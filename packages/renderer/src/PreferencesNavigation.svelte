@@ -1,11 +1,9 @@
 <script lang="ts">
-import { faFlask } from '@fortawesome/free-solid-svg-icons';
 import { SettingsNavItem } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 import type { TinroRouteMeta } from 'tinro';
 
 import { CONFIGURATION_DEFAULT_SCOPE } from '/@api/configuration/constants.js';
-import { DockerCompatibilitySettings } from '/@api/docker-compatibility-info';
 
 import { configurationProperties } from './stores/configurationProperties';
 
@@ -20,27 +18,8 @@ interface NavItem {
 
 let { meta }: Props = $props();
 
-let dockerCompatibilityEnabled = $state(false);
 let configProperties: Map<string, NavItem[]> = $state(new Map<string, NavItem[]>());
 let sectionExpanded: { [key: string]: boolean } = $state({});
-
-let experimentalSection: boolean = $state(false);
-
-function updateDockerCompatibility(): void {
-  window
-    .getConfigurationValue<boolean>(`${DockerCompatibilitySettings.SectionName}.${DockerCompatibilitySettings.Enabled}`)
-    .then(result => {
-      if (result !== undefined) {
-        dockerCompatibilityEnabled = result;
-      }
-    })
-    .catch((err: unknown) =>
-      console.error(
-        `Error getting configuration value ${DockerCompatibilitySettings.SectionName}.${DockerCompatibilitySettings.Enabled}`,
-        err,
-      ),
-    );
-}
 
 function sortItems(items: NavItem[]): NavItem[] {
   return items.toSorted((a, b) => a.title.localeCompare(b.title));
@@ -48,12 +27,6 @@ function sortItems(items: NavItem[]): NavItem[] {
 
 onMount(() => {
   return configurationProperties.subscribe(value => {
-    // update compatibility
-    updateDockerCompatibility();
-
-    // check for experimental configuration
-    experimentalSection = value.some(configuration => !!configuration.experimental);
-
     // update config properties
     configProperties = value.reduce((map, current) => {
       // filter on default scope
@@ -87,12 +60,12 @@ onMount(() => {
     </div>
   </div>
   <div class="h-full overflow-y-auto" style="margin-bottom:auto">
-    {#each [{ title: 'Resources', href: '/preferences/resources', visible: true }, { title: 'Proxy', href: '/preferences/proxies', visible: true }, { title: 'Docker Compatibility', href: '/preferences/docker-compatibility', visible: dockerCompatibilityEnabled }, { title: 'Registries', href: '/preferences/registries', visible: true }, { title: 'Authentication', href: '/preferences/authentication-providers', visible: true }, { title: 'CLI Tools', href: '/preferences/cli-tools', visible: true }, { title: 'Kubernetes', href: '/preferences/kubernetes-contexts', visible: true }] as navItem, index (index)}
+    {#each [{ title: 'Proxy', href: '/preferences/proxies', visible: true }] as navItem, index (index)}
       {#if navItem.visible}
         <SettingsNavItem title={navItem.title} href={navItem.href} selected={meta.url === navItem.href} />
       {/if}
     {/each}
-
+<!--
     {#if experimentalSection}
       <SettingsNavItem
         icon={faFlask}
@@ -102,7 +75,7 @@ onMount(() => {
         selected={meta.url === '/preferences/experimental'}
       />
     {/if}
-
+-->
     <!-- Default configuration properties start -->
     {#each configProperties as [configSection, configItems] (configSection)}
       <SettingsNavItem

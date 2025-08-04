@@ -18,7 +18,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import type { PodContainerInfo, PodInfo } from '@podman-desktop/api';
+import type { PodContainerInfo, PodInfo } from '@kortex-app/api';
 import { beforeEach, expect, test } from 'vitest';
 
 import { TerminalService } from '/@/lib/kube/pods/terminal/KubernetesTerminalService';

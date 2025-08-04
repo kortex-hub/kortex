@@ -77,7 +77,7 @@ async function openGitHub(): Promise<void> {
 <FeedbackForm>
   <svelte:fragment slot="content">
     <label for="smiley" class="block mt-4 mb-2 text-sm font-medium text-[var(--pd-modal-text)]"
-      >How was your experience with Podman Desktop?</label>
+      >How was your experience with Kortex ?</label>
     <div class="flex space-x-4">
       <button aria-label="very-sad-smiley" onclick={(): void => selectSmiley(1)}>
         <Fa

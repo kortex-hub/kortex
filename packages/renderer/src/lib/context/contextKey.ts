@@ -28,7 +28,7 @@
 /* eslint-disable sonarjs/single-character-alternation */
 /* eslint-disable sonarjs/updated-loop-counter */
 /* eslint-disable sonarjs/function-return-type */
-import type { Event } from '@podman-desktop/api';
+import type { Event } from '@kortex-app/api';
 
 import type { IDisposable } from '/@api/disposable.js';
 

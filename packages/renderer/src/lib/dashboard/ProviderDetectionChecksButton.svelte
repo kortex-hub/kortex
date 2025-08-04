@@ -1,6 +1,6 @@
 <script lang="ts">
 import { faList } from '@fortawesome/free-solid-svg-icons';
-import type { ProviderDetectionCheck } from '@podman-desktop/api';
+import type { ProviderDetectionCheck } from '@kortex-app/api';
 import { Button } from '@podman-desktop/ui-svelte';
 
 import type { ProviderInfo } from '/@api/provider-info';

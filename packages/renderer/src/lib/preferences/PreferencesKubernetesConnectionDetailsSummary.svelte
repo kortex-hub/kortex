@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { KubernetesProviderConnection } from '@podman-desktop/api';
+import type { KubernetesProviderConnection } from '@kortex-app/api';
 
 import type { IConfigurationPropertyRecordedSchema } from '/@api/configuration/models.js';
 import type { ProviderKubernetesConnectionInfo } from '/@api/provider-info';

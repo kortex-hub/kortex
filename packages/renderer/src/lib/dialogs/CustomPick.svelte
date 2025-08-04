@@ -1,6 +1,6 @@
 <script lang="ts">
 import { faAngleDown, faAngleUp, faCircleCheck, faXmark } from '@fortawesome/free-solid-svg-icons';
-import type { CustomPickItem } from '@podman-desktop/api';
+import type { CustomPickItem } from '@kortex-app/api';
 import { Button } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';

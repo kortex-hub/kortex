@@ -67,7 +67,7 @@ test('should override default path', async () => {
   const wantedDirectory = '/fake-directory';
 
   // add the env variable
-  process.env[Directories.PODMAN_DESKTOP_HOME_DIR] = wantedDirectory;
+  process.env[Directories.KORTEX_HOME_DIR] = wantedDirectory;
 
   directories = new TestDirectories();
   const result = directories.getDesktopAppHomeDir();

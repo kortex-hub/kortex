@@ -70,8 +70,8 @@ async function addElectronFuses(context) {
  * @see https://www.electron.build/configuration/configuration
  */
 const config = {
-  productName: 'Podman Desktop',
-  appId: 'io.podman_desktop.PodmanDesktop',
+  productName: 'Kortex',
+  appId: 'dev.kortex-hub.Kortex',
   directories: {
     output: 'dist',
     buildResources: 'buildResources',
@@ -82,47 +82,12 @@ const config = {
     const DEFAULT_ASSETS = [];
     context.packager.config.extraResources = DEFAULT_ASSETS;
 
-    // universal build, add both pkg files
-    // this is hack to avoid issue https://github.com/electron/universal/issues/36
-    if (
-      context.appOutDir.endsWith('mac-universal-x64-temp') ||
-      context.appOutDir.endsWith('mac-universal-arm64-temp')
-    ) {
-      context.packager.config.extraResources = DEFAULT_ASSETS;
-      context.packager.config.extraResources.push(
-        'extensions/podman/packages/extension/assets/podman-installer-macos-universal*.pkg',
-      );
-      return;
-    }
-
-    if (context.arch === Arch.arm64 && context.electronPlatformName === 'darwin') {
-      context.packager.config.extraResources.push(
-        'extensions/podman/packages/extension/assets/podman-installer-macos-aarch64-*.pkg',
-      );
-      context.packager.config.extraResources.push('extensions/podman/packages/extension/assets/podman-image-arm64.zst');
-    }
-
-    if (context.arch === Arch.x64 && context.electronPlatformName === 'darwin') {
-      context.packager.config.extraResources.push(
-        'extensions/podman/packages/extension/assets/podman-installer-macos-amd64-*.pkg',
-      );
-      context.packager.config.extraResources.push('extensions/podman/packages/extension/assets/podman-image-x64.zst');
-    }
-
     if (context.electronPlatformName === 'win32') {
       // add the win-ca package
       context.packager.config.extraResources.push({
         from: 'node_modules/win-ca/lib/roots.exe',
         to: 'win-ca/roots.exe',
       });
-      // add podman installer
-      context.packager.config.extraResources.push('extensions/podman/packages/extension/assets/podman-*.exe');
-    }
-    if (context.arch === Arch.x64 && context.electronPlatformName === 'win32') {
-      context.packager.config.extraResources.push('extensions/podman/packages/extension/assets/podman-image-x64.zst');
-    }
-    if (context.arch === Arch.arm64 && context.electronPlatformName === 'win32') {
-      context.packager.config.extraResources.push('extensions/podman/packages/extension/assets/podman-image-arm64.zst');
     }
   },
   afterPack: async context => {
@@ -130,10 +95,10 @@ const config = {
   },
   files: ['packages/**/dist/**', 'extensions/**/builtin/*.cdix/**', 'packages/main/src/assets/**'],
   portable: {
-    artifactName: `podman-desktop${artifactNameSuffix}-\${version}-\${arch}.\${ext}`,
+    artifactName: `kortex${artifactNameSuffix}-\${version}-\${arch}.\${ext}`,
   },
   nsis: {
-    artifactName: `podman-desktop${artifactNameSuffix}-\${version}-setup-\${arch}.\${ext}`,
+    artifactName: `kortex${artifactNameSuffix}-\${version}-setup-\${arch}.\${ext}`,
     oneClick: false,
   },
   win: {
@@ -186,11 +151,11 @@ const config = {
       '--talk-name=org.freedesktop.Flatpak',
     ],
     useWaylandFlags: 'false',
-    artifactName: 'podman-desktop-${version}.${ext}',
+    artifactName: 'kortex-${version}.${ext}',
     runtimeVersion: '24.08',
     branch: 'main',
     files: [
-      ['.flatpak-appdata.xml', '/share/metainfo/io.podman_desktop.PodmanDesktop.metainfo.xml'],
+      ['.flatpak-appdata.xml', '/share/metainfo/dev.kortex.Kortex.metainfo.xml'],
       ['buildResources/icon-512x512.png', '/share/icons/hicolor/512x512/apps/io.podman_desktop.PodmanDesktop.png'],
     ],
   },
@@ -200,7 +165,7 @@ const config = {
     target: ['flatpak', { target: 'tar.gz', arch: ['x64', 'arm64'] }],
   },
   mac: {
-    artifactName: `podman-desktop${artifactNameSuffix}-\${version}-\${arch}.\${ext}`,
+    artifactName: `kortex${artifactNameSuffix}-\${version}-\${arch}.\${ext}`,
     hardenedRuntime: true,
     entitlements: './node_modules/electron-builder-notarize/entitlements.mac.inherit.plist',
     target: {
@@ -229,8 +194,8 @@ const config = {
     ],
   },
   protocols: {
-    name: 'Podman Desktop',
-    schemes: ['podman-desktop'],
+    name: 'Kortex',
+    schemes: ['kortex'],
     role: 'Editor',
   },
   publish: {

@@ -20,7 +20,7 @@ import { existsSync } from 'node:fs';
 import { unlink, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-import type { Configuration } from '@podman-desktop/api';
+import type { Configuration } from '@kortex-app/api';
 import { app } from 'electron';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 

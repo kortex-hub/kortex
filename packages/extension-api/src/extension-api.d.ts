@@ -17,33 +17,31 @@
  ***********************************************************************/
 
 /**
- * The Podman Desktop API is intended to be consumed by extensions interacting with Podman Desktop.
+ * The Kortex API is intended to be consumed by extensions interacting with Kortex.
  *
  * This documentation is automatically generated from typedoc comments
- * in the source code `extension-api.d.ts` and provided [on our website](https://podman-desktop.io/api).
+ * in the source code `extension-api.d.ts`
  *
- * This type declaration file can be installed from [the npm registry](https://www.npmjs.com/package/@podman-desktop/api).
+ * This type declaration file can be installed from [the npm registry](https://www.npmjs.com/package/@kortex-app/api).
  *
- * For more information, see the main
- * [Podman Desktop developing extensions documentation](https://podman-desktop.io/docs/extensions/developing).
  *
  * @example
  * ```shell
- * $ npm install @podman-desktop/api
+ * $ npm install @kortex-app/api
  * ```
  *
  * ```typescript
- * import * as api from '@podman-desktop/api';
+ * import * as api from '@kortex-app/api';
  *
  * console.log(api.version);
  * ```
  *
- * @module @podman-desktop/api
+ * @module @kortex-app/api
  **/
 
-declare module '@podman-desktop/api' {
+declare module '@kortex-app/api' {
   /**
-   * The version of Podman Desktop.
+   * The version of Kortex.
    */
   export const version: string;
 
@@ -125,7 +123,7 @@ declare module '@podman-desktop/api' {
    * the `Event` interface.
    *
    * ```typescript
-   * import * as api from '@podman-desktop/api';
+   * import * as api from '@kortex-app/api';
    *
    * class MyValueManager {
    *   private value: boolean | undefined = undefined;
@@ -249,10 +247,10 @@ declare module '@podman-desktop/api' {
    * and the {@link Extension.exports exports}-property, like below:
    *
    * ```typescript
-   * const podmanExtension = extensions.getExtension('podman-desktop.podman');
-   * const podmanExtensionAPI = podmanExtension.exports;
+   * const fooExtension = extensions.getExtension('kortex.foo');
+   * const fooExtensionAPI = fooExtension.exports;
    *
-   * podmanExtensionAPI....
+   * fooExtensionAPI....
    * ```
    */
   export namespace extensions {
@@ -738,12 +736,12 @@ declare module '@podman-desktop/api' {
   /**
    * The commands module provides functions to register and execute commands
    * Existing commands available for extensions to use:
-   * - `pullImage`: uses Podman Desktop's UI pull image behavior. This command will create a visible task to show the progress of the pullImage action with the option to include a task action.
+   * - `pullImage`: uses Kortex's UI pull image behavior. This command will create a visible task to show the progress of the pullImage action with the option to include a task action.
    * It uses the same parameters as the original pullImage function, in addition to having `taskActionName: string` and `taskActionCallback: () => void` as parameters to create a task action (optional).
    *
    * @example
    * ```typescript
-   * import * as api from '@podman-desktop/api';
+   * import * as api from '@kortex-app/api';
    *
    * export async function activate(extensionContext: api.ExtensionContext): Promise<void> {
    *
@@ -847,7 +845,7 @@ declare module '@podman-desktop/api' {
     /**
      * Opens new session using ProviderConnectionShellAccessImpl class
      * @example
-     * import * as api from '@podman-desktop/api';
+     * import * as api from '@kortex-app/api';
      *
      * class ProviderConnectionShellAccessImpl implements ProviderConnectionShellAccess {
      *  open(): ProviderConnectionShellAccessSession {
@@ -1063,7 +1061,7 @@ declare module '@podman-desktop/api' {
    * @example
    *
    * ```typescript
-   * import * as api from '@podman-desktop/api';
+   * import * as api from '@kortex-app/api';
    *
    * export async function activate(extensionContext: api.ExtensionContext): Promise<void> {
    *   const handleProxyConfiguration = (e: boolean | undefined, s: api.ProxySettings | undefined) => {
@@ -1281,7 +1279,7 @@ declare module '@podman-desktop/api' {
      * Show progress bar under app icon in launcher bar.
      *
      * @deprecated This value is deprecated as it does not render equally on various supported platforms. It will be
-     * removed in future versions of Podman Desktop. We strongly encourage to use TASK_WIDGET instead.
+     * removed in future versions of Kortex. We strongly encourage to use TASK_WIDGET instead.
      * @see TASK_WIDGET
      */
     APP_ICON = 1,
@@ -1320,7 +1318,7 @@ declare module '@podman-desktop/api' {
      * navigate action that the user can trigger.
      * @example
      * ```ts
-     * import { window, type ProgressLocation } from '@podman-desktop/api';
+     * import { window, type ProgressLocation } from '@kortex-app/api';
      *
      * await window.withProgress<string>(
      *     {
@@ -2190,7 +2188,7 @@ declare module '@podman-desktop/api' {
     export function showErrorMessage(message: string, ...items: string[]): Promise<string | undefined>;
 
     /**
-     * Show progress in Podman Desktop. Progress is shown while running the given callback
+     * Show progress in Kortex. Progress is shown while running the given callback
      * and while the promise it returned isn't resolved nor rejected. The location at which
      * progress should show (and other details) is defined via the passed {@linkcode ProgressOptions}.
      *
@@ -2268,7 +2266,7 @@ declare module '@podman-desktop/api' {
      *
      * @example
      * ```typescript
-     * import * as api from '@podman-desktop/api';
+     * import * as api from '@kortex-app/api';
      *
      * export async function activate(extensionContext: api.ExtensionContext): Promise<void> {
      *   const statusBarItem = api.window.createStatusBarItem();
@@ -4623,7 +4621,7 @@ declare module '@podman-desktop/api' {
   export type CliToolInstallationSource = 'extension' | 'external';
 
   /**
-   * Options to create new CliTool instance and register it in podman desktop
+   * Options to create new CliTool instance and register it in Kortex
    */
 
   export interface CliToolOptions {
@@ -4884,7 +4882,7 @@ declare module '@podman-desktop/api' {
      *
      * @example
      * ```ts
-     * import { navigation, commands } from '@podman-desktop/api';
+     * import { navigation, commands } from '@kortex-app/api';
      *
      * commands.registerCommand('redirect-download-command', (trackingId: string) => {
      *   // todo: do something with the trackingId

@@ -19,7 +19,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import type * as containerDesktopAPI from '@podman-desktop/api';
+import type * as containerDesktopAPI from '@kortex-app/api';
 import AdmZip from 'adm-zip';
 import { app, clipboard as electronClipboard } from 'electron';
 import { inject, injectable, preDestroy } from 'inversify';
@@ -329,7 +329,7 @@ export class ExtensionLoader implements AsyncDisposable {
     }
 
     this.moduleLoader.addOverride(createHttpPatchedModules(this.proxy, this.certificates)); // add patched http and https
-    this.moduleLoader.addOverride({ '@podman-desktop/api': ext => ext.api }); // add podman desktop API
+    this.moduleLoader.addOverride({ '@kortex-app/api': ext => ext.api }); // add podman desktop API
 
     this.moduleLoader.overrideRequire();
     // register configuration for the max activation time

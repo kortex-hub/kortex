@@ -52,7 +52,7 @@
     "yaml": "^2.8.0"
   },
   "dependencies": {
-    "@podman-desktop/ui-svelte": "workspace:*",
+    "@podman-desktop/ui-svelte": "^1.21.0-202508041246-1d7512118b0",
     "@zerodevx/svelte-toast": "^0.9.6",
     "electron-context-menu": "4.1.0",
     "js-yaml": "^4.1.0",

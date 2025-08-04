@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { ImageFile, ImageFileSymlink } from '@podman-desktop/api';
+import type { ImageFile, ImageFileSymlink } from '@kortex-app/api';
 import { SvelteMap } from 'svelte/reactivity';
 
 import type { FilesystemNode } from '/@api/filesystem-tree';

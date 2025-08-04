@@ -18,7 +18,7 @@
 
 /* eslint-disable sonarjs/no-unused-collection */
 
-import type { OpenDialogOptions, SaveDialogOptions } from '@podman-desktop/api';
+import type { OpenDialogOptions, SaveDialogOptions } from '@kortex-app/api';
 import type { IpcRenderer, IpcRendererEvent } from 'electron';
 import { contextBridge, ipcRenderer } from 'electron';
 import { beforeEach, describe, expect, test, vi } from 'vitest';

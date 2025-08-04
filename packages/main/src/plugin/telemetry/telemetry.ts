@@ -19,12 +19,7 @@
 import * as os from 'node:os';
 import { promisify } from 'node:util';
 
-import type {
-  TelemetryLogger,
-  TelemetryLoggerOptions,
-  TelemetrySender,
-  TelemetryTrustedValue,
-} from '@podman-desktop/api';
+import type { TelemetryLogger, TelemetryLoggerOptions, TelemetrySender, TelemetryTrustedValue } from '@kortex-app/api';
 import type { EventProperties } from '@segment/analytics-core';
 import { Analytics, type UserTraits } from '@segment/analytics-node';
 import { app } from 'electron';
@@ -66,7 +61,7 @@ export type EventType =
 export class Telemetry {
   public static readonly DEFAULT_DELAY_AGGREGATE = 10_000; // 10 seconds
 
-  private static readonly SEGMENT_KEY = 'Mhl7GXADk5M1vG6r9FXztbCqWRQY8XPy';
+  private static readonly SEGMENT_KEY = 'bM9vFhjiVszj9rvZGyUwYUAh9CmKGU4z';
 
   private cachedTelemetrySettings: TelemetryRule[] | undefined;
   private regexp: Map<string, RegExp> = new Map();

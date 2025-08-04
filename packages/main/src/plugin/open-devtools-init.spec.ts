@@ -47,7 +47,7 @@ test('should register a configuration', async () => {
   expect(configurationNode?.properties).toBeDefined();
   expect(configurationNode?.properties?.['preferences.OpenDevTools']).toBeDefined();
   expect(configurationNode?.properties?.['preferences.OpenDevTools']?.description).toBe(
-    'Open DevTools when launching Podman Desktop in development mode.',
+    'Open DevTools when launching Kortex in development mode.',
   );
   expect(configurationNode?.properties?.['preferences.OpenDevTools']?.type).toBe('string');
   expect(configurationNode?.properties?.['preferences.OpenDevTools']?.enum).toEqual([

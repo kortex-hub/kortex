@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { CliToolInstaller, CliToolOptions, CliToolSelectUpdate, CliToolUpdate, Logger } from '@podman-desktop/api';
+import type { CliToolInstaller, CliToolOptions, CliToolSelectUpdate, CliToolUpdate, Logger } from '@kortex-app/api';
 import { afterEach, beforeEach, expect, suite, test, vi } from 'vitest';
 
 import type { CliToolExtensionInfo } from '/@api/cli-tool-info.js';

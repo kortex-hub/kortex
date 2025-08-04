@@ -1,8 +1,8 @@
 {
-  "name": "@podman-desktop/api",
+  "name": "@kortex-app/api",
   "version": "0.0.1",
-  "description": "API for Podman Desktop extensions",
-  "repository": "https://github.com/podman-desktop/podman-desktop",
+  "description": "API for Kortex extensions",
+  "repository": "https://github.com/kortex-hub/kortex",
   "publishConfig": {
     "provenance": true,
     "access": "public"

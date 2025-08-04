@@ -46,12 +46,8 @@ const compat = new FlatCompat({
 
 const TYPESCRIPT_PROJECTS = [
   'packages/*/tsconfig.json',
-  './website/tsconfig.json',
-  './website-argos/tsconfig.json',
   './extensions/*/tsconfig.json',
   './extensions/*/packages/*/tsconfig.json',
-  './tests/playwright/tsconfig.json',
-  './storybook/tsconfig.json',
 ];
 
 export default [

@@ -2,10 +2,6 @@ packages:
   - 'packages/*'
   - 'extensions/*'
   - 'extensions/*/packages/*'
-  - 'storybook'
-  - 'website'
-  - 'website-argos'
-  - 'tests/*'
   - 'scripts'
 onlyBuiltDependencies:
   - '@biomejs/biome'

@@ -23,6 +23,7 @@ import { EventEmitter } from 'node:events';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
+import type * as containerDesktopAPI from '@kortex-app/api';
 import type {
   Cluster,
   Context as KubernetesContext,
@@ -41,7 +42,6 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
-import type * as containerDesktopAPI from '@podman-desktop/api';
 import checkDiskSpacePkg from 'check-disk-space';
 import type Dockerode from 'dockerode';
 import type { WebContents } from 'electron';
@@ -524,7 +524,7 @@ export class PluginSystem {
     container.bind<OnboardingRegistry>(OnboardingRegistry).toSelf().inSingletonScope();
     container.bind<KubernetesClient>(KubernetesClient).toSelf().inSingletonScope();
     const kubernetesClient = container.get<KubernetesClient>(KubernetesClient);
-    await kubernetesClient.init();
+    // disable await kubernetesClient.init();
 
     container.bind<CloseBehavior>(CloseBehavior).toSelf().inSingletonScope();
     const closeBehaviorConfiguration = container.get<CloseBehavior>(CloseBehavior);
@@ -532,7 +532,7 @@ export class PluginSystem {
 
     container.bind<DockerCompatibility>(DockerCompatibility).toSelf().inSingletonScope();
     const dockerCompatibility = container.get<DockerCompatibility>(DockerCompatibility);
-    dockerCompatibility.init();
+    // DISABLED: dockerCompatibility.init();
 
     container.bind<StatusbarProvidersInit>(StatusbarProvidersInit).toSelf().inSingletonScope();
     const statusbarProviders = container.get<StatusbarProvidersInit>(StatusbarProvidersInit);
@@ -724,7 +724,7 @@ export class PluginSystem {
 
     container.bind<RecommendationsRegistry>(RecommendationsRegistry).toSelf().inSingletonScope();
     const recommendationsRegistry = container.get<RecommendationsRegistry>(RecommendationsRegistry);
-    recommendationsRegistry.init();
+    // DISABLED: recommendationsRegistry.init();
 
     // do not wait
     featured.init().catch((e: unknown) => {

@@ -22,6 +22,7 @@
 
 import EventEmitter from 'node:events';
 
+import type * as containerDesktopAPI from '@kortex-app/api';
 import type {
   Cluster,
   Context,
@@ -40,7 +41,6 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
-import type * as containerDesktopAPI from '@podman-desktop/api';
 import { contextBridge, ipcRenderer } from 'electron';
 
 import type { CliToolInfo } from '/@api/cli-tool-info';

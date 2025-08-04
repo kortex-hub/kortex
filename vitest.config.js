@@ -29,10 +29,7 @@ const PODMAN_DESKTOP_EXCLUDED = [
  */
 export default defineConfig({
   test: {
-    workspace: [
-      '{extensions,packages,tools,storybook,website,scripts}/**/{vitest,vite}.config.{js,ts}',
-      '!**/builtin/**',
-    ],
+    workspace: ['{extensions,packages,tools,scripts}/**/{vitest,vite}.config.{js,ts}', '!**/builtin/**'],
     // use GitHub action reporters when running in CI
     reporters: process.env.CI ? [['junit', { includeConsoleOutput: false }], 'default'] : ['default'],
     outputFile: process.env.CI ? { junit: 'coverage/junit-results.xml' } : {},

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ContainerProviderConnection } from '@podman-desktop/api';
+import type { ContainerProviderConnection } from '@kortex-app/api';
 
 export interface ManifestCreateOptions {
   images: string[];

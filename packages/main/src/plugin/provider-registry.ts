@@ -52,7 +52,7 @@ import type {
   UpdateKubernetesConnectionEvent,
   UpdateVmConnectionEvent,
   VmProviderConnection,
-} from '@podman-desktop/api';
+} from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
 import type { Event } from '/@api/event.js';

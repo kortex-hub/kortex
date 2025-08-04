@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Configuration, ProxySettings } from '@podman-desktop/api';
+import type { Configuration, ProxySettings } from '@kortex-app/api';
 import { delay, http, HttpResponse } from 'msw';
 import { setupServer, type SetupServerApi } from 'msw/node';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';

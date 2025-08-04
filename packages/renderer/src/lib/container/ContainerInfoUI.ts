@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Port } from '@podman-desktop/api';
+import type { Port } from '@kortex-app/api';
 
 // type of groups
 export enum ContainerGroupInfoTypeUI {

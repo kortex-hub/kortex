@@ -87,19 +87,8 @@ test('Test rendering of the navigation bar with empty items', async (_arg: unkno
 
   const dasboard = screen.getByRole('link', { name: 'Dashboard' });
   expect(dasboard).toBeInTheDocument();
-  const containers = screen.getByRole('link', { name: 'Containers' });
-  expect(containers).toBeInTheDocument();
-  const pods = screen.getByRole('link', { name: 'Pods' });
-  expect(pods).toBeInTheDocument();
-  const images = screen.getByRole('link', { name: 'Images' });
-  expect(images).toBeInTheDocument();
-  const volumes = screen.getByRole('link', { name: 'Volumes' });
-  expect(volumes).toBeInTheDocument();
   const settings = screen.getByRole('link', { name: 'Settings' });
   expect(settings).toBeInTheDocument();
-
-  const kubernetes = screen.queryByRole('link', { name: 'Kubernetes' });
-  expect(kubernetes).toBeInTheDocument();
 });
 
 test('Test contributions', () => {

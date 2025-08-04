@@ -22,7 +22,7 @@ import type {
   AuthenticationSession,
   AuthenticationSessionAccountInformation,
   Event,
-} from '@podman-desktop/api';
+} from '@kortex-app/api';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import type { ApiSenderType } from './api.js';

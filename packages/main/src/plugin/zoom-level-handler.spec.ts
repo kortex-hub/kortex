@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Configuration } from '@podman-desktop/api';
+import type { Configuration } from '@kortex-app/api';
 import type { BrowserWindow } from 'electron';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 

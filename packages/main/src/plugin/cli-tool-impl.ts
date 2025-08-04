@@ -28,7 +28,7 @@ import type {
   Disposable,
   Event,
   ProviderImages,
-} from '@podman-desktop/api';
+} from '@kortex-app/api';
 
 import type { CliToolExtensionInfo } from '/@api/cli-tool-info.js';
 
