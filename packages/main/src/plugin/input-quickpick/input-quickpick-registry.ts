@@ -16,12 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type {
-  CancellationToken,
-  InputBoxOptions,
-  InputBoxValidationMessage,
-  QuickPickOptions,
-} from '@podman-desktop/api';
+import type { CancellationToken, InputBoxOptions, InputBoxValidationMessage, QuickPickOptions } from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
 import { ApiSenderType } from '../api.js';

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { NotificationOptions } from '@podman-desktop/api';
+import type { NotificationOptions } from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
 import { NotificationImpl } from '/@/plugin/tasks/notification-impl.js';

@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import type { Disposable } from '@kortex-app/api';
 import type {
   Informer,
   KubernetesListObject,
@@ -24,7 +25,6 @@ import type {
   ObjectCache,
 } from '@kubernetes/client-node';
 import { ADD, ApiException, DELETE, ERROR, ListWatch, UPDATE, Watch } from '@kubernetes/client-node';
-import type { Disposable } from '@podman-desktop/api';
 
 import type { Event } from '/@api/event.js';
 

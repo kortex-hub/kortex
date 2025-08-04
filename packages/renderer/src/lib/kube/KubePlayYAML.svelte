@@ -7,7 +7,7 @@ import type { ProviderContainerConnectionInfo, ProviderInfo } from '/@api/provid
 let providerUnsubscribe: Unsubscriber;
 
 import { faCircleCheck } from '@fortawesome/free-solid-svg-icons';
-import type { OpenDialogOptions } from '@podman-desktop/api';
+import type { OpenDialogOptions } from '@kortex-app/api';
 import { Button, Checkbox, ErrorMessage } from '@podman-desktop/ui-svelte';
 import Fa from 'svelte-fa';
 
@@ -209,7 +209,7 @@ function goBackToPodsPage(): void {
       <div hidden={runStarted}>
         <label for="containerFilePath" class="block mb-2 text-base font-bold text-[var(--pd-content-card-header-text)]"
           >Kubernetes YAML file</label>
-       
+
       </div>
 
       <div class="flex flex-col">
@@ -295,9 +295,9 @@ function goBackToPodsPage(): void {
           </label>
           <div id="custom-yaml-editor" class="h-[400px] border">
             {#key editorKey}
-              <MonacoEditor 
-                readOnly={false} 
-                language="yaml" 
+              <MonacoEditor
+                readOnly={false}
+                language="yaml"
                 on:contentChange={(e): void => {
                   customYamlContent = e.detail;
                 }} />

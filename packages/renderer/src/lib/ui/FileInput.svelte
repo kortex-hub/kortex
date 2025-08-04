@@ -1,6 +1,6 @@
 <script lang="ts">
 import { faFolderOpen } from '@fortawesome/free-solid-svg-icons';
-import type { OpenDialogOptions } from '@podman-desktop/api';
+import type { OpenDialogOptions } from '@kortex-app/api';
 import { Button, Input } from '@podman-desktop/ui-svelte';
 
 export let placeholder: string | undefined = undefined;

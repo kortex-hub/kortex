@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import type { Event } from '@podman-desktop/api';
+import type { Event } from '@kortex-app/api';
 
 import type { TaskState, TaskStatus } from '/@api/taskInfo.js';
 

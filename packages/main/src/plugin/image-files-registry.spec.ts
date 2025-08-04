@@ -23,7 +23,7 @@ import type {
   ImageFilesystemLayers,
   ImageInfo,
   ProviderResult,
-} from '@podman-desktop/api';
+} from '@kortex-app/api';
 import { afterEach, beforeEach, expect, suite, test, vi } from 'vitest';
 
 import type { ImageFilesExtensionInfo } from '/@api/image-files-info.js';

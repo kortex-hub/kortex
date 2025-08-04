@@ -18,7 +18,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import type { ProviderImages } from '@podman-desktop/api';
+import type { ProviderImages } from '@kortex-app/api';
 import { render, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { expect, test } from 'vitest';

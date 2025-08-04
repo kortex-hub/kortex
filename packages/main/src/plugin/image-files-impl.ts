@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Disposable, ImageFilesProvider, ImageFileSymlink, ImageFilesystemLayer } from '@podman-desktop/api';
+import type { Disposable, ImageFilesProvider, ImageFileSymlink, ImageFilesystemLayer } from '@kortex-app/api';
 
 import type { ImageFilesRegistry } from './image-files-registry.js';
 

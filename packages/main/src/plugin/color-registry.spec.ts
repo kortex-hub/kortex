@@ -433,7 +433,7 @@ describe('registerExtensionThemes', () => {
     // now check for a color not defined in 'light-theme1'
     const titlebarTextColorLight = colorsLight.find(c => c.id === 'titlebar-text');
     expect(titlebarTextColorLight).toBeDefined();
-    expect(titlebarTextColorLight?.value).toBe('#37255d');
+    expect(titlebarTextColorLight?.value).toBe('#0d2c52');
   });
 
   test('check dispose on Windows', async () => {

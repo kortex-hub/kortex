@@ -50,7 +50,7 @@ async function createWindow(): Promise<BrowserWindow> {
 
   const browserWindowConstructorOptions: BrowserWindowConstructorOptions = {
     show: false, // Use 'ready-to-show' event to show window
-    autoHideMenuBar: true, // This makes Podman Desktop look more like a native app
+    autoHideMenuBar: true, // This makes Kortex look more like a native app
     width: INITIAL_APP_WIDTH,
     minWidth: INITIAL_APP_MIN_WIDTH,
     minHeight: INITIAL_APP_MIN_HEIGHT,

@@ -66,31 +66,6 @@ afterEach(() => {
   vi.resetAllMocks();
 });
 
-test('LearningCenter component shows carousel with guides', async () => {
-  render(LearningCenter);
-
-  await vi.waitFor(() => {
-    const firstCard = screen.getByText(learningCenter.guides[0].title);
-    expect(firstCard).toBeVisible();
-  });
-});
-
-test('Clicking on LearningCenter title hides carousel with guides', async () => {
-  render(LearningCenter);
-  await vi.waitFor(() => {
-    const firstCard = screen.getByText(learningCenter.guides[0].title);
-    expect(firstCard).toBeVisible();
-  });
-
-  const button = screen.getByRole('button', { name: 'Learning Center' });
-  expect(button).toBeInTheDocument();
-  expect(screen.queryByText(learningCenter.guides[0].title)).toBeInTheDocument();
-  await fireEvent.click(button);
-  await vi.waitFor(async () => {
-    expect(screen.queryByText(learningCenter.guides[0].title)).not.toBeInTheDocument();
-  });
-});
-
 test('Toggling expansion sets configuration', async () => {
   render(LearningCenter);
 

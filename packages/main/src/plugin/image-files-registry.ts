@@ -22,7 +22,7 @@ import type {
   ImageFilesProvider,
   ImageFilesProviderMetadata,
   ImageInfo,
-} from '@podman-desktop/api';
+} from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
 import { type IConfigurationNode, IConfigurationRegistry } from '/@api/configuration/models.js';

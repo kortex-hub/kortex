@@ -36,7 +36,7 @@ import type {
   ProviderUpdate,
   UpdateVmConnectionEvent,
   VmProviderConnection,
-} from '@podman-desktop/api';
+} from '@kortex-app/api';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type {

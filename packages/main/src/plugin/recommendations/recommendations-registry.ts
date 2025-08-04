@@ -18,18 +18,9 @@
 
 import { inject, injectable } from 'inversify';
 
-import { ExtensionsCatalog } from '/@/plugin/extension/catalog/extensions-catalog.js';
-import { ExtensionLoader } from '/@/plugin/extension/extension-loader.js';
-import { Featured } from '/@/plugin/featured/featured.js';
-import type { FeaturedExtension } from '/@/plugin/featured/featured-api.js';
-import type {
-  ExtensionBanner,
-  RecommendedRegistry,
-  RecommendedRegistryExtensionDetails,
-} from '/@/plugin/recommendations/recommendations-api.js';
+import type { ExtensionBanner, RecommendedRegistry } from '/@/plugin/recommendations/recommendations-api.js';
 import { type IConfigurationNode, IConfigurationRegistry } from '/@api/configuration/models.js';
 
-import recommendations from '../../../../../recommendations.json' with { type: 'json' };
 import { RecommendationsSettings } from './recommendations-settings.js';
 
 @injectable()
@@ -37,12 +28,6 @@ export class RecommendationsRegistry {
   constructor(
     @inject(IConfigurationRegistry)
     private configurationRegistry: IConfigurationRegistry,
-    @inject(Featured)
-    private featured: Featured,
-    @inject(ExtensionLoader)
-    private extensionLoader: ExtensionLoader,
-    @inject(ExtensionsCatalog)
-    private extensionsCatalog: ExtensionsCatalog,
   ) {}
 
   isBannerRecommendationEnabled(): boolean {
@@ -60,93 +45,14 @@ export class RecommendationsRegistry {
   }
 
   async getRegistries(): Promise<RecommendedRegistry[]> {
-    // Do not recommend any registry when user selected the ignore preference
-    if (!this.isRecommendationEnabled()) {
-      return [];
-    }
-
-    const installedExtensions = await this.extensionLoader.listExtensions();
-
-    const fetchableExtensions = await this.extensionsCatalog.getFetchableExtensions();
-
-    return recommendations.registries
-      .map(registry => {
-        const matchingExtension = fetchableExtensions.find(e => e.extensionId === registry.extensionId);
-        let extensionDetails: RecommendedRegistryExtensionDetails | undefined;
-
-        if (matchingExtension) {
-          extensionDetails = {
-            id: matchingExtension.extensionId,
-            displayName: registry.extensionId,
-            fetchable: true,
-            fetchLink: matchingExtension.link,
-            fetchVersion: matchingExtension.version,
-          };
-        }
-
-        return {
-          extensionId: registry.extensionId,
-          id: registry.id,
-          name: registry.name,
-          errors: registry.errors,
-          isInstalled: installedExtensions.some(e => e.id === registry.extensionId),
-          extensionDetails,
-        };
-      })
-      .filter(registry => registry.extensionDetails !== undefined) as RecommendedRegistry[];
+    return [];
   }
 
   /**
    * Return the recommended extension banners which are not installed.
-   * @param limit the maximum number of extension banners returned. Default 1, use -1 for no limit
    */
-  async getExtensionBanners(limit = 1): Promise<ExtensionBanner[]> {
-    // Do not recommend any extension when user selected the ignore preference
-    if (!this.isBannerRecommendationEnabled()) return [];
-
-    const featuredExtensions: Record<string, FeaturedExtension> = Object.fromEntries(
-      (await this.featured.getFeaturedExtensions()).map(featured => [featured.id, featured]),
-    );
-
-    // Filter and shuffle the extensions
-    const extensionBanners: ExtensionBanner[] = recommendations.extensions.reduce((prev, extension) => {
-      // ensure the extension is in the featured extensions and is not install
-      if (!(extension.extensionId in featuredExtensions) || featuredExtensions[extension.extensionId]?.installed) {
-        return prev;
-      }
-
-      // Check for publishDate property
-      if ('publishDate' in extension && typeof extension.publishDate === 'string') {
-        const publishDate = new Date(extension.publishDate).getTime();
-        if (isNaN(publishDate) || publishDate > Date.now()) {
-          return prev;
-        }
-      }
-
-      const featured = featuredExtensions[extension.extensionId];
-      if (featured) {
-        prev.push({
-          ...extension,
-          featured,
-        });
-      }
-
-      return prev;
-    }, [] as ExtensionBanner[]);
-
-    // Limit the number of
-    if (limit >= 0 && extensionBanners.length > limit) {
-      // instead of using random generator we ensure deterministic results for a period of time (here by the hours)
-      const startingIndex = new Date().getHours() % extensionBanners.length;
-
-      // Let's return the subset of banners starting at the chosen index
-      // and filter out all potential undefined items
-      return Array.from(
-        { length: limit },
-        (_, i) => extensionBanners[(startingIndex + i) % extensionBanners.length],
-      ).filter((value): value is ExtensionBanner => value !== undefined);
-    }
-    return extensionBanners;
+  async getExtensionBanners(): Promise<ExtensionBanner[]> {
+    return [];
   }
 
   init(): void {

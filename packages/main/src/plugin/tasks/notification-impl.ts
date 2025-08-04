@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import type { NotificationType } from '@podman-desktop/api';
+import type { NotificationType } from '@kortex-app/api';
 
 import type { NotificationTask } from '/@/plugin/tasks/notifications.js';
 import { TaskImpl } from '/@/plugin/tasks/task-impl.js';

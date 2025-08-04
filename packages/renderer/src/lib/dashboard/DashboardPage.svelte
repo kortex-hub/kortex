@@ -3,11 +3,8 @@ import { NavPage } from '@podman-desktop/ui-svelte';
 import { SvelteMap } from 'svelte/reactivity';
 
 import ProviderConfiguring from '/@/lib/dashboard/ProviderConfiguring.svelte';
-import ExtensionBanners from '/@/lib/recommendation/ExtensionBanners.svelte';
 
 import { providerInfos } from '../../stores/providers';
-import ExploreFeatures from '../explore-features/ExploreFeatures.svelte';
-import LearningCenter from '../learning-center/LearningCenter.svelte';
 import NotificationsBox from './NotificationsBox.svelte';
 import ProviderConfigured from './ProviderConfigured.svelte';
 import type { InitializationContext } from './ProviderInitUtils';
@@ -17,7 +14,6 @@ import ProviderNotInstalled from './ProviderNotInstalled.svelte';
 import ProviderReady from './ProviderReady.svelte';
 import ProviderStarting from './ProviderStarting.svelte';
 import ProviderStopped from './ProviderStopped.svelte';
-import ReleaseNotesBox from './ReleaseNotesBox.svelte';
 
 const providerInitContexts = new SvelteMap<string, InitializationContext>();
 
@@ -46,10 +42,12 @@ function getInitializationContext(id: string): InitializationContext {
     <div class="min-w-full flex-1">
       <NotificationsBox />
       <div class="px-5 space-y-5 h-full">
+        <!--
         <ReleaseNotesBox />
         <ExtensionBanners />
         <ExploreFeatures />
         <LearningCenter />
+        <LearningCenter />-->
         <!-- Provider is ready display a box to indicate some information -->
         {#if providersReady.length > 0}
           {#each providersReady as providerReady (providerReady.internalId)}

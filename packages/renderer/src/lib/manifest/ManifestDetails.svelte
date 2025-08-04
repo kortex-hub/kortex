@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { ImageInfo } from '@podman-desktop/api';
+import type { ImageInfo } from '@kortex-app/api';
 import { StatusIcon, Tab } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 import { router } from 'tinro';

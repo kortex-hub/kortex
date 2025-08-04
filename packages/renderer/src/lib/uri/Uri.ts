@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import type { Uri as APIUri } from '@podman-desktop/api';
+import type { Uri as APIUri } from '@kortex-app/api';
 
 export class Uri {
   private constructor(

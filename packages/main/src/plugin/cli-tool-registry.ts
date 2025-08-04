@@ -24,7 +24,7 @@ import type {
   CliToolSelectUpdate,
   CliToolUpdate,
   Logger,
-} from '@podman-desktop/api';
+} from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
 import type { CliToolExtensionInfo, CliToolInfo } from '/@api/cli-tool-info.js';

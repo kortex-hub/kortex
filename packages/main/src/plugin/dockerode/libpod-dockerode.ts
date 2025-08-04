@@ -22,8 +22,7 @@ import type {
   HostConfigPortBinding,
   ManifestCreateOptions,
   ManifestInspectInfo,
-  ManifestPushOptions,
-} from '@podman-desktop/api';
+  ManifestPushOptions } from '@kortex-app/api';
 import type DockerModem from 'docker-modem';
 import type { DialOptions } from 'docker-modem';
 import type { VolumeCreateOptions, VolumeCreateResponse } from 'dockerode';

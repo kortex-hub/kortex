@@ -25,7 +25,7 @@ import type {
   ProviderInformation,
   ProviderLinks,
   ProviderStatus,
-} from '@podman-desktop/api';
+} from '@kortex-app/api';
 
 export type LifecycleMethod = 'start' | 'stop' | 'delete' | 'edit';
 
@@ -38,7 +38,7 @@ export interface ProviderContainerConnectionInfo {
   };
   lifecycleMethods?: LifecycleMethod[];
   /**
-   * Specify if the corresponding {@link import('@podman-desktop/api').ProviderContainerConnection} instance
+   * Specify if the corresponding {@link import('@kortex-app/api').ProviderContainerConnection} instance
    * has a shellAccess available
    */
   shellAccess?: boolean;

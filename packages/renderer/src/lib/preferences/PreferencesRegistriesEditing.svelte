@@ -1,6 +1,6 @@
 <script lang="ts">
 import { faPlusCircle, faTrash, faUser, faUserPen } from '@fortawesome/free-solid-svg-icons';
-import type * as containerDesktopAPI from '@podman-desktop/api';
+import type * as containerDesktopAPI from '@kortex-app/api';
 import { Button, DropdownMenu, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 
@@ -489,7 +489,7 @@ async function removeExistingRegistry(registry: containerDesktopAPI.Registry): P
         >
       {/snippet}
     {#snippet buttons()}
-      
+
         <Button type="link" onclick={(): boolean => (showNewRegistryForm = false)}>Cancel</Button>
         <Button
           type="primary"
@@ -498,7 +498,7 @@ async function removeExistingRegistry(registry: containerDesktopAPI.Registry): P
             !newRegistryRequest.secret.trim()}
           inProgress={loggingIn}
           onclick={(): Promise<void> => loginToRegistry(newRegistryRequest)}>Add</Button>
-      
+
       {/snippet}
   </Dialog>
 {/if}

@@ -19,7 +19,7 @@
 import * as fs from 'node:fs';
 import * as pathfs from 'node:path';
 
-import type * as containerDesktopAPI from '@podman-desktop/api';
+import type * as containerDesktopAPI from '@kortex-app/api';
 import * as chokidar from 'chokidar';
 import { injectable } from 'inversify';
 

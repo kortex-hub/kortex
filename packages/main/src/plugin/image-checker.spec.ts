@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { CancellationToken, ImageChecks, ImageInfo, ProviderResult } from '@podman-desktop/api';
+import type { CancellationToken, ImageChecks, ImageInfo, ProviderResult } from '@kortex-app/api';
 import { afterEach, beforeEach, expect, suite, test, vi } from 'vitest';
 
 import type { ImageCheckerExtensionInfo } from '/@api/image-checker-info.js';

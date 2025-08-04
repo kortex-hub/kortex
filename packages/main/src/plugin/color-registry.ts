@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type * as extensionApi from '@podman-desktop/api';
+import type * as extensionApi from '@kortex-app/api';
 
 import type { AnalyzedExtension } from '/@/plugin/extension/extension-analyzer.js';
 import type { ColorDefinition, ColorInfo } from '/@api/color-info.js';

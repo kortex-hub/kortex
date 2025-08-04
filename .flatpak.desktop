@@ -1,10 +1,10 @@
 [Desktop Entry]
-Name=Podman Desktop
+Name=Kortex
 Exec=run.sh %U
 Terminal=false
 Type=Application
-Icon=io.podman_desktop.PodmanDesktop
-StartupWMClass=Podman Desktop
+Icon=dev.kortex_hub.Kortex
+StartupWMClass=Kortex
 Categories=Development;
-Keywords=container;pod;image;volume;kubernetes;docker;kind;kubectl;
-X-Flatpak=io.podman_desktop.PodmanDesktop
+Keywords=
+X-Flatpak=dev.kortex_hub.Kortex

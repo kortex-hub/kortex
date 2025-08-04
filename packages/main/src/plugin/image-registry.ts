@@ -23,7 +23,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 
-import type * as containerDesktopAPI from '@podman-desktop/api';
+import type * as containerDesktopAPI from '@kortex-app/api';
 import type * as Dockerode from 'dockerode';
 import * as fzstd from 'fzstd';
 import type { HttpsOptions, OptionsOfTextResponseBody } from 'got';

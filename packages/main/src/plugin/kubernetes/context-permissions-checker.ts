@@ -16,13 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import type { Disposable } from '@kortex-app/api';
 import type {
   AuthorizationV1ApiCreateSelfSubjectAccessReviewRequest,
   V1ResourceAttributes,
   V1SubjectAccessReviewStatus,
 } from '@kubernetes/client-node';
 import { AuthorizationV1Api } from '@kubernetes/client-node';
-import type { Disposable } from '@podman-desktop/api';
 
 import type { Event } from '/@api/event.js';
 

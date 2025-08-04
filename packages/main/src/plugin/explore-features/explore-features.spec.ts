@@ -19,7 +19,7 @@
 import { existsSync, promises } from 'node:fs';
 import path from 'node:path';
 
-import type { Configuration } from '@podman-desktop/api';
+import type { Configuration } from '@kortex-app/api';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import type { Context } from '/@/plugin/context/context.js';
