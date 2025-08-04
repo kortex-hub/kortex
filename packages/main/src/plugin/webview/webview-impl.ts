@@ -18,7 +18,7 @@
 
 import { randomUUID } from 'node:crypto';
 
-import type { Event, Webview, WebviewOptions } from '@podman-desktop/api';
+import type { Event, Webview, WebviewOptions } from '@kortex-app/api';
 
 import type { ApiSenderType } from '/@/plugin/api.js';
 import { Emitter } from '/@/plugin/events/emitter.js';

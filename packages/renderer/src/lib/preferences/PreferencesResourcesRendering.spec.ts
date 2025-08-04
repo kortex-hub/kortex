@@ -18,7 +18,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import type { ProviderConnectionStatus } from '@podman-desktop/api';
+import type { ProviderConnectionStatus } from '@kortex-app/api';
 import { render, screen, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { router } from 'tinro';

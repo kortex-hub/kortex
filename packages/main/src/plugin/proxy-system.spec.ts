@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { RunResult } from '@podman-desktop/api';
+import type { RunResult } from '@kortex-app/api';
 import { describe, expect, test, vi } from 'vitest';
 
 import type { Proxy } from '/@/plugin/proxy.js';

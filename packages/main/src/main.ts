@@ -31,7 +31,7 @@ export type AdditionalData = {
 };
 
 /**
- * The main Podman Desktop entry point
+ * The main Kortex entry point
  */
 export class Main implements IDisposable {
   // TODO: should be renamed to #app
@@ -69,7 +69,7 @@ export class Main implements IDisposable {
     try {
       this.init(additionalData);
     } catch (err: unknown) {
-      console.error('failed to init Podman Desktop', err);
+      console.error('failed to init Kortex', err);
     }
   }
 
@@ -79,7 +79,7 @@ export class Main implements IDisposable {
      */
     const isSingleInstance = this.app.requestSingleInstanceLock(additionalData);
     if (!isSingleInstance) {
-      console.warn('An instance of Podman Desktop is already running. Stopping');
+      console.warn('An instance of Kortex is already running. Stopping');
       this.app.quit();
       process.exit(0);
     }

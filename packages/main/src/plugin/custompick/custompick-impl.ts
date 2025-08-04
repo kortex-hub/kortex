@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import type { CustomPick, CustomPickItem, Event } from '@podman-desktop/api';
+import type { CustomPick, CustomPickItem, Event } from '@kortex-app/api';
 
 import type { ApiSenderType } from '../api.js';
 import { Emitter } from '../events/emitter.js';

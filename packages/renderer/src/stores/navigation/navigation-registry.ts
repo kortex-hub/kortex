@@ -24,12 +24,7 @@ import type { IconSize } from 'svelte-fa';
 import { EventStore } from '/@/stores/event-store';
 
 import { configurationProperties } from '../configurationProperties';
-import { createNavigationContainerEntry } from './navigation-registry-container.svelte';
 import { createNavigationExtensionEntry, createNavigationExtensionGroup } from './navigation-registry-extension.svelte';
-import { createNavigationImageEntry } from './navigation-registry-image.svelte';
-import { createNavigationKubernetesGroup } from './navigation-registry-kubernetes.svelte';
-import { createNavigationPodEntry } from './navigation-registry-pod.svelte';
-import { createNavigationVolumeEntry } from './navigation-registry-volume.svelte';
 
 export interface NavigationRegistryEntry {
   name: string;
@@ -62,11 +57,6 @@ let hiddenItems: string[] = [];
 let values: NavigationRegistryEntry[] = [];
 let initialized = false;
 const init = (): void => {
-  values.push(createNavigationContainerEntry());
-  values.push(createNavigationPodEntry());
-  values.push(createNavigationImageEntry());
-  values.push(createNavigationVolumeEntry());
-  values.push(createNavigationKubernetesGroup());
   values.push(createNavigationExtensionEntry());
   values.push(createNavigationExtensionGroup());
   hideItems().catch((err: unknown) => console.error('Error hiding navigation items', err));

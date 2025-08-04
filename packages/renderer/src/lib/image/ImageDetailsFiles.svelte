@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { ImageInfo } from '@podman-desktop/api';
+import type { ImageInfo } from '@kortex-app/api';
 import { Button, Checkbox } from '@podman-desktop/ui-svelte';
 import { onDestroy, onMount } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';

@@ -20,7 +20,7 @@
 import { EventEmitter } from 'node:events';
 import { tmpdir } from 'node:os';
 
-import type { PullEvent } from '@podman-desktop/api';
+import type { PullEvent } from '@kortex-app/api';
 import type { WebContents } from 'electron';
 import { app, BrowserWindow, clipboard, ipcMain, shell } from 'electron';
 import { Container as InversifyContainer } from 'inversify';

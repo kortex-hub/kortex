@@ -6,7 +6,7 @@ import {
   faExclamationTriangle,
   type IconDefinition,
 } from '@fortawesome/free-solid-svg-icons';
-import type { ImageCheck } from '@podman-desktop/api';
+import type { ImageCheck } from '@kortex-app/api';
 import { Spinner } from '@podman-desktop/ui-svelte';
 import type { Snippet } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
@@ -185,7 +185,7 @@ function onSeverityClicked(severity: 'critical' | 'high' | 'medium' | 'low' | 's
     <div class="h-full w-full pr-4 overflow-y-scroll pb-16"  aria-label="Analysis Results">
       {#each filtered as result, index (index)}
         <div
-          role="row" aria-label="{result.check.name}" 
+          role="row" aria-label="{result.check.name}"
           class="rounded-r-lg bg-[var(--pd-content-bg)] mb-4 mr-4 p-4 border-l-2"
           class:border-l-[var(--pd-state-error)]={result.check.severity === 'critical'}
           class:border-l-[var(--pd-state-warning)]={result.check.severity === 'high'}

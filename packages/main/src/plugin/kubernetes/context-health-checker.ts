@@ -16,8 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import type { Disposable } from '@kortex-app/api';
 import { Health } from '@kubernetes/client-node';
-import type { Disposable } from '@podman-desktop/api';
 
 import type { Event } from '/@api/event.js';
 

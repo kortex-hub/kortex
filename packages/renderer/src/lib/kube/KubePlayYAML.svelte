@@ -7,8 +7,8 @@ import type { ProviderContainerConnectionInfo, ProviderInfo } from '/@api/provid
 let providerUnsubscribe: Unsubscriber;
 
 import { faCircleCheck } from '@fortawesome/free-solid-svg-icons';
+import type { OpenDialogOptions } from '@kortex-app/api';
 import type { V1NamespaceList } from '@kubernetes/client-node/dist/api';
-import type { OpenDialogOptions } from '@podman-desktop/api';
 import { Button, Checkbox, Dropdown, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
 import Fa from 'svelte-fa';
 

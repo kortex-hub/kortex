@@ -16,13 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type {
-  Event,
-  Uri,
-  WebviewOptions,
-  WebviewPanel,
-  WebviewPanelOnDidChangeViewStateEvent,
-} from '@podman-desktop/api';
+import type { Event, Uri, WebviewOptions, WebviewPanel, WebviewPanelOnDidChangeViewStateEvent } from '@kortex-app/api';
 
 import type { ApiSenderType } from '/@/plugin/api.js';
 import { Emitter } from '/@/plugin/events/emitter.js';

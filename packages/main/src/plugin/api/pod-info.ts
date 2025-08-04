@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ContainerProviderConnection, PodCreatePortOptions } from '@podman-desktop/api';
+import type { ContainerProviderConnection, PodCreatePortOptions } from '@kortex-app/api';
 
 import type { ProviderContainerConnectionInfo } from '/@api/provider-info.js';
 

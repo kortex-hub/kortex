@@ -20,7 +20,7 @@ import { existsSync } from 'node:fs';
 import type * as http from 'node:http';
 import { resolve } from 'node:path';
 
-import type * as podmanDesktopAPI from '@podman-desktop/api';
+import type * as podmanDesktopAPI from '@kortex-app/api';
 import type { Application } from 'express';
 import express from 'express';
 import { inject, injectable } from 'inversify';

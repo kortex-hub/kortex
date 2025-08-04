@@ -37,7 +37,8 @@ import { ExtensionsCatalogSettings } from './extensions-catalog-settings.js';
  */
 @injectable()
 export class ExtensionsCatalog {
-  public static readonly DEFAULT_EXTENSIONS_URL = 'https://registry.podman-desktop.io/api/extensions.json';
+  public static readonly DEFAULT_EXTENSIONS_URL =
+    'https://gist.githubusercontent.com/benoitf/63df9e7193c6cabcd8fc0052e3e0cc4c/raw/6ed37b4e24975f54a4583a3dca998fbd3218777e/extensions.json';
 
   private lastFetchTime = 0;
   private cachedCatalog: InternalCatalogJSON | undefined;

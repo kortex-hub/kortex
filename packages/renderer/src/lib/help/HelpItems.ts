@@ -16,17 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { faDiscord, faSlack } from '@fortawesome/free-brands-svg-icons';
 import { faComment } from '@fortawesome/free-regular-svg-icons';
-import {
-  faExclamationTriangle,
-  faExternalLinkAlt,
-  faLightbulb,
-  faListUl,
-  type IconDefinition,
-} from '@fortawesome/free-solid-svg-icons';
-
-import { homepage, repository } from '../../../../../package.json';
+import { faLightbulb, type IconDefinition } from '@fortawesome/free-solid-svg-icons';
 
 export enum ActionKind {
   LINK,
@@ -48,15 +39,6 @@ export interface ItemInfo {
 
 export const Items: readonly ItemInfo[] = [
   {
-    title: 'Getting Started',
-    icon: faExternalLinkAlt,
-    enabled: true,
-    action: {
-      kind: ActionKind.LINK,
-      parameter: `${homepage}/docs/intro`,
-    },
-  },
-  {
     title: 'Troubleshooting',
     icon: faLightbulb,
     enabled: true,
@@ -66,46 +48,12 @@ export const Items: readonly ItemInfo[] = [
     },
   },
   {
-    title: 'Report a Bug',
-    icon: faExclamationTriangle,
-    enabled: true,
-    action: {
-      kind: ActionKind.LINK,
-      parameter: `${repository}/issues/new/choose`,
-    },
-  },
-  {
     title: 'Share Your Feedback',
     icon: faComment,
     enabled: true,
     action: {
       kind: ActionKind.COMMAND,
       parameter: 'feedback',
-    },
-  },
-  {
-    title: 'Community',
-    icon: faListUl,
-    enabled: false,
-  },
-  {
-    title: '#podman-desktop',
-    tooltip: 'Join Discord #podman-desktop channel',
-    icon: faDiscord,
-    enabled: true,
-    action: {
-      kind: ActionKind.LINK,
-      parameter: 'https://discord.com/invite/x5GzFF6QH4',
-    },
-  },
-  {
-    title: '#podman-desktop',
-    tooltip: 'Join Slack #podman-desktop channel',
-    icon: faSlack,
-    enabled: true,
-    action: {
-      kind: ActionKind.LINK,
-      parameter: 'https://slack.k8s.io',
     },
   },
 ];

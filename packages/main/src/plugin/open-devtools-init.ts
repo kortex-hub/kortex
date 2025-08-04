@@ -32,7 +32,7 @@ export class OpenDevToolsInit {
       type: 'object',
       properties: {
         ['preferences.OpenDevTools']: {
-          description: 'Open DevTools when launching Podman Desktop in development mode.',
+          description: 'Open DevTools when launching Kortex in development mode.',
           type: 'string',
           enum: ['left', 'right', 'bottom', 'undocked', 'detach', 'none'],
           default: 'undocked',

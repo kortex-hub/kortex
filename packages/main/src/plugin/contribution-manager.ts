@@ -19,7 +19,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import type { RunResult } from '@podman-desktop/api';
+import type { RunResult } from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 import * as jsYaml from 'js-yaml';
 

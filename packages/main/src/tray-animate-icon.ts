@@ -119,19 +119,19 @@ export class AnimatedTray {
     switch (this.status) {
       case 'initialized':
         this.tray.setImage(this.getIconPath('empty'));
-        this.tray.setToolTip('Podman Desktop is initialized');
+        this.tray.setToolTip('Kortex is initialized');
         break;
       case 'error':
         this.tray.setImage(this.getIconPath('error'));
-        this.tray.setToolTip('Podman Desktop has an error');
+        this.tray.setToolTip('Kortex has an error');
         break;
       case 'ready':
         this.tray.setImage(this.getIconPath('default'));
-        this.tray.setToolTip('Podman Desktop is ready');
+        this.tray.setToolTip('Kortex is ready');
         break;
       case 'updating':
         this.animatedInterval = setInterval(this.animateTrayIcon.bind(this), 1000);
-        this.tray.setToolTip('Podman Desktop: resources are being updated');
+        this.tray.setToolTip('Kortex: resources are being updated');
         break;
     }
   }

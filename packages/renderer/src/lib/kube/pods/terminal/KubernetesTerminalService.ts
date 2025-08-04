@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { PodContainerInfo, PodInfo } from '@podman-desktop/api';
+import type { PodContainerInfo, PodInfo } from '@kortex-app/api';
 
 import KubernetesTerminal from '/@/lib/kube/pods/terminal/KubernetesTerminal.svelte';
 import { terminalStates } from '/@/stores/kubernetes-terminal-state-store';

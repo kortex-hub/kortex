@@ -18,7 +18,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import type { ProviderStatus } from '@podman-desktop/api';
+import type { ProviderStatus } from '@kortex-app/api';
 import { render, screen, waitFor } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { tick } from 'svelte';

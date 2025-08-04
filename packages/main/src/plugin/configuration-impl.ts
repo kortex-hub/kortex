@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type * as containerDesktopAPI from '@podman-desktop/api';
+import type * as containerDesktopAPI from '@kortex-app/api';
 
 import { CONFIGURATION_DEFAULT_SCOPE } from '/@api/configuration/constants.js';
 import type { IConfigurationChangeEvent } from '/@api/configuration/models.js';

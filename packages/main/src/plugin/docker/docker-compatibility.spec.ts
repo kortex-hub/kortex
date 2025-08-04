@@ -19,7 +19,7 @@
 import type { Stats } from 'node:fs';
 import { promises } from 'node:fs';
 
-import type { ProviderContainerConnection } from '@podman-desktop/api';
+import type { ProviderContainerConnection } from '@kortex-app/api';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
 
 import type { DockerSocketServerInfoType } from '/@api/docker-compatibility-info.js';

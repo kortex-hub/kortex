@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type containerDesktopAPI from '@podman-desktop/api';
+import type containerDesktopAPI from '@kortex-app/api';
 
 import type { CancellationTokenRegistry } from '/@/plugin/cancellation-token-registry.js';
 import type { LoggerWithEnd } from '/@/plugin/index.js';

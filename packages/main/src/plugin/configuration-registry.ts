@@ -19,7 +19,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import type * as containerDesktopAPI from '@podman-desktop/api';
+import type * as containerDesktopAPI from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
 import { CONFIGURATION_DEFAULT_SCOPE } from '/@api/configuration/constants.js';

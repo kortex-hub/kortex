@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ProviderContainerConnection } from '@podman-desktop/api';
+import type { ProviderContainerConnection } from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
 import { ApiSenderType } from '/@/plugin/api.js';

@@ -23,7 +23,7 @@ import type {
   ImageCheckerProviderMetadata,
   ImageChecks,
   ImageInfo,
-} from '@podman-desktop/api';
+} from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
 import type { ImageCheckerExtensionInfo, ImageCheckerInfo } from '/@api/image-checker-info.js';

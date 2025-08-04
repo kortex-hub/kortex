@@ -1,7 +1,7 @@
 <script lang="ts">
 import '@xterm/xterm/css/xterm.css';
 
-import type { ProviderConnectionShellDimensions, ProviderConnectionStatus } from '@podman-desktop/api';
+import type { ProviderConnectionShellDimensions, ProviderConnectionStatus } from '@kortex-app/api';
 import { EmptyScreen } from '@podman-desktop/ui-svelte';
 import { FitAddon } from '@xterm/addon-fit';
 import { SerializeAddon } from '@xterm/addon-serialize';

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ConfigurationScope } from '@podman-desktop/api';
+import type { ConfigurationScope } from '@kortex-app/api';
 import type { Terminal } from '@xterm/xterm';
 
 import { CONFIGURATION_DEFAULT_SCOPE } from '/@api/configuration/constants.js';

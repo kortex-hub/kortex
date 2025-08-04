@@ -20,7 +20,7 @@ import * as fs from 'node:fs';
 import { readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 
-import type * as containerDesktopAPI from '@podman-desktop/api';
+import type * as containerDesktopAPI from '@kortex-app/api';
 import { injectable } from 'inversify';
 
 export interface AnalyzedExtension {
