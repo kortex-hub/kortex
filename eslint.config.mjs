@@ -63,6 +63,7 @@ export default [
       '**/coverage/',
       '**/.svelte-kit/',
       '**/.storybook/',
+      '**/packages/chat/',
       '**/storybook/storybook-static/',
       '**/.docusaurus/',
       '**/website/api/',

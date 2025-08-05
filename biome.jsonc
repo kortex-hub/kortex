@@ -13,6 +13,7 @@
       "!**/dist/**",
       "!**/output/**",
       "!**/packages/ui/.svelte-kit/**",
+      "!**/packages/chat/.next/**",
       "!**/exposedIn*.d.ts"
     ]
   },
