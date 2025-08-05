@@ -21,6 +21,8 @@ import type {
   ContainerProviderConnection,
   ContainerProviderConnectionFactory,
   Event,
+  InferenceProviderConnection,
+  InferenceProviderConnectionFactory,
   KubernetesProviderConnection,
   KubernetesProviderConnectionFactory,
   Provider,
@@ -51,10 +53,13 @@ export class ProviderImpl implements Provider, IDisposable {
   private containerProviderConnectionsStatuses: Map<string, ProviderConnectionStatus>;
   private kubernetesProviderConnections: Set<KubernetesProviderConnection>;
   private vmProviderConnections: Set<VmProviderConnection>;
+  private inferenceProviderConnections: Set<InferenceProviderConnection>;
+
   // optional factory
   private _containerProviderConnectionFactory: ContainerProviderConnectionFactory | undefined = undefined;
   private _kubernetesProviderConnectionFactory: KubernetesProviderConnectionFactory | undefined = undefined;
   private _vmProviderConnectionFactory: VmProviderConnectionFactory | undefined = undefined;
+  private _inferenceProviderConnectionFactory: InferenceProviderConnectionFactory | undefined = undefined;
 
   private _connectionAuditor: Auditor | undefined = undefined;
 
@@ -90,6 +95,7 @@ export class ProviderImpl implements Provider, IDisposable {
     this.containerProviderConnections = new Set();
     this.kubernetesProviderConnections = new Set();
     this.vmProviderConnections = new Set();
+    this.inferenceProviderConnections = new Set();
     this._status = providerOptions.status;
     this._version = providerOptions.version;
 
@@ -122,6 +128,10 @@ export class ProviderImpl implements Provider, IDisposable {
 
   get containerProviderConnectionFactory(): ContainerProviderConnectionFactory | undefined {
     return this._containerProviderConnectionFactory;
+  }
+
+  get inferenceProviderConnectionFactory(): InferenceProviderConnectionFactory | undefined {
+    return this._inferenceProviderConnectionFactory;
   }
 
   get connectionAuditor(): Auditor | undefined {
@@ -203,6 +213,10 @@ export class ProviderImpl implements Provider, IDisposable {
     return Array.from(this.vmProviderConnections.values());
   }
 
+  get inferenceConnections(): InferenceProviderConnection[] {
+    return Array.from(this.inferenceProviderConnections.values());
+  }
+
   dispose(): void {
     this.providerRegistry.disposeProvider(this);
   }
@@ -239,6 +253,29 @@ export class ProviderImpl implements Provider, IDisposable {
       this.kubernetesProviderConnections.delete(kubernetesProviderConnection);
       disposable.dispose();
       this.providerRegistry.onDidUnregisterKubernetesConnectionCallback(this, kubernetesProviderConnection);
+    });
+  }
+
+  registerInferenceProviderConnection(connection: InferenceProviderConnection): Disposable {
+    this.inferenceProviderConnections.add(connection);
+    const disposable = this.providerRegistry.registerInferenceConnection(this, connection);
+    this.providerRegistry.onDidRegisterInferenceConnectionCallback(this, connection);
+    return Disposable.create(() => {
+      this.inferenceProviderConnections.delete(connection);
+      disposable.dispose();
+      this.providerRegistry.onDidUnregisterInferenceConnectionCallback(this, connection);
+    });
+  }
+
+  setInferenceProviderConnectionFactory(
+    inferenceProviderConnectionFactory: ContainerProviderConnectionFactory,
+    connectionAuditor?: Auditor,
+  ): Disposable {
+    this._inferenceProviderConnectionFactory = inferenceProviderConnectionFactory;
+    this._connectionAuditor = connectionAuditor;
+    return Disposable.create(() => {
+      this._inferenceProviderConnectionFactory = undefined;
+      this._connectionAuditor = undefined;
     });
   }
 

@@ -455,7 +455,7 @@ $effect(() => {
                 </Button>
               {:else}
                 <div class="flex flex-row justify-around flex-wrap gap-2">
-                  {#if provider.containerProviderConnectionCreation || provider.kubernetesProviderConnectionCreation || provider.vmProviderConnectionCreation}
+                  {#if provider.containerProviderConnectionCreation || provider.kubernetesProviderConnectionCreation || provider.vmProviderConnectionCreation || provider.inferenceProviderConnectionCreation}
                     {@const providerDisplayName =
                       (provider.containerProviderConnectionCreation
                         ? (provider.containerProviderConnectionCreationDisplayName ?? undefined)
@@ -463,7 +463,9 @@ $effect(() => {
                           ? provider.kubernetesProviderConnectionCreationDisplayName
                           : provider.vmProviderConnectionCreation
                             ? provider.vmProviderConnectionCreationDisplayName
-                            : undefined) ?? provider.name}
+                            : provider.inferenceProviderConnectionCreation
+                              ? provider.inferenceProviderConnectionCreationDisplayName
+                                : undefined) ?? provider.name}
                     {@const buttonTitle =
                       (provider.containerProviderConnectionCreation
                         ? (provider.containerProviderConnectionCreationButtonTitle ?? undefined)
@@ -471,7 +473,9 @@ $effect(() => {
                           ? provider.kubernetesProviderConnectionCreationButtonTitle
                           : provider.vmProviderConnectionCreation
                             ? provider.vmProviderConnectionCreationButtonTitle
-                            : undefined) ?? 'Create new'}
+                            : provider.inferenceProviderConnectionCreation
+                              ? provider.inferenceProviderConnectionCreationButtonTitle
+                                : undefined) ?? 'Create new'}
                     <!-- create new provider button -->
                     <Tooltip bottom tip="Create new {providerDisplayName}">
                       <Button
@@ -706,6 +710,11 @@ $effect(() => {
                 </span>
               {/snippet}
             </PreferencesConnectionActions>
+          </div>
+        {/each}
+        {#each provider.inferenceConnections as inferenceConnection, index (index)}
+          <div class="px-5 py-2 w-[240px]" role="region" aria-label={inferenceConnection.name}>
+            <span>{inferenceConnection.name}</span>
           </div>
         {/each}
         </div>

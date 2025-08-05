@@ -16,11 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import type { ProviderV2 } from '@ai-sdk/provider';
 import type {
   AuditRequestItems,
   AuditResult,
   CancellationToken,
   ContainerProviderConnection,
+  InferenceProviderConnection,
   KubernetesProviderConnection,
   Logger,
   Provider,
@@ -43,9 +45,11 @@ import type {
   ProviderStatus,
   ProviderUpdate,
   RegisterContainerConnectionEvent,
+  RegisterInferenceConnectionEvent,
   RegisterKubernetesConnectionEvent,
   RegisterVmConnectionEvent,
   UnregisterContainerConnectionEvent,
+  UnregisterInferenceConnectionEvent,
   UnregisterKubernetesConnectionEvent,
   UnregisterVmConnectionEvent,
   UpdateContainerConnectionEvent,
@@ -62,6 +66,7 @@ import type {
   ProviderCleanupActionInfo,
   ProviderConnectionInfo,
   ProviderContainerConnectionInfo,
+  ProviderInferenceConnectionInfo,
   ProviderInfo,
   ProviderKubernetesConnectionInfo,
   ProviderVmConnectionInfo,
@@ -114,6 +119,7 @@ export class ProviderRegistry {
 
   protected kubernetesProviders: Map<string, KubernetesProviderConnection> = new Map();
   protected vmProviders: Map<string, VmProviderConnection> = new Map();
+  protected inferenceProviders: Map<string, InferenceProviderConnection> = new Map();
 
   private readonly _onDidUpdateProvider = new Emitter<ProviderEvent>();
   readonly onDidUpdateProvider: Event<ProviderEvent> = this._onDidUpdateProvider.event;
@@ -152,6 +158,14 @@ export class ProviderRegistry {
 
   private readonly _onDidRegisterVmConnection = new Emitter<RegisterVmConnectionEvent>();
   readonly onDidRegisterVmConnection: Event<RegisterVmConnectionEvent> = this._onDidRegisterVmConnection.event;
+
+  private readonly _onDidRegisterInferenceConnection = new Emitter<RegisterInferenceConnectionEvent>();
+  readonly onDidRegisterInferenceConnection: Event<RegisterInferenceConnectionEvent> =
+    this._onDidRegisterInferenceConnection.event;
+
+  private readonly _onDidUnregisterInferenceConnection = new Emitter<UnregisterInferenceConnectionEvent>();
+  readonly onDidUnregisterInferenceConnection: Event<UnregisterInferenceConnectionEvent> =
+    this._onDidUnregisterInferenceConnection.event;
 
   private readonly _onDidRegisterContainerConnection = new Emitter<RegisterContainerConnectionEvent>();
   readonly onDidRegisterContainerConnection: Event<RegisterContainerConnectionEvent> =
@@ -681,6 +695,10 @@ export class ProviderRegistry {
     return this.getProviderConnectionInfo(connection) as ProviderVmConnectionInfo;
   }
 
+  public getProviderInferenceConnectionInfo(connection: InferenceProviderConnection): ProviderVmConnectionInfo {
+    return this.getProviderConnectionInfo(connection) as ProviderVmConnectionInfo;
+  }
+
   private getProviderConnectionInfo(connection: ProviderConnection): ProviderConnectionInfo {
     let providerConnection: ProviderConnectionInfo;
     if (this.isContainerConnection(connection)) {
@@ -714,6 +732,8 @@ export class ProviderRegistry {
         status: connection.status(),
       };
     }
+
+    // handle lifecycle
     if (connection.lifecycle) {
       const lifecycleMethods: LifecycleMethod[] = [];
       if (connection.lifecycle.delete) {
@@ -743,6 +763,9 @@ export class ProviderRegistry {
     const vmConnections: ProviderVmConnectionInfo[] = provider.vmConnections.map(connection => {
       return this.getProviderVmConnectionInfo(connection);
     });
+    const inferenceConnections: ProviderInferenceConnectionInfo[] = provider.inferenceConnections.map(connection => {
+      return this.getProviderInferenceConnectionInfo(connection);
+    });
 
     // container connection factory ?
     let containerProviderConnectionInitialization = false;
@@ -760,6 +783,12 @@ export class ProviderRegistry {
     let vmProviderConnectionCreation = false;
     if (provider?.vmProviderConnectionFactory?.create) {
       vmProviderConnectionCreation = true;
+    }
+
+    // Inference connection factory ?
+    let inferenceProviderConnectionCreation = false;
+    if (provider?.inferenceProviderConnectionFactory?.create) {
+      inferenceProviderConnectionCreation = true;
     }
 
     // container connection factory ?
@@ -790,6 +819,16 @@ export class ProviderRegistry {
       vmProviderConnectionInitialization = true;
     }
 
+    // Inference connection factory ?
+    let inferenceProviderConnectionInitialization = false;
+    const inferenceProviderConnectionCreationDisplayName =
+      provider.inferenceProviderConnectionFactory?.creationDisplayName;
+    const inferenceProviderConnectionCreationButtonTitle =
+      provider.inferenceProviderConnectionFactory?.creationButtonTitle;
+    if (provider?.inferenceProviderConnectionFactory?.initialize) {
+      inferenceProviderConnectionInitialization = true;
+    }
+
     const emptyConnectionMarkdownDescription = provider.emptyConnectionMarkdownDescription;
 
     // handle installation
@@ -812,19 +851,29 @@ export class ProviderRegistry {
       containerConnections,
       kubernetesConnections,
       vmConnections,
+      inferenceConnections,
       status: provider.status,
       containerProviderConnectionCreation,
       kubernetesProviderConnectionCreation,
       vmProviderConnectionCreation,
+      inferenceProviderConnectionCreation,
+      // containers
       containerProviderConnectionInitialization,
       containerProviderConnectionCreationDisplayName,
       containerProviderConnectionCreationButtonTitle,
+      // K8s
       kubernetesProviderConnectionInitialization,
       kubernetesProviderConnectionCreationDisplayName,
       kubernetesProviderConnectionCreationButtonTitle,
+      // VM
       vmProviderConnectionInitialization,
       vmProviderConnectionCreationDisplayName,
       vmProviderConnectionCreationButtonTitle,
+      // Inference
+      inferenceProviderConnectionInitialization,
+      inferenceProviderConnectionCreationDisplayName,
+      inferenceProviderConnectionCreationButtonTitle,
+      // other
       emptyConnectionMarkdownDescription,
       links: provider.links,
       detectionChecks: provider.detectionChecks,
@@ -992,6 +1041,21 @@ export class ProviderRegistry {
     return provider.vmProviderConnectionFactory.create(params, logHandler, token);
   }
 
+  async createInferenceProviderConnection(
+    internalProviderId: string,
+    params: { [key: string]: unknown },
+    logHandler: Logger,
+    token?: CancellationToken,
+  ): Promise<void> {
+    // grab the correct provider
+    const provider = this.getMatchingProvider(internalProviderId);
+
+    if (!provider.inferenceProviderConnectionFactory?.create) {
+      throw new Error('The provider does not support Inference connection creation');
+    }
+    return provider.inferenceProviderConnectionFactory.create(params, logHandler, token);
+  }
+
   // helper method
   protected getMatchingContainerConnectionFromProvider(
     internalProviderId: string,
@@ -1084,6 +1148,10 @@ export class ProviderRegistry {
     return (
       !this.isContainerConnection(connection) && (connection as ContainerProviderConnection).endpoint !== undefined
     );
+  }
+
+  isInferenceConnection(connection: ProviderConnection): connection is InferenceProviderConnection {
+    return 'sdk' in connection;
   }
 
   async startProviderConnection(
@@ -1306,6 +1374,15 @@ export class ProviderRegistry {
     this._onDidRegisterVmConnection.fire({ providerId: provider.id });
   }
 
+  onDidRegisterInferenceConnectionCallback(
+    provider: ProviderImpl,
+    inferenceProviderConnection: InferenceProviderConnection,
+  ): void {
+    this.connectionLifecycleContexts.set(inferenceProviderConnection, new LifecycleContextImpl());
+    this.apiSender.send('provider-register-inference-connection', { name: inferenceProviderConnection.name });
+    this._onDidRegisterInferenceConnection.fire({ providerId: provider.id });
+  }
+
   onDidChangeContainerProviderConnectionStatus(
     provider: ProviderImpl,
     containerConnection: ContainerProviderConnection,
@@ -1345,6 +1422,14 @@ export class ProviderRegistry {
     kubernetesProviderConnection: KubernetesProviderConnection,
   ): void {
     this.apiSender.send('provider-unregister-kubernetes-connection', { name: kubernetesProviderConnection.name });
+    this._onDidUnregisterKubernetesConnection.fire({ providerId: provider.id });
+  }
+
+  onDidUnregisterInferenceConnectionCallback(
+    provider: ProviderImpl,
+    kubernetesProviderConnection: InferenceProviderConnection,
+  ): void {
+    this.apiSender.send('provider-unregister-inference-connection', { name: kubernetesProviderConnection.name });
     this._onDidUnregisterKubernetesConnection.fire({ providerId: provider.id });
   }
 
@@ -1439,6 +1524,36 @@ export class ProviderRegistry {
     });
   }
 
+  registerInferenceConnection(
+    provider: Provider,
+    inferenceProviderConnection: InferenceProviderConnection,
+  ): Disposable {
+    const providerName = inferenceProviderConnection.name;
+    const id = `${provider.id}.${providerName}`;
+    this.inferenceProviders.set(id, inferenceProviderConnection);
+    this.telemetryService.track('registerInferenceProviderConnection', {
+      name: inferenceProviderConnection.name,
+      total: this.inferenceProviders.size,
+    });
+
+    let previousStatus = inferenceProviderConnection.status();
+
+    // track the status of the provider
+    const timer = setInterval(() => {
+      const newStatus = inferenceProviderConnection.status();
+      if (newStatus !== previousStatus) {
+        this.apiSender.send('provider-change', {});
+        previousStatus = newStatus;
+      }
+    }, 2000);
+
+    return Disposable.create(() => {
+      clearInterval(timer);
+      this.inferenceProviders.delete(id);
+      this.apiSender.send('provider-change', {});
+    });
+  }
+
   async shellInProviderConnection(
     internalProviderId: string,
     providerConnectionInfo: ProviderConnectionInfo,
@@ -1455,7 +1570,11 @@ export class ProviderRegistry {
       let shellAccess: ProviderConnectionShellAccess | undefined;
       let connection: ProviderConnectionShellAccessSession | undefined;
       const disposables: Disposable[] = [];
-      if (!this.isKubernetesConnection(containerConnection) && providerConnectionInfo.status === 'started') {
+      if (
+        !this.isKubernetesConnection(containerConnection) &&
+        !this.isInferenceConnection(containerConnection) &&
+        providerConnectionInfo.status === 'started'
+      ) {
         shellAccess = containerConnection.shellAccess;
         connection = shellAccess?.open();
         connection?.onData(
@@ -1503,6 +1622,15 @@ export class ProviderRegistry {
       return this.toProviderInfo(provider);
     }
     return undefined;
+  }
+
+  getInferenceSDK(internalProviderId: string, connectionName: string): ProviderV2 {
+    const provider = this.providers.get(internalProviderId);
+    if (!provider) throw new Error('Provider not found');
+
+    const connection = provider.inferenceConnections.find(({ name }) => name === connectionName);
+    if (!connection) throw new Error('Connection not found');
+    return connection.sdk;
   }
 
   protected fireUpdateContainerConnectionEvents(

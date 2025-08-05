@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import type { ProviderV2 as AISDKInferenceProvider } from '@ai-sdk/provider';
+
 /**
  * The Kortex API is intended to be consumed by extensions interacting with Kortex.
  *
@@ -530,7 +532,18 @@ declare module '@kortex-app/api' {
     status(): ProviderConnectionStatus;
   }
 
-  export type ProviderConnection = ContainerProviderConnection | KubernetesProviderConnection | VmProviderConnection;
+  export type InferenceProviderConnection = {
+    name: string;
+    sdk: AISDKInferenceProvider;
+    lifecycle?: ProviderConnectionLifecycle;
+    status(): ProviderConnectionStatus;
+  };
+
+  export type ProviderConnection =
+    | ContainerProviderConnection
+    | KubernetesProviderConnection
+    | VmProviderConnection
+    | InferenceProviderConnection;
 
   // common set of options for creating a provider
   export interface ProviderConnectionFactory {
@@ -546,6 +559,12 @@ declare module '@kortex-app/api' {
 
   // create programmatically a ContainerProviderConnection
   export interface ContainerProviderConnectionFactory extends ProviderConnectionFactory {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    create(params: { [key: string]: any }, logger?: Logger, token?: CancellationToken): Promise<void>;
+  }
+
+  // create programmatically a ContainerProviderConnection
+  export interface InferenceProviderConnectionFactory extends ProviderConnectionFactory {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     create(params: { [key: string]: any }, logger?: Logger, token?: CancellationToken): Promise<void>;
   }
@@ -686,9 +705,16 @@ declare module '@kortex-app/api' {
       connectionAuditor?: Auditor,
     ): Disposable;
 
+    setInferenceProviderConnectionFactory(
+      providerProviderConnectionFactory: InferenceProviderConnectionFactory,
+      connectionAuditor?: Auditor,
+    ): Disposable;
+
     registerContainerProviderConnection(connection: ContainerProviderConnection): Disposable;
     registerKubernetesProviderConnection(connection: KubernetesProviderConnection): Disposable;
     registerVmProviderConnection(connection: VmProviderConnection): Disposable;
+    registerInferenceProviderConnection(connection: InferenceProviderConnection): Disposable;
+
     registerLifecycle(lifecycle: ProviderLifecycle): Disposable;
 
     // register installation flow
@@ -827,6 +853,12 @@ declare module '@kortex-app/api' {
     providerId: string;
   }
   export interface RegisterVmConnectionEvent {
+    providerId: string;
+  }
+  export interface RegisterInferenceConnectionEvent {
+    providerId: string;
+  }
+  export interface UnregisterInferenceConnectionEvent {
     providerId: string;
   }
   export interface RegisterContainerConnectionEvent {

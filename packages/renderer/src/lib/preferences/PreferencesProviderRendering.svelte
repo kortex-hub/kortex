@@ -173,6 +173,16 @@ async function stopReceivingLogs(providerInternalId: string): Promise<void> {
             taskId={taskId}
             bind:inProgress={inProgress} />
         {/if}
+
+        {#if providerInfo?.inferenceProviderConnectionCreation === true}
+          <PreferencesConnectionCreationRendering
+            providerInfo={providerInfo}
+            properties={properties}
+            propertyScope="InferenceProviderConnectionFactory"
+            callback={window.createInferenceProviderConnection}
+            taskId={taskId}
+            bind:inProgress={inProgress} />
+        {/if}
       </div>
     </div>
     {/snippet}

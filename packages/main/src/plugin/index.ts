@@ -42,6 +42,7 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
+import { generateText } from 'ai';
 import checkDiskSpacePkg from 'check-disk-space';
 import type Dockerode from 'dockerode';
 import type { WebContents } from 'electron';
@@ -2433,6 +2434,50 @@ export class PluginSystem {
           navigateToTask: () => navigationManager.navigateToProviderTask(internalProviderId, taskId),
           execute: (logger: LoggerWithEnd, token?: containerDesktopAPI.CancellationToken) =>
             providerRegistry.createVmProviderConnection(internalProviderId, params, logger, token),
+          executeErrorMsg: (err: unknown) => `Something went wrong while trying to create provider: ${err}`,
+        });
+      },
+    );
+
+    this.ipcHandle(
+      'inference:generate',
+      async (
+        _listener: Electron.IpcMainInvokeEvent,
+        internalProviderId: string,
+        connectionName: string,
+        model: string,
+        prompt: string,
+      ): Promise<string> => {
+        const sdk = providerRegistry.getInferenceSDK(internalProviderId, connectionName);
+        const languageModel = sdk.languageModel(model);
+
+        const result = await generateText({
+          model: languageModel,
+          prompt,
+        });
+        console.log('result', result);
+        return result.text;
+      },
+    );
+
+    this.ipcHandle(
+      'provider-registry:createInferenceProviderConnection',
+      async (
+        _listener: Electron.IpcMainInvokeEvent,
+        internalProviderId: string,
+        params: { [key: string]: unknown },
+        loggerId: string,
+        tokenId: number | undefined,
+        taskId: number | undefined,
+      ): Promise<void> => {
+        const providerName = providerRegistry.getProviderInfo(internalProviderId)?.name;
+        return taskConnectionUtils.withTask({
+          loggerId,
+          tokenId,
+          title: `Creating ${providerName ?? 'Inference'} provider`,
+          navigateToTask: () => navigationManager.navigateToProviderTask(internalProviderId, taskId),
+          execute: (logger: LoggerWithEnd, token?: containerDesktopAPI.CancellationToken) =>
+            providerRegistry.createInferenceProviderConnection(internalProviderId, params, logger, token),
           executeErrorMsg: (err: unknown) => `Something went wrong while trying to create provider: ${err}`,
         });
       },
