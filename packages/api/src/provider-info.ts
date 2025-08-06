@@ -61,6 +61,12 @@ export interface ProviderVmConnectionInfo {
   lifecycleMethods?: LifecycleMethod[];
 }
 
+export interface ProviderMCPConnectionInfo {
+  name: string;
+  status: ProviderConnectionStatus;
+  lifecycleMethods?: LifecycleMethod[];
+}
+
 export interface ProviderInferenceConnectionInfo {
   name: string;
   status: ProviderConnectionStatus;
@@ -71,7 +77,8 @@ export type ProviderConnectionInfo =
   | ProviderContainerConnectionInfo
   | ProviderKubernetesConnectionInfo
   | ProviderVmConnectionInfo
-  | ProviderInferenceConnectionInfo;
+  | ProviderInferenceConnectionInfo
+  | ProviderMCPConnectionInfo;
 
 export interface ProviderInfo {
   internalId: string;
@@ -84,6 +91,7 @@ export interface ProviderInfo {
   kubernetesConnections: ProviderKubernetesConnectionInfo[];
   vmConnections: ProviderVmConnectionInfo[];
   inferenceConnections: ProviderInferenceConnectionInfo[];
+  mcpConnections: ProviderMCPConnectionInfo[];
 
   status: ProviderStatus;
   lifecycleMethods?: LifecycleMethod[];
@@ -130,6 +138,18 @@ export interface ProviderInfo {
   inferenceProviderConnectionCreationDisplayName?: string;
   // optional creation button title (if defined)
   inferenceProviderConnectionCreationButtonTitle?: string;
+
+  /**
+   * MCP Provider connection
+   */
+  // can create provider connection from MCPProviderConnectionFactory params
+  mcpProviderConnectionCreation: boolean;
+  // can initialize provider connection from MCPProviderConnectionFactory params
+  mcpProviderConnectionInitialization: boolean;
+  // optional creation name (if defined)
+  mcpProviderConnectionCreationDisplayName?: string;
+  // optional creation button title (if defined)
+  mcpProviderConnectionCreationButtonTitle?: string;
 
   // other
   emptyConnectionMarkdownDescription?: string;

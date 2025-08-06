@@ -36,6 +36,7 @@ const windowEvents = [
   'provider-unregister-kubernetes-connection',
   'provider-register-vm-connection',
   'provider-register-inference-connection',
+  'provider-register-mcp-connection',
   'provider-unregister-vm-connection',
   'extensions-started',
 ];

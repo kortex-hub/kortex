@@ -19,17 +19,17 @@
 import type { ExtensionContext } from '@kortex-app/api';
 import { provider } from '@kortex-app/api';
 
-import { Gemini } from './gemini';
+import { GitHubMCP } from './github-mcp';
 
 export async function activate(extensionContext: ExtensionContext): Promise<void> {
-  console.log('starting gemini extension');
+  console.log('starting github-mcp extension');
+  const github = new GitHubMCP(provider, extensionContext.secrets);
+  extensionContext.subscriptions.push(github);
 
-  const gemini = new Gemini(provider, extensionContext.secrets);
-  extensionContext.subscriptions.push(gemini);
-
-  await gemini.init();
+  // init GitHub MCP
+  await github.init();
 }
 
 export function deactivate(): void {
-  console.log('stopping gemini extension');
+  console.log('stopping github-mcp extension');
 }

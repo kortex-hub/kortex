@@ -11,10 +11,12 @@ let prompt = $state<string>('');
  * Selecting provider
  */
 const providers = $derived(
-  $providerInfos.map(({ internalId, name }) => ({
-    value: internalId,
-    label: name,
-  })),
+  $providerInfos
+    .filter(({ inferenceConnections }) => inferenceConnections.length > 0)
+    .map(({ internalId, name }) => ({
+      value: internalId,
+      label: name,
+    })),
 );
 let selectedProvider = $state<undefined | string>(undefined);
 
