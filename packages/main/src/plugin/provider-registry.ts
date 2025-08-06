@@ -176,8 +176,7 @@ export class ProviderRegistry {
   readonly onDidRegisterMCPConnection: Event<RegisterMCPConnectionEvent> = this._onDidRegisterMCPConnection.event;
 
   private readonly _onDidUnregisterMCPConnection = new Emitter<UnregisterMCPConnectionEvent>();
-  readonly onDidUnregisterMCPConnection: Event<UnregisterMCPConnectionEvent> =
-    this._onDidUnregisterInferenceConnection.event;
+  readonly onDidUnregisterMCPConnection: Event<UnregisterMCPConnectionEvent> = this._onDidUnregisterMCPConnection.event;
 
   private readonly _onDidRegisterContainerConnection = new Emitter<RegisterContainerConnectionEvent>();
   readonly onDidRegisterContainerConnection: Event<RegisterContainerConnectionEvent> =
@@ -1444,7 +1443,7 @@ export class ProviderRegistry {
   onDidRegisterMCPConnectionCallback(provider: ProviderImpl, mcpProviderConnection: MCPProviderConnection): void {
     this.connectionLifecycleContexts.set(mcpProviderConnection, new LifecycleContextImpl());
     this.apiSender.send('provider-register-mcp-connection', { name: mcpProviderConnection.name });
-    this._onDidRegisterMCPConnection.fire({ providerId: provider.id });
+    this._onDidRegisterMCPConnection.fire({ providerId: provider.id, connection: mcpProviderConnection });
   }
 
   onDidChangeContainerProviderConnectionStatus(
@@ -1499,7 +1498,7 @@ export class ProviderRegistry {
 
   onDidUnregisterMCPConnectionCallback(provider: ProviderImpl, mcpProviderConnection: MCPProviderConnection): void {
     this.apiSender.send('provider-unregister-mcp-connection', { name: mcpProviderConnection.name });
-    this._onDidUnregisterMCPConnection.fire({ providerId: provider.id });
+    this._onDidUnregisterMCPConnection.fire({ providerId: provider.id, connectionName: mcpProviderConnection.name });
   }
 
   onDidUnregisterVmConnectionCallback(provider: ProviderImpl, vmProviderConnection: VmProviderConnection): void {
@@ -1734,6 +1733,13 @@ export class ProviderRegistry {
     return Array.from(this.providers.values()).flatMap(({ mcpConnections }) =>
       mcpConnections.map(({ transport }) => transport),
     );
+  }
+
+  getMCPProviderConnection(internalProviderId: string): Array<MCPProviderConnection> {
+    const provider = this.providers.get(internalProviderId);
+    if (!provider) throw new Error('Provider not found');
+
+    return provider.mcpConnections;
   }
 
   protected fireUpdateContainerConnectionEvents(

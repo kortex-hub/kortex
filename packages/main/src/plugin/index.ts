@@ -42,7 +42,7 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
-import { experimental_createMCPClient, generateText, stepCountIs, type ToolSet } from 'ai';
+import { generateText, stepCountIs, type ToolSet } from 'ai';
 import checkDiskSpacePkg from 'check-disk-space';
 import type Dockerode from 'dockerode';
 import type { WebContents } from 'electron';
@@ -59,6 +59,7 @@ import type {
   KubernetesGeneratorSelector,
 } from '/@/plugin/kubernetes/kube-generator-registry.js';
 import { KubeGeneratorRegistry } from '/@/plugin/kubernetes/kube-generator-registry.js';
+import { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
 import { MenuRegistry } from '/@/plugin/menu-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
 import type { ExtensionBanner, RecommendedRegistry } from '/@/plugin/recommendations/recommendations-api.js';
@@ -518,6 +519,7 @@ export class PluginSystem {
     container.bind<CancellationTokenRegistry>(CancellationTokenRegistry).toSelf().inSingletonScope();
 
     container.bind<ProviderRegistry>(ProviderRegistry).toSelf().inSingletonScope();
+    container.bind<MCPManager>(MCPManager).toSelf().inSingletonScope();
     container.bind<TrayMenuRegistry>(TrayMenuRegistry).toSelf().inSingletonScope();
     container.bind<InputQuickPickRegistry>(InputQuickPickRegistry).toSelf().inSingletonScope();
     container.bind<FilesystemMonitoring>(FilesystemMonitoring).toSelf().inSingletonScope();
@@ -588,6 +590,9 @@ export class PluginSystem {
 
     const providerRegistry = container.get<ProviderRegistry>(ProviderRegistry);
     providerRegistry.registerAutostartEngine(autoStartEngine);
+
+    const mcpManager = container.get<MCPManager>(MCPManager);
+    mcpManager.init();
 
     providerRegistry.addProviderListener((name: string, providerInfo: ProviderInfo) => {
       if (name === 'provider:update-status') {
@@ -2451,16 +2456,7 @@ export class PluginSystem {
         const sdk = providerRegistry.getInferenceSDK(internalProviderId, connectionName);
         const languageModel = sdk.languageModel(model);
 
-        // create ToolSet
-        const transports = providerRegistry.getMCPTransports();
-        const tools = await Promise.all(
-          transports.map(transport =>
-            experimental_createMCPClient({ transport: transport }).then(client => client.tools()),
-          ),
-        );
-        const toolSet: ToolSet = tools.reduce((acc, current) => {
-          return { ...acc, ...current };
-        }, {});
+        const toolSet: ToolSet = await mcpManager.getToolSet();
 
         const result = await generateText({
           model: languageModel,
