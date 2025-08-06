@@ -19,5 +19,8 @@
     "watch": "",
     "publish:next": "pnpm publish  --registry=https://registry.npmjs.org/ --no-git-tag-version --new-version 0.0.1-\"$(date +%s)\""
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@ai-sdk/provider": "^2.0.0",
+    "@modelcontextprotocol/sdk": "^1.17.1"
+  }
 }

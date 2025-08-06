@@ -42,6 +42,7 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
+import { experimental_createMCPClient, generateText, stepCountIs, type ToolSet } from 'ai';
 import checkDiskSpacePkg from 'check-disk-space';
 import type Dockerode from 'dockerode';
 import type { WebContents } from 'electron';
@@ -2433,6 +2434,86 @@ export class PluginSystem {
           navigateToTask: () => navigationManager.navigateToProviderTask(internalProviderId, taskId),
           execute: (logger: LoggerWithEnd, token?: containerDesktopAPI.CancellationToken) =>
             providerRegistry.createVmProviderConnection(internalProviderId, params, logger, token),
+          executeErrorMsg: (err: unknown) => `Something went wrong while trying to create provider: ${err}`,
+        });
+      },
+    );
+
+    this.ipcHandle(
+      'inference:generate',
+      async (
+        _listener: Electron.IpcMainInvokeEvent,
+        internalProviderId: string,
+        connectionName: string,
+        model: string,
+        prompt: string,
+      ): Promise<string> => {
+        const sdk = providerRegistry.getInferenceSDK(internalProviderId, connectionName);
+        const languageModel = sdk.languageModel(model);
+
+        // create ToolSet
+        const transports = providerRegistry.getMCPTransports();
+        const tools = await Promise.all(
+          transports.map(transport =>
+            experimental_createMCPClient({ transport: transport }).then(client => client.tools()),
+          ),
+        );
+        const toolSet: ToolSet = tools.reduce((acc, current) => {
+          return { ...acc, ...current };
+        }, {});
+
+        const result = await generateText({
+          model: languageModel,
+          tools: toolSet,
+          stopWhen: stepCountIs(5),
+          prompt,
+        });
+        console.log('result', result);
+        return result.text;
+      },
+    );
+
+    this.ipcHandle(
+      'provider-registry:createInferenceProviderConnection',
+      async (
+        _listener: Electron.IpcMainInvokeEvent,
+        internalProviderId: string,
+        params: { [key: string]: unknown },
+        loggerId: string,
+        tokenId: number | undefined,
+        taskId: number | undefined,
+      ): Promise<void> => {
+        const providerName = providerRegistry.getProviderInfo(internalProviderId)?.name;
+        return taskConnectionUtils.withTask({
+          loggerId,
+          tokenId,
+          title: `Creating ${providerName ?? 'Inference'} provider`,
+          navigateToTask: () => navigationManager.navigateToProviderTask(internalProviderId, taskId),
+          execute: (logger: LoggerWithEnd, token?: containerDesktopAPI.CancellationToken) =>
+            providerRegistry.createInferenceProviderConnection(internalProviderId, params, logger, token),
+          executeErrorMsg: (err: unknown) => `Something went wrong while trying to create provider: ${err}`,
+        });
+      },
+    );
+
+    this.ipcHandle(
+      'provider-registry:createMCPProviderConnection',
+      async (
+        _listener: Electron.IpcMainInvokeEvent,
+        internalProviderId: string,
+        params: { [key: string]: unknown },
+        loggerId: string,
+        tokenId: number | undefined,
+        taskId: number | undefined,
+      ): Promise<void> => {
+        const providerName = providerRegistry.getProviderInfo(internalProviderId)?.name;
+        return taskConnectionUtils.withTask({
+          loggerId,
+          tokenId,
+          title: `Creating ${providerName ?? 'MCP'} provider`,
+          navigateToTask: () => navigationManager.navigateToProviderTask(internalProviderId, taskId),
+          execute: (logger: LoggerWithEnd, token?: containerDesktopAPI.CancellationToken) =>
+            providerRegistry.createMCPProviderConnection(internalProviderId, params, logger, token),
           executeErrorMsg: (err: unknown) => `Something went wrong while trying to create provider: ${err}`,
         });
       },
