@@ -1,0 +1,40 @@
+{
+  "name": "github-mcp",
+  "displayName": "github-mcp",
+  "description": "MCP Server for GitHub",
+  "version": "0.0.1-next",
+  "icon": "icon.png",
+  "publisher": "kortex",
+  "license": "Apache-2.0",
+  "engines": {
+    "kortex": "^0.0.1"
+  },
+  "main": "./dist/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Gemini",
+      "properties": {
+        "github-mcp.factory.apiKey": {
+          "type": "string",
+          "scope": "MCPProviderConnectionFactory",
+          "description": "apiKey"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "vite build && node ./scripts/build.js",
+    "test": "vitest run --coverage --passWithNoTests",
+    "test:watch": "vitest watch --coverage --passWithNoTests",
+    "watch": "vite build --watch"
+  },
+  "dependencies": {
+    "@kortex-app/api": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.17.1"
+  },
+  "devDependencies": {
+    "mkdirp": "^3.0.1",
+    "vite": "^7.0.6",
+    "vitest": "^3.2.4"
+  }
+}

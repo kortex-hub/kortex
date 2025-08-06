@@ -61,26 +61,44 @@ export interface ProviderVmConnectionInfo {
   lifecycleMethods?: LifecycleMethod[];
 }
 
+export interface ProviderMCPConnectionInfo {
+  name: string;
+  status: ProviderConnectionStatus;
+  lifecycleMethods?: LifecycleMethod[];
+}
+
+export interface ProviderInferenceConnectionInfo {
+  name: string;
+  status: ProviderConnectionStatus;
+  lifecycleMethods?: LifecycleMethod[];
+}
+
 export type ProviderConnectionInfo =
   | ProviderContainerConnectionInfo
   | ProviderKubernetesConnectionInfo
-  | ProviderVmConnectionInfo;
+  | ProviderVmConnectionInfo
+  | ProviderInferenceConnectionInfo
+  | ProviderMCPConnectionInfo;
 
 export interface ProviderInfo {
   internalId: string;
   id: string;
   readonly extensionId: string;
   name: string;
+
+  // connections
   containerConnections: ProviderContainerConnectionInfo[];
   kubernetesConnections: ProviderKubernetesConnectionInfo[];
   vmConnections: ProviderVmConnectionInfo[];
+  inferenceConnections: ProviderInferenceConnectionInfo[];
+  mcpConnections: ProviderMCPConnectionInfo[];
+
   status: ProviderStatus;
   lifecycleMethods?: LifecycleMethod[];
   // can create provider connection from ContainerProviderConnectionFactory params
   containerProviderConnectionCreation: boolean;
   // can initialize provider connection from ContainerProviderConnectionFactory params
   containerProviderConnectionInitialization: boolean;
-
   // optional creation name (if defined)
   containerProviderConnectionCreationDisplayName?: string;
 
@@ -109,6 +127,31 @@ export interface ProviderInfo {
   // optional creation button title (if defined)
   vmProviderConnectionCreationButtonTitle?: string;
 
+  /**
+   * Inference Provider connection
+   */
+  // can create provider connection from InferenceProviderConnectionFactory params
+  inferenceProviderConnectionCreation: boolean;
+  // can initialize provider connection from InferenceProviderConnectionFactory params
+  inferenceProviderConnectionInitialization: boolean;
+  // optional creation name (if defined)
+  inferenceProviderConnectionCreationDisplayName?: string;
+  // optional creation button title (if defined)
+  inferenceProviderConnectionCreationButtonTitle?: string;
+
+  /**
+   * MCP Provider connection
+   */
+  // can create provider connection from MCPProviderConnectionFactory params
+  mcpProviderConnectionCreation: boolean;
+  // can initialize provider connection from MCPProviderConnectionFactory params
+  mcpProviderConnectionInitialization: boolean;
+  // optional creation name (if defined)
+  mcpProviderConnectionCreationDisplayName?: string;
+  // optional creation button title (if defined)
+  mcpProviderConnectionCreationButtonTitle?: string;
+
+  // other
   emptyConnectionMarkdownDescription?: string;
 
   version?: string;
