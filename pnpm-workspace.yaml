@@ -12,6 +12,7 @@ onlyBuiltDependencies:
   - electron
   - esbuild
   - msw
+  - next
   - protobufjs
   - sharp
   - ssh2

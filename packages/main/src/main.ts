@@ -15,7 +15,11 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+import http from 'node:http';
+import { join } from 'node:path';
+
 import type { App as ElectronApp, BrowserWindow } from 'electron';
+import next from 'next';
 
 import type { AppPlugin } from '/@/plugin/app-ready/app-plugin.js';
 import { DefaultProtocolClient } from '/@/plugin/app-ready/default-protocol-client.js';
@@ -73,6 +77,33 @@ export class Main implements IDisposable {
     }
   }
 
+  protected async startNextJS(): Promise<number> {
+    try {
+      const dev = process.env.NODE_ENV === 'development';
+      const dir = join(this.app.getAppPath(), 'packages', 'chat');
+
+      const port = 3000; // Default port for Next.js
+
+      const app = next({ dev, dir, turbo: true, port });
+      const handle = app.getRequestHandler();
+
+      app.prepare().then(() => {
+        const server = http.createServer((req, res) => {
+          handle(req, res);
+        });
+
+        server.listen(port, () => {
+          console.log('> Ready on http://localhost:3000');
+        });
+      });
+
+      return port;
+    } catch (error) {
+      console.error('Unable to start nextjs:', error);
+      throw error;
+    }
+  }
+
   protected init(additionalData: AdditionalData): void {
     /**
      * Prevent multiple instances
@@ -117,6 +148,15 @@ export class Main implements IDisposable {
      */
     this.app.on('window-all-closed', this.onWindowAllClosed.bind(this));
     this.app.on('before-quit', this.onBeforeQuit.bind(this));
+
+    // create next server
+    this.startNextJS()
+      .then((port: number) => {
+        console.log(`Next.js server started on port ${port}`);
+      })
+      .catch((error: unknown) => {
+        console.error('Failed to start Next.js server:', error);
+      });
 
     /**
      * Register {@link Main#whenReady} for ready event

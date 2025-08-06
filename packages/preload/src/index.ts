@@ -1898,6 +1898,10 @@ export function initExposure(): void {
     return ipcInvoke('webview:get-preload-script');
   });
 
+  contextBridge.exposeInMainWorld('getChatPreloadPath', async (): Promise<string> => {
+    return ipcInvoke('chat:get-preload-script');
+  });
+
   contextBridge.exposeInMainWorld('getWebviewRegistryHttpPort', async (): Promise<number> => {
     return ipcInvoke('webview:get-registry-http-port');
   });

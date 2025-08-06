@@ -2997,6 +2997,11 @@ export class PluginSystem {
       return `file://${preloadScriptPath}`;
     });
 
+    this.ipcHandle('chat:get-preload-script', async (): Promise<string> => {
+      const preloadScriptPath = path.join(__dirname, '../../preload-chat/dist/index.cjs');
+      return `file://${preloadScriptPath}`;
+    });
+
     this.ipcHandle('webview:get-registry-http-port', async (): Promise<number> => {
       return webviewRegistry.getRegistryHttpPort();
     });

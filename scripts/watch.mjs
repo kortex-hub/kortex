@@ -161,6 +161,25 @@ const setupPreloadWebviewPackageWatcher = ({ ws }) =>
     },
   });
 
+const setupPreloadChatPackageWatcher = ({ ws }) =>
+  getWatcher({
+    name: 'reload-page-on-preload-chat-package-change',
+    configFile: 'packages/preload-chat/vite.config.js',
+    writeBundle() {
+      // Generating exposedInChat.d.ts when preload package is changed.
+      generateAsync({
+        input: 'packages/preload-chat/tsconfig.json',
+        output: 'packages/preload-chat/exposedInChat.d.ts',
+      });
+
+      if (ws) {
+        ws.send({
+          type: 'full-reload',
+        });
+      }
+    },
+  });
+
 /**
  * Start or restart App when source files are changed
  * @param {{ws: import('vite').WebSocketServer}} WebSocketServer
@@ -227,6 +246,7 @@ const setupExtensionApiWatcher = name => {
     }
     await setupPreloadPackageWatcher(viteDevServer);
     await setupPreloadWebviewPackageWatcher(viteDevServer);
+    await setupPreloadChatPackageWatcher(viteDevServer);
     await setupMainPackageWatcher(viteDevServer);
   } catch (e) {
     console.error(e);

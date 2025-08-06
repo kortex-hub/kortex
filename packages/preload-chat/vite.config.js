@@ -16,11 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { node } from '../../.electron-vendors.cache.json';
+import { chrome } from '../../.electron-vendors.cache.json';
 import { join } from 'path';
 import { builtinModules } from 'module';
 
 const PACKAGE_ROOT = __dirname;
+const PACKAGE_NAME = 'preload-docker-extension';
+
 /**
  * @type {import('vite').UserConfig}
  * @see https://vitejs.dev/config/
@@ -35,29 +37,26 @@ const config = {
       '/@api/': join(PACKAGE_ROOT, '../api/src') + '/',
     },
   },
+  /*plugins: [
+     commonjs({
+       dynamicRequireTargets: [
+         // include using a glob pattern (either a string or an array of strings)
+         'node_modules/ssh2/lib/protocol/crypto/poly1305.js',
+       ]
+       }),
+   ],*/
   build: {
     sourcemap: 'inline',
-    target: `node${node}`,
+    target: `chrome${chrome}`,
     outDir: 'dist',
     assetsDir: '.',
-    minify: process.env.MODE === 'production' ? 'esbuild' : false,
+    minify: process.env.MODE !== 'development',
     lib: {
       entry: 'src/index.ts',
       formats: ['cjs'],
     },
     rollupOptions: {
-      external: [
-        'better-sqlite3',
-        'electron',
-        'chokidar',
-        'tar-fs',
-        'ssh2',
-        '@segment/analytics-node',
-        'next',
-        'express',
-        'isomorphic-ws',
-        ...builtinModules.flatMap(p => [p, `node:${p}`]),
-      ],
+      external: ['electron', ...builtinModules.flatMap(p => [p, `node:${p}`])],
       output: {
         entryFileNames: '[name].cjs',
       },
@@ -66,8 +65,7 @@ const config = {
     reportCompressedSize: false,
   },
   test: {
-    retry: 3, // Retries failing tests up to 3 times
-    environment: 'node',
+    environment: 'jsdom',
     include: ['src/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
   },
 };

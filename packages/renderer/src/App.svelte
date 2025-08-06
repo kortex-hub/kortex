@@ -13,6 +13,7 @@ import type { NavigationRequest } from '/@api/navigation-request';
 import AppNavigation from './AppNavigation.svelte';
 import { navigateTo } from './kubernetesNavigation';
 import Appearance from './lib/appearance/Appearance.svelte';
+import Chat from './lib/chat/Chat.svelte';
 import ComposeDetails from './lib/compose/ComposeDetails.svelte';
 import ConfigMapDetails from './lib/configmaps-secrets/ConfigMapDetails.svelte';
 import ConfigMapSecretList from './lib/configmaps-secrets/ConfigMapSecretList.svelte';
@@ -364,6 +365,10 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
         {/if}
         <Route path="/preferences/*" breadcrumb="Settings">
           <PreferencesPage />
+        </Route>
+
+        <Route path="/chat/*" breadcrumb="Chat">
+          <Chat />
         </Route>
 
         <Route path="/global-onboarding" breadcrumb="Extension Onboarding" let:meta navigationHint="details">
