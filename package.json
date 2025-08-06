@@ -35,7 +35,7 @@
     "test:extensions": "vitest --run --project=extensions --passWithNoTests",
     "test:renderer": "pnpm run build:preload:types && vitest --run --project=renderer --passWithNoTests",
     "test:watch": "vitest watch",
-    "watch": "node scripts/watch.mjs",
+    "watch": "cross-env AUTH_SECRET=foo node scripts/watch.mjs",
     "format:check": "biome format",
     "format:clean": "rimraf node_modules/.cache/prettier",
     "format:fix": "biome format --write",
