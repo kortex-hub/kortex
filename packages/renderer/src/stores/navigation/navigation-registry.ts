@@ -24,6 +24,7 @@ import type { IconSize } from 'svelte-fa';
 import { EventStore } from '/@/stores/event-store';
 
 import { configurationProperties } from '../configurationProperties';
+import { createNavigationChatEntry } from './navigation-registry-chat.svelte';
 import { createNavigationExtensionEntry, createNavigationExtensionGroup } from './navigation-registry-extension.svelte';
 
 export interface NavigationRegistryEntry {
@@ -57,6 +58,7 @@ let hiddenItems: string[] = [];
 let values: NavigationRegistryEntry[] = [];
 let initialized = false;
 const init = (): void => {
+  values.push(createNavigationChatEntry());
   values.push(createNavigationExtensionEntry());
   values.push(createNavigationExtensionGroup());
   hideItems().catch((err: unknown) => console.error('Error hiding navigation items', err));
