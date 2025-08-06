@@ -84,6 +84,7 @@ import Route from './Route.svelte';
 import { lastSubmenuPages } from './stores/breadcrumb';
 import { navigationRegistry } from './stores/navigation/navigation-registry';
 import SubmenuNavigation from './SubmenuNavigation.svelte';
+  import CustomChat from './lib/chat/route/CustomChat.svelte';
 
 router.mode.memory();
 
@@ -383,6 +384,10 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
         </Route>
         <Route path="/extensions/details/:id/*" breadcrumb="Extension Details" let:meta navigationHint="details">
           <ExtensionDetails extensionId={meta.params.id} />
+        </Route>
+
+        <Route path="/chat/*" breadcrumb="Chat">
+          <CustomChat />
         </Route>
       </div>
     </div>
