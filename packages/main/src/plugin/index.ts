@@ -42,7 +42,16 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
-import { generateText, stepCountIs, type ToolSet } from 'ai';
+import {
+  convertToModelMessages,
+  generateText,
+  stepCountIs,
+  streamText,
+  TextStreamPart,
+  type ToolSet,
+  UIMessage,
+  UIMessageChunk,
+} from 'ai';
 import checkDiskSpacePkg from 'check-disk-space';
 import type Dockerode from 'dockerode';
 import type { WebContents } from 'electron';
@@ -1190,6 +1199,73 @@ export class PluginSystem {
           },
           abortController,
         });
+      },
+    );
+
+    const getMostRecentUserMessage = (messages: UIMessage[]): UIMessage | undefined => {
+      const userMessages = messages.filter(message => message.role === 'user');
+      return userMessages.at(-1);
+    };
+
+    this.ipcHandle(
+      'inference:streamText',
+      async (_listener, modelId: string, messages: UIMessage[], onDataId: number): Promise<number> => {
+        const sdk = providerRegistry.getFirstInferenceSDK('gemini');
+        const languageModel = sdk.languageModel(modelId);
+
+        const userMessage = getMostRecentUserMessage(messages);
+
+        if (!userMessage) {
+          throw new Error('No user message found');
+        }
+
+        const modelMessages = convertToModelMessages(messages);
+        const currentIds = new Set<string>();
+
+        const streaming = streamText({
+          model: languageModel,
+          messages: modelMessages,
+          system: 'You are a friendly assistant! Keep your responses concise and helpful.',
+
+          onChunk: ({ chunk }: { chunk: TextStreamPart<ToolSet> }) => {
+            // FIXME: I don't know why but I don't have the text-start events
+            // also text-delta does not contain expected delta field but there is a text field
+            if (chunk.type === 'text-delta') {
+              // add missing text-start if any
+              const chunkId = chunk.id;
+              if (!currentIds.has(chunkId)) {
+              this.getWebContentsSender().send('inference:streamText-onChunk', onDataId, {
+                type: 'text-start',
+                id: chunk.id,
+              });
+
+              currentIds.add(chunkId);
+            }
+              // text-delta is expected to have delta field, not text
+              this.getWebContentsSender().send('inference:streamText-onChunk', onDataId, {
+                ...chunk,
+                delta: chunk.text,
+              });
+              //FIXME: should it contain text-end ?
+            }
+          },
+        });
+
+        const reader = streaming.textStream.getReader();
+        // loop to wait for the stream to finish
+        while (true) {
+          const { done } = await reader.read();
+          if (done) {
+            break;
+          }
+        }
+        // no chunks received except text-delta, seend one manually ?
+        this.getWebContentsSender().send('inference:streamText-onChunk', onDataId, { type: 'finish' });
+
+        // end of the methodwhat
+        this.getWebContentsSender().send('inference:streamText-onEnd', onDataId);
+
+        return onDataId;
       },
     );
 

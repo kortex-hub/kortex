@@ -1729,6 +1729,17 @@ export class ProviderRegistry {
     return connection.sdk;
   }
 
+  getFirstInferenceSDK(providerName: string): ProviderV2 {
+    const provider = this.providers.values().find(provider => provider.id === providerName);
+    if (!provider) throw new Error('Provider not found');
+    const connections = provider.inferenceConnections.filter(c => c.sdk);
+    if (!connections) throw new Error('Connection not found');
+    if (connections.length < 1 || !connections[0]) {
+      throw new Error('No inference connection found');
+    }
+    return connections[0].sdk;
+  }
+
   getMCPTransports(): Array<MCPTransport> {
     return Array.from(this.providers.values()).flatMap(({ mcpConnections }) =>
       mcpConnections.map(({ transport }) => transport),
