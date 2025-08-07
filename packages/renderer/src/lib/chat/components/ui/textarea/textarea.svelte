@@ -1,13 +1,13 @@
 <script lang="ts">
-	import { cn, type WithElementRef, type WithoutChildren } from '/@/lib/chat/utils/shadcn.js';
-	import type { HTMLTextareaAttributes } from 'svelte/elements';
+import { cn, type WithElementRef, type WithoutChildren } from '/@/lib/chat/utils/shadcn.js';
+import type { HTMLTextareaAttributes } from 'svelte/elements';
 
-	let {
-		ref = $bindable(null),
-		value = $bindable(),
-		class: className,
-		...restProps
-	}: WithoutChildren<WithElementRef<HTMLTextareaAttributes>> = $props();
+let {
+  ref = $bindable(null),
+  value = $bindable(),
+  class: className,
+  ...restProps
+}: WithoutChildren<WithElementRef<HTMLTextareaAttributes>> = $props();
 </script>
 
 <textarea

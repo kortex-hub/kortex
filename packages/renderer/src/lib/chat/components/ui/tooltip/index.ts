@@ -13,18 +13,18 @@ type TooltipProviderProps = ComponentProps<typeof Provider>;
 type TooltipContentProps = ComponentProps<typeof Content>;
 
 export {
-	Root,
-	Trigger,
-	Content,
-	Provider,
-	Portal,
-	//
-	Root as Tooltip,
-	type TooltipProps,
-	Content as TooltipContent,
-	type TooltipContentProps,
-	Trigger as TooltipTrigger,
-	type TooltipTriggerProps,
-	Provider as TooltipProvider,
-	type TooltipProviderProps
+  Root,
+  Trigger,
+  Content,
+  Provider,
+  Portal,
+  //
+  Root as Tooltip,
+  type TooltipProps,
+  Content as TooltipContent,
+  type TooltipContentProps,
+  Trigger as TooltipTrigger,
+  type TooltipTriggerProps,
+  Provider as TooltipProvider,
+  type TooltipProviderProps,
 };

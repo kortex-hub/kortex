@@ -1,46 +1,40 @@
 <script lang="ts">
-	import { cn } from '/@/lib/chat/utils/shadcn';
-	import { Button } from './ui/button';
-	import {
-		DropdownMenu,
-		DropdownMenuContent,
-		DropdownMenuItem,
-		DropdownMenuTrigger
-	} from './ui/dropdown-menu';
-	import ChevronDownIcon from './icons/chevron-down.svelte';
-	import LockIcon from './icons/lock.svelte';
-	import GlobeIcon from './icons/globe.svelte';
-	import CheckCircleFillIcon from './icons/check-circle-fill.svelte';
-	import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
-	import type { Chat } from '../../../../../main/src/chat/db/schema';
+import { cn } from '/@/lib/chat/utils/shadcn';
+import { Button } from './ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import ChevronDownIcon from './icons/chevron-down.svelte';
+import LockIcon from './icons/lock.svelte';
+import GlobeIcon from './icons/globe.svelte';
+import CheckCircleFillIcon from './icons/check-circle-fill.svelte';
+import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
+import type { Chat } from '../../../../../main/src/chat/db/schema';
 
-	import type { ClassValue } from 'svelte/elements';
+import type { ClassValue } from 'svelte/elements';
 
-	let { chat, class: c }: { chat: Chat; class?: ClassValue } = $props();
+let { chat, class: c }: { chat: Chat; class?: ClassValue } = $props();
 
-	let open = $state(false);
+let open = $state(false);
 
-	const visibilities = [
-		{
-			id: 'private',
-			label: 'Private',
-			description: 'Only you can access this chat',
-			Icon: LockIcon
-		},
-		{
-			id: 'public',
-			label: 'Public',
-			description: 'Anyone with the link can access this chat',
-			Icon: GlobeIcon
-		}
-	] as const;
+const visibilities = [
+  {
+    id: 'private',
+    label: 'Private',
+    description: 'Only you can access this chat',
+    Icon: LockIcon,
+  },
+  {
+    id: 'public',
+    label: 'Public',
+    description: 'Anyone with the link can access this chat',
+    Icon: GlobeIcon,
+  },
+] as const;
 
-	const chatHistory = ChatHistory.fromContext();
-	const chatFromHistory = $derived(chatHistory.getChatDetails(chat.id));
-	const { label, Icon } = $derived(
-		(chatFromHistory && visibilities.find((v) => v.id === chatFromHistory.visibility)) ??
-			visibilities[0]
-	);
+const chatHistory = ChatHistory.fromContext();
+const chatFromHistory = $derived(chatHistory.getChatDetails(chat.id));
+const { label, Icon } = $derived(
+  (chatFromHistory && visibilities.find(v => v.id === chatFromHistory.visibility)) ?? visibilities[0],
+);
 </script>
 
 <DropdownMenu {open} onOpenChange={(val) => (open = val)}>

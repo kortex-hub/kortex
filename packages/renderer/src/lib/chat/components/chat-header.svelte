@@ -1,27 +1,27 @@
 <script lang="ts">
-	import { useSidebar } from './ui/sidebar';
-	import SidebarToggle from './sidebar-toggle.svelte';
-	import { innerWidth } from 'svelte/reactivity/window';
-	import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-	import { Button } from './ui/button';
-	import PlusIcon from './icons/plus.svelte';
-		import ModelSelector from './model-selector.svelte';
-	import type { Chat , User } from '../../../../../main/src/chat/db/schema';
+import { useSidebar } from './ui/sidebar';
+import SidebarToggle from './sidebar-toggle.svelte';
+import { innerWidth } from 'svelte/reactivity/window';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { Button } from './ui/button';
+import PlusIcon from './icons/plus.svelte';
+import ModelSelector from './model-selector.svelte';
+import type { Chat, User } from '../../../../../main/src/chat/db/schema';
 
-	import VisibilitySelector from './visibility-selector.svelte';
-	import VercelIcon from './icons/vercel.svelte';
-import {router} from 'tinro';
-	let {
-		user,
-		chat,
-		readonly
-	}: {
-		user: User | undefined;
-		chat: Chat | undefined;
-		readonly: boolean;
-	} = $props();
+import VisibilitySelector from './visibility-selector.svelte';
+import VercelIcon from './icons/vercel.svelte';
+import { router } from 'tinro';
+let {
+  user,
+  chat,
+  readonly,
+}: {
+  user: User | undefined;
+  chat: Chat | undefined;
+  readonly: boolean;
+} = $props();
 
-	const sidebar = useSidebar();
+const sidebar = useSidebar();
 </script>
 
 <header class="bg-background sticky top-0 flex items-center gap-2 p-2">

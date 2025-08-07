@@ -1,13 +1,13 @@
 <script lang="ts">
-	import { cn, type WithElementRef } from '/@/lib/chat/utils/shadcn.js';
-	import type { HTMLAttributes } from 'svelte/elements';
+import { cn, type WithElementRef } from '/@/lib/chat/utils/shadcn.js';
+import type { HTMLAttributes } from 'svelte/elements';
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		children,
-		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLUListElement>> = $props();
+let {
+  ref = $bindable(null),
+  class: className,
+  children,
+  ...restProps
+}: WithElementRef<HTMLAttributes<HTMLUListElement>> = $props();
 </script>
 
 <ul

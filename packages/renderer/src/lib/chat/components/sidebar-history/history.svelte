@@ -1,112 +1,111 @@
 <script lang="ts">
-	import ChatItem from './item.svelte';
-	import type { Chat, User } from '../../../../../../main/src/chat/db/schema';
+import ChatItem from './item.svelte';
+import type { Chat, User } from '../../../../../../main/src/chat/db/schema';
 
-	import { SidebarGroup, SidebarGroupContent, SidebarMenu } from '../ui/sidebar';
-	import { subWeeks, subMonths, isToday, isYesterday } from 'date-fns';
-	import {
-		AlertDialog,
-		AlertDialogAction,
-		AlertDialogCancel,
-		AlertDialogContent,
-		AlertDialogDescription,
-		AlertDialogFooter,
-		AlertDialogHeader,
-		AlertDialogTitle
-	} from '../ui/alert-dialog';
-	import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
-	import { toast } from 'svelte-sonner';
-	import { Skeleton } from '../ui/skeleton';
-  import { router } from 'tinro';
+import { SidebarGroup, SidebarGroupContent, SidebarMenu } from '../ui/sidebar';
+import { subWeeks, subMonths, isToday, isYesterday } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
+import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
+import { toast } from 'svelte-sonner';
+import { Skeleton } from '../ui/skeleton';
+import { router } from 'tinro';
 
-	let { user }: { user?: User } = $props();
-	const chatHistory = ChatHistory.fromContext();
-	let alertDialogOpen = $state(false);
-	const groupedChats = $derived(groupChatsByDate(chatHistory.chats));
-	let chatIdToDelete = $state<string | undefined>(undefined);
+let { user }: { user?: User } = $props();
+const chatHistory = ChatHistory.fromContext();
+let alertDialogOpen = $state(false);
+const groupedChats = $derived(groupChatsByDate(chatHistory.chats));
+let chatIdToDelete = $state<string | undefined>(undefined);
 
+//FIXME
+const page = { params: { chatId: '123' } };
 
-    //FIXME
-const page = {params: {chatId: '123'}};
+type GroupedChats = {
+  today: Chat[];
+  yesterday: Chat[];
+  lastWeek: Chat[];
+  lastMonth: Chat[];
+  older: Chat[];
+};
+const chatGroupTitles = {
+  today: 'Today',
+  yesterday: 'Yesterday',
+  lastWeek: 'Last 7 days',
+  lastMonth: 'Last 30 days',
+  older: 'Older',
+} as const;
 
-	type GroupedChats = {
-		today: Chat[];
-		yesterday: Chat[];
-		lastWeek: Chat[];
-		lastMonth: Chat[];
-		older: Chat[];
-	};
-	const chatGroupTitles = {
-		today: 'Today',
-		yesterday: 'Yesterday',
-		lastWeek: 'Last 7 days',
-		lastMonth: 'Last 30 days',
-		older: 'Older'
-	} as const;
+function groupChatsByDate(chats: Chat[]): GroupedChats {
+  const now = new Date();
+  const oneWeekAgo = subWeeks(now, 1);
+  const oneMonthAgo = subMonths(now, 1);
 
-	function groupChatsByDate(chats: Chat[]): GroupedChats {
-		const now = new Date();
-		const oneWeekAgo = subWeeks(now, 1);
-		const oneMonthAgo = subMonths(now, 1);
+  return chats.reduce(
+    (groups, chat) => {
+      const chatDate = new Date(chat.createdAt);
 
-		return chats.reduce(
-			(groups, chat) => {
-				const chatDate = new Date(chat.createdAt);
+      if (isToday(chatDate)) {
+        groups.today.push(chat);
+      } else if (isYesterday(chatDate)) {
+        groups.yesterday.push(chat);
+      } else if (chatDate > oneWeekAgo) {
+        groups.lastWeek.push(chat);
+      } else if (chatDate > oneMonthAgo) {
+        groups.lastMonth.push(chat);
+      } else {
+        groups.older.push(chat);
+      }
 
-				if (isToday(chatDate)) {
-					groups.today.push(chat);
-				} else if (isYesterday(chatDate)) {
-					groups.yesterday.push(chat);
-				} else if (chatDate > oneWeekAgo) {
-					groups.lastWeek.push(chat);
-				} else if (chatDate > oneMonthAgo) {
-					groups.lastMonth.push(chat);
-				} else {
-					groups.older.push(chat);
-				}
+      return groups;
+    },
+    {
+      today: [],
+      yesterday: [],
+      lastWeek: [],
+      lastMonth: [],
+      older: [],
+    } as GroupedChats,
+  );
+}
 
-				return groups;
-			},
-			{
-				today: [],
-				yesterday: [],
-				lastWeek: [],
-				lastMonth: [],
-				older: []
-			} as GroupedChats
-		);
-	}
+async function handleDeleteChat() {
+  const deletePromise = (async () => {
+    const res = await fetch('/api/chat', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id: chatIdToDelete }),
+    });
+    if (!res.ok) {
+      throw new Error();
+    }
+  })();
 
-	async function handleDeleteChat() {
-		const deletePromise = (async () => {
-			const res = await fetch('/api/chat', {
-				method: 'DELETE',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ id: chatIdToDelete })
-			});
-			if (!res.ok) {
-				throw new Error();
-			}
-		})();
+  toast.promise(deletePromise, {
+    loading: 'Deleting chat...',
+    success: () => {
+      chatHistory.chats = chatHistory.chats.filter(chat => chat.id !== chatIdToDelete);
+      chatHistory.refetch();
+      return 'Chat deleted successfully';
+    },
+    error: 'Failed to delete chat',
+  });
 
-		toast.promise(deletePromise, {
-			loading: 'Deleting chat...',
-			success: () => {
-				chatHistory.chats = chatHistory.chats.filter((chat) => chat.id !== chatIdToDelete);
-				chatHistory.refetch();
-				return 'Chat deleted successfully';
-			},
-			error: 'Failed to delete chat'
-		});
+  alertDialogOpen = false;
 
-		alertDialogOpen = false;
-
-		if (chatIdToDelete === page.params.chatId) {
-			await router.goto('/');
-		}
-	}
+  if (chatIdToDelete === page.params.chatId) {
+    await router.goto('/');
+  }
+}
 </script>
 
 {#if !user}

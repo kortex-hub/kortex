@@ -1,9 +1,9 @@
 <script lang="ts">
-	import Markdown from 'svelte-exmarkdown';
-	import { gfmPlugin } from 'svelte-exmarkdown/gfm';
-	import { cn } from '/@/lib/chat/utils/shadcn';
-	import CodeBlock from '../code-block.svelte';
-	let { md }: { md: string } = $props();
+import Markdown from 'svelte-exmarkdown';
+import { gfmPlugin } from 'svelte-exmarkdown/gfm';
+import { cn } from '/@/lib/chat/utils/shadcn';
+import CodeBlock from '../code-block.svelte';
+let { md }: { md: string } = $props();
 </script>
 
 <Markdown {md} plugins={[gfmPlugin()]}>

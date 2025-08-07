@@ -1,7 +1,7 @@
 <script lang="ts">
-	import VercelIcon from '../icons/vercel.svelte';
-	import MessageIcon from '../icons/message.svelte';
-	import { scale } from 'svelte/transition';
+import VercelIcon from '../icons/vercel.svelte';
+import MessageIcon from '../icons/message.svelte';
+import { scale } from 'svelte/transition';
 </script>
 
 <div class="mx-auto max-w-3xl md:mt-20" transition:scale={{ opacity: 0, start: 0.98 }}>

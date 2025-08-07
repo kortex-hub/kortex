@@ -11,38 +11,38 @@ export type AuthUser = InferSelectModel<typeof user>;
 export type User = Omit<AuthUser, 'password'>;
 
 export const session = sqliteTable('Session', {
-	id: text('id').primaryKey().notNull(),
-	userId: text('userId')
-		.notNull()
-		.references(() => user.id),
-	expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull()
+  id: text('id').primaryKey().notNull(),
+  userId: text('userId')
+    .notNull()
+    .references(() => user.id),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
 });
 
 export type Session = InferSelectModel<typeof session>;
 
 export const chat = sqliteTable('Chat', {
-	id: text('id').primaryKey().notNull().primaryKey(),
-	createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
-	title: text('title').notNull(),
-	userId: text('userId')
-		.notNull()
-		.references(() => user.id),
-	visibility: text('visibility', { enum: ['public', 'private'] })
-		.notNull()
-		.default('private')
+  id: text('id').primaryKey().notNull().primaryKey(),
+  createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+  title: text('title').notNull(),
+  userId: text('userId')
+    .notNull()
+    .references(() => user.id),
+  visibility: text('visibility', { enum: ['public', 'private'] })
+    .notNull()
+    .default('private'),
 });
 
 export type Chat = InferSelectModel<typeof chat>;
 
 export const message = sqliteTable('Message', {
-	id: text('id').primaryKey().notNull(),
-	chatId: text('chatId')
-		.notNull()
-		.references(() => chat.id),
-	role: text('role').notNull(),
-	parts: text('parts', { mode: 'json' }).notNull(),
-	attachments: text('attachments', { mode: 'json' }).notNull(),
-	createdAt: integer('createdAt', { mode: 'timestamp' }).notNull()
+  id: text('id').primaryKey().notNull(),
+  chatId: text('chatId')
+    .notNull()
+    .references(() => chat.id),
+  role: text('role').notNull(),
+  parts: text('parts', { mode: 'json' }).notNull(),
+  attachments: text('attachments', { mode: 'json' }).notNull(),
+  createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
 });
 
 export type Message = InferSelectModel<typeof message>;
@@ -67,7 +67,6 @@ export const vote = sqliteTable(
 
 export type Vote = InferSelectModel<typeof vote>;
 
-
 export const document = sqliteTable(
   'Document',
   {
@@ -89,9 +88,7 @@ export const document = sqliteTable(
   },
 );
 
-
 export type Document = InferSelectModel<typeof document>;
-
 
 export const suggestion = sqliteTable(
   'Suggestion',
