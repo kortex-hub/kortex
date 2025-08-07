@@ -1,12 +1,12 @@
 <script lang="ts">
-	import type { WithElementRef } from '/@/lib/chat/utils/types.js';
-	import type { SVGAttributes } from 'svelte/elements';
+import type { WithElementRef } from '/@/lib/chat/utils/types.js';
+import type { SVGAttributes } from 'svelte/elements';
 
-	let {
-		size = 16,
-		ref = $bindable(null),
-		...rest
-	}: WithElementRef<SVGAttributes<SVGElement> & { size?: number }, SVGElement> = $props();
+let {
+  size = 16,
+  ref = $bindable(null),
+  ...rest
+}: WithElementRef<SVGAttributes<SVGElement> & { size?: number }, SVGElement> = $props();
 </script>
 
 <svg

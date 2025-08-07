@@ -1,16 +1,16 @@
 <script lang="ts">
-	import type { Attachment } from 'ai';
-	import LoaderIcon from './icons/loader.svelte';
+import type { Attachment } from 'ai';
+import LoaderIcon from './icons/loader.svelte';
 
-	let {
-		attachment,
-		uploading = false
-	}: {
-		attachment: Attachment;
-		uploading?: boolean;
-	} = $props();
+let {
+  attachment,
+  uploading = false,
+}: {
+  attachment: Attachment;
+  uploading?: boolean;
+} = $props();
 
-	const { name, url, contentType } = $derived(attachment);
+const { name, url, contentType } = $derived(attachment);
 </script>
 
 <div class="flex flex-col gap-2">

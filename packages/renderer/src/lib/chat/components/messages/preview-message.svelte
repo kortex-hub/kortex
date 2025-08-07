@@ -1,19 +1,18 @@
 <script lang="ts">
-	import { cn } from '/@/lib/chat/utils/shadcn';
-	import SparklesIcon from '../icons/sparkles.svelte';
-	import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
-	import { Button } from '../ui/button';
-	import PencilEditIcon from '../icons/pencil-edit.svelte';
-	import PreviewAttachment from '../preview-attachment.svelte';
-	import { Markdown } from '../markdown';
-	import MessageReasoning from '../message-reasoning.svelte';
-	import { fly } from 'svelte/transition';
-	import type { UIMessage } from '@ai-sdk/svelte';
+import { cn } from '/@/lib/chat/utils/shadcn';
+import SparklesIcon from '../icons/sparkles.svelte';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { Button } from '../ui/button';
+import PencilEditIcon from '../icons/pencil-edit.svelte';
+import PreviewAttachment from '../preview-attachment.svelte';
+import { Markdown } from '../markdown';
+import MessageReasoning from '../message-reasoning.svelte';
+import { fly } from 'svelte/transition';
+import type { UIMessage } from '@ai-sdk/svelte';
 
-	let { message, readonly, loading }: { message: UIMessage; readonly: boolean; loading: boolean } =
-		$props();
+let { message, readonly, loading }: { message: UIMessage; readonly: boolean; loading: boolean } = $props();
 
-	let mode = $state<'view' | 'edit'>('view');
+let mode = $state<'view' | 'edit'>('view');
 </script>
 
 <div

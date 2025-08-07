@@ -1,17 +1,17 @@
 <script lang="ts">
-	import { cn } from '/@/lib/chat/utils/shadcn.js';
-	import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
+import { cn } from '/@/lib/chat/utils/shadcn.js';
+import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		inset,
-		variant = 'default',
-		...restProps
-	}: DropdownMenuPrimitive.ItemProps & {
-		inset?: boolean;
-		variant?: 'default' | 'destructive';
-	} = $props();
+let {
+  ref = $bindable(null),
+  class: className,
+  inset,
+  variant = 'default',
+  ...restProps
+}: DropdownMenuPrimitive.ItemProps & {
+  inset?: boolean;
+  variant?: 'default' | 'destructive';
+} = $props();
 </script>
 
 <DropdownMenuPrimitive.Item

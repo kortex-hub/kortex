@@ -1,39 +1,39 @@
 <script lang="ts">
-	import type { Chat } from '../../../../../../main/src/chat/db/schema';
+import type { Chat } from '../../../../../../main/src/chat/db/schema';
 
-	import {
-		DropdownMenu,
-		DropdownMenuContent,
-		DropdownMenuItem,
-		DropdownMenuSub,
-		DropdownMenuSubContent,
-		DropdownMenuSubTrigger,
-		DropdownMenuTrigger
-	} from '../ui/dropdown-menu';
-	import { useSidebar, SidebarMenuAction, SidebarMenuButton, SidebarMenuItem } from '../ui/sidebar';
-	import TrashIcon from '../icons/trash.svelte';
-	import GlobeIcon from '../icons/globe.svelte';
-	import CheckCircleFillIcon from '../icons/check-circle-fill.svelte';
-	import LockIcon from '../icons/lock.svelte';
-	import ShareIcon from '../icons/share.svelte';
-	import MoreHorizontalIcon from '../icons/more-horizontal.svelte';
-	import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
-  import { router } from 'tinro';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
+import { useSidebar, SidebarMenuAction, SidebarMenuButton, SidebarMenuItem } from '../ui/sidebar';
+import TrashIcon from '../icons/trash.svelte';
+import GlobeIcon from '../icons/globe.svelte';
+import CheckCircleFillIcon from '../icons/check-circle-fill.svelte';
+import LockIcon from '../icons/lock.svelte';
+import ShareIcon from '../icons/share.svelte';
+import MoreHorizontalIcon from '../icons/more-horizontal.svelte';
+import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
+import { router } from 'tinro';
 
-	let {
-		chat,
-		active,
-		ondelete
-	}: {
-		chat: Chat;
-		active: boolean;
-		ondelete: (chatId: string) => void;
-	} = $props();
+let {
+  chat,
+  active,
+  ondelete,
+}: {
+  chat: Chat;
+  active: boolean;
+  ondelete: (chatId: string) => void;
+} = $props();
 
-	const context = useSidebar();
+const context = useSidebar();
 
-	const chatHistory = ChatHistory.fromContext();
-	const chatFromHistory = $derived(chatHistory.getChatDetails(chat.id));
+const chatHistory = ChatHistory.fromContext();
+const chatFromHistory = $derived(chatHistory.getChatDetails(chat.id));
 </script>
 
 <SidebarMenuItem>

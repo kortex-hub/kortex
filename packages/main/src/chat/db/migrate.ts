@@ -3,7 +3,6 @@ import { resolve } from 'node:path';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 
-
 export const runMigrate = (db: BetterSQLite3Database<Record<string, unknown>>): void => {
   console.log('⏳ Running migrations...');
 

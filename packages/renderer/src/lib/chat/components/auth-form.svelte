@@ -1,19 +1,19 @@
 <script module lang="ts">
-	export type FormSuccessData = {
-		success: true;
-	};
-	export type FormFailureData = {
-		success: false;
-		message: string;
-		email?: string;
-	};
-	export type FormData = FormSuccessData | FormFailureData;
+export type FormSuccessData = {
+  success: true;
+};
+export type FormFailureData = {
+  success: false;
+  message: string;
+  email?: string;
+};
+export type FormData = FormSuccessData | FormFailureData;
 
-	export type AuthFormProps = {
-		form?: FormData;
-		submitButton: Snippet<[{ pending: boolean; success: boolean }]>;
-		children: Snippet;
-	};
+export type AuthFormProps = {
+  form?: FormData;
+  submitButton: Snippet<[{ pending: boolean; success: boolean }]>;
+  children: Snippet;
+};
 </script>
 
 <script lang="ts">

@@ -1,18 +1,18 @@
 <script lang="ts">
-	import { cn } from '/@/lib/chat/utils/shadcn';
-	import type { Snippet } from 'svelte';
-	import type { ClassValue } from 'svelte/elements';
+import { cn } from '/@/lib/chat/utils/shadcn';
+import type { Snippet } from 'svelte';
+import type { ClassValue } from 'svelte/elements';
 
-	let {
-		inline,
-		class: c,
-		children,
-		...rest
-	}: {
-		inline?: boolean;
-		class?: ClassValue;
-		children?: Snippet;
-	} = $props();
+let {
+  inline,
+  class: c,
+  children,
+  ...rest
+}: {
+  inline?: boolean;
+  class?: ClassValue;
+  children?: Snippet;
+} = $props();
 </script>
 
 {#if inline}
