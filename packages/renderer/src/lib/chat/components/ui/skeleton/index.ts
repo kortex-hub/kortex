@@ -4,8 +4,8 @@ import Root from './skeleton.svelte';
 type SkeletonProps = ComponentProps<typeof Root>;
 
 export {
-	Root,
-	//
-	Root as Skeleton,
-	type SkeletonProps
+  Root,
+  //
+  Root as Skeleton,
+  type SkeletonProps,
 };

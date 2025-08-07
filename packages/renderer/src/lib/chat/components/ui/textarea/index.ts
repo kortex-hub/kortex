@@ -4,8 +4,8 @@ import Root from './textarea.svelte';
 type TextareaProps = ComponentProps<typeof Root>;
 
 export {
-	Root,
-	//
-	Root as Textarea,
-	type TextareaProps
+  Root,
+  //
+  Root as Textarea,
+  type TextareaProps,
 };

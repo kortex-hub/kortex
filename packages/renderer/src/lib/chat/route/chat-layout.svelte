@@ -1,13 +1,13 @@
 <script lang="ts">
-	import AppSidebar from '/@/lib/chat/components/app-sidebar.svelte';
-	import { SidebarInset, SidebarProvider } from '/@/lib/chat/components/ui/sidebar';
-	import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte.js';
+import AppSidebar from '/@/lib/chat/components/app-sidebar.svelte';
+import { SidebarInset, SidebarProvider } from '/@/lib/chat/components/ui/sidebar';
+import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte.js';
 
-	let { data, children } = $props();
+let { data, children } = $props();
 
-	const chatHistory = new ChatHistory(data.chats);
-	chatHistory.setContext();
-	data.selectedChatModel.setContext();
+const chatHistory = new ChatHistory(data.chats);
+chatHistory.setContext();
+data.selectedChatModel.setContext();
 </script>
 
 <SidebarProvider open={!data.sidebarCollapsed}>

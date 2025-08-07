@@ -32,16 +32,15 @@ import type { ArtifactKind } from '/@api/chat/artifact/artifact-kind.js';
 // Do not update document right after creating it. Wait for user feedback or request to update it.
 // `;
 
-export const regularPrompt =
-	'You are a friendly assistant! Keep your responses concise and helpful.';
+export const regularPrompt = 'You are a friendly assistant! Keep your responses concise and helpful.';
 
 export const systemPrompt = ({ selectedChatModel }: { selectedChatModel: string }) => {
-	if (selectedChatModel === 'chat-model-reasoning') {
-		return regularPrompt;
-	} else {
-		return regularPrompt;
-		// return `${regularPrompt}\n\n${artifactsPrompt}`;
-	}
+  if (selectedChatModel === 'chat-model-reasoning') {
+    return regularPrompt;
+  } else {
+    return regularPrompt;
+    // return `${regularPrompt}\n\n${artifactsPrompt}`;
+  }
 };
 
 export const codePrompt = `
@@ -77,22 +76,22 @@ You are a spreadsheet creation assistant. Create a spreadsheet in csv format bas
 `;
 
 export const updateDocumentPrompt = (currentContent: string | null, type: ArtifactKind) =>
-	type === 'text'
-		? `\
+  type === 'text'
+    ? `\
 Improve the following contents of the document based on the given prompt.
 
 ${currentContent}
 `
-		: type === 'code'
-			? `\
+    : type === 'code'
+      ? `\
 Improve the following code snippet based on the given prompt.
 
 ${currentContent}
 `
-			: type === 'sheet'
-				? `\
+      : type === 'sheet'
+        ? `\
 Improve the following spreadsheet based on the given prompt.
 
 ${currentContent}
 `
-				: '';
+        : '';

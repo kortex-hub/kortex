@@ -1,10 +1,10 @@
 <script>
-	import SidebarLeftIcon from './icons/sidebar-left.svelte';
-	import { Button } from './ui/button';
-	import { useSidebar } from './ui/sidebar';
-	import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import SidebarLeftIcon from './icons/sidebar-left.svelte';
+import { Button } from './ui/button';
+import { useSidebar } from './ui/sidebar';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
-	const sidebar = useSidebar();
+const sidebar = useSidebar();
 </script>
 
 <Tooltip>

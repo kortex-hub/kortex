@@ -1,29 +1,22 @@
 <script lang="ts">
-	import { Button } from './ui/button';
-	import {
-		DropdownMenu,
-		DropdownMenuContent,
-		DropdownMenuItem,
-		DropdownMenuTrigger
-	} from './ui/dropdown-menu';
-	import CheckCircleFillIcon from './icons/check-circle-fill.svelte';
-	import ChevronDownIcon from './icons/chevron-down.svelte';
-	import { cn } from '/@/lib/chat/utils/shadcn';
-	import { chatModels } from '/@/lib/chat/ai/models';
-	import type { ClassValue } from 'svelte/elements';
-	import { SelectedModel } from '/@/lib/chat/hooks/selected-model.svelte';
+import { Button } from './ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import CheckCircleFillIcon from './icons/check-circle-fill.svelte';
+import ChevronDownIcon from './icons/chevron-down.svelte';
+import { cn } from '/@/lib/chat/utils/shadcn';
+import { chatModels } from '/@/lib/chat/ai/models';
+import type { ClassValue } from 'svelte/elements';
+import { SelectedModel } from '/@/lib/chat/hooks/selected-model.svelte';
 
-	let {
-		class: c
-	}: {
-		class: ClassValue;
-	} = $props();
+let {
+  class: c,
+}: {
+  class: ClassValue;
+} = $props();
 
-	let open = $state(false);
-	const selectedChatModel = SelectedModel.fromContext();
-	const selectedChatModelDetails = $derived(
-		chatModels.find((model) => model.id === selectedChatModel.value)
-	);
+let open = $state(false);
+const selectedChatModel = SelectedModel.fromContext();
+const selectedChatModelDetails = $derived(chatModels.find(model => model.id === selectedChatModel.value));
 </script>
 
 <DropdownMenu {open} onOpenChange={(val) => (open = val)}>

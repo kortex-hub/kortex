@@ -1,131 +1,128 @@
 <script lang="ts">
-	import type { Chat } from '@ai-sdk/svelte';
-	import PreviewAttachment from './preview-attachment.svelte';
-	import { Textarea } from './ui/textarea';
-	import { cn } from '/@/lib/chat/utils/shadcn';
-	import { onMount } from 'svelte';
-	import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
-	import { innerWidth } from 'svelte/reactivity/window';
-	import type { Attachment } from 'ai';
-	import { toast } from 'svelte-sonner';
-	import { Button } from './ui/button';
-	import PaperclipIcon from './icons/paperclip.svelte';
-	import StopIcon from './icons/stop.svelte';
-	import ArrowUpIcon from './icons/arrow-up.svelte';
-	import SuggestedActions from './suggested-actions.svelte';
-	import type { User } from '../../../../../main/src/chat/db/schema';
+import type { Chat } from '@ai-sdk/svelte';
+import PreviewAttachment from './preview-attachment.svelte';
+import { Textarea } from './ui/textarea';
+import { cn } from '/@/lib/chat/utils/shadcn';
+import { onMount } from 'svelte';
+import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
+import { innerWidth } from 'svelte/reactivity/window';
+import type { Attachment } from 'ai';
+import { toast } from 'svelte-sonner';
+import { Button } from './ui/button';
+import PaperclipIcon from './icons/paperclip.svelte';
+import StopIcon from './icons/stop.svelte';
+import ArrowUpIcon from './icons/arrow-up.svelte';
+import SuggestedActions from './suggested-actions.svelte';
+import type { User } from '../../../../../main/src/chat/db/schema';
 
-	let {
-		attachments = $bindable(),
-		user,
-		chatClient,
-		class: c
-	}: {
-		attachments: Attachment[];
-		user: User | undefined;
-		chatClient: Chat;
-		class?: string;
-	} = $props();
+let {
+  attachments = $bindable(),
+  user,
+  chatClient,
+  class: c,
+}: {
+  attachments: Attachment[];
+  user: User | undefined;
+  chatClient: Chat;
+  class?: string;
+} = $props();
 
-	let mounted = $state(false);
-	let textareaRef = $state<HTMLTextAreaElement | null>(null);
-	let fileInputRef = $state<HTMLInputElement | null>(null);
-	let uploadQueue = $state<string[]>([]);
-	const storedInput = new LocalStorage('input', '');
-	const loading = $derived(chatClient.status === 'streaming' || chatClient.status === 'submitted');
+let mounted = $state(false);
+let textareaRef = $state<HTMLTextAreaElement | null>(null);
+let fileInputRef = $state<HTMLInputElement | null>(null);
+let uploadQueue = $state<string[]>([]);
+const storedInput = new LocalStorage('input', '');
+const loading = $derived(chatClient.status === 'streaming' || chatClient.status === 'submitted');
 
-	const adjustHeight = () => {
-		if (textareaRef) {
-			textareaRef.style.height = 'auto';
-			textareaRef.style.height = `${textareaRef.scrollHeight + 2}px`;
-		}
-	};
+const adjustHeight = () => {
+  if (textareaRef) {
+    textareaRef.style.height = 'auto';
+    textareaRef.style.height = `${textareaRef.scrollHeight + 2}px`;
+  }
+};
 
-	const resetHeight = () => {
-		if (textareaRef) {
-			textareaRef.style.height = 'auto';
-			textareaRef.style.height = '98px';
-		}
-	};
+const resetHeight = () => {
+  if (textareaRef) {
+    textareaRef.style.height = 'auto';
+    textareaRef.style.height = '98px';
+  }
+};
 
-	function setInput(value: string) {
-		chatClient.input = value;
-		adjustHeight();
-	}
+function setInput(value: string) {
+  chatClient.input = value;
+  adjustHeight();
+}
 
-	async function submitForm(event?: Event) {
+async function submitForm(event?: Event) {
+  await chatClient.handleSubmit(event, {
+    experimental_attachments: attachments,
+  });
 
-		await chatClient.handleSubmit(event, {
-			experimental_attachments: attachments
-		});
+  attachments = [];
+  resetHeight();
 
-		attachments = [];
-		resetHeight();
+  if (innerWidth.current && innerWidth.current > 768) {
+    textareaRef?.focus();
+  }
+}
 
-		if (innerWidth.current && innerWidth.current > 768) {
-			textareaRef?.focus();
-		}
-	}
+async function uploadFile(file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
 
-	async function uploadFile(file: File) {
-		const formData = new FormData();
-		formData.append('file', file);
+  try {
+    const response = await fetch('/api/files/upload', {
+      method: 'POST',
+      body: formData,
+    });
 
-		try {
-			const response = await fetch('/api/files/upload', {
-				method: 'POST',
-				body: formData
-			});
+    if (response.ok) {
+      const data = await response.json();
+      const { url, pathname, contentType } = data;
 
-			if (response.ok) {
-				const data = await response.json();
-				const { url, pathname, contentType } = data;
+      return {
+        url,
+        name: pathname,
+        contentType: contentType,
+      };
+    }
+    const { message } = await response.json();
+    toast.error(message);
+  } catch {
+    toast.error('Failed to upload file, please try again!');
+  }
+}
 
-				return {
-					url,
-					name: pathname,
-					contentType: contentType
-				};
-			}
-			const { message } = await response.json();
-			toast.error(message);
-		} catch {
-			toast.error('Failed to upload file, please try again!');
-		}
-	}
+async function handleFileChange(
+  event: Event & {
+    currentTarget: EventTarget & HTMLInputElement;
+  },
+) {
+  const files = Array.from(event.currentTarget.files || []);
+  uploadQueue = files.map(file => file.name);
 
-	async function handleFileChange(
-		event: Event & {
-			currentTarget: EventTarget & HTMLInputElement;
-		}
-	) {
-		const files = Array.from(event.currentTarget.files || []);
-		uploadQueue = files.map((file) => file.name);
+  try {
+    const uploadPromises = files.map(file => uploadFile(file));
+    const uploadedAttachments = await Promise.all(uploadPromises);
+    const successfullyUploadedAttachments = uploadedAttachments.filter(attachment => attachment !== undefined);
 
-		try {
-			const uploadPromises = files.map((file) => uploadFile(file));
-			const uploadedAttachments = await Promise.all(uploadPromises);
-			const successfullyUploadedAttachments = uploadedAttachments.filter(
-				(attachment) => attachment !== undefined
-			);
+    attachments = [...attachments, ...successfullyUploadedAttachments];
+  } catch (error) {
+    console.error('Error uploading files!', error);
+  } finally {
+    uploadQueue = [];
+  }
+}
 
-			attachments = [...attachments, ...successfullyUploadedAttachments];
-		} catch (error) {
-			console.error('Error uploading files!', error);
-		} finally {
-			uploadQueue = [];
-		}
-	}
+onMount(() => {
+  chatClient.input = storedInput.value;
+  adjustHeight();
+  mounted = true;
+});
 
-	onMount(() => {
-		chatClient.input = storedInput.value;
-		adjustHeight();
-		mounted = true;
-	});
-
-	$effect.pre(() => {
-		storedInput.value = chatClient.input;
-	});
+$effect.pre(() => {
+  storedInput.value = chatClient.input;
+});
 </script>
 
 <div class="relative flex w-full flex-col gap-4">

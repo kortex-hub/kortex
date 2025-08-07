@@ -1,33 +1,33 @@
 <script lang="ts">
-	import type { Chat } from '@ai-sdk/svelte';
-	import { Button } from './ui/button';
-	import { fly } from 'svelte/transition';
-		import type { User } from '../../../../../main/src/chat/db/schema';
+import type { Chat } from '@ai-sdk/svelte';
+import { Button } from './ui/button';
+import { fly } from 'svelte/transition';
+import type { User } from '../../../../../main/src/chat/db/schema';
 
-	let { user, chatClient }: { user: User | undefined; chatClient: Chat } = $props();
+let { user, chatClient }: { user: User | undefined; chatClient: Chat } = $props();
 
-	const suggestedActions = [
-		{
-			title: 'What are the advantages',
-			label: 'of using SvelteKit?',
-			action: 'What are the advantages of using SvelteKit?'
-		},
-		{
-			title: 'Write code to',
-			label: `demonstrate djikstra's algorithm`,
-			action: `Write code to demonstrate djikstra's algorithm`
-		},
-		{
-			title: 'Help me write an essay',
-			label: `about silicon valley`,
-			action: `Help me write an essay about silicon valley`
-		},
-		{
-			title: 'What is the weather like',
-			label: 'in San Francisco?',
-			action: 'What is the weather like in San Francisco?'
-		}
-	];
+const suggestedActions = [
+  {
+    title: 'What are the advantages',
+    label: 'of using SvelteKit?',
+    action: 'What are the advantages of using SvelteKit?',
+  },
+  {
+    title: 'Write code to',
+    label: `demonstrate djikstra's algorithm`,
+    action: `Write code to demonstrate djikstra's algorithm`,
+  },
+  {
+    title: 'Help me write an essay',
+    label: `about silicon valley`,
+    action: `Help me write an essay about silicon valley`,
+  },
+  {
+    title: 'What is the weather like',
+    label: 'in San Francisco?',
+    action: 'What is the weather like in San Francisco?',
+  },
+];
 </script>
 
 <div class="grid w-full gap-2 sm:grid-cols-2">

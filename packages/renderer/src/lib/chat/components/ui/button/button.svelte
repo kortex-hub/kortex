@@ -1,7 +1,7 @@
 <script lang="ts" module>
-	import { cn, type WithElementRef } from '/@/lib/chat/utils/shadcn.js';
-	import {type ButtonProps} from './button.js';
-  import { buttonVariants } from './button.js';
+import { cn, type WithElementRef } from '/@/lib/chat/utils/shadcn.js';
+import { type ButtonProps } from './button.js';
+import { buttonVariants } from './button.js';
 </script>
 
 <script lang="ts">

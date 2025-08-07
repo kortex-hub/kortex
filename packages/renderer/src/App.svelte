@@ -85,7 +85,7 @@ import Route from './Route.svelte';
 import { lastSubmenuPages } from './stores/breadcrumb';
 import { navigationRegistry } from './stores/navigation/navigation-registry';
 import SubmenuNavigation from './SubmenuNavigation.svelte';
-  import CustomChat from './lib/chat/route/CustomChat.svelte';
+import CustomChat from './lib/chat/route/CustomChat.svelte';
 
 router.mode.memory();
 

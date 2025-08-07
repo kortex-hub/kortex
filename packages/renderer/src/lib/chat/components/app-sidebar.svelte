@@ -1,25 +1,18 @@
 <script lang="ts">
-	import { Button } from './ui/button';
-	import {
-		useSidebar,
-		Sidebar,
-		SidebarContent,
-		SidebarFooter,
-		SidebarHeader,
-		SidebarMenu
-	} from './ui/sidebar';
-	import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { Button } from './ui/button';
+import { useSidebar, Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu } from './ui/sidebar';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
-	import PlusIcon from './icons/plus.svelte';
-	import type {  User } from '../../../../../main/src/chat/db/schema';
+import PlusIcon from './icons/plus.svelte';
+import type { User } from '../../../../../main/src/chat/db/schema';
 
-	import SidebarUserNav from './sidebar-user-nav.svelte';
-	import { SidebarHistory } from './sidebar-history';
-  import { router } from 'tinro';
+import SidebarUserNav from './sidebar-user-nav.svelte';
+import { SidebarHistory } from './sidebar-history';
+import { router } from 'tinro';
 
-	let { user }: { user?: User } = $props();
+let { user }: { user?: User } = $props();
 
-	const context = useSidebar();
+const context = useSidebar();
 </script>
 
 <Sidebar class="group-data-[side=left]:border-r-0">

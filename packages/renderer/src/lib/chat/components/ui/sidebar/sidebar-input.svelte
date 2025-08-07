@@ -1,14 +1,14 @@
 <script lang="ts">
-	import type { ComponentProps } from 'svelte';
-	import { Input } from '/@/lib/chat/components/ui/input/index.js';
-	import { cn } from '/@/lib/chat/utils/shadcn.js';
+import type { ComponentProps } from 'svelte';
+import { Input } from '/@/lib/chat/components/ui/input/index.js';
+import { cn } from '/@/lib/chat/utils/shadcn.js';
 
-	let {
-		ref = $bindable(null),
-		value = $bindable(''),
-		class: className,
-		...restProps
-	}: ComponentProps<typeof Input> = $props();
+let {
+  ref = $bindable(null),
+  value = $bindable(''),
+  class: className,
+  ...restProps
+}: ComponentProps<typeof Input> = $props();
 </script>
 
 <Input

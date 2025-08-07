@@ -1,19 +1,19 @@
 <script lang="ts">
-	import type { User } from '../../../../../main/src/chat/db/schema';
-	import { cn } from '/@//lib/chat/utils/shadcn';
-	import ChevronUp from './icons/chevron-up.svelte';
-	import {
-		DropdownMenu,
-		DropdownMenuContent,
-		DropdownMenuItem,
-		DropdownMenuSeparator,
-		DropdownMenuTrigger
-	} from './ui/dropdown-menu';
-	import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from './ui/sidebar';
-	import { getTheme } from '@sejohnson/svelte-themes';
+import type { User } from '../../../../../main/src/chat/db/schema';
+import { cn } from '/@//lib/chat/utils/shadcn';
+import ChevronUp from './icons/chevron-up.svelte';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from './ui/sidebar';
+import { getTheme } from '@sejohnson/svelte-themes';
 
-	let { user }: { user: User } = $props();
-	const theme = getTheme();
+let { user }: { user: User } = $props();
+const theme = getTheme();
 </script>
 
 <SidebarMenu>

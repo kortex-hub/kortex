@@ -1,16 +1,16 @@
 <script lang="ts">
-	import { cn } from '/@/lib/chat/utils/shadcn.js';
-	import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
+import { cn } from '/@/lib/chat/utils/shadcn.js';
+import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
 
-	let {
-		ref = $bindable(null),
-		sideOffset = 4,
-		portalProps,
-		class: className,
-		...restProps
-	}: DropdownMenuPrimitive.ContentProps & {
-		portalProps?: DropdownMenuPrimitive.PortalProps;
-	} = $props();
+let {
+  ref = $bindable(null),
+  sideOffset = 4,
+  portalProps,
+  class: className,
+  ...restProps
+}: DropdownMenuPrimitive.ContentProps & {
+  portalProps?: DropdownMenuPrimitive.PortalProps;
+} = $props();
 </script>
 
 <DropdownMenuPrimitive.Portal {...portalProps}>
