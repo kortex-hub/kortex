@@ -1,6 +1,6 @@
 <script lang="ts">
-import { Chat } from '@ai-sdk/svelte';
-import type { Attachment } from 'ai';
+import { Chat, type UIMessage } from '@ai-sdk/svelte';
+import type { Attachment } from '@ai-sdk/ui-utils';
 import { toast } from 'svelte-sonner';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
 import ChatHeader from './chat-header.svelte';
@@ -29,8 +29,7 @@ const chatClient = $derived(
     id: chat?.id,
     // This way, the client is only recreated when the ID changes, allowing us to fully manage messages
     // clientside while still SSRing them on initial load or when we navigate to a different chat.
-    initialMessages: untrack(() => initialMessages),
-    sendExtraMessageFields: true,
+    messages: untrack(() => initialMessages),
     generateId: crypto.randomUUID.bind(crypto),
     onFinish: async () => {
       await chatHistory.refetch();

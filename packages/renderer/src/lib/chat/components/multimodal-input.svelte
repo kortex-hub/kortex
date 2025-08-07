@@ -1,12 +1,12 @@
 <script lang="ts">
-import type { Chat } from '@ai-sdk/svelte';
+import { Completion, type Chat } from '@ai-sdk/svelte';
 import PreviewAttachment from './preview-attachment.svelte';
 import { Textarea } from './ui/textarea';
 import { cn } from '/@/lib/chat/utils/shadcn';
 import { onMount } from 'svelte';
 import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
 import { innerWidth } from 'svelte/reactivity/window';
-import type { Attachment } from 'ai';
+import type { Attachment } from '@ai-sdk/ui-utils';
 import { toast } from 'svelte-sonner';
 import { Button } from './ui/button';
 import PaperclipIcon from './icons/paperclip.svelte';
@@ -27,6 +27,7 @@ let {
   class?: string;
 } = $props();
 
+let input = $state('');
 let mounted = $state(false);
 let textareaRef = $state<HTMLTextAreaElement | null>(null);
 let fileInputRef = $state<HTMLInputElement | null>(null);
@@ -49,13 +50,19 @@ const resetHeight = () => {
 };
 
 function setInput(value: string) {
-  chatClient.input = value;
+  input = value;
   adjustHeight();
 }
 
 async function submitForm(event?: Event) {
-  await chatClient.handleSubmit(event, {
-    experimental_attachments: attachments,
+  await chatClient.sendMessage({
+    text: input,
+    files: attachments.map(attachment => ({
+      type: 'file',
+      url: attachment.url,
+      name: attachment.name,
+      mediaType: attachment.contentType!,
+    })),
   });
 
   attachments = [];
@@ -115,13 +122,13 @@ async function handleFileChange(
 }
 
 onMount(() => {
-  chatClient.input = storedInput.value;
+  input = storedInput.value;
   adjustHeight();
   mounted = true;
 });
 
 $effect.pre(() => {
-  storedInput.value = chatClient.input;
+  storedInput.value = input;
 });
 </script>
 
@@ -161,7 +168,7 @@ $effect.pre(() => {
 	<Textarea
 		bind:ref={textareaRef}
 		placeholder="Send a message..."
-		bind:value={() => chatClient.input, setInput}
+		bind:value={() => input, setInput}
 		class={cn(
 			'bg-muted max-h-[calc(75dvh)] min-h-[24px] resize-none overflow-hidden rounded-2xl pb-10 !text-base dark:border-zinc-700',
 			c
@@ -228,7 +235,7 @@ $effect.pre(() => {
 			event.preventDefault();
 			submitForm();
 		}}
-		disabled={chatClient.input.length === 0 || uploadQueue.length > 0}
+		disabled={input.length === 0 || uploadQueue.length > 0}
 	>
 		<ArrowUpIcon size={14} />
 	</Button>
