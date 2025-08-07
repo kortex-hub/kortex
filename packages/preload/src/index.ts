@@ -41,6 +41,7 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
+import type { UIMessage, UIMessageChunk } from 'ai';
 import { contextBridge, ipcRenderer } from 'electron';
 
 import type { CliToolInfo } from '/@api/cli-tool-info';
@@ -1091,6 +1092,52 @@ export function initExposure(): void {
       );
     },
   );
+
+  // callbacks for streamText
+  let onDataCallbacksStreamTextId = 0;
+  const onDataCallbacksStreamText = new Map<
+    number,
+    { onChunk: (chunk: UIMessageChunk) => void; onError: (error: string) => void; onEnd: () => void }
+  >();
+  contextBridge.exposeInMainWorld(
+    'inferenceStreamText',
+    async (
+      modelId: string,
+      messages: UIMessage[],
+      onChunk: (data: UIMessageChunk) => void,
+      onError: (error: string) => void,
+      onEnd: () => void,
+    ): Promise<number> => {
+      onDataCallbacksStreamTextId++;
+      onDataCallbacksStreamText.set(onDataCallbacksStreamTextId, { onChunk, onError, onEnd });
+      return ipcInvoke('inference:streamText', modelId, messages, onDataCallbacksStreamTextId);
+    },
+  );
+
+  ipcRenderer.on('inference:streamText-onChunk', (_, callbackId: number, chunk: UIMessageChunk) => {
+    // grab callback from the map
+    const callback = onDataCallbacksStreamText.get(callbackId);
+    if (callback) {
+      callback.onChunk(chunk);
+    }
+  });
+  ipcRenderer.on('inference:streamText-onError', (_, callbackId: number, error: string) => {
+    // grab callback from the map
+    const callback = onDataCallbacksStreamText.get(callbackId);
+    if (callback) {
+      callback.onError(error);
+    }
+  });
+
+  ipcRenderer.on('inference:streamText-onEnd', (_, callbackId: number) => {
+    // grab callback from the map
+    const callback = onDataCallbacksStreamText.get(callbackId);
+    if (callback) {
+      callback.onEnd();
+      // remove callback from the map
+      onDataCallbacksStreamText.delete(callbackId);
+    }
+  });
 
   ipcRenderer.on(
     'provider-registry:taskConnection-onData',
