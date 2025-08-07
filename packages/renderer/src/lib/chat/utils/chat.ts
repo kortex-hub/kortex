@@ -1,5 +1,5 @@
-import type { UIMessage } from '@ai-sdk/svelte';
-import type { Attachment, CoreAssistantMessage, CoreToolMessage, Message } from 'ai';
+import type { Attachment } from '@ai-sdk/ui-utils';
+import type { AssistantModelMessage, ToolModelMessage, UIMessage } from 'ai';
 
 import type { Document, Message as DBMessage } from '../../../../../main/src/chat/db/schema.js';
 
@@ -15,7 +15,7 @@ export function convertToUIMessages(messages: Array<DBMessage>): Array<UIMessage
   }));
 }
 
-export function getMostRecentUserMessage(messages: Array<Message>) {
+export function getMostRecentUserMessage(messages: Array<UIMessage>) {
   const userMessages = messages.filter(message => message.role === 'user');
   return userMessages.at(-1);
 }
@@ -27,7 +27,7 @@ export function getDocumentTimestampByIndex(documents: Array<Document>, index: n
   return documents[index].createdAt;
 }
 
-type ResponseMessageWithoutId = CoreToolMessage | CoreAssistantMessage;
+type ResponseMessageWithoutId = ToolModelMessage | AssistantModelMessage;
 type ResponseMessage = ResponseMessageWithoutId & { id: string };
 
 export function getTrailingMessageId({ messages }: { messages: Array<ResponseMessage> }): string | null {

@@ -40,9 +40,9 @@ const suggestedActions = [
 				variant="ghost"
 				onclick={async () => {
 
-					await chatClient.append({
+      await chatClient.sendMessage({
 						role: 'user',
-						content: suggestedAction.action
+						parts: [{text: suggestedAction.action, type: 'text' }],
 					});
 				}}
 				class="h-auto w-full flex-1 items-start justify-start gap-1 rounded-xl border px-4 py-3.5 text-left text-sm sm:flex-col"
