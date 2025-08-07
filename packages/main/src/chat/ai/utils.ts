@@ -1,11 +1,11 @@
-import { generateText, type Message } from 'ai';
+import { generateText, type UIMessage } from 'ai';
 import { fromPromise, ok, type ResultAsync, safeTry } from 'neverthrow';
 
 import { type AIError, AIInternalError } from '/@api/chat/errors/ai.js';
 
 import { myProvider } from './models.js';
 
-export function generateTitleFromUserMessage({ message }: { message: Message }): ResultAsync<string, AIError> {
+export function generateTitleFromUserMessage({ message }: { message: UIMessage }): ResultAsync<string, AIError> {
   return safeTry(async function* () {
     const result = yield* fromPromise(
       generateText({
