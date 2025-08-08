@@ -24,6 +24,7 @@ module.exports = {
     'packages/renderer/index.html',
     'packages/renderer/src/**/*.{svelte,ts,css}',
     'packages/ui/src/**/*.{svelte,ts,css}',
+    'node_modules/@podman-desktop/ui-svelte/dist/**/*.{svelte,ts,css}',
   ],
   darkMode: 'class',
   theme: {
