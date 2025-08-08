@@ -1,24 +1,31 @@
 <script lang="ts">
-import { useSidebar } from './ui/sidebar';
-import SidebarToggle from './sidebar-toggle.svelte';
 import { innerWidth } from 'svelte/reactivity/window';
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-import { Button } from './ui/button';
-import PlusIcon from './icons/plus.svelte';
-import ModelSelector from './model-selector.svelte';
-import type { Chat, User } from '../../../../../main/src/chat/db/schema';
-
-import VisibilitySelector from './visibility-selector.svelte';
-import VercelIcon from './icons/vercel.svelte';
 import { router } from 'tinro';
+
+import type {ModelInfo} from '/@/lib/chat/components/model-info';
+
+import type { Chat, User } from '../../../../../main/src/chat/db/schema';
+import PlusIcon from './icons/plus.svelte';
+import VercelIcon from './icons/vercel.svelte';
+import ModelSelector from './model-selector.svelte';
+import SidebarToggle from './sidebar-toggle.svelte';
+import { Button } from './ui/button';
+import { useSidebar } from './ui/sidebar';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import VisibilitySelector from './visibility-selector.svelte';
+
 let {
   user,
   chat,
   readonly,
+  models,
+  selectedModel = $bindable<ModelInfo | undefined>(),
 }: {
   user: User | undefined;
   chat: Chat | undefined;
   readonly: boolean;
+  selectedModel: ModelInfo | undefined;
+  models: Array<ModelInfo>,
 } = $props();
 
 const sidebar = useSidebar();
@@ -49,7 +56,9 @@ const sidebar = useSidebar();
 	{/if}
 
 	{#if !readonly}
-		<ModelSelector class="order-1 md:order-2" />
+		<ModelSelector
+      class="order-1 md:order-2" models={models} bind:value={selectedModel}
+    />
 	{/if}
 
 	{#if !readonly && chat}

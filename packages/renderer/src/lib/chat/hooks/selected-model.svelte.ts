@@ -1,5 +1,8 @@
 import { SynchronizedCookie } from '/@/lib/chat/utils/reactivity.svelte';
 
+/**
+ * @deprecated
+ */
 export class SelectedModel extends SynchronizedCookie {
   constructor(value: string) {
     super('selected-model', value);

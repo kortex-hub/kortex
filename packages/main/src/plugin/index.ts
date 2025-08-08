@@ -50,7 +50,6 @@ import {
   TextStreamPart,
   type ToolSet,
   UIMessage,
-  UIMessageChunk,
 } from 'ai';
 import checkDiskSpacePkg from 'check-disk-space';
 import type Dockerode from 'dockerode';
@@ -1209,8 +1208,15 @@ export class PluginSystem {
 
     this.ipcHandle(
       'inference:streamText',
-      async (_listener, modelId: string, messages: UIMessage[], onDataId: number): Promise<number> => {
-        const sdk = providerRegistry.getFirstInferenceSDK('gemini');
+      async (
+        _listener,
+        internalProviderId: string,
+        connectionName: string,
+        modelId: string,
+        messages: UIMessage[],
+        onDataId: number
+      ): Promise<number> => {
+        const sdk = providerRegistry.getInferenceSDK(internalProviderId, connectionName);
         const languageModel = sdk.languageModel(modelId);
 
         const userMessage = getMostRecentUserMessage(messages);

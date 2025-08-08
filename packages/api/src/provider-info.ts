@@ -76,6 +76,9 @@ export interface ProviderMCPConnectionInfo extends ProviderConnectionBase {
 
 export interface ProviderInferenceConnectionInfo extends ProviderConnectionBase {
   connectionType: ProviderConnectionType.INFERENCE;
+  models: Array<{
+    label: string;
+  }>
 }
 
 export type ProviderConnectionInfo =

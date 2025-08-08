@@ -1,6 +1,10 @@
 import type { ChatRequestOptions, ChatTransport, UIMessage, UIMessageChunk } from 'ai';
+import type { ModelInfo } from '/@/lib/chat/components/model-info';
 
 export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
+  constructor(private readonly getModel: () => ModelInfo) {
+  }
+
   async sendMessages(
     options: {
       trigger: 'submit-message' | 'regenerate-message';
@@ -13,13 +17,17 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
     const uiMessages = JSON.parse(JSON.stringify(options.messages));
 
     console.log('IPCChatTransport: uiMessages', uiMessages);
+    const model = this.getModel();
+    console.log('Selected model', model);
 
     // Buffer to collect chunks
     const chunks: UIMessageChunk[] = [];
 
     try {
       await window.inferenceStreamText(
-        'gemini-2.0-flash-lite',
+        model.internalProviderId,
+        model.connectionName,
+        model.label,
         uiMessages,
         (chunk: UIMessageChunk) => {
           console.log('IPCChatTransport->chunk:', chunk);
