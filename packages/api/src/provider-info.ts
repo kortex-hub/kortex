@@ -29,14 +29,26 @@ import type {
 
 export type LifecycleMethod = 'start' | 'stop' | 'delete' | 'edit';
 
-export interface ProviderContainerConnectionInfo {
+export enum ProviderConnectionType {
+  CONTAINER = 'container',
+  KUBERNETES = 'kubernetes',
+  VM = 'vm',
+  INFERENCE = 'inference',
+  MCP = 'mcp',
+}
+
+export interface ProviderConnectionBase {
   name: string;
-  displayName: string;
   status: ProviderConnectionStatus;
+  lifecycleMethods?: LifecycleMethod[];
+  connectionType: ProviderConnectionType;
+}
+
+export interface ProviderContainerConnectionInfo extends ProviderConnectionBase {
+  displayName: string;
   endpoint: {
     socketPath: string;
   };
-  lifecycleMethods?: LifecycleMethod[];
   /**
    * Specify if the corresponding {@link import('@kortex-app/api').ProviderContainerConnection} instance
    * has a shellAccess available
@@ -44,33 +56,26 @@ export interface ProviderContainerConnectionInfo {
   shellAccess?: boolean;
   type: 'docker' | 'podman';
   vmType?: { id: string; name: string };
+  connectionType: ProviderConnectionType.CONTAINER;
 }
 
-export interface ProviderKubernetesConnectionInfo {
-  name: string;
-  status: ProviderConnectionStatus;
+export interface ProviderKubernetesConnectionInfo extends ProviderConnectionBase {
   endpoint: {
     apiURL: string;
   };
-  lifecycleMethods?: LifecycleMethod[];
+  connectionType: ProviderConnectionType.KUBERNETES;
 }
 
-export interface ProviderVmConnectionInfo {
-  name: string;
-  status: ProviderConnectionStatus;
-  lifecycleMethods?: LifecycleMethod[];
+export interface ProviderVmConnectionInfo extends ProviderConnectionBase {
+  connectionType: ProviderConnectionType.VM;
 }
 
-export interface ProviderMCPConnectionInfo {
-  name: string;
-  status: ProviderConnectionStatus;
-  lifecycleMethods?: LifecycleMethod[];
+export interface ProviderMCPConnectionInfo extends ProviderConnectionBase {
+  connectionType: ProviderConnectionType.MCP;
 }
 
-export interface ProviderInferenceConnectionInfo {
-  name: string;
-  status: ProviderConnectionStatus;
-  lifecycleMethods?: LifecycleMethod[];
+export interface ProviderInferenceConnectionInfo extends ProviderConnectionBase {
+  connectionType: ProviderConnectionType.INFERENCE;
 }
 
 export type ProviderConnectionInfo =

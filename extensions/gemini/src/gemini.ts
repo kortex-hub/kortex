@@ -15,6 +15,8 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+import { createHash } from 'node:crypto';
+
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import type {
   Disposable,
@@ -29,7 +31,7 @@ export const TOKEN_SEPARATOR = ',';
 
 export class Gemini implements Disposable {
   private provider: Provider | undefined = undefined;
-  private disposables: Array<Disposable> = [];
+  private connections: Map<string, Disposable> = new Map();
 
   constructor(
     private readonly providerAPI: typeof ProviderAPI,
@@ -85,22 +87,59 @@ export class Gemini implements Disposable {
     await this.secrets.store(TOKENS_KEY, raw);
   }
 
+  private getTokenHash(token: string): string {
+    const sha256 = createHash('sha256');
+    return sha256.update(token).digest('hex');
+  }
+
+  private async removeToken(token: string): Promise<void> {
+    // get existing tokens
+    const tokens: Array<string> = await this.getTokens();
+    // filter out the token
+    const raw = tokens.filter(t => t !== token).join(TOKEN_SEPARATOR);
+    // save to secret storage
+    await this.secrets.store(TOKENS_KEY, raw);
+  }
+
   private async registerInferenceProviderConnection({ token }: { token: string }): Promise<void> {
     if (!this.provider) throw new Error('cannot create MCP provider connection: provider is not initialized');
+
+    // create masked version of token
+    const key = this.maskKey(token);
+
+    // get hash of the token (used for Map)
+    const tokenHash = this.getTokenHash(token);
+
+    if (this.connections.has(tokenHash)) {
+      throw new Error(`connection already exists for token ${key}`);
+    }
 
     // create ProviderV2
     const google = createGoogleGenerativeAI({
       apiKey: token,
     });
 
-    const disposable = this.provider.registerInferenceProviderConnection({
+    // create a clean method
+    const clean = async (): Promise<void> => {
+      // dispose inference provider connection
+      this.connections.get(tokenHash)?.dispose();
+      // delete map entry
+      this.connections.delete(tokenHash);
+      // remove token from secret storage
+      await this.removeToken(token);
+    };
+
+    const connectionDisposable = this.provider.registerInferenceProviderConnection({
       name: this.maskKey(token),
       sdk: google,
       status(): ProviderConnectionStatus {
-        return 'started';
+        return 'unknown'; // if status is not unknown we cannot delete the connection
+      },
+      lifecycle: {
+        delete: clean.bind(this),
       },
     });
-    this.disposables.push(disposable);
+    this.connections.set(tokenHash, connectionDisposable);
   }
 
   private maskKey(name: string): string {
@@ -122,7 +161,7 @@ export class Gemini implements Disposable {
 
   dispose(): void {
     this.provider?.dispose();
-    this.disposables.forEach(d => d.dispose());
-    this.disposables = [];
+    this.connections.forEach(disposable => disposable.dispose());
+    this.connections.clear();
   }
 }
