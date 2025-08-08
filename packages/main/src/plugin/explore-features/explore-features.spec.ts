@@ -25,7 +25,7 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import type { Context } from '/@/plugin/context/context.js';
 import type { ContainerInfo } from '/@api/container-info.js';
 import type { ExtensionInfo } from '/@api/extension-info.js';
-import type { ProviderInfo, ProviderKubernetesConnectionInfo } from '/@api/provider-info.js';
+import { ProviderConnectionType, type ProviderInfo, type ProviderKubernetesConnectionInfo } from '/@api/provider-info.js';
 
 import type { ConfigurationRegistry } from '../configuration-registry.js';
 import type { ContainerProviderRegistry } from '../container-registry.js';
@@ -104,6 +104,7 @@ const providerInfoMock: ProviderInfo = {
     {
       name: 'connection1',
       displayName: 'Connection 1',
+      connectionType: ProviderConnectionType.CONTAINER,
       status: 'started',
       endpoint: {
         socketPath: '',
@@ -113,9 +114,13 @@ const providerInfoMock: ProviderInfo = {
   ],
   kubernetesConnections: [],
   vmConnections: [],
+  inferenceConnections: [],
+  flowConnections: [],
   status: 'ready',
   containerProviderConnectionCreation: false,
   containerProviderConnectionInitialization: false,
+  inferenceProviderConnectionCreation: false,
+  inferenceProviderConnectionInitialization: false,
   kubernetesProviderConnectionCreation: false,
   kubernetesProviderConnectionInitialization: false,
   vmProviderConnectionCreation: false,
