@@ -165,6 +165,22 @@ onMount(async () => {
           }
         }
       });
+
+      provider.inferenceConnections.forEach(connection => {
+        const inferenceConnectionName = getProviderConnectionName(provider, connection);
+        connectionNames.push(inferenceConnectionName);
+        // update the map only if the container state is different from last time
+        if (
+          !containerConnectionStatus.has(inferenceConnectionName) ||
+          containerConnectionStatus.get(inferenceConnectionName)?.status !== connection.status
+        ) {
+          containerConnectionStatus.set(inferenceConnectionName, {
+            inProgress: false,
+            action: undefined,
+            status: connection.status,
+          });
+        }
+      });
     });
     // if a machine has been deleted we need to clean its old stored status
     containerConnectionStatus.forEach((v, k) => {
@@ -724,6 +740,13 @@ $effect(() => {
         {#each provider.inferenceConnections as inferenceConnection, index (index)}
           <div class="px-5 py-2 w-[240px]" role="region" aria-label={inferenceConnection.name}>
             <span>{inferenceConnection.name} (Inference)</span>
+            <PreferencesConnectionActions
+              provider={provider}
+              connection={inferenceConnection}
+              connectionStatus={containerConnectionStatus.get(getProviderConnectionName(provider, inferenceConnection))}
+              updateConnectionStatus={updateContainerStatus}
+              addConnectionToRestartingQueue={addConnectionToRestartingQueue}
+            />
           </div>
         {/each}
           {#each provider.mcpConnections as mcpConnection, index (index)}
