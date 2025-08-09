@@ -138,6 +138,13 @@ export class Gemini implements Disposable {
       lifecycle: {
         delete: clean.bind(this),
       },
+      models: [{
+        label: 'gemini-2.5-flash',
+      },
+        {
+          label: 'gemini-2.5-pro',
+        },
+        ],
     });
     this.connections.set(tokenHash, connectionDisposable);
   }

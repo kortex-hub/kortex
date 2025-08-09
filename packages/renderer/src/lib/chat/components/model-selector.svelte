@@ -1,22 +1,45 @@
 <script lang="ts">
-import { Button } from './ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import type { ClassValue } from 'svelte/elements';
+
+import type {ModelInfo} from '/@/lib/chat/components/model-info';
+import { cn } from '/@/lib/chat/utils/shadcn';
+
 import CheckCircleFillIcon from './icons/check-circle-fill.svelte';
 import ChevronDownIcon from './icons/chevron-down.svelte';
-import { cn } from '/@/lib/chat/utils/shadcn';
-import { chatModels } from '/@/lib/chat/ai/models';
-import type { ClassValue } from 'svelte/elements';
-import { SelectedModel } from '/@/lib/chat/hooks/selected-model.svelte';
+import { Button } from './ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuGroupHeading,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 
 let {
   class: c,
+  models,
+  value = $bindable<ModelInfo | undefined>(),
 }: {
   class: ClassValue;
+  value: ModelInfo | undefined;
+  models: Array<ModelInfo>;
 } = $props();
 
+let groups: Map<string, Array<ModelInfo>> = $derived(
+  Map.groupBy(models, ({ internalProviderId, connectionName }) => `${internalProviderId}:${connectionName}`)
+);
+
 let open = $state(false);
-const selectedChatModel = SelectedModel.fromContext();
-const selectedChatModelDetails = $derived(chatModels.find(model => model.id === selectedChatModel.value));
+const selectedChatModelDetails = $derived(
+  models.values().find(model => model.label === value?.label && model.internalProviderId === value?.internalProviderId && model.connectionName === value?.connectionName)
+);
+
+function onSelect(model: ModelInfo): void {
+  open = false;
+  value = model;
+}
 </script>
 
 <DropdownMenu {open} onOpenChange={(val) => (open = val)}>
@@ -30,34 +53,37 @@ const selectedChatModelDetails = $derived(chatModels.find(model => model.id === 
 					c
 				)}
 			>
-				{selectedChatModelDetails?.name}
+				{selectedChatModelDetails?.label}
 				<ChevronDownIcon />
 			</Button>
 		{/snippet}
 	</DropdownMenuTrigger>
 	<DropdownMenuContent align="start" class="min-w-[300px]">
-		{#each chatModels as chatModel (chatModel.id)}
-			<DropdownMenuItem
-				onSelect={() => {
-					open = false;
-					selectedChatModel.value = chatModel.id;
-				}}
-				class="group/item flex flex-row items-center justify-between gap-4"
-				data-active={chatModel.id === selectedChatModel.value}
-			>
-				<div class="flex flex-col items-start gap-1">
-					<div>{chatModel.name}</div>
-					<div class="text-muted-foreground text-xs">
-						{chatModel.description}
-					</div>
-				</div>
+    {#each groups.entries() as [key, mModels] (key)}
 
-				<div
-					class="text-foreground dark:text-foreground opacity-0 group-data-[active=true]/item:opacity-100"
-				>
-					<CheckCircleFillIcon />
-				</div>
-			</DropdownMenuItem>
-		{/each}
+      <DropdownMenuGroup>
+        <DropdownMenuGroupHeading>
+          {key}
+        </DropdownMenuGroupHeading>
+        {#each mModels as model (model.label)}
+          <DropdownMenuItem
+            onSelect={onSelect.bind(undefined, model)}
+            class="group/item flex flex-row items-center justify-between gap-4"
+            data-active={model.label === value?.label && model.internalProviderId === value?.internalProviderId && model.connectionName === value?.connectionName}
+          >
+            <div class="flex flex-col items-start gap-1">
+              <div>{model.label}</div>
+            </div>
+
+            <div
+              class="text-foreground dark:text-foreground opacity-0 group-data-[active=true]/item:opacity-100"
+            >
+              <CheckCircleFillIcon />
+            </div>
+          </DropdownMenuItem>
+        {/each}
+        <DropdownMenuSeparator/>
+      </DropdownMenuGroup>
+    {/each}
 	</DropdownMenuContent>
 </DropdownMenu>

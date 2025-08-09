@@ -755,6 +755,7 @@ export class ProviderRegistry {
         name: connection.name,
         status: connection.status(),
         connectionType: ProviderConnectionType.INFERENCE,
+        models: connection.models,
       };
     } else if (this.isMCPConnection(connection)) {
       providerConnection = {
