@@ -21,6 +21,7 @@ import PreferencesRendering from './PreferencesRendering.svelte';
 import PreferencesResourcesRendering from './PreferencesResourcesRendering.svelte';
 import PreferencesVmConnectionRendering from './PreferencesVmConnectionRendering.svelte';
 import { isDefaultScope } from './Util';
+  import PreferencesMcpRegistriesEditing from './PreferencesMCPRegistriesEditing.svelte';
 
 let properties: IConfigurationPropertyRecordedSchema[];
 let defaultPrefPageId: string;
@@ -72,6 +73,9 @@ onMount(async () => {
   </Route>
   <Route path="/registries" breadcrumb="Registries">
     <PreferencesRegistriesEditing />
+  </Route>
+  <Route path="/mcp-registries" breadcrumb="Registries">
+    <PreferencesMcpRegistriesEditing />
   </Route>
   <Route path="/authentication-providers" breadcrumb="Authentication">
     <PreferencesAuthenticationProvidersRendering />

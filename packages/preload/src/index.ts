@@ -1575,6 +1575,7 @@ export function initExposure(): void {
     },
   );
 
+
   contextBridge.exposeInMainWorld(
     'searchImageInRegistry',
     async (options: ImageSearchOptions): Promise<ImageSearchResult[]> => {
@@ -1617,6 +1618,32 @@ export function initExposure(): void {
       return ipcInvoke('configuration-registry:getConfigurationProperties');
     },
   );
+
+
+
+  contextBridge.exposeInMainWorld('getMcpRegistries', async (): Promise<readonly containerDesktopAPI.MCPRegistry[]> => {
+    return ipcInvoke('mcp-registry:getMcpRegistries');
+  });
+  contextBridge.exposeInMainWorld(
+    'getMcpSuggestedRegistries',
+    async (): Promise<containerDesktopAPI.MCPRegistrySuggestedProvider[]> => {
+      return ipcInvoke('mcp-registry:getMcpSuggestedRegistries');
+    },
+  );
+
+    contextBridge.exposeInMainWorld(
+    'unregisterMCPRegistry',
+    async (registry: containerDesktopAPI.MCPRegistry): Promise<void> => {
+      return ipcInvoke('mcp-registry:unregisterMCPRegistry', registry);
+    },
+  );
+    contextBridge.exposeInMainWorld(
+    'createMCPRegistry',
+    async (registryCreateOptions: containerDesktopAPI.MCPRegistryCreateOptions): Promise<void> => {
+      return ipcInvoke('mcp-registry:createMCPRegistry', registryCreateOptions);
+    },
+  );
+
 
   // can't send configuration object as it is not serializable
   // https://www.electronjs.org/docs/latest/api/context-bridge#parameter--error--return-type-support
