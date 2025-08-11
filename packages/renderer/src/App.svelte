@@ -154,6 +154,9 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
         <Route path="/" breadcrumb="Chat" navigationHint="root">
           <CustomChat />
         </Route>
+        <Route path="/chat/*" breadcrumb="Chat">
+          <CustomChat />
+        </Route>
         <Route path="/containers" breadcrumb="Containers" navigationHint="root">
           <ContainerList searchTerm={meta.query.filter ?? ''} />
         </Route>
