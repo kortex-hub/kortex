@@ -3,7 +3,6 @@ import { NavPage } from '@podman-desktop/ui-svelte';
 import { SvelteMap } from 'svelte/reactivity';
 
 import ProviderConfiguring from '/@/lib/dashboard/ProviderConfiguring.svelte';
-import ChatForm from '/@/lib/demo/ChatForm.svelte';
 
 import { providerInfos } from '../../stores/providers';
 import NotificationsBox from './NotificationsBox.svelte';
@@ -43,10 +42,6 @@ function getInitializationContext(id: string): InitializationContext {
     <div class="min-w-full flex-1">
       <NotificationsBox />
       <div class="px-5 space-y-5 h-full">
-
-        <div>
-          <ChatForm/>
-        </div>
         <!--
         <ReleaseNotesBox />
         <ExtensionBanners />
