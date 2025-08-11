@@ -1105,6 +1105,7 @@ export function initExposure(): void {
       internalProviderId: string,
       connectionName: string,
       modelId: string,
+      mcp: Array<string>,
       messages: UIMessage[],
       onChunk: (data: UIMessageChunk) => void,
       onError: (error: string) => void,
@@ -1116,6 +1117,7 @@ export function initExposure(): void {
         internalProviderId,
         connectionName,
         modelId,
+        mcp,
         messages,
         onDataCallbacksStreamTextId
       );

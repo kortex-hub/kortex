@@ -1,4 +1,5 @@
 <script lang="ts">
+import { SvelteSet } from 'svelte/reactivity';
 import { innerWidth } from 'svelte/reactivity/window';
 import { router } from 'tinro';
 
@@ -7,6 +8,7 @@ import type {ModelInfo} from '/@/lib/chat/components/model-info';
 import type { Chat, User } from '../../../../../main/src/chat/db/schema';
 import PlusIcon from './icons/plus.svelte';
 import VercelIcon from './icons/vercel.svelte';
+import MCPSelector from './mcp-selector.svelte';
 import ModelSelector from './model-selector.svelte';
 import SidebarToggle from './sidebar-toggle.svelte';
 import { Button } from './ui/button';
@@ -20,12 +22,15 @@ let {
   readonly,
   models,
   selectedModel = $bindable<ModelInfo | undefined>(),
+  // selected under the form `${internalProviderId}:${connectionName}``
+  selectedMCP = $bindable(new SvelteSet()),
 }: {
   user: User | undefined;
   chat: Chat | undefined;
   readonly: boolean;
   selectedModel: ModelInfo | undefined;
   models: Array<ModelInfo>,
+  selectedMCP: Set<string>,
 } = $props();
 
 const sidebar = useSidebar();
@@ -59,6 +64,7 @@ const sidebar = useSidebar();
 		<ModelSelector
       class="order-1 md:order-2" models={models} bind:value={selectedModel}
     />
+    <MCPSelector bind:selected={selectedMCP}/>
 	{/if}
 
 	{#if !readonly && chat}

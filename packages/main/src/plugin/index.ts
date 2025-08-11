@@ -1213,6 +1213,7 @@ export class PluginSystem {
         internalProviderId: string,
         connectionName: string,
         modelId: string,
+        mcp: Array<string>,
         messages: UIMessage[],
         onDataId: number
       ): Promise<number> => {
@@ -1228,12 +1229,19 @@ export class PluginSystem {
         const modelMessages = convertToModelMessages(messages);
         const currentIds = new Set<string>();
 
+        const toolset = await mcpManager.getToolSet(mcp);
+
         const streaming = streamText({
           model: languageModel,
           messages: modelMessages,
           system: 'You are a friendly assistant! Keep your responses concise and helpful.',
+          tools: toolset,
+
+          stopWhen: stepCountIs(5),
 
           onChunk: ({ chunk }: { chunk: TextStreamPart<ToolSet> }) => {
+            console.log('chunk');
+
             // FIXME: I don't know why but I don't have the text-start events
             // also text-delta does not contain expected delta field but there is a text field
             if (chunk.type === 'text-delta') {
@@ -1253,6 +1261,8 @@ export class PluginSystem {
                 delta: chunk.text,
               });
               //FIXME: should it contain text-end ?
+            } else {
+              console.log('chunk.type is not text-delta', chunk);
             }
           },
         });
