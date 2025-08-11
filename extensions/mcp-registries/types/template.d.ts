@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2022 Red Hat, Inc.
+ * Copyright (C) 2025 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-/**
- * Mock the extension API for vitest.
- * This file is referenced from vitest.config.js file.
- */
-const mcpRegistry = {
-      suggestRegistry: vi.fn(),
-    };
-
-const plugin = {mcpRegistry};
-module.exports = plugin;
+declare module '*.png' {
+  const contents: string;
+  export = contents;
+}

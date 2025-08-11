@@ -1242,6 +1242,57 @@ declare module '@kortex-app/api' {
     export const onDidUnregisterRegistry: Event<Registry>;
   }
 
+
+
+  // An interface for "Default" registries that include the name, URL as well as an icon
+  // This allows an extension to "suggest" a registry to the user that you may
+  // login via a username & password.
+  export interface MCPRegistrySuggestedProvider {
+    name: string;
+    url: string;
+
+    // Optional base64 PNG image (for transparency / non vector icons)
+    icon?: string | { light: string; dark: string };
+  }
+
+  export interface MCPRegistry extends MCPRegistryCreateOptions {
+    // Optional name and icon for the registry when it's being added (used for display within the UI)
+    name?: string;
+    icon?: string | { light: string; dark: string };
+  }
+
+  export interface MCPRegistryCreateOptions {
+    serverUrl: string;
+    alias?: string;
+  }
+
+  export interface MCPRegistryProvider {
+    readonly name: string;
+    create(registryCreateOptions: MCPRegistryCreateOptions): Registry;
+  }
+
+  /**
+   * Handle MCP registries from different sources
+   */
+  export namespace mcpRegistry {
+    export function registerRegistryProvider(registryProvider: MCPRegistryProvider): Disposable;
+
+    // expose a registry from a source
+    export function registerRegistry(registry: Registry): Disposable;
+
+    // remove registry from a source
+    export function unregisterRegistry(registry: Registry): void;
+
+    // suggest a registry to be included on the registry settings page
+    export function suggestRegistry(registry: MCPRegistrySuggestedProvider): Disposable;
+
+    export const onDidRegisterRegistry: Event<MCPRegistry>;
+    export const onDidUpdateRegistry: Event<MCPRegistry>;
+    export const onDidUnregisterRegistry: Event<MCPRegistry>;
+  }
+
+
+
   export namespace tray {
     /**
      * Creates a menu not related to a Provider
