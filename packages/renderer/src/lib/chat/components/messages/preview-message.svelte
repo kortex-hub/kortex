@@ -5,10 +5,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { Button } from '../ui/button';
 import PencilEditIcon from '../icons/pencil-edit.svelte';
 import PreviewAttachment from '../preview-attachment.svelte';
-import { Markdown } from '../markdown';
 import MessageReasoning from '../message-reasoning.svelte';
 import { fly } from 'svelte/transition';
 import type { UIMessage } from '@ai-sdk/svelte';
+import Markdown from "/@/lib/markdown/Markdown.svelte";
 
 let { message, readonly, loading }: { message: UIMessage; readonly: boolean; loading: boolean } = $props();
 
@@ -79,7 +79,7 @@ let mode = $state<'view' | 'edit'>('view');
 									'bg-primary text-primary-foreground rounded-xl px-3 py-2': message.role === 'user'
 								})}
 							>
-								<Markdown md={part.text} />
+								<Markdown markdown={part.text} />
 							</div>
 						</div>
 					{:else if mode === 'edit'}
