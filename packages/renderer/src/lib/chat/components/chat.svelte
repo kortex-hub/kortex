@@ -3,6 +3,7 @@ import { Chat, type UIMessage } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
 import { untrack } from 'svelte';
 import { toast } from 'svelte-sonner';
+import { SvelteSet } from 'svelte/reactivity';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
@@ -41,6 +42,7 @@ function getFirstModel(): ModelInfo | undefined {
 }
 
 let selectedModel = $state<ModelInfo | undefined>(getFirstModel());
+let selectedMCP = new SvelteSet<string>();
 
 let models: Array<ModelInfo> = $derived(
   $providerInfos.reduce((accumulator, current) => {
@@ -63,10 +65,15 @@ const chatHistory = ChatHistory.fromContext();
 const chatClient = $derived(
   new Chat({
     id: chat?.id,
-    transport: new IPCChatTransport(() => {
-      const value = $state.snapshot(selectedModel);
-      if(!value) throw new Error('no model selected');
-      return value;
+    transport: new IPCChatTransport({
+      getModel: (): ModelInfo => {
+        const value = $state.snapshot(selectedModel);
+        if(!value) throw new Error('no model selected');
+        return value;
+      },
+      getMCP: (): Array<string> => {
+        return Array.from($state.snapshot(selectedMCP).values());
+      },
     }),
     // This way, the client is only recreated when the ID changes, allowing us to fully manage messages
     // clientside while still SSRing them on initial load or when we navigate to a different chat.
@@ -101,7 +108,7 @@ let attachments = $state<Attachment[]>([]);
 </script>
 
 <div class="bg-background flex h-full min-w-0 flex-col">
-	<ChatHeader {user} {chat} {readonly} models={models} bind:selectedModel={selectedModel} />
+	<ChatHeader {user} {chat} {readonly} models={models} bind:selectedModel={selectedModel} bind:selectedMCP={selectedMCP} />
 	<Messages
 		{readonly}
 		loading={chatClient.status === 'streaming' || chatClient.status === 'submitted'}
@@ -110,7 +117,7 @@ let attachments = $state<Attachment[]>([]);
 
 	<form class="bg-background mx-auto flex w-full gap-2 px-4 pb-4 md:max-w-3xl md:pb-6">
 		{#if !readonly}
-			<MultimodalInput {attachments} {user} {chatClient} class="flex-1" models={models} />
+			<MultimodalInput {attachments} {user} {chatClient} class="flex-1" />
 		{/if}
 	</form>
 </div>
