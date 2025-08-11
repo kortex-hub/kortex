@@ -55,7 +55,7 @@ const sidebar = useSidebar();
 					</Button>
 				{/snippet}
 			</TooltipTrigger>
-			<TooltipContent>New Chat</TooltipContent>
+			<TooltipContent side="bottom" >New Chat</TooltipContent>
 		</Tooltip>
 	{/if}
 

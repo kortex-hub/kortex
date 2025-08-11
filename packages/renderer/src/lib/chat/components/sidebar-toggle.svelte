@@ -22,5 +22,5 @@ const sidebar = useSidebar();
 			</Button>
 		{/snippet}
 	</TooltipTrigger>
-	<TooltipContent align="start">Toggle Sidebar</TooltipContent>
+	<TooltipContent side="bottom" align="start">Toggle Sidebar</TooltipContent>
 </Tooltip>

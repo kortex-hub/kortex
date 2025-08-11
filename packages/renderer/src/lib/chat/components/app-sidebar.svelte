@@ -47,7 +47,7 @@ const context = useSidebar();
 							</Button>
 						{/snippet}
 					</TooltipTrigger>
-					<TooltipContent align="end">New Chat</TooltipContent>
+					<TooltipContent side="bottom" align="end">New Chat</TooltipContent>
 				</Tooltip>
 			</div>
 		</SidebarMenu>
