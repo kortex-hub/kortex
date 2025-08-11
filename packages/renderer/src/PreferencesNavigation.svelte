@@ -60,7 +60,7 @@ onMount(() => {
     </div>
   </div>
   <div class="h-full overflow-y-auto" style="margin-bottom:auto">
-    {#each [{ title: 'Proxy', href: '/preferences/proxies', visible: true }] as navItem, index (index)}
+    {#each [{ title: 'Proxy', href: '/preferences/proxies', visible: true }, { title: 'MCP Registries', href: '/preferences/mcp-registries', visible: true }] as navItem, index (index)}
       {#if navItem.visible}
         <SettingsNavItem title={navItem.title} href={navItem.href} selected={meta.url === navItem.href} />
       {/if}
