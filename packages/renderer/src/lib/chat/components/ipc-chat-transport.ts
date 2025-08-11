@@ -1,8 +1,14 @@
 import type { ChatRequestOptions, ChatTransport, UIMessage, UIMessageChunk } from 'ai';
+
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 
+interface Dependencies {
+  getModel: () => ModelInfo,
+  getMCP: () => Array<string>
+}
+
 export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
-  constructor(private readonly getModel: () => ModelInfo) {
+  constructor(private readonly dependencies: Dependencies) {
   }
 
   async sendMessages(
@@ -17,7 +23,7 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
     const uiMessages = JSON.parse(JSON.stringify(options.messages));
 
     console.log('IPCChatTransport: uiMessages', uiMessages);
-    const model = this.getModel();
+    const model = this.dependencies.getModel();
     console.log('Selected model', model);
 
     // Buffer to collect chunks
@@ -28,6 +34,7 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
         model.internalProviderId,
         model.connectionName,
         model.label,
+        this.dependencies.getMCP(),
         uiMessages,
         (chunk: UIMessageChunk) => {
           console.log('IPCChatTransport->chunk:', chunk);
