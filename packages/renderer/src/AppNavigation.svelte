@@ -12,7 +12,7 @@ import AuthActions from './lib/authentication/AuthActions.svelte';
 import { CommandRegistry } from './lib/CommandRegistry';
 import NewContentOnDashboardBadge from './lib/dashboard/NewContentOnDashboardBadge.svelte';
 import AccountIcon from './lib/images/AccountIcon.svelte';
-import DashboardIcon from './lib/images/DashboardIcon.svelte';
+import MessageIcon from './lib/images/MessageIcon.svelte';
 import SettingsIcon from './lib/images/SettingsIcon.svelte';
 import NavItem from './lib/ui/NavItem.svelte';
 import NavRegistryEntry from './lib/ui/NavRegistryEntry.svelte';
@@ -73,7 +73,7 @@ function onDidChangeConfigurationCallback(e: Event): void {
     <div class="relative w-full">
       <div class="flex flex-col items-center w-full h-full">
         <div class="flex items-center w-fit h-full relative">
-          <DashboardIcon size={iconSize} />
+          <MessageIcon size={iconSize} />
           <NewContentOnDashboardBadge />
         </div>
         {#if iconWithTitle}
