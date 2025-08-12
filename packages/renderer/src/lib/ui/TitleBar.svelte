@@ -6,7 +6,7 @@ import WindowControlButtons from '../window-control-buttons/ControlButtons.svelt
 
 let platform: string;
 
-const title = 'Podman Desktop';
+const title = 'Kortex';
 
 onMount(async () => {
   platform = await window.getOsPlatform();
