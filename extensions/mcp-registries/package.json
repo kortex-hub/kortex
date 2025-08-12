@@ -21,7 +21,7 @@
     "@kortex-app/api": "workspace:*",
     "adm-zip": "^0.5.16",
     "mkdirp": "^3.0.1",
-    "vite": "^6.3.5",
+    "vite": "^7.1.2",
     "vitest": "^3.1.4"
   }
 }

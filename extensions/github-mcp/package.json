@@ -30,11 +30,11 @@
   },
   "dependencies": {
     "@kortex-app/api": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.17.1"
+    "@modelcontextprotocol/sdk": "^1.17.2"
   },
   "devDependencies": {
     "mkdirp": "^3.0.1",
-    "vite": "^7.0.6",
+    "vite": "^7.1.2",
     "vitest": "^3.2.4"
   }
 }

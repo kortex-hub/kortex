@@ -61,13 +61,13 @@
     "*.{css,json}": "biome format --write"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.1.3",
+    "@biomejs/biome": "^2.1.4",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@electron/fuses": "^1.8.0",
-    "@eslint/compat": "^1.3.1",
+    "@eslint/compat": "^1.3.2",
     "@eslint/eslintrc": "^3.3.1",
-    "@eslint/js": "^9.32.0",
+    "@eslint/js": "^9.33.0",
     "@kortex-app/api": "workspace:",
     "@playwright/test": "1.54.2",
     "@rollup/plugin-commonjs": "^28.0.6",
@@ -88,16 +88,16 @@
     "@types/tar-fs": "^2.0.4",
     "@types/validator": "^13.15.2",
     "@types/ws": "^8.18.1",
-    "@typescript-eslint/eslint-plugin": "^8.38.0",
-    "@typescript-eslint/parser": "^8.38.0",
+    "@typescript-eslint/eslint-plugin": "^8.39.1",
+    "@typescript-eslint/parser": "^8.39.1",
     "@vitest/coverage-v8": "^3.2.4",
     "@vitest/eslint-plugin": "^1.3.4",
     "cross-env": "10.0.0",
     "dts-for-context-bridge": "0.7.1",
-    "electron": "37.2.5",
+    "electron": "37.2.6",
     "electron-builder": "26.0.12",
     "electron-builder-notarize": "^1.5.2",
-    "eslint": "^9.32.0",
+    "eslint": "^9.33.0",
     "eslint-import-resolver-custom-alias": "^1.3.2",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-etc": "^2.0.3",
@@ -112,22 +112,22 @@
     "get-tsconfig": "^4.10.1",
     "globals": "^16.3.0",
     "husky": "^9.1.7",
-    "inversify": "^7.7.0",
+    "inversify": "^7.7.1",
     "js-yaml": "^4.1.0",
-    "lint-staged": "^16.1.4",
+    "lint-staged": "^16.1.5",
     "minimist": "^1.2.8",
     "msw": "^2.10.4",
     "prettier": "^3.6.2",
     "proxy": "^2.2.0",
-    "typescript": "5.8.3",
-    "typescript-eslint": "^8.38.0",
+    "typescript": "5.9.2",
+    "typescript-eslint": "^8.39.1",
     "validator": "^13.15.15",
-    "vite": "^7.0.6",
+    "vite": "^7.1.2",
     "vitest": "^3.2.4",
     "xvfb-maybe": "^0.2.1"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.17.1",
+    "@modelcontextprotocol/sdk": "^1.17.2",
     "@docker/extension-api-client-types": "0.4.2",
     "@kubernetes/client-node": "^1.3.0",
     "@oslojs/crypto": "^1.0.1",
@@ -137,7 +137,7 @@
     "@types/stream-json": "^1.7.8",
     "@types/winreg": "^1.2.36",
     "adm-zip": "^0.5.16",
-    "ai": "^5.0.2",
+    "ai": "^5.0.11",
     "bcrypt-ts": "^7.1.0",
     "better-sqlite3": "^12.2.0",
     "check-disk-space": "^3.4.0",
@@ -151,7 +151,7 @@
     "electron-util": "^0.18.1",
     "express": "^4.21.2",
     "getos": "^3.2.1",
-    "got": "^14.4.2",
+    "got": "^14.4.7",
     "hosted-git-info": "^9.0.0",
     "hpagent": "^1.2.0",
     "minimist": "^1.2.8",
@@ -168,7 +168,7 @@
     "undici": "^7.13.0",
     "win-ca": "^3.5.1",
     "winreg": "^1.2.5",
-    "yaml": "^2.8.0"
+    "yaml": "^2.8.1"
   },
   "pnpm": {
     "overrides": {
@@ -190,5 +190,5 @@
       "@kubernetes/client-node": "patches/@kubernetes__client-node.patch"
     }
   },
-  "packageManager": "pnpm@10.6.2+sha512.47870716bea1572b53df34ad8647b42962bc790ce2bf4562ba0f643237d7302a3d6a8ecef9e4bdfc01d23af1969aa90485d4cebb0b9638fa5ef1daef656f6c1b"
+  "packageManager": "pnpm@10.14.0"
 }

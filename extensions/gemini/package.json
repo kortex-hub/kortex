@@ -29,12 +29,12 @@
     "watch": "vite build --watch"
   },
   "dependencies": {
-    "@kortex-app/api": "workspace:*",
-    "@ai-sdk/google": "^2.0.1"
+    "@ai-sdk/google": "^2.0.5",
+    "@kortex-app/api": "workspace:*"
   },
   "devDependencies": {
     "mkdirp": "^3.0.1",
-    "vite": "^7.0.6",
+    "vite": "^7.1.2",
     "vitest": "^3.2.4"
   }
 }

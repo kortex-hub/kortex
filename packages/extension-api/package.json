@@ -21,6 +21,6 @@
   },
   "devDependencies": {
     "@ai-sdk/provider": "^2.0.0",
-    "@modelcontextprotocol/sdk": "^1.17.1"
+    "@modelcontextprotocol/sdk": "^1.17.2"
   }
 }
