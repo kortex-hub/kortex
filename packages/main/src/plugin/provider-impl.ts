@@ -42,6 +42,7 @@ import type {
   ProviderUpdate,
   VmProviderConnection,
   VmProviderConnectionFactory,
+  WorkflowProviderConnection,
 } from '@kortex-app/api';
 
 import type { ContainerProviderRegistry } from './container-registry.js';
@@ -57,6 +58,7 @@ export class ProviderImpl implements Provider, IDisposable {
   private vmProviderConnections: Set<VmProviderConnection>;
   private inferenceProviderConnections: Set<InferenceProviderConnection>;
   private mcpProviderConnections: Set<MCPProviderConnection>;
+  private workflowProviderConnections: Set<WorkflowProviderConnection>;
 
   // optional factory
   private _containerProviderConnectionFactory: ContainerProviderConnectionFactory | undefined = undefined;
@@ -101,6 +103,7 @@ export class ProviderImpl implements Provider, IDisposable {
     this.vmProviderConnections = new Set();
     this.inferenceProviderConnections = new Set();
     this.mcpProviderConnections = new Set();
+    this.workflowProviderConnections = new Set();
     this._status = providerOptions.status;
     this._version = providerOptions.version;
 
@@ -230,6 +233,10 @@ export class ProviderImpl implements Provider, IDisposable {
     return Array.from(this.mcpProviderConnections.values());
   }
 
+  get workflowConnections(): WorkflowProviderConnection[] {
+    return Array.from(this.workflowProviderConnections.values());
+  }
+
   dispose(): void {
     this.providerRegistry.disposeProvider(this);
   }
@@ -300,6 +307,17 @@ export class ProviderImpl implements Provider, IDisposable {
       this.mcpProviderConnections.delete(connection);
       disposable.dispose();
       this.providerRegistry.onDidUnregisterMCPConnectionCallback(this, connection);
+    });
+  }
+
+  registerWorkflowProviderConnection(connection: WorkflowProviderConnection): Disposable {
+    this.workflowProviderConnections.add(connection);
+    const disposable = this.providerRegistry.registerWorkflowConnection(this, connection);
+    this.providerRegistry.onDidRegisterWorkflowConnectionCallback(this, connection);
+    return Disposable.create(() => {
+      this.workflowProviderConnections.delete(connection);
+      disposable.dispose();
+      this.providerRegistry.onDidUnregisterWorkflowConnectionCallback(this, connection);
     });
   }
 

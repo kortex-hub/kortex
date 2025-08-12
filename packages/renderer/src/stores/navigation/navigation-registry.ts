@@ -25,6 +25,7 @@ import { EventStore } from '/@/stores/event-store';
 
 import { configurationProperties } from '../configurationProperties';
 import { createNavigationExtensionEntry, createNavigationExtensionGroup } from './navigation-registry-extension.svelte';
+import { createNavigationWorkflowsEntry } from '/@/stores/navigation/navigation-registry-workflows.svelte';
 
 export interface NavigationRegistryEntry {
   name: string;
@@ -58,6 +59,7 @@ let values: NavigationRegistryEntry[] = [];
 let initialized = false;
 const init = (): void => {
   values.push(createNavigationExtensionEntry());
+  values.push(createNavigationWorkflowsEntry());
   values.push(createNavigationExtensionGroup());
   hideItems().catch((err: unknown) => console.error('Error hiding navigation items', err));
 };

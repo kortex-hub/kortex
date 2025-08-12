@@ -49,15 +49,18 @@ import type {
   RegisterKubernetesConnectionEvent,
   RegisterMCPConnectionEvent,
   RegisterVmConnectionEvent,
+  RegisterWorkflowConnectionEvent,
   UnregisterContainerConnectionEvent,
   UnregisterInferenceConnectionEvent,
   UnregisterKubernetesConnectionEvent,
   UnregisterMCPConnectionEvent,
   UnregisterVmConnectionEvent,
+  UnregisterWorkflowConnectionEvent,
   UpdateContainerConnectionEvent,
   UpdateKubernetesConnectionEvent,
   UpdateVmConnectionEvent,
   VmProviderConnection,
+  WorkflowProviderConnection,
 } from '@kortex-app/api';
 import type { Transport as MCPTransport } from '@modelcontextprotocol/sdk/shared/transport.d.ts';
 import { inject, injectable } from 'inversify';
@@ -126,45 +129,35 @@ export class ProviderRegistry {
   protected vmProviders: Map<string, VmProviderConnection> = new Map();
   protected inferenceProviders: Map<string, InferenceProviderConnection> = new Map();
   protected mcpProviders: Map<string, MCPProviderConnection> = new Map();
+  protected workflowProviders: Map<string, WorkflowProviderConnection> = new Map();
 
   private readonly _onDidUpdateProvider = new Emitter<ProviderEvent>();
   readonly onDidUpdateProvider: Event<ProviderEvent> = this._onDidUpdateProvider.event;
 
-  private readonly _onBeforeDidUpdateContainerConnection = new Emitter<UpdateContainerConnectionEvent>();
-  readonly onBeforeDidUpdateContainerConnection: Event<UpdateContainerConnectionEvent> =
-    this._onBeforeDidUpdateContainerConnection.event;
-  private readonly _onDidUpdateContainerConnection = new Emitter<UpdateContainerConnectionEvent>();
-  readonly onDidUpdateContainerConnection: Event<UpdateContainerConnectionEvent> =
-    this._onDidUpdateContainerConnection.event;
-  private readonly _onAfterDidUpdateContainerConnection = new Emitter<UpdateContainerConnectionEvent>();
-  readonly onAfterDidUpdateContainerConnection: Event<UpdateContainerConnectionEvent> =
-    this._onAfterDidUpdateContainerConnection.event;
+  // VM
+  private readonly _onDidRegisterVmConnection = new Emitter<RegisterVmConnectionEvent>();
+  readonly onDidRegisterVmConnection: Event<RegisterVmConnectionEvent> = this._onDidRegisterVmConnection.event;
 
-  private readonly _onDidUpdateKubernetesConnection = new Emitter<UpdateKubernetesConnectionEvent>();
-  readonly onDidUpdateKubernetesConnection: Event<UpdateKubernetesConnectionEvent> =
-    this._onDidUpdateKubernetesConnection.event;
+  private readonly _onDidUnregisterVmConnection = new Emitter<UnregisterVmConnectionEvent>();
+  readonly onDidUnregisterVmConnection: Event<UnregisterVmConnectionEvent> = this._onDidUnregisterVmConnection.event;
 
   private readonly _onDidUpdateVmConnection = new Emitter<UpdateVmConnectionEvent>();
   readonly onDidUpdateVmConnection: Event<UpdateVmConnectionEvent> = this._onDidUpdateVmConnection.event;
 
-  private readonly _onDidUnregisterContainerConnection = new Emitter<UnregisterContainerConnectionEvent>();
-  readonly onDidUnregisterContainerConnection: Event<UnregisterContainerConnectionEvent> =
-    this._onDidUnregisterContainerConnection.event;
+  // Kubernetes
+  private readonly _onDidRegisterKubernetesConnection = new Emitter<RegisterKubernetesConnectionEvent>();
+  readonly onDidRegisterKubernetesConnection: Event<RegisterKubernetesConnectionEvent> =
+    this._onDidRegisterKubernetesConnection.event;
 
   private readonly _onDidUnregisterKubernetesConnection = new Emitter<UnregisterKubernetesConnectionEvent>();
   readonly onDidUnregisterKubernetesConnection: Event<UnregisterKubernetesConnectionEvent> =
     this._onDidUnregisterKubernetesConnection.event;
 
-  private readonly _onDidUnregisterVmConnection = new Emitter<UnregisterVmConnectionEvent>();
-  readonly onDidUnregisterVmConnection: Event<UnregisterVmConnectionEvent> = this._onDidUnregisterVmConnection.event;
+  private readonly _onDidUpdateKubernetesConnection = new Emitter<UpdateKubernetesConnectionEvent>();
+  readonly onDidUpdateKubernetesConnection: Event<UpdateKubernetesConnectionEvent> =
+    this._onDidUpdateKubernetesConnection.event;
 
-  private readonly _onDidRegisterKubernetesConnection = new Emitter<RegisterKubernetesConnectionEvent>();
-  readonly onDidRegisterKubernetesConnection: Event<RegisterKubernetesConnectionEvent> =
-    this._onDidRegisterKubernetesConnection.event;
-
-  private readonly _onDidRegisterVmConnection = new Emitter<RegisterVmConnectionEvent>();
-  readonly onDidRegisterVmConnection: Event<RegisterVmConnectionEvent> = this._onDidRegisterVmConnection.event;
-
+  // Inference
   private readonly _onDidRegisterInferenceConnection = new Emitter<RegisterInferenceConnectionEvent>();
   readonly onDidRegisterInferenceConnection: Event<RegisterInferenceConnectionEvent> =
     this._onDidRegisterInferenceConnection.event;
@@ -173,15 +166,40 @@ export class ProviderRegistry {
   readonly onDidUnregisterInferenceConnection: Event<UnregisterInferenceConnectionEvent> =
     this._onDidUnregisterInferenceConnection.event;
 
+  // MCP
   private readonly _onDidRegisterMCPConnection = new Emitter<RegisterMCPConnectionEvent>();
   readonly onDidRegisterMCPConnection: Event<RegisterMCPConnectionEvent> = this._onDidRegisterMCPConnection.event;
 
   private readonly _onDidUnregisterMCPConnection = new Emitter<UnregisterMCPConnectionEvent>();
   readonly onDidUnregisterMCPConnection: Event<UnregisterMCPConnectionEvent> = this._onDidUnregisterMCPConnection.event;
 
+  // Workflow
+  private readonly _onDidRegisterWorkflowConnection = new Emitter<RegisterWorkflowConnectionEvent>();
+  readonly onDidRegisterWorkflowConnection: Event<RegisterWorkflowConnectionEvent> = this._onDidRegisterWorkflowConnection.event;
+
+  private readonly _onDidUnregisterWorkflowConnection = new Emitter<UnregisterWorkflowConnectionEvent>();
+  readonly onDidUnregisterWorkflowConnection: Event<UnregisterWorkflowConnectionEvent> = this._onDidUnregisterWorkflowConnection.event;
+
+  // Container
   private readonly _onDidRegisterContainerConnection = new Emitter<RegisterContainerConnectionEvent>();
   readonly onDidRegisterContainerConnection: Event<RegisterContainerConnectionEvent> =
     this._onDidRegisterContainerConnection.event;
+
+  private readonly _onDidUnregisterContainerConnection = new Emitter<UnregisterContainerConnectionEvent>();
+  readonly onDidUnregisterContainerConnection: Event<UnregisterContainerConnectionEvent> =
+    this._onDidUnregisterContainerConnection.event;
+
+  private readonly _onBeforeDidUpdateContainerConnection = new Emitter<UpdateContainerConnectionEvent>();
+  readonly onBeforeDidUpdateContainerConnection: Event<UpdateContainerConnectionEvent> =
+    this._onBeforeDidUpdateContainerConnection.event;
+
+  private readonly _onDidUpdateContainerConnection = new Emitter<UpdateContainerConnectionEvent>();
+  readonly onDidUpdateContainerConnection: Event<UpdateContainerConnectionEvent> =
+    this._onDidUpdateContainerConnection.event;
+
+  private readonly _onAfterDidUpdateContainerConnection = new Emitter<UpdateContainerConnectionEvent>();
+  readonly onAfterDidUpdateContainerConnection: Event<UpdateContainerConnectionEvent> =
+    this._onAfterDidUpdateContainerConnection.event;
 
   constructor(
     @inject(ApiSenderType)
@@ -1268,6 +1286,10 @@ export class ProviderRegistry {
     return 'transport' in connection;
   }
 
+  isWorkflowConnection(connection: ProviderConnection): connection is WorkflowProviderConnection {
+    return 'workflow' in connection;
+  }
+
   async startProviderConnection(
     internalProviderId: string,
     providerConnectionInfo: ProviderConnectionInfo,
@@ -1503,6 +1525,13 @@ export class ProviderRegistry {
     this._onDidRegisterMCPConnection.fire({ providerId: provider.id, connection: mcpProviderConnection });
   }
 
+  onDidRegisterWorkflowConnectionCallback(provider: ProviderImpl, workflowProviderConnection: WorkflowProviderConnection): void {
+    this.connectionLifecycleContexts.set(workflowProviderConnection, new LifecycleContextImpl());
+    this.apiSender.send('provider-register-workflow-connection', { name: workflowProviderConnection.name });
+    this._onDidRegisterWorkflowConnection.fire({ providerId: provider.id, connection: workflowProviderConnection });
+  }
+
+
   onDidChangeContainerProviderConnectionStatus(
     provider: ProviderImpl,
     containerConnection: ContainerProviderConnection,
@@ -1556,6 +1585,11 @@ export class ProviderRegistry {
   onDidUnregisterMCPConnectionCallback(provider: ProviderImpl, mcpProviderConnection: MCPProviderConnection): void {
     this.apiSender.send('provider-unregister-mcp-connection', { name: mcpProviderConnection.name });
     this._onDidUnregisterMCPConnection.fire({ providerId: provider.id, connectionName: mcpProviderConnection.name });
+  }
+
+  onDidUnregisterWorkflowConnectionCallback(provider: ProviderImpl, connection: WorkflowProviderConnection): void {
+    this.apiSender.send('provider-unregister-workflow-connection', { name: connection.name });
+    this._onDidUnregisterWorkflowConnection.fire({ providerId: provider.id, connectionName: connection.name });
   }
 
   onDidUnregisterVmConnectionCallback(provider: ProviderImpl, vmProviderConnection: VmProviderConnection): void {
@@ -1706,6 +1740,33 @@ export class ProviderRegistry {
     });
   }
 
+  registerWorkflowConnection(provider: Provider, workflowProviderConnection: WorkflowProviderConnection): Disposable {
+    const providerName = workflowProviderConnection.name;
+    const id = `${provider.id}.${providerName}`;
+    this.workflowProviders.set(id, workflowProviderConnection);
+    this.telemetryService.track('registerWorkflowProviderConnection', {
+      name: workflowProviderConnection.name,
+      total: this.mcpProviders.size,
+    });
+
+    let previousStatus = workflowProviderConnection.status();
+
+    // track the status of the provider
+    const timer = setInterval(() => {
+      const newStatus = workflowProviderConnection.status();
+      if (newStatus !== previousStatus) {
+        this.apiSender.send('provider-change', {});
+        previousStatus = newStatus;
+      }
+    }, 2000);
+
+    return Disposable.create(() => {
+      clearInterval(timer);
+      this.workflowProviders.delete(id);
+      this.apiSender.send('provider-change', {});
+    });
+  }
+
   async shellInProviderConnection(
     internalProviderId: string,
     providerConnectionInfo: ProviderConnectionInfo,
@@ -1726,6 +1787,7 @@ export class ProviderRegistry {
         !this.isKubernetesConnection(containerConnection) &&
         !this.isInferenceConnection(containerConnection) &&
         !this.isMCPConnection(containerConnection) &&
+        !this.isWorkflowConnection(containerConnection) &&
         providerConnectionInfo.status === 'started'
       ) {
         shellAccess = containerConnection.shellAccess;
@@ -1808,6 +1870,13 @@ export class ProviderRegistry {
     if (!provider) throw new Error('Provider not found');
 
     return provider.mcpConnections;
+  }
+
+  getWorkflowProviderConnection(internalProviderId: string): Array<WorkflowProviderConnection> {
+    const provider = this.providers.get(internalProviderId);
+    if (!provider) throw new Error('Provider not found');
+
+    return provider.workflowConnections;
   }
 
   protected fireUpdateContainerConnectionEvents(

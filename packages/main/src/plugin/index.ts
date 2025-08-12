@@ -218,6 +218,8 @@ import { TaskConnectionUtils } from './util/task-connection-utils.js';
 import { ViewRegistry } from './view-registry.js';
 import { WebviewRegistry } from './webview/webview-registry.js';
 import { WelcomeInit } from './welcome/welcome-init.js';
+import { WorkflowManager } from '/@/plugin/workflow/workflow-manager.js';
+import type { WorkflowInfo } from '/@api/workflow-info.js';
 
 // workaround for ESM
 const checkDiskSpace: (path: string) => Promise<{ free: number }> = checkDiskSpacePkg as unknown as (
@@ -530,6 +532,7 @@ export class PluginSystem {
 
     container.bind<ProviderRegistry>(ProviderRegistry).toSelf().inSingletonScope();
     container.bind<MCPManager>(MCPManager).toSelf().inSingletonScope();
+    container.bind<WorkflowManager>(WorkflowManager).toSelf().inSingletonScope();
     container.bind<TrayMenuRegistry>(TrayMenuRegistry).toSelf().inSingletonScope();
     container.bind<InputQuickPickRegistry>(InputQuickPickRegistry).toSelf().inSingletonScope();
     container.bind<FilesystemMonitoring>(FilesystemMonitoring).toSelf().inSingletonScope();
@@ -603,6 +606,9 @@ export class PluginSystem {
 
     const mcpManager = container.get<MCPManager>(MCPManager);
     mcpManager.init();
+
+    const workflowManager = container.get<WorkflowManager>(WorkflowManager);
+    workflowManager.init();
 
     providerRegistry.addProviderListener((name: string, providerInfo: ProviderInfo) => {
       if (name === 'provider:update-status') {
@@ -805,6 +811,15 @@ export class PluginSystem {
     this.ipcHandle('container-provider-registry:listPods', async (): Promise<PodInfo[]> => {
       return containerProviderRegistry.listPods();
     });
+
+    this.ipcHandle('workflows:list', async (): Promise<Array<WorkflowInfo>> => {
+      return workflowManager.all()
+    });
+
+    this.ipcHandle('workflows:refresh', async (): Promise<void> => {
+      return workflowManager.refresh()
+    });
+
     this.ipcHandle('container-provider-registry:listNetworks', async (): Promise<NetworkInspectInfo[]> => {
       return containerProviderRegistry.listNetworks();
     });

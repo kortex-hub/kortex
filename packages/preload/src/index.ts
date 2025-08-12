@@ -124,6 +124,7 @@ import type {
 import type { Guide } from '../../main/src/plugin/learning-center/learning-center-api';
 import type { ExtensionBanner, RecommendedRegistry } from '../../main/src/plugin/recommendations/recommendations-api';
 import type { IDisposable } from '../../main/src/plugin/types/disposable';
+import type { WorkflowInfo } from '/@api/workflow-info';
 
 export type DialogResultCallback = (openDialogReturnValue: Electron.OpenDialogReturnValue) => void;
 export type OpenSaveDialogResultCallback = (result: string | string[] | undefined) => void;
@@ -285,6 +286,15 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld('listPods', async (): Promise<PodInfo[]> => {
     return ipcInvoke('container-provider-registry:listPods');
   });
+
+  contextBridge.exposeInMainWorld('listWorkflows', async (): Promise<Array<WorkflowInfo>> => {
+    return ipcInvoke('workflows:list');
+  });
+
+  contextBridge.exposeInMainWorld('refreshWorkflows', async (): Promise<void> => {
+    return ipcInvoke('workflows:refresh');
+  });
+
 
   contextBridge.exposeInMainWorld('reconnectContainerProviders', async (): Promise<PodInfo[]> => {
     return ipcInvoke('container-provider-registry:reconnectContainerProviders');

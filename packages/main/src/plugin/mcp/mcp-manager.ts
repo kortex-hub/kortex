@@ -19,7 +19,7 @@
 import { MCPProviderConnection } from '@kortex-app/api';
 import type { ToolSet } from 'ai';
 import { experimental_createMCPClient } from 'ai';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, preDestroy } from 'inversify';
 
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 
@@ -40,6 +40,7 @@ export class MCPManager implements AsyncDisposable {
   /**
    * Cleanup all clients
    */
+  @preDestroy()
   async [Symbol.asyncDispose](): Promise<void> {
     await Promise.all(Array.from(this.#client.values().map(({ close }) => close())));
   }
@@ -89,7 +90,9 @@ export class MCPManager implements AsyncDisposable {
 
     // register listener for unregistered MCP connections
     this.provider.onDidUnregisterMCPConnection(({ providerId, connectionName }) => {
-      const client = this.#client.get(this.getKey(providerId, connectionName));
+      const internalProviderId = this.provider.getMatchingProviderInternalId(providerId);
+
+      const client = this.#client.get(this.getKey(internalProviderId, connectionName));
       if (client) {
         client.close().catch(console.error);
         this.#client.delete(this.getKey(providerId, connectionName));

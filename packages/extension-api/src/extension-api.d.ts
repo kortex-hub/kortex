@@ -404,6 +404,21 @@ declare module '@kortex-app/api' {
     vmTypeDisplayName?: string;
   }
 
+  export interface Workflow {
+    path: string;
+  }
+
+  export interface WorkflowProviderConnection {
+    name: string;
+    displayName?: string;
+    status(): ProviderConnectionStatus;
+    lifecycle?: ProviderConnectionLifecycle;
+    workflow: {
+      all(): Promise<Array<Workflow>>,
+      onDidChange: Event<void>;
+    }
+  }
+
   export interface PodCreatePortOptions {
     host_ip: string;
     container_port: number;
@@ -556,7 +571,8 @@ declare module '@kortex-app/api' {
     | KubernetesProviderConnection
     | VmProviderConnection
     | InferenceProviderConnection
-    | MCPProviderConnection;
+    | MCPProviderConnection
+    | WorkflowProviderConnection;
 
   // common set of options for creating a provider
   export interface ProviderConnectionFactory {
@@ -740,6 +756,8 @@ declare module '@kortex-app/api' {
     registerInferenceProviderConnection(connection: InferenceProviderConnection): Disposable;
     registerMCPProviderConnection(connection: MCPProviderConnection): Disposable;
 
+    registerWorkflowProviderConnection(connection: WorkflowProviderConnection): Disposable;
+
     registerLifecycle(lifecycle: ProviderLifecycle): Disposable;
 
     // register installation flow
@@ -892,6 +910,15 @@ declare module '@kortex-app/api' {
     connection: MCPProviderConnection;
   }
   export interface UnregisterMCPConnectionEvent {
+    providerId: string;
+    connectionName: string;
+  }
+
+  export interface RegisterWorkflowConnectionEvent {
+    providerId: string;
+    connection: WorkflowProviderConnection;
+  }
+  export interface UnregisterWorkflowConnectionEvent {
     providerId: string;
     connectionName: string;
   }
