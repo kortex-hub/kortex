@@ -8,7 +8,7 @@ import SearchButton from './SearchButton.svelte';
 
 let platform: string = $state('');
 
-const title = 'Podman Desktop';
+const title = 'Kortex';
 let commandPalletVisible = $state(false);
 let globalSearchbar = $state(false);
 
