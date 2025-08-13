@@ -49,6 +49,13 @@ export interface NavigationParameters {
   [NavigationPage.CLI_TOOLS]: never;
   [NavigationPage.EDIT_CONTAINER_CONNECTION]: { provider: string; name: string };
   [NavigationPage.PROVIDER_TASK]: { internalId: string; taskId: number | undefined };
+  // flows
+  [NavigationPage.FLOWS]: never;
+  [NavigationPage.FLOW_DETAILS]: {
+    providerId: string;
+    connectionName: string;
+    flowId: string;
+  };
 }
 
 // the parameters property is optional when the NavigationParameters say it is

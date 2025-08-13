@@ -404,6 +404,21 @@ declare module '@kortex-app/api' {
     vmTypeDisplayName?: string;
   }
 
+  export interface Flow {
+    path: string;
+  }
+
+  export interface FlowProviderConnection {
+    name: string;
+    displayName?: string;
+    status(): ProviderConnectionStatus;
+    lifecycle?: ProviderConnectionLifecycle;
+    flow: {
+      all(): Promise<Array<Flow>>,
+      onDidChange: Event<void>;
+    }
+  }
+
   export interface PodCreatePortOptions {
     host_ip: string;
     container_port: number;
@@ -556,7 +571,8 @@ declare module '@kortex-app/api' {
     | KubernetesProviderConnection
     | VmProviderConnection
     | InferenceProviderConnection
-    | MCPProviderConnection;
+    | MCPProviderConnection
+    | FlowProviderConnection;
 
   // common set of options for creating a provider
   export interface ProviderConnectionFactory {
@@ -740,6 +756,8 @@ declare module '@kortex-app/api' {
     registerInferenceProviderConnection(connection: InferenceProviderConnection): Disposable;
     registerMCPProviderConnection(connection: MCPProviderConnection): Disposable;
 
+    registerFlowProviderConnection(connection: FlowProviderConnection): Disposable;
+
     registerLifecycle(lifecycle: ProviderLifecycle): Disposable;
 
     // register installation flow
@@ -892,6 +910,15 @@ declare module '@kortex-app/api' {
     connection: MCPProviderConnection;
   }
   export interface UnregisterMCPConnectionEvent {
+    providerId: string;
+    connectionName: string;
+  }
+
+  export interface RegisterFlowConnectionEvent {
+    providerId: string;
+    connection: FlowProviderConnection;
+  }
+  export interface UnregisterFlowConnectionEvent {
     providerId: string;
     connectionName: string;
   }

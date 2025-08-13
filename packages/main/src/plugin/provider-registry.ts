@@ -21,6 +21,7 @@ import type {
   AuditResult,
   CancellationToken,
   ContainerProviderConnection,
+  FlowProviderConnection,
   InferenceProviderConnection,
   KubernetesProviderConnection,
   Logger,
@@ -45,11 +46,13 @@ import type {
   ProviderStatus,
   ProviderUpdate,
   RegisterContainerConnectionEvent,
+  RegisterFlowConnectionEvent,
   RegisterInferenceConnectionEvent,
   RegisterKubernetesConnectionEvent,
   RegisterMCPConnectionEvent,
   RegisterVmConnectionEvent,
   UnregisterContainerConnectionEvent,
+  UnregisterFlowConnectionEvent,
   UnregisterInferenceConnectionEvent,
   UnregisterKubernetesConnectionEvent,
   UnregisterMCPConnectionEvent,
@@ -70,6 +73,7 @@ import {
   ProviderConnectionInfo,
   ProviderConnectionType,
   ProviderContainerConnectionInfo,
+  ProviderFlowConnectionInfo,
   ProviderInferenceConnectionInfo,
   ProviderInfo,
   ProviderKubernetesConnectionInfo,
@@ -126,45 +130,35 @@ export class ProviderRegistry {
   protected vmProviders: Map<string, VmProviderConnection> = new Map();
   protected inferenceProviders: Map<string, InferenceProviderConnection> = new Map();
   protected mcpProviders: Map<string, MCPProviderConnection> = new Map();
+  protected flowProviders: Map<string, FlowProviderConnection> = new Map();
 
   private readonly _onDidUpdateProvider = new Emitter<ProviderEvent>();
   readonly onDidUpdateProvider: Event<ProviderEvent> = this._onDidUpdateProvider.event;
 
-  private readonly _onBeforeDidUpdateContainerConnection = new Emitter<UpdateContainerConnectionEvent>();
-  readonly onBeforeDidUpdateContainerConnection: Event<UpdateContainerConnectionEvent> =
-    this._onBeforeDidUpdateContainerConnection.event;
-  private readonly _onDidUpdateContainerConnection = new Emitter<UpdateContainerConnectionEvent>();
-  readonly onDidUpdateContainerConnection: Event<UpdateContainerConnectionEvent> =
-    this._onDidUpdateContainerConnection.event;
-  private readonly _onAfterDidUpdateContainerConnection = new Emitter<UpdateContainerConnectionEvent>();
-  readonly onAfterDidUpdateContainerConnection: Event<UpdateContainerConnectionEvent> =
-    this._onAfterDidUpdateContainerConnection.event;
+  // VM
+  private readonly _onDidRegisterVmConnection = new Emitter<RegisterVmConnectionEvent>();
+  readonly onDidRegisterVmConnection: Event<RegisterVmConnectionEvent> = this._onDidRegisterVmConnection.event;
 
-  private readonly _onDidUpdateKubernetesConnection = new Emitter<UpdateKubernetesConnectionEvent>();
-  readonly onDidUpdateKubernetesConnection: Event<UpdateKubernetesConnectionEvent> =
-    this._onDidUpdateKubernetesConnection.event;
+  private readonly _onDidUnregisterVmConnection = new Emitter<UnregisterVmConnectionEvent>();
+  readonly onDidUnregisterVmConnection: Event<UnregisterVmConnectionEvent> = this._onDidUnregisterVmConnection.event;
 
   private readonly _onDidUpdateVmConnection = new Emitter<UpdateVmConnectionEvent>();
   readonly onDidUpdateVmConnection: Event<UpdateVmConnectionEvent> = this._onDidUpdateVmConnection.event;
 
-  private readonly _onDidUnregisterContainerConnection = new Emitter<UnregisterContainerConnectionEvent>();
-  readonly onDidUnregisterContainerConnection: Event<UnregisterContainerConnectionEvent> =
-    this._onDidUnregisterContainerConnection.event;
+  // Kubernetes
+  private readonly _onDidRegisterKubernetesConnection = new Emitter<RegisterKubernetesConnectionEvent>();
+  readonly onDidRegisterKubernetesConnection: Event<RegisterKubernetesConnectionEvent> =
+    this._onDidRegisterKubernetesConnection.event;
 
   private readonly _onDidUnregisterKubernetesConnection = new Emitter<UnregisterKubernetesConnectionEvent>();
   readonly onDidUnregisterKubernetesConnection: Event<UnregisterKubernetesConnectionEvent> =
     this._onDidUnregisterKubernetesConnection.event;
 
-  private readonly _onDidUnregisterVmConnection = new Emitter<UnregisterVmConnectionEvent>();
-  readonly onDidUnregisterVmConnection: Event<UnregisterVmConnectionEvent> = this._onDidUnregisterVmConnection.event;
+  private readonly _onDidUpdateKubernetesConnection = new Emitter<UpdateKubernetesConnectionEvent>();
+  readonly onDidUpdateKubernetesConnection: Event<UpdateKubernetesConnectionEvent> =
+    this._onDidUpdateKubernetesConnection.event;
 
-  private readonly _onDidRegisterKubernetesConnection = new Emitter<RegisterKubernetesConnectionEvent>();
-  readonly onDidRegisterKubernetesConnection: Event<RegisterKubernetesConnectionEvent> =
-    this._onDidRegisterKubernetesConnection.event;
-
-  private readonly _onDidRegisterVmConnection = new Emitter<RegisterVmConnectionEvent>();
-  readonly onDidRegisterVmConnection: Event<RegisterVmConnectionEvent> = this._onDidRegisterVmConnection.event;
-
+  // Inference
   private readonly _onDidRegisterInferenceConnection = new Emitter<RegisterInferenceConnectionEvent>();
   readonly onDidRegisterInferenceConnection: Event<RegisterInferenceConnectionEvent> =
     this._onDidRegisterInferenceConnection.event;
@@ -173,15 +167,41 @@ export class ProviderRegistry {
   readonly onDidUnregisterInferenceConnection: Event<UnregisterInferenceConnectionEvent> =
     this._onDidUnregisterInferenceConnection.event;
 
+  // MCP
   private readonly _onDidRegisterMCPConnection = new Emitter<RegisterMCPConnectionEvent>();
   readonly onDidRegisterMCPConnection: Event<RegisterMCPConnectionEvent> = this._onDidRegisterMCPConnection.event;
 
   private readonly _onDidUnregisterMCPConnection = new Emitter<UnregisterMCPConnectionEvent>();
   readonly onDidUnregisterMCPConnection: Event<UnregisterMCPConnectionEvent> = this._onDidUnregisterMCPConnection.event;
 
+  // Flow
+  private readonly _onDidRegisterFlowConnection = new Emitter<RegisterFlowConnectionEvent>();
+  readonly onDidRegisterFlowConnection: Event<RegisterFlowConnectionEvent> = this._onDidRegisterFlowConnection.event;
+
+  private readonly _onDidUnregisterFlowConnection = new Emitter<UnregisterFlowConnectionEvent>();
+  readonly onDidUnregisterFlowConnection: Event<UnregisterFlowConnectionEvent> =
+    this._onDidUnregisterFlowConnection.event;
+
+  // Container
   private readonly _onDidRegisterContainerConnection = new Emitter<RegisterContainerConnectionEvent>();
   readonly onDidRegisterContainerConnection: Event<RegisterContainerConnectionEvent> =
     this._onDidRegisterContainerConnection.event;
+
+  private readonly _onDidUnregisterContainerConnection = new Emitter<UnregisterContainerConnectionEvent>();
+  readonly onDidUnregisterContainerConnection: Event<UnregisterContainerConnectionEvent> =
+    this._onDidUnregisterContainerConnection.event;
+
+  private readonly _onBeforeDidUpdateContainerConnection = new Emitter<UpdateContainerConnectionEvent>();
+  readonly onBeforeDidUpdateContainerConnection: Event<UpdateContainerConnectionEvent> =
+    this._onBeforeDidUpdateContainerConnection.event;
+
+  private readonly _onDidUpdateContainerConnection = new Emitter<UpdateContainerConnectionEvent>();
+  readonly onDidUpdateContainerConnection: Event<UpdateContainerConnectionEvent> =
+    this._onDidUpdateContainerConnection.event;
+
+  private readonly _onAfterDidUpdateContainerConnection = new Emitter<UpdateContainerConnectionEvent>();
+  readonly onAfterDidUpdateContainerConnection: Event<UpdateContainerConnectionEvent> =
+    this._onAfterDidUpdateContainerConnection.event;
 
   constructor(
     @inject(ApiSenderType)
@@ -715,6 +735,10 @@ export class ProviderRegistry {
     return this.getProviderConnectionInfo(connection) as ProviderMCPConnectionInfo;
   }
 
+  public getProviderFlowConnectionInfo(connection: FlowProviderConnection): ProviderFlowConnectionInfo {
+    return this.getProviderConnectionInfo(connection) as ProviderFlowConnectionInfo;
+  }
+
   private getProviderConnectionInfo(connection: ProviderConnection): ProviderConnectionInfo {
     let providerConnection: ProviderConnectionInfo;
     if (this.isContainerConnection(connection)) {
@@ -756,6 +780,12 @@ export class ProviderRegistry {
         name: connection.name,
         status: connection.status(),
         connectionType: ProviderConnectionType.MCP,
+      };
+    } else if (this.isFlowConnection(connection)) {
+      providerConnection = {
+        name: connection.name,
+        status: connection.status(),
+        connectionType: ProviderConnectionType.FLOW,
       };
     } else {
       providerConnection = {
@@ -800,6 +830,9 @@ export class ProviderRegistry {
     });
     const mcpConnections: ProviderMCPConnectionInfo[] = provider.mcpConnections.map(connection => {
       return this.getProviderMCPConnectionInfo(connection);
+    });
+    const flowConnections: ProviderFlowConnectionInfo[] = provider.flowConnections.map(connection => {
+      return this.getProviderFlowConnectionInfo(connection);
     });
 
     // container connection factory ?
@@ -902,6 +935,7 @@ export class ProviderRegistry {
       vmConnections,
       inferenceConnections,
       mcpConnections,
+      flowConnections,
       status: provider.status,
       containerProviderConnectionCreation,
       kubernetesProviderConnectionCreation,
@@ -1214,6 +1248,21 @@ export class ProviderRegistry {
     return connection;
   }
 
+  protected getMatchingFlowConnectionFromProvider(
+    internalProviderId: string,
+    providerFlowConnectionInfo: ProviderFlowConnectionInfo,
+  ): FlowProviderConnection {
+    // grab the correct provider
+    const provider = this.getMatchingProvider(internalProviderId);
+
+    // grab the correct kubernetes connection
+    const connection = provider.flowConnections.find(connection => connection.name === providerFlowConnectionInfo.name);
+    if (!connection) {
+      throw new Error(`no flow connection matching provider id ${internalProviderId}`);
+    }
+    return connection;
+  }
+
   getMatchingConnectionFromProvider(
     internalProviderId: string,
     providerContainerConnectionInfo: ProviderConnectionInfo | ContainerProviderConnection,
@@ -1232,6 +1281,8 @@ export class ProviderRegistry {
         return this.getMatchingInferenceConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
       case ProviderConnectionType.MCP:
         return this.getMatchingMCPConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
+      case ProviderConnectionType.FLOW:
+        return this.getMatchingFlowConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
     }
   }
 
@@ -1266,6 +1317,10 @@ export class ProviderRegistry {
 
   isMCPConnection(connection: ProviderConnection): connection is MCPProviderConnection {
     return 'transport' in connection;
+  }
+
+  isFlowConnection(connection: ProviderConnection): connection is FlowProviderConnection {
+    return 'flow' in connection;
   }
 
   async startProviderConnection(
@@ -1503,6 +1558,12 @@ export class ProviderRegistry {
     this._onDidRegisterMCPConnection.fire({ providerId: provider.id, connection: mcpProviderConnection });
   }
 
+  onDidRegisterFlowConnectionCallback(provider: ProviderImpl, connection: FlowProviderConnection): void {
+    this.connectionLifecycleContexts.set(connection, new LifecycleContextImpl());
+    this.apiSender.send('provider-register-flow-connection', { name: connection.name });
+    this._onDidRegisterFlowConnection.fire({ providerId: provider.id, connection: connection });
+  }
+
   onDidChangeContainerProviderConnectionStatus(
     provider: ProviderImpl,
     containerConnection: ContainerProviderConnection,
@@ -1556,6 +1617,11 @@ export class ProviderRegistry {
   onDidUnregisterMCPConnectionCallback(provider: ProviderImpl, mcpProviderConnection: MCPProviderConnection): void {
     this.apiSender.send('provider-unregister-mcp-connection', { name: mcpProviderConnection.name });
     this._onDidUnregisterMCPConnection.fire({ providerId: provider.id, connectionName: mcpProviderConnection.name });
+  }
+
+  onDidUnregisterFlowConnectionCallback(provider: ProviderImpl, connection: FlowProviderConnection): void {
+    this.apiSender.send('provider-unregister-flow-connection', { name: connection.name });
+    this._onDidUnregisterFlowConnection.fire({ providerId: provider.id, connectionName: connection.name });
   }
 
   onDidUnregisterVmConnectionCallback(provider: ProviderImpl, vmProviderConnection: VmProviderConnection): void {
@@ -1706,6 +1772,33 @@ export class ProviderRegistry {
     });
   }
 
+  registerFlowConnection(provider: Provider, connection: FlowProviderConnection): Disposable {
+    const providerName = connection.name;
+    const id = `${provider.id}.${providerName}`;
+    this.flowProviders.set(id, connection);
+    this.telemetryService.track('registerFlowProviderConnection', {
+      name: connection.name,
+      total: this.mcpProviders.size,
+    });
+
+    let previousStatus = connection.status();
+
+    // track the status of the provider
+    const timer = setInterval(() => {
+      const newStatus = connection.status();
+      if (newStatus !== previousStatus) {
+        this.apiSender.send('provider-change', {});
+        previousStatus = newStatus;
+      }
+    }, 2000);
+
+    return Disposable.create(() => {
+      clearInterval(timer);
+      this.flowProviders.delete(id);
+      this.apiSender.send('provider-change', {});
+    });
+  }
+
   async shellInProviderConnection(
     internalProviderId: string,
     providerConnectionInfo: ProviderConnectionInfo,
@@ -1726,6 +1819,7 @@ export class ProviderRegistry {
         !this.isKubernetesConnection(containerConnection) &&
         !this.isInferenceConnection(containerConnection) &&
         !this.isMCPConnection(containerConnection) &&
+        !this.isFlowConnection(containerConnection) &&
         providerConnectionInfo.status === 'started'
       ) {
         shellAccess = containerConnection.shellAccess;
@@ -1808,6 +1902,13 @@ export class ProviderRegistry {
     if (!provider) throw new Error('Provider not found');
 
     return provider.mcpConnections;
+  }
+
+  getFlowProviderConnection(internalProviderId: string): Array<FlowProviderConnection> {
+    const provider = this.providers.get(internalProviderId);
+    if (!provider) throw new Error('Provider not found');
+
+    return provider.flowConnections;
   }
 
   protected fireUpdateContainerConnectionEvents(

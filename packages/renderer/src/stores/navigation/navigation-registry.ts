@@ -22,6 +22,7 @@ import { type Writable, writable } from 'svelte/store';
 import type { IconSize } from 'svelte-fa';
 
 import { EventStore } from '/@/stores/event-store';
+import {  createNavigationFlowsEntry } from '/@/stores/navigation/navigation-registry-flows.svelte';
 
 import { configurationProperties } from '../configurationProperties';
 import { createNavigationExtensionEntry, createNavigationExtensionGroup } from './navigation-registry-extension.svelte';
@@ -58,6 +59,7 @@ let values: NavigationRegistryEntry[] = [];
 let initialized = false;
 const init = (): void => {
   values.push(createNavigationExtensionEntry());
+  values.push(createNavigationFlowsEntry());
   values.push(createNavigationExtensionGroup());
   hideItems().catch((err: unknown) => console.error('Error hiding navigation items', err));
 };

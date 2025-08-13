@@ -49,8 +49,7 @@ import {
   streamText,
   TextStreamPart,
   type ToolSet,
-  UIMessage,
-} from 'ai';
+  UIMessage} from 'ai';
 import checkDiskSpacePkg from 'check-disk-space';
 import type Dockerode from 'dockerode';
 import type { WebContents } from 'electron';
@@ -61,6 +60,7 @@ import { Container } from 'inversify';
 import type { KubernetesGeneratorInfo } from '/@/plugin/api/KubernetesGeneratorInfo.js';
 import { ExtensionLoader } from '/@/plugin/extension/extension-loader.js';
 import { ExtensionWatcher } from '/@/plugin/extension/extension-watcher.js';
+import { FlowManager } from '/@/plugin/flow/flow-manager.js';
 import type {
   GenerateKubeResult,
   KubernetesGeneratorArgument,
@@ -97,6 +97,7 @@ import type { DockerSocketMappingStatusInfo } from '/@api/docker-compatibility-i
 import type { ExtensionDevelopmentFolderInfo } from '/@api/extension-development-folders-info.js';
 import type { ExtensionInfo } from '/@api/extension-info.js';
 import type { FeedbackProperties, GitHubIssue } from '/@api/feedback.js';
+import type { FlowInfo } from '/@api/flow-info.js';
 import type { HistoryInfo } from '/@api/history-info.js';
 import type { IconInfo } from '/@api/icon-info.js';
 import type { ImageCheckerInfo } from '/@api/image-checker-info.js';
@@ -530,6 +531,7 @@ export class PluginSystem {
 
     container.bind<ProviderRegistry>(ProviderRegistry).toSelf().inSingletonScope();
     container.bind<MCPManager>(MCPManager).toSelf().inSingletonScope();
+    container.bind<FlowManager>(FlowManager).toSelf().inSingletonScope();
     container.bind<TrayMenuRegistry>(TrayMenuRegistry).toSelf().inSingletonScope();
     container.bind<InputQuickPickRegistry>(InputQuickPickRegistry).toSelf().inSingletonScope();
     container.bind<FilesystemMonitoring>(FilesystemMonitoring).toSelf().inSingletonScope();
@@ -603,6 +605,9 @@ export class PluginSystem {
 
     const mcpManager = container.get<MCPManager>(MCPManager);
     mcpManager.init();
+
+    const flowManager = container.get<FlowManager>(FlowManager);
+    flowManager.init();
 
     providerRegistry.addProviderListener((name: string, providerInfo: ProviderInfo) => {
       if (name === 'provider:update-status') {
@@ -805,6 +810,15 @@ export class PluginSystem {
     this.ipcHandle('container-provider-registry:listPods', async (): Promise<PodInfo[]> => {
       return containerProviderRegistry.listPods();
     });
+
+    this.ipcHandle('flows:list', async (): Promise<Array<FlowInfo>> => {
+      return flowManager.all();
+    });
+
+    this.ipcHandle('flows:refresh', async (): Promise<void> => {
+      return flowManager.refresh();
+    });
+
     this.ipcHandle('container-provider-registry:listNetworks', async (): Promise<NetworkInspectInfo[]> => {
       return containerProviderRegistry.listNetworks();
     });

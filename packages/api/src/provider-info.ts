@@ -35,6 +35,7 @@ export enum ProviderConnectionType {
   VM = 'vm',
   INFERENCE = 'inference',
   MCP = 'mcp',
+  FLOW = 'flow',
 }
 
 export interface ProviderConnectionBase {
@@ -74,11 +75,15 @@ export interface ProviderMCPConnectionInfo extends ProviderConnectionBase {
   connectionType: ProviderConnectionType.MCP;
 }
 
+export interface ProviderFlowConnectionInfo extends ProviderConnectionBase {
+  connectionType: ProviderConnectionType.FLOW;
+}
+
 export interface ProviderInferenceConnectionInfo extends ProviderConnectionBase {
   connectionType: ProviderConnectionType.INFERENCE;
   models: Array<{
     label: string;
-  }>
+  }>;
 }
 
 export type ProviderConnectionInfo =
@@ -86,7 +91,8 @@ export type ProviderConnectionInfo =
   | ProviderKubernetesConnectionInfo
   | ProviderVmConnectionInfo
   | ProviderInferenceConnectionInfo
-  | ProviderMCPConnectionInfo;
+  | ProviderMCPConnectionInfo
+  | ProviderFlowConnectionInfo;
 
 export interface ProviderInfo {
   internalId: string;
@@ -100,6 +106,7 @@ export interface ProviderInfo {
   vmConnections: ProviderVmConnectionInfo[];
   inferenceConnections: ProviderInferenceConnectionInfo[];
   mcpConnections: ProviderMCPConnectionInfo[];
+  flowConnections: ProviderFlowConnectionInfo[];
 
   status: ProviderStatus;
   lifecycleMethods?: LifecycleMethod[];
