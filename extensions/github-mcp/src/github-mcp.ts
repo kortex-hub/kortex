@@ -66,7 +66,12 @@ export class GitHubMCP implements Disposable {
    */
   private async getTokens(): Promise<string[]> {
     // get raw string from secret storage
-    const raw = await this.secrets.get(TOKENS_KEY);
+    let raw: string | undefined;
+    try {
+      raw = await this.secrets.get(TOKENS_KEY);
+    } catch (err: unknown) {
+      console.error('GitHubMCP: something went wrong while trying to get tokens from secret storage', err);
+    }
     // if undefined return empty array
     if (!raw) return [];
     // split raw string by token separator
