@@ -18,6 +18,8 @@
 
 export enum NavigationPage {
   DASHBOARD = 'dashboard',
+  FLOWS = 'flows',
+  FLOW_DETAILS = 'flow-details',
   CONTAINERS = 'containers',
   CONTAINER_EXPORT = 'container-export',
   CONTAINER = 'container',

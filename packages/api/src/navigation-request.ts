@@ -51,6 +51,13 @@ export interface NavigationParameters {
   [NavigationPage.CREATE_PROVIDER_CONNECTION]: { provider: string };
   [NavigationPage.PROVIDER_TASK]: { internalId: string; taskId: number | undefined };
   [NavigationPage.EXPERIMENTAL_FEATURES]: never;
+  // flows
+  [NavigationPage.FLOWS]: never;
+  [NavigationPage.FLOW_DETAILS]: {
+    providerId: string;
+    connectionName: string;
+    flowId: string;
+  };
 }
 
 // the parameters property is optional when the NavigationParameters say it is

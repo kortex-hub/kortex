@@ -42,6 +42,14 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
     case NavigationPage.DASHBOARD:
       router.goto('/');
       break;
+    case NavigationPage.FLOWS:
+      router.goto('/flows');
+      break;
+    case NavigationPage.FLOW_DETAILS:
+      router.goto(
+        `/flows/${request.parameters.providerId}/${request.parameters.connectionName}/${request.parameters.flowId}`,
+      );
+      break;
     case NavigationPage.CONTAINERS:
       router.goto('/containers');
       break;
