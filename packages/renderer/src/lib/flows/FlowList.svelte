@@ -34,7 +34,7 @@ function key(flow: FlowSelectable): string {
 
 <NavPage searchEnabled={false} title="FLows">
   {#snippet additionalActions()}
-    <Button onclick={window.refreshWorkflows}>
+    <Button onclick={window.refreshFlows}>
       Refresh
     </Button>
   {/snippet}

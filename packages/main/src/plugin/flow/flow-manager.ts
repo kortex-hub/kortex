@@ -45,13 +45,13 @@ export class FlowManager implements Disposable {
   }
 
   all(): Array<FlowInfo> {
-    return Array.from(this.#flows.entries()).flatMap(([key, workflows]) => {
+    return Array.from(this.#flows.entries()).flatMap(([key, flows]) => {
       const [providerId, connectionName] = key.split(':'); // TODO: might do something better?
 
       // assert
       if (!providerId || !connectionName) return [];
 
-      return workflows.map(workflow => ({
+      return flows.map(workflow => ({
         providerId,
         connectionName,
         ...workflow,
@@ -79,7 +79,7 @@ export class FlowManager implements Disposable {
   }
 
   /**
-   * Register a new Workflow connection
+   * Register a new Flow connection
    * @param providerId (not the internalId)
    * @param connection
    * @protected
@@ -87,8 +87,8 @@ export class FlowManager implements Disposable {
   protected async register(providerId: string, connection: FlowProviderConnection): Promise<void> {
     const key = this.getKey(providerId, connection.name);
 
-    const workflows = await connection.flow.all();
-    this.#flows.set(key, workflows);
+    const flows = await connection.flow.all();
+    this.#flows.set(key, flows);
 
     // dispose of existing if any
     this.#disposable.get(key)?.dispose();
@@ -103,7 +103,7 @@ export class FlowManager implements Disposable {
   }
 
   init(): void {
-    // register listener for new Workflow connections
+    // register listener for new Flow connections
     this.provider.onDidRegisterFlowConnection(({ providerId, connection }) => {
       this.register(providerId, connection).catch(console.error); // do not block exec
     });
