@@ -4,6 +4,8 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 
 import { router } from 'tinro';
 
+import FlowDetails from '/@/lib/flows/FlowDetails.svelte';
+import FlowList from '/@/lib/flows/FlowList.svelte';
 import PinActions from '/@/lib/statusbar/PinActions.svelte';
 import { handleNavigation } from '/@/navigation';
 import { kubernetesNoCurrentContext } from '/@/stores/kubernetes-no-current-context';
@@ -85,7 +87,6 @@ import Route from './Route.svelte';
 import { lastSubmenuPages } from './stores/breadcrumb';
 import { navigationRegistry } from './stores/navigation/navigation-registry';
 import SubmenuNavigation from './SubmenuNavigation.svelte';
-import FlowList from './lib/flows/FlowList.svelte';
 
 router.mode.memory();
 
@@ -159,8 +160,16 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
           <CustomChat />
         </Route>
 
-        <Route path="/flows/*" breadcrumb="Flows">
+        <Route path="/flows" breadcrumb="Flows">
           <FlowList/>
+        </Route>
+
+        <Route path="/flows/:providerId/:connectionName/:flowId" let:meta breadcrumb="Flow Details">
+          <FlowDetails
+            providerId={meta.params.providerId}
+            connectionName={meta.params.connectionName}
+            flowId={meta.params.flowId}
+          />
         </Route>
 
         <Route path="/containers" breadcrumb="Containers" navigationHint="root">

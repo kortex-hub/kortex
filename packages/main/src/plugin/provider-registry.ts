@@ -21,6 +21,7 @@ import type {
   AuditResult,
   CancellationToken,
   ContainerProviderConnection,
+  FlowProviderConnection,
   InferenceProviderConnection,
   KubernetesProviderConnection,
   Logger,
@@ -45,22 +46,21 @@ import type {
   ProviderStatus,
   ProviderUpdate,
   RegisterContainerConnectionEvent,
+  RegisterFlowConnectionEvent,
   RegisterInferenceConnectionEvent,
   RegisterKubernetesConnectionEvent,
   RegisterMCPConnectionEvent,
   RegisterVmConnectionEvent,
-  RegisterFlowConnectionEvent,
   UnregisterContainerConnectionEvent,
+  UnregisterFlowConnectionEvent,
   UnregisterInferenceConnectionEvent,
   UnregisterKubernetesConnectionEvent,
   UnregisterMCPConnectionEvent,
   UnregisterVmConnectionEvent,
-  UnregisterFlowConnectionEvent,
   UpdateContainerConnectionEvent,
   UpdateKubernetesConnectionEvent,
   UpdateVmConnectionEvent,
   VmProviderConnection,
-  FlowProviderConnection,
 } from '@kortex-app/api';
 import type { Transport as MCPTransport } from '@modelcontextprotocol/sdk/shared/transport.d.ts';
 import { inject, injectable } from 'inversify';
@@ -73,6 +73,7 @@ import {
   ProviderConnectionInfo,
   ProviderConnectionType,
   ProviderContainerConnectionInfo,
+  ProviderFlowConnectionInfo,
   ProviderInferenceConnectionInfo,
   ProviderInfo,
   ProviderKubernetesConnectionInfo,
@@ -178,7 +179,8 @@ export class ProviderRegistry {
   readonly onDidRegisterFlowConnection: Event<RegisterFlowConnectionEvent> = this._onDidRegisterFlowConnection.event;
 
   private readonly _onDidUnregisterFlowConnection = new Emitter<UnregisterFlowConnectionEvent>();
-  readonly onDidUnregisterFlowConnection: Event<UnregisterFlowConnectionEvent> = this._onDidUnregisterFlowConnection.event;
+  readonly onDidUnregisterFlowConnection: Event<UnregisterFlowConnectionEvent> =
+    this._onDidUnregisterFlowConnection.event;
 
   // Container
   private readonly _onDidRegisterContainerConnection = new Emitter<RegisterContainerConnectionEvent>();
@@ -733,6 +735,10 @@ export class ProviderRegistry {
     return this.getProviderConnectionInfo(connection) as ProviderMCPConnectionInfo;
   }
 
+  public getProviderFlowConnectionInfo(connection: FlowProviderConnection): ProviderFlowConnectionInfo {
+    return this.getProviderConnectionInfo(connection) as ProviderFlowConnectionInfo;
+  }
+
   private getProviderConnectionInfo(connection: ProviderConnection): ProviderConnectionInfo {
     let providerConnection: ProviderConnectionInfo;
     if (this.isContainerConnection(connection)) {
@@ -774,6 +780,12 @@ export class ProviderRegistry {
         name: connection.name,
         status: connection.status(),
         connectionType: ProviderConnectionType.MCP,
+      };
+    } else if (this.isFlowConnection(connection)) {
+      providerConnection = {
+        name: connection.name,
+        status: connection.status(),
+        connectionType: ProviderConnectionType.FLOW,
       };
     } else {
       providerConnection = {
@@ -818,6 +830,9 @@ export class ProviderRegistry {
     });
     const mcpConnections: ProviderMCPConnectionInfo[] = provider.mcpConnections.map(connection => {
       return this.getProviderMCPConnectionInfo(connection);
+    });
+    const flowConnections: ProviderFlowConnectionInfo[] = provider.flowConnections.map(connection => {
+      return this.getProviderFlowConnectionInfo(connection);
     });
 
     // container connection factory ?
@@ -920,6 +935,7 @@ export class ProviderRegistry {
       vmConnections,
       inferenceConnections,
       mcpConnections,
+      flowConnections,
       status: provider.status,
       containerProviderConnectionCreation,
       kubernetesProviderConnectionCreation,
@@ -1232,6 +1248,21 @@ export class ProviderRegistry {
     return connection;
   }
 
+  protected getMatchingFlowConnectionFromProvider(
+    internalProviderId: string,
+    providerFlowConnectionInfo: ProviderFlowConnectionInfo,
+  ): FlowProviderConnection {
+    // grab the correct provider
+    const provider = this.getMatchingProvider(internalProviderId);
+
+    // grab the correct kubernetes connection
+    const connection = provider.flowConnections.find(connection => connection.name === providerFlowConnectionInfo.name);
+    if (!connection) {
+      throw new Error(`no flow connection matching provider id ${internalProviderId}`);
+    }
+    return connection;
+  }
+
   getMatchingConnectionFromProvider(
     internalProviderId: string,
     providerContainerConnectionInfo: ProviderConnectionInfo | ContainerProviderConnection,
@@ -1250,6 +1281,8 @@ export class ProviderRegistry {
         return this.getMatchingInferenceConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
       case ProviderConnectionType.MCP:
         return this.getMatchingMCPConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
+      case ProviderConnectionType.FLOW:
+        return this.getMatchingFlowConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
     }
   }
 

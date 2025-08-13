@@ -1,15 +1,9 @@
 <script lang="ts">
-import {
-  Button,
-  NavPage,
-  Table,
-  TableColumn,
-  TableRow,
-  TableSimpleColumn,
-} from '@podman-desktop/ui-svelte';
+import { Button, NavPage, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 
+import FlowName from '/@/lib/flows/columns/FlowName.svelte';
 import { flowsInfos } from '/@/stores/flows';
-import type {FlowInfo} from '/@api/flow-info';
+import type { FlowInfo } from '/@api/flow-info';
 
 type FlowSelectable = FlowInfo & { selected: boolean };
 
@@ -17,12 +11,9 @@ const row = new TableRow<FlowSelectable>({
   selectable: (_): boolean => false,
 });
 
-let pathColumn = new TableColumn<FlowSelectable, string>('Path', {
+let pathColumn = new TableColumn<FlowSelectable>('Path', {
   width: '2fr',
-  renderer: TableSimpleColumn,
-  renderMapping(object): string {
-    return object.path;
-  },
+  renderer: FlowName,
 });
 
 const columns = [pathColumn];
