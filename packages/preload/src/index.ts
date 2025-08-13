@@ -640,6 +640,8 @@ export function initExposure(): void {
     },
   );
 
+  // workflow shell start
+
   // callbacks for shellInProviderConnection
   let onDataCallbacksShellInProviderConnectionId = 0;
   const onDataCallbacksShellInProviderConnection = new Map<
@@ -651,6 +653,7 @@ export function initExposure(): void {
     async (
       internalProviderId: string,
       connectionInfo: ProviderConnectionInfo,
+      workflowId: string,
       onData: (data: string) => void,
       onError: (error: string) => void,
       onEnd: () => void,
@@ -665,6 +668,7 @@ export function initExposure(): void {
         'provider-registry:shellInProviderConnection',
         internalProviderId,
         connectionInfo,
+        workflowId,
         onDataCallbacksShellInProviderConnectionId,
       );
     },

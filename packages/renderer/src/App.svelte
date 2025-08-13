@@ -86,6 +86,7 @@ import { lastSubmenuPages } from './stores/breadcrumb';
 import { navigationRegistry } from './stores/navigation/navigation-registry';
 import SubmenuNavigation from './SubmenuNavigation.svelte';
 import WorkflowList from '/@/lib/workflows/WorkflowList.svelte';
+import WorkflowDetails from "/@/lib/workflows/WorkflowDetails.svelte";
 
 router.mode.memory();
 
@@ -159,8 +160,16 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
           <CustomChat />
         </Route>
 
-        <Route path="/workflows/*" breadcrumb="Workflows">
+        <Route path="/workflows" breadcrumb="Workflows">
           <WorkflowList/>
+        </Route>
+
+        <Route path="/workflows/:internalId/:connectionName/:workflowId" let:meta breadcrumb="Workflow Details">
+          <WorkflowDetails
+            internalId={meta.params.internalId}
+            connectionName={meta.params.connectionName}
+            workflowId={meta.params.workflowId}
+          />
         </Route>
 
         <Route path="/containers" breadcrumb="Containers" navigationHint="root">

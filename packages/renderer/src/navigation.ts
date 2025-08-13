@@ -42,6 +42,12 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
     case NavigationPage.DASHBOARD:
       router.goto('/');
       break;
+    case NavigationPage.WORKFLOWS:
+      router.goto('/workflows');
+      break;
+    case NavigationPage.WORKFLOW_DETAILS:
+      router.goto(`/workflows/${request.parameters.internalId}/${request.parameters.connectionName}/${request.parameters.workflowId}`);
+      break;
     case NavigationPage.CONTAINERS:
       router.goto('/containers');
       break;

@@ -1,13 +1,13 @@
 <script lang="ts">
 import {
+  Button,
   NavPage,
   Table,
   TableColumn,
   TableRow,
-  TableSimpleColumn,
-  Button,
 } from '@podman-desktop/ui-svelte';
 
+import WorkflowName from '/@/lib/workflows/columns/WorkflowName.svelte';
 import { workflowsInfos } from '/@/stores/workflows';
 import type {WorkflowInfo} from '/@api/workflow-info';
 
@@ -17,12 +17,9 @@ const row = new TableRow<WorkflowSelectable>({
   selectable: (_container): boolean => false,
 });
 
-let pathColumn = new TableColumn<WorkflowSelectable, string>('Path', {
+let pathColumn = new TableColumn<WorkflowSelectable>('Path', {
   width: '2fr',
-  renderer: TableSimpleColumn,
-  renderMapping(object): string {
-    return object.path;
-  },
+  renderer: WorkflowName,
 });
 
 const columns = [pathColumn];

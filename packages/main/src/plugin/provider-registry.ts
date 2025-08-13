@@ -31,8 +31,6 @@ import type {
   ProviderCleanupAction,
   ProviderCleanupExecuteOptions,
   ProviderConnection,
-  ProviderConnectionShellAccess,
-  ProviderConnectionShellAccessSession,
   ProviderConnectionShellDimensions,
   ProviderConnectionStatus,
   ProviderContainerConnection,
@@ -50,6 +48,8 @@ import type {
   RegisterMCPConnectionEvent,
   RegisterVmConnectionEvent,
   RegisterWorkflowConnectionEvent,
+  ShellAccess,
+  ShellAccessSession,
   UnregisterContainerConnectionEvent,
   UnregisterInferenceConnectionEvent,
   UnregisterKubernetesConnectionEvent,
@@ -60,6 +60,7 @@ import type {
   UpdateKubernetesConnectionEvent,
   UpdateVmConnectionEvent,
   VmProviderConnection,
+  Workflow,
   WorkflowProviderConnection,
 } from '@kortex-app/api';
 import type { Transport as MCPTransport } from '@modelcontextprotocol/sdk/shared/transport.d.ts';
@@ -78,6 +79,7 @@ import {
   ProviderKubernetesConnectionInfo,
   ProviderMCPConnectionInfo,
   ProviderVmConnectionInfo,
+  ProviderWorkflowConnectionInfo,
 } from '/@api/provider-info.js';
 
 import { ApiSenderType } from './api.js';
@@ -733,6 +735,10 @@ export class ProviderRegistry {
     return this.getProviderConnectionInfo(connection) as ProviderMCPConnectionInfo;
   }
 
+  public getProviderWorkflowConnectionInfo(connection: WorkflowProviderConnection): ProviderWorkflowConnectionInfo {
+    return this.getProviderConnectionInfo(connection) as ProviderWorkflowConnectionInfo;
+  }
+
   private getProviderConnectionInfo(connection: ProviderConnection): ProviderConnectionInfo {
     let providerConnection: ProviderConnectionInfo;
     if (this.isContainerConnection(connection)) {
@@ -774,6 +780,12 @@ export class ProviderRegistry {
         name: connection.name,
         status: connection.status(),
         connectionType: ProviderConnectionType.MCP,
+      };
+    } else if(this.isWorkflowConnection(connection)) {
+      providerConnection = {
+        name: connection.name,
+        status: connection.status(),
+        connectionType: ProviderConnectionType.WORKFLOW,
       };
     } else {
       providerConnection = {
@@ -818,6 +830,9 @@ export class ProviderRegistry {
     });
     const mcpConnections: ProviderMCPConnectionInfo[] = provider.mcpConnections.map(connection => {
       return this.getProviderMCPConnectionInfo(connection);
+    });
+    const workflowConnections: ProviderWorkflowConnectionInfo[] = provider.workflowConnections.map(connection => {
+      return this.getProviderWorkflowConnectionInfo(connection);
     });
 
     // container connection factory ?
@@ -920,6 +935,7 @@ export class ProviderRegistry {
       vmConnections,
       inferenceConnections,
       mcpConnections,
+      workflowConnections,
       status: provider.status,
       containerProviderConnectionCreation,
       kubernetesProviderConnectionCreation,
@@ -1232,6 +1248,21 @@ export class ProviderRegistry {
     return connection;
   }
 
+  protected getMatchingWorkflowConnectionFromProvider(
+    internalProviderId: string,
+    connectionInfo: ProviderWorkflowConnectionInfo,
+  ): WorkflowProviderConnection {
+    // grab the correct provider
+    const provider = this.getMatchingProvider(internalProviderId);
+
+    // grab the correct kubernetes connection
+    const connection = provider.workflowConnections.find(connection => connection.name === connectionInfo.name);
+    if (!connection) {
+      throw new Error(`no kubernetes connection matching provider id ${internalProviderId}`);
+    }
+    return connection;
+  }
+
   getMatchingConnectionFromProvider(
     internalProviderId: string,
     providerContainerConnectionInfo: ProviderConnectionInfo | ContainerProviderConnection,
@@ -1250,6 +1281,8 @@ export class ProviderRegistry {
         return this.getMatchingInferenceConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
       case ProviderConnectionType.MCP:
         return this.getMatchingMCPConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
+      default:
+        return this.getMatchingWorkflowConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
     }
   }
 
@@ -1767,9 +1800,10 @@ export class ProviderRegistry {
     });
   }
 
-  async shellInProviderConnection(
+  async workflowExecute(
     internalProviderId: string,
     providerConnectionInfo: ProviderConnectionInfo,
+    workflow: Workflow,
     onData: (data: string) => void,
     onError: (error: string) => void,
     onEnd: () => void,
@@ -1780,36 +1814,27 @@ export class ProviderRegistry {
   }> {
     try {
       const containerConnection = this.getMatchingConnectionFromProvider(internalProviderId, providerConnectionInfo);
-      let shellAccess: ProviderConnectionShellAccess | undefined;
-      let connection: ProviderConnectionShellAccessSession | undefined;
       const disposables: Disposable[] = [];
-      if (
-        !this.isKubernetesConnection(containerConnection) &&
-        !this.isInferenceConnection(containerConnection) &&
-        !this.isMCPConnection(containerConnection) &&
-        !this.isWorkflowConnection(containerConnection) &&
-        providerConnectionInfo.status === 'started'
-      ) {
-        shellAccess = containerConnection.shellAccess;
-        connection = shellAccess?.open();
-        connection?.onData(
-          data => {
-            onData(data.data);
-          },
-          {},
-          disposables,
-        );
+      if(!this.isWorkflowConnection(containerConnection)) throw new Error('only workflow connection are supported');
 
-        connection?.onError(
-          error => {
-            onError(error.error);
-          },
-          {},
-          disposables,
-        );
+      const connection: ShellAccessSession = containerConnection.workflow.execute(workflow);
+      connection?.onData(
+        data => {
+          onData(data.data);
+        },
+        {},
+        disposables,
+      );
 
-        connection?.onEnd(onEnd, {}, disposables);
-      }
+      connection?.onError(
+        error => {
+          onError(error.error);
+        },
+        {},
+        disposables,
+      );
+
+      connection?.onEnd(onEnd, {}, disposables);
 
       return {
         write: (data: string): void => {

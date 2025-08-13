@@ -49,6 +49,13 @@ export interface NavigationParameters {
   [NavigationPage.CLI_TOOLS]: never;
   [NavigationPage.EDIT_CONTAINER_CONNECTION]: { provider: string; name: string };
   [NavigationPage.PROVIDER_TASK]: { internalId: string; taskId: number | undefined };
+  // workflows
+  [NavigationPage.WORKFLOWS]: never;
+  [NavigationPage.WORKFLOW_DETAILS]: {
+    internalId: string,
+    connectionName: string,
+    workflowId: string, // base64 of the path
+  };
 }
 
 // the parameters property is optional when the NavigationParameters say it is

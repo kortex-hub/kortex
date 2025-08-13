@@ -1352,7 +1352,9 @@ export class PluginSystem {
       },
     );
 
-    const providerRegistryShellInProviderConnectionSendCallback = new Map<
+    // workflow shell start
+
+    const workflowShellInProviderConnectionSendCallback = new Map<
       number,
       {
         write: (param: string) => void;
@@ -1366,12 +1368,19 @@ export class PluginSystem {
         _listener,
         internalProviderId: string,
         connectionInfo: ProviderConnectionInfo,
+        workflowId: string,
         onDataId: number,
       ): Promise<number> => {
+        console.log(`opening connection shell for workflow ${workflowId} with provider ${internalProviderId} and connection ${connectionInfo.name}`);
+
+        //  Get the workflow from the Workflow Manager
+        const workflow = workflowManager.getWorkflow(internalProviderId, connectionInfo.name, workflowId);
+
         // provide the data content to the remote side
-        const shellInProviderConnectionInvocation = await providerRegistry.shellInProviderConnection(
+        const shellInProviderConnectionInvocation = await providerRegistry.workflowExecute(
           internalProviderId,
           connectionInfo,
+          workflow,
           (content: string) => {
             this.getWebContentsSender().send('provider-registry:shellInProviderConnection-onData', onDataId, content);
           },
@@ -1381,11 +1390,11 @@ export class PluginSystem {
           () => {
             this.getWebContentsSender().send('provider-registry:shellInProviderConnection-onEnd', onDataId);
             // delete the callback
-            providerRegistryShellInProviderConnectionSendCallback.delete(onDataId);
+            workflowShellInProviderConnectionSendCallback.delete(onDataId);
           },
         );
         // store the callback
-        providerRegistryShellInProviderConnectionSendCallback.set(onDataId, shellInProviderConnectionInvocation);
+        workflowShellInProviderConnectionSendCallback.set(onDataId, shellInProviderConnectionInvocation);
         return onDataId;
       },
     );
@@ -1393,7 +1402,7 @@ export class PluginSystem {
     this.ipcHandle(
       'provider-registry:shellInProviderConnectionSend',
       async (_listener, onDataId: number, content: string): Promise<void> => {
-        const callback = providerRegistryShellInProviderConnectionSendCallback.get(onDataId);
+        const callback = workflowShellInProviderConnectionSendCallback.get(onDataId);
         if (callback) {
           callback.write(content);
         }
@@ -1407,7 +1416,7 @@ export class PluginSystem {
         onDataId: number,
         dimensions: containerDesktopAPI.ProviderConnectionShellDimensions,
       ): Promise<void> => {
-        const callback = providerRegistryShellInProviderConnectionSendCallback.get(onDataId);
+        const callback = workflowShellInProviderConnectionSendCallback.get(onDataId);
         if (callback) {
           callback.resize(dimensions);
         }
@@ -1417,10 +1426,12 @@ export class PluginSystem {
     this.ipcHandle(
       'provider-registry:shellInProviderConnectionClose',
       async (_listener, onDataId: number): Promise<void> => {
-        const callback = providerRegistryShellInProviderConnectionSendCallback.get(onDataId);
+        const callback = workflowShellInProviderConnectionSendCallback.get(onDataId);
         callback?.close();
       },
     );
+
+    // workflow shell end
 
     const containerProviderRegistryAttachContainerSendCallback = new Map<number, (param: string) => void>();
     this.ipcHandle(

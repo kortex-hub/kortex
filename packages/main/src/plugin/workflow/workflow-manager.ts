@@ -53,6 +53,19 @@ export class WorkflowManager implements Disposable {
     });
   }
 
+  public getWorkflow(internalProviderId: string, connectionName: string, workflowId: string): Workflow {
+    const key = this.getKey(internalProviderId, connectionName);
+    const workflows = this.#workflows.get(key);
+    if (!workflows) {
+      throw new Error(`No workflows found for ${key}`);
+    }
+    const workflow = workflows.find(({ path }) => path === workflowId);
+    if(!workflow) {
+      throw new Error(`No workflow found for ${key} with id ${workflowId}`);
+    }
+    return workflow;
+  }
+
   public refresh(): void {
     console.log('refreshing workflows');
     this.registerAll().catch(console.error);

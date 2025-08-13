@@ -28,8 +28,8 @@ import type {
   Logger,
   Provider,
   ProviderCleanup,
-  ProviderConnectionShellAccess,
-  ProviderConnectionShellAccessSession,
+  ShellAccess,
+  ShellAccessSession,
   ProviderConnectionStatus,
   ProviderInstallation,
   ProviderLifecycle,
@@ -2193,17 +2193,17 @@ describe('shellInProviderConnection', () => {
       return disposable;
     });
 
-    const shellAccessSession: ProviderConnectionShellAccessSession = {
+    const shellAccessSession: ShellAccessSession = {
       onData: onDataMock,
       onError: onErrorMock,
       onEnd: onEndMock,
       close: closeMock,
-    } as unknown as ProviderConnectionShellAccessSession;
+    } as unknown as ShellAccessSession;
 
     openMock.mockReturnValue(shellAccessSession);
-    const shellAccess: ProviderConnectionShellAccess = {
+    const shellAccess: ShellAccess = {
       open: openMock,
-    } as unknown as ProviderConnectionShellAccess;
+    } as unknown as ShellAccess;
 
     provider.registerContainerProviderConnection({
       name: 'connection',
@@ -2281,17 +2281,17 @@ describe('shellInProviderConnection', () => {
       return disposable;
     });
 
-    const shellAccessSession: ProviderConnectionShellAccessSession = {
+    const shellAccessSession: ShellAccessSession = {
       onData: onDataMock,
       onError: onErrorMock,
       onEnd: onEndMock,
       close: closeMock,
-    } as unknown as ProviderConnectionShellAccessSession;
+    } as unknown as ShellAccessSession;
 
     openMock.mockReturnValue(shellAccessSession);
-    const shellAccess: ProviderConnectionShellAccess = {
+    const shellAccess: ShellAccess = {
       open: openMock,
-    } as unknown as ProviderConnectionShellAccess;
+    } as unknown as ShellAccess;
 
     (provider as ProviderImpl).registerVmProviderConnection({
       name: 'connection',

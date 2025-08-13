@@ -394,7 +394,7 @@ declare module '@kortex-app/api' {
     displayName?: string;
     type: 'docker' | 'podman';
     endpoint: ContainerProviderConnectionEndpoint;
-    shellAccess?: ProviderConnectionShellAccess;
+    shellAccess?: ShellAccess;
     lifecycle?: ProviderConnectionLifecycle;
     status(): ProviderConnectionStatus;
     vmType?: string;
@@ -416,6 +416,7 @@ declare module '@kortex-app/api' {
     workflow: {
       all(): Promise<Array<Workflow>>,
       onDidChange: Event<void>;
+      execute(workflow: Workflow): ShellAccessSession;
     }
   }
 
@@ -543,7 +544,7 @@ declare module '@kortex-app/api' {
 
   export interface VmProviderConnection {
     name: string;
-    shellAccess?: ProviderConnectionShellAccess;
+    shellAccess?: ShellAccess;
     lifecycle?: ProviderConnectionLifecycle;
     status(): ProviderConnectionStatus;
   }
@@ -935,7 +936,7 @@ declare module '@kortex-app/api' {
   /**
    * Callback for openning shell session
    */
-  export interface ProviderConnectionShellAccess {
+  export interface ShellAccess {
     /**
      * Opens new session using ProviderConnectionShellAccessImpl class
      * @example
@@ -973,13 +974,13 @@ declare module '@kortex-app/api' {
      *  extensionContext.subscriptions.push(disposable);
      * }
      */
-    open(): ProviderConnectionShellAccessSession;
+    open(): ShellAccessSession;
   }
 
   /**
    * Callbacks for interaction with shell session
    */
-  export interface ProviderConnectionShellAccessSession {
+  export interface ShellAccessSession {
     onData: Event<ProviderConnectionShellAccessData>;
     onError: Event<ProviderConnectionShellAccessError>;
     onEnd: Event<void>;

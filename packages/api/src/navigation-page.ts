@@ -18,6 +18,8 @@
 
 export enum NavigationPage {
   DASHBOARD = 'dashboard',
+  WORKFLOWS = 'workflows',
+  WORKFLOW_DETAILS = 'workflow-details',
   CONTAINERS = 'containers',
   CONTAINER_EXPORT = 'container-export',
   CONTAINER = 'container',

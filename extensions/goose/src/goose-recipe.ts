@@ -15,17 +15,22 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import type {
-  Disposable,
-  Provider,
-  provider as ProviderAPI,
-  ProviderConnectionStatus,  Workflow} from '@kortex-app/api';
-import {
-  EventEmitter,
-} from '@kortex-app/api';
+import { spawn } from 'node:child_process';
+import { EventEmitter as NodeEventEmitter } from 'node:events';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { Buffer } from 'node:buffer';
 
+import type {
+  Provider,
+  provider as ProviderAPI,
+  ProviderConnectionStatus,
+  ShellAccessSession,
+  Workflow} from '@kortex-app/api';
+import {
+  Disposable,
+  EventEmitter,
+} from '@kortex-app/api';
 
 import type { GooseCLI } from './goose-cli';
 
@@ -39,10 +44,69 @@ export class GooseRecipe implements Disposable {
     ) {
   }
 
+  protected getBasePath(): string {
+    return join(homedir(), '.config', 'goose', 'recipes');
+  }
+
   protected async all(): Promise<Array<Workflow>> {
     return this.gooseCLI.getRecipes({
-      path: join(homedir(), '.config', 'goose', 'recipes'),
+      path: this.getBasePath(),
     });
+  }
+
+  protected open(workflow: Workflow): ShellAccessSession {
+    console.log('[GooseRecipe] open', workflow);
+    const emitter = new NodeEventEmitter();
+
+    const child = spawn('goose', ['run', '--recipe', workflow.path], {
+      stdio: ['pipe', 'pipe', 'pipe'], // stdin, stdout, stderr
+      cwd: this.getBasePath(),
+    });
+
+    child.stdout.on('data', data => {
+      console.log('[GooseRecipe][stdout] data', Buffer.from(data).toString('utf-8'));
+      emitter.emit('data', { data });
+    });
+
+    child.stderr.on('data', data => {
+      console.log('[GooseRecipe][stderr] data', Buffer.from(data).toString('utf-8'));
+      emitter.emit('error', { error: data });
+    });
+
+    child.on('exit', () => {
+      console.log('[GooseRecipe][exit]');
+      emitter.emit('end');
+    });
+
+    return {
+      onData(listener): Disposable {
+        emitter.on('data', listener);
+        return Disposable.create(() => {
+          emitter.off('data', listener);
+        });
+      },
+      onError(listener): Disposable {
+        emitter.on('error', listener);
+        return Disposable.create(() => {
+          emitter.off('error', listener);
+        });
+      },
+      onEnd(listener): Disposable {
+        emitter.on('end', listener);
+        return Disposable.create(() => {
+          emitter.off('end', listener);
+        });
+      },
+      write(data): void {
+        child.stdin.write(data);
+      },
+      resize(_dimensions): void {
+        // Not supported without a real PTY
+      },
+      close(): void {
+        child.kill();
+      },
+    };
   }
 
   init(): void {
@@ -57,6 +121,7 @@ export class GooseRecipe implements Disposable {
       workflow: {
         all: this.all.bind(this),
         onDidChange: this.updateEmitter.event,
+        execute: this.open.bind(this),
       },
       lifecycle: {},
       status(): ProviderConnectionStatus {

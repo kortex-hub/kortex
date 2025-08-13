@@ -35,6 +35,7 @@ export enum ProviderConnectionType {
   VM = 'vm',
   INFERENCE = 'inference',
   MCP = 'mcp',
+  WORKFLOW = 'workflow',
 }
 
 export interface ProviderConnectionBase {
@@ -74,6 +75,10 @@ export interface ProviderMCPConnectionInfo extends ProviderConnectionBase {
   connectionType: ProviderConnectionType.MCP;
 }
 
+export interface ProviderWorkflowConnectionInfo extends ProviderConnectionBase {
+  connectionType: ProviderConnectionType.WORKFLOW;
+}
+
 export interface ProviderInferenceConnectionInfo extends ProviderConnectionBase {
   connectionType: ProviderConnectionType.INFERENCE;
   models: Array<{
@@ -86,7 +91,8 @@ export type ProviderConnectionInfo =
   | ProviderKubernetesConnectionInfo
   | ProviderVmConnectionInfo
   | ProviderInferenceConnectionInfo
-  | ProviderMCPConnectionInfo;
+  | ProviderMCPConnectionInfo
+  | ProviderWorkflowConnectionInfo;
 
 export interface ProviderInfo {
   internalId: string;
@@ -100,6 +106,7 @@ export interface ProviderInfo {
   vmConnections: ProviderVmConnectionInfo[];
   inferenceConnections: ProviderInferenceConnectionInfo[];
   mcpConnections: ProviderMCPConnectionInfo[];
+  workflowConnections: ProviderWorkflowConnectionInfo[];
 
   status: ProviderStatus;
   lifecycleMethods?: LifecycleMethod[];
