@@ -24,7 +24,7 @@ import { FlowInfo } from '/@api/flow-info.js';
 
 @injectable()
 export class FlowManager implements Disposable {
-  #workflows: Map<string, Array<Flow>> = new Map();
+  #flows: Map<string, Array<Flow>> = new Map();
   #disposable: Map<string, Disposable> = new Map();
 
   constructor(
@@ -45,13 +45,13 @@ export class FlowManager implements Disposable {
   }
 
   all(): Array<FlowInfo> {
-    return Array.from(this.#workflows.entries()).flatMap(([key, workflows]) => {
-      const [providerId, connectionName ] = key.split(':'); // TODO: might do something better?
+    return Array.from(this.#flows.entries()).flatMap(([key, workflows]) => {
+      const [providerId, connectionName] = key.split(':'); // TODO: might do something better?
 
       // assert
-      if(!providerId || !connectionName) return [];
+      if (!providerId || !connectionName) return [];
 
-      return workflows.map((workflow) => ({
+      return workflows.map(workflow => ({
         providerId,
         connectionName,
         ...workflow,
@@ -88,15 +88,18 @@ export class FlowManager implements Disposable {
     const key = this.getKey(providerId, connection.name);
 
     const workflows = await connection.flow.all();
-    this.#workflows.set(key, workflows);
+    this.#flows.set(key, workflows);
 
     // dispose of existing if any
     this.#disposable.get(key)?.dispose();
 
     // create disposable
-    this.#disposable.set(key, connection.flow.onDidChange(() => {
-      this.apiSender.send('flow:updated');
-    }));
+    this.#disposable.set(
+      key,
+      connection.flow.onDidChange(() => {
+        this.apiSender.send('flow:updated');
+      }),
+    );
   }
 
   init(): void {
@@ -109,7 +112,7 @@ export class FlowManager implements Disposable {
     this.provider.onDidUnregisterFlowConnection(({ providerId, connectionName }) => {
       const key = this.getKey(providerId, connectionName);
 
-      this.#workflows.delete(key);
+      this.#flows.delete(key);
       this.#disposable.get(key)?.dispose();
       this.#disposable.delete(key);
 
@@ -122,7 +125,7 @@ export class FlowManager implements Disposable {
 
   @preDestroy()
   dispose(): void {
-    this.#workflows.clear();
-    this.#disposable.values().forEach((d) => d.dispose());
+    this.#flows.clear();
+    this.#disposable.values().forEach(d => d.dispose());
   }
 }
