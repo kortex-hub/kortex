@@ -51,10 +51,10 @@ export class FlowManager implements Disposable {
       // assert
       if (!providerId || !connectionName) return [];
 
-      return flows.map(workflow => ({
+      return flows.map(flow => ({
         providerId,
         connectionName,
-        ...workflow,
+        ...flow,
       }));
     });
   }
