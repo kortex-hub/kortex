@@ -26,6 +26,7 @@ import {  createNavigationFlowsEntry } from '/@/stores/navigation/navigation-reg
 
 import { configurationProperties } from '../configurationProperties';
 import { createNavigationExtensionEntry, createNavigationExtensionGroup } from './navigation-registry-extension.svelte';
+import { createNavigationMcpEntry } from './navigation-registry-mcp.svelte';
 
 export interface NavigationRegistryEntry {
   name: string;
@@ -58,6 +59,7 @@ let hiddenItems: string[] = [];
 let values: NavigationRegistryEntry[] = [];
 let initialized = false;
 const init = (): void => {
+  values.push(createNavigationMcpEntry());
   values.push(createNavigationExtensionEntry());
   values.push(createNavigationFlowsEntry());
   values.push(createNavigationExtensionGroup());

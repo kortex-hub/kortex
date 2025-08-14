@@ -16,12 +16,16 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { MCPProviderConnection } from '@kortex-app/api';
+import type { MCPProviderConnection } from '@kortex-app/api';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { ToolSet } from 'ai';
 import { experimental_createMCPClient } from 'ai';
 import { inject, injectable, preDestroy } from 'inversify';
 
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info.js';
+
+import { ApiSenderType } from '../api.js';
 
 /**
  * experimental_createMCPClient return `Promise<MCPClient>` but they did not exported this type...
@@ -32,9 +36,12 @@ type ExtractedMCPClient = Awaited<ReturnType<typeof experimental_createMCPClient
 export class MCPManager implements AsyncDisposable {
   #client: Map<string, ExtractedMCPClient> = new Map<string, ExtractedMCPClient>();
 
+  #mcps: MCPRemoteServerInfo[] = [];
+
   constructor(
     @inject(ProviderRegistry)
     private provider: ProviderRegistry,
+    @inject(ApiSenderType) private apiSender: ApiSenderType,
   ) {}
 
   /**
@@ -74,11 +81,30 @@ export class MCPManager implements AsyncDisposable {
     }, {});
   }
 
-  protected async registerMCPClient(internalProviderId: string, connection: MCPProviderConnection): Promise<void> {
-    const client = await experimental_createMCPClient({ transport: connection.transport });
+  public async registerMCPClient(internalProviderId: string, connectionName: string, transport: Transport, url?: string): Promise<void> {
+        const client = await experimental_createMCPClient({ transport});
 
-    console.log('[MCPManager] Registering MCP client for ', internalProviderId, ' with name ', connection.name);
-    this.#client.set(this.getKey(internalProviderId, connection.name), client);
+    const key = this.getKey(internalProviderId, connectionName);
+
+    console.log('[MCPManager] Registering MCP client for ', internalProviderId, ' with name ', connectionName);
+    this.#client.set(key, client);
+
+
+    const mcpRemoteServerInfo: MCPRemoteServerInfo = {
+      id: key,
+      name: connectionName,
+      url: url ?? '',
+    };
+    this.#mcps.push(mcpRemoteServerInfo);
+
+    // broadcast new items
+    this.apiSender.send('mcp-manager-update');
+  }
+
+
+  protected async registerMCPClientConnection(internalProviderId: string, connection: MCPProviderConnection): Promise<void> {
+    return this.registerMCPClient(internalProviderId, connection.name, connection.transport);
+
   }
 
   init(): void {
@@ -88,7 +114,7 @@ export class MCPManager implements AsyncDisposable {
     this.provider.onDidRegisterMCPConnection(async ({ providerId, connection }) => {
       const internalProviderId = this.provider.getMatchingProviderInternalId(providerId);
 
-      await this.registerMCPClient(internalProviderId, connection);
+      await this.registerMCPClientConnection(internalProviderId, connection);
     });
 
     // register listener for unregistered MCP connections
@@ -109,8 +135,13 @@ export class MCPManager implements AsyncDisposable {
     Promise.allSettled(
       providers.flatMap(({ internalId }) => {
         const connections = this.provider.getMCPProviderConnection(internalId);
-        return connections.map(connection => this.registerMCPClient(internalId, connection));
+        return connections.map(connection => this.registerMCPClientConnection(internalId, connection));
       }),
     ).catch(console.error);
   }
+
+  public async listMCPRemoteServers(): Promise<MCPRemoteServerInfo[]> {
+    return this.#mcps;
+  }
+
 }
