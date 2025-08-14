@@ -26,7 +26,8 @@ import type {
   FlowDeployKubernetesResult,
   Provider,
   provider as ProviderAPI,
-  ProviderConnectionStatus} from '@kortex-app/api';
+  ProviderConnectionStatus,
+} from '@kortex-app/api';
 import { EventEmitter } from '@kortex-app/api';
 
 import type { GooseCLI } from './goose-cli';
@@ -41,8 +42,7 @@ export class GooseRecipe implements Disposable {
     private readonly provider: typeof ProviderAPI,
     private readonly gooseCLI: GooseCLI,
     private readonly kortexVersion: string,
-    ) {
-  }
+  ) {}
 
   protected getBasePath(): string {
     return join(homedir(), '.config', 'goose', 'recipes');
@@ -78,7 +78,7 @@ export class GooseRecipe implements Disposable {
   }
 
   protected async deployKubernetes(options: FlowDeployKubernetesOptions): Promise<FlowDeployKubernetesResult> {
-    if(options.provider.id !== 'gemini') throw new Error('unsupported provider');
+    if (options.provider.id !== 'gemini') throw new Error('unsupported provider');
 
     const path = join(this.getBasePath(), options.flow.path);
     const content = await readFile(path, 'utf-8');
@@ -97,10 +97,12 @@ export class GooseRecipe implements Disposable {
         name: options.provider.id,
         model: options.model.label,
         credentials: {
-          env: [{
-            key: 'GOOGLE_API_KEY',
-            value: 'REPLACE_KEY_HERE',
-          }],
+          env: [
+            {
+              key: 'GOOGLE_API_KEY',
+              value: 'REPLACE_KEY_HERE',
+            },
+          ],
         },
       },
       namespace: options.namespace,

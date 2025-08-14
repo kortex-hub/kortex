@@ -304,26 +304,24 @@ export function initExposure(): void {
     return ipcInvoke('flows:list');
   });
 
-  contextBridge.exposeInMainWorld('flowDeployKubernetes', async (
-    inference: {
-      providerId: string,
-      connectionName: string,
-      model: string,
+  contextBridge.exposeInMainWorld(
+    'flowDeployKubernetes',
+    async (
+      inference: {
+        providerId: string;
+        connectionName: string;
+        model: string;
+      },
+      flow: {
+        providerId: string;
+        connectionName: string;
+        flowId: string;
+      },
+      namespace: string = 'default',
+    ): Promise<string> => {
+      return ipcInvoke('flows:deploy:kubernetes', inference, flow, namespace);
     },
-    flow: {
-      providerId: string,
-      connectionName: string,
-      flowId: string,
-    },
-    namespace: string = 'default',
-  ): Promise<string> => {
-    return ipcInvoke(
-      'flows:deploy:kubernetes',
-      inference,
-      flow,
-      namespace,
-    );
-  });
+  );
 
   contextBridge.exposeInMainWorld('refreshFlows', async (): Promise<void> => {
     return ipcInvoke('flows:refresh');
@@ -1170,7 +1168,8 @@ export function initExposure(): void {
     ): Promise<number> => {
       onDataCallbacksStreamTextId++;
       onDataCallbacksStreamText.set(onDataCallbacksStreamTextId, { onChunk, onError, onEnd });
-      return ipcInvoke('inference:streamText',
+      return ipcInvoke(
+        'inference:streamText',
         providerId,
         connectionName,
         modelId,
@@ -1635,7 +1634,6 @@ export function initExposure(): void {
     },
   );
 
-
   contextBridge.exposeInMainWorld(
     'searchImageInRegistry',
     async (options: ImageSearchOptions): Promise<ImageSearchResult[]> => {
@@ -1679,8 +1677,6 @@ export function initExposure(): void {
     },
   );
 
-
-
   contextBridge.exposeInMainWorld('getMcpRegistries', async (): Promise<readonly containerDesktopAPI.MCPRegistry[]> => {
     return ipcInvoke('mcp-registry:getMcpRegistries');
   });
@@ -1691,42 +1687,32 @@ export function initExposure(): void {
     },
   );
 
-  contextBridge.exposeInMainWorld(
-    'getMcpRegistryServers',
-    async (): Promise<MCPRegistryServerDetail[]> => {
-      return ipcInvoke('mcp-registry:getMcpRegistryServers');
-    },
-  );
+  contextBridge.exposeInMainWorld('getMcpRegistryServers', async (): Promise<MCPRegistryServerDetail[]> => {
+    return ipcInvoke('mcp-registry:getMcpRegistryServers');
+  });
   contextBridge.exposeInMainWorld(
     'createMCPServerFromRemoteRegistry',
-    async (serverId: string, remoteId: number, headersParams: {name: string, value: string}[]): Promise<void> => {
+    async (serverId: string, remoteId: number, headersParams: { name: string; value: string }[]): Promise<void> => {
       return ipcInvoke('mcp-registry:createMCPServerFromRemoteRegistry', serverId, remoteId, headersParams);
     },
   );
 
+  contextBridge.exposeInMainWorld('fetchMcpRemoteServers', async (): Promise<MCPRemoteServerInfo[]> => {
+    return ipcInvoke('mcp-manager:fetchMcpRemoteServers');
+  });
 
   contextBridge.exposeInMainWorld(
-    'fetchMcpRemoteServers',
-    async (): Promise<MCPRemoteServerInfo[]> => {
-      return ipcInvoke('mcp-manager:fetchMcpRemoteServers');
-    },
-  );
-
-
-
-    contextBridge.exposeInMainWorld(
     'unregisterMCPRegistry',
     async (registry: containerDesktopAPI.MCPRegistry): Promise<void> => {
       return ipcInvoke('mcp-registry:unregisterMCPRegistry', registry);
     },
   );
-    contextBridge.exposeInMainWorld(
+  contextBridge.exposeInMainWorld(
     'createMCPRegistry',
     async (registryCreateOptions: containerDesktopAPI.MCPRegistryCreateOptions): Promise<void> => {
       return ipcInvoke('mcp-registry:createMCPRegistry', registryCreateOptions);
     },
   );
-
 
   // can't send configuration object as it is not serializable
   // https://www.electronjs.org/docs/latest/api/context-bridge#parameter--error--return-type-support

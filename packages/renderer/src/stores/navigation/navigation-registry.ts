@@ -22,7 +22,7 @@ import { type Writable, writable } from 'svelte/store';
 import type { IconSize } from 'svelte-fa';
 
 import { EventStore } from '/@/stores/event-store';
-import {  createNavigationFlowsEntry } from '/@/stores/navigation/navigation-registry-flows.svelte';
+import { createNavigationFlowsEntry } from '/@/stores/navigation/navigation-registry-flows.svelte';
 
 import { configurationProperties } from '../configurationProperties';
 import { createNavigationExtensionEntry, createNavigationExtensionGroup } from './navigation-registry-extension.svelte';

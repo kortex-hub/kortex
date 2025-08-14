@@ -81,14 +81,18 @@ export class MCPManager implements AsyncDisposable {
     }, {});
   }
 
-  public async registerMCPClient(internalProviderId: string, connectionName: string, transport: Transport, url?: string): Promise<void> {
-        const client = await experimental_createMCPClient({ transport});
+  public async registerMCPClient(
+    internalProviderId: string,
+    connectionName: string,
+    transport: Transport,
+    url?: string,
+  ): Promise<void> {
+    const client = await experimental_createMCPClient({ transport });
 
     const key = this.getKey(internalProviderId, connectionName);
 
     console.log('[MCPManager] Registering MCP client for ', internalProviderId, ' with name ', connectionName);
     this.#client.set(key, client);
-
 
     const mcpRemoteServerInfo: MCPRemoteServerInfo = {
       id: key,
@@ -101,10 +105,11 @@ export class MCPManager implements AsyncDisposable {
     this.apiSender.send('mcp-manager-update');
   }
 
-
-  protected async registerMCPClientConnection(internalProviderId: string, connection: MCPProviderConnection): Promise<void> {
+  protected async registerMCPClientConnection(
+    internalProviderId: string,
+    connection: MCPProviderConnection,
+  ): Promise<void> {
     return this.registerMCPClient(internalProviderId, connection.name, connection.transport);
-
   }
 
   init(): void {
@@ -143,5 +148,4 @@ export class MCPManager implements AsyncDisposable {
   public async listMCPRemoteServers(): Promise<MCPRemoteServerInfo[]> {
     return this.#mcps;
   }
-
 }

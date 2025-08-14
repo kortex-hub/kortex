@@ -13,27 +13,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-  import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 
 let {
   // selected under the form `${internalProviderId}:${connectionName}``
   selected = $bindable(new SvelteSet()),
 }: {
-  selected: Set<string>
+  selected: Set<string>;
 } = $props();
-
 
 let open = $state(false);
 
-
 function onSelect(key: string, event: Event): void {
   event.preventDefault(); // prevent dropdown to close itself
-  if(selected.has(key)) {
+  if (selected.has(key)) {
     selected.delete(key);
   } else {
     selected.add(key);
   }
-
 }
 </script>
 

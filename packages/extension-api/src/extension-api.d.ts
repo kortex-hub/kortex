@@ -427,9 +427,9 @@ declare module '@kortex-app/api' {
     status(): ProviderConnectionStatus;
     lifecycle?: ProviderConnectionLifecycle;
     flow: {
-      all(): Promise<Array<Flow>>,
+      all(): Promise<Array<Flow>>;
       onDidChange: Event<void>;
-    },
+    };
     deploy?: {
       kubernetes?(options: FlowDeployKubernetesOptions): Promise<FlowDeployKubernetesResult>;
     };
@@ -581,7 +581,7 @@ declare module '@kortex-app/api' {
     lifecycle?: ProviderConnectionLifecycle;
     status(): ProviderConnectionStatus;
     // list of models
-    models: Array<InferenceModel>
+    models: Array<InferenceModel>;
   };
 
   export type ProviderConnection =
@@ -1287,8 +1287,6 @@ declare module '@kortex-app/api' {
     export const onDidUnregisterRegistry: Event<Registry>;
   }
 
-
-
   // An interface for "Default" registries that include the name, URL as well as an icon
   // This allows an extension to "suggest" a registry to the user that you may
   // login via a username & password.
@@ -1335,8 +1333,6 @@ declare module '@kortex-app/api' {
     export const onDidUpdateRegistry: Event<MCPRegistry>;
     export const onDidUnregisterRegistry: Event<MCPRegistry>;
   }
-
-
 
   export namespace tray {
     /**

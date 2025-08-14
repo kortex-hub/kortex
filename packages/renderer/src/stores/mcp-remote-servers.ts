@@ -35,7 +35,6 @@ window.events?.receive('mcp-manager-update', () => {
   });
 });
 
-
 window.addEventListener('system-ready', () => {
   fetchMcpRemoteServers().catch((error: unknown) => {
     console.error('Failed to fetch registries entries', error);

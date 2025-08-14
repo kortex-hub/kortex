@@ -3,7 +3,7 @@ import { SvelteSet } from 'svelte/reactivity';
 import { innerWidth } from 'svelte/reactivity/window';
 import { router } from 'tinro';
 
-import type {ModelInfo} from '/@/lib/chat/components/model-info';
+import type { ModelInfo } from '/@/lib/chat/components/model-info';
 
 import type { Chat, User } from '../../../../../main/src/chat/db/schema';
 import PlusIcon from './icons/plus.svelte';
@@ -28,8 +28,8 @@ let {
   chat: Chat | undefined;
   readonly: boolean;
   selectedModel: ModelInfo | undefined;
-  models: Array<ModelInfo>,
-  selectedMCP: Set<string>,
+  models: Array<ModelInfo>;
+  selectedMCP: Set<string>;
 } = $props();
 
 const sidebar = useSidebar();

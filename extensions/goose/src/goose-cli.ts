@@ -34,11 +34,9 @@ export class GooseCLI implements Disposable {
     }
   }
 
-  async getRecipes(options: {
-    path: string,
-  }): Promise<Array<{ path: string }>> {
+  async getRecipes(options: { path: string }): Promise<Array<{ path: string }>> {
     // skip when no
-    if(this.cli?.version === undefined) {
+    if (this.cli?.version === undefined) {
       console.warn('cannot get recipes: goose is not installed');
       return [];
     }

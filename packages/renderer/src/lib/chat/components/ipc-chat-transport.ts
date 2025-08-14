@@ -3,13 +3,12 @@ import type { ChatRequestOptions, ChatTransport, UIMessage, UIMessageChunk } fro
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 
 interface Dependencies {
-  getModel: () => ModelInfo,
-  getMCP: () => Array<string>
+  getModel: () => ModelInfo;
+  getMCP: () => Array<string>;
 }
 
 export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
-  constructor(private readonly dependencies: Dependencies) {
-  }
+  constructor(private readonly dependencies: Dependencies) {}
 
   async sendMessages(
     options: {
