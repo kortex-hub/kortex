@@ -152,6 +152,11 @@ export class Gemini implements Disposable {
         },
         { label: 'gemini-2.0-flash-lite' },
       ],
+      credentials(): Record<string, string> {
+        return {
+          [TOKENS_KEY]: token,
+        };
+      },
     });
     this.connections.set(tokenHash, connectionDisposable);
   }
