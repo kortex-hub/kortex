@@ -1,7 +1,7 @@
 <script lang="ts">
 import { faPlusCircle, faTrash } from '@fortawesome/free-solid-svg-icons';
 import type * as containerDesktopAPI from '@kortex-app/api';
-import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
+import { Button, ErrorMessage, Input, Link } from '@podman-desktop/ui-svelte';
 
 import IconImage from '../appearance/IconImage.svelte';
 import Dialog from '../dialogs/Dialog.svelte';
@@ -112,6 +112,9 @@ async function removeExistingRegistry(registry: containerDesktopAPI.MCPRegistry)
                 </div>
               </div>
             </div>
+             <div class="w-1/5 flex space-x-2" role="cell">
+              {registry.serverUrl}
+            </div>
                         <div class="w-1/5 flex space-x-2 justify-end" role="cell">
                           <!-- Add remove button-->
                           <Button
@@ -154,7 +157,8 @@ async function removeExistingRegistry(registry: containerDesktopAPI.MCPRegistry)
                 </div>
               </div>
             </div>
-            <div class="w-1/5" role="cell">
+            <div class="w-3/5" role="cell">
+                 <Link on:click={(): Promise<void> => window.openExternal(registry.url)}>{registry.url}</Link>
             </div>
             <div class="w-1/5 flex space-x-2 justify-end" role="cell">
             </div>

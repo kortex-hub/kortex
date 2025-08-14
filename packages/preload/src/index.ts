@@ -68,6 +68,7 @@ import type { ExploreFeature } from '/@api/explore-feature';
 import type { ExtensionDevelopmentFolderInfo } from '/@api/extension-development-folders-info';
 import type { ExtensionInfo } from '/@api/extension-info';
 import type { FeedbackProperties, GitHubIssue } from '/@api/feedback';
+import type { FlowInfo } from '/@api/flow-info';
 import type { HistoryInfo } from '/@api/history-info';
 import type { IconInfo } from '/@api/icon-info';
 import type { ImageCheckerInfo } from '/@api/image-checker-info';
@@ -85,6 +86,8 @@ import type { ResourceCount } from '/@api/kubernetes-resource-count';
 import type { KubernetesContextResources } from '/@api/kubernetes-resources';
 import type { KubernetesTroubleshootingInformation } from '/@api/kubernetes-troubleshooting';
 import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '/@api/manifest-info';
+import type { MCPRegistryServerDetail } from '/@api/mcp/mcp-registry-server-entry';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import type { Menu } from '/@api/menu.js';
 import { NavigationPage } from '/@api/navigation-page';
 import type { NavigationRequest } from '/@api/navigation-request';
@@ -129,7 +132,6 @@ import type {
 import type { Guide } from '../../main/src/plugin/learning-center/learning-center-api';
 import type { ExtensionBanner, RecommendedRegistry } from '../../main/src/plugin/recommendations/recommendations-api';
 import type { IDisposable } from '../../main/src/plugin/types/disposable';
-import { FlowInfo } from '/@api/flow-info';
 
 export type DialogResultCallback = (openDialogReturnValue: Electron.OpenDialogReturnValue) => void;
 export type OpenSaveDialogResultCallback = (result: string | string[] | undefined) => void;
@@ -1174,7 +1176,7 @@ export function initExposure(): void {
         modelId,
         mcp,
         messages,
-        onDataCallbacksStreamTextId
+        onDataCallbacksStreamTextId,
       );
     },
   );
@@ -1688,6 +1690,29 @@ export function initExposure(): void {
       return ipcInvoke('mcp-registry:getMcpSuggestedRegistries');
     },
   );
+
+  contextBridge.exposeInMainWorld(
+    'getMcpRegistryServers',
+    async (): Promise<MCPRegistryServerDetail[]> => {
+      return ipcInvoke('mcp-registry:getMcpRegistryServers');
+    },
+  );
+  contextBridge.exposeInMainWorld(
+    'createMCPServerFromRemoteRegistry',
+    async (serverId: string, remoteId: number, headersParams: {name: string, value: string}[]): Promise<void> => {
+      return ipcInvoke('mcp-registry:createMCPServerFromRemoteRegistry', serverId, remoteId, headersParams);
+    },
+  );
+
+
+  contextBridge.exposeInMainWorld(
+    'fetchMcpRemoteServers',
+    async (): Promise<MCPRemoteServerInfo[]> => {
+      return ipcInvoke('mcp-manager:fetchMcpRemoteServers');
+    },
+  );
+
+
 
     contextBridge.exposeInMainWorld(
     'unregisterMCPRegistry',

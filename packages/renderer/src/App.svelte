@@ -86,6 +86,7 @@ import Route from './Route.svelte';
 import { lastSubmenuPages } from './stores/breadcrumb';
 import { navigationRegistry } from './stores/navigation/navigation-registry';
 import SubmenuNavigation from './SubmenuNavigation.svelte';
+  import McpServerList from './lib/mcp/MCPServerList.svelte';
 
 router.mode.memory();
 
@@ -170,6 +171,9 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
           />
         </Route>
 
+        <Route path="/mcps/*" breadcrumb="MCPs">
+          <McpServerList />
+        </Route>
         <Route path="/containers" breadcrumb="Containers" navigationHint="root">
           <ContainerList searchTerm={meta.query.filter ?? ''} />
         </Route>
