@@ -408,6 +408,19 @@ declare module '@kortex-app/api' {
     path: string;
   }
 
+  export interface FlowDeployKubernetesResult {
+    resources: string;
+  }
+
+  export interface FlowDeployKubernetesOptions {
+    dryrun: boolean;
+    provider: Provider;
+    connection: InferenceProviderConnection;
+    model: InferenceModel;
+    namespace: string;
+    flow: Flow;
+  }
+
   export interface FlowProviderConnection {
     name: string;
     displayName?: string;
@@ -416,7 +429,10 @@ declare module '@kortex-app/api' {
     flow: {
       all(): Promise<Array<Flow>>,
       onDidChange: Event<void>;
-    }
+    },
+    deploy?: {
+      kubernetes?(options: FlowDeployKubernetesOptions): Promise<FlowDeployKubernetesResult>;
+    };
   }
 
   export interface PodCreatePortOptions {
@@ -555,15 +571,17 @@ declare module '@kortex-app/api' {
     status(): ProviderConnectionStatus;
   };
 
+  export interface InferenceModel {
+    label: string;
+  }
+
   export type InferenceProviderConnection = {
     name: string;
     sdk: AISDKInferenceProvider;
     lifecycle?: ProviderConnectionLifecycle;
     status(): ProviderConnectionStatus;
     // list of models
-    models: Array<{
-      label: string;
-    }>
+    models: Array<InferenceModel>
   };
 
   export type ProviderConnection =

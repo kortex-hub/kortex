@@ -302,6 +302,27 @@ export function initExposure(): void {
     return ipcInvoke('flows:list');
   });
 
+  contextBridge.exposeInMainWorld('flowDeployKubernetes', async (
+    inference: {
+      providerId: string,
+      connectionName: string,
+      model: string,
+    },
+    flow: {
+      providerId: string,
+      connectionName: string,
+      flowId: string,
+    },
+    namespace: string = 'default',
+  ): Promise<string> => {
+    return ipcInvoke(
+      'flows:deploy:kubernetes',
+      inference,
+      flow,
+      namespace,
+    );
+  });
+
   contextBridge.exposeInMainWorld('refreshFlows', async (): Promise<void> => {
     return ipcInvoke('flows:refresh');
   });
@@ -1136,7 +1157,7 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld(
     'inferenceStreamText',
     async (
-      internalProviderId: string,
+      providerId: string,
       connectionName: string,
       modelId: string,
       mcp: Array<string>,
@@ -1148,7 +1169,7 @@ export function initExposure(): void {
       onDataCallbacksStreamTextId++;
       onDataCallbacksStreamText.set(onDataCallbacksStreamTextId, { onChunk, onError, onEnd });
       return ipcInvoke('inference:streamText',
-        internalProviderId,
+        providerId,
         connectionName,
         modelId,
         mcp,

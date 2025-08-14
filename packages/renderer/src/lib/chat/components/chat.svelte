@@ -2,8 +2,8 @@
 import { Chat, type UIMessage } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
 import { untrack } from 'svelte';
-import { toast } from 'svelte-sonner';
 import { SvelteSet } from 'svelte/reactivity';
+import { toast } from 'svelte-sonner';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
@@ -35,7 +35,7 @@ function getFirstModel(): ModelInfo | undefined {
   if (!connection) return undefined;
 
   return {
-    internalProviderId: inference.internalId,
+    providerId: inference.id,
     connectionName: connection.name,
     label: connection.models[0].label,
   };
@@ -50,7 +50,7 @@ let models: Array<ModelInfo> = $derived(
 
       for (const { name, models } of current.inferenceConnections) {
         accumulator.push(...models.map(model => ({
-          internalProviderId: current.internalId,
+          providerId: current.id,
           connectionName: name,
           label: model.label,
         })));
