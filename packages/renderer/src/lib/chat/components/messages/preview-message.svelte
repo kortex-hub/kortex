@@ -20,6 +20,19 @@ let mode = $state<'view' | 'edit'>('view');
 	data-role={message.role}
 	in:fly|global={{ opacity: 0, y: 5 }}
 >
+
+ {#if message.role === 'assistant'}
+    {@const dynamicToolingParts = message.parts.filter(part => part.type === 'dynamic-tool')}
+	  <!-- do we have tooling in parts ?-->
+    {#if dynamicToolingParts.length > 0}
+      <div class="flex-row w-full flex">
+        <div class="italic">Dynamic tooling used:</div>
+        {#each dynamicToolingParts as dynamicTool}
+          <div>{dynamicTool.toolName}</div>
+        {/each}
+	  </div>
+    {/if}
+	{/if}
 	<div
 		class={cn(
 			'flex w-full gap-4 group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl',
