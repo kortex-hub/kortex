@@ -1381,6 +1381,9 @@ export class PluginSystem {
               //FIXME: should it contain text-end ?
             } else {
               console.log('chunk.type is not text-delta', chunk);
+              this.getWebContentsSender().send('inference:streamText-onChunk', onDataId, {
+                ...chunk,
+              });
             }
           },
         });
