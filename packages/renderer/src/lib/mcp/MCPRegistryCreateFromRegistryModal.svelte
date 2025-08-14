@@ -1,41 +1,42 @@
 <script lang="ts">
 import { faCheckCircle, faCircleArrowUp, faPlusCircle, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import { Button, ErrorMessage, Input, Link } from '@podman-desktop/ui-svelte';
-import { onMount} from 'svelte';
+import { onMount } from 'svelte';
 import Fa from 'svelte-fa';
 import { router } from 'tinro';
 
-
-  import type { MCPRegistryServerDetail } from '/@api/mcp/mcp-registry-server-entry';
-  import Dialog from '/@/lib/dialogs/Dialog.svelte';
-  import PasswordInput from '../ui/PasswordInput.svelte';
+import type { MCPRegistryServerDetail } from '/@api/mcp/mcp-registry-server-entry';
+import Dialog from '/@/lib/dialogs/Dialog.svelte';
+import PasswordInput from '../ui/PasswordInput.svelte';
 
 interface Props {
   mcpRegistryServerDetail: MCPRegistryServerDetail;
   closeCallback: () => void;
 }
 
-const {mcpRegistryServerDetail, closeCallback}: Props = $props();
+const { mcpRegistryServerDetail, closeCallback }: Props = $props();
 
 let createInProgress = $state(false);
 let createFinished = $state(false);
-let createError: string | undefined = $state(undefined)
+let createError: string | undefined = $state(undefined);
 
 // get first remote if any
 const remote = $derived(mcpRegistryServerDetail.remotes?.[0]);
 
-const remoteHeadersFields = $derived((remote?.headers ?? []).map(header => {return {name: header.name ?? '', value: '', isSecret: header.is_secret, description: header.description ?? ''}}));
-
+const remoteHeadersFields = $derived(
+  (remote?.headers ?? []).map(header => {
+    return { name: header.name ?? '', value: '', isSecret: header.is_secret, description: header.description ?? '' };
+  }),
+);
 
 async function createMcpServer(): Promise<void> {
-
   // get first remote
 
   // FIXME: handle only one remote for now
   const remoteid = 0;
   createInProgress = true;
   try {
-    await window.createMCPServerFromRemoteRegistry(mcpRegistryServerDetail.id, remoteid, remoteHeadersFields)
+    await window.createMCPServerFromRemoteRegistry(mcpRegistryServerDetail.id, remoteid, remoteHeadersFields);
   } catch (error) {
     console.error('Error creating MCP server from registry:', error);
     createError = String(error);
@@ -43,14 +44,12 @@ async function createMcpServer(): Promise<void> {
     createInProgress = false;
     createFinished = true;
   }
-
 }
 
 async function creationFinished(): Promise<void> {
   closeCallback();
   router.goto('/mcps');
 }
-
 </script>
 
 <Dialog

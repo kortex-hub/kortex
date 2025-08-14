@@ -87,7 +87,7 @@ import Route from './Route.svelte';
 import { lastSubmenuPages } from './stores/breadcrumb';
 import { navigationRegistry } from './stores/navigation/navigation-registry';
 import SubmenuNavigation from './SubmenuNavigation.svelte';
-  import McpServerList from './lib/mcp/MCPServerList.svelte';
+import McpServerList from './lib/mcp/MCPServerList.svelte';
 
 router.mode.memory();
 

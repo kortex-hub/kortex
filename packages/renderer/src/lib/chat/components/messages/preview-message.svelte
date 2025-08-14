@@ -8,7 +8,7 @@ import PreviewAttachment from '../preview-attachment.svelte';
 import MessageReasoning from '../message-reasoning.svelte';
 import { fly } from 'svelte/transition';
 import type { UIMessage } from '@ai-sdk/svelte';
-import Markdown from "/@/lib/markdown/Markdown.svelte";
+import Markdown from '/@/lib/markdown/Markdown.svelte';
 
 let { message, readonly, loading }: { message: UIMessage; readonly: boolean; loading: boolean } = $props();
 

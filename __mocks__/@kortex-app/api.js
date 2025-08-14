@@ -21,8 +21,8 @@
  * This file is referenced from vitest.config.js file.
  */
 const mcpRegistry = {
-      suggestRegistry: vi.fn(),
-    };
+  suggestRegistry: vi.fn(),
+};
 
-const plugin = {mcpRegistry};
+const plugin = { mcpRegistry };
 module.exports = plugin;

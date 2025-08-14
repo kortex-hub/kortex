@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ClassValue } from 'svelte/elements';
 
-import type {ModelInfo} from '/@/lib/chat/components/model-info';
+import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { cn } from '/@/lib/chat/utils/shadcn';
 
 import CheckCircleFillIcon from './icons/check-circle-fill.svelte';
@@ -28,12 +28,19 @@ let {
 } = $props();
 
 let groups: Map<string, Array<ModelInfo>> = $derived(
-  Map.groupBy(models, ({ providerId, connectionName }) => `${providerId}:${connectionName}`)
+  Map.groupBy(models, ({ providerId, connectionName }) => `${providerId}:${connectionName}`),
 );
 
 let open = $state(false);
 const selectedChatModelDetails = $derived(
-  models.values().find(model => model.label === value?.label && model.providerId === value?.providerId && model.connectionName === value?.connectionName)
+  models
+    .values()
+    .find(
+      model =>
+        model.label === value?.label &&
+        model.providerId === value?.providerId &&
+        model.connectionName === value?.connectionName,
+    ),
 );
 
 function onSelect(model: ModelInfo): void {

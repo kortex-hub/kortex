@@ -1,15 +1,15 @@
 <script lang="ts">
-import { Button,Tab } from '@podman-desktop/ui-svelte';
+import { Button, Tab } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
-import type {ModelInfo} from '/@/lib/chat/components/model-info';
+import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
 import MonacoEditor from '/@/lib/editor/MonacoEditor.svelte';
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
-import {getTabUrl, isTabSelected} from '/@/lib/ui/Util';
+import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
 import { providerInfos } from '/@/stores/providers';
-import type {ProviderFlowConnectionInfo} from '/@api/provider-info';
+import type { ProviderFlowConnectionInfo } from '/@api/provider-info';
 
 interface Props {
   providerId: string;
@@ -20,23 +20,29 @@ interface Props {
 let { providerId, connectionName, flowId }: Props = $props();
 
 let provider = $derived($providerInfos.find(provider => provider.id === providerId));
-let connection: ProviderFlowConnectionInfo | undefined = $derived(provider?.flowConnections.find(connection => connection.name === connectionName));
+let connection: ProviderFlowConnectionInfo | undefined = $derived(
+  provider?.flowConnections.find(connection => connection.name === connectionName),
+);
 let path = $derived(atob(flowId));
 
 let models: Array<ModelInfo> = $derived(
-  $providerInfos.reduce((accumulator, current) => {
-    if (current.inferenceConnections.length > 0) {
-
-      for (const { name, models } of current.inferenceConnections) {
-        accumulator.push(...models.map(model => ({
-          providerId: current.id,
-          connectionName: name,
-          label: model.label,
-        })));
+  $providerInfos.reduce(
+    (accumulator, current) => {
+      if (current.inferenceConnections.length > 0) {
+        for (const { name, models } of current.inferenceConnections) {
+          accumulator.push(
+            ...models.map(model => ({
+              providerId: current.id,
+              connectionName: name,
+              label: model.label,
+            })),
+          );
+        }
       }
-    }
-    return accumulator;
-  }, [] as Array<ModelInfo>),
+      return accumulator;
+    },
+    [] as Array<ModelInfo>,
+  ),
 );
 
 let selectedModel = $state<ModelInfo | undefined>(undefined);
@@ -44,9 +50,9 @@ let selectedModel = $state<ModelInfo | undefined>(undefined);
 let kubernetes: string | undefined = $state(undefined);
 
 async function deployKubernetes(): Promise<void> {
-  if(!selectedModel) return;
-  if(!provider) return;
-  if(!connection) return;
+  if (!selectedModel) return;
+  if (!provider) return;
+  if (!connection) return;
 
   const result = await window.flowDeployKubernetes(
     {
@@ -58,7 +64,7 @@ async function deployKubernetes(): Promise<void> {
       flowId: path,
       providerId: provider.id,
       connectionName: connection.name,
-    }
+    },
   );
   kubernetes = result;
 }

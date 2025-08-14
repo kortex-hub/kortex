@@ -52,12 +52,9 @@ export class MCPRegistry {
   private readonly _onDidUpdateRegistry = new Emitter<kortexAPI.MCPRegistry>();
   private readonly _onDidUnregisterRegistry = new Emitter<kortexAPI.MCPRegistry>();
 
-  readonly onDidRegisterRegistry: kortexAPI.Event<kortexAPI.MCPRegistry> =
-    this._onDidRegisterRegistry.event;
-  readonly onDidUpdateRegistry: kortexAPI.Event<kortexAPI.MCPRegistry> =
-    this._onDidUpdateRegistry.event;
-  readonly onDidUnregisterRegistry: kortexAPI.Event<kortexAPI.MCPRegistry> =
-    this._onDidUnregisterRegistry.event;
+  readonly onDidRegisterRegistry: kortexAPI.Event<kortexAPI.MCPRegistry> = this._onDidRegisterRegistry.event;
+  readonly onDidUpdateRegistry: kortexAPI.Event<kortexAPI.MCPRegistry> = this._onDidUpdateRegistry.event;
+  readonly onDidUnregisterRegistry: kortexAPI.Event<kortexAPI.MCPRegistry> = this._onDidUnregisterRegistry.event;
 
   private proxySettings: kortexAPI.ProxySettings | undefined;
   private proxyEnabled: boolean;
@@ -88,16 +85,12 @@ export class MCPRegistry {
     }
   }
 
-
   getRegistryHash(registry: { serverUrl: string }): string {
     return crypto.createHash('sha512').update(registry.serverUrl).digest('hex');
   }
 
   registerMCPRegistry(registry: kortexAPI.MCPRegistry): Disposable {
-    const found = this.registries.find(
-      reg =>
-        reg.serverUrl === registry.serverUrl,
-    );
+    const found = this.registries.find(reg => reg.serverUrl === registry.serverUrl);
     if (found) {
       // Ignore and don't register - extension may register registries every time it is restarted
       console.log('Registry already registered, skipping registration');
@@ -113,8 +106,6 @@ export class MCPRegistry {
     return Disposable.create(() => {
       this.unregisterMCPRegistry(registry);
     });
-
-
   }
 
   suggestMCPRegistry(registry: kortexAPI.MCPRegistrySuggestedProvider): Disposable {
@@ -147,9 +138,7 @@ export class MCPRegistry {
   }
 
   unregisterMCPRegistry(registry: kortexAPI.MCPRegistry): void {
-    const filtered = this.registries.filter(
-      registryItem => registryItem.serverUrl !== registry.serverUrl,
-    );
+    const filtered = this.registries.filter(registryItem => registryItem.serverUrl !== registry.serverUrl);
     if (filtered.length !== this.registries.length) {
       this._onDidUnregisterRegistry.fire(Object.freeze({ ...registry }));
       this.registries = filtered;
@@ -180,14 +169,10 @@ export class MCPRegistry {
     });
   }
 
-  async createRegistry(
-    registryCreateOptions: kortexAPI.MCPRegistryCreateOptions,
-  ): Promise<Disposable> {
+  async createRegistry(registryCreateOptions: kortexAPI.MCPRegistryCreateOptions): Promise<Disposable> {
     let telemetryOptions = {};
     try {
-      const exists = this.registries.find(
-        registry => registry.serverUrl === registryCreateOptions.serverUrl,
-      );
+      const exists = this.registries.find(registry => registry.serverUrl === registryCreateOptions.serverUrl);
       if (exists) {
         throw new Error(`Registry ${registryCreateOptions.serverUrl} already exists`);
       }
@@ -203,11 +188,13 @@ export class MCPRegistry {
         ...telemetryOptions,
       });
     }
-
   }
 
-  async createMCPServerFromRemoteRegistry(serverId: string, remoteId: number, headersParams: {name: string, value: string}[]): Promise<void> {
-
+  async createMCPServerFromRemoteRegistry(
+    serverId: string,
+    remoteId: number,
+    headersParams: { name: string; value: string }[],
+  ): Promise<void> {
     // create the mcp connection
     const headers: { [key: string]: string } = {};
     for (const header of headersParams) {
@@ -220,12 +207,10 @@ export class MCPRegistry {
       headers[keyName] = keyValue;
     }
 
-
     // get the remote from the server-id/remoteId
 
     const serverDetails = await this.listMCPServersFromRegistries();
-    const serverDetail = serverDetails.find(
-      server => server.id === serverId);
+    const serverDetail = serverDetails.find(server => server.id === serverId);
     if (!serverDetail) {
       throw new Error(`MCP server with id ${serverId} not found in remote registry`);
     }
@@ -248,50 +233,42 @@ export class MCPRegistry {
       },
     });
 
-
-
     await this.mcpManager.registerMCPClient('internal', name, transport, remote.url);
-
   }
 
+  async listMCPServersFromRegistries(): Promise<MCPRegistryServerDetail[]> {
+    // connect to each registry and grab server details
+    const serverDetails: MCPRegistryServerDetail[] = [];
 
-async listMCPServersFromRegistries(): Promise<MCPRegistryServerDetail[]> {
+    // merge all urls to inspect
+    const serverUrls: string[] = this.registries
+      .map(registry => registry.serverUrl)
+      .concat(this.suggestedRegistries.map(registry => registry.url));
 
-  // connect to each registry and grab server details
-  const serverDetails: MCPRegistryServerDetail[] = [];
+    for (const registryURL of serverUrls) {
+      // connect to ${registry.serverUrl}/v0/servers and grab the list of servers
+      // use fetch
 
-  // merge all urls to inspect
-  const serverUrls: string[] = this.registries.map(registry => registry.serverUrl).concat(this.suggestedRegistries.map(registry => registry.url));
+      const content = await fetch(`${registryURL}/v0/servers`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!content.ok) {
+        console.error(`Failed to fetch MCP servers from ${registryURL}: ${content.statusText}`);
+      }
+      const serverList: MCPRegistryServerList = await content.json();
 
-
-  for (const registryURL of serverUrls) {
-    // connect to ${registry.serverUrl}/v0/servers and grab the list of servers
-    // use fetch
-
-    const content = await fetch(`${registryURL}/v0/servers`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    if (!content.ok) {
-      console.error(`Failed to fetch MCP servers from ${registryURL}: ${content.statusText}`);
+      // now, aggregate the servers from the list
+      serverDetails.push(...serverList.servers);
     }
-    const serverList: MCPRegistryServerList = await content.json();
-
-    // now, aggregate the servers from the list
-    serverDetails.push(...serverList.servers);
-
+    return serverDetails;
   }
-  return serverDetails;
-
-}
-
 
   async updateMCPRegistry(registry: kortexAPI.MCPRegistry): Promise<void> {
     const matchingRegistry = this.registries.find(
-      existingRegistry =>
-        registry.serverUrl === existingRegistry.serverUrl,
+      existingRegistry => registry.serverUrl === existingRegistry.serverUrl,
     );
     if (!matchingRegistry) {
       throw new Error(`MCP Registry ${registry.serverUrl} was not found`);

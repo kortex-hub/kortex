@@ -7,7 +7,7 @@ import { toast } from 'svelte-sonner';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
-import {providerInfos} from '/@/stores/providers';
+import { providerInfos } from '/@/stores/providers';
 
 import type { Chat as DbChat, User } from '../../../../../main/src/chat/db/schema';
 import ChatHeader from './chat-header.svelte';
@@ -28,10 +28,10 @@ let {
 } = $props();
 
 function getFirstModel(): ModelInfo | undefined {
-  const inference = $providerInfos.find((provider) => provider.inferenceConnections.length > 0);
+  const inference = $providerInfos.find(provider => provider.inferenceConnections.length > 0);
   if (!inference) return undefined;
 
-  const connection = inference.inferenceConnections.find((connection) => connection.models.length > 0);
+  const connection = inference.inferenceConnections.find(connection => connection.models.length > 0);
   if (!connection) return undefined;
 
   return {
@@ -45,19 +45,23 @@ let selectedModel = $state<ModelInfo | undefined>(getFirstModel());
 let selectedMCP = new SvelteSet<string>();
 
 let models: Array<ModelInfo> = $derived(
-  $providerInfos.reduce((accumulator, current) => {
-    if (current.inferenceConnections.length > 0) {
-
-      for (const { name, models } of current.inferenceConnections) {
-        accumulator.push(...models.map(model => ({
-          providerId: current.id,
-          connectionName: name,
-          label: model.label,
-        })));
+  $providerInfos.reduce(
+    (accumulator, current) => {
+      if (current.inferenceConnections.length > 0) {
+        for (const { name, models } of current.inferenceConnections) {
+          accumulator.push(
+            ...models.map(model => ({
+              providerId: current.id,
+              connectionName: name,
+              label: model.label,
+            })),
+          );
+        }
       }
-    }
-    return accumulator;
-  }, [] as Array<ModelInfo>),
+      return accumulator;
+    },
+    [] as Array<ModelInfo>,
+  ),
 );
 
 const chatHistory = ChatHistory.fromContext();
@@ -68,7 +72,7 @@ const chatClient = $derived(
     transport: new IPCChatTransport({
       getModel: (): ModelInfo => {
         const value = $state.snapshot(selectedModel);
-        if(!value) throw new Error('no model selected');
+        if (!value) throw new Error('no model selected');
         return value;
       },
       getMCP: (): Array<string> => {

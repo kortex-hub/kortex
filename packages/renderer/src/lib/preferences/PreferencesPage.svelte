@@ -21,7 +21,7 @@ import PreferencesRendering from './PreferencesRendering.svelte';
 import PreferencesResourcesRendering from './PreferencesResourcesRendering.svelte';
 import PreferencesVmConnectionRendering from './PreferencesVmConnectionRendering.svelte';
 import { isDefaultScope } from './Util';
-  import PreferencesMcpRegistriesEditing from './PreferencesMCPRegistriesEditing.svelte';
+import PreferencesMcpRegistriesEditing from './PreferencesMCPRegistriesEditing.svelte';
 
 let properties: IConfigurationPropertyRecordedSchema[];
 let defaultPrefPageId: string;

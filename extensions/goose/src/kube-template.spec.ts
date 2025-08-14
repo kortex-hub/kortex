@@ -45,9 +45,7 @@ instructions: |
       name: 'google',
       model: 'gemini-2.5-pro',
       credentials: {
-        env: [
-          { key: 'GOOGLE_API_KEY', value: 'dummy' },
-        ],
+        env: [{ key: 'GOOGLE_API_KEY', value: 'dummy' }],
       },
     },
     kortex: {
@@ -55,9 +53,7 @@ instructions: |
     },
     namespace: 'default',
   },
-])('$testName', async (options) => {
+])('$testName', async options => {
   const template = new KubeTemplate(options);
-  await expect(template.render()).toMatchFileSnapshot(
-    join('test-snapshots', `${options.testName}.yaml`),
-  );
+  await expect(template.render()).toMatchFileSnapshot(join('test-snapshots', `${options.testName}.yaml`));
 });

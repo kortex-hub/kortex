@@ -24,85 +24,85 @@ export type MCPRegistryAuthMethod = 'github' | 'none';
 export type MCPRegistryServerStatus = 'active' | 'deprecated';
 
 export interface MCPRegistryAuthentication {
-    method?: MCPRegistryAuthMethod;
-    token?: string;
-    repo_ref?: string;
+  method?: MCPRegistryAuthMethod;
+  token?: string;
+  repo_ref?: string;
 }
 
 export interface MCPRegistryRepository {
-    url: string;
-    source: string;
-    id: string;
+  url: string;
+  source: string;
+  id: string;
 }
 
 export type MCPRegistryFormat = 'string' | 'number' | 'boolean' | 'file_path';
 
 export interface MCPRegistryInput {
-    description?: string;
-    is_required?: boolean;
-    format?: MCPRegistryFormat;
-    value?: string;
-    is_secret?: boolean;
-    default?: string;
-    choices?: string[];
-    template?: string;
-    name?: string;
+  description?: string;
+  is_required?: boolean;
+  format?: MCPRegistryFormat;
+  value?: string;
+  is_secret?: boolean;
+  default?: string;
+  choices?: string[];
+  template?: string;
+  name?: string;
 }
 
 export interface MCPRegistryInputWithVariables extends MCPRegistryInput {
-    variables?: Record<string, MCPRegistryInput>;
+  variables?: Record<string, MCPRegistryInput>;
 }
 
 export interface MCPRegistryKeyValueInput extends MCPRegistryInputWithVariables {
-    name: string;
+  name: string;
 }
 
 export type MCPRegistryArgumentType = 'positional' | 'named';
 
 export interface MCPRegistryArgument extends MCPRegistryInputWithVariables {
-    type: MCPRegistryArgumentType;
-    name?: string;
-    is_repeated?: boolean;
-    value_hint?: string;
+  type: MCPRegistryArgumentType;
+  name?: string;
+  is_repeated?: boolean;
+  value_hint?: string;
 }
 
 export interface MCPRegistryPackage {
-    registry_name: string;
-    name: string;
-    version: string;
-    runtime_hint?: string;
-    runtime_arguments?: MCPRegistryArgument[];
-    package_arguments?: MCPRegistryArgument[];
-    environment_variables?: MCPRegistryKeyValueInput[];
+  registry_name: string;
+  name: string;
+  version: string;
+  runtime_hint?: string;
+  runtime_arguments?: MCPRegistryArgument[];
+  package_arguments?: MCPRegistryArgument[];
+  environment_variables?: MCPRegistryKeyValueInput[];
 }
 
 export interface MCPRegistryRemote {
-    transport_type: string;
-    url: string;
-    headers?: MCPRegistryInput[];
+  transport_type: string;
+  url: string;
+  headers?: MCPRegistryInput[];
 }
 
 export interface MCPRegistryVersionDetail {
-    version: string;
-    release_date: string;
-    is_latest: boolean;
+  version: string;
+  release_date: string;
+  is_latest: boolean;
 }
 
 export interface MCPRegistryServer {
-    id: string;
-    name: string;
-    description: string;
-    status?: MCPRegistryServerStatus;
-    repository: MCPRegistryRepository;
-    version_detail: MCPRegistryVersionDetail;
+  id: string;
+  name: string;
+  description: string;
+  status?: MCPRegistryServerStatus;
+  repository: MCPRegistryRepository;
+  version_detail: MCPRegistryVersionDetail;
 }
 
 export interface MCPRegistryServerDetail extends MCPRegistryServer {
-    packages?: MCPRegistryPackage[];
-    remotes?: MCPRegistryRemote[];
+  packages?: MCPRegistryPackage[];
+  remotes?: MCPRegistryRemote[];
 }
 
 export interface MCPRegistryServerList {
-    servers: MCPRegistryServer[];
-    metadata: {next_cursor?: string, count: number};
+  servers: MCPRegistryServer[];
+  metadata: { next_cursor?: string; count: number };
 }
