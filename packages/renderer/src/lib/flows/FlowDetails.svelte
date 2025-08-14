@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Button, Tab } from '@podman-desktop/ui-svelte';
+import { Button, Checkbox,Tab } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
@@ -49,6 +49,8 @@ let selectedModel = $state<ModelInfo | undefined>(undefined);
 
 let kubernetes: string | undefined = $state(undefined);
 
+let hideSecrets: boolean = $state(true);
+
 async function deployKubernetes(): Promise<void> {
   if (!selectedModel) return;
   if (!provider) return;
@@ -65,6 +67,10 @@ async function deployKubernetes(): Promise<void> {
       providerId: provider.id,
       connectionName: connection.name,
     },
+    {
+      hideSecrets: hideSecrets,
+      namespace: 'default',
+    }
   );
   kubernetes = result;
 }
@@ -86,8 +92,10 @@ async function deployKubernetes(): Promise<void> {
       </ul>
     </Route>
     <Route path="/kube" breadcrumb="Kube" navigationHint="tab">
-      <div class="flex flex-row gap-x-2">
+      <div class="flex flex-row gap-x-2 items-center">
         <ModelSelector class="" models={models} bind:value={selectedModel}/>
+
+        <Checkbox bind:checked={hideSecrets} title="Hide Secrets">Hide Secret</Checkbox>
 
         <Button onclick={deployKubernetes} disabled={!selectedModel}>Dryrun</Button>
       </div>

@@ -832,7 +832,10 @@ export class PluginSystem {
           connectionName: string;
           flowId: string;
         },
-        namespace: string = 'default',
+        options: {
+          namespace: string,
+          hideSecrets: boolean,
+        },
       ): Promise<string> => {
         // Get the inference provider to use
         const inferenceProvider = providerRegistry.getProvider(inference.providerId);
@@ -859,7 +862,8 @@ export class PluginSystem {
           flow: {
             path: flow.flowId,
           },
-          namespace: namespace,
+          namespace: options.namespace,
+          hideSecrets: options.hideSecrets,
         });
 
         return resources;

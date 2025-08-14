@@ -306,9 +306,12 @@ export function initExposure(): void {
         connectionName: string;
         flowId: string;
       },
-      namespace: string = 'default',
+      options: {
+        namespace: string,
+        hideSecrets: boolean,
+      }
     ): Promise<string> => {
-      return ipcInvoke('flows:deploy:kubernetes', inference, flow, namespace);
+      return ipcInvoke('flows:deploy:kubernetes', inference, flow, options);
     },
   );
 
