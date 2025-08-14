@@ -49,7 +49,8 @@ import {
   streamText,
   TextStreamPart,
   type ToolSet,
-  UIMessage} from 'ai';
+  UIMessage,
+} from 'ai';
 import checkDiskSpacePkg from 'check-disk-space';
 import type Dockerode from 'dockerode';
 import type { WebContents } from 'electron';
@@ -813,52 +814,57 @@ export class PluginSystem {
       return containerProviderRegistry.listPods();
     });
 
-    this.ipcHandle('flows:list', async (
-      _listener,
-    ): Promise<Array<FlowInfo>> => {
+    this.ipcHandle('flows:list', async (_listener): Promise<Array<FlowInfo>> => {
       return flowManager.all();
     });
 
-    this.ipcHandle('flows:deploy:kubernetes', async (
-      _listener,
-      inference: {
-        providerId: string,
-        connectionName: string,
-        model: string,
-      },
-      flow: {
-        providerId: string,
-        connectionName: string,
-        flowId: string,
-      },
-      namespace: string = 'default',
-    ): Promise<string> => {
-      // Get the inference provider to use
-      const inferenceProvider = providerRegistry.getProvider(inference.providerId);
-      const inferenceConnection: containerDesktopAPI.InferenceProviderConnection | undefined = inferenceProvider.inferenceConnections.find(({ name }) => name === inference.connectionName);
-      if(!inferenceConnection) throw new Error(`cannot find inference connection with name ${inference.connectionName}`);
-      const model = inferenceConnection.models.find(({ label }) => inference.model === label);
-      if(!model) throw new Error(`cannot find model with label ${inference.model}`);
-
-      // Get the flow provider to use
-      const flowProvider = providerRegistry.getProvider(flow.providerId);
-      const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined = flowProvider.flowConnections.find(({ name }) => name === flow.connectionName);
-      if(!flowConnection) throw new Error(`cannot find flow connection with name ${flow.connectionName}`);
-      if(!flowConnection?.deploy?.kubernetes) throw new Error(`cannot find kubernetes deploy method on flow connection ${flow.connectionName}`);
-
-      const { resources } = await flowConnection.deploy.kubernetes({
-        dryrun: true,
-        provider: inferenceProvider,
-        connection: inferenceConnection,
-        model: model,
-        flow: {
-          path: flow.flowId,
+    this.ipcHandle(
+      'flows:deploy:kubernetes',
+      async (
+        _listener,
+        inference: {
+          providerId: string;
+          connectionName: string;
+          model: string;
         },
-        namespace: namespace,
-      });
+        flow: {
+          providerId: string;
+          connectionName: string;
+          flowId: string;
+        },
+        namespace: string = 'default',
+      ): Promise<string> => {
+        // Get the inference provider to use
+        const inferenceProvider = providerRegistry.getProvider(inference.providerId);
+        const inferenceConnection: containerDesktopAPI.InferenceProviderConnection | undefined =
+          inferenceProvider.inferenceConnections.find(({ name }) => name === inference.connectionName);
+        if (!inferenceConnection)
+          throw new Error(`cannot find inference connection with name ${inference.connectionName}`);
+        const model = inferenceConnection.models.find(({ label }) => inference.model === label);
+        if (!model) throw new Error(`cannot find model with label ${inference.model}`);
 
-      return resources;
-    });
+        // Get the flow provider to use
+        const flowProvider = providerRegistry.getProvider(flow.providerId);
+        const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
+          flowProvider.flowConnections.find(({ name }) => name === flow.connectionName);
+        if (!flowConnection) throw new Error(`cannot find flow connection with name ${flow.connectionName}`);
+        if (!flowConnection?.deploy?.kubernetes)
+          throw new Error(`cannot find kubernetes deploy method on flow connection ${flow.connectionName}`);
+
+        const { resources } = await flowConnection.deploy.kubernetes({
+          dryrun: true,
+          provider: inferenceProvider,
+          connection: inferenceConnection,
+          model: model,
+          flow: {
+            path: flow.flowId,
+          },
+          namespace: namespace,
+        });
+
+        return resources;
+      },
+    );
 
     this.ipcHandle('flows:refresh', async (): Promise<void> => {
       return flowManager.refresh();
@@ -1311,13 +1317,13 @@ export class PluginSystem {
               // add missing text-start if any
               const chunkId = chunk.id;
               if (!currentIds.has(chunkId)) {
-              this.getWebContentsSender().send('inference:streamText-onChunk', onDataId, {
-                type: 'text-start',
-                id: chunk.id,
-              });
+                this.getWebContentsSender().send('inference:streamText-onChunk', onDataId, {
+                  type: 'text-start',
+                  id: chunk.id,
+                });
 
-              currentIds.add(chunkId);
-            }
+                currentIds.add(chunkId);
+              }
               // text-delta is expected to have delta field, not text
               this.getWebContentsSender().send('inference:streamText-onChunk', onDataId, {
                 ...chunk,
@@ -2108,25 +2114,24 @@ export class PluginSystem {
 
     this.ipcHandle(
       'mcp-registry:createMCPRegistry',
-      async (
-        _listener,
-        registryCreateOptions: containerDesktopAPI.MCPRegistryCreateOptions,
-      ): Promise<void> => {
+      async (_listener, registryCreateOptions: containerDesktopAPI.MCPRegistryCreateOptions): Promise<void> => {
         await mcpRegistry.createRegistry(registryCreateOptions);
       },
     );
 
-        this.ipcHandle(
+    this.ipcHandle(
       'mcp-registry:createMCPServerFromRemoteRegistry',
       async (
         _listener,
-        serverId: string, remoteId: number, headersParams: {name: string, value: string}[],
+        serverId: string,
+        remoteId: number,
+        headersParams: { name: string; value: string }[],
       ): Promise<void> => {
         await mcpRegistry.createMCPServerFromRemoteRegistry(serverId, remoteId, headersParams);
       },
     );
 
-        this.ipcHandle('mcp-registry:getMcpRegistries', async (): Promise<readonly containerDesktopAPI.MCPRegistry[]> => {
+    this.ipcHandle('mcp-registry:getMcpRegistries', async (): Promise<readonly containerDesktopAPI.MCPRegistry[]> => {
       return mcpRegistry.getRegistries();
     });
 
@@ -2141,22 +2146,16 @@ export class PluginSystem {
       },
     );
 
-        this.ipcHandle(
+    this.ipcHandle(
       'mcp-registry:unregisterMCPRegistry',
       async (_listener, registry: containerDesktopAPI.MCPRegistry): Promise<void> => {
         return mcpRegistry.unregisterMCPRegistry(registry);
       },
     );
 
-            this.ipcHandle(
-      'mcp-manager:fetchMcpRemoteServers',
-      async (
-        _listener,
-      ): Promise<MCPRemoteServerInfo[]> => {
-        return mcpManager.listMCPRemoteServers();
-      },
-    );
-
+    this.ipcHandle('mcp-manager:fetchMcpRemoteServers', async (_listener): Promise<MCPRemoteServerInfo[]> => {
+      return mcpManager.listMCPRemoteServers();
+    });
 
     this.ipcHandle(
       'image-registry:updateRegistry',

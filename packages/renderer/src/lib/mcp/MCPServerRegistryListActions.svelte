@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { faGear, faPlusCircle, faTrash } from "@fortawesome/free-solid-svg-icons";
-  import ListItemButtonIcon from "../ui/ListItemButtonIcon.svelte";
-  import type { MCPRegistryServerDetail } from "/@api/mcp/mcp-registry-server-entry";
-  import McpRegistryCreateFromRegistryModal from "./MCPRegistryCreateFromRegistryModal.svelte";
-
+import { faGear, faPlusCircle, faTrash } from '@fortawesome/free-solid-svg-icons';
+import ListItemButtonIcon from '../ui/ListItemButtonIcon.svelte';
+import type { MCPRegistryServerDetail } from '/@api/mcp/mcp-registry-server-entry';
+import McpRegistryCreateFromRegistryModal from './MCPRegistryCreateFromRegistryModal.svelte';
 
 export let object: MCPRegistryServerDetail;
 
@@ -12,7 +11,6 @@ let createFromRegistryModal = false;
 function closeModals(): void {
   createFromRegistryModal = false;
 }
-
 </script>
 
 {#if object.remotes?.length ?? 0 > 0}

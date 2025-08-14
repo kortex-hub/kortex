@@ -79,7 +79,7 @@ export interface ProviderFlowConnectionInfo extends ProviderConnectionBase {
   connectionType: ProviderConnectionType.FLOW;
   deploy: {
     kubernetes: boolean;
-  }
+  };
 }
 
 export interface ProviderInferenceConnectionInfo extends ProviderConnectionBase {

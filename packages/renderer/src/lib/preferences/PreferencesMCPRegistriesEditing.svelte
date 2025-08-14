@@ -6,14 +6,13 @@ import { Button, ErrorMessage, Input, Link } from '@podman-desktop/ui-svelte';
 import IconImage from '../appearance/IconImage.svelte';
 import Dialog from '../dialogs/Dialog.svelte';
 import SettingsPage from './SettingsPage.svelte';
-  import { mcpRegistriesInfos, mcpRegistriesSuggestedInfos } from '/@/stores/mcp-registries';
+import { mcpRegistriesInfos, mcpRegistriesSuggestedInfos } from '/@/stores/mcp-registries';
 
 // contains the original instances of MCP registries when user clicks
 let originRegistries = $state<containerDesktopAPI.MCPRegistry[]>([]);
 
 // login error responses
 let errorResponses = $state<{ serverUrl: string; error: string }[]>([]);
-
 
 interface Props {
   // show or hide new registry form
@@ -30,7 +29,6 @@ const newRegistryRequest = $state<containerDesktopAPI.MCPRegistry>({
   serverUrl: '',
 });
 
-
 function setErrorResponse(serverUrl: string, message: string | undefined): void {
   if (message) {
     errorResponses = [...errorResponses, { serverUrl: serverUrl, error: message }];
@@ -39,24 +37,19 @@ function setErrorResponse(serverUrl: string, message: string | undefined): void 
   }
 }
 
-
-
-
 async function addToMCPRegistry(registry: containerDesktopAPI.MCPRegistry): Promise<void> {
   adding = true;
   try {
     // use ... to avoid to give the proxy object
-    await window.createMCPRegistry({...registry});
-  setNewRegistryFormVisible(false);
+    await window.createMCPRegistry({ ...registry });
+    setNewRegistryFormVisible(false);
   } catch (error: unknown) {
-
     setErrorResponse(registry.serverUrl, String(error));
   }
   adding = false;
 }
 
 function setNewRegistryFormVisible(visible: boolean): void {
-
   // Show the new registry form
   showNewRegistryForm = visible;
 }

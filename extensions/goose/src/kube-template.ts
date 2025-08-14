@@ -22,18 +22,18 @@ import template from './templates/kube.mustache?raw';
 export interface KubeTemplateOptions {
   kortex: {
     version: string;
-  },
+  };
   recipe: {
     name: string;
     content: string;
-  },
+  };
   provider: {
     name: string;
     model: string;
     credentials: {
-      env: Array<{ key: string, value: string }>,
-    }
-  },
+      env: Array<{ key: string; value: string }>;
+    };
+  };
   namespace: string;
 }
 

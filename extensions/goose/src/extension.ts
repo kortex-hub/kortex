@@ -17,23 +17,17 @@
  ***********************************************************************/
 
 import type { ExtensionContext } from '@kortex-app/api';
-import { cli,process, provider } from '@kortex-app/api';
+import { cli, process, provider } from '@kortex-app/api';
 
 import { GooseCLI } from './goose-cli';
 import { GooseRecipe } from './goose-recipe';
 
 export async function activate(extensionContext: ExtensionContext): Promise<void> {
-  const gooseCLI = new GooseCLI(
-    cli,
-    process,
-  );
+  const gooseCLI = new GooseCLI(cli, process);
   extensionContext.subscriptions.push(gooseCLI);
   await gooseCLI.init();
 
-  const gooseProvider = new GooseRecipe(
-    provider,
-    gooseCLI,
-  );
+  const gooseProvider = new GooseRecipe(provider, gooseCLI);
   extensionContext.subscriptions.push(gooseProvider);
   gooseProvider.init();
 }

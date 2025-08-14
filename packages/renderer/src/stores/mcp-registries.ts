@@ -49,9 +49,7 @@ export async function fetchRegistries(): Promise<void> {
 
 export const mcpRegistriesInfos: Writable<readonly kortexAPI.MCPRegistry[]> = writable([]);
 
-export const mcpRegistriesSuggestedInfos: Writable<readonly kortexAPI.RegistrySuggestedProvider[]> = writable(
-  [],
-);
+export const mcpRegistriesSuggestedInfos: Writable<readonly kortexAPI.RegistrySuggestedProvider[]> = writable([]);
 
 export const searchPattern = writable('');
 

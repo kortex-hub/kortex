@@ -1,5 +1,5 @@
 export interface MCPRemoteServerInfo {
- id: string;
- name: string;
- url: string;
+  id: string;
+  name: string;
+  url: string;
 }

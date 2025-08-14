@@ -1,34 +1,33 @@
 <script lang="ts">
+import { Button, NavPage, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
+import { mcpRegistriesServerInfos } from '/@/stores/mcp-registry-servers';
+import McpIcon from '../images/MCPIcon.svelte';
+import type { MCPRegistryServerDetail } from '/@api/mcp/mcp-registry-server-entry';
+import McpServerListActions from './MCPServerRegistryListActions.svelte';
+import SimpleColumn from '@podman-desktop/ui-svelte/TableSimpleColumn';
+import MCPEmptyScreen from './MCPRegistryEmptyScreen.svelte';
+import McpServerListRegistryInstall from './MCPServerListRegistryInstall.svelte';
+import McpServerListRemoteReady from './MCPServerListRemoteReady.svelte';
 
-  import { Button, NavPage, Table, TableColumn, TableRow } from "@podman-desktop/ui-svelte";
-  import { mcpRegistriesServerInfos } from "/@/stores/mcp-registry-servers";
-  import McpIcon from "../images/MCPIcon.svelte";
-  import type { MCPRegistryServerDetail } from "/@api/mcp/mcp-registry-server-entry";
-    import McpServerListActions from "./MCPServerRegistryListActions.svelte";
-  import SimpleColumn from "@podman-desktop/ui-svelte/TableSimpleColumn";
-  import MCPEmptyScreen from "./MCPRegistryEmptyScreen.svelte";
-  import McpServerListRegistryInstall from "./MCPServerListRegistryInstall.svelte";
-  import McpServerListRemoteReady from "./MCPServerListRemoteReady.svelte";
-
-
-  interface SelectableMCPRegistryServerDetailUI extends MCPRegistryServerDetail {
-    selected?: boolean;
-  }
+interface SelectableMCPRegistryServerDetailUI extends MCPRegistryServerDetail {
+  selected?: boolean;
+}
 
 const servers: SelectableMCPRegistryServerDetailUI[] = $derived(
-  $mcpRegistriesServerInfos.map((server): SelectableMCPRegistryServerDetailUI => ({
-    ...server,
-    selected: false,
-  }))
+  $mcpRegistriesServerInfos.map(
+    (server): SelectableMCPRegistryServerDetailUI => ({
+      ...server,
+      selected: false,
+    }),
+  ),
 );
-
 
 let table: Table<SelectableMCPRegistryServerDetailUI>;
 
 const statusColumn = new TableColumn<MCPRegistryServerDetail>('Status', {
-    width: '60px',
-    renderer: McpIcon,
-  });
+  width: '60px',
+  renderer: McpIcon,
+});
 
 const nameColumn = new TableColumn<MCPRegistryServerDetail, string>('Name', {
   width: '2fr',
@@ -40,11 +39,14 @@ const nameColumn = new TableColumn<MCPRegistryServerDetail, string>('Name', {
 const columns = [
   statusColumn,
   nameColumn,
-  new TableColumn<MCPRegistryServerDetail>('Actions', { align: 'right', renderer: McpServerListActions, overflow: true }),
+  new TableColumn<MCPRegistryServerDetail>('Actions', {
+    align: 'right',
+    renderer: McpServerListActions,
+    overflow: true,
+  }),
 ];
 
 const row = new TableRow<MCPRegistryServerDetail>({});
-
 
 let selectedTab = $state<'READY' | 'INSTALLABLE'>('READY');
 </script>

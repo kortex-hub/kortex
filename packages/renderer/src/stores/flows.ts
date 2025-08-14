@@ -22,13 +22,7 @@ import PodIcon from '/@/lib/images/PodIcon.svelte';
 import { EventStore } from '/@/stores/event-store';
 import type { FlowInfo } from '/@api/flow-info';
 
-const windowEvents = [
-  'extension-stopped',
-  'extensions-started',
-  'extension-started',
-  'flow:collected',
-  'flow:updated',
-];
+const windowEvents = ['extension-stopped', 'extensions-started', 'extension-started', 'flow:collected', 'flow:updated'];
 const windowListeners = ['extensions-already-started'];
 
 let readyToUpdate = false;
