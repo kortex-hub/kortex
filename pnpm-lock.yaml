@@ -383,6 +383,31 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.1.0)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(msw@2.10.4(@types/node@24.1.0)(typescript@5.9.2))(terser@5.36.0)(tsx@4.20.3)(yaml@2.8.1)
 
+  extensions/goose:
+    dependencies:
+      '@kortex-app/api':
+        specifier: workspace:*
+        version: link:../../packages/extension-api
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.17.1
+        version: 1.17.2
+      mustache:
+        specifier: ^4.2.0
+        version: 4.2.0
+    devDependencies:
+      '@types/mustache':
+        specifier: ^4.2.6
+        version: 4.2.6
+      mkdirp:
+        specifier: ^3.0.1
+        version: 3.0.1
+      vite:
+        specifier: ^7.0.6
+        version: 7.1.2(@types/node@24.1.0)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.36.0)(tsx@4.20.3)(yaml@2.8.1)
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.1.0)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(msw@2.10.4(@types/node@24.1.0)(typescript@5.9.2))(terser@5.36.0)(tsx@4.20.3)(yaml@2.8.1)
+
   extensions/mcp-registries:
     devDependencies:
       '@kortex-app/api':
@@ -2008,6 +2033,9 @@ packages:
 
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
+
+  '@types/mustache@4.2.6':
+    resolution: {integrity: sha512-t+8/QWTAhOFlrF1IVZqKnMRJi84EgkIK5Kh0p2JV4OLywUvCwJPFxbJAl7XAow7DVIHsF+xW9f1MVzg0L6Szjw==}
 
   '@types/node-fetch@2.6.12':
     resolution: {integrity: sha512-8nneRWKCg3rMtF69nLQJnOYUcbafYeFSjqkw3jCRLsqkWFlHaoQrr5mXmofFGOx3DKn7UfmBMyov8ySvLRVldA==}
@@ -5298,6 +5326,10 @@ packages:
       typescript:
         optional: true
 
+  mustache@4.2.0:
+    resolution: {integrity: sha512-71ippSywq5Yb7/tVYyGbkBggbU8H3u5Rz56fH60jGFgr8uHwxs+aSKeqmluIVzM0m0kB7xQjKS6qPfd0b2ZoqQ==}
+    hasBin: true
+
   mute-stream@2.0.0:
     resolution: {integrity: sha512-WWdIxpyjEn+FhQJQQv9aQAYlHoNVdzIzUySNV1gHUPDSdZJ3yZn7pAAbQcV7B56Mvu881q9FZV+0Vx2xC44VWA==}
     engines: {node: ^18.17.0 || >=20.5.0}
@@ -8501,6 +8533,8 @@ snapshots:
   '@types/mime@1.3.5': {}
 
   '@types/ms@2.1.0': {}
+
+  '@types/mustache@4.2.6': {}
 
   '@types/node-fetch@2.6.12':
     dependencies:
@@ -12440,6 +12474,8 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
     optional: true
+
+  mustache@4.2.0: {}
 
   mute-stream@2.0.0: {}
 

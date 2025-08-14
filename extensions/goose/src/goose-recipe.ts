@@ -15,19 +15,22 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, basename } from 'node:path';
 
 import type {
   Disposable,
-Flow,  Provider,
+  Flow,
+  FlowDeployKubernetesOptions,
+  FlowDeployKubernetesResult,
+  Provider,
   provider as ProviderAPI,
   ProviderConnectionStatus} from '@kortex-app/api';
-import {
-  EventEmitter,
-} from '@kortex-app/api';
+import { EventEmitter } from '@kortex-app/api';
 
 import type { GooseCLI } from './goose-cli';
+import { KubeTemplate } from './kube-template';
 
 export class GooseRecipe implements Disposable {
   private gooseProvider: Provider | undefined = undefined;
@@ -37,12 +40,17 @@ export class GooseRecipe implements Disposable {
   constructor(
     private readonly provider: typeof ProviderAPI,
     private readonly gooseCLI: GooseCLI,
+    private readonly kortexVersion: string,
     ) {
+  }
+
+  protected getBasePath(): string {
+    return join(homedir(), '.config', 'goose', 'recipes');
   }
 
   protected async all(): Promise<Array<Flow>> {
     return this.gooseCLI.getRecipes({
-      path: join(homedir(), '.config', 'goose', 'recipes'),
+      path: this.getBasePath(),
     });
   }
 
@@ -63,7 +71,43 @@ export class GooseRecipe implements Disposable {
       status(): ProviderConnectionStatus {
         return 'unknown';
       },
+      deploy: {
+        kubernetes: this.deployKubernetes.bind(this),
+      },
     });
+  }
+
+  protected async deployKubernetes(options: FlowDeployKubernetesOptions): Promise<FlowDeployKubernetesResult> {
+    if(options.provider.id !== 'gemini') throw new Error('unsupported provider');
+
+    const path = join(this.getBasePath(), options.flow.path);
+    const content = await readFile(path, 'utf-8');
+
+    const recipeName = basename(path).split('.')[0];
+
+    const template = new KubeTemplate({
+      kortex: {
+        version: this.kortexVersion,
+      },
+      recipe: {
+        name: recipeName,
+        content: content,
+      },
+      provider: {
+        name: options.provider.id,
+        model: options.model.label,
+        credentials: {
+          env: [{
+            key: 'GOOGLE_API_KEY',
+            value: 'REPLACE_KEY_HERE',
+          }],
+        },
+      },
+      namespace: options.namespace,
+    });
+    return {
+      resources: template.render(),
+    };
   }
 
   dispose(): void {

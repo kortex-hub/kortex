@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: goose-{{ provider.name }}-credentials
+  labels:
+    app: goose
+  annotations:
+    kortex-hub/version: {{ kortex.version }}
+  namespace: {{ namespace }}
+stringData:
+  {{#provider.credentials.env}}
+    {{ key }}: {{ value }}
+  {{/provider.credentials.env}}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: goose-recipe-{{ recipe.name }}
+  labels:
+    app: goose
+  annotations:
+    kortex-hub/version: {{ kortex.version }}
+  namespace: {{ namespace }}
+spec:
+  template:
+    spec:
+      containers:
+        - name: goose
+          image: {{& container }}
+          command: ['/usr/local/bin/goose']
+          args: ['run', '--recipe', '/home/goose/recipe.yaml']
+          envFrom:
+            - secretRef:
+                name: goose-credentials
+          volumeMounts:
+            - name: goose-config-volume
+              mountPath: /home/goose/.config/goose/config.yaml
+              subPath: goose-config.yaml
+            - name: goose-recipe-volume
+              mountPath: /home/goose/recipe.yaml
+              subPath: recipe.yaml
+      volumes:
+        # Goose config (Provider, model etc.)
+        - name: goose-config-volume
+          configMap:
+            name: goose-config
+        # Goose recipe
+        - name: goose-recipe-volume
+          configMap:
+            name: goose-recipe-{{ recipe.name }}
+      restartPolicy: Never
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: goose-config
+  labels:
+    app: goose
+  annotations:
+    kortex-hub/version: {{ kortex.version }}
+  namespace: {{ namespace }}
+data:
+  goose-config.yaml: |
+    GOOSE_PROVIDER: {{ provider.name }}
+    GOOSE_MODEL: {{ provider.model }}
+    extensions: {}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: goose-recipe-{{ recipe.name }}
+  labels:
+    app: goose
+  annotations:
+    kortex-hub/version: {{ kortex.version }}
+  namespace: {{ namespace }}
+data:
+  recipe.yaml: |
+  {{#recipe.content }}
+    {{&.}}
+  {{/recipe.content }}

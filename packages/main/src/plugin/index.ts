@@ -811,8 +811,51 @@ export class PluginSystem {
       return containerProviderRegistry.listPods();
     });
 
-    this.ipcHandle('flows:list', async (): Promise<Array<FlowInfo>> => {
+    this.ipcHandle('flows:list', async (
+      _listener,
+    ): Promise<Array<FlowInfo>> => {
       return flowManager.all();
+    });
+
+    this.ipcHandle('flows:deploy:kubernetes', async (
+      _listener,
+      inference: {
+        providerId: string,
+        connectionName: string,
+        model: string,
+      },
+      flow: {
+        providerId: string,
+        connectionName: string,
+        flowId: string,
+      },
+      namespace: string = 'default',
+    ): Promise<string> => {
+      // Get the inference provider to use
+      const inferenceProvider = providerRegistry.getProvider(inference.providerId);
+      const inferenceConnection: containerDesktopAPI.InferenceProviderConnection | undefined = inferenceProvider.inferenceConnections.find(({ name }) => name === inference.connectionName);
+      if(!inferenceConnection) throw new Error(`cannot find inference connection with name ${inference.connectionName}`);
+      const model = inferenceConnection.models.find(({ label }) => inference.model === label);
+      if(!model) throw new Error(`cannot find model with label ${inference.model}`);
+
+      // Get the flow provider to use
+      const flowProvider = providerRegistry.getProvider(flow.providerId);
+      const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined = flowProvider.flowConnections.find(({ name }) => name === flow.connectionName);
+      if(!flowConnection) throw new Error(`cannot find flow connection with name ${flow.connectionName}`);
+      if(!flowConnection?.deploy?.kubernetes) throw new Error(`cannot find kubernetes deploy method on flow connection ${flow.connectionName}`);
+
+      const { resources } = await flowConnection.deploy.kubernetes({
+        dryrun: true,
+        provider: inferenceProvider,
+        connection: inferenceConnection,
+        model: model,
+        flow: {
+          path: flow.flowId,
+        },
+        namespace: namespace,
+      });
+
+      return resources;
     });
 
     this.ipcHandle('flows:refresh', async (): Promise<void> => {
@@ -1227,13 +1270,14 @@ export class PluginSystem {
       'inference:streamText',
       async (
         _listener,
-        internalProviderId: string,
+        providerId: string,
         connectionName: string,
         modelId: string,
         mcp: Array<string>,
         messages: UIMessage[],
         onDataId: number,
       ): Promise<number> => {
+        const internalProviderId = providerRegistry.getMatchingProviderInternalId(providerId);
         const sdk = providerRegistry.getInferenceSDK(internalProviderId, connectionName);
         const languageModel = sdk.languageModel(modelId);
 

@@ -21,9 +21,11 @@
   },
   "dependencies": {
     "@kortex-app/api": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.17.1"
+    "@modelcontextprotocol/sdk": "^1.17.1",
+    "mustache": "^4.2.0"
   },
   "devDependencies": {
+    "@types/mustache": "^4.2.6",
     "mkdirp": "^3.0.1",
     "vite": "^7.0.6",
     "vitest": "^3.2.4"

@@ -28,12 +28,12 @@ let {
 } = $props();
 
 let groups: Map<string, Array<ModelInfo>> = $derived(
-  Map.groupBy(models, ({ internalProviderId, connectionName }) => `${internalProviderId}:${connectionName}`)
+  Map.groupBy(models, ({ providerId, connectionName }) => `${providerId}:${connectionName}`)
 );
 
 let open = $state(false);
 const selectedChatModelDetails = $derived(
-  models.values().find(model => model.label === value?.label && model.internalProviderId === value?.internalProviderId && model.connectionName === value?.connectionName)
+  models.values().find(model => model.label === value?.label && model.providerId === value?.providerId && model.connectionName === value?.connectionName)
 );
 
 function onSelect(model: ModelInfo): void {
@@ -69,7 +69,7 @@ function onSelect(model: ModelInfo): void {
           <DropdownMenuItem
             onSelect={onSelect.bind(undefined, model)}
             class="group/item flex flex-row items-center justify-between gap-4"
-            data-active={model.label === value?.label && model.internalProviderId === value?.internalProviderId && model.connectionName === value?.connectionName}
+            data-active={model.label === value?.label && model.providerId === value?.providerId && model.connectionName === value?.connectionName}
           >
             <div class="flex flex-col items-start gap-1">
               <div>{model.label}</div>
