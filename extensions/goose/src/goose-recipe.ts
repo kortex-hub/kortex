@@ -17,7 +17,7 @@
  ***********************************************************************/
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { join, basename } from 'node:path';
+import { basename,join } from 'node:path';
 
 import type {
   Disposable,
@@ -85,6 +85,8 @@ export class GooseRecipe implements Disposable {
 
     const recipeName = basename(path).split('.')[0];
 
+    const token = options.connection.credentials()['gemini:tokens'] ?? 'API_TOKEN';
+
     const template = new KubeTemplate({
       kortex: {
         version: this.kortexVersion,
@@ -100,7 +102,7 @@ export class GooseRecipe implements Disposable {
           env: [
             {
               key: 'GOOGLE_API_KEY',
-              value: 'REPLACE_KEY_HERE',
+              value: (options.hideSecrets) ? ('*'.repeat(token.length)) : token,
             },
           ],
         },
