@@ -36,7 +36,7 @@ function getInitializationContext(id: string): InitializationContext {
 }
 </script>
 
-<NavPage searchEnabled={false} title="Dashboard">
+<NavPage searchEnabled={false} title="Chat">
   {#snippet content()}
   <div class="flex flex-col min-w-full h-full bg-[var(--pd-content-bg)] py-5">
     <div class="min-w-full flex-1">
