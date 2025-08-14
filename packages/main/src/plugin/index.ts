@@ -219,6 +219,8 @@ import { TaskConnectionUtils } from './util/task-connection-utils.js';
 import { ViewRegistry } from './view-registry.js';
 import { WebviewRegistry } from './webview/webview-registry.js';
 import { WelcomeInit } from './welcome/welcome-init.js';
+import { MCPRegistryServerDetail } from '/@api/mcp/mcp-registry-server-entry.js';
+import { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info.js';
 
 // workaround for ESM
 const checkDiskSpace: (path: string) => Promise<{ free: number }> = checkDiskSpacePkg as unknown as (
@@ -2114,8 +2116,22 @@ export class PluginSystem {
       },
     );
 
+        this.ipcHandle(
+      'mcp-registry:createMCPServerFromRemoteRegistry',
+      async (
+        _listener,
+        serverId: string, remoteId: number, headersParams: {name: string, value: string}[],
+      ): Promise<void> => {
+        await mcpRegistry.createMCPServerFromRemoteRegistry(serverId, remoteId, headersParams);
+      },
+    );
+
         this.ipcHandle('mcp-registry:getMcpRegistries', async (): Promise<readonly containerDesktopAPI.MCPRegistry[]> => {
       return mcpRegistry.getRegistries();
+    });
+
+    this.ipcHandle('mcp-registry:getMcpRegistryServers', async (): Promise<readonly MCPRegistryServerDetail[]> => {
+      return mcpRegistry.listMCPServersFromRegistries();
     });
 
     this.ipcHandle(
@@ -2129,6 +2145,15 @@ export class PluginSystem {
       'mcp-registry:unregisterMCPRegistry',
       async (_listener, registry: containerDesktopAPI.MCPRegistry): Promise<void> => {
         return mcpRegistry.unregisterMCPRegistry(registry);
+      },
+    );
+
+            this.ipcHandle(
+      'mcp-manager:fetchMcpRemoteServers',
+      async (
+        _listener,
+      ): Promise<MCPRemoteServerInfo[]> => {
+        return mcpManager.listMCPRemoteServers();
       },
     );
 
