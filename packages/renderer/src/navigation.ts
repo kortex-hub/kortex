@@ -47,7 +47,7 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
       break;
     case NavigationPage.FLOW_DETAILS:
       router.goto(
-        `/flows/${request.parameters.providerId}/${request.parameters.connectionName}/${request.parameters.flowId}`,
+        `/flows/${request.parameters.providerId}/${request.parameters.connectionName}/${request.parameters.flowId}/summary`,
       );
       break;
     case NavigationPage.CONTAINERS:

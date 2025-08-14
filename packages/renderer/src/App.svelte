@@ -164,7 +164,7 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
           <FlowList/>
         </Route>
 
-        <Route path="/flows/:providerId/:connectionName/:flowId" let:meta breadcrumb="Flow Details">
+        <Route path="/flows/:providerId/:connectionName/:flowId/*" let:meta breadcrumb="Flow Details">
           <FlowDetails
             providerId={meta.params.providerId}
             connectionName={meta.params.connectionName}
