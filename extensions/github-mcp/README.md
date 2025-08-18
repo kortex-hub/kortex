@@ -1,1 +1,0 @@
-# Gemini extension for Kortex
