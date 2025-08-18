@@ -9,10 +9,14 @@ import MessageReasoning from '../message-reasoning.svelte';
 import { fly } from 'svelte/transition';
 import type { UIMessage } from '@ai-sdk/svelte';
 import Markdown from '/@/lib/markdown/Markdown.svelte';
+import type { DynamicToolUIPart } from 'ai';
+import ToolParts from './tool-parts.svelte';
 
 let { message, readonly, loading }: { message: UIMessage; readonly: boolean; loading: boolean } = $props();
 
 let mode = $state<'view' | 'edit'>('view');
+
+const tools: Array<DynamicToolUIPart> = message.parts.filter((part) => part?.type === 'dynamic-tool') ?? [];
 </script>
 
 <div
@@ -21,24 +25,12 @@ let mode = $state<'view' | 'edit'>('view');
 	in:fly|global={{ opacity: 0, y: 5 }}
 >
 
- {#if message.role === 'assistant'}
-    {@const dynamicToolingParts = message.parts.filter(part => part.type === 'dynamic-tool')}
-	  <!-- do we have tooling in parts ?-->
-    {#if dynamicToolingParts.length > 0}
-      <div class="flex-row w-full flex">
-        <div class="italic">Dynamic tooling used:</div>
-        {#each dynamicToolingParts as dynamicTool}
-          <div>{dynamicTool.toolName}</div>
-        {/each}
-	  </div>
-    {/if}
-	{/if}
 	<div
 		class={cn(
 			'flex w-full gap-4 group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl',
 			{
 				'w-full': mode === 'edit',
-				'group-data-[role=user]/message:w-fit': mode !== 'edit'
+				'group-data-[role=user]/message:w-fit': mode !== 'edit',
 			}
 		)}
 	>
@@ -53,6 +45,13 @@ let mode = $state<'view' | 'edit'>('view');
 		{/if}
 
 		<div class="flex w-full flex-col gap-4">
+      {#if message.role === 'assistant'}
+        <!-- do we have tooling in parts ?-->
+        {#if tools.length > 0}
+          <ToolParts tools={tools} />
+        {/if}
+      {/if}
+
 			{#if message.parts.filter(part => part.type === 'file').length > 0}
 				<div class="flex flex-row justify-end gap-2">
 					{#each message.parts.filter(part => part.type === 'file') as attachment (attachment.url)}

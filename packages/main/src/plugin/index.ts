@@ -47,7 +47,6 @@ import {
   generateText,
   stepCountIs,
   streamText,
-  TextStreamPart,
   type ToolSet,
   UIMessage,
 } from 'ai';
@@ -1300,7 +1299,6 @@ export class PluginSystem {
         }
 
         const modelMessages = convertToModelMessages(messages);
-        const currentIds = new Set<string>();
 
         const toolset = await mcpManager.getToolSet(mcp);
 
@@ -1311,51 +1309,20 @@ export class PluginSystem {
           tools: toolset,
 
           stopWhen: stepCountIs(5),
-
-          onChunk: ({ chunk }: { chunk: TextStreamPart<ToolSet> }) => {
-            console.log('chunk');
-
-            // FIXME: I don't know why but I don't have the text-start events
-            // also text-delta does not contain expected delta field but there is a text field
-            if (chunk.type === 'text-delta') {
-              // add missing text-start if any
-              const chunkId = chunk.id;
-              if (!currentIds.has(chunkId)) {
-                this.getWebContentsSender().send('inference:streamText-onChunk', onDataId, {
-                  type: 'text-start',
-                  id: chunk.id,
-                });
-
-                currentIds.add(chunkId);
-              }
-              // text-delta is expected to have delta field, not text
-              this.getWebContentsSender().send('inference:streamText-onChunk', onDataId, {
-                ...chunk,
-                delta: chunk.text,
-              });
-              //FIXME: should it contain text-end ?
-            } else {
-              console.log('chunk.type is not text-delta', chunk);
-              this.getWebContentsSender().send('inference:streamText-onChunk', onDataId, {
-                ...chunk,
-              });
-            }
-          },
         });
 
-        const reader = streaming.textStream.getReader();
+        const reader = streaming.toUIMessageStream().getReader();
+
         // loop to wait for the stream to finish
         while (true) {
-          const { done } = await reader.read();
+          const { done, value } = await reader.read();
           if (done) {
+            // end
+            this.getWebContentsSender().send('inference:streamText-onEnd', onDataId);
             break;
           }
+          this.getWebContentsSender().send('inference:streamText-onChunk', onDataId, value);
         }
-        // no chunks received except text-delta, seend one manually ?
-        this.getWebContentsSender().send('inference:streamText-onChunk', onDataId, { type: 'finish' });
-
-        // end of the methodwhat
-        this.getWebContentsSender().send('inference:streamText-onEnd', onDataId);
 
         return onDataId;
       },
