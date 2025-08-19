@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
 import { Button, Checkbox,Tab } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
@@ -51,6 +52,8 @@ let kubernetes: string | undefined = $state(undefined);
 
 let hideSecrets: boolean = $state(true);
 
+let flowContent: string | undefined = $state(undefined);
+
 async function deployKubernetes(): Promise<void> {
   if (!selectedModel) return;
   if (!provider) return;
@@ -63,7 +66,7 @@ async function deployKubernetes(): Promise<void> {
       connectionName: selectedModel.connectionName,
     },
     {
-      flowId: path,
+      flowId: flowId,
       providerId: provider.id,
       connectionName: connection.name,
     },
@@ -74,11 +77,22 @@ async function deployKubernetes(): Promise<void> {
   );
   kubernetes = result;
 }
+
+onMount(() => {
+  window.readFlow(
+    providerId,
+  connectionName,
+  flowId,
+  ).then((content) => {
+    flowContent = content;
+  }).catch(console.error);
+});
 </script>
 
 <DetailsPage title={path}>
   {#snippet tabsSnippet()}
     <Tab title="Summary" selected={isTabSelected($router.path, 'summary')} url={getTabUrl($router.path, 'summary')} />
+    <Tab title="Source" selected={isTabSelected($router.path, 'source')} url={getTabUrl($router.path, 'source')} />
     {#if connection?.deploy?.kubernetes}
       <Tab title="Kube" selected={isTabSelected($router.path, 'kube')} url={getTabUrl($router.path, 'kube')} />
     {/if}
@@ -90,6 +104,9 @@ async function deployKubernetes(): Promise<void> {
         <li>{connectionName} => {connection?.name}</li>
         <li>{flowId} => {path}</li>
       </ul>
+    </Route>
+    <Route path="/source" breadcrumb="Source" navigationHint="tab">
+      <MonacoEditor content={flowContent} language="yaml" readOnly={true} />
     </Route>
     <Route path="/kube" breadcrumb="Kube" navigationHint="tab">
       <div class="flex flex-row gap-x-2 items-center">

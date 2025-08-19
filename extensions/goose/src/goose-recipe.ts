@@ -17,7 +17,7 @@
  ***********************************************************************/
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { basename,join } from 'node:path';
+import { basename,dirname, join } from 'node:path';
 
 import type {
   Disposable,
@@ -45,13 +45,39 @@ export class GooseRecipe implements Disposable {
   ) {}
 
   protected getBasePath(): string {
+    // https://block.github.io/goose/docs/guides/recipes/storing-recipes
     return join(homedir(), '.config', 'goose', 'recipes');
   }
 
   protected async all(): Promise<Array<Flow>> {
-    return this.gooseCLI.getRecipes({
-      path: this.getBasePath(),
+    const basePath =  this.getBasePath();
+    const recipes = await this.gooseCLI.getRecipes({
+      path: basePath,
     });
+    // map Recipe to Flow
+    return recipes.map(({ path }) => {
+      const full = join(basePath, path);
+      return {
+        id: Buffer.from(full).toString('base64'),
+        path: full,
+      };
+    });
+  }
+
+  protected async getFlowPath(flowId: string): Promise<string> {
+    const decoded = Buffer.from(flowId, 'base64').toString('utf-8');
+    if(dirname(decoded) !== this.getBasePath()) throw new Error(`only support recipes in ${this.getBasePath()}`);
+
+    return decoded;
+  }
+
+  protected async read(flowId: string): Promise<string> {
+    const path = await this.getFlowPath(flowId);
+    return await readFile(path, 'utf-8');
+  }
+
+  protected async write(flowId: string, content: string): Promise<void> {
+    throw new Error('not implemented');
   }
 
   init(): void {
@@ -66,6 +92,8 @@ export class GooseRecipe implements Disposable {
       flow: {
         all: this.all.bind(this),
         onDidChange: this.updateEmitter.event,
+        read: this.read.bind(this),
+        write: this.write.bind(this),
       },
       lifecycle: {},
       status(): ProviderConnectionStatus {
@@ -79,8 +107,8 @@ export class GooseRecipe implements Disposable {
 
   protected async deployKubernetes(options: FlowDeployKubernetesOptions): Promise<FlowDeployKubernetesResult> {
     if (options.provider.id !== 'gemini') throw new Error('unsupported provider');
+    const path = await this.getFlowPath(options.flowId);
 
-    const path = join(this.getBasePath(), options.flow.path);
     const content = await readFile(path, 'utf-8');
 
     const recipeName = basename(path).split('.')[0];

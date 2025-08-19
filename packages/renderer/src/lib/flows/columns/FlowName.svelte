@@ -15,7 +15,7 @@ function openDetails(workflow: FlowInfo): void {
     parameters: {
       providerId: workflow.providerId,
       connectionName: workflow.connectionName,
-      flowId: btoa(workflow.path),
+      flowId: workflow.id,
     },
   });
 }
