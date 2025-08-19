@@ -27,23 +27,6 @@ let {
   readonly: boolean;
 } = $props();
 
-function getFirstModel(): ModelInfo | undefined {
-  const inference = $providerInfos.find(provider => provider.inferenceConnections.length > 0);
-  if (!inference) return undefined;
-
-  const connection = inference.inferenceConnections.find(connection => connection.models.length > 0);
-  if (!connection) return undefined;
-
-  return {
-    providerId: inference.id,
-    connectionName: connection.name,
-    label: connection.models[0].label,
-  };
-}
-
-let selectedModel = $state<ModelInfo | undefined>(getFirstModel());
-let selectedMCP = new SvelteSet<string>();
-
 let models: Array<ModelInfo> = $derived(
   $providerInfos.reduce(
     (accumulator, current) => {
@@ -63,6 +46,19 @@ let models: Array<ModelInfo> = $derived(
     [] as Array<ModelInfo>,
   ),
 );
+
+let selectedModel = $state<ModelInfo | undefined>(getFirstModel());
+let selectedMCP = new SvelteSet<string>();
+
+function getFirstModel(): ModelInfo | undefined {
+  return (models && models.length > 0)?models[0]:undefined;
+}
+
+$effect(() => {
+  if(!selectedModel && models && models.length > 0) {
+    selectedModel = getFirstModel();
+  }
+});
 
 const chatHistory = ChatHistory.fromContext();
 
