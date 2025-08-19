@@ -812,6 +812,21 @@ export class PluginSystem {
       return flowManager.all();
     });
 
+    this.ipcHandle('flows:read', async (
+      _listener,
+      providerId: string,
+      connectionName: string,
+      flowId: string,
+    ): Promise<string> => {
+      // Get the flow provider to use
+      const flowProvider = providerRegistry.getProvider(providerId);
+      const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
+        flowProvider.flowConnections.find(({ name }) => name === connectionName);
+      if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
+
+      return flowConnection.flow.read(flowId);
+    });
+
     this.ipcHandle(
       'flows:deploy:kubernetes',
       async (
@@ -853,9 +868,7 @@ export class PluginSystem {
           provider: inferenceProvider,
           connection: inferenceConnection,
           model: model,
-          flow: {
-            path: flow.flowId,
-          },
+          flowId: flow.flowId,
           namespace: options.namespace,
           hideSecrets: options.hideSecrets,
         });

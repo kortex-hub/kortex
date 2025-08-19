@@ -22,5 +22,7 @@ export interface FlowInfo {
    */
   providerId: string;
   connectionName: string;
+
+  id: string;
   path: string;
 }

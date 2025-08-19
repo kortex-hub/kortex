@@ -293,6 +293,15 @@ export function initExposure(): void {
     return ipcInvoke('flows:list');
   });
 
+
+  contextBridge.exposeInMainWorld('readFlow', async (
+    providerId: string,
+    connectionName: string,
+    flowId: string,
+  ): Promise<string> => {
+    return ipcInvoke('flows:read', providerId, connectionName, flowId);
+  });
+
   contextBridge.exposeInMainWorld(
     'flowDeployKubernetes',
     async (
@@ -309,7 +318,7 @@ export function initExposure(): void {
       options: {
         namespace: string,
         hideSecrets: boolean,
-      }
+      },
     ): Promise<string> => {
       return ipcInvoke('flows:deploy:kubernetes', inference, flow, options);
     },
