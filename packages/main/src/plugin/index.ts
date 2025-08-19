@@ -42,14 +42,8 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
-import {
-  convertToModelMessages,
-  generateText,
-  stepCountIs,
-  streamText,
-  type ToolSet,
-  UIMessage,
-} from 'ai';
+import type { ToolSet, UIMessage } from 'ai';
+import { convertToModelMessages, generateText, stepCountIs, streamText } from 'ai';
 import checkDiskSpacePkg from 'check-disk-space';
 import type Dockerode from 'dockerode';
 import type { WebContents } from 'electron';
@@ -116,6 +110,8 @@ import type { ResourceCount } from '/@api/kubernetes-resource-count.js';
 import type { KubernetesContextResources } from '/@api/kubernetes-resources.js';
 import type { KubernetesTroubleshootingInformation } from '/@api/kubernetes-troubleshooting.js';
 import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '/@api/manifest-info.js';
+import type { MCPRegistryServerDetail } from '/@api/mcp/mcp-registry-server-entry.js';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info.js';
 import type { Menu } from '/@api/menu.js';
 import type { NetworkInspectInfo } from '/@api/network-info.js';
 import type { NotificationCard, NotificationCardOptions } from '/@api/notification.js';
@@ -229,8 +225,6 @@ import { ViewRegistry } from './view-registry.js';
 import { DevToolsManager } from './webview/devtools-manager.js';
 import { WebviewRegistry } from './webview/webview-registry.js';
 import { WelcomeInit } from './welcome/welcome-init.js';
-import { MCPRegistryServerDetail } from '/@api/mcp/mcp-registry-server-entry.js';
-import { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info.js';
 
 // workaround for ESM
 const checkDiskSpace: (path: string) => Promise<{ free: number }> = checkDiskSpacePkg as unknown as (
@@ -804,6 +798,7 @@ export class PluginSystem {
     );
     await experimentalFeatureFeedbackHandler.init();
     const mcpRegistry = container.get<MCPRegistry>(MCPRegistry);
+    mcpRegistry.init();
 
     await this.setupSecurityRestrictionsOnLinks(messageBox);
 
@@ -862,8 +857,8 @@ export class PluginSystem {
           flowId: string;
         },
         options: {
-          namespace: string,
-          hideSecrets: boolean,
+          namespace: string;
+          hideSecrets: boolean;
         },
       ): Promise<string> => {
         // Get the inference provider to use

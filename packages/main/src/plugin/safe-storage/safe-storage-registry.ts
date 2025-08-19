@@ -20,6 +20,7 @@ import { cpSync, existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import type { SecretStorage } from '@kortex-app/api';
 import { safeStorage } from 'electron';
 import { inject, injectable } from 'inversify';
 
@@ -27,6 +28,8 @@ import { Directories } from '/@/plugin/directories.js';
 import { Emitter } from '/@/plugin/events/emitter.js';
 import type { Event } from '/@api/event.js';
 import type { NotificationCardOptions } from '/@api/notification.js';
+
+export const CORE_STORAGE_KEY = 'core';
 
 /**
  * Manage the storage of string being encrypted on disk
@@ -92,11 +95,20 @@ export class SafeStorageRegistry {
     return notifications;
   }
 
-  getExtensionStorage(extensionId: string): ExtensionSecretStorage {
+  getExtensionStorage(extensionId: string): SecretStorageWrapper {
+    if (extensionId === CORE_STORAGE_KEY) throw new Error('cannot have an extension id using core storage key');
+
     if (!this.#extensionStorage) {
       throw new Error('Safe storage not initialized');
     }
-    return new ExtensionSecretStorage(this.#extensionStorage, extensionId);
+    return new SecretStorageWrapper(this.#extensionStorage, extensionId);
+  }
+
+  getCoreStorage(): SecretStorageWrapper {
+    if (!this.#extensionStorage) {
+      throw new Error('Safe storage not initialized');
+    }
+    return new SecretStorageWrapper(this.#extensionStorage, CORE_STORAGE_KEY);
   }
 }
 
@@ -144,29 +156,29 @@ export class SafeStorage {
   }
 }
 
-export class ExtensionSecretStorage {
+export class SecretStorageWrapper implements SecretStorage {
   readonly #onDidChange = new Emitter<SecretStorageChangeEvent>();
   readonly onDidChange: Event<SecretStorageChangeEvent> = this.#onDidChange.event;
 
   readonly #storage: SafeStorage;
-  readonly #extensionId: string;
+  readonly #prefix: string;
 
-  constructor(storage: SafeStorage, extensionId: string) {
+  constructor(storage: SafeStorage, prefix: string) {
     this.#storage = storage;
-    this.#extensionId = extensionId;
+    this.#prefix = prefix;
   }
 
   async get(key: string): Promise<string | undefined> {
-    return this.#storage.getDecrypted(`${this.#extensionId}.${key}`);
+    return this.#storage.getDecrypted(`${this.#prefix}.${key}`);
   }
 
   async store(key: string, value: string): Promise<void> {
-    this.#storage.set(`${this.#extensionId}.${key}`, value);
+    this.#storage.set(`${this.#prefix}.${key}`, value);
     this.#onDidChange.fire({ key });
   }
 
   async delete(key: string): Promise<void> {
-    this.#storage.delete(`${this.#extensionId}.${key}`);
+    this.#storage.delete(`${this.#prefix}.${key}`);
     this.#onDidChange.fire({ key });
   }
 }
