@@ -61,7 +61,7 @@ import type { MessageBox } from '../message-box.js';
 import type { OnboardingRegistry } from '../onboarding-registry.js';
 import type { ProviderRegistry } from '../provider-registry.js';
 import type { Proxy } from '../proxy.js';
-import type { ExtensionSecretStorage, SafeStorageRegistry } from '../safe-storage/safe-storage-registry.js';
+import type { SafeStorageRegistry, SecretStorageWrapper } from '../safe-storage/safe-storage-registry.js';
 import type { StatusBarRegistry } from '../statusbar/statusbar-registry.js';
 import type { NotificationRegistry } from '../tasks/notification-registry.js';
 import { type ProgressImpl, ProgressLocation } from '../tasks/progress-impl.js';
@@ -2226,7 +2226,7 @@ describe('extensionContext', async () => {
       get: getMock,
       store: storeMock,
       delete: deleteMock,
-    } as unknown as ExtensionSecretStorage);
+    } as unknown as SecretStorageWrapper);
 
     let extensionContext: containerDesktopAPI.ExtensionContext | undefined;
 
