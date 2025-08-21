@@ -24,7 +24,7 @@ import { OpenAI } from './openAI';
 export async function activate(extensionContext: ExtensionContext): Promise<void> {
   console.log('starting openAI extension');
 
-  const openai = new OpenAI(provider);
+  const openai = new OpenAI(provider, extensionContext.secrets);
   extensionContext.subscriptions.push(openai);
 
   await openai.init();
