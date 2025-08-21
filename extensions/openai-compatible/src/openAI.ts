@@ -71,7 +71,7 @@ export class OpenAI implements Disposable {
     const tokenHash = this.getTokenHash(token);
 
     if (this.connections.has(tokenHash)) {
-      throw new Error(`connection already exists for token ${key}`);
+      throw new Error(`connection already exists for token (hidden) baseURL ${baseURL}`);
     }
 
     const models = await this.listModels(baseURL, token);
@@ -90,6 +90,11 @@ export class OpenAI implements Disposable {
         return 'unknown'; // if status is not unknown we cannot delete the connection
       },
       models: models,
+      credentials(): Record<string, string> {
+        return {
+          'openai:tokens': token,
+        };
+      },
     });
     this.connections.set(tokenHash, connectionDisposable);
   }
