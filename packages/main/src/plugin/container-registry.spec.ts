@@ -43,7 +43,7 @@ import type { Telemetry } from '/@/plugin/telemetry/telemetry.js';
 import type { ContainerCreateOptions, HostConfig } from '/@api/container-info.js';
 import type { ContainerInspectInfo } from '/@api/container-inspect-info.js';
 import type { ImageInfo } from '/@api/image-info.js';
-import type { ProviderContainerConnectionInfo } from '/@api/provider-info.js';
+import { ProviderConnectionType, type ProviderContainerConnectionInfo } from '/@api/provider-info.js';
 
 import * as util from '../util.js';
 import { CancellationTokenRegistry } from './cancellation-token-registry.js';
@@ -1365,6 +1365,7 @@ describe('buildImage', () => {
 
     const connection: ProviderContainerConnectionInfo = {
       name: 'connection',
+      connectionType: ProviderConnectionType.CONTAINER,
       displayName: 'podman',
       type: 'docker',
       endpoint: {
@@ -1448,6 +1449,7 @@ describe('buildImage', () => {
 
     const connection: ProviderContainerConnectionInfo = {
       name: 'podman',
+      connectionType: ProviderConnectionType.CONTAINER,
       displayName: 'podman',
       type: 'podman',
       endpoint: {
@@ -1533,6 +1535,7 @@ describe('buildImage', () => {
 
     const connection: ProviderContainerConnectionInfo = {
       name: 'podman',
+      connectionType: ProviderConnectionType.CONTAINER,
       displayName: 'podman',
       type: 'podman',
       endpoint: {
@@ -1635,6 +1638,7 @@ describe('buildImage', () => {
 
     const connection: ProviderContainerConnectionInfo = {
       name: 'podman',
+      connectionType: ProviderConnectionType.CONTAINER,
       displayName: 'podman',
       type: 'podman',
       endpoint: {
@@ -1739,6 +1743,7 @@ describe('buildImage', () => {
 
     const connection: ProviderContainerConnectionInfo = {
       name: 'podman',
+      connectionType: ProviderConnectionType.CONTAINER,
       displayName: 'podman',
       type: 'podman',
       endpoint: {
@@ -1819,6 +1824,7 @@ describe('buildImage', () => {
 
     const connection: ProviderContainerConnectionInfo = {
       name: 'podman',
+      connectionType: ProviderConnectionType.CONTAINER,
       displayName: 'podman',
       type: 'podman',
       endpoint: {
@@ -3907,6 +3913,7 @@ test('check createPod uses running podman connection if ProviderContainerConnect
 
   const containerProviderConnection: ProviderContainerConnectionInfo = {
     name: 'podman1',
+    connectionType: ProviderConnectionType.CONTAINER,
     displayName: 'podman1',
     endpoint: {
       socketPath: 'podman.sock',
