@@ -168,7 +168,13 @@ export class ProviderRegistry {
     this._onDidUnregisterInferenceConnection.event;
 
   // MCP
+  /**
+   * @deprecated
+   */
   private readonly _onDidRegisterMCPConnection = new Emitter<RegisterMCPConnectionEvent>();
+  /**
+   * @deprecated
+   */
   readonly onDidRegisterMCPConnection: Event<RegisterMCPConnectionEvent> = this._onDidRegisterMCPConnection.event;
 
   private readonly _onDidUnregisterMCPConnection = new Emitter<UnregisterMCPConnectionEvent>();
@@ -1324,6 +1330,9 @@ export class ProviderRegistry {
     return 'sdk' in connection;
   }
 
+  /**
+   * @deprecated
+   */
   isMCPConnection(connection: ProviderConnection): connection is MCPProviderConnection {
     return 'transport' in connection;
   }
@@ -1561,6 +1570,9 @@ export class ProviderRegistry {
     this._onDidRegisterInferenceConnection.fire({ providerId: provider.id });
   }
 
+  /**
+   * @deprecated
+   */
   onDidRegisterMCPConnectionCallback(provider: ProviderImpl, mcpProviderConnection: MCPProviderConnection): void {
     this.connectionLifecycleContexts.set(mcpProviderConnection, new LifecycleContextImpl());
     this.apiSender.send('provider-register-mcp-connection', { name: mcpProviderConnection.name });
