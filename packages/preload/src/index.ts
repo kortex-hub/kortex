@@ -302,6 +302,14 @@ export function initExposure(): void {
     return ipcInvoke('flows:read', providerId, connectionName, flowId);
   });
 
+  contextBridge.exposeInMainWorld('generateFlow', async (
+    providerId: string,
+    connectionName: string,
+    options: containerDesktopAPI.FlowGenerateOptions,
+  ): Promise<string> => {
+    return ipcInvoke('flows:generate', providerId, connectionName, options);
+  });
+
   contextBridge.exposeInMainWorld(
     'flowDeployKubernetes',
     async (

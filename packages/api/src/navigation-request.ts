@@ -51,6 +51,7 @@ export interface NavigationParameters {
   [NavigationPage.PROVIDER_TASK]: { internalId: string; taskId: number | undefined };
   // flows
   [NavigationPage.FLOWS]: never;
+  [NavigationPage.FLOW_CREATE]: never;
   [NavigationPage.FLOW_DETAILS]: {
     providerId: string;
     connectionName: string;

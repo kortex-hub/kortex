@@ -827,6 +827,21 @@ export class PluginSystem {
       return flowConnection.flow.read(flowId);
     });
 
+    this.ipcHandle('flows:generate', async (
+      _listener,
+      providerId: string,
+      connectionName: string,
+      options: containerDesktopAPI.FlowGenerateOptions,
+    ): Promise<string> => {
+      // Get the flow provider to use
+      const flowProvider = providerRegistry.getProvider(providerId);
+      const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
+        flowProvider.flowConnections.find(({ name }) => name === connectionName);
+      if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
+
+      return flowConnection.flow.generate(options);
+    });
+
     this.ipcHandle(
       'flows:deploy:kubernetes',
       async (

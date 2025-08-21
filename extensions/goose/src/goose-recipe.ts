@@ -24,6 +24,7 @@ import type {
   Flow,
   FlowDeployKubernetesOptions,
   FlowDeployKubernetesResult,
+  FlowGenerateOptions,
   Provider,
   provider as ProviderAPI,
   ProviderConnectionStatus,
@@ -32,6 +33,7 @@ import { EventEmitter } from '@kortex-app/api';
 
 import type { GooseCLI } from './goose-cli';
 import { KubeTemplate } from './kube-template';
+import { RecipeTemplate } from './recipe-template';
 
 export class GooseRecipe implements Disposable {
   private gooseProvider: Provider | undefined = undefined;
@@ -80,6 +82,17 @@ export class GooseRecipe implements Disposable {
     throw new Error('not implemented');
   }
 
+  protected async generate(options: FlowGenerateOptions): Promise<string> {
+    return new RecipeTemplate({
+      recipe: {
+        name: options.name,
+        title: options.name,
+        prompt: options.prompt,
+        instructions: options.prompt
+      },
+    }).render();
+  }
+
   init(): void {
     this.gooseProvider = this.provider.createProvider({
       id: 'goose',
@@ -94,6 +107,7 @@ export class GooseRecipe implements Disposable {
         onDidChange: this.updateEmitter.event,
         read: this.read.bind(this),
         write: this.write.bind(this),
+        generate: this.generate.bind(this),
       },
       lifecycle: {},
       status(): ProviderConnectionStatus {
