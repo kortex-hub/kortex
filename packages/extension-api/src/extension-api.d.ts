@@ -16,9 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ProviderV2 as AISDKInferenceProvider } from '@ai-sdk/provider';
-import type { Transport as MCPTransport } from '@modelcontextprotocol/sdk/shared/transport.d.ts';
-
 /**
  * The Kortex API is intended to be consumed by extensions interacting with Kortex.
  *
@@ -43,6 +40,9 @@ import type { Transport as MCPTransport } from '@modelcontextprotocol/sdk/shared
  **/
 
 declare module '@kortex-app/api' {
+  import type { ProviderV2 as AISDKInferenceProvider } from '@ai-sdk/provider';
+  import type { Transport as MCPTransport } from '@modelcontextprotocol/sdk/shared/transport.d.ts';
+
   /**
    * The version of Kortex.
    */
