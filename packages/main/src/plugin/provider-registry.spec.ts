@@ -39,12 +39,13 @@ import type {
 } from '@kortex-app/api';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import type {
-  CheckStatus,
-  PreflightChecksCallback,
-  ProviderContainerConnectionInfo,
-  ProviderKubernetesConnectionInfo,
-  ProviderVmConnectionInfo,
+import {
+  type CheckStatus,
+  type PreflightChecksCallback,
+  ProviderConnectionType,
+  type ProviderContainerConnectionInfo,
+  type ProviderKubernetesConnectionInfo,
+  type ProviderVmConnectionInfo,
 } from '/@api/provider-info.js';
 
 import type { ApiSenderType } from './api.js';
@@ -350,6 +351,7 @@ test('expect isContainerConnection returns false with a KubernetesConnection', a
 test('expect isProviderContainerConnection returns true with a ProviderContainerConnection', async () => {
   const connection: ProviderContainerConnectionInfo = {
     name: 'connection',
+    connectionType: ProviderConnectionType.CONTAINER,
     displayName: 'connection',
     type: 'docker',
     endpoint: {
@@ -365,6 +367,7 @@ test('expect isProviderContainerConnection returns true with a ProviderContainer
 test('expect isProviderContainerConnection returns false with a ProviderKubernetesConnectionInfo', async () => {
   const connection: ProviderKubernetesConnectionInfo = {
     name: 'connection',
+    connectionType: ProviderConnectionType.KUBERNETES,
     endpoint: {
       apiURL: 'url',
     },
@@ -693,6 +696,7 @@ describe('should send events when starting a container connection', async () => 
     });
     connection = {
       name: 'connection',
+      connectionType: ProviderConnectionType.CONTAINER,
       displayName: 'connection',
       type: 'docker',
       endpoint: {
@@ -815,6 +819,7 @@ test('should send events when starting a Kubernetes connection', async () => {
   });
   const connection: ProviderKubernetesConnectionInfo = {
     name: 'connection',
+    connectionType: ProviderConnectionType.KUBERNETES,
     endpoint: { apiURL: 'endpoint' },
     status: 'started',
   };
@@ -865,6 +870,7 @@ test('should send events when starting a VM connection', async () => {
   });
   const connection: ProviderVmConnectionInfo = {
     name: 'connection',
+    connectionType: ProviderConnectionType.VM,
     status: 'started',
   };
 
@@ -929,6 +935,7 @@ describe('when auto-starting a container connection', async () => {
     connection = {
       name: 'connection',
       displayName: 'connection',
+      connectionType: ProviderConnectionType.CONTAINER,
       type: 'docker',
       endpoint: {
         socketPath: '/endpoint1.sock',
@@ -1105,6 +1112,7 @@ test('should send events when stopping a container connection', async () => {
   });
   const connection: ProviderContainerConnectionInfo = {
     name: 'connection',
+    connectionType: ProviderConnectionType.CONTAINER,
     displayName: 'connection',
     type: 'docker',
     endpoint: {
@@ -1175,6 +1183,7 @@ test('should send events when container connection status change', async () => {
   });
   const connection: ProviderContainerConnectionInfo = {
     name: 'connection',
+    connectionType: ProviderConnectionType.CONTAINER,
     displayName: 'connection',
     type: 'docker',
     endpoint: {
@@ -1255,6 +1264,7 @@ test('should send events when stopping a Kubernetes connection', async () => {
   });
   const connection: ProviderKubernetesConnectionInfo = {
     name: 'connection',
+    connectionType: ProviderConnectionType.KUBERNETES,
     endpoint: {
       apiURL: 'endpoint1',
     },
@@ -1307,6 +1317,7 @@ test('should send events when stopping a VM connection', async () => {
   });
   const connection: ProviderVmConnectionInfo = {
     name: 'connection',
+    connectionType: ProviderConnectionType.VM,
     status: 'stopped',
   };
 
@@ -1401,6 +1412,7 @@ test('should retrieve context of container provider', async () => {
   const connection: ProviderContainerConnectionInfo = {
     name: 'connection',
     displayName: 'connection',
+    connectionType: ProviderConnectionType.CONTAINER,
     type: 'docker',
     endpoint: {
       socketPath: '/endpoint1.sock',
@@ -1456,6 +1468,7 @@ test('should retrieve context of kubernetes provider', async () => {
 
     const connection: ProviderKubernetesConnectionInfo = {
       name: 'connection',
+      connectionType: ProviderConnectionType.KUBERNETES,
       endpoint: {
         apiURL: 'url',
       },
@@ -1514,6 +1527,7 @@ test('should retrieve context of VM provider', async () => {
 
     const connection: ProviderVmConnectionInfo = {
       name: 'connection',
+      connectionType: ProviderConnectionType.VM,
       status: 'stopped',
     };
 
@@ -2177,6 +2191,7 @@ describe('shellInProviderConnection', () => {
     const connection: ProviderContainerConnectionInfo = {
       name: 'connection',
       displayName: 'connection',
+      connectionType: ProviderConnectionType.CONTAINER,
       type: 'docker',
       endpoint: {
         socketPath: '/endpoint1.sock',
@@ -2274,6 +2289,7 @@ describe('shellInProviderConnection', () => {
     const connection: ProviderVmConnectionInfo = {
       name: 'connection',
       status: 'started',
+      connectionType: ProviderConnectionType.VM,
     };
 
     const closeMock = vi.fn();
