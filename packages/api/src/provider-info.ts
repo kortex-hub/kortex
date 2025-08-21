@@ -34,6 +34,9 @@ export enum ProviderConnectionType {
   KUBERNETES = 'kubernetes',
   VM = 'vm',
   INFERENCE = 'inference',
+  /**
+   * @deprecated
+   */
   MCP = 'mcp',
   FLOW = 'flow',
 }
@@ -71,6 +74,9 @@ export interface ProviderVmConnectionInfo extends ProviderConnectionBase {
   connectionType: ProviderConnectionType.VM;
 }
 
+/**
+ * @deprecated
+ */
 export interface ProviderMCPConnectionInfo extends ProviderConnectionBase {
   connectionType: ProviderConnectionType.MCP;
 }
@@ -108,6 +114,9 @@ export interface ProviderInfo {
   kubernetesConnections: ProviderKubernetesConnectionInfo[];
   vmConnections: ProviderVmConnectionInfo[];
   inferenceConnections: ProviderInferenceConnectionInfo[];
+  /**
+   * @deprecated
+   */
   mcpConnections: ProviderMCPConnectionInfo[];
   flowConnections: ProviderFlowConnectionInfo[];
 
@@ -161,12 +170,24 @@ export interface ProviderInfo {
    * MCP Provider connection
    */
   // can create provider connection from MCPProviderConnectionFactory params
+  /**
+   * @deprecated
+   */
   mcpProviderConnectionCreation: boolean;
   // can initialize provider connection from MCPProviderConnectionFactory params
+  /**
+   * @deprecated
+   */
   mcpProviderConnectionInitialization: boolean;
   // optional creation name (if defined)
+  /**
+   * @deprecated
+   */
   mcpProviderConnectionCreationDisplayName?: string;
   // optional creation button title (if defined)
+  /**
+   * @deprecated
+   */
   mcpProviderConnectionCreationButtonTitle?: string;
 
   // other
