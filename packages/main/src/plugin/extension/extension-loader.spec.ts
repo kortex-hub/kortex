@@ -56,6 +56,7 @@ import type { ImageFilesRegistry } from '../image-files-registry.js';
 import type { ImageRegistry } from '../image-registry.js';
 import type { InputQuickPickRegistry } from '../input-quickpick/input-quickpick-registry.js';
 import type { KubernetesClient } from '../kubernetes/kubernetes-client.js';
+import type { MCPRegistry } from '../mcp/mcp-registry.js';
 import type { MenuRegistry } from '../menu-registry.js';
 import type { MessageBox } from '../message-box.js';
 import type { OnboardingRegistry } from '../onboarding-registry.js';
@@ -292,6 +293,8 @@ const extensionAnalyzer = {
   analyzeExtension: vi.fn(),
 } as unknown as ExtensionAnalyzer;
 
+const mcpRegistry = {} as unknown as MCPRegistry;
+
 const createApi = (disposables?: { dispose(): unknown }[]): typeof containerDesktopAPI => {
   const analyzedExtension = {
     path: '/path',
@@ -363,6 +366,7 @@ beforeEach(() => {
     extensionWatcher,
     extensionDevelopmentFolder,
     extensionAnalyzer,
+    mcpRegistry,
   );
 });
 
