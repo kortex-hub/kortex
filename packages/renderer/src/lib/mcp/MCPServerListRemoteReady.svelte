@@ -1,13 +1,12 @@
 <script lang="ts">
 import { Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
-import { mcpRegistriesServerInfos } from '/@/stores/mcp-registry-servers';
-import McpIcon from '../images/MCPIcon.svelte';
-import type { MCPRegistryServerDetail } from '/@api/mcp/mcp-registry-server-entry';
-import McpServerListActions from './MCPServerRegistryListActions.svelte';
 import SimpleColumn from '@podman-desktop/ui-svelte/TableSimpleColumn';
-import MCPServerEmptyScreen from './MCPServerEmptyScreen.svelte';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
+
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
+
+import McpIcon from '../images/MCPIcon.svelte';
+import MCPServerEmptyScreen from './MCPServerEmptyScreen.svelte';
 import McpServerRemoteActions from './MCPServerRemoteActions.svelte';
 
 interface SelectableMCPRemoteServerInfo extends MCPRemoteServerInfo {
@@ -30,7 +29,7 @@ const statusColumn = new TableColumn<MCPRemoteServerInfo>('Status', {
 
 const nameColumn = new TableColumn<MCPRemoteServerInfo, string>('Name', {
   width: '2fr',
-  renderMapping: obj => obj.name,
+  renderMapping: (obj): string => obj.name,
   renderer: SimpleColumn,
   comparator: (a, b): number => b.name.localeCompare(a.name),
 });

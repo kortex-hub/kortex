@@ -20,13 +20,14 @@ import * as crypto from 'node:crypto';
 
 import type * as kortexAPI from '@kortex-app/api';
 import { SecretStorage } from '@kortex-app/api';
+import { MCPServerConfig } from '@mastra/core/mcp';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { HttpsOptions, OptionsOfTextResponseBody } from 'got';
 import { HttpProxyAgent, HttpsProxyAgent } from 'hpagent';
 import { inject, injectable } from 'inversify';
 
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
-import type { MCPRegistryServerDetail, MCPRegistryServerList } from '/@api/mcp/mcp-registry-server-entry.js';
+import type { MCPRegistryServerList } from '/@api/mcp/mcp-registry-server-entry.js';
 
 import { ApiSenderType } from '../api.js';
 import { Certificates } from '../certificates.js';
@@ -114,16 +115,17 @@ export class MCPRegistry {
 
       const { servers } = await this.listMCPServersFromRegistry(registry.serverUrl);
       for (const server of servers) {
+        if (!server.id) {
+          console.warn(`[MCPRegistry] no id for server`, server);
+          continue;
+        }
         const config = mapping.get(server.id);
         if (!config) {
           console.warn(`[MCPRegistry] no existing config for server ${server.id}`);
           continue;
         }
 
-        // what?
-        if (!('remotes' in server)) continue;
-
-        const remote = (server as MCPRegistryServerDetail).remotes?.[config.remoteId];
+        const remote = (server as MCPServerConfig).remotes?.[config.remoteId];
         if (!remote) {
           console.warn('[MCPRegistry] remote is undefined');
           continue;
@@ -335,9 +337,9 @@ export class MCPRegistry {
     return await content.json();
   }
 
-  async listMCPServersFromRegistries(): Promise<MCPRegistryServerDetail[]> {
+  async listMCPServersFromRegistries(): Promise<MCPServerConfig[]> {
     // connect to each registry and grab server details
-    const serverDetails: MCPRegistryServerDetail[] = [];
+    const serverDetails: MCPServerConfig[] = [];
 
     // merge all urls to inspect
     const serverUrls: string[] = this.registries
