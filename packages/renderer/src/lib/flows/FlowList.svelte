@@ -1,9 +1,11 @@
 <script lang="ts">
 import { Button, NavPage, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
-
+import { faPencil } from '@fortawesome/free-solid-svg-icons/faPencil';
 import FlowName from '/@/lib/flows/columns/FlowName.svelte';
 import { flowsInfos } from '/@/stores/flows';
 import type { FlowInfo } from '/@api/flow-info';
+import {handleNavigation} from "/@/navigation";
+import {NavigationPage} from "/@api/navigation-page";
 
 type FlowSelectable = FlowInfo & { selected: boolean };
 
@@ -21,10 +23,19 @@ const columns = [pathColumn];
 function key(flow: FlowSelectable): string {
   return flow.path;
 }
+
+function navigateToCreateFlow(): void {
+  handleNavigation({
+    page: NavigationPage.FLOW_CREATE,
+  });
+}
 </script>
 
-<NavPage searchEnabled={false} title="FLows">
+<NavPage searchEnabled={false} title="Flows">
   {#snippet additionalActions()}
+    <Button icon={faPencil} onclick={navigateToCreateFlow}>
+      Create
+    </Button>
     <Button onclick={window.refreshFlows}>
       Refresh
     </Button>

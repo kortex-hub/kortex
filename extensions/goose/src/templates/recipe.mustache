@@ -1,0 +1,11 @@
+title: {{ recipe.title }}
+name: {{ recipe.name }}
+description: {{ recipe.description }}
+
+# Required for headless mode
+prompt: {{ recipe.prompt }}
+
+instructions: |
+  {{#recipe.instructions }}
+    {{&.}}
+  {{/recipe.instructions }}
