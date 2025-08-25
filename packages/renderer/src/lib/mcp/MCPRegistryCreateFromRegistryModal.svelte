@@ -1,16 +1,17 @@
 <script lang="ts">
-import { faCheckCircle, faCircleArrowUp, faPlusCircle, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
-import { Button, ErrorMessage, Input, Link } from '@podman-desktop/ui-svelte';
-import { onMount } from 'svelte';
-import Fa from 'svelte-fa';
+import { faPlusCircle } from '@fortawesome/free-solid-svg-icons';
+import type { MCPServerConfig, RemoteInfo } from '@mastra/core/mcp';
+import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
-import type { MCPRegistryServerDetail } from '/@api/mcp/mcp-registry-server-entry';
 import Dialog from '/@/lib/dialogs/Dialog.svelte';
+
 import PasswordInput from '../ui/PasswordInput.svelte';
 
 interface Props {
-  mcpRegistryServerDetail: MCPRegistryServerDetail;
+  mcpRegistryServerDetail: MCPServerConfig & {
+    remotes?: (RemoteInfo & { headers?: { name: string; is_secret: boolean; description: string }[] })[];
+  };
   closeCallback: () => void;
 }
 
@@ -32,7 +33,7 @@ const remoteHeadersFields = $derived(
 async function createMcpServer(): Promise<void> {
   // get first remote
 
-  // FIXME: handle only one remote for now
+  // FIX ME: handle only one remote for now
   const remoteid = 0;
   createInProgress = true;
   try {
@@ -63,8 +64,8 @@ async function creationFinished(): Promise<void> {
     <div class="pb-4">
 
       <!-- for each header field, add an input field-->
-      {#each remoteHeadersFields as headerField }
-      <label for="modalImageTag" class="block mb-2 text-sm font-medium text-[var(--pd-modal-text)]">{headerField.description}</label>
+      {#each remoteHeadersFields as headerField (headerField.name) }
+      <label for="modalImageTag" class="block mb-2 text-sm font-medium text-[var(--pd-modal-text)]" >{headerField.description}</label>
 
         {#if headerField.isSecret}
             <PasswordInput

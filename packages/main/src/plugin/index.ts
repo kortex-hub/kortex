@@ -42,6 +42,7 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
+import type { MCPServerConfig } from '@mastra/core/mcp';
 import type { ToolSet, UIMessage } from 'ai';
 import { convertToModelMessages, generateText, stepCountIs, streamText } from 'ai';
 import checkDiskSpacePkg from 'check-disk-space';
@@ -109,7 +110,6 @@ import type { ResourceCount } from '/@api/kubernetes-resource-count.js';
 import type { KubernetesContextResources } from '/@api/kubernetes-resources.js';
 import type { KubernetesTroubleshootingInformation } from '/@api/kubernetes-troubleshooting.js';
 import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '/@api/manifest-info.js';
-import type { MCPRegistryServerDetail } from '/@api/mcp/mcp-registry-server-entry.js';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info.js';
 import type { Menu } from '/@api/menu.js';
 import type { NetworkInspectInfo } from '/@api/network-info.js';
@@ -812,35 +812,36 @@ export class PluginSystem {
       return flowManager.all();
     });
 
-    this.ipcHandle('flows:read', async (
-      _listener,
-      providerId: string,
-      connectionName: string,
-      flowId: string,
-    ): Promise<string> => {
-      // Get the flow provider to use
-      const flowProvider = providerRegistry.getProvider(providerId);
-      const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
-        flowProvider.flowConnections.find(({ name }) => name === connectionName);
-      if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
+    this.ipcHandle(
+      'flows:read',
+      async (_listener, providerId: string, connectionName: string, flowId: string): Promise<string> => {
+        // Get the flow provider to use
+        const flowProvider = providerRegistry.getProvider(providerId);
+        const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
+          flowProvider.flowConnections.find(({ name }) => name === connectionName);
+        if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
 
-      return flowConnection.flow.read(flowId);
-    });
+        return flowConnection.flow.read(flowId);
+      },
+    );
 
-    this.ipcHandle('flows:generate', async (
-      _listener,
-      providerId: string,
-      connectionName: string,
-      options: containerDesktopAPI.FlowGenerateOptions,
-    ): Promise<string> => {
-      // Get the flow provider to use
-      const flowProvider = providerRegistry.getProvider(providerId);
-      const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
-        flowProvider.flowConnections.find(({ name }) => name === connectionName);
-      if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
+    this.ipcHandle(
+      'flows:generate',
+      async (
+        _listener,
+        providerId: string,
+        connectionName: string,
+        options: containerDesktopAPI.FlowGenerateOptions,
+      ): Promise<string> => {
+        // Get the flow provider to use
+        const flowProvider = providerRegistry.getProvider(providerId);
+        const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
+          flowProvider.flowConnections.find(({ name }) => name === connectionName);
+        if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
 
-      return flowConnection.flow.generate(options);
-    });
+        return flowConnection.flow.generate(options);
+      },
+    );
 
     this.ipcHandle(
       'flows:deploy:kubernetes',
@@ -2132,7 +2133,7 @@ export class PluginSystem {
       return mcpRegistry.getRegistries();
     });
 
-    this.ipcHandle('mcp-registry:getMcpRegistryServers', async (): Promise<readonly MCPRegistryServerDetail[]> => {
+    this.ipcHandle('mcp-registry:getMcpRegistryServers', async (): Promise<readonly MCPServerConfig[]> => {
       return mcpRegistry.listMCPServersFromRegistries();
     });
 

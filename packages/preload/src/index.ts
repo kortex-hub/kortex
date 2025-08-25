@@ -41,6 +41,7 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
+import type { MCPServerConfig } from '@mastra/core/mcp';
 import type { UIMessage, UIMessageChunk } from 'ai';
 import { contextBridge, ipcRenderer } from 'electron';
 
@@ -84,7 +85,6 @@ import type { ResourceCount } from '/@api/kubernetes-resource-count';
 import type { KubernetesContextResources } from '/@api/kubernetes-resources';
 import type { KubernetesTroubleshootingInformation } from '/@api/kubernetes-troubleshooting';
 import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '/@api/manifest-info';
-import type { MCPRegistryServerDetail } from '/@api/mcp/mcp-registry-server-entry';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import type { Menu } from '/@api/menu.js';
 import type { NetworkInspectInfo } from '/@api/network-info';
@@ -293,22 +293,23 @@ export function initExposure(): void {
     return ipcInvoke('flows:list');
   });
 
+  contextBridge.exposeInMainWorld(
+    'readFlow',
+    async (providerId: string, connectionName: string, flowId: string): Promise<string> => {
+      return ipcInvoke('flows:read', providerId, connectionName, flowId);
+    },
+  );
 
-  contextBridge.exposeInMainWorld('readFlow', async (
-    providerId: string,
-    connectionName: string,
-    flowId: string,
-  ): Promise<string> => {
-    return ipcInvoke('flows:read', providerId, connectionName, flowId);
-  });
-
-  contextBridge.exposeInMainWorld('generateFlow', async (
-    providerId: string,
-    connectionName: string,
-    options: containerDesktopAPI.FlowGenerateOptions,
-  ): Promise<string> => {
-    return ipcInvoke('flows:generate', providerId, connectionName, options);
-  });
+  contextBridge.exposeInMainWorld(
+    'generateFlow',
+    async (
+      providerId: string,
+      connectionName: string,
+      options: containerDesktopAPI.FlowGenerateOptions,
+    ): Promise<string> => {
+      return ipcInvoke('flows:generate', providerId, connectionName, options);
+    },
+  );
 
   contextBridge.exposeInMainWorld(
     'flowDeployKubernetes',
@@ -324,8 +325,8 @@ export function initExposure(): void {
         flowId: string;
       },
       options: {
-        namespace: string,
-        hideSecrets: boolean,
+        namespace: string;
+        hideSecrets: boolean;
       },
     ): Promise<string> => {
       return ipcInvoke('flows:deploy:kubernetes', inference, flow, options);
@@ -1679,7 +1680,7 @@ export function initExposure(): void {
     },
   );
 
-  contextBridge.exposeInMainWorld('getMcpRegistryServers', async (): Promise<MCPRegistryServerDetail[]> => {
+  contextBridge.exposeInMainWorld('getMcpRegistryServers', async (): Promise<MCPServerConfig[]> => {
     return ipcInvoke('mcp-registry:getMcpRegistryServers');
   });
   contextBridge.exposeInMainWorld(

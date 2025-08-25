@@ -1,13 +1,15 @@
 <script lang="ts">
+import type { MCPServerConfig } from '@mastra/core/mcp';
 import { Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
-import { mcpRegistriesServerInfos } from '/@/stores/mcp-registry-servers';
-import McpIcon from '../images/MCPIcon.svelte';
-import type { MCPRegistryServerDetail } from '/@api/mcp/mcp-registry-server-entry';
-import McpServerListActions from './MCPServerRegistryListActions.svelte';
 import SimpleColumn from '@podman-desktop/ui-svelte/TableSimpleColumn';
-import McpEmptyScreen from './MCPRegistryEmptyScreen.svelte';
 
-interface SelectableMCPRegistryServerDetailUI extends MCPRegistryServerDetail {
+import { mcpRegistriesServerInfos } from '/@/stores/mcp-registry-servers';
+
+import McpIcon from '../images/MCPIcon.svelte';
+import McpEmptyScreen from './MCPRegistryEmptyScreen.svelte';
+import McpServerListActions from './MCPServerRegistryListActions.svelte';
+
+interface SelectableMCPRegistryServerDetailUI extends MCPServerConfig {
   selected?: boolean;
 }
 
@@ -22,14 +24,14 @@ const servers: SelectableMCPRegistryServerDetailUI[] = $derived(
 
 let table: Table<SelectableMCPRegistryServerDetailUI>;
 
-const statusColumn = new TableColumn<MCPRegistryServerDetail>('Status', {
+const statusColumn = new TableColumn<MCPServerConfig>('Status', {
   width: '60px',
   renderer: McpIcon,
 });
 
-const nameColumn = new TableColumn<MCPRegistryServerDetail, string>('Name', {
+const nameColumn = new TableColumn<MCPServerConfig, string>('Name', {
   width: '2fr',
-  renderMapping: obj => obj.name,
+  renderMapping: (obj): string => obj.name,
   renderer: SimpleColumn,
   comparator: (a, b): number => b.name.localeCompare(a.name),
 });
@@ -37,14 +39,14 @@ const nameColumn = new TableColumn<MCPRegistryServerDetail, string>('Name', {
 const columns = [
   statusColumn,
   nameColumn,
-  new TableColumn<MCPRegistryServerDetail>('Actions', {
+  new TableColumn<MCPServerConfig>('Actions', {
     align: 'right',
     renderer: McpServerListActions,
     overflow: true,
   }),
 ];
 
-const row = new TableRow<MCPRegistryServerDetail>({});
+const row = new TableRow<MCPServerConfig>({});
 </script>
 
       {#if servers.length === 0}
