@@ -53,6 +53,7 @@ export interface NavigationParameters {
   [NavigationPage.EXPERIMENTAL_FEATURES]: never;
   // flows
   [NavigationPage.FLOWS]: never;
+  [NavigationPage.FLOW_CREATE]: never;
   [NavigationPage.FLOW_DETAILS]: {
     providerId: string;
     connectionName: string;
