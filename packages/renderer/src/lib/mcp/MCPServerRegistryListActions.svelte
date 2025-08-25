@@ -1,10 +1,11 @@
 <script lang="ts">
-import { faGear, faPlusCircle, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faPlusCircle } from '@fortawesome/free-solid-svg-icons';
+import type { MCPServerConfig } from '@mastra/core/mcp';
+
 import ListItemButtonIcon from '../ui/ListItemButtonIcon.svelte';
-import type { MCPRegistryServerDetail } from '/@api/mcp/mcp-registry-server-entry';
 import McpRegistryCreateFromRegistryModal from './MCPRegistryCreateFromRegistryModal.svelte';
 
-export let object: MCPRegistryServerDetail;
+export let object: MCPServerConfig;
 
 let createFromRegistryModal = false;
 
@@ -13,12 +14,12 @@ function closeModals(): void {
 }
 </script>
 
-{#if object.remotes?.length ?? 0 > 0}
+{#if (object.remotes?.length ?? 0) > 0}
 
  <ListItemButtonIcon
     title="Install Remote server"
     icon={faPlusCircle}
-    onClick={() => createFromRegistryModal = true}
+    onClick={(): boolean => createFromRegistryModal = true}
     />
 
 {/if}

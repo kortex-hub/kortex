@@ -19,90 +19,9 @@
 // definition of a MCP server as listed in a MCP registry
 // it should come frome types https://github.com/modelcontextprotocol/registry/issues/186
 
-export type MCPRegistryAuthMethod = 'github' | 'none';
-
-export type MCPRegistryServerStatus = 'active' | 'deprecated';
-
-export interface MCPRegistryAuthentication {
-  method?: MCPRegistryAuthMethod;
-  token?: string;
-  repo_ref?: string;
-}
-
-export interface MCPRegistryRepository {
-  url: string;
-  source: string;
-  id: string;
-}
-
-export type MCPRegistryFormat = 'string' | 'number' | 'boolean' | 'file_path';
-
-export interface MCPRegistryInput {
-  description?: string;
-  is_required?: boolean;
-  format?: MCPRegistryFormat;
-  value?: string;
-  is_secret?: boolean;
-  default?: string;
-  choices?: string[];
-  template?: string;
-  name?: string;
-}
-
-export interface MCPRegistryInputWithVariables extends MCPRegistryInput {
-  variables?: Record<string, MCPRegistryInput>;
-}
-
-export interface MCPRegistryKeyValueInput extends MCPRegistryInputWithVariables {
-  name: string;
-}
-
-export type MCPRegistryArgumentType = 'positional' | 'named';
-
-export interface MCPRegistryArgument extends MCPRegistryInputWithVariables {
-  type: MCPRegistryArgumentType;
-  name?: string;
-  is_repeated?: boolean;
-  value_hint?: string;
-}
-
-export interface MCPRegistryPackage {
-  registry_name: string;
-  name: string;
-  version: string;
-  runtime_hint?: string;
-  runtime_arguments?: MCPRegistryArgument[];
-  package_arguments?: MCPRegistryArgument[];
-  environment_variables?: MCPRegistryKeyValueInput[];
-}
-
-export interface MCPRegistryRemote {
-  transport_type: string;
-  url: string;
-  headers?: MCPRegistryInput[];
-}
-
-export interface MCPRegistryVersionDetail {
-  version: string;
-  release_date: string;
-  is_latest: boolean;
-}
-
-export interface MCPRegistryServer {
-  id: string;
-  name: string;
-  description: string;
-  status?: MCPRegistryServerStatus;
-  repository: MCPRegistryRepository;
-  version_detail: MCPRegistryVersionDetail;
-}
-
-export interface MCPRegistryServerDetail extends MCPRegistryServer {
-  packages?: MCPRegistryPackage[];
-  remotes?: MCPRegistryRemote[];
-}
+import type { MCPServerConfig } from '@mastra/core/mcp';
 
 export interface MCPRegistryServerList {
-  servers: MCPRegistryServer[];
+  servers: MCPServerConfig[];
   metadata: { next_cursor?: string; count: number };
 }
