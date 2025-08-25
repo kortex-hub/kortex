@@ -27,7 +27,7 @@ import { Terminal } from '@xterm/xterm';
 import type { Mock } from 'vitest';
 import { beforeAll, beforeEach, expect, test, vi } from 'vitest';
 
-import type { ProviderContainerConnectionInfo } from '/@api/provider-info';
+import { ProviderConnectionType, type ProviderContainerConnectionInfo } from '/@api/provider-info';
 
 import PreferencesConnectionDetailsLogs from './PreferencesConnectionDetailsLogs.svelte';
 
@@ -39,6 +39,7 @@ const containerConnection: ProviderContainerConnectionInfo = {
   },
   status: 'started',
   type: 'podman',
+  connectionType: ProviderConnectionType.CONTAINER,
 };
 
 beforeAll(async () => {

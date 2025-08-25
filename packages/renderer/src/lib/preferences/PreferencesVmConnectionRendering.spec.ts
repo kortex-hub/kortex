@@ -23,7 +23,7 @@ import userEvent from '@testing-library/user-event';
 import { router } from 'tinro';
 import { expect, test, vi } from 'vitest';
 
-import type { ProviderInfo } from '/@api/provider-info';
+import { ProviderConnectionType, type ProviderInfo } from '/@api/provider-info';
 
 import { providerInfos } from '../../stores/providers';
 import * as preferencesConnectionActions from './PreferencesConnectionActions.svelte';
@@ -54,15 +54,18 @@ test('Expect that removing the connection is going back to the previous page', a
       {
         name: vm1,
         status: 'started',
+        connectionType: ProviderConnectionType.VM,
       },
       {
         name: vm2,
         status: 'stopped',
         lifecycleMethods: ['delete'],
+        connectionType: ProviderConnectionType.VM,
       },
       {
         name: vm3,
         status: 'started',
+        connectionType: ProviderConnectionType.VM,
       },
     ],
     vmProviderConnectionCreation: true,
@@ -75,6 +78,13 @@ test('Expect that removing the connection is going back to the previous page', a
     kubernetesProviderConnectionInitialization: false,
     extensionId: '',
     cleanupSupport: false,
+    inferenceConnections: [],
+    mcpConnections: [],
+    flowConnections: [],
+    inferenceProviderConnectionCreation: false,
+    inferenceProviderConnectionInitialization: false,
+    mcpProviderConnectionCreation: false,
+    mcpProviderConnectionInitialization: false,
   };
 
   providerInfos.set([providerInfo]);
@@ -137,6 +147,7 @@ test('Expect to see error message if action fails', async () => {
         name: vm1,
         status: 'stopped',
         lifecycleMethods: ['delete'],
+        connectionType: ProviderConnectionType.VM,
       },
     ],
     vmProviderConnectionCreation: true,
@@ -149,6 +160,13 @@ test('Expect to see error message if action fails', async () => {
     kubernetesProviderConnectionInitialization: false,
     extensionId: '',
     cleanupSupport: false,
+    inferenceConnections: [],
+    mcpConnections: [],
+    flowConnections: [],
+    inferenceProviderConnectionCreation: false,
+    inferenceProviderConnectionInitialization: false,
+    mcpProviderConnectionCreation: false,
+    mcpProviderConnectionInitialization: false,
   };
 
   providerInfos.set([providerInfo]);
@@ -199,6 +217,7 @@ test('startProviderConnectionLifecycle is called when addConnectionToRestartingQ
     vmConnections: [
       {
         name: 'vm 1',
+        connectionType: ProviderConnectionType.VM,
         status: 'stopped',
         lifecycleMethods: ['delete'],
       },
@@ -213,6 +232,13 @@ test('startProviderConnectionLifecycle is called when addConnectionToRestartingQ
     kubernetesProviderConnectionInitialization: false,
     extensionId: '',
     cleanupSupport: false,
+    inferenceConnections: [],
+    mcpConnections: [],
+    flowConnections: [],
+    inferenceProviderConnectionCreation: false,
+    inferenceProviderConnectionInitialization: false,
+    mcpProviderConnectionCreation: false,
+    mcpProviderConnectionInitialization: false,
   };
 
   providerInfos.set([providerInfo]);

@@ -25,7 +25,7 @@ import { beforeEach, expect, test, vi } from 'vitest';
 
 import ContainerConnectionDropdown from '/@/lib/forms/ContainerConnectionDropdown.svelte';
 import ContainerConnectionDropdownTest from '/@/lib/forms/ContainerConnectionDropdownTest.svelte';
-import type { ProviderContainerConnectionInfo } from '/@api/provider-info';
+import { ProviderConnectionType, type ProviderContainerConnectionInfo } from '/@api/provider-info';
 
 vi.mock('@podman-desktop/ui-svelte');
 
@@ -38,6 +38,7 @@ const CONTAINER_CONNECTION_INFO: ProviderContainerConnectionInfo = {
   type: 'podman',
   displayName: 'Podman',
   lifecycleMethods: undefined,
+  connectionType: ProviderConnectionType.CONTAINER,
 };
 
 beforeEach(() => {

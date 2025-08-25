@@ -24,7 +24,7 @@ import userEvent from '@testing-library/user-event';
 import { router } from 'tinro';
 import { beforeAll, expect, test, vi } from 'vitest';
 
-import type { ProviderContainerConnectionInfo, ProviderInfo } from '/@api/provider-info';
+import { ProviderConnectionType, type ProviderContainerConnectionInfo, type ProviderInfo } from '/@api/provider-info';
 
 import type { PlayKubeInfo } from '../../../../main/src/plugin/dockerode/libpod-dockerode';
 import { providerInfos } from '../../stores/providers';
@@ -111,6 +111,7 @@ function setup(): void {
       socketPath: '',
     },
     type: 'podman',
+    connectionType: ProviderConnectionType.CONTAINER,
   };
   const providerInfo = {
     id: 'test',

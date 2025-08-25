@@ -22,7 +22,7 @@ import { render, screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { expect, test, vi } from 'vitest';
 
-import type { ProviderInfo } from '/@api/provider-info';
+import { ProviderConnectionType, type ProviderInfo } from '/@api/provider-info';
 
 import PreferencesProviderInstallationModal from './PreferencesProviderInstallationModal.svelte';
 
@@ -46,6 +46,7 @@ const providerInfo: ProviderInfo = {
       },
       lifecycleMethods: ['start', 'stop', 'delete'],
       type: 'podman',
+      connectionType: ProviderConnectionType.CONTAINER,
     },
   ],
   installationSupport: false,
@@ -61,6 +62,13 @@ const providerInfo: ProviderInfo = {
   kubernetesProviderConnectionInitialization: false,
   extensionId: '',
   cleanupSupport: false,
+  inferenceConnections: [],
+  mcpConnections: [],
+  flowConnections: [],
+  inferenceProviderConnectionCreation: false,
+  inferenceProviderConnectionInitialization: false,
+  mcpProviderConnectionCreation: false,
+  mcpProviderConnectionInitialization: false,
 };
 
 const closeCallback = vi.fn();

@@ -25,7 +25,7 @@ import '@testing-library/jest-dom/vitest';
 import { render, screen } from '@testing-library/svelte';
 import { expect, test } from 'vitest';
 
-import type { ProviderKubernetesConnectionInfo } from '/@api/provider-info';
+import { ProviderConnectionType, type ProviderKubernetesConnectionInfo } from '/@api/provider-info';
 
 import PreferencesKubernetesConnectionDetailsSummary from './PreferencesKubernetesConnectionDetailsSummary.svelte';
 
@@ -35,6 +35,7 @@ const kubernetesConnection: ProviderKubernetesConnectionInfo = {
     apiURL: 'url',
   },
   status: 'started',
+  connectionType: ProviderConnectionType.KUBERNETES,
 };
 
 test('Expect that name, url and kubernetes are displayed', async () => {

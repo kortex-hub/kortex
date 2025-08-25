@@ -23,7 +23,7 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { expect, test, vi } from 'vitest';
 
 import { type PodCreation, podCreationHolder } from '/@/stores/creation-from-containers-store';
-import type { ProviderInfo } from '/@api/provider-info';
+import { ProviderConnectionType, type ProviderInfo } from '/@api/provider-info';
 
 import { providerInfos } from '../../stores/providers';
 import PodCreateFromContainers from './PodCreateFromContainers.svelte';
@@ -48,6 +48,7 @@ const providerInfo: ProviderInfo = {
       },
       lifecycleMethods: ['start', 'stop', 'delete'],
       type: 'podman',
+      connectionType: ProviderConnectionType.CONTAINER,
     },
   ],
   installationSupport: false,
@@ -63,6 +64,13 @@ const providerInfo: ProviderInfo = {
   vmConnections: [],
   vmProviderConnectionCreation: false,
   vmProviderConnectionInitialization: false,
+  inferenceConnections: [],
+  mcpConnections: [],
+  flowConnections: [],
+  inferenceProviderConnectionCreation: false,
+  inferenceProviderConnectionInitialization: false,
+  mcpProviderConnectionCreation: false,
+  mcpProviderConnectionInitialization: false,
 };
 
 const podCreation: PodCreation = {

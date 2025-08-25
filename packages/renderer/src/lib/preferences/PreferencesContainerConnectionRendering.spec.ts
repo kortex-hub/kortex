@@ -28,7 +28,7 @@ import { router } from 'tinro';
 import { expect, test, vi } from 'vitest';
 
 import { lastPage } from '/@/stores/breadcrumb';
-import type { ProviderInfo } from '/@api/provider-info';
+import { ProviderConnectionType, type ProviderInfo } from '/@api/provider-info';
 
 import { providerInfos } from '../../stores/providers';
 import PreferencesContainerConnectionRendering from './PreferencesContainerConnectionRendering.svelte';
@@ -57,6 +57,13 @@ const EMPTY_PROVIDER_MOCK: ProviderInfo = {
   kubernetesProviderConnectionInitialization: false,
   extensionId: '',
   cleanupSupport: false,
+  inferenceConnections: [],
+  mcpConnections: [],
+  flowConnections: [],
+  inferenceProviderConnectionCreation: false,
+  inferenceProviderConnectionInitialization: false,
+  mcpProviderConnectionCreation: false,
+  mcpProviderConnectionInitialization: false,
 };
 
 test('Expect that the right machine is displayed', async () => {
@@ -76,6 +83,7 @@ test('Expect that the right machine is displayed', async () => {
           socketPath,
         },
         type: 'podman',
+        connectionType: ProviderConnectionType.CONTAINER,
       },
       {
         name: podmanMachineName2,
@@ -85,6 +93,7 @@ test('Expect that the right machine is displayed', async () => {
           socketPath,
         },
         type: 'podman',
+        connectionType: ProviderConnectionType.CONTAINER,
       },
       {
         name: podmanMachineName3,
@@ -94,6 +103,7 @@ test('Expect that the right machine is displayed', async () => {
           socketPath,
         },
         type: 'podman',
+        connectionType: ProviderConnectionType.CONTAINER,
       },
     ],
   };
@@ -139,6 +149,7 @@ test('Expect that removing the connection is going back to the previous page', a
           socketPath,
         },
         type: 'podman',
+        connectionType: ProviderConnectionType.CONTAINER,
       },
       {
         name: podmanMachineName2,
@@ -149,6 +160,7 @@ test('Expect that removing the connection is going back to the previous page', a
         },
         type: 'podman',
         lifecycleMethods: ['delete'],
+        connectionType: ProviderConnectionType.CONTAINER,
       },
       {
         name: podmanMachineName3,
@@ -158,6 +170,7 @@ test('Expect that removing the connection is going back to the previous page', a
           socketPath,
         },
         type: 'podman',
+        connectionType: ProviderConnectionType.CONTAINER,
       },
     ],
   };
@@ -233,6 +246,7 @@ test('Expect to see error message if action fails', async () => {
         },
         type: 'podman',
         lifecycleMethods: ['delete'],
+        connectionType: ProviderConnectionType.CONTAINER,
       },
     ],
   };
@@ -295,6 +309,7 @@ test('Expect startContainerProvider to only be called once when restarting', asy
         },
         type: 'podman',
         lifecycleMethods: ['start', 'stop'],
+        connectionType: ProviderConnectionType.CONTAINER,
       },
     ],
   };
@@ -351,6 +366,7 @@ test('Expect display name to be used in favor of name for page title', async () 
         },
         type: 'podman',
         lifecycleMethods: ['start', 'stop'],
+        connectionType: ProviderConnectionType.CONTAINER,
       },
     ],
   };
@@ -391,6 +407,7 @@ test('expect terminal tab to be visible if shellAccess is truthy', async () => {
         },
         shellAccess: true,
         type: 'podman',
+        connectionType: ProviderConnectionType.CONTAINER,
       },
     ],
   };
