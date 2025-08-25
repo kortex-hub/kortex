@@ -27,7 +27,7 @@ import userEvent from '@testing-library/user-event';
 import { router } from 'tinro';
 import { expect, test, vi } from 'vitest';
 
-import type { ProviderInfo } from '/@api/provider-info';
+import { ProviderConnectionType, type ProviderInfo } from '/@api/provider-info';
 
 import { providerInfos } from '../../stores/providers';
 import PreferencesKubernetesConnectionRendering from './PreferencesKubernetesConnectionRendering.svelte';
@@ -62,6 +62,7 @@ test('Expect that removing the connection is going back to the previous page', a
         endpoint: {
           apiURL: 'http://localhost:8080',
         },
+        connectionType: ProviderConnectionType.KUBERNETES,
       },
       {
         name: kindCluster2,
@@ -70,6 +71,7 @@ test('Expect that removing the connection is going back to the previous page', a
           apiURL: 'http://localhost:8181',
         },
         lifecycleMethods: ['delete'],
+        connectionType: ProviderConnectionType.KUBERNETES,
       },
       {
         name: kindCluster3,
@@ -77,6 +79,7 @@ test('Expect that removing the connection is going back to the previous page', a
         endpoint: {
           apiURL: 'http://localhost:8282',
         },
+        connectionType: ProviderConnectionType.KUBERNETES,
       },
     ],
     kubernetesProviderConnectionCreation: true,
@@ -89,6 +92,13 @@ test('Expect that removing the connection is going back to the previous page', a
     kubernetesProviderConnectionInitialization: false,
     extensionId: '',
     cleanupSupport: false,
+    inferenceConnections: [],
+    mcpConnections: [],
+    flowConnections: [],
+    inferenceProviderConnectionCreation: false,
+    inferenceProviderConnectionInitialization: false,
+    mcpProviderConnectionCreation: false,
+    mcpProviderConnectionInitialization: false,
   };
 
   // 3 connections with the same socket path
@@ -165,6 +175,7 @@ test('Expect to see error message if action fails', async () => {
           apiURL,
         },
         lifecycleMethods: ['delete'],
+        connectionType: ProviderConnectionType.KUBERNETES,
       },
     ],
     kubernetesProviderConnectionCreation: true,
@@ -177,6 +188,13 @@ test('Expect to see error message if action fails', async () => {
     kubernetesProviderConnectionInitialization: false,
     extensionId: '',
     cleanupSupport: false,
+    inferenceConnections: [],
+    mcpConnections: [],
+    flowConnections: [],
+    inferenceProviderConnectionCreation: false,
+    inferenceProviderConnectionInitialization: false,
+    mcpProviderConnectionCreation: false,
+    mcpProviderConnectionInitialization: false,
   };
 
   providerInfos.set([providerInfo]);

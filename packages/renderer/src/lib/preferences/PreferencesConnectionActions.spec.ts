@@ -21,10 +21,11 @@ import '@testing-library/jest-dom/vitest';
 import { render, screen } from '@testing-library/svelte';
 import { expect, test } from 'vitest';
 
-import type {
-  ProviderContainerConnectionInfo,
-  ProviderInfo,
-  ProviderKubernetesConnectionInfo,
+import {
+  ProviderConnectionType,
+  type ProviderContainerConnectionInfo,
+  type ProviderInfo,
+  type ProviderKubernetesConnectionInfo,
 } from '/@api/provider-info';
 
 import PreferencesConnectionActions from './PreferencesConnectionActions.svelte';
@@ -53,6 +54,13 @@ const containerProviderInfo: ProviderInfo = {
   vmConnections: [],
   vmProviderConnectionCreation: false,
   vmProviderConnectionInitialization: false,
+  inferenceConnections: [],
+  mcpConnections: [],
+  flowConnections: [],
+  inferenceProviderConnectionCreation: false,
+  inferenceProviderConnectionInitialization: false,
+  mcpProviderConnectionCreation: false,
+  mcpProviderConnectionInitialization: false,
 };
 
 const containerConnection: ProviderContainerConnectionInfo = {
@@ -64,6 +72,7 @@ const containerConnection: ProviderContainerConnectionInfo = {
   },
   lifecycleMethods: ['start', 'stop', 'delete'],
   type: 'podman',
+  connectionType: ProviderConnectionType.CONTAINER,
 };
 
 const kubernetesConnection: ProviderKubernetesConnectionInfo = {
@@ -73,6 +82,7 @@ const kubernetesConnection: ProviderKubernetesConnectionInfo = {
     apiURL: 'url',
   },
   lifecycleMethods: ['start', 'stop', 'delete'],
+  connectionType: ProviderConnectionType.KUBERNETES,
 };
 
 const updateConnectionStatus = (): void => {

@@ -22,7 +22,7 @@ import { fireEvent, render } from '@testing-library/svelte';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import ContainerConnectionDropdownTest from '/@/lib/forms/ContainerConnectionDropdownTest.svelte';
-import type { ProviderContainerConnectionInfo } from '/@api/provider-info';
+import { ProviderConnectionType, type ProviderContainerConnectionInfo } from '/@api/provider-info';
 
 const MULTI_CONNECTIONS: ProviderContainerConnectionInfo[] = Array.from({ length: 5 }).map((_, index) => ({
   name: `connection-${index}`,
@@ -32,6 +32,7 @@ const MULTI_CONNECTIONS: ProviderContainerConnectionInfo[] = Array.from({ length
   },
   status: 'started',
   type: 'podman',
+  connectionType: ProviderConnectionType.CONTAINER,
 }));
 
 beforeEach(() => {

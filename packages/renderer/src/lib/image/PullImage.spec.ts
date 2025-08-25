@@ -26,7 +26,7 @@ import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { providerInfos } from '/@/stores/providers';
 import { recommendedRegistries } from '/@/stores/recommendedRegistries';
-import type { ProviderContainerConnectionInfo, ProviderInfo } from '/@api/provider-info';
+import { ProviderConnectionType, type ProviderContainerConnectionInfo, type ProviderInfo } from '/@api/provider-info';
 
 import PullImage from './PullImage.svelte';
 
@@ -57,6 +57,7 @@ const CONTAINER_CONNECTION_MOCK: ProviderContainerConnectionInfo = {
     socketPath: 'dummy/socket',
   },
   type: 'podman',
+  connectionType: ProviderConnectionType.CONTAINER,
 };
 
 const PROVIDER_INFO_MOCK: ProviderInfo = {

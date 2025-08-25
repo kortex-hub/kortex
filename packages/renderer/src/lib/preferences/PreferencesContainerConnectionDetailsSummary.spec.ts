@@ -25,7 +25,7 @@ import '@testing-library/jest-dom/vitest';
 import { render, screen } from '@testing-library/svelte';
 import { expect, test } from 'vitest';
 
-import type { ProviderContainerConnectionInfo } from '/@api/provider-info';
+import { ProviderConnectionType, type ProviderContainerConnectionInfo } from '/@api/provider-info';
 
 import PreferencesContainerConnectionDetailsSummary from './PreferencesContainerConnectionDetailsSummary.svelte';
 
@@ -37,6 +37,7 @@ const podmanContainerConnection: ProviderContainerConnectionInfo = {
   },
   status: 'started',
   type: 'podman',
+  connectionType: ProviderConnectionType.CONTAINER,
 };
 
 const dockerContainerConnection: ProviderContainerConnectionInfo = {
@@ -47,6 +48,7 @@ const dockerContainerConnection: ProviderContainerConnectionInfo = {
   },
   status: 'started',
   type: 'docker',
+  connectionType: ProviderConnectionType.CONTAINER,
 };
 
 test('Expect that name, socket and type are displayed for Podman', async () => {

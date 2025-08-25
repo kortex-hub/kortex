@@ -26,7 +26,7 @@ import { expect, test } from 'vitest';
 import { notificationQueue } from '/@/stores/notifications';
 import { providerInfos } from '/@/stores/providers';
 import type { NotificationCard } from '/@api/notification';
-import type { ProviderContainerConnectionInfo, ProviderInfo } from '/@api/provider-info';
+import { ProviderConnectionType, type ProviderContainerConnectionInfo, type ProviderInfo } from '/@api/provider-info';
 
 import NewContentOnDashboardBadge from './NewContentOnDashboardBadge.svelte';
 
@@ -47,6 +47,7 @@ const notification1: NotificationCard = {
 const pStatus: ProviderStatus = 'started';
 const pInfo: ProviderContainerConnectionInfo = {
   name: 'test',
+  connectionType: ProviderConnectionType.CONTAINER,
   displayName: 'test',
   status: 'started',
   endpoint: {

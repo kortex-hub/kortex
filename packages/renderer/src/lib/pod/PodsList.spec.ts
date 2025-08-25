@@ -33,7 +33,7 @@ import PodsList from '/@/lib/pod/PodsList.svelte';
 import { filtered, podsInfos } from '/@/stores/pods';
 import { providerInfos } from '/@/stores/providers';
 import type { ContextGeneralState } from '/@api/kubernetes-contexts-states';
-import type { ProviderContainerConnectionInfo, ProviderInfo } from '/@api/provider-info';
+import { ProviderConnectionType, type ProviderContainerConnectionInfo, type ProviderInfo } from '/@api/provider-info';
 
 import type { PodInfo } from '../../../../main/src/plugin/api/pod-info';
 
@@ -51,6 +51,7 @@ const provider: ProviderInfo = {
       status: 'started',
       endpoint: { socketPath: 'dummy' },
       type: 'podman',
+      connectionType: ProviderConnectionType.CONTAINER,
     },
   ],
   containerProviderConnectionCreation: false,
@@ -72,6 +73,13 @@ const provider: ProviderInfo = {
   warnings: [],
   extensionId: '',
   cleanupSupport: false,
+  inferenceConnections: [],
+  mcpConnections: [],
+  flowConnections: [],
+  inferenceProviderConnectionCreation: false,
+  inferenceProviderConnectionInitialization: false,
+  mcpProviderConnectionCreation: false,
+  mcpProviderConnectionInitialization: false,
 };
 
 const pod1: PodInfo = {

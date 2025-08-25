@@ -29,7 +29,7 @@ import { onboardingList } from '/@/stores/onboarding';
 import { CONFIGURATION_DEFAULT_SCOPE } from '/@api/configuration/constants.js';
 import type { Menu } from '/@api/menu.js';
 import type { OnboardingInfo } from '/@api/onboarding';
-import type { ProviderInfo } from '/@api/provider-info';
+import { ProviderConnectionType, type ProviderInfo } from '/@api/provider-info';
 
 import { providerInfos } from '../../stores/providers';
 import PreferencesResourcesRendering from './PreferencesResourcesRendering.svelte';
@@ -68,6 +68,7 @@ const providerInfo: ProviderInfo = {
         id: 'libkrun',
         name: 'libkrun',
       },
+      connectionType: ProviderConnectionType.CONTAINER,
     },
     {
       name: secondaryContainerConnectionName,
@@ -82,6 +83,7 @@ const providerInfo: ProviderInfo = {
         id: 'wsl',
         name: 'wsl',
       },
+      connectionType: ProviderConnectionType.CONTAINER,
     },
   ],
   installationSupport: false,
@@ -96,6 +98,13 @@ const providerInfo: ProviderInfo = {
   containerProviderConnectionCreationDisplayName: 'Podman machine',
   kubernetesProviderConnectionInitialization: false,
   cleanupSupport: false,
+  inferenceConnections: [],
+  mcpConnections: [],
+  flowConnections: [],
+  inferenceProviderConnectionCreation: false,
+  inferenceProviderConnectionInitialization: false,
+  mcpProviderConnectionCreation: false,
+  mcpProviderConnectionInitialization: false,
 };
 
 // mock the router
@@ -172,6 +181,7 @@ describe.each<{
             id: 'libkrun',
             name: 'libkrun',
           },
+          connectionType: ProviderConnectionType.CONTAINER,
         },
         {
           name: secondaryContainerConnectionName,
@@ -186,6 +196,7 @@ describe.each<{
             id: 'wsl',
             name: 'wsl',
           },
+          connectionType: ProviderConnectionType.CONTAINER,
         },
       ],
       installationSupport: false,
@@ -200,6 +211,13 @@ describe.each<{
       containerProviderConnectionCreationDisplayName: 'Podman machine',
       kubernetesProviderConnectionInitialization: false,
       cleanupSupport: false,
+      inferenceConnections: [],
+      mcpConnections: [],
+      flowConnections: [],
+      inferenceProviderConnectionCreation: false,
+      inferenceProviderConnectionInitialization: false,
+      mcpProviderConnectionCreation: false,
+      mcpProviderConnectionInitialization: false,
     },
     startFailedImplemented: true,
   },
@@ -234,6 +252,7 @@ describe.each<{
             apiURL: 'url',
           },
           lifecycleMethods: ['start', 'stop', 'delete'],
+          connectionType: ProviderConnectionType.KUBERNETES,
         },
         {
           name: secondaryKubernetesConnectionName,
@@ -242,6 +261,7 @@ describe.each<{
             apiURL: 'url',
           },
           lifecycleMethods: ['start', 'stop', 'delete'],
+          connectionType: ProviderConnectionType.KUBERNETES,
         },
       ],
       installationSupport: false,
@@ -256,6 +276,13 @@ describe.each<{
       kubernetesProviderConnectionCreationDisplayName: 'Kluster',
       kubernetesProviderConnectionInitialization: false,
       cleanupSupport: false,
+      inferenceConnections: [],
+      mcpConnections: [],
+      flowConnections: [],
+      inferenceProviderConnectionCreation: false,
+      inferenceProviderConnectionInitialization: false,
+      mcpProviderConnectionCreation: false,
+      mcpProviderConnectionInitialization: false,
     },
     startFailedImplemented: false,
   },
@@ -287,11 +314,13 @@ describe.each<{
           name: defaultVmConnectionName,
           status: 'started',
           lifecycleMethods: ['start', 'stop', 'delete'],
+          connectionType: ProviderConnectionType.VM,
         },
         {
           name: secondaryVmConnectionName,
           status: 'stopped',
           lifecycleMethods: ['start', 'stop', 'delete'],
+          connectionType: ProviderConnectionType.VM,
         },
       ],
       installationSupport: false,
@@ -305,6 +334,13 @@ describe.each<{
       containerProviderConnectionInitialization: false,
       kubernetesProviderConnectionInitialization: false,
       cleanupSupport: false,
+      inferenceConnections: [],
+      mcpConnections: [],
+      flowConnections: [],
+      inferenceProviderConnectionCreation: false,
+      inferenceProviderConnectionInitialization: false,
+      mcpProviderConnectionCreation: false,
+      mcpProviderConnectionInitialization: false,
     },
     startFailedImplemented: true,
   },
