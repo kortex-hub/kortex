@@ -18,13 +18,31 @@
 import { createHash } from 'node:crypto';
 
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import type { Disposable, Provider, provider as ProviderAPI, ProviderConnectionStatus } from '@kortex-app/api';
+import type {
+  Disposable,
+  Provider,
+  provider as ProviderAPI,
+  ProviderConnectionStatus,
+  SecretStorage,
+} from '@kortex-app/api';
+
+export const TOKENS_KEY = 'openai:infos';
+export const TOKEN_SEPARATOR = ',';
+const INFO_SEPARATOR = '|';
+
+interface ConnectionInfo {
+  apiKey: string;
+  baseURL: string;
+}
 
 export class OpenAI implements Disposable {
   private provider: Provider | undefined = undefined;
   private connections: Map<string, Disposable> = new Map();
 
-  constructor(private readonly providerAPI: typeof ProviderAPI) {}
+  constructor(
+    private readonly providerAPI: typeof ProviderAPI,
+    private readonly secrets: SecretStorage,
+  ) {}
 
   async init(): Promise<void> {
     // create provider
@@ -36,11 +54,69 @@ export class OpenAI implements Disposable {
 
     // register MCP Provider connection factory
     this.provider?.setInferenceProviderConnectionFactory({ create: this.inferenceFactory.bind(this) });
+
+    // restore persistent connections
+    await this.restoreConnections();
+  }
+
+  private async restoreConnections(): Promise<void> {
+    const connectionInfos = await this.getConnectionInfos();
+    for (const connectionInfo of connectionInfos) {
+      await this.registerInferenceProviderConnection({ token: connectionInfo.apiKey, baseURL: connectionInfo.baseURL });
+    }
+  }
+
+  /**
+   * Get all connection infos from secret storage
+   * @private
+   */
+  private async getConnectionInfos(): Promise<ConnectionInfo[]> {
+    // get raw string from secret storage
+    let raw: string | undefined;
+    try {
+      raw = await this.secrets.get(TOKENS_KEY);
+    } catch (err: unknown) {
+      console.error('openai: something went wrong while trying to get tokens from secret storage', err);
+    }
+    // if undefined return empty array
+    if (!raw) return [];
+    // split raw string by token separator
+    return raw.split(TOKEN_SEPARATOR).map(str => {
+      const [apiKey, baseURL] = str.split(INFO_SEPARATOR);
+      return {
+        apiKey,
+        baseURL,
+      };
+    });
+  }
+
+  /**
+   * Save connection info to secret storage
+   * @param apiKey
+   * @param baseURL
+   * @private
+   */
+  private async saveConnectionInfo(apiKey: string, baseURL: string): Promise<void> {
+    // get existing tokens
+    const tokens = (await this.getConnectionInfos()).map(t => `${t.apiKey}|${t.baseURL}`);
+    // concat new token with existing tokens
+    const raw = [...tokens, `${apiKey}${INFO_SEPARATOR}${baseURL}`].join(TOKEN_SEPARATOR);
+    // save to secret storage
+    await this.secrets.store(TOKENS_KEY, raw);
   }
 
   private getTokenHash(token: string): string {
     const sha256 = createHash('sha256');
     return sha256.update(token).digest('hex');
+  }
+
+  private async removeConnectionInfo(token: string, baseURL: string): Promise<void> {
+    // get existing tokens
+    const tokens = await this.getConnectionInfos();
+    // filter out the token
+    const raw = tokens.filter(t => t.apiKey !== token || t.baseURL !== baseURL).join(TOKEN_SEPARATOR);
+    // save to secret storage
+    await this.secrets.store(TOKENS_KEY, raw);
   }
 
   protected async listModels(baseURL: string, token: string): Promise<Array<{ label: string }>> {
@@ -83,11 +159,24 @@ export class OpenAI implements Disposable {
       name: baseURL,
     });
 
+    // create a clean method
+    const clean = async (): Promise<void> => {
+      // dispose inference provider connection
+      this.connections.get(tokenHash)?.dispose();
+      // delete map entry
+      this.connections.delete(tokenHash);
+      // remove token from secret storage
+      await this.removeConnectionInfo(token, baseURL);
+    };
+
     const connectionDisposable = this.provider.registerInferenceProviderConnection({
       name: baseURL,
       sdk: openai,
       status(): ProviderConnectionStatus {
         return 'unknown'; // if status is not unknown we cannot delete the connection
+      },
+      lifecycle: {
+        delete: clean.bind(this),
       },
       models: models,
       credentials(): Record<string, string> {
@@ -106,6 +195,9 @@ export class OpenAI implements Disposable {
 
     const baseURL = params['openai.factory.baseURL'];
     if (!baseURL || typeof baseURL !== 'string') throw new Error('invalid baseURL');
+
+    // save the connection info in secret storage
+    await this.saveConnectionInfo(apiKey, baseURL);
 
     // use dedicated method to register connection
     await this.registerInferenceProviderConnection({
