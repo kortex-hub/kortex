@@ -116,7 +116,7 @@ export class MCPRegistry {
       const { servers } = await this.listMCPServersFromRegistry(registry.serverUrl);
       for (const server of servers) {
         if (!server.id) {
-          console.warn(`[MCPRegistry] no id for server`);
+          console.warn(`[MCPRegistry] no id for server`, server);
           continue;
         }
         const config = mapping.get(server.id);
