@@ -868,12 +868,6 @@ export class ProviderRegistry {
       inferenceProviderConnectionCreation = true;
     }
 
-    // MCP connection factory ?
-    let mcpProviderConnectionCreation = false;
-    if (provider?.mcpProviderConnectionFactory?.create) {
-      mcpProviderConnectionCreation = true;
-    }
-
     // container connection factory ?
     let containerProviderConnectionCreation = false;
     const containerProviderConnectionCreationDisplayName =
@@ -912,14 +906,6 @@ export class ProviderRegistry {
       inferenceProviderConnectionInitialization = true;
     }
 
-    // MCP connection factory ?
-    let mcpProviderConnectionInitialization = false;
-    const mcpProviderConnectionCreationDisplayName = provider.mcpProviderConnectionFactory?.creationDisplayName;
-    const mcpProviderConnectionCreationButtonTitle = provider.mcpProviderConnectionFactory?.creationButtonTitle;
-    if (provider?.mcpProviderConnectionFactory?.initialize) {
-      mcpProviderConnectionInitialization = true;
-    }
-
     const emptyConnectionMarkdownDescription = provider.emptyConnectionMarkdownDescription;
 
     // handle installation
@@ -950,7 +936,6 @@ export class ProviderRegistry {
       kubernetesProviderConnectionCreation,
       vmProviderConnectionCreation,
       inferenceProviderConnectionCreation,
-      mcpProviderConnectionCreation,
       // containers
       containerProviderConnectionInitialization,
       containerProviderConnectionCreationDisplayName,
@@ -967,10 +952,6 @@ export class ProviderRegistry {
       inferenceProviderConnectionInitialization,
       inferenceProviderConnectionCreationDisplayName,
       inferenceProviderConnectionCreationButtonTitle,
-      // MCP
-      mcpProviderConnectionInitialization,
-      mcpProviderConnectionCreationDisplayName,
-      mcpProviderConnectionCreationButtonTitle,
       // other
       emptyConnectionMarkdownDescription,
       links: provider.links,
@@ -1158,21 +1139,6 @@ export class ProviderRegistry {
       throw new Error('The provider does not support Inference connection creation');
     }
     return provider.inferenceProviderConnectionFactory.create(params, logHandler, token);
-  }
-
-  async createMCPProviderConnection(
-    internalProviderId: string,
-    params: { [key: string]: unknown },
-    logHandler: Logger,
-    token?: CancellationToken,
-  ): Promise<void> {
-    // grab the correct provider
-    const provider = this.getMatchingProvider(internalProviderId);
-
-    if (!provider.mcpProviderConnectionFactory?.create) {
-      throw new Error('The provider does not support MCP connection creation');
-    }
-    return provider.mcpProviderConnectionFactory.create(params, logHandler, token);
   }
 
   // helper method

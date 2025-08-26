@@ -57,6 +57,9 @@ export interface NavigationParameters {
     connectionName: string;
     flowId: string;
   };
+  [NavigationPage.MCP_DETAILS]: {
+    id: string;
+  };
 }
 
 // the parameters property is optional when the NavigationParameters say it is

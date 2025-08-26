@@ -41,6 +41,8 @@
 
 declare module '@kortex-app/api' {
   import type { ProviderV2 as AISDKInferenceProvider } from '@ai-sdk/provider';
+  // @ts-expect-error vite is not able to handle with directive
+  import type { MCPServerConfig, RemoteInfo } from '@mastra/core/mcp';
   import type { Transport as MCPTransport } from '@modelcontextprotocol/sdk/shared/transport.d.ts';
 
   /**
@@ -585,13 +587,20 @@ declare module '@kortex-app/api' {
   }
 
   /**
-   * @deprecated
+   * An MCP Connection lists all the MCP available in the provider
    */
   export type MCPProviderConnection = {
     name: string;
     transport: MCPTransport;
     lifecycle?: ProviderConnectionLifecycle;
     status(): ProviderConnectionStatus;
+    mcp: {
+      // list all MCP in this connection
+      all(): Array<RemoteInfo>
+    },
+    deploy: {
+      kubernetes(mcp: MCPServerConfig): Promise<void>
+    }
   };
 
   export interface InferenceModel {
@@ -636,12 +645,6 @@ declare module '@kortex-app/api' {
 
   // create programmatically a InferenceProviderConnection
   export interface InferenceProviderConnectionFactory extends ProviderConnectionFactory {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    create(params: { [key: string]: any }, logger?: Logger, token?: CancellationToken): Promise<void>;
-  }
-
-  // create programmatically a MCPProviderConnection
-  export interface MCPProviderConnectionFactory extends ProviderConnectionFactory {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     create(params: { [key: string]: any }, logger?: Logger, token?: CancellationToken): Promise<void>;
   }
@@ -787,21 +790,10 @@ declare module '@kortex-app/api' {
       connectionAuditor?: Auditor,
     ): Disposable;
 
-    /**
-     * @deprecated
-     */
-    setMCPProviderConnectionFactory(
-      providerProviderConnectionFactory: MCPProviderConnectionFactory,
-      connectionAuditor?: Auditor,
-    ): Disposable;
-
     registerContainerProviderConnection(connection: ContainerProviderConnection): Disposable;
     registerKubernetesProviderConnection(connection: KubernetesProviderConnection): Disposable;
     registerVmProviderConnection(connection: VmProviderConnection): Disposable;
     registerInferenceProviderConnection(connection: InferenceProviderConnection): Disposable;
-    /**
-     * @deprecated
-     */
     registerMCPProviderConnection(connection: MCPProviderConnection): Disposable;
 
     registerFlowProviderConnection(connection: FlowProviderConnection): Disposable;
@@ -953,17 +945,11 @@ declare module '@kortex-app/api' {
     providerId: string;
   }
 
-  /**
-   * @deprecated
-   */
   export interface RegisterMCPConnectionEvent {
     providerId: string;
     connection: MCPProviderConnection;
   }
 
-  /**
-   * @deprecated
-   */
   export interface UnregisterMCPConnectionEvent {
     providerId: string;
     connectionName: string;

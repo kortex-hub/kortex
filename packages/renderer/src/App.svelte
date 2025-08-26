@@ -4,8 +4,10 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 
 import { router } from 'tinro';
 
+import FlowCreate from '/@/lib/flows/FlowCreate.svelte';
 import FlowDetails from '/@/lib/flows/FlowDetails.svelte';
 import FlowList from '/@/lib/flows/FlowList.svelte';
+import MCPDetails from '/@/lib/mcp/MCPDetails.svelte';
 import PinActions from '/@/lib/statusbar/PinActions.svelte';
 import { handleNavigation } from '/@/navigation';
 import { kubernetesNoCurrentContext } from '/@/stores/kubernetes-no-current-context';
@@ -57,6 +59,7 @@ import KubePodDetails from './lib/kube/pods/PodDetails.svelte';
 import KubePodsList from './lib/kube/pods/PodsList.svelte';
 import PortForwardingList from './lib/kubernetes-port-forward/PortForwardingList.svelte';
 import ManifestDetails from './lib/manifest/ManifestDetails.svelte';
+import McpServerList from './lib/mcp/MCPServerList.svelte';
 import NodeDetails from './lib/node/NodeDetails.svelte';
 import NodesList from './lib/node/NodesList.svelte';
 import Onboarding from './lib/onboarding/Onboarding.svelte';
@@ -87,8 +90,6 @@ import Route from './Route.svelte';
 import { lastSubmenuPages } from './stores/breadcrumb';
 import { navigationRegistry } from './stores/navigation/navigation-registry';
 import SubmenuNavigation from './SubmenuNavigation.svelte';
-import McpServerList from './lib/mcp/MCPServerList.svelte';
-import FlowCreate from "/@/lib/flows/FlowCreate.svelte";
 
 router.mode.memory();
 
@@ -178,9 +179,14 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
           />
         </Route>
 
-        <Route path="/mcps/*" breadcrumb="MCPs">
+        <!-- MCP -->
+        <Route path="/mcps" breadcrumb="MCPs" navigationHint="root">
           <McpServerList />
         </Route>
+        <Route path="/mcps/:id/*" let:meta>
+          <MCPDetails id={meta.params.id} />
+        </Route>
+
         <Route path="/containers" breadcrumb="Containers" navigationHint="root">
           <ContainerList searchTerm={meta.query.filter ?? ''} />
         </Route>
