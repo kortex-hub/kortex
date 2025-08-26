@@ -2,7 +2,9 @@
 import { faToolbox } from '@fortawesome/free-solid-svg-icons/faToolbox';
 import type { DynamicToolUIPart } from 'ai';
 import { tick } from 'svelte';
-import { cubicInOut, slide, SvelteSet } from 'svelte/easing';
+import { cubicInOut } from 'svelte/easing';
+import { SvelteSet } from 'svelte/reactivity';
+import { slide } from 'svelte/transition';
 import Fa from 'svelte-fa';
 
 import ChevronDownIcon from '/@/lib/chat/components/icons/chevron-down.svelte';
@@ -114,7 +116,7 @@ function isMcpResourceContent(
                 {:else if isMcpImageContent(item)}
                   <div class="rounded border p-2">
                     <div class="text-[10px] uppercase tracking-wide text-zinc-500">Image ({item.mimeType})</div>
-                    <img alt="MCP image" class="max-h-64 rounded border" src={`data:${item.mimeType};base64,${item.data}`} />
+                    <img alt="MCP {item.mimeType} content" class="max-h-64 rounded border" src={`data:${item.mimeType};base64,${item.data}`} />
                   </div>
                 {:else if isMcpResourceContent(item)}
                   <div class="rounded border p-2">
