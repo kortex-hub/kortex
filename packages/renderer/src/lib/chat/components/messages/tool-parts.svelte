@@ -38,10 +38,6 @@ function toggle(id: string): void {
   }
 }
 
-function onToggle(id: string): (e: MouseEvent) => void {
-  return () => toggle(id);
-}
-
 // Helpers to better reflect MCP CallToolResult shapes in output rendering
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -81,7 +77,7 @@ function isMcpResourceContent(
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         class="cursor-pointer"
-        onclick={onToggle(tool.toolCallId)}
+        onclick={toggle.bind(undefined, tool.toolCallId)}
       >
         <ChevronDownIcon />
       </div>
