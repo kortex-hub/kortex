@@ -42,7 +42,7 @@ import type {
   V1Service,
 } from '@kubernetes/client-node';
 import type { MCPServerConfig } from '@mastra/core/mcp';
-import type { UIMessage, UIMessageChunk } from 'ai';
+import type { ToolSet, UIMessage, UIMessageChunk } from 'ai';
 import { contextBridge, ipcRenderer } from 'electron';
 
 import type { CliToolInfo } from '/@api/cli-tool-info';
@@ -1659,6 +1659,11 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld('getMcpRegistryServers', async (): Promise<MCPServerConfig[]> => {
     return ipcInvoke('mcp-registry:getMcpRegistryServers');
   });
+
+  contextBridge.exposeInMainWorld('getMcpToolSet', async (mcpId: string): Promise<string> => {
+    return ipcInvoke('mcp-manager:getTools', mcpId);
+  });
+
   contextBridge.exposeInMainWorld(
     'createMCPServerFromRemoteRegistry',
     async (serverId: string, remoteId: number, headersParams: { name: string; value: string }[]): Promise<void> => {

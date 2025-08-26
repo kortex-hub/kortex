@@ -2155,6 +2155,17 @@ export class PluginSystem {
       return mcpManager.listMCPRemoteServers();
     });
 
+    this.ipcHandle('mcp-manager:getTools', async (_listener, mcpId: string): Promise<string> => {
+      const tools = await mcpManager.getToolSet([mcpId]);
+
+      const serializable = Object.entries(tools).map(([key, value]) => ([key, {
+        description: value.description,
+      }]));
+      console.log('serializable', serializable);
+
+      return JSON.stringify(serializable, null, 2);
+    });
+
     this.ipcHandle(
       'image-registry:updateRegistry',
       async (_listener, registry: containerDesktopAPI.Registry): Promise<void> => {

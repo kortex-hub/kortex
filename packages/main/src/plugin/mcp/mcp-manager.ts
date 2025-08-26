@@ -83,20 +83,20 @@ export class MCPManager implements AsyncDisposable {
 
   public async registerMCPClient(
     internalProviderId: string,
-    connectionName: string,
+    serverName: string,
     transport: Transport,
     url?: string,
   ): Promise<void> {
     const client = await experimental_createMCPClient({ transport });
 
-    const key = this.getKey(internalProviderId, connectionName);
+    const key = this.getKey(internalProviderId, serverName);
 
-    console.log('[MCPManager] Registering MCP client for ', internalProviderId, ' with name ', connectionName);
+    console.log('[MCPManager] Registering MCP client for ', internalProviderId, ' with name ', serverName);
     this.#client.set(key, client);
 
     const mcpRemoteServerInfo: MCPRemoteServerInfo = {
       id: key,
-      name: connectionName,
+      name: serverName,
       url: url ?? '',
     };
     this.#mcps.push(mcpRemoteServerInfo);
