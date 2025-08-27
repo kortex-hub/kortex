@@ -91,6 +91,7 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type 
 							<div
 								class={cn('flex flex-col gap-4', {
 									'bg-primary text-primary-foreground rounded-xl px-3 pt-4': message.role === 'user',
+   									'animate-fade-in': message.role === 'assistant',
 								})}
 							>
 								<Markdown markdown={part.text} />
