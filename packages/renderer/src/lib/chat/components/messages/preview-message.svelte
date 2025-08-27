@@ -1,22 +1,24 @@
 <script lang="ts">
-import { cn } from '/@/lib/chat/utils/shadcn';
-import SparklesIcon from '../icons/sparkles.svelte';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
-import { Button } from '../ui/button';
-import PencilEditIcon from '../icons/pencil-edit.svelte';
-import PreviewAttachment from '../preview-attachment.svelte';
-import MessageReasoning from '../message-reasoning.svelte';
-import { fly } from 'svelte/transition';
 import type { UIMessage } from '@ai-sdk/svelte';
-import Markdown from '/@/lib/markdown/Markdown.svelte';
 import type { DynamicToolUIPart } from 'ai';
+import { fly } from 'svelte/transition';
+
+import { cn } from '/@/lib/chat/utils/shadcn';
+import Markdown from '/@/lib/markdown/Markdown.svelte';
+
+import PencilEditIcon from '../icons/pencil-edit.svelte';
+import SparklesIcon from '../icons/sparkles.svelte';
+import MessageReasoning from '../message-reasoning.svelte';
+import PreviewAttachment from '../preview-attachment.svelte';
+import { Button } from '../ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import ToolParts from './tool-parts.svelte';
 
 let { message, readonly, loading }: { message: UIMessage; readonly: boolean; loading: boolean } = $props();
 
 let mode = $state<'view' | 'edit'>('view');
 
-const tools: Array<DynamicToolUIPart> = message.parts.filter((part) => part?.type === 'dynamic-tool') ?? [];
+const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type === 'dynamic-tool') ?? [];
 </script>
 
 <div
@@ -75,7 +77,7 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter((part) => part?.typ
 												{...props}
 												variant="ghost"
 												class="text-muted-foreground h-fit rounded-full px-2 opacity-0 group-hover/message:opacity-100"
-												onclick={() => {
+												onclick={(): void => {
 													mode = 'edit';
 												}}
 											>
@@ -88,7 +90,7 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter((part) => part?.typ
 							{/if}
 							<div
 								class={cn('flex flex-col gap-4', {
-									'bg-primary text-primary-foreground rounded-xl px-3 py-2': message.role === 'user'
+									'bg-primary text-primary-foreground rounded-xl px-3 pt-4': message.role === 'user',
 								})}
 							>
 								<Markdown markdown={part.text} />
