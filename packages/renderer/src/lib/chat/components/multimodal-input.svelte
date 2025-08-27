@@ -200,17 +200,17 @@ $effect.pre(() => {
 	/>
 
 	<div class="absolute bottom-0 flex w-fit flex-row justify-start p-2">
-	<Button
-		class="h-fit rounded-md rounded-bl-lg p-[7px] hover:bg-zinc-200 dark:border-zinc-700 hover:dark:bg-zinc-900"
-		onclick={(event): void => {
-			event.preventDefault();
-			fileInputRef?.click();
-		}}
-		disabled={loading}
-		variant="ghost"
-	>
-		<PaperclipIcon size={14} />
-	</Button>
+		<Button
+			class="h-fit rounded-md rounded-bl-lg p-[7px] hover:bg-zinc-200 dark:border-zinc-700 hover:dark:bg-zinc-900"
+			onclick={(event): void => {
+				event.preventDefault();
+				fileInputRef?.click();
+			}}
+			disabled={loading}
+			variant="ghost"
+		>
+			<PaperclipIcon size={14} />
+		</Button>
 	</div>
 
 	<div class="absolute right-0 bottom-0 flex w-fit flex-row justify-end p-2">
