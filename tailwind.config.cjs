@@ -57,6 +57,17 @@ module.exports = {
         700: tailwindColors.violet[700],
       },
     },
+    extend: {
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: 0, transform: 'translateY(10px)' },
+          '100%': { opacity: 1, transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'fade-in': 'fadeIn 2s ease-out forwards',
+      },
+    },
   },
   plugins: [],
 };
