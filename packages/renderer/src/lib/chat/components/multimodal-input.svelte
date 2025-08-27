@@ -1,19 +1,21 @@
 <script lang="ts">
-import { Completion, type Chat } from '@ai-sdk/svelte';
-import PreviewAttachment from './preview-attachment.svelte';
-import { Textarea } from './ui/textarea';
-import { cn } from '/@/lib/chat/utils/shadcn';
-import { onMount } from 'svelte';
-import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
-import { innerWidth } from 'svelte/reactivity/window';
+import { type Chat } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
+import { onMount } from 'svelte';
+import { innerWidth } from 'svelte/reactivity/window';
 import { toast } from 'svelte-sonner';
-import { Button } from './ui/button';
+
+import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
+import { cn } from '/@/lib/chat/utils/shadcn';
+
+import type { User } from '../../../../../main/src/chat/db/schema';
+import ArrowUpIcon from './icons/arrow-up.svelte';
 import PaperclipIcon from './icons/paperclip.svelte';
 import StopIcon from './icons/stop.svelte';
-import ArrowUpIcon from './icons/arrow-up.svelte';
+import PreviewAttachment from './preview-attachment.svelte';
 import SuggestedActions from './suggested-actions.svelte';
-import type { User } from '../../../../../main/src/chat/db/schema';
+import { Button } from './ui/button';
+import { Textarea } from './ui/textarea';
 
 let {
   attachments = $bindable(),
@@ -35,28 +37,30 @@ let uploadQueue = $state<string[]>([]);
 const storedInput = new LocalStorage('input', '');
 const loading = $derived(chatClient.status === 'streaming' || chatClient.status === 'submitted');
 
-const adjustHeight = () => {
+const adjustHeight = (): void => {
   if (textareaRef) {
     textareaRef.style.height = 'auto';
     textareaRef.style.height = `${textareaRef.scrollHeight + 2}px`;
   }
 };
 
-const resetHeight = () => {
+const resetHeight = (): void => {
   if (textareaRef) {
     textareaRef.style.height = 'auto';
     textareaRef.style.height = '98px';
   }
 };
 
-function setInput(value: string) {
+function setInput(value: string): void {
   input = value;
   adjustHeight();
 }
 
-async function submitForm(event?: Event) {
+async function submitForm(): Promise<void> {
+  const text = input;
+  setInput('');
   await chatClient.sendMessage({
-    text: input,
+    text,
     files: attachments.map(attachment => ({
       type: 'file',
       url: attachment.url,
@@ -73,7 +77,14 @@ async function submitForm(event?: Event) {
   }
 }
 
-async function uploadFile(file: File) {
+async function uploadFile(file: File): Promise<
+  | {
+      url: string;
+      name: string;
+      contentType: string;
+    }
+  | undefined
+> {
   const formData = new FormData();
   formData.append('file', file);
 
@@ -104,8 +115,8 @@ async function handleFileChange(
   event: Event & {
     currentTarget: EventTarget & HTMLInputElement;
   },
-) {
-  const files = Array.from(event.currentTarget.files || []);
+): Promise<void> {
+  const files = Array.from(event.currentTarget.files ?? []);
   uploadQueue = files.map(file => file.name);
 
   try {
@@ -157,7 +168,7 @@ $effect.pre(() => {
 					attachment={{
 						url: '',
 						name: filename,
-						contentType: ''
+						contentType: '',
 					}}
 					uploading
 				/>
@@ -168,75 +179,65 @@ $effect.pre(() => {
 	<Textarea
 		bind:ref={textareaRef}
 		placeholder="Send a message..."
-		bind:value={() => input, setInput}
+		bind:value={():string => input, setInput}
 		class={cn(
 			'bg-muted max-h-[calc(75dvh)] min-h-[24px] resize-none overflow-hidden rounded-2xl pb-10 !text-base dark:border-zinc-700',
 			c
 		)}
 		rows={2}
 		autofocus
-		onkeydown={(event) => {
+		onkeydown={async(event): Promise<void> => {
 			if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
 				event.preventDefault();
 
 				if (loading) {
 					toast.error('Please wait for the model to finish its response!');
 				} else {
-					submitForm();
+					await submitForm();
 				}
 			}
 		}}
 	/>
 
 	<div class="absolute bottom-0 flex w-fit flex-row justify-start p-2">
-		{@render attachmentsButton()}
+		<Button
+			class="h-fit rounded-md rounded-bl-lg p-[7px] hover:bg-zinc-200 dark:border-zinc-700 hover:dark:bg-zinc-900"
+			onclick={(event): void => {
+				event.preventDefault();
+				fileInputRef?.click();
+			}}
+			disabled={loading}
+			variant="ghost"
+		>
+			<PaperclipIcon size={14} />
+		</Button>
 	</div>
 
 	<div class="absolute right-0 bottom-0 flex w-fit flex-row justify-end p-2">
 		{#if loading}
-			{@render stopButton()}
+			<Button
+				class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
+				onclick={(event): void => {
+					event.preventDefault();
+					stop();
+					chatClient.messages = chatClient.messages;
+				}}
+			>
+				<StopIcon size={14} />
+			</Button>
 		{:else}
-			{@render sendButton()}
+			<Button
+					class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
+					onclick={async(event): Promise<void> => {
+						event.preventDefault();
+						await submitForm();
+					}}
+					disabled={input.length === 0 || uploadQueue.length > 0}
+				>
+				<ArrowUpIcon size={14} />
+			</Button>
 		{/if}
 	</div>
 </div>
 
-{#snippet attachmentsButton()}
-	<Button
-		class="h-fit rounded-md rounded-bl-lg p-[7px] hover:bg-zinc-200 dark:border-zinc-700 hover:dark:bg-zinc-900"
-		onclick={(event) => {
-			event.preventDefault();
-			fileInputRef?.click();
-		}}
-		disabled={loading}
-		variant="ghost"
-	>
-		<PaperclipIcon size={14} />
-	</Button>
-{/snippet}
 
-{#snippet stopButton()}
-	<Button
-		class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
-		onclick={(event) => {
-			event.preventDefault();
-			stop();
-			chatClient.messages = chatClient.messages;
-		}}
-	>
-		<StopIcon size={14} />
-	</Button>
-{/snippet}
-
-{#snippet sendButton()}
-	<Button
-		class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
-		onclick={(event) => {
-			event.preventDefault();
-			submitForm();
-		}}
-		disabled={input.length === 0 || uploadQueue.length > 0}
-	>
-		<ArrowUpIcon size={14} />
-	</Button>
-{/snippet}
