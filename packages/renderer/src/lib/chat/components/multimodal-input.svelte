@@ -215,27 +215,27 @@ $effect.pre(() => {
 
 	<div class="absolute right-0 bottom-0 flex w-fit flex-row justify-end p-2">
 		{#if loading}
-				<Button
-		class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
-		onclick={(event): void => {
-			event.preventDefault();
-			stop();
-			chatClient.messages = chatClient.messages;
-		}}
-	>
-		<StopIcon size={14} />
-	</Button>
-		{:else}
-		<Button
+			<Button
 				class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
-				onclick={async(event): Promise<void> => {
+				onclick={(event): void => {
 					event.preventDefault();
-					await submitForm();
+					stop();
+					chatClient.messages = chatClient.messages;
 				}}
-				disabled={input.length === 0 || uploadQueue.length > 0}
 			>
-		<ArrowUpIcon size={14} />
-	</Button>
+				<StopIcon size={14} />
+			</Button>
+		{:else}
+			<Button
+					class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
+					onclick={async(event): Promise<void> => {
+						event.preventDefault();
+						await submitForm();
+					}}
+					disabled={input.length === 0 || uploadQueue.length > 0}
+				>
+				<ArrowUpIcon size={14} />
+			</Button>
 		{/if}
 	</div>
 </div>
