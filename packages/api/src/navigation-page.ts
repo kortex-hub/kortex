@@ -51,4 +51,5 @@ export enum NavigationPage {
   DEPLOY_TO_KUBE = 'deploy-to-kube',
   EXPERIMENTAL_FEATURES = 'experimental',
   CREATE_PROVIDER_CONNECTION = 'create-provider-connection',
+  MCP_DETAILS = 'mcp-details',
 }
