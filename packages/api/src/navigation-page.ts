@@ -49,4 +49,5 @@ export enum NavigationPage {
   RESOURCES = 'resources',
   EDIT_CONTAINER_CONNECTION = 'edit-container-connection',
   DEPLOY_TO_KUBE = 'deploy-to-kube',
+  MCP_DETAILS = 'mcp-details',
 }

@@ -46,9 +46,7 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
       router.goto('/flows');
       break;
     case NavigationPage.FLOW_CREATE:
-      router.goto(
-        `/flows/create`,
-      );
+      router.goto(`/flows/create`);
       break;
     case NavigationPage.FLOW_DETAILS:
       router.goto(
@@ -142,6 +140,9 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
       break;
     case NavigationPage.EDIT_CONTAINER_CONNECTION:
       router.goto(`/preferences/container-connection/edit/${request.parameters.provider}/${request.parameters.name}`);
+      break;
+    case NavigationPage.MCP_DETAILS:
+      router.goto(`/mcps/${request.parameters.id}/summary`);
       break;
   }
 };

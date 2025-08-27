@@ -1683,6 +1683,14 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld('getMcpRegistryServers', async (): Promise<MCPServerConfig[]> => {
     return ipcInvoke('mcp-registry:getMcpRegistryServers');
   });
+
+  contextBridge.exposeInMainWorld(
+    'getMcpToolSet',
+    async (mcpId: string): Promise<Record<string, { description: string }>> => {
+      return ipcInvoke('mcp-manager:getTools', mcpId);
+    },
+  );
+
   contextBridge.exposeInMainWorld(
     'createMCPServerFromRemoteRegistry',
     async (serverId: string, remoteId: number, headersParams: { name: string; value: string }[]): Promise<void> => {
