@@ -1120,30 +1120,6 @@ export function initExposure(): void {
     },
   );
 
-  contextBridge.exposeInMainWorld(
-    'createMCPProviderConnection',
-    async (
-      internalProviderId: string,
-      params: { [key: string]: unknown },
-      key: symbol,
-      keyLogger: (key: symbol, eventName: 'log' | 'warn' | 'error' | 'finish', args: string[]) => void,
-      tokenId: number | undefined,
-      taskId: number | undefined,
-    ): Promise<void> => {
-      onDataCallbacksTaskConnectionId++;
-      onDataCallbacksTaskConnectionKeys.set(onDataCallbacksTaskConnectionId, key);
-      onDataCallbacksTaskConnectionLogs.set(onDataCallbacksTaskConnectionId, keyLogger);
-      return ipcInvoke(
-        'provider-registry:createMCPProviderConnection',
-        internalProviderId,
-        params,
-        onDataCallbacksTaskConnectionId,
-        tokenId,
-        taskId,
-      );
-    },
-  );
-
   // callbacks for streamText
   let onDataCallbacksStreamTextId = 0;
   const onDataCallbacksStreamText = new Map<
@@ -1683,6 +1659,14 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld('getMcpRegistryServers', async (): Promise<MCPServerConfig[]> => {
     return ipcInvoke('mcp-registry:getMcpRegistryServers');
   });
+
+  contextBridge.exposeInMainWorld(
+    'getMcpToolSet',
+    async (mcpId: string): Promise<Record<string, { description: string }>> => {
+      return ipcInvoke('mcp-manager:getTools', mcpId);
+    },
+  );
+
   contextBridge.exposeInMainWorld(
     'createMCPServerFromRemoteRegistry',
     async (serverId: string, remoteId: number, headersParams: { name: string; value: string }[]): Promise<void> => {
