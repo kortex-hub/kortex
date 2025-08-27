@@ -1,8 +1,13 @@
+
 <script lang="ts">
 import { faToolbox } from '@fortawesome/free-solid-svg-icons/faToolbox';
 import type { DynamicToolUIPart } from 'ai';
 import { tick } from 'svelte';
-import { cubicInOut, slide, SvelteSet } from 'svelte/easing';
+/* eslint-disable import/no-duplicates */
+import { cubicInOut } from 'svelte/easing';
+import { SvelteSet } from 'svelte/reactivity';
+import { slide } from 'svelte/transition';
+/* eslint-enable import/no-duplicates */
 import Fa from 'svelte-fa';
 
 import ChevronDownIcon from '/@/lib/chat/components/icons/chevron-down.svelte';
