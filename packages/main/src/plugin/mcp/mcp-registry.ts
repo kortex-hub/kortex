@@ -20,11 +20,11 @@ import * as crypto from 'node:crypto';
 
 import type * as kortexAPI from '@kortex-app/api';
 import { SecretStorage } from '@kortex-app/api';
-import { MCPServerConfig } from '@mastra/core/mcp';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { HttpsOptions, OptionsOfTextResponseBody } from 'got';
 import { HttpProxyAgent, HttpsProxyAgent } from 'hpagent';
 import { inject, injectable } from 'inversify';
+import type { components } from 'mcp-registry';
 
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import type { MCPRegistryServerList } from '/@api/mcp/mcp-registry-server-entry.js';
@@ -125,7 +125,7 @@ export class MCPRegistry {
           continue;
         }
 
-        const remote = (server as MCPServerConfig).remotes?.[config.remoteId];
+        const remote = server.remotes?.[config.remoteId];
         if (!remote) {
           console.warn('[MCPRegistry] remote is undefined');
           continue;
@@ -337,9 +337,9 @@ export class MCPRegistry {
     return await content.json();
   }
 
-  async listMCPServersFromRegistries(): Promise<MCPServerConfig[]> {
+  async listMCPServersFromRegistries(): Promise<components['schemas']['ServerDetail'][]> {
     // connect to each registry and grab server details
-    const serverDetails: MCPServerConfig[] = [];
+    const serverDetails: components['schemas']['ServerDetail'][] = [];
 
     // merge all urls to inspect
     const serverUrls: string[] = this.registries

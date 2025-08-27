@@ -1,0 +1,21 @@
+{
+  "name": "mcp-registry",
+  "version": "0.0.1",
+  "description": "API for Kortex extensions",
+  "repository": "https://github.com/kortex-hub/kortex",
+  "publishConfig": {
+    "provenance": true,
+    "access": "public"
+  },
+  "license": "Apache-2.0",
+  "types": "./src/schema.d.ts",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "generate": "npx openapi-typescript https://raw.githubusercontent.com/modelcontextprotocol/registry/refs/heads/main/docs/server-registry-api/openapi.yaml -o src/schema.d.ts --export-type"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.8.0"
+  }
+}

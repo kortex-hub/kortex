@@ -19,9 +19,9 @@
 // definition of a MCP server as listed in a MCP registry
 // it should come frome types https://github.com/modelcontextprotocol/registry/issues/186
 
-import type { MCPServerConfig } from '@mastra/core/mcp';
+import type { components } from 'mcp-registry';
 
 export interface MCPRegistryServerList {
-  servers: MCPServerConfig[];
+  servers: components['schemas']['ServerDetail'][];
   metadata: { next_cursor?: string; count: number };
 }

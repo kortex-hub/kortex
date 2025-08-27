@@ -42,7 +42,6 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
-import type { MCPServerConfig } from '@mastra/core/mcp';
 import type { ToolSet, UIMessage } from 'ai';
 import { convertToModelMessages, generateText, stepCountIs, streamText } from 'ai';
 import checkDiskSpacePkg from 'check-disk-space';
@@ -51,6 +50,7 @@ import type { WebContents } from 'electron';
 import { app, BrowserWindow, clipboard, ipcMain, shell } from 'electron';
 import type { IpcMainInvokeEvent } from 'electron/main';
 import { Container } from 'inversify';
+import type { components } from 'mcp-registry';
 
 import type { KubernetesGeneratorInfo } from '/@/plugin/api/KubernetesGeneratorInfo.js';
 import { ExtensionLoader } from '/@/plugin/extension/extension-loader.js';
@@ -2133,9 +2133,12 @@ export class PluginSystem {
       return mcpRegistry.getRegistries();
     });
 
-    this.ipcHandle('mcp-registry:getMcpRegistryServers', async (): Promise<readonly MCPServerConfig[]> => {
-      return mcpRegistry.listMCPServersFromRegistries();
-    });
+    this.ipcHandle(
+      'mcp-registry:getMcpRegistryServers',
+      async (): Promise<readonly components['schemas']['ServerDetail'][]> => {
+        return mcpRegistry.listMCPServersFromRegistries();
+      },
+    );
 
     this.ipcHandle(
       'mcp-registry:getMcpSuggestedRegistries',
