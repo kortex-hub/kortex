@@ -10,7 +10,7 @@ interface Dependencies {
 export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
   constructor(private readonly dependencies: Dependencies) {}
 
-  async sendMessages(
+  sendMessages(
     options: {
       trigger: 'submit-message' | 'regenerate-message';
       chatId: string;
@@ -20,49 +20,40 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
     } & ChatRequestOptions,
   ): Promise<ReadableStream<UIMessageChunk>> {
     const uiMessages = JSON.parse(JSON.stringify(options.messages));
-
-    console.log('IPCChatTransport: uiMessages', uiMessages);
     const model = this.dependencies.getModel();
     console.log('Selected model', model);
 
-    // Buffer to collect chunks
-    const chunks: UIMessageChunk[] = [];
+    const mcp = this.dependencies.getMCP();
 
-    try {
-      await window.inferenceStreamText(
-        model.providerId,
-        model.connectionName,
-        model.label,
-        this.dependencies.getMCP(),
-        uiMessages,
-        (chunk: UIMessageChunk) => {
-          console.log('IPCChatTransport->chunk:', chunk);
-          chunks.push(chunk);
-        },
-        (error: unknown) => {
-          throw error;
-        },
-        () => {
-          console.log('IPCChatTransport:Stream completed');
-        },
-      );
-    } catch (error) {
-      console.error('Error during inferenceStreamText:', error);
-    }
-
-    // Now create a stream from the buffered chunks
-    return new ReadableStream<UIMessageChunk>({
-      start(controller): void {
-        for (const chunk of chunks) {
-          controller.enqueue(chunk);
-        }
-        controller.close();
+    const stream = new ReadableStream<UIMessageChunk>({
+      async start(controller): Promise<void> {
+        await window.inferenceStreamText(
+          model.providerId,
+          model.connectionName,
+          model.label,
+          mcp,
+          uiMessages,
+          (chunk: UIMessageChunk) => {
+            console.log('IPCChatTransport->chunk:', chunk);
+            controller.enqueue(chunk);
+          },
+          (error: unknown) => {
+            console.error('Error during inferenceStreamText:', error);
+            controller.error(error);
+          },
+          () => {
+            console.log('IPCChatTransport: Stream completed');
+            controller.close();
+          },
+        );
       },
     });
+
+    return Promise.resolve(stream);
   }
 
   reconnectToStream(options: { chatId: string } & ChatRequestOptions): Promise<ReadableStream<UIMessageChunk> | null> {
-    //FIXME: not implemented
+    //FIX ME: not implemented
     console.log('reconnecting to stream with options', options);
     return Promise.resolve(null);
   }
