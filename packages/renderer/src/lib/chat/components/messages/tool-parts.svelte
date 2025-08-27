@@ -2,13 +2,12 @@
 import { faToolbox } from '@fortawesome/free-solid-svg-icons/faToolbox';
 import type { DynamicToolUIPart } from 'ai';
 import { tick } from 'svelte';
-import { cubicInOut } from 'svelte/easing';
-import { SvelteSet } from 'svelte/reactivity';
-import { slide } from 'svelte/transition';
+import { cubicInOut, slide, SvelteSet } from 'svelte/easing';
 import Fa from 'svelte-fa';
 
 import ChevronDownIcon from '/@/lib/chat/components/icons/chevron-down.svelte';
 import { getLock } from '/@/lib/chat/hooks/lock';
+import { formatText } from '/@/lib/format/format';
 
 interface Props {
   tools: Array<DynamicToolUIPart>;
@@ -111,7 +110,7 @@ function isMcpResourceContent(
                 {#if isMcpTextContent(item)}
                   <div class="rounded border p-2">
                     <div class="text-[10px] uppercase tracking-wide text-zinc-500">Text</div>
-                    <div class="whitespace-pre-wrap text-sm">{item.text}</div>
+                    <div class="whitespace-pre-wrap text-sm">{formatText(item.text)}</div>
                   </div>
                 {:else if isMcpImageContent(item)}
                   <div class="rounded border p-2">
@@ -128,7 +127,7 @@ function isMcpResourceContent(
                     {#if 'text' in item.resource && item.resource.text}
                       <div class="mt-1">
                         <div class="text-[10px] uppercase tracking-wide text-zinc-500">Text</div>
-                        <code class="whitespace-pre-wrap overflow-auto rounded bg-zinc-50 p-2 text-xs dark:bg-zinc-900">{item.resource.text}</code>
+                        <code class="whitespace-pre-wrap overflow-auto rounded bg-zinc-50 p-2 text-xs dark:bg-zinc-900">{formatText(item.resource.text)}</code>
                       </div>
                     {:else if 'blob' in item.resource && item.resource.blob}
                       <div class="text-xs text-zinc-500">Binary blob provided.</div>
