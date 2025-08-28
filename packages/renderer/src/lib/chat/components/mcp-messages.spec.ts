@@ -24,14 +24,14 @@ import { describe, expect, test } from 'vitest';
 
 import MCPMessages from './mcp-messages.svelte';
 
-function dynamicTool(toolName: string, id: string, extra?: Partial<DynamicToolUIPart>): DynamicToolUIPart {
+function dynamicTool(toolName: string, id: string): DynamicToolUIPart {
   return {
     type: 'dynamic-tool',
-    state: 'call-arguments',
+    state: 'output-available',
     toolCallId: id,
     toolName,
     input: { foo: id },
-    ...(extra ?? {}),
+    output: { bar: id },
   } as DynamicToolUIPart;
 }
 
@@ -53,7 +53,7 @@ describe('mcp-messages.svelte', () => {
     expect(screen.getByText('No MCP activity yet.')).toBeInTheDocument();
   });
 
-  test('renders one entry per assistant message that contains dynamic-tool parts', () => {
+  test('renders one entry per assistant message that contains dynamic-tool parts', async () => {
     const msgWithOneTool: UIMessage = {
       id: 'a1',
       role: 'assistant',
@@ -86,19 +86,20 @@ describe('mcp-messages.svelte', () => {
       systemMessage,
     ];
 
-    const { container } = render(MCPMessages, { messages });
+    render(MCPMessages, { messages });
 
     // Empty state should not be present
     expect(screen.queryByText('No MCP activity yet.')).not.toBeInTheDocument();
 
     // The component wraps each ToolParts in a specific container div; count them
-    const entryContainers = container.querySelectorAll('.rounded-md.bg-background.p-2.ring-1.ring-border');
+    //const entryContainers = container.querySelectorAll('.rounded-md.bg-background.p-2.ring-1.ring-border');
+    const entryContainers = await screen.findAllByRole('row');
     expect(entryContainers.length).toBe(2); // only a1 and a2 contain dynamic-tool parts
 
     // Ensure tool names from ToolParts appear (verifies children rendered)
-    expect(screen.getByText('Tool A')).toBeInTheDocument();
-    expect(screen.getByText('Tool B1')).toBeInTheDocument();
-    expect(screen.getByText('Tool B2')).toBeInTheDocument();
+    expect(screen.getByText('Tool A', { exact: true })).toBeInTheDocument();
+    expect(screen.getByText('Tool B1', { exact: true })).toBeInTheDocument();
+    expect(screen.getByText('Tool B2', { exact: true })).toBeInTheDocument();
 
     // Assistant without tools and non-assistant dynamic tools should not contribute entries
     expect(screen.queryByText('System Tool')).not.toBeInTheDocument();

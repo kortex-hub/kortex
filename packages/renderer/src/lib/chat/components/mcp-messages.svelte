@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { UIMessage } from '@ai-sdk/svelte';
-import type { DynamicToolUIPart } from 'ai';
+import type { DynamicToolUIPart, UIDataTypes, UIMessagePart, UITools } from 'ai';
 
 import MCPIcon from '/@/lib/images/MCPIcon.svelte';
 
@@ -8,27 +8,19 @@ import ToolParts from './messages/tool-parts.svelte';
 
 let { messages }: { messages: UIMessage[] } = $props();
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-function isDynamicTool(part: unknown): part is DynamicToolUIPart {
-  return (
-    isRecord(part) &&
-    'type' in part &&
-    (part as { type?: unknown }).type === 'dynamic-tool'
-  );
+function isDynamicTool(part: UIMessagePart<UIDataTypes, UITools>): part is DynamicToolUIPart {
+  return part.type === 'dynamic-tool';
 }
 
 // Collect all assistant dynamic-tool parts per message
 const toolsPerMessage = $derived(
   messages
-    .filter((m) => m.role === 'assistant')
-    .map((m) => ({
+    .filter(m => m.role === 'assistant')
+    .map(m => ({
       id: m.id,
-      tools: (m.parts?.filter(isDynamicTool) as Array<DynamicToolUIPart>) ?? []
+      tools: m.parts?.filter(isDynamicTool) ?? [],
     }))
-    .filter((entry) => entry.tools.length > 0)
+    .filter(entry => entry.tools.length > 0),
 );
 </script>
 
@@ -44,7 +36,7 @@ const toolsPerMessage = $derived(
     {:else}
       <div class="flex flex-col gap-4">
         {#each toolsPerMessage as entry (entry.id)}
-          <div class="rounded-md bg-background p-2 ring-1 ring-border">
+          <div class="rounded-md bg-background p-2 ring-1 ring-border" role="row">
             <ToolParts tools={entry.tools} />
           </div>
         {/each}
