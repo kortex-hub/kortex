@@ -3,7 +3,7 @@ import { faToolbox } from '@fortawesome/free-solid-svg-icons/faToolbox';
 import { SvelteSet } from 'svelte/reactivity';
 import Fa from 'svelte-fa';
 
-import {cn} from '/@/lib/chat/utils/shadcn';
+import { cn } from '/@/lib/chat/utils/shadcn';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 
 import CheckCircleFillIcon from './icons/check-circle-fill.svelte';
@@ -25,7 +25,7 @@ let {
 }: {
   selected: Set<string>;
   class?: string;
-  disabled: boolean ;
+  disabled?: boolean;
 } = $props();
 
 let open = $state(false);
@@ -40,7 +40,7 @@ function onSelect(key: string, event: Event): void {
 }
 </script>
 
-<DropdownMenu {open} onOpenChange={(val): void => (open = val)}>
+<DropdownMenu {open} onOpenChange={(val): boolean => (open = val)}>
   <DropdownMenuTrigger>
     {#snippet child({ props })}
       <Button

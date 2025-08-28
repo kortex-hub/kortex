@@ -7,6 +7,7 @@ import { Textarea } from '/@/lib/chat/components/ui/textarea';
 import MonacoEditor from '/@/lib/editor/MonacoEditor.svelte';
 import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
 import FormPage from '/@/lib/ui/FormPage.svelte';
+import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 
 import FlowConnectionSelector from './components/flow-connection-selector.svelte';
 
@@ -34,6 +35,11 @@ async function generate(): Promise<void> {
       name: $state.snapshot(name),
       description: $state.snapshot(description),
       prompt: $state.snapshot(prompt),
+      mcp: [...selectedMCP].map(m => ({
+        name: m,
+        type: 'streamable_http',
+        uri: $mcpRemoteServerInfos.find(mcp => mcp.id === m)!.url,
+      })),
     });
   } catch (err: unknown) {
     error = String(err);
@@ -72,8 +78,8 @@ async function generate(): Promise<void> {
 
           <!-- tools -->
           <div class="flex flex-col">
-            <span>Tools (not supported yet)</span>
-            <MCPSelector disabled bind:selected={selectedMCP}/>
+            <span>Tools</span>
+            <MCPSelector bind:selected={selectedMCP}/>
           </div>
 
           <!-- description -->
