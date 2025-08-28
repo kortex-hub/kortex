@@ -24,6 +24,7 @@ import { FlowInfo } from '/@api/flow-info.js';
 
 @injectable()
 export class FlowManager implements Disposable {
+  #installedProviders: Set<string> = new Set();
   #flows: Map<string, Array<Flow>> = new Map();
   #disposable: Map<string, Disposable> = new Map();
 
@@ -42,6 +43,10 @@ export class FlowManager implements Disposable {
    */
   protected getKey(providerId: string, connectionName: string): string {
     return `${providerId}:${connectionName}`;
+  }
+
+  hasInstalledFlowProviders(): boolean {
+    return Array.from(this.#installedProviders).length > 0;
   }
 
   all(): Array<FlowInfo> {
@@ -89,6 +94,10 @@ export class FlowManager implements Disposable {
 
     const flows = await connection.flow.all();
     this.#flows.set(key, flows);
+
+    if (connection.flow.installed) {
+      this.#installedProviders.add(providerId);
+    }
 
     // dispose of existing if any
     this.#disposable.get(key)?.dispose();

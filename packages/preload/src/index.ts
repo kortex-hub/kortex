@@ -293,6 +293,10 @@ export function initExposure(): void {
     return ipcInvoke('flows:list');
   });
 
+  contextBridge.exposeInMainWorld('hasInstalledFlowProviders', async (): Promise<boolean> => {
+    return ipcInvoke('flows:hasInstalledFlowProviders');
+  });
+
   contextBridge.exposeInMainWorld(
     'readFlow',
     async (providerId: string, connectionName: string, flowId: string): Promise<string> => {

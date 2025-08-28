@@ -444,6 +444,7 @@ declare module '@kortex-app/api' {
     lifecycle?: ProviderConnectionLifecycle;
     flow: {
       all(): Promise<Array<Flow>>;
+      readonly installed: boolean;
       onDidChange: Event<void>;
       /**
        * @experimental expect change
