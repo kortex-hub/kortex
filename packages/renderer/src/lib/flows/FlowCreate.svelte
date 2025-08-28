@@ -11,7 +11,7 @@ import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 
 import FlowConnectionSelector from './components/flow-connection-selector.svelte';
 
-let selectedMCP: Set<string> = $derived($flowCreationStore?.mcp ?? new SvelteSet());
+let selectedMCP: Set<string> = $state($flowCreationStore?.mcp ?? new SvelteSet());
 
 // error
 let error: string | undefined = $state();
@@ -22,7 +22,6 @@ let description: string = $state('');
 let prompt: string = $state($flowCreationStore?.prompt ?? '');
 let flowProviderConnectionKey: string | undefined = $state<string>();
 let result: string | undefined = $state(undefined);
-
 flowCreationStore.set(undefined);
 
 async function generate(): Promise<void> {
@@ -52,7 +51,7 @@ async function generate(): Promise<void> {
     <div class="px-5 pb-5 min-w-full h-fit">
       <div class="bg-[var(--pd-content-card-bg)] px-6 py-4">
         {#if error}
-          <ErrorMessage error={error}/>
+          <ErrorMessage {error}/>
         {/if}
 
         <form
@@ -82,7 +81,7 @@ async function generate(): Promise<void> {
             <MCPSelector bind:selected={selectedMCP}/>
           </div>
 
-          <!-- description -->
+          <!-- prompt -->
           <div>
             <span>Prompt</span>
             <Textarea
