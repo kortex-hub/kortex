@@ -12,8 +12,8 @@ import { providerInfos } from '/@/stores/providers';
 import type { Chat as DbChat, User } from '../../../../../main/src/chat/db/schema';
 import ChatHeader from './chat-header.svelte';
 import { IPCChatTransport } from './ipc-chat-transport';
-import Messages from './messages.svelte';
 import McpMessages from './mcp-messages.svelte';
+import Messages from './messages.svelte';
 import MultimodalInput from './multimodal-input.svelte';
 
 let {
