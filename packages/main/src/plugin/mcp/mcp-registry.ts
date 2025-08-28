@@ -27,7 +27,6 @@ import { inject, injectable } from 'inversify';
 import type { components } from 'mcp-registry';
 
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
-import type { MCPRegistryServerList } from '/@api/mcp/mcp-registry-server-entry.js';
 
 import { ApiSenderType } from '../api.js';
 import { Certificates } from '../certificates.js';
@@ -114,20 +113,17 @@ export class MCPRegistry {
       );
 
       const { servers } = await this.listMCPServersFromRegistry(registry.serverUrl);
-      for (const server of servers) {
+      for (const { server } of servers) {
         if (!server.id) {
-          console.warn(`[MCPRegistry] no id for server`, server);
           continue;
         }
         const config = mapping.get(server.id);
         if (!config) {
-          console.warn(`[MCPRegistry] no existing config for server ${server.id}`);
           continue;
         }
 
         const remote = server.remotes?.[config.remoteId];
         if (!remote) {
-          console.warn('[MCPRegistry] remote is undefined');
           continue;
         }
 
@@ -321,7 +317,7 @@ export class MCPRegistry {
     await this.safeStorage?.store(STORAGE_KEY, JSON.stringify([...existing, config]));
   }
 
-  protected async listMCPServersFromRegistry(registryURL: string): Promise<MCPRegistryServerList> {
+  protected async listMCPServersFromRegistry(registryURL: string): Promise<components['schemas']['ServerList']> {
     // connect to ${registry.serverUrl}/v0/servers and grab the list of servers
     // use fetch
 
@@ -337,9 +333,9 @@ export class MCPRegistry {
     return await content.json();
   }
 
-  async listMCPServersFromRegistries(): Promise<components['schemas']['ServerDetail'][]> {
+  async listMCPServersFromRegistries(): Promise<Array<components['schemas']['ServerDetail']>> {
     // connect to each registry and grab server details
-    const serverDetails: components['schemas']['ServerDetail'][] = [];
+    const serverDetails: Array<components['schemas']['ServerResponse']> = [];
 
     // merge all urls to inspect
     const serverUrls: string[] = this.registries
@@ -347,12 +343,12 @@ export class MCPRegistry {
       .concat(this.suggestedRegistries.map(registry => registry.url));
 
     for (const registryURL of serverUrls) {
-      const serverList: MCPRegistryServerList = await this.listMCPServersFromRegistry(registryURL);
+      const serverList: components['schemas']['ServerList'] = await this.listMCPServersFromRegistry(registryURL);
 
       // now, aggregate the servers from the list
       serverDetails.push(...serverList.servers);
     }
-    return serverDetails;
+    return serverDetails.map(({ server }) => server);
   }
 
   async updateMCPRegistry(registry: kortexAPI.MCPRegistry): Promise<void> {
