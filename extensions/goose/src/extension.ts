@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import type { ExtensionContext } from '@kortex-app/api';
-import { cli, process, provider } from '@kortex-app/api';
+import { cli, process, provider, version } from '@kortex-app/api';
 
 import { GooseCLI } from './goose-cli';
 import { GooseRecipe } from './goose-recipe';
@@ -27,7 +27,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
   extensionContext.subscriptions.push(gooseCLI);
   await gooseCLI.init();
 
-  const gooseProvider = new GooseRecipe(provider, gooseCLI);
+  const gooseProvider = new GooseRecipe(provider, gooseCLI, version);
   extensionContext.subscriptions.push(gooseProvider);
   gooseProvider.init();
 }
