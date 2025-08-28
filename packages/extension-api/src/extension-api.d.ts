@@ -427,6 +427,14 @@ declare module '@kortex-app/api' {
     name: string;
     description: string;
     prompt: string;
+    mcp: Array<{
+      name: string;
+      type: 'streamable_http';
+      uri: string;
+      headers?: {
+        [key: string]: string;
+      };
+    }>;
   }
 
   export interface FlowProviderConnection {

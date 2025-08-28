@@ -19,13 +19,19 @@ import mustache from 'mustache';
 
 import template from './templates/recipe.mustache?raw';
 
-interface RecipeTemplateOptions {
+export interface RecipeTemplateOptions {
   recipe: {
     title: string;
     name: string;
     prompt: string;
     instructions: string;
-  }
+    extensions: Array<{
+      name: string;
+      type: string;
+      uri: string;
+      headers: Array<{ key: string; value: string }>;
+    }>;
+  };
 }
 
 export class RecipeTemplate {

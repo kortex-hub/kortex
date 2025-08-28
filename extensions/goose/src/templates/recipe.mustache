@@ -9,3 +9,14 @@ instructions: |
   {{#recipe.instructions }}
     {{&.}}
   {{/recipe.instructions }}
+
+extensions:
+  {{#recipe.extensions }}
+  - name: "{{ name }}"
+    type: "{{ type }}"
+    uri: "{{ &uri }}"
+    headers:
+    {{#headers }}
+      {{ key }}: "{{ value }}"
+    {{/headers }}
+  {{/recipe.extensions }}
