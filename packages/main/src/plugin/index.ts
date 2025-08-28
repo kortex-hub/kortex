@@ -42,7 +42,7 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
-import type { ToolSet, UIMessage } from 'ai';
+import type { DynamicToolUIPart, ToolSet, UIMessage } from 'ai';
 import { convertToModelMessages, generateText, stepCountIs, streamText } from 'ai';
 import checkDiskSpacePkg from 'check-disk-space';
 import type Dockerode from 'dockerode';
@@ -2173,6 +2173,10 @@ export class PluginSystem {
         );
       },
     );
+
+    this.ipcHandle('mcp-manager:getExchanges', async (_listener, mcpId: string): Promise<DynamicToolUIPart[]> => {
+      return mcpManager.getExchanges(mcpId);
+    });
 
     this.ipcHandle(
       'image-registry:updateRegistry',
