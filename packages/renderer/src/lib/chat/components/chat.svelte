@@ -52,11 +52,11 @@ let selectedModel = $state<ModelInfo | undefined>(getFirstModel());
 let selectedMCP = new SvelteSet<string>();
 
 function getFirstModel(): ModelInfo | undefined {
-  return (models && models.length > 0)?models[0]:undefined;
+  return models && models.length > 0 ? models[0] : undefined;
 }
 
 $effect(() => {
-  if(!selectedModel && models && models.length > 0) {
+  if (!selectedModel && models && models.length > 0) {
     selectedModel = getFirstModel();
   }
 });
@@ -80,6 +80,7 @@ const chatClient = $derived(
     // clientside while still SSRing them on initial load or when we navigate to a different chat.
     messages: untrack(() => initialMessages),
     generateId: crypto.randomUUID.bind(crypto),
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     onFinish: async (): Promise<void> => {
       await chatHistory.refetch();
     },
@@ -119,7 +120,7 @@ let attachments = $state<Attachment[]>([]);
 		/>
      <form class="bg-background mx-auto flex w-full gap-2 px-4 pb-4 md:max-w-3xl md:pb-6">
        {#if !readonly}
-         <MultimodalInput {attachments} {user} {chatClient} class="flex-1" />
+         <MultimodalInput {attachments} {user} {chatClient} selectedModel={selectedModel} selectedMCP={selectedMCP} class="flex-1" />
        {/if}
      </form>
    </div>
