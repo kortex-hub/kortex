@@ -1,11 +1,11 @@
 <script lang="ts">
 import { faPlusCircle } from '@fortawesome/free-solid-svg-icons';
-import type { MCPServerConfig } from '@mastra/core/mcp';
+import type { components } from 'mcp-registry';
 
 import ListItemButtonIcon from '../ui/ListItemButtonIcon.svelte';
 import McpRegistryCreateFromRegistryModal from './MCPRegistryCreateFromRegistryModal.svelte';
 
-export let object: MCPServerConfig;
+export let object: components['schemas']['ServerDetail'];
 
 let createFromRegistryModal = false;
 

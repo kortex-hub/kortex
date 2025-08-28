@@ -1,7 +1,7 @@
 <script lang="ts">
 import { faPlusCircle } from '@fortawesome/free-solid-svg-icons';
-import type { MCPServerConfig, RemoteInfo } from '@mastra/core/mcp';
 import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
+import type { components } from 'mcp-registry';
 import { router } from 'tinro';
 
 import Dialog from '/@/lib/dialogs/Dialog.svelte';
@@ -9,9 +9,7 @@ import Dialog from '/@/lib/dialogs/Dialog.svelte';
 import PasswordInput from '../ui/PasswordInput.svelte';
 
 interface Props {
-  mcpRegistryServerDetail: MCPServerConfig & {
-    remotes?: (RemoteInfo & { headers?: { name: string; is_secret: boolean; description: string }[] })[];
-  };
+  mcpRegistryServerDetail: components['schemas']['ServerDetail'];
   closeCallback: () => void;
 }
 

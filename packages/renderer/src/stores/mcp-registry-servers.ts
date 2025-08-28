@@ -16,11 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { MCPServerConfig } from '@mastra/core/mcp';
+import type { components } from 'mcp-registry';
 import type { Writable } from 'svelte/store';
 import { writable } from 'svelte/store';
 
-export const mcpRegistriesServerInfos: Writable<readonly MCPServerConfig[]> = writable([]);
+export const mcpRegistriesServerInfos: Writable<readonly components['schemas']['ServerDetail'][]> = writable([]);
 
 export async function fetchMcpRegistryServers(): Promise<void> {
   const registries = await window.getMcpRegistryServers();
