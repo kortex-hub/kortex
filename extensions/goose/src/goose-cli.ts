@@ -43,7 +43,7 @@ export class GooseCLI implements Disposable {
 
     try {
       const { stdout } = await this.processAPI.exec('goose', ['recipe', 'list', '--format=json'], {
-        cwd: options.path,
+        env: {GOOSE_RECIPE_PATH: options.path},
       });
       console.log('[GooseCLI] getRecipes: ', stdout);
       return JSON.parse(stdout);

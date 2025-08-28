@@ -58,10 +58,9 @@ export class GooseRecipe implements Disposable {
     });
     // map Recipe to Flow
     return recipes.map(({ path }) => {
-      const full = join(basePath, path);
       return {
-        id: Buffer.from(full).toString('base64'),
-        path: full,
+        id: Buffer.from(path).toString('base64'),
+        path,
       };
     });
   }
