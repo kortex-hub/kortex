@@ -197,6 +197,7 @@ $effect.pre(() => {
 	/>
 
 	<div class="absolute bottom-0 flex w-fit flex-row justify-start p-2">
+    
 		<Button
 			class="h-fit rounded-md rounded-bl-lg p-[7px] hover:bg-zinc-200 dark:border-zinc-700 hover:dark:bg-zinc-900"
 			onclick={(event): void => {
@@ -236,5 +237,3 @@ $effect.pre(() => {
 		{/if}
 	</div>
 </div>
-
-

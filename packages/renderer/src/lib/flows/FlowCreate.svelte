@@ -1,31 +1,31 @@
 <script lang="ts">
-import { Button,ErrorMessage,Input } from '@podman-desktop/ui-svelte';
+import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
 import { SvelteSet } from 'svelte/reactivity';
 
 import MCPSelector from '/@/lib/chat/components/mcp-selector.svelte';
-import {Textarea} from '/@/lib/chat/components/ui/textarea';
+import { Textarea } from '/@/lib/chat/components/ui/textarea';
 import MonacoEditor from '/@/lib/editor/MonacoEditor.svelte';
+import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 
 import FlowConnectionSelector from './components/flow-connection-selector.svelte';
 
-let selectedMCP: Set<string> = new SvelteSet();
+let selectedMCP: Set<string> = $derived($flowCreationStore?.mcp ?? new SvelteSet());
 
 // error
 let error: string | undefined = $state();
 
 // form field
-
 let name: string = $state('');
 let description: string = $state('');
-let prompt: string = $state('');
-let flowProviderConnectionKey: string | undefined = $state(undefined);
-
-// result
+let prompt: string = $state($flowCreationStore?.prompt ?? '');
+let flowProviderConnectionKey: string | undefined = $state<string>();
 let result: string | undefined = $state(undefined);
 
+flowCreationStore.set(undefined);
+
 async function generate(): Promise<void> {
-  if(!flowProviderConnectionKey) return;
+  if (!flowProviderConnectionKey) return;
 
   const [providerId, connectionName] = flowProviderConnectionKey.split(':');
 
@@ -53,7 +53,6 @@ async function generate(): Promise<void> {
           novalidate
           class="p-2 space-y-7 h-fit"
         >
-          <!-- name -->
           <div>
             <span>Flow Name</span>
             <Input bind:value={name} placeholder="name" class="grow" required />
