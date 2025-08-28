@@ -3,7 +3,7 @@ import { writable } from 'svelte/store';
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 
 export interface FlowCreationData {
-  lastUserMessage: string;
+  prompt: string;
   model: ModelInfo;
   mcp: Set<string>;
 }

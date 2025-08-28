@@ -1,10 +1,14 @@
 <script lang="ts">
-import ThinkingMessage from './messages/thinking-message.svelte';
-import Overview from './messages/overview.svelte';
-import { onMount } from 'svelte';
-import PreviewMessage from './messages/preview-message.svelte';
 import type { UIMessage } from '@ai-sdk/svelte';
+import { onMount } from 'svelte';
+import type { SvelteSet } from 'svelte/reactivity';
+
 import { getLock } from '/@/lib/chat/hooks/lock';
+
+import Overview from './messages/overview.svelte';
+import PreviewMessage from './messages/preview-message.svelte';
+import ThinkingMessage from './messages/thinking-message.svelte';
+import type { ModelInfo } from './model-info';
 
 let containerRef = $state<HTMLDivElement | null>(null);
 let endRef = $state<HTMLDivElement | null>(null);
@@ -13,10 +17,14 @@ let {
   readonly,
   loading,
   messages,
+  selectedModel,
+  selectedMCP,
 }: {
   readonly: boolean;
   loading: boolean;
   messages: UIMessage[];
+  selectedModel?: ModelInfo;
+  selectedMCP: SvelteSet<string>;
 } = $props();
 
 let mounted = $state(false);
@@ -41,7 +49,7 @@ $effect(() => {
     characterData: true,
   });
 
-  return () => observer.disconnect();
+  return (): void => observer.disconnect();
 });
 </script>
 
@@ -51,7 +59,7 @@ $effect(() => {
 	{/if}
 
 	{#each messages as message (message.id)}
-		<PreviewMessage {message} {readonly} {loading} />
+		<PreviewMessage {message} {readonly} {loading} {selectedModel} {selectedMCP} />
 	{/each}
 
 	{#if loading && messages.length > 0 && messages[messages.length - 1].role === 'user'}

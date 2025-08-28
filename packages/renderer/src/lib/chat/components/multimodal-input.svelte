@@ -2,21 +2,16 @@
 import { type Chat } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
 import { onMount } from 'svelte';
-import type { SvelteSet } from 'svelte/reactivity';
 import { innerWidth } from 'svelte/reactivity/window';
 import { toast } from 'svelte-sonner';
-import { router } from 'tinro';
 
 import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
 import { cn } from '/@/lib/chat/utils/shadcn';
-import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
 
 import type { User } from '../../../../../main/src/chat/db/schema';
 import ArrowUpIcon from './icons/arrow-up.svelte';
 import PaperclipIcon from './icons/paperclip.svelte';
-import PlusIcon from './icons/plus.svelte';
 import StopIcon from './icons/stop.svelte';
-import type { ModelInfo } from './model-info';
 import PreviewAttachment from './preview-attachment.svelte';
 import SuggestedActions from './suggested-actions.svelte';
 import { Button } from './ui/button';
@@ -27,15 +22,11 @@ let {
   user,
   chatClient,
   class: c,
-  selectedModel,
-  selectedMCP,
 }: {
   attachments: Attachment[];
   user: User | undefined;
   chatClient: Chat;
   class?: string;
-  selectedModel?: ModelInfo;
-  selectedMCP: SvelteSet<string>;
 } = $props();
 
 let input = $state('');
@@ -45,30 +36,6 @@ let fileInputRef = $state<HTMLInputElement | null>(null);
 let uploadQueue = $state<string[]>([]);
 const storedInput = new LocalStorage('input', '');
 const loading = $derived(chatClient.status === 'streaming' || chatClient.status === 'submitted');
-
-const exportAsFlow = (): void => {
-  if (!selectedModel) {
-    toast.error("There's no selected model to export as a flow.");
-    return;
-  }
-
-  const lastUserMessage = chatClient.messages
-    .findLast(m => m.role === 'user')
-    ?.parts.find(p => p.type === 'text')?.text;
-
-  if (!lastUserMessage) {
-    toast.error("There's no user message to export as a flow.");
-    return;
-  }
-
-  flowCreationStore.set({
-    lastUserMessage,
-    model: selectedModel,
-    mcp: selectedMCP,
-  });
-
-  router.goto('/flows/create');
-};
 
 const adjustHeight = (): void => {
   if (textareaRef) {
@@ -245,18 +212,6 @@ $effect.pre(() => {
 		>
 			<PaperclipIcon size={14} />
 		</Button>
-		<Button
-            class="h-fit rounded-md p-[7px] hover:bg-zinc-200 dark:border-zinc-700 hover:dark:bg-zinc-900"
-            onclick={(event): void => {
-                event.preventDefault();
-                exportAsFlow();
-            }}
-            disabled={loading || chatClient.messages.filter(m => m.role === 'user').length === 0}
-            variant="ghost"
-            title="Export as Flow"
-        >
-            <PlusIcon size={14} />
-        </Button>
 	</div>
 
 	<div class="absolute right-0 bottom-0 flex w-fit flex-row justify-end p-2">

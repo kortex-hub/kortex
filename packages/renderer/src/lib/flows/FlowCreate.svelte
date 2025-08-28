@@ -18,7 +18,7 @@ let error: string | undefined = $state();
 // form field
 let name: string = $state('');
 let description: string = $state('');
-let prompt: string = $state($flowCreationStore?.lastUserMessage ?? '');
+let prompt: string = $state($flowCreationStore?.prompt ?? '');
 let flowProviderConnectionKey: string | undefined = $state<string>();
 let result: string | undefined = $state(undefined);
 

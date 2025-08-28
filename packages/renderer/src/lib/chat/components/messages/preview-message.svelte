@@ -1,22 +1,62 @@
 <script lang="ts">
 import type { UIMessage } from '@ai-sdk/svelte';
 import type { DynamicToolUIPart } from 'ai';
+import type { SvelteSet } from 'svelte/reactivity';
 import { fly } from 'svelte/transition';
+import { toast } from 'svelte-sonner';
+import { router } from 'tinro';
 
 import { cn } from '/@/lib/chat/utils/shadcn';
+import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
 import Markdown from '/@/lib/markdown/Markdown.svelte';
 
 import PencilEditIcon from '../icons/pencil-edit.svelte';
+import PlusIcon from '../icons/plus.svelte';
 import SparklesIcon from '../icons/sparkles.svelte';
 import MessageReasoning from '../message-reasoning.svelte';
+import type { ModelInfo } from '../model-info';
 import PreviewAttachment from '../preview-attachment.svelte';
 import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import ToolParts from './tool-parts.svelte';
 
-let { message, readonly, loading }: { message: UIMessage; readonly: boolean; loading: boolean } = $props();
+let {
+  message,
+  readonly,
+  loading,
+  selectedModel,
+  selectedMCP,
+}: {
+  message: UIMessage;
+  readonly: boolean;
+  loading: boolean;
+  selectedModel?: ModelInfo;
+  selectedMCP: SvelteSet<string>;
+} = $props();
 
 let mode = $state<'view' | 'edit'>('view');
+
+const exportAsFlow = (): void => {
+  if (!selectedModel) {
+    toast.error(`There's no selected model to export as a flow.`);
+    return;
+  }
+
+  const prompt = message.parts?.find(p => p.type === 'text')?.text;
+
+  if (!prompt) {
+    toast.error(`There's no user message to export as a flow.`);
+    return;
+  }
+
+  flowCreationStore.set({
+    prompt,
+    model: selectedModel,
+    mcp: selectedMCP,
+  });
+
+  router.goto('/flows/create');
+};
 
 const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type === 'dynamic-tool') ?? [];
 </script>
@@ -96,6 +136,20 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type 
 							>
 								<Markdown markdown={part.text} />
 							</div>
+								{#if message.role === 'user' }
+									<Button
+										class="h-fit rounded-md p-[7px] hover:bg-zinc-200 dark:border-zinc-700 hover:dark:bg-zinc-900"
+										onclick={(event): void => {
+											event.preventDefault();
+											exportAsFlow();
+										}}
+										disabled={loading}
+										variant="ghost"
+										title="Export as Flow"
+									>
+										<PlusIcon size={14} />
+									</Button>
+							{/if}
 						</div>
 					{:else if mode === 'edit'}
 						<div class="flex flex-row items-start gap-2">
