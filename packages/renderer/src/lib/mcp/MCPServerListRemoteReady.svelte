@@ -7,7 +7,6 @@ import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import McpIcon from '../images/MCPIcon.svelte';
 import MCPServerEmptyScreen from './MCPServerEmptyScreen.svelte';
-import McpServerRemoteActions from './MCPServerRemoteActions.svelte';
 
 interface SelectableMCPRemoteServerInfo extends MCPRemoteServerInfo {
   selected?: boolean;
@@ -31,11 +30,7 @@ const nameColumn = new TableColumn<MCPRemoteServerInfo>('Name', {
   comparator: (a, b): number => b.name.localeCompare(a.name),
 });
 
-const columns = [
-  statusColumn,
-  nameColumn,
-  new TableColumn<MCPRemoteServerInfo>('Actions', { align: 'right', renderer: McpServerRemoteActions, overflow: true }),
-];
+const columns = [statusColumn, nameColumn];
 
 const row = new TableRow<MCPRemoteServerInfo>({});
 </script>
