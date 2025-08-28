@@ -1,9 +1,11 @@
 <script lang="ts">
 import { Chat, type UIMessage } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
+import { Button } from '@podman-desktop/ui-svelte';
 import { untrack } from 'svelte';
 import { SvelteSet } from 'svelte/reactivity';
 import { toast } from 'svelte-sonner';
+import { router } from 'tinro';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
@@ -107,28 +109,41 @@ const chatClient = $derived(
 );
 
 let attachments = $state<Attachment[]>([]);
+
+const hasModels = $derived(models && models.length > 0);
 </script>
 
 <div class="bg-background flex h-full min-w-0 flex-col">
-	<ChatHeader {user} {chat} {readonly} models={models} bind:selectedModel={selectedModel} bind:selectedMCP={selectedMCP} />
- <div class="flex min-h-0 flex-1">
-   <div class="flex flex-col flex-3/4">
-		<Messages
-			{readonly}
-			loading={chatClient.status === 'streaming' || chatClient.status === 'submitted'}
-			messages={chatClient.messages}
-      {selectedModel}
-      {selectedMCP}
-		/>
-     <form class="bg-background mx-auto flex w-full gap-2 px-4 pb-4 md:max-w-3xl md:pb-6">
-       {#if !readonly}
-         <MultimodalInput {attachments} {user} {chatClient} class="flex-1" />
-       {/if}
-     </form>
-   </div>
-		<McpMessages messages={chatClient.messages} />
-	</div>
-
+  {#if hasModels}
+	  <ChatHeader {user} {chat} {readonly} models={models} bind:selectedModel={selectedModel} bind:selectedMCP={selectedMCP} />
+  {/if}
+  <div class="flex min-h-0 flex-1">
+        {#if hasModels}
+            <div class="flex flex-col flex-3/4">
+                <Messages
+                    {readonly}
+                    loading={chatClient.status === 'streaming' || chatClient.status === 'submitted'}
+                    messages={chatClient.messages}
+                    {selectedModel}
+                    {selectedMCP}
+                />
+                <form class="bg-background mx-auto flex w-full gap-2 px-4 pb-4 md:max-w-3xl md:pb-6">
+                    {#if !readonly}
+                        <MultimodalInput {attachments} {chatClient} class="flex-1" />
+                    {/if}
+                </form>
+            </div>
+            <McpMessages messages={chatClient.messages} />
+        {:else}
+            <div class="flex flex-col items-center justify-center w-full p-8 text-center">
+                <h2 class="text-2xl font-semibold mb-4">No AI Models Available</h2>
+                <p class="text-muted-foreground mb-6">You need to configure at least one AI model to start chatting.</p>
+                <Button onclick={():void => router.goto('/preferences/resources')}>
+                    Configure Models
+                </Button>
+            </div>
+        {/if}
+    </div>
 </div>
 
 <!-- TODO -->
