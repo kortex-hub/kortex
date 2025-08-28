@@ -13,6 +13,7 @@ import type { Chat as DbChat, User } from '../../../../../main/src/chat/db/schem
 import ChatHeader from './chat-header.svelte';
 import { IPCChatTransport } from './ipc-chat-transport';
 import Messages from './messages.svelte';
+import McpMessages from './mcp-messages.svelte';
 import MultimodalInput from './multimodal-input.svelte';
 
 let {
@@ -109,17 +110,22 @@ let attachments = $state<Attachment[]>([]);
 
 <div class="bg-background flex h-full min-w-0 flex-col">
 	<ChatHeader {user} {chat} {readonly} models={models} bind:selectedModel={selectedModel} bind:selectedMCP={selectedMCP} />
-	<Messages
-		{readonly}
-		loading={chatClient.status === 'streaming' || chatClient.status === 'submitted'}
-		messages={chatClient.messages}
-	/>
+ <div class="flex min-h-0 flex-1">
+   <div class="flex flex-col flex-3/4">
+		<Messages
+			{readonly}
+			loading={chatClient.status === 'streaming' || chatClient.status === 'submitted'}
+			messages={chatClient.messages}
+		/>
+     <form class="bg-background mx-auto flex w-full gap-2 px-4 pb-4 md:max-w-3xl md:pb-6">
+       {#if !readonly}
+         <MultimodalInput {attachments} {user} {chatClient} class="flex-1" />
+       {/if}
+     </form>
+   </div>
+		<McpMessages messages={chatClient.messages} />
+	</div>
 
-	<form class="bg-background mx-auto flex w-full gap-2 px-4 pb-4 md:max-w-3xl md:pb-6">
-		{#if !readonly}
-			<MultimodalInput {attachments} {user} {chatClient} class="flex-1" />
-		{/if}
-	</form>
 </div>
 
 <!-- TODO -->
