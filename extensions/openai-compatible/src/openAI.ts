@@ -68,7 +68,7 @@ export class OpenAI implements Disposable {
           baseURL: connectionInfo.baseURL,
         });
       } catch (err: unknown) {
-        console.error(`openai: failed to restore connection for baseURL ${connectionInfo.baseURL}`);
+        console.error(`openai: failed to restore connection for baseURL ${connectionInfo.baseURL}`, err);
       }
     }
   }
