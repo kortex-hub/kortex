@@ -8,7 +8,6 @@ import { toast } from 'svelte-sonner';
 import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
 import { cn } from '/@/lib/chat/utils/shadcn';
 
-import type { User } from '../../../../../main/src/chat/db/schema';
 import ArrowUpIcon from './icons/arrow-up.svelte';
 import PaperclipIcon from './icons/paperclip.svelte';
 import StopIcon from './icons/stop.svelte';
@@ -19,12 +18,10 @@ import { Textarea } from './ui/textarea';
 
 let {
   attachments = $bindable(),
-  user,
   chatClient,
   class: c,
 }: {
   attachments: Attachment[];
-  user: User | undefined;
   chatClient: Chat;
   class?: string;
 } = $props();
@@ -145,7 +142,7 @@ $effect.pre(() => {
 
 <div class="relative flex w-full flex-col gap-4">
 	{#if mounted && chatClient.messages.length === 0 && attachments.length === 0 && uploadQueue.length === 0}
-		<SuggestedActions {user} {chatClient} />
+		<SuggestedActions {chatClient} />
 	{/if}
 
 	<input
