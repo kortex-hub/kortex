@@ -17,7 +17,7 @@
  ***********************************************************************/
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { basename,dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 
 import type {
   Disposable,
@@ -52,7 +52,7 @@ export class GooseRecipe implements Disposable {
   }
 
   protected async all(): Promise<Array<Flow>> {
-    const basePath =  this.getBasePath();
+    const basePath = this.getBasePath();
     const recipes = await this.gooseCLI.getRecipes({
       path: basePath,
     });
@@ -67,7 +67,7 @@ export class GooseRecipe implements Disposable {
 
   protected async getFlowPath(flowId: string): Promise<string> {
     const decoded = Buffer.from(flowId, 'base64').toString('utf-8');
-    if(dirname(decoded) !== this.getBasePath()) throw new Error(`only support recipes in ${this.getBasePath()}`);
+    if (dirname(decoded) !== this.getBasePath()) throw new Error(`only support recipes in ${this.getBasePath()}`);
 
     return decoded;
   }
@@ -77,7 +77,7 @@ export class GooseRecipe implements Disposable {
     return await readFile(path, 'utf-8');
   }
 
-  protected async write(flowId: string, content: string): Promise<void> {
+  protected async write(_flowId: string, _content: string): Promise<void> {
     throw new Error('not implemented');
   }
 
@@ -87,7 +87,7 @@ export class GooseRecipe implements Disposable {
         name: options.name,
         title: options.name,
         prompt: options.prompt,
-        instructions: options.prompt
+        instructions: options.prompt,
       },
     }).render();
   }
@@ -143,7 +143,7 @@ export class GooseRecipe implements Disposable {
           env: [
             {
               key: 'GOOGLE_API_KEY',
-              value: (options.hideSecrets) ? ('*'.repeat(token.length)) : token,
+              value: options.hideSecrets ? '*'.repeat(token.length) : token,
             },
           ],
         },
