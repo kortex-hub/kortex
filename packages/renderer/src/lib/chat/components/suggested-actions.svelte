@@ -1,16 +1,16 @@
 <script lang="ts">
 import type { Chat } from '@ai-sdk/svelte';
-import { Button } from './ui/button';
 import { fly } from 'svelte/transition';
-import type { User } from '../../../../../main/src/chat/db/schema';
 
-let { user, chatClient }: { user: User | undefined; chatClient: Chat } = $props();
+import { Button } from './ui/button';
+
+let { chatClient }: { chatClient: Chat } = $props();
 
 const suggestedActions = [
   {
-    title: 'What are the advantages',
-    label: 'of using SvelteKit?',
-    action: 'What are the advantages of using SvelteKit?',
+    title: 'What are the last 5 issues of Github',
+    label: 'repository podman-desktop/podman-desktop?',
+    action: 'What are the last 5 issues of Github repository podman-desktop/podman-desktop?',
   },
   {
     title: 'Write code to',
@@ -38,7 +38,7 @@ const suggestedActions = [
 		>
 			<Button
 				variant="ghost"
-				onclick={async () => {
+				onclick={async (): Promise<void> => {
 
       await chatClient.sendMessage({
 						role: 'user',
