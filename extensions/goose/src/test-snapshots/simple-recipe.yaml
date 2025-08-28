@@ -1,0 +1,11 @@
+title: Echo
+name: echo
+description: 
+
+# Required for headless mode
+prompt: echo the user prompt
+
+instructions: |
+    echo the user prompt
+
+extensions:
