@@ -24,11 +24,7 @@ import { describe, expect, test } from 'vitest';
 
 import MCPMessages from './mcp-messages.svelte';
 
-function dynamicTool(
-  toolName: string,
-  id: string,
-  extra?: Partial<DynamicToolUIPart>
-): DynamicToolUIPart {
+function dynamicTool(toolName: string, id: string, extra?: Partial<DynamicToolUIPart>): DynamicToolUIPart {
   return {
     type: 'dynamic-tool',
     state: 'call-arguments',
@@ -42,10 +38,10 @@ function dynamicTool(
 describe('mcp-messages.svelte', () => {
   test('shows empty state when no assistant dynamic-tool parts are present', () => {
     const messages: UIMessage[] = [
-      { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Hello' }] } as unknown as UIMessage,
-      { id: 'a1', role: 'assistant', parts: [{ type: 'text', text: 'Hi!' }] } as unknown as UIMessage,
+      { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Hello' }] },
+      { id: 'a1', role: 'assistant', parts: [{ type: 'text', text: 'Hi!' }] },
       // dynamic-tool but from user: must be ignored
-      { id: 'u2', role: 'user', parts: [dynamicTool('Ignored Tool', 't0')] } as unknown as UIMessage,
+      { id: 'u2', role: 'user', parts: [dynamicTool('Ignored Tool', 't0')] },
     ];
 
     render(MCPMessages, { messages });
@@ -62,28 +58,28 @@ describe('mcp-messages.svelte', () => {
       id: 'a1',
       role: 'assistant',
       parts: [dynamicTool('Tool A', 't1')],
-    } as unknown as UIMessage;
+    };
 
     const msgWithTwoTools: UIMessage = {
       id: 'a2',
       role: 'assistant',
       parts: [dynamicTool('Tool B1', 't2'), dynamicTool('Tool B2', 't3')],
-    } as unknown as UIMessage;
+    };
 
     const assistantWithoutTools: UIMessage = {
       id: 'a3',
       role: 'assistant',
       parts: [{ type: 'text', text: 'no tools here' }],
-    } as unknown as UIMessage;
+    };
 
     const systemMessage: UIMessage = {
       id: 's1',
       role: 'system',
       parts: [dynamicTool('System Tool', 'tX')], // should be ignored because not assistant
-    } as unknown as UIMessage;
+    };
 
     const messages = [
-      { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Hello' }] } as unknown as UIMessage,
+      { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Hello' }] } satisfies UIMessage,
       msgWithOneTool,
       msgWithTwoTools,
       assistantWithoutTools,
