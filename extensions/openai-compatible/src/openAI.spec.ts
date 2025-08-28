@@ -224,3 +224,104 @@ describe('connection delete lifecycle', () => {
     expect(disposeMock).toHaveBeenCalledOnce();
   });
 });
+
+describe('restoreConnections', () => {
+  test('should restore multiple connections from secret storage on init', async () => {
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue('key1|http://a/v1,key2|http://b/v1');
+
+    const openai = new OpenAI(PROVIDER_API_MOCK, SECRET_STORAGE_MOCK);
+    await openai.init();
+
+    // two connections should be attempted
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledTimes(2);
+
+    // Also ensure models listing was requested twice
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenNthCalledWith(1, 'http://a/v1/models', {
+      headers: { Authorization: 'Bearer key1' },
+    });
+    expect(fetchMock).toHaveBeenNthCalledWith(2, 'http://b/v1/models', {
+      headers: { Authorization: 'Bearer key2' },
+    });
+  });
+
+  test('should restore a single connection from secret storage on init', async () => {
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue('key1|http://a/v1,key2|http://b/v1');
+    fetchMock.mockResolvedValueOnce({ status: 500, json: async () => ({}) });
+
+    const openai = new OpenAI(PROVIDER_API_MOCK, SECRET_STORAGE_MOCK);
+    await openai.init();
+
+    // two connections should be attempted
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledTimes(1);
+
+    // Also ensure models listing was requested twice
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenNthCalledWith(1, 'http://a/v1/models', {
+      headers: { Authorization: 'Bearer key1' },
+    });
+    expect(fetchMock).toHaveBeenNthCalledWith(2, 'http://b/v1/models', {
+      headers: { Authorization: 'Bearer key2' },
+    });
+  });
+});
+
+describe('listModels error handling (through factory)', () => {
+  test('non-200 response should throw', async () => {
+    const openai = new OpenAI(PROVIDER_API_MOCK, SECRET_STORAGE_MOCK);
+    await openai.init();
+
+    const mock = vi.mocked(PROVIDER_MOCK.setInferenceProviderConnectionFactory);
+    const create = mock.mock.calls[0][0].create;
+
+    fetchMock.mockResolvedValueOnce({ status: 500, json: async () => ({}) });
+
+    await expect(
+      create({ 'openai.factory.apiKey': 'k', 'openai.factory.baseURL': 'http://x/v1' }),
+    ).rejects.toThrowError('failed to list models');
+  });
+
+  test('missing data field should throw', async () => {
+    const openai = new OpenAI(PROVIDER_API_MOCK, SECRET_STORAGE_MOCK);
+    await openai.init();
+
+    const mock = vi.mocked(PROVIDER_MOCK.setInferenceProviderConnectionFactory);
+    const create = mock.mock.calls[0][0].create;
+
+    fetchMock.mockResolvedValueOnce({ status: 200, json: async () => ({}) });
+
+    await expect(
+      create({ 'openai.factory.apiKey': 'k', 'openai.factory.baseURL': 'http://x/v1' }),
+    ).rejects.toThrowError('malformed response from http://x/v1');
+  });
+
+  test('data not array should throw', async () => {
+    const openai = new OpenAI(PROVIDER_API_MOCK, SECRET_STORAGE_MOCK);
+    await openai.init();
+
+    const mock = vi.mocked(PROVIDER_MOCK.setInferenceProviderConnectionFactory);
+    const create = mock.mock.calls[0][0].create;
+
+    fetchMock.mockResolvedValueOnce({ status: 200, json: async () => ({ data: {} }) });
+
+    await expect(
+      create({ 'openai.factory.apiKey': 'k', 'openai.factory.baseURL': 'http://x/v1' }),
+    ).rejects.toThrowError('malformed response from http://x/v1: data is not an array');
+  });
+});
+
+describe('duplicate connection prevention', () => {
+  test('creating the same connection twice should throw', async () => {
+    const openai = new OpenAI(PROVIDER_API_MOCK, SECRET_STORAGE_MOCK);
+    await openai.init();
+
+    const mock = vi.mocked(PROVIDER_MOCK.setInferenceProviderConnectionFactory);
+    const create = mock.mock.calls[0][0].create;
+
+    await create({ 'openai.factory.apiKey': 'dup', 'openai.factory.baseURL': 'http://dup/v1' });
+
+    await expect(
+      create({ 'openai.factory.apiKey': 'dup', 'openai.factory.baseURL': 'http://dup/v1' }),
+    ).rejects.toThrowError('connection already exists for token (hidden) baseURL http://dup/v1');
+  });
+});

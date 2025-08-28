@@ -62,7 +62,14 @@ export class OpenAI implements Disposable {
   private async restoreConnections(): Promise<void> {
     const connectionInfos = await this.getConnectionInfos();
     for (const connectionInfo of connectionInfos) {
-      await this.registerInferenceProviderConnection({ token: connectionInfo.apiKey, baseURL: connectionInfo.baseURL });
+      try {
+        await this.registerInferenceProviderConnection({
+          token: connectionInfo.apiKey,
+          baseURL: connectionInfo.baseURL,
+        });
+      } catch (err: unknown) {
+        console.error(`openai: failed to restore connection for baseURL ${connectionInfo.baseURL}`, err);
+      }
     }
   }
 
