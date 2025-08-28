@@ -11,6 +11,6 @@ export interface FlowCreationData {
 /**
  * A writable store to temporarily hold the data for a new flow
  * when navigating from a chat session to the creation page.
- * It's set to `null` after being read to prevent stale data.
+ * It's set to `undefined` after being read to prevent stale data.
  */
-export const flowCreationStore = writable<FlowCreationData | null>(null);
+export const flowCreationStore = writable<FlowCreationData | undefined>();

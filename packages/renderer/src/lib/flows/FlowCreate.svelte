@@ -22,7 +22,7 @@ let prompt: string = $state($flowCreationStore?.lastUserMessage ?? '');
 let flowProviderConnectionKey: string | undefined = $state<string>();
 let result: string | undefined = $state(undefined);
 
-flowCreationStore.set(null);
+flowCreationStore.set(undefined);
 
 async function generate(): Promise<void> {
   if (!flowProviderConnectionKey) return;
