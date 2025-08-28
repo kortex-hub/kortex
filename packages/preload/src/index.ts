@@ -41,9 +41,9 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
-import type { MCPServerConfig } from '@mastra/core/mcp';
 import type { UIMessage, UIMessageChunk } from 'ai';
 import { contextBridge, ipcRenderer } from 'electron';
+import type { components } from 'mcp-registry';
 
 import type { CliToolInfo } from '/@api/cli-tool-info';
 import type { ColorInfo } from '/@api/color-info';
@@ -1680,9 +1680,12 @@ export function initExposure(): void {
     },
   );
 
-  contextBridge.exposeInMainWorld('getMcpRegistryServers', async (): Promise<MCPServerConfig[]> => {
-    return ipcInvoke('mcp-registry:getMcpRegistryServers');
-  });
+  contextBridge.exposeInMainWorld(
+    'getMcpRegistryServers',
+    async (): Promise<components['schemas']['ServerDetail'][]> => {
+      return ipcInvoke('mcp-registry:getMcpRegistryServers');
+    },
+  );
 
   contextBridge.exposeInMainWorld(
     'getMcpToolSet',
