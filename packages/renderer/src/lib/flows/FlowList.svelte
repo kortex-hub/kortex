@@ -54,16 +54,14 @@ let hasInstalledFlowProviders = $derived(window.hasInstalledFlowProviders());
     <div class="w-full flex justify-center">
       {#await hasInstalledFlowProviders then hasInstalledFlowProvidersC}
         {#if hasInstalledFlowProvidersC}
-          <div class="w-full max-w-6xl">
-            <Table
-              kind="flows"
-              data={$flowsInfos.map((flow) => ({ ...flow, selected: false, name: flow.path }))}
-              columns={columns}
-              row={row}
-              defaultSortColumn="Path"
-              key={key}
-            />
-          </div>
+          <Table
+            kind="flows"
+            data={$flowsInfos.map((flow) => ({ ...flow, selected: false, name: flow.path }))}
+            columns={columns}
+            row={row}
+            defaultSortColumn="Path"
+            key={key}
+          />
         {:else}
           <NoFlowProviders />
         {/if}
