@@ -169,8 +169,8 @@ export class FlowManager implements Disposable {
 
     // try to register all clients
     await Promise.allSettled(
-      providers.flatMap(({ id }) => {
-        const connections = this.provider.getFlowProviderConnection(id);
+      providers.flatMap(({ id, internalId }) => {
+        const connections = this.provider.getFlowProviderConnection(internalId);
         return connections.map(this.register.bind(this, id));
       }),
     ).finally(() => {
