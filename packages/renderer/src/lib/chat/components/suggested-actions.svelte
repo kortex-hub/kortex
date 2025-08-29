@@ -1,16 +1,25 @@
 <script lang="ts">
 import type { Chat } from '@ai-sdk/svelte';
+import type { SvelteSet } from 'svelte/reactivity';
 import { fly } from 'svelte/transition';
+import { toast } from 'svelte-sonner';
 
 import { Button } from './ui/button';
 
-let { chatClient }: { chatClient: Chat } = $props();
+let {
+  chatClient,
+  selectedMCP,
+}: {
+  chatClient: Chat;
+  selectedMCP: SvelteSet<string>;
+} = $props();
 
 const suggestedActions = [
   {
     title: 'What are the last 5 issues of Github',
     label: 'repository podman-desktop/podman-desktop?',
     action: 'What are the last 5 issues of Github repository podman-desktop/podman-desktop?',
+    requiredMcp: ['internal:GitHub MCP server'],
   },
   {
     title: 'Write code to',
@@ -39,6 +48,11 @@ const suggestedActions = [
 			<Button
 				variant="ghost"
 				onclick={async (): Promise<void> => {
+
+					if (suggestedAction.requiredMcp?.some(m => !selectedMCP.has(m))) {
+    					toast.error(`You need to enable the following MCP first: ${suggestedAction.requiredMcp.map(m => m.split(':')[1]).join(', ')}`);
+						return;
+					}
 
       await chatClient.sendMessage({
 						role: 'user',
