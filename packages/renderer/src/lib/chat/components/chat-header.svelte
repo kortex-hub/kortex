@@ -36,6 +36,8 @@ let {
 } = $props();
 
 const sidebar = useSidebar();
+
+const noMcps = $derived($mcpRemoteServerInfos.length === 0);
 </script>
 
 <header class="bg-background sticky top-0 flex items-start gap-2 p-2">
@@ -69,8 +71,8 @@ const sidebar = useSidebar();
             bind:value={selectedModel}
         />
         <div class="flex flex-col gap-1">
-            <MCPSelector bind:selected={selectedMCP}/>
-            {#if $mcpRemoteServerInfos.length === 0}
+            <MCPSelector disabled={noMcps} bind:selected={selectedMCP}/>
+            {#if noMcps}
                 <div class="flex items-center gap-1 px-1 text-xs text-muted-foreground">
                     <Button 
                         variant="link" 
