@@ -458,6 +458,11 @@ declare module '@kortex-app/api' {
        * @experimental expect change
        */
       generate(options?: FlowGenerateOptions): Promise<string>;
+
+      /**
+       * @experimental expect change
+       */
+      execute(flowId: string, logger: Logger): Promise<void>;
     };
     deploy?: {
       kubernetes?(options: FlowDeployKubernetesOptions): Promise<FlowDeployKubernetesResult>;

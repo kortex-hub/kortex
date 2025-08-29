@@ -15,24 +15,56 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { Disposable, Flow, FlowProviderConnection } from '@kortex-app/api';
+import type { Disposable, Flow, FlowProviderConnection, Logger } from '@kortex-app/api';
 import { inject, injectable, preDestroy } from 'inversify';
 
 import { ApiSenderType } from '/@/plugin/api.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
-import { FlowInfo } from '/@api/flow-info.js';
+import type { FlowExecuteInfo } from '/@api/flow-execute-info.js';
+import type { FlowInfo } from '/@api/flow-info.js';
+
+import { TaskManager } from '../tasks/task-manager.js';
+
+class BufferLogger implements Logger {
+  #buffer = '';
+
+  constructor(private apiSender: ApiSenderType) {}
+
+  getBuffer(): string {
+    return this.#buffer;
+  }
+
+  log(message: string): void {
+    this.#buffer += message;
+    this.apiSender.send('flow:current-log');
+  }
+  error(message: string): void {
+    this.#buffer += message;
+    this.apiSender.send('flow:current-log');
+  }
+  warn(message: string): void {
+    this.#buffer += message;
+    this.apiSender.send('flow:current-log');
+  }
+}
 
 @injectable()
 export class FlowManager implements Disposable {
   #installedProviders: Set<string> = new Set();
   #flows: Map<string, Array<Flow>> = new Map();
+  // key = execution id = task id
+  #flowsExecution: Map<string, FlowExecuteInfo> = new Map();
+  #flowsLogs: Map<string, BufferLogger> = new Map();
   #disposable: Map<string, Disposable> = new Map();
+  #currentLogger: BufferLogger | undefined = undefined;
 
   constructor(
     @inject(ProviderRegistry)
     private provider: ProviderRegistry,
     @inject(ApiSenderType)
     private apiSender: ApiSenderType,
+    @inject(TaskManager)
+    private taskManager: TaskManager,
   ) {}
 
   /**
@@ -62,6 +94,68 @@ export class FlowManager implements Disposable {
         ...flow,
       }));
     });
+  }
+
+  public async execute(providerId: string, connectionName: string, flowId: string): Promise<string> {
+    // Get the flow provider to use
+    const flowProvider = this.provider.getProvider(providerId);
+    const flowConnection = flowProvider.flowConnections.find(({ name }) => name === connectionName);
+    if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
+
+    const task = this.taskManager.createTask({ title: `Execute flow ${flowId}` });
+    const logger = new BufferLogger(this.apiSender);
+    this.#flowsLogs.set(task.id, logger);
+
+    const flowInfo: FlowInfo = {
+      connectionName,
+      providerId,
+      id: flowId,
+      path: '',
+    };
+    const flowExecuteInfo: FlowExecuteInfo = {
+      taskId: task.id,
+      flowInfo,
+    };
+
+    this.#flowsExecution.set(task.id, flowExecuteInfo);
+    // notify start
+    this.apiSender.send('flow:execute');
+
+    task.state = 'running';
+    task.status = 'in-progress';
+
+    flowConnection.flow
+      .execute(flowId, logger)
+      .then(() => {
+        task.state = 'completed';
+        task.status = 'success';
+      })
+      .catch((error: unknown) => {
+        task.status = 'failure';
+        task.error = String(error);
+        task.state = 'completed';
+      })
+      .finally(() => {
+        // notify sucess/error
+        this.apiSender.send('flow:execute');
+        this.apiSender.send('flow:current-log');
+      });
+
+    return task.id;
+  }
+
+  public async dispatchLog(
+    _providerId: string,
+    _connectionName: string,
+    _flowId: string,
+    taskId: string,
+  ): Promise<void> {
+    this.#currentLogger = this.#flowsLogs.get(taskId);
+    this.apiSender.send('flow:current-log');
+  }
+
+  public async listExecutions(): Promise<FlowExecuteInfo[]> {
+    return Array.from(this.#flowsExecution.values());
   }
 
   public refresh(): void {
@@ -131,6 +225,10 @@ export class FlowManager implements Disposable {
 
     // register all connections
     this.registerAll().catch(console.error);
+  }
+
+  async getLogCurrent(): Promise<string> {
+    return this.#currentLogger?.getBuffer() ?? '';
   }
 
   @preDestroy()
