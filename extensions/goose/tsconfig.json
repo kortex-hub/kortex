@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "strict": true,
-    "lib": ["ES2017", "webworker"],
+    "lib": ["ES2024", "webworker"],
     "sourceMap": true,
     "rootDir": "src",
     "outDir": "dist",
