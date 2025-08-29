@@ -2,6 +2,7 @@
 import { type Chat } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
 import { onMount } from 'svelte';
+import type { SvelteSet } from 'svelte/reactivity';
 import { innerWidth } from 'svelte/reactivity/window';
 import { toast } from 'svelte-sonner';
 
@@ -20,10 +21,12 @@ let {
   attachments = $bindable(),
   chatClient,
   class: c,
+  selectedMCP,
 }: {
   attachments: Attachment[];
   chatClient: Chat;
   class?: string;
+  selectedMCP: SvelteSet<string>;
 } = $props();
 
 let input = $state('');
@@ -142,7 +145,7 @@ $effect.pre(() => {
 
 <div class="relative flex w-full flex-col gap-4">
 	{#if mounted && chatClient.messages.length === 0 && attachments.length === 0 && uploadQueue.length === 0}
-		<SuggestedActions {chatClient} />
+		<SuggestedActions {chatClient} {selectedMCP} />
 	{/if}
 
 	<input

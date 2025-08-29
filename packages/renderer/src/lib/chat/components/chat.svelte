@@ -129,7 +129,7 @@ const hasModels = $derived(models && models.length > 0);
                 />
                 <form class="bg-background mx-auto flex w-full gap-2 px-4 pb-4 md:max-w-3xl md:pb-6">
                     {#if !readonly}
-                        <MultimodalInput {attachments} {chatClient} class="flex-1" />
+                        <MultimodalInput {attachments} {chatClient} {selectedMCP} class="flex-1" />
                     {/if}
                 </form>
             </div>
