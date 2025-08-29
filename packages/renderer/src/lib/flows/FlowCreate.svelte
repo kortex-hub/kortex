@@ -10,6 +10,7 @@ import FormPage from '/@/lib/ui/FormPage.svelte';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 
 import FlowConnectionSelector from './components/flow-connection-selector.svelte';
+import NoFlowProviders from './components/NoFlowProviders.svelte';
 
 let selectedMCP: Set<string> = $state($flowCreationStore?.mcp ?? new SvelteSet());
 
@@ -23,6 +24,8 @@ let prompt: string = $state($flowCreationStore?.prompt ?? '');
 let flowProviderConnectionKey: string | undefined = $state<string>();
 let result: string | undefined = $state(undefined);
 flowCreationStore.set(undefined);
+
+let hasInstalledFlowProviders = $derived(window.hasInstalledFlowProviders());
 
 async function generate(): Promise<void> {
   if (!flowProviderConnectionKey) return;
@@ -48,63 +51,68 @@ async function generate(): Promise<void> {
 
 <FormPage title="Flow Create" inProgress={false}>
   {#snippet content()}
-    <div class="px-5 pb-5 min-w-full h-fit">
-      <div class="bg-[var(--pd-content-card-bg)] px-6 py-4">
-        {#if error}
-          <ErrorMessage {error}/>
-        {/if}
+    {#await hasInstalledFlowProviders then hasInstalledFlowProvidersC}
+      <div class="px-5 pb-5 min-w-full">
+      {#if hasInstalledFlowProvidersC}
+          <div class="bg-[var(--pd-content-card-bg)] px-6 py-4">
+            {#if error}
+              <ErrorMessage {error}/>
+            {/if}
 
-        <form
-          novalidate
-          class="p-2 space-y-7 h-fit"
-        >
-          <div>
-            <span>Flow Name</span>
-            <Input bind:value={name} placeholder="name" class="grow" required />
+            <form
+              novalidate
+              class="p-2 space-y-7 h-fit"
+            >
+              <div>
+                <span>Flow Name</span>
+                <Input bind:value={name} placeholder="name" class="grow" required />
+              </div>
+
+              <!-- description -->
+              <div>
+                <span>Description</span>
+                <Textarea
+                  placeholder="Description..."
+                  bind:value={description}
+                  class='bg-muted max-h-[calc(75dvh)] min-h-[24px] resize-none overflow-hidden rounded-2xl pb-10 !text-base dark:border-zinc-700'
+                  rows={2}
+                  autofocus
+                />
+              </div>
+
+              <!-- tools -->
+              <div class="flex flex-col">
+                <span>Tools</span>
+                <MCPSelector bind:selected={selectedMCP}/>
+              </div>
+
+              <!-- prompt -->
+              <div>
+                <span>Prompt</span>
+                <Textarea
+                  placeholder="Prompt"
+                  bind:value={prompt}
+                  class='bg-muted max-h-[calc(75dvh)] min-h-[24px] resize-none overflow-hidden rounded-2xl pb-10 !text-base dark:border-zinc-700'
+                  rows={2}
+                  autofocus
+                />
+              </div>
+
+              <FlowConnectionSelector class="" bind:value={flowProviderConnectionKey}/>
+              <Button disabled={!flowProviderConnectionKey} onclick={generate}>Generate</Button>
+
+            </form>
+
+            {#if result}
+              <div class="h-[40rem]">
+                <MonacoEditor content={result} language="yaml" />
+              </div>
+            {/if}
           </div>
-
-          <!-- description -->
-          <div>
-            <span>Description</span>
-            <Textarea
-              placeholder="Description..."
-              bind:value={description}
-              class='bg-muted max-h-[calc(75dvh)] min-h-[24px] resize-none overflow-hidden rounded-2xl pb-10 !text-base dark:border-zinc-700'
-              rows={2}
-              autofocus
-            />
-          </div>
-
-          <!-- tools -->
-          <div class="flex flex-col">
-            <span>Tools</span>
-            <MCPSelector bind:selected={selectedMCP}/>
-          </div>
-
-          <!-- prompt -->
-          <div>
-            <span>Prompt</span>
-            <Textarea
-              placeholder="Prompt"
-              bind:value={prompt}
-              class='bg-muted max-h-[calc(75dvh)] min-h-[24px] resize-none overflow-hidden rounded-2xl pb-10 !text-base dark:border-zinc-700'
-              rows={2}
-              autofocus
-            />
-          </div>
-
-          <FlowConnectionSelector class="" bind:value={flowProviderConnectionKey}/>
-          <Button disabled={!flowProviderConnectionKey} onclick={generate}>Generate</Button>
-
-        </form>
-
-        {#if result}
-          <div class="h-[40rem]">
-            <MonacoEditor content={result} language="yaml" />
-          </div>
-        {/if}
+      {:else}
+        <NoFlowProviders />
+      {/if}
       </div>
-    </div>
-    <span>content</span>
+    {/await}
   {/snippet}
 </FormPage>
