@@ -48,12 +48,17 @@ export class GooseDownloader implements Disposable {
     const destFile = await this.download(release);
 
     const directory = await Open.file(destFile);
-    await directory.extract({ path: join(
-        this.extensionContext.storagePath,
-        'bin',
-      ) });
+    await directory.extract({ path: this.extensionContext.storagePath });
 
-    throw new Error('not implemented');
+    return this.getGooseExecutableExtensionStorage();
+  }
+
+  getGooseExecutableExtensionStorage(): string {
+    if(this.envAPI.isWindows) {
+      return join(this.extensionContext.storagePath, 'goose-package', 'goose.exe');
+    } else {
+      throw new Error('not implemented');
+    }
   }
 
   async selectVersion(cliInfo?: CliTool): Promise<ReleaseArtifactMetadata> {

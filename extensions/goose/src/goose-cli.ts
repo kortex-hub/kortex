@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 
 import type { cli as CliAPI, CliTool, Disposable, Logger, process as ProcessAPI } from '@kortex-app/api';
 import { env } from '@kortex-app/api';
@@ -32,6 +33,13 @@ export class GooseCLI implements Disposable {
   ) {}
 
   protected async findGooseVersion(): Promise<string | undefined> {
+    try {
+      const path= this.downloader.getGooseExecutableExtensionStorage();
+      if(existsSync(path)) return path;
+    } catch (err: unknown) {
+      console.warn(err);
+    }
+
     try {
       const { stdout } = await this.processAPI.exec('goose', ['--version']);
       return stdout.trim();
@@ -108,8 +116,7 @@ export class GooseCLI implements Disposable {
   }
 
   async init(): Promise<void> {
-    // const version = await this.findGooseVersion();
-    const version = undefined;
+    const version = await this.findGooseVersion();
 
     this.cli = this.cliAPI.createCliTool({
       name: 'goose',
