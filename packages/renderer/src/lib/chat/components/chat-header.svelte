@@ -64,23 +64,24 @@ const sidebar = useSidebar();
 
 	{#if !readonly}
         <ModelSelector
-      class="order-1 md:order-2" models={models} bind:value={selectedModel}
-    />
-    <div class="flex flex-col gap-1">
-      <MCPSelector bind:selected={selectedMCP}/>
-      {#if $mcpRemoteServerInfos.length === 0}
-        <div class="text-xs text-muted-foreground">
-          No MCP servers configured. 
-          <Button 
-            variant="link" 
-            class="h-auto p-0 text-xs"
-            onclick={():void => router.goto('/preferences/mcp')}
-          >
-            Configure MCP servers
-          </Button>
+            class="order-1 md:order-2" 
+            models={models} 
+            bind:value={selectedModel}
+        />
+        <div class="flex flex-col gap-1">
+            <MCPSelector bind:selected={selectedMCP}/>
+            {#if $mcpRemoteServerInfos.length === 0}
+                <div class="flex items-center gap-1 px-1 text-xs text-muted-foreground">
+                    <Button 
+                        variant="link" 
+                        class="h-auto p-0 text-xs hover:underline"
+                        onclick={():void => router.goto('/mcps')}
+                    >
+                        Configure MCP servers
+                    </Button>
+                </div>
+            {/if}
         </div>
-      {/if}
-    </div>
     {/if}
     
     {#if !readonly && chat}
