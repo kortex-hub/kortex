@@ -1,5 +1,6 @@
 <script lang="ts">
 import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
+import { onMount } from 'svelte';
 import { SvelteSet } from 'svelte/reactivity';
 
 import MCPSelector from '/@/lib/chat/components/mcp-selector.svelte';
@@ -34,6 +35,25 @@ let flowProviderConnectionKey: string | undefined = $state<string>();
 flowCreationStore.set(undefined);
 
 let hasInstalledFlowProviders = $state(window.hasInstalledFlowProviders());
+let showFlowConnectionSelector = $state(true);
+
+onMount(() => {
+  // If there is exactly one available flow connection across all providers,
+  // preselect it so the user can directly generate the flow.
+  try {
+    const allFlowConnections = $providerInfos.flatMap(p =>
+      (p.flowConnections ?? []).map(c => ({ providerId: p.id, connectionName: c.name })),
+    );
+    if (allFlowConnections.length === 1) {
+      const only = allFlowConnections[0];
+      flowProviderConnectionKey = `${only.providerId}:${only.connectionName}`;
+      showFlowConnectionSelector = false;
+    }
+  } catch (e) {
+    // ignore errors in auto-select logic to avoid blocking UI
+    console.error('Flow auto-select skipped:', e);
+  }
+});
 
 function retryCheck(): void {
   hasInstalledFlowProviders = window.hasInstalledFlowProviders();
@@ -145,7 +165,9 @@ async function generate(): Promise<void> {
                 />
               </div>
 
+              {#if showFlowConnectionSelector}
               <FlowConnectionSelector class="" bind:value={flowProviderConnectionKey}/>
+              {/if}
               <Button inProgress={loading} disabled={!flowProviderConnectionKey || !name} onclick={generate}>Generate</Button>
             </form>
           </div>
