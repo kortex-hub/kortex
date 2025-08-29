@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Button, Checkbox, Link, Tooltip } from '@podman-desktop/ui-svelte';
+import { Button, Checkbox, Link } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 import { router } from 'tinro';
 
@@ -7,7 +7,6 @@ import { onboardingList } from '/@/stores/onboarding';
 import { providerInfos } from '/@/stores/providers';
 import type { OnboardingInfo } from '/@api/onboarding';
 
-import IconImage from '../appearance/IconImage.svelte';
 import DesktopIcon from '../images/DesktopIcon.svelte';
 import bgImage from './background.png';
 import { WelcomeUtils } from './welcome-utils';
@@ -74,18 +73,6 @@ async function closeWelcome(): Promise<void> {
   }
 }
 
-// Function to toggle provider selection
-function toggleOnboardingSelection(providerName: string): void {
-  // Go through providers, find the provider name and toggle the selected value
-  // then update providers
-  onboardingProviders = onboardingProviders.map(provider => {
-    if (provider.name === providerName) {
-      provider.selected = !provider.selected;
-    }
-    return provider;
-  });
-}
-
 function startOnboardingQueue(): void {
   const selectedProviders = onboardingProviders.filter(provider => provider.selected);
   const extensionIds = selectedProviders.map(provider => provider.extension);
@@ -100,53 +87,14 @@ function startOnboardingQueue(): void {
     style="background-image: url({bgImage}); background-position: 50% -175%; background-size: 100% 75%">
     <!-- Header -->
     <div class="flex flex-row flex-none backdrop-blur-sm p-6 mt-10">
-      <div class="flex flex-auto text-lg font-bold">Get started with Podman Desktop</div>
+      <div class="flex flex-auto text-lg font-bold">Get started with Kortex</div>
     </div>
 
     <!-- Body -->
     <div class="flex flex-col justify-center content-center flex-auto backdrop-blur-sm p-2 overflow-y-auto">
       <div class="flex justify-center p-2"><DesktopIcon /></div>
       <div class="flex justify-center text-lg font-bold p-2">
-        <span class="mr-2">🎉</span>Welcome to Podman Desktop v{podmanDesktopVersion} !
-      </div>
-      <div class="flex flex-row justify-center">
-        <div class="bg-[var(--pd-content-card-inset-bg)] px-4 pb-4 pt-2 rounded-sm">
-          {#if onboardingProviders && onboardingProviders.length > 0}
-            <div class="flex justify-center text-sm text-[var(--pd-content-card-text)] pb-2">
-              <div>Choose the extensions to include:</div>
-            </div>
-            <div aria-label="providerList" class="grid grid-cols-3 gap-3">
-              {#each onboardingProviders as onboarding, index (index)}
-                <div
-                  class="rounded-md bg-[var(--pd-content-card-bg)] flex flex-row justify-between border-2 p-4 {onboarding.selected
-                    ? 'border-[var(--pd-content-card-border-selected)]'
-                    : 'border-[var(--pd-content-card-border)]'}">
-                  <div class="place-items-top flex flex-col flex-1">
-                    <div class="flex flex-row place-items-left flex-1">
-                      <IconImage image={onboarding.icon} class="max-h-12 h-auto w-auto" alt="{onboarding.name} logo" />
-                      <div
-                        class="flex flex-1 mx-2 underline decoration-2 decoration-dotted underline-offset-2 cursor-default justify-left text-capitalize">
-                        <Tooltip top tip={onboarding.description}>
-                          {onboarding.displayName}
-                        </Tooltip>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Checkbox
-                    title="{onboarding.displayName} checkbox"
-                    name="{onboarding.displayName} checkbox"
-                    bind:checked={onboarding.selected}
-                    on:click={(): void => toggleOnboardingSelection(onboarding.name)}
-                    class="text-xl" />
-                </div>
-              {/each}
-            </div>
-          {/if}
-        </div>
-      </div>
-      <div class="flex justify-center p-2 text-sm items-center">
-        Configure these and more under Settings.
+        <span class="mr-2">🎉</span>Welcome to Kortex v{podmanDesktopVersion} !
       </div>
     </div>
 
@@ -161,7 +109,7 @@ function startOnboardingQueue(): void {
             class="text-lg px-2"
             title="Enable telemetry"><div class="text-base font-medium">Telemetry:</div></Checkbox>
           <div class="w-2/5 text-[var(--pd-content-card-text)]">
-            Help Red Hat improve Podman Desktop by allowing anonymous usage data to be collected.
+            Help Red Hat improve Kortex by allowing anonymous usage data to be collected.
             <Link
               on:click={async (): Promise<void> => {
                 await window.openExternal('https://developers.redhat.com/article/tool-data-collection');
