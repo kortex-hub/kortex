@@ -106,7 +106,7 @@ export class GooseRecipe implements Disposable {
         name: options.name,
         title: options.name,
         prompt: options.prompt,
-        instructions: options.prompt,
+        instructions: options.instruction,
         extensions: options.mcp.map(server => ({
           ...server,
           headers: Object.entries(server.headers ?? {}).map(([key, value]) => ({
