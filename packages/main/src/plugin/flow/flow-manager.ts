@@ -96,7 +96,7 @@ export class FlowManager implements Disposable {
     this.#flows.set(key, flows);
 
     if (connection.flow.installed) {
-      this.#installedProviders.add(providerId);
+      this.#installedProviders.add(key);
     }
 
     // dispose of existing if any
@@ -124,6 +124,7 @@ export class FlowManager implements Disposable {
       this.#flows.delete(key);
       this.#disposable.get(key)?.dispose();
       this.#disposable.delete(key);
+      this.#installedProviders.delete(key);
 
       this.apiSender.send('flow:updated');
     });
@@ -136,5 +137,6 @@ export class FlowManager implements Disposable {
   dispose(): void {
     this.#flows.clear();
     this.#disposable.values().forEach(d => d.dispose());
+    this.#installedProviders.clear();
   }
 }
