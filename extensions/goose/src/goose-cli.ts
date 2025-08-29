@@ -20,12 +20,15 @@ import { spawn } from 'node:child_process';
 import type { cli as CliAPI, CliTool, Disposable, Logger, process as ProcessAPI } from '@kortex-app/api';
 import { env } from '@kortex-app/api';
 
+import type { GooseDownloader, ReleaseArtifactMetadata } from './goose-downloader';
+
 export class GooseCLI implements Disposable {
   private cli: CliTool | undefined = undefined;
 
   constructor(
     private readonly cliAPI: typeof CliAPI,
     private readonly processAPI: typeof ProcessAPI,
+    private readonly downloader: GooseDownloader,
   ) {}
 
   protected async findGooseVersion(): Promise<string | undefined> {
@@ -105,7 +108,8 @@ export class GooseCLI implements Disposable {
   }
 
   async init(): Promise<void> {
-    const version = await this.findGooseVersion();
+    // const version = await this.findGooseVersion();
+    const version = undefined;
 
     this.cli = this.cliAPI.createCliTool({
       name: 'goose',
@@ -114,6 +118,30 @@ export class GooseCLI implements Disposable {
       images: {},
       version: version,
     });
+
+    if(!this.cli.version) {
+      // register the minikube installer
+      let artifact: ReleaseArtifactMetadata | undefined;
+
+      this.cli.registerInstaller({
+        selectVersion: async () => {
+          const release = await this.downloader.selectVersion(this.cli);
+          artifact = release;
+          return release.tag.replace('v', '').trim();
+        },
+        doInstall: async () => {
+          if (!artifact) throw new Error('not selected');
+          const installPath = await this.downloader.install(artifact);
+          this.cli?.updateVersion({
+            version: artifact.tag.replace('v', '').trim(),
+            path: installPath,
+          });
+        },
+        doUninstall: () => {
+          throw new Error('not implemented');
+        },
+      });
+    }
   }
 
   dispose(): void {
