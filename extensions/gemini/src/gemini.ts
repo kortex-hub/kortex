@@ -150,7 +150,6 @@ export class Gemini implements Disposable {
         {
           label: 'gemini-2.5-pro',
         },
-        { label: 'gemini-2.0-flash-lite' },
       ],
       credentials(): Record<string, string> {
         return {
