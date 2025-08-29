@@ -22,7 +22,8 @@
   "dependencies": {
     "@kortex-app/api": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.17.1",
-    "mustache": "^4.2.0"
+    "mustache": "^4.2.0",
+    "yaml": "^2.8.1"
   },
   "devDependencies": {
     "@types/mustache": "^4.2.6",

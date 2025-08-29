@@ -853,13 +853,30 @@ export class PluginSystem {
         connectionName: string,
         options: containerDesktopAPI.FlowGenerateOptions,
       ): Promise<string> => {
-        // Get the flow provider to use
-        const flowProvider = providerRegistry.getProvider(providerId);
-        const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
-          flowProvider.flowConnections.find(({ name }) => name === connectionName);
-        if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
+        const task = taskManager.createTask({
+          title: `Generating flow for ${connectionName}'`,
+        });
 
-        return flowConnection.flow.generate(options);
+        try {
+          // Get the flow provider to use
+          const flowProvider = providerRegistry.getProvider(providerId);
+          const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
+            flowProvider.flowConnections.find(({ name }) => name === connectionName);
+          if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
+
+          // Generate the raw string
+          const generated = await flowConnection.flow.generate(options);
+          // Save it
+          const flowId = await flowConnection.flow.create(generated);
+
+          task.status = 'success';
+
+          return flowId;
+        } catch (err: unknown) {
+          task.status = 'failure';
+          task.error = String(err);
+          throw err;
+        }
       },
     );
 
