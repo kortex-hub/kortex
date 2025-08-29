@@ -33,17 +33,20 @@ export class GooseCLI implements Disposable {
       return undefined;
     }
   }
+  get installed(): boolean {
+    return !!this.cli?.version;
+  }
 
   async getRecipes(options: { path: string }): Promise<Array<{ path: string }>> {
     // skip when no
-    if (this.cli?.version === undefined) {
+    if (!this.installed) {
       console.warn('cannot get recipes: goose is not installed');
       return [];
     }
 
     try {
       const { stdout } = await this.processAPI.exec('goose', ['recipe', 'list', '--format=json'], {
-        env: {GOOSE_RECIPE_PATH: options.path},
+        env: { GOOSE_RECIPE_PATH: options.path },
       });
       console.log('[GooseCLI] getRecipes: ', stdout);
       return JSON.parse(stdout);
