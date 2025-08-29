@@ -65,6 +65,7 @@ import {
   QuickPickItemKind,
 } from '../input-quickpick/input-quickpick-registry.js';
 import { KubernetesClient } from '../kubernetes/kubernetes-client.js';
+import { MCPRegistry } from '../mcp/mcp-registry.js';
 import { MessageBox } from '../message-box.js';
 import { ModuleLoader } from '../module-loader.js';
 import { OnboardingRegistry } from '../onboarding-registry.js';
@@ -91,7 +92,6 @@ import { ViewRegistry } from '../view-registry.js';
 import { type AnalyzedExtension, ExtensionAnalyzer } from './extension-analyzer.js';
 import { ExtensionDevelopmentFolders } from './extension-development-folders.js';
 import { ExtensionWatcher } from './extension-watcher.js';
-import { MCPRegistry } from '../mcp/mcp-registry.js';
 
 export interface ActivatedExtension {
   id: string;
@@ -388,7 +388,7 @@ export class ExtensionLoader implements AsyncDisposable {
   getDisabledExtensionIds(): string[] {
     return this.configurationRegistry
       .getConfiguration(ExtensionLoaderSettings.SectionName)
-      .get<string[]>(ExtensionLoaderSettings.Disabled, []);
+      .get<string[]>(ExtensionLoaderSettings.Disabled, ['kortex.openai']);
   }
 
   setDisabledExtensionIds(disabledExtensionIds: string[]): void {
