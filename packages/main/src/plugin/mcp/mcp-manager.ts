@@ -18,7 +18,13 @@
 
 import type { MCPProviderConnection } from '@kortex-app/api';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import type { ToolSet } from 'ai';
+import {
+  isJSONRPCRequest,
+  isJSONRPCResponse,
+  JSONRPCRequest,
+  JSONRPCResponse,
+} from '@modelcontextprotocol/sdk/types.js';
+import type { DynamicToolUIPart, ToolSet } from 'ai';
 import { experimental_createMCPClient } from 'ai';
 import { inject, injectable, preDestroy } from 'inversify';
 
@@ -26,14 +32,43 @@ import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info.js';
 
 import { ApiSenderType } from '../api.js';
+import { MCPTransportDelegate } from './mcp-transport-delegate.js';
 
 /**
  * experimental_createMCPClient return `Promise<MCPClient>` but they did not exported this type...
  */
 type ExtractedMCPClient = Awaited<ReturnType<typeof experimental_createMCPClient>>;
 
+// Exchanges are represented as DynamicToolUIPart so the renderer can display them directly
+export type MCPMessageExchange = DynamicToolUIPart;
+
+function JSONRPCRequest2UIPart(message: JSONRPCRequest): DynamicToolUIPart {
+  const rawParams: unknown = (message as { params?: unknown }).params;
+  let toolName = 'unknown';
+  let inputArg: unknown = undefined;
+  if (rawParams && typeof rawParams === 'object') {
+    const p = rawParams as Record<string, unknown>;
+    if (typeof p['name'] === 'string') {
+      toolName = p['name'] as string;
+    }
+    inputArg = (p as Record<string, unknown>)['arguments'];
+  }
+  const toolCallId = String(message.id);
+  return {
+    type: 'dynamic-tool',
+    state: 'input-available',
+    toolCallId,
+    toolName,
+    input: inputArg,
+  };
+}
+
 @injectable()
 export class MCPManager implements AsyncDisposable {
+  /**
+   * Stores all JSON-RPC message exchanges per MCP client key.
+   */
+  #exchanges: Map<string, Array<MCPMessageExchange>> = new Map<string, Array<MCPMessageExchange>>();
   #client: Map<string, ExtractedMCPClient> = new Map<string, ExtractedMCPClient>();
 
   #mcps: MCPRemoteServerInfo[] = [];
@@ -87,9 +122,23 @@ export class MCPManager implements AsyncDisposable {
     transport: Transport,
     url?: string,
   ): Promise<void> {
-    const client = await experimental_createMCPClient({ transport });
-
     const key = this.getKey(internalProviderId, connectionName);
+
+    // Wrap transport with delegate to record all exchanges
+    const wrapped = new MCPTransportDelegate(transport, {
+      onSend: (message): void => {
+        if (isJSONRPCRequest(message)) {
+          this.recordInput(key, message);
+        }
+      },
+      onReceive: (message, _extra): void => {
+        if (isJSONRPCResponse(message)) {
+          this.recordOutput(key, message);
+        }
+      },
+    });
+
+    const client = await experimental_createMCPClient({ transport: wrapped });
 
     console.log('[MCPManager] Registering MCP client for ', internalProviderId, ' with name ', connectionName);
     this.#client.set(key, client);
@@ -103,6 +152,49 @@ export class MCPManager implements AsyncDisposable {
 
     // broadcast new items
     this.apiSender.send('mcp-manager-update');
+  }
+
+  /**
+   * Record an input for the given client key.
+   */
+  protected recordInput(key: string, message: JSONRPCRequest): void {
+    if (message.method === 'tools/call') {
+      const arr = this.#exchanges.get(key) ?? [];
+      const part = JSONRPCRequest2UIPart(message);
+      arr.push(part);
+      this.#exchanges.set(key, arr);
+    }
+  }
+
+  /**
+   * Record an output for the given client key.
+   */
+  protected recordOutput(key: string, message: JSONRPCResponse): void {
+    const arr = this.#exchanges.get(key) ?? [];
+    const id = String(message.id);
+    const exchange = arr.find(e => e.toolCallId === id);
+    if (exchange) {
+      // JSON-RPC response can be either result or error
+      const hasResult = 'result' in message;
+      const hasError = 'error' in message;
+      if (hasError && message['error'] !== undefined) {
+        // Wrap error in a shape that the UI component understands
+        exchange.output = { isError: true, toolResult: message['error'] };
+        exchange.state = 'output-available';
+      } else if (hasResult) {
+        exchange.output = message['result'];
+        exchange.state = 'output-available';
+      } else {
+        // No result and no error - leave as-is
+      }
+    }
+    this.apiSender.send('mcp-manager-update');
+  }
+  /**
+   * Returns the list of recorded exchanges for a given client key.
+   */
+  public getExchanges(key: string): MCPMessageExchange[] {
+    return this.#exchanges.get(key) ?? [];
   }
 
   protected async registerMCPClientConnection(
