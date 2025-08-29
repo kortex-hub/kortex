@@ -201,7 +201,7 @@ export class FlowManager implements Disposable {
     this.#disposable.set(
       key,
       connection.flow.onDidChange(() => {
-        this.apiSender.send('flow:updated');
+        this.refresh();
       }),
     );
   }

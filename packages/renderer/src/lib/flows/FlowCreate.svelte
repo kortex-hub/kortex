@@ -68,7 +68,7 @@ async function generate(): Promise<void> {
 }
 </script>
 
-<FormPage title="Flow Create" inProgress={false}>
+<FormPage title="Flow Create" inProgress={loading}>
   {#snippet content()}
     {#await hasInstalledFlowProviders then hasInstalledFlowProvidersC}
       <div class="px-5 pb-5 min-w-full">
