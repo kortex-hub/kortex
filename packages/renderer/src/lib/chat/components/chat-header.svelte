@@ -1,9 +1,9 @@
 <script lang="ts">
-import { SvelteSet } from 'svelte/reactivity';
-import { innerWidth } from 'svelte/reactivity/window';
+import { innerWidth, SvelteSet } from 'svelte/reactivity';
 import { router } from 'tinro';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
+import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 
 import type { Chat, User } from '../../../../../main/src/chat/db/schema';
 import PlusIcon from './icons/plus.svelte';
@@ -46,7 +46,7 @@ const sidebar = useSidebar();
 						{...props}
 						variant="outline"
 						class="order-2 ml-auto px-2 md:order-1 md:ml-0 md:h-fit md:px-2"
-						onclick={() => {
+						onclick={():void => {
 							router.goto('/');
 						}}
 					>
@@ -65,8 +65,20 @@ const sidebar = useSidebar();
     />
     <MCPSelector bind:selected={selectedMCP}/>
 	{/if}
+    
+    {#if $mcpRemoteServerInfos.length === 0}
+      <div class="text-sm text-muted-foreground">
+        <Button 
+          variant="link" 
+          class="h-auto p-0 text-sm"
+          onclick={():void => router.goto('/preferences/mcp')}
+        >
+          Install MCP providers
+        </Button>
+      </div>
+    {/if}
 
-	{#if !readonly && chat}
+    {#if !readonly && chat}
 		<VisibilitySelector {chat} class="order-1 md:order-3" />
 	{/if}
 
