@@ -25,7 +25,11 @@ let flowProviderConnectionKey: string | undefined = $state<string>();
 let result: string | undefined = $state(undefined);
 flowCreationStore.set(undefined);
 
-let hasInstalledFlowProviders = $derived(window.hasInstalledFlowProviders());
+let hasInstalledFlowProviders = $state(window.hasInstalledFlowProviders());
+
+function retryCheck(): void {
+  hasInstalledFlowProviders = window.hasInstalledFlowProviders();
+}
 
 async function generate(): Promise<void> {
   if (!flowProviderConnectionKey) return;
@@ -110,7 +114,7 @@ async function generate(): Promise<void> {
             {/if}
           </div>
       {:else}
-        <NoFlowProviders />
+        <NoFlowProviders {retryCheck} />
       {/if}
       </div>
     {/await}
