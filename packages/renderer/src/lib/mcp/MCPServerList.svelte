@@ -1,10 +1,12 @@
 <script lang="ts">
 import { Button, NavPage } from '@podman-desktop/ui-svelte';
 
+import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+
 import McpServerListRegistryInstall from './MCPServerListRegistryInstall.svelte';
 import McpServerListRemoteReady from './MCPServerListRemoteReady.svelte';
 
-let selectedTab = $state<'READY' | 'INSTALLABLE'>('READY');
+let selectedTab = $state<'READY' | 'INSTALLABLE'>($mcpRemoteServerInfos.length ? 'READY' : 'INSTALLABLE');
 </script>
 
 <NavPage searchEnabled={false} title="MCP servers">
