@@ -4,10 +4,11 @@ import { SvelteSet } from 'svelte/reactivity';
 
 import MCPSelector from '/@/lib/chat/components/mcp-selector.svelte';
 import { Textarea } from '/@/lib/chat/components/ui/textarea';
-import MonacoEditor from '/@/lib/editor/MonacoEditor.svelte';
 import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
 import FormPage from '/@/lib/ui/FormPage.svelte';
+import { handleNavigation } from '/@/navigation';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import { NavigationPage } from '/@api/navigation-page';
 
 import FlowConnectionSelector from './components/flow-connection-selector.svelte';
 import NoFlowProviders from './components/NoFlowProviders.svelte';
@@ -16,13 +17,13 @@ let selectedMCP: Set<string> = $state($flowCreationStore?.mcp ?? new SvelteSet()
 
 // error
 let error: string | undefined = $state();
+let loading: boolean = $state(false);
 
 // form field
 let name: string = $state('');
 let description: string = $state('');
 let prompt: string = $state($flowCreationStore?.prompt ?? '');
 let flowProviderConnectionKey: string | undefined = $state<string>();
-let result: string | undefined = $state(undefined);
 flowCreationStore.set(undefined);
 
 let hasInstalledFlowProviders = $state(window.hasInstalledFlowProviders());
@@ -33,11 +34,14 @@ function retryCheck(): void {
 
 async function generate(): Promise<void> {
   if (!flowProviderConnectionKey) return;
+  if (loading) return;
 
-  const [providerId, connectionName] = flowProviderConnectionKey.split(':');
+  loading = true;
 
   try {
-    result = await window.generateFlow(providerId, connectionName, {
+    const [providerId, connectionName] = flowProviderConnectionKey.split(':');
+
+    const flowId = await window.generateFlow(providerId, connectionName, {
       name: $state.snapshot(name),
       description: $state.snapshot(description),
       prompt: $state.snapshot(prompt),
@@ -47,13 +51,24 @@ async function generate(): Promise<void> {
         uri: $mcpRemoteServerInfos.find(mcp => mcp.id === m)!.url,
       })),
     });
+
+    handleNavigation({
+      page: NavigationPage.FLOW_DETAILS,
+      parameters: {
+        flowId: flowId,
+        providerId: providerId,
+        connectionName: connectionName,
+      },
+    });
   } catch (err: unknown) {
     error = String(err);
+  } finally {
+    loading = false;
   }
 }
 </script>
 
-<FormPage title="Flow Create" inProgress={false}>
+<FormPage title="Flow Create" inProgress={loading}>
   {#snippet content()}
     {#await hasInstalledFlowProviders then hasInstalledFlowProvidersC}
       <div class="px-5 pb-5 min-w-full">
@@ -103,15 +118,8 @@ async function generate(): Promise<void> {
               </div>
 
               <FlowConnectionSelector class="" bind:value={flowProviderConnectionKey}/>
-              <Button disabled={!flowProviderConnectionKey} onclick={generate}>Generate</Button>
-
+              <Button inProgress={loading} disabled={!flowProviderConnectionKey} onclick={generate}>Generate</Button>
             </form>
-
-            {#if result}
-              <div class="h-[40rem]">
-                <MonacoEditor content={result} language="yaml" />
-              </div>
-            {/if}
           </div>
       {:else}
         <NoFlowProviders {retryCheck} />
