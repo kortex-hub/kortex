@@ -26,12 +26,14 @@ let {
   loading,
   selectedModel,
   selectedMCP,
+  allowExportAsFlow,
 }: {
   message: UIMessage;
   readonly: boolean;
   loading: boolean;
   selectedModel?: ModelInfo;
   selectedMCP: SvelteSet<string>;
+  allowExportAsFlow: boolean;
 } = $props();
 
 let mode = $state<'view' | 'edit'>('view');
@@ -141,13 +143,16 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type 
 										class="h-fit rounded-md p-[7px] hover:bg-zinc-200 dark:border-zinc-700 hover:dark:bg-zinc-900"
 										onclick={(event): void => {
 											event.preventDefault();
-											exportAsFlow();
+                      if (allowExportAsFlow) {
+											 exportAsFlow();
+                      }
 										}}
 										disabled={loading}
 										variant="ghost"
-										title="Export as Flow"
+										title={allowExportAsFlow? 'Export as Flow' : 'Install flow provider to enable save.'}
 									>
-										<PlusIcon size={14} />
+										<PlusIcon size={14}>
+										</PlusIcon>
 									</Button>
 							{/if}
 						</div>
