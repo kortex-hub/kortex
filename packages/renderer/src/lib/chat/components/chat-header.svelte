@@ -1,9 +1,12 @@
 <script lang="ts">
+/* eslint-disable import/no-duplicates */
 import { SvelteSet } from 'svelte/reactivity';
 import { innerWidth } from 'svelte/reactivity/window';
+/* eslint-enable import/no-duplicates */
 import { router } from 'tinro';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
+import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 
 import type { Chat, User } from '../../../../../main/src/chat/db/schema';
 import PlusIcon from './icons/plus.svelte';
@@ -33,9 +36,11 @@ let {
 } = $props();
 
 const sidebar = useSidebar();
+
+const noMcps = $derived($mcpRemoteServerInfos.length === 0);
 </script>
 
-<header class="bg-background sticky top-0 flex items-center gap-2 p-2">
+<header class="bg-background sticky top-0 flex items-start gap-2 p-2">
 	<SidebarToggle />
 
 	{#if !sidebar.open || (innerWidth.current ?? 768) < 768}
@@ -46,7 +51,7 @@ const sidebar = useSidebar();
 						{...props}
 						variant="outline"
 						class="order-2 ml-auto px-2 md:order-1 md:ml-0 md:h-fit md:px-2"
-						onclick={() => {
+						onclick={():void => {
 							router.goto('/');
 						}}
 					>
@@ -60,13 +65,28 @@ const sidebar = useSidebar();
 	{/if}
 
 	{#if !readonly}
-		<ModelSelector
-      class="order-1 md:order-2" models={models} bind:value={selectedModel}
-    />
-    <MCPSelector bind:selected={selectedMCP}/>
-	{/if}
-
-	{#if !readonly && chat}
+        <ModelSelector
+            class="order-1 md:order-2" 
+            models={models} 
+            bind:value={selectedModel}
+        />
+        <div class="flex flex-col gap-1">
+            <MCPSelector disabled={noMcps} bind:selected={selectedMCP}/>
+            {#if noMcps}
+                <div class="flex items-center gap-1 px-1 text-xs text-muted-foreground">
+                    <Button 
+                        variant="link" 
+                        class="h-auto p-0 text-xs hover:underline"
+                        onclick={():void => router.goto('/mcps')}
+                    >
+                        Configure MCP servers
+                    </Button>
+                </div>
+            {/if}
+        </div>
+    {/if}
+    
+    {#if !readonly && chat}
 		<VisibilitySelector {chat} class="order-1 md:order-3" />
 	{/if}
 
