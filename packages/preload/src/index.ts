@@ -41,7 +41,7 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
-import type { UIMessage, UIMessageChunk } from 'ai';
+import type { DynamicToolUIPart, UIMessage, UIMessageChunk } from 'ai';
 import { contextBridge, ipcRenderer } from 'electron';
 import type { components } from 'mcp-registry';
 
@@ -1693,6 +1693,10 @@ export function initExposure(): void {
       return ipcInvoke('mcp-manager:getTools', mcpId);
     },
   );
+
+  contextBridge.exposeInMainWorld('getMcpExchanges', async (mcpId: string): Promise<DynamicToolUIPart[]> => {
+    return ipcInvoke('mcp-manager:getExchanges', mcpId);
+  });
 
   contextBridge.exposeInMainWorld(
     'createMCPServerFromRemoteRegistry',
