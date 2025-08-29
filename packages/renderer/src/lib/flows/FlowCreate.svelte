@@ -10,8 +10,8 @@ import { getModels } from '/@/lib/models/models-utils';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 import { handleNavigation } from '/@/navigation';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
-import { NavigationPage } from '/@api/navigation-page';
 import { providerInfos } from '/@/stores/providers';
+import { NavigationPage } from '/@api/navigation-page';
 
 import type { ModelInfo } from '../chat/components/model-info';
 import FlowConnectionSelector from './components/flow-connection-selector.svelte';
