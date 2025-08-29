@@ -38,7 +38,7 @@ let {
 const sidebar = useSidebar();
 </script>
 
-<header class="bg-background sticky top-0 flex items-center gap-2 p-2">
+<header class="bg-background sticky top-0 flex items-start gap-2 p-2">
 	<SidebarToggle />
 
 	{#if !sidebar.open || (innerWidth.current ?? 768) < 768}
