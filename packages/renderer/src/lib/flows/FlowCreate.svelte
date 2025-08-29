@@ -3,17 +3,23 @@ import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
 import { SvelteSet } from 'svelte/reactivity';
 
 import MCPSelector from '/@/lib/chat/components/mcp-selector.svelte';
+import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
 import { Textarea } from '/@/lib/chat/components/ui/textarea';
 import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
+import { getModels } from '/@/lib/models/models-utils';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 import { handleNavigation } from '/@/navigation';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import { providerInfos } from '/@/stores/providers';
 import { NavigationPage } from '/@api/navigation-page';
 
+import type { ModelInfo } from '../chat/components/model-info';
 import FlowConnectionSelector from './components/flow-connection-selector.svelte';
 import NoFlowProviders from './components/NoFlowProviders.svelte';
 
-let selectedMCP: Set<string> = $state($flowCreationStore?.mcp ?? new SvelteSet());
+let selectedMCP = $state<Set<string>>($flowCreationStore?.mcp ?? new SvelteSet());
+let models: Array<ModelInfo> = $derived(getModels($providerInfos));
+let selectedModel = $state<ModelInfo | undefined>($flowCreationStore?.model);
 
 // error
 let error: string | undefined = $state();
@@ -99,6 +105,14 @@ async function generate(): Promise<void> {
                   rows={2}
                   autofocus
                 />
+              </div>
+              <div class="flex flex-col">
+                <span>Model</span>
+                    <ModelSelector
+                        class="order-1 md:order-2" 
+                        models={models} 
+                        bind:value={selectedModel}
+                    />
               </div>
 
               <!-- tools -->

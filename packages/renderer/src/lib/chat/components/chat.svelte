@@ -9,6 +9,7 @@ import { router } from 'tinro';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
+import { getModels } from '/@/lib/models/models-utils';
 import { providerInfos } from '/@/stores/providers';
 
 import type { Chat as DbChat, User } from '../../../../../main/src/chat/db/schema';
@@ -30,25 +31,7 @@ let {
   readonly: boolean;
 } = $props();
 
-let models: Array<ModelInfo> = $derived(
-  $providerInfos.reduce(
-    (accumulator, current) => {
-      if (current.inferenceConnections.length > 0) {
-        for (const { name, models } of current.inferenceConnections) {
-          accumulator.push(
-            ...models.map(model => ({
-              providerId: current.id,
-              connectionName: name,
-              label: model.label,
-            })),
-          );
-        }
-      }
-      return accumulator;
-    },
-    [] as Array<ModelInfo>,
-  ),
-);
+let models: Array<ModelInfo> = $derived(getModels($providerInfos));
 
 let selectedModel = $state<ModelInfo | undefined>(getFirstModel());
 let selectedMCP = new SvelteSet<string>();

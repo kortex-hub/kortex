@@ -6,12 +6,12 @@ import { innerWidth } from 'svelte/reactivity/window';
 import { router } from 'tinro';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
+import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 
 import type { Chat, User } from '../../../../../main/src/chat/db/schema';
 import PlusIcon from './icons/plus.svelte';
 import MCPSelector from './mcp-selector.svelte';
-import ModelSelector from './model-selector.svelte';
 import SidebarToggle from './sidebar-toggle.svelte';
 import { Button } from './ui/button';
 import { useSidebar } from './ui/sidebar';
