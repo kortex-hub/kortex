@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 
@@ -31,6 +31,7 @@ import type {
   ProviderConnectionStatus,
 } from '@kortex-app/api';
 import { EventEmitter } from '@kortex-app/api';
+import { parse } from 'yaml';
 
 import type { GooseCLI } from './goose-cli';
 import { KubeTemplate } from './kube-template';
@@ -78,8 +79,19 @@ export class GooseRecipe implements Disposable {
     return await readFile(path, 'utf-8');
   }
 
-  protected async write(_flowId: string, _content: string): Promise<void> {
-    throw new Error('not implemented');
+  protected async create(content: string): Promise<string> {
+    console.log('GooseRecipe.create', content);
+    const parsed = parse(content);
+    const name = parsed['name'].toLowerCase();
+
+    const basePath = this.getBasePath();
+    const fullPath = join(basePath, `${name}.yaml`);
+    await writeFile(fullPath, content);
+
+    // notify update
+    this.updateEmitter.fire();
+
+    return Buffer.from(fullPath).toString('base64');
   }
 
   protected async execute(flowId: string, logger: Logger): Promise<void> {
@@ -120,7 +132,7 @@ export class GooseRecipe implements Disposable {
         installed: this.gooseCLI.installed,
         onDidChange: this.updateEmitter.event,
         read: this.read.bind(this),
-        write: this.write.bind(this),
+        create: this.create.bind(this),
         execute: this.execute.bind(this),
         generate: this.generate.bind(this),
       },
