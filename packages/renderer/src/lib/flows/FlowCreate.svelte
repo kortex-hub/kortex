@@ -22,7 +22,8 @@ let loading: boolean = $state(false);
 // form field
 let name: string = $state('');
 let description: string = $state('');
-let prompt: string = $state($flowCreationStore?.prompt ?? '');
+let instruction: string = $state($flowCreationStore?.prompt ?? '');
+let prompt: string = $state('You are a helpful assistant.');
 let flowProviderConnectionKey: string | undefined = $state<string>();
 flowCreationStore.set(undefined);
 
@@ -44,6 +45,7 @@ async function generate(): Promise<void> {
     const flowId = await window.generateFlow(providerId, connectionName, {
       name: $state.snapshot(name),
       description: $state.snapshot(description),
+      instruction: $state.snapshot(instruction),
       prompt: $state.snapshot(prompt),
       mcp: [...selectedMCP].map(m => ({
         name: m,
@@ -107,10 +109,22 @@ async function generate(): Promise<void> {
 
               <!-- prompt -->
               <div>
-                <span>Prompt</span>
+                <span>Prompt (System prompt)</span>
                 <Textarea
                   placeholder="Prompt"
                   bind:value={prompt}
+                  class='bg-muted max-h-[calc(75dvh)] min-h-[24px] resize-none overflow-hidden rounded-2xl pb-10 !text-base dark:border-zinc-700'
+                  rows={2}
+                  autofocus
+                />
+              </div>
+
+              <!-- system prompt -->
+              <div>
+                <span>Instruction</span>
+                <Textarea
+                  placeholder="Instruction"
+                  bind:value={instruction}
                   class='bg-muted max-h-[calc(75dvh)] min-h-[24px] resize-none overflow-hidden rounded-2xl pb-10 !text-base dark:border-zinc-700'
                   rows={2}
                   autofocus

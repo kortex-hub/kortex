@@ -426,7 +426,11 @@ declare module '@kortex-app/api' {
   export interface FlowGenerateOptions {
     name: string;
     description: string;
+    /**
+     * system prompt
+     */
     prompt: string;
+    instruction: string;
     mcp: Array<{
       name: string;
       type: 'streamable_http';
