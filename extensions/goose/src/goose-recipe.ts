@@ -106,10 +106,11 @@ export class GooseRecipe implements Disposable {
       status: 'unknown',
     });
 
-    this.connection = this.gooseProvider?.registerFlowProviderConnection({
+    this.connection = this.gooseProvider.registerFlowProviderConnection({
       name: 'goose-recipes',
       flow: {
         all: this.all.bind(this),
+        installed: this.gooseCLI.installed,
         onDidChange: this.updateEmitter.event,
         read: this.read.bind(this),
         write: this.write.bind(this),
