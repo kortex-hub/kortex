@@ -7,6 +7,7 @@ import { router } from 'tinro';
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
 import MonacoEditor from '/@/lib/editor/MonacoEditor.svelte';
+import { getModels } from '/@/lib/models/models-utils';
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
@@ -32,6 +33,8 @@ let connection: ProviderFlowConnectionInfo | undefined = $derived(
 );
 let path = $derived(atob(flowId));
 
+
+
 let flowInfo = $derived({
   providerId,
   id: flowId,
@@ -39,25 +42,7 @@ let flowInfo = $derived({
   connectionName,
 });
 
-let models: Array<ModelInfo> = $derived(
-  $providerInfos.reduce(
-    (accumulator, current) => {
-      if (current.inferenceConnections.length > 0) {
-        for (const { name, models } of current.inferenceConnections) {
-          accumulator.push(
-            ...models.map(model => ({
-              providerId: current.id,
-              connectionName: name,
-              label: model.label,
-            })),
-          );
-        }
-      }
-      return accumulator;
-    },
-    [] as Array<ModelInfo>,
-  ),
-);
+let models: Array<ModelInfo> = $derived(getModels($providerInfos));
 
 let selectedModel = $state<ModelInfo | undefined>(undefined);
 
