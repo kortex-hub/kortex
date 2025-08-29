@@ -15,7 +15,10 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import type { cli as CliAPI, CliTool, Disposable, process as ProcessAPI } from '@kortex-app/api';
+import { spawn } from 'node:child_process';
+
+import type { cli as CliAPI, CliTool, Disposable, Logger, process as ProcessAPI } from '@kortex-app/api';
+import { env } from '@kortex-app/api';
 
 export class GooseCLI implements Disposable {
   private cli: CliTool | undefined = undefined;
@@ -35,6 +38,51 @@ export class GooseCLI implements Disposable {
   }
   get installed(): boolean {
     return !!this.cli?.version;
+  }
+
+  async getGooseFullPath(): Promise<string | undefined> {
+    const cmd = 'goose';
+    if (env.isWindows) {
+      return `${cmd}.exe`;
+    }
+    try {
+      const { stdout } = await this.processAPI.exec('which', ['goose']);
+      return stdout.trim();
+    } catch (err: unknown) {
+      return undefined;
+    }
+  }
+
+  async run(flowPath: string, logger: Logger, options: { path: string }): Promise<void> {
+    const deferred = Promise.withResolvers<void>();
+
+    const cmdPath = await this.getGooseFullPath();
+    if (!cmdPath) {
+      deferred.reject(new Error('goose command not found'));
+      return deferred.promise;
+    }
+    // run goose flow execute <flowId> --watch
+    const subprocess = spawn(cmdPath, ['run', '--recipe', flowPath], {
+      env: { GOOSE_RECIPE_PATH: options.path },
+    });
+
+    subprocess.stdout.on('data', data => {
+      logger.log(data.toString());
+    });
+
+    subprocess.stderr.on('data', data => {
+      logger.error(data.toString());
+    });
+
+    subprocess.on('exit', code => {
+      if (code === 0) {
+        deferred.resolve();
+      } else {
+        deferred.reject(new Error(`goose process exited with code ${code}`));
+      }
+    });
+
+    return deferred.promise;
   }
 
   async getRecipes(options: { path: string }): Promise<Array<{ path: string }>> {

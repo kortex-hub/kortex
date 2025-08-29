@@ -67,6 +67,7 @@ import type { DockerSocketMappingStatusInfo } from '/@api/docker-compatibility-i
 import type { ExtensionDevelopmentFolderInfo } from '/@api/extension-development-folders-info';
 import type { ExtensionInfo } from '/@api/extension-info';
 import type { FeedbackProperties, GitHubIssue } from '/@api/feedback';
+import type { FlowExecuteInfo } from '/@api/flow-execute-info';
 import type { FlowInfo } from '/@api/flow-info';
 import type { HistoryInfo } from '/@api/history-info';
 import type { IconInfo } from '/@api/icon-info';
@@ -297,12 +298,27 @@ export function initExposure(): void {
     return ipcInvoke('flows:hasInstalledFlowProviders');
   });
 
+  contextBridge.exposeInMainWorld('listExecuteFlows', async (): Promise<Array<FlowExecuteInfo>> => {
+    return ipcInvoke('flows:listExecute');
+  });
+
   contextBridge.exposeInMainWorld(
     'readFlow',
     async (providerId: string, connectionName: string, flowId: string): Promise<string> => {
       return ipcInvoke('flows:read', providerId, connectionName, flowId);
     },
   );
+
+  contextBridge.exposeInMainWorld(
+    'flowDispatchLog',
+    async (providerId: string, connectionName: string, flowId: string, taskId: string): Promise<void> => {
+      return ipcInvoke('flows:dispatchLog', providerId, connectionName, flowId, taskId);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('getLogCurrentFlow', async (): Promise<string> => {
+    return ipcInvoke('flows:getLogCurrent');
+  });
 
   contextBridge.exposeInMainWorld(
     'generateFlow',
@@ -334,6 +350,13 @@ export function initExposure(): void {
       },
     ): Promise<string> => {
       return ipcInvoke('flows:deploy:kubernetes', inference, flow, options);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'flowExecute',
+    async (flow: { providerId: string; connectionName: string; flowId: string }): Promise<void> => {
+      return ipcInvoke('flows:execute', flow);
     },
   );
 

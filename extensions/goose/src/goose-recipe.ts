@@ -25,6 +25,7 @@ import type {
   FlowDeployKubernetesOptions,
   FlowDeployKubernetesResult,
   FlowGenerateOptions,
+  Logger,
   Provider,
   provider as ProviderAPI,
   ProviderConnectionStatus,
@@ -81,6 +82,12 @@ export class GooseRecipe implements Disposable {
     throw new Error('not implemented');
   }
 
+  protected async execute(flowId: string, logger: Logger): Promise<void> {
+    // execute goose recipe using run
+    const flowPath = await this.getFlowPath(flowId);
+    await this.gooseCLI.run(flowPath, logger, { path: this.getBasePath() });
+  }
+
   protected async generate(options: FlowGenerateOptions): Promise<string> {
     return new RecipeTemplate({
       recipe: {
@@ -114,6 +121,7 @@ export class GooseRecipe implements Disposable {
         onDidChange: this.updateEmitter.event,
         read: this.read.bind(this),
         write: this.write.bind(this),
+        execute: this.execute.bind(this),
         generate: this.generate.bind(this),
       },
       lifecycle: {},
