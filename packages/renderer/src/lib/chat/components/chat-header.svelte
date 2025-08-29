@@ -1,5 +1,8 @@
 <script lang="ts">
-import { innerWidth, SvelteSet } from 'svelte/reactivity';
+/* eslint-disable import/no-duplicates */
+import { SvelteSet } from 'svelte/reactivity';
+import { innerWidth } from 'svelte/reactivity/window';
+/* eslint-enable import/no-duplicates */
 import { router } from 'tinro';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
@@ -60,24 +63,26 @@ const sidebar = useSidebar();
 	{/if}
 
 	{#if !readonly}
-		<ModelSelector
+        <ModelSelector
       class="order-1 md:order-2" models={models} bind:value={selectedModel}
     />
-    <MCPSelector bind:selected={selectedMCP}/>
-	{/if}
-    
-    {#if $mcpRemoteServerInfos.length === 0}
-      <div class="text-sm text-muted-foreground">
-        <Button 
-          variant="link" 
-          class="h-auto p-0 text-sm"
-          onclick={():void => router.goto('/preferences/mcp')}
-        >
-          Install MCP providers
-        </Button>
-      </div>
+    <div class="flex flex-col gap-1">
+      <MCPSelector bind:selected={selectedMCP}/>
+      {#if $mcpRemoteServerInfos.length === 0}
+        <div class="text-xs text-muted-foreground">
+          No MCP servers configured. 
+          <Button 
+            variant="link" 
+            class="h-auto p-0 text-xs"
+            onclick={():void => router.goto('/preferences/mcp')}
+          >
+            Configure MCP servers
+          </Button>
+        </div>
+      {/if}
+    </div>
     {/if}
-
+    
     {#if !readonly && chat}
 		<VisibilitySelector {chat} class="order-1 md:order-3" />
 	{/if}
