@@ -163,7 +163,7 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
           <CustomChat />
         </Route>
 
-        <Route path="/flows" breadcrumb="Flows">
+        <Route path="/flows" breadcrumb="Flows"  navigationHint="root">
           <FlowList/>
         </Route>
 
