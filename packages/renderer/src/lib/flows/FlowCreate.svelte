@@ -146,7 +146,7 @@ async function generate(): Promise<void> {
               </div>
 
               <FlowConnectionSelector class="" bind:value={flowProviderConnectionKey}/>
-              <Button inProgress={loading} disabled={!flowProviderConnectionKey} onclick={generate}>Generate</Button>
+              <Button inProgress={loading} disabled={!flowProviderConnectionKey || !name} onclick={generate}>Generate</Button>
             </form>
           </div>
       {:else}
