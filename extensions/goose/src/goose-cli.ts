@@ -76,13 +76,13 @@ export class GooseCLI implements Disposable {
     return !!this.cli?.version;
   }
 
-  async run(flowPath: string, logger: Logger, options: { path: string }): Promise<void> {
+  async run(flowPath: string, logger: Logger, options: { path: string; env?: Record<string, string> }): Promise<void> {
     if (!this.cli?.path) throw new Error('goose not installed');
     const deferred = Promise.withResolvers<void>();
 
     // run goose flow execute <flowId> --watch
     const subprocess = spawn(this.cli?.path, ['run', '--recipe', flowPath], {
-      env: { GOOSE_RECIPE_PATH: options.path },
+      env: { GOOSE_RECIPE_PATH: options.path, ...options.env },
     });
 
     subprocess.stdout.on('data', data => {

@@ -38,6 +38,7 @@ import type {
   ProviderContainerConnection,
   ProviderDetectionCheck,
   ProviderEvent,
+  ProviderInferenceConnection,
   ProviderInformation,
   ProviderInstallation,
   ProviderLifecycle,
@@ -1654,6 +1655,46 @@ export class ProviderRegistry {
     return Disposable.create(() => {
       clearInterval(timer);
       this.inferenceProviders.delete(id);
+      this.apiSender.send('provider-change', {});
+    });
+  }
+
+  getInferenceConnections(): ProviderInferenceConnection[] {
+    const connections: ProviderInferenceConnection[] = [];
+    this.providers.forEach(provider => {
+      provider.inferenceConnections.forEach(connection => {
+        connections.push({
+          providerId: provider.id,
+          connection,
+        });
+      });
+    });
+    return connections;
+  }
+
+  registerMCPConnection(provider: Provider, mcpProviderConnection: MCPProviderConnection): Disposable {
+    const providerName = mcpProviderConnection.name;
+    const id = `${provider.id}.${providerName}`;
+    this.mcpProviders.set(id, mcpProviderConnection);
+    this.telemetryService.track('registerMCPProviderConnection', {
+      name: mcpProviderConnection.name,
+      total: this.mcpProviders.size,
+    });
+
+    let previousStatus = mcpProviderConnection.status();
+
+    // track the status of the provider
+    const timer = setInterval(() => {
+      const newStatus = mcpProviderConnection.status();
+      if (newStatus !== previousStatus) {
+        this.apiSender.send('provider-change', {});
+        previousStatus = newStatus;
+      }
+    }, 2000);
+
+    return Disposable.create(() => {
+      clearInterval(timer);
+      this.mcpProviders.delete(id);
       this.apiSender.send('provider-change', {});
     });
   }
