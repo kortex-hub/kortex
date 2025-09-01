@@ -20,3 +20,8 @@ extensions:
       {{ key }}: "{{ value }}"
     {{/headers }}
   {{/recipe.extensions }}
+
+
+settings:
+  goose_provider: {{ &recipe.settings.goose_provider }}
+  goose_model: {{ &recipe.settings.goose_model }}
