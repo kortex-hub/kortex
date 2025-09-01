@@ -205,4 +205,22 @@ export class MCPManager implements AsyncDisposable {
   public async listMCPRemoteServers(): Promise<MCPRemoteServerInfo[]> {
     return this.#mcps;
   }
+
+  public async removeMcpRemoteServer(key: string): Promise<void> {
+    const instance = this.#client.get(key);
+    if (!instance) throw new Error(`cannot find MCP instance with key ${key}`);
+
+    // Close the client connection
+    await instance.close();
+
+    // remove the instance
+    this.#client.delete(key);
+    this.#exchanges.delete(key);
+
+    // clear from the #mcps list
+    this.#mcps = this.#mcps.filter(mcp => mcp.id !== key);
+
+    // broadcast new items
+    this.apiSender.send('mcp-manager-update');
+  }
 }
