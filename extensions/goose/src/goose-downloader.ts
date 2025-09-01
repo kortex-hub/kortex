@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { exec } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { arch } from 'node:os';
@@ -42,27 +43,54 @@ export interface ReleaseArtifactMetadata extends QuickPickItem {
 }
 
 export class GooseDownloader implements Disposable {
+  #installDirectory: string;
+
   constructor(
     private readonly extensionContext: ExtensionContext,
     private readonly octokit: Octokit,
     private readonly envAPI: typeof EnvAPI,
     private readonly windowAPI: typeof WindowAPI,
-  ) {}
+  ) {
+    this.#installDirectory = join(this.extensionContext.storagePath, 'goose-package');
+  }
+
+  async init(): Promise<void> {
+    // ensure the install directory exists
+    if (!existsSync(this.#installDirectory)) {
+      await mkdir(this.#installDirectory, { recursive: true });
+    }
+  }
 
   dispose(): void {}
+
+  extractTarBz2(filePath: string, outDir: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // eslint-disable-next-line sonarjs/os-command
+      exec(`tar -xjf "${filePath}" -C "${outDir}"`, err => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+  }
 
   async install(release: ReleaseArtifactMetadata): Promise<string> {
     const destFile = await this.download(release);
 
-    const directory = await Open.file(destFile);
-    await directory.extract({ path: this.extensionContext.storagePath });
-
+    if (destFile.endsWith('.zip')) {
+      const directory = await Open.file(destFile);
+      await directory.extract({ path: this.extensionContext.storagePath });
+    } else if (destFile.endsWith('.tar.bz2') && (this.envAPI.isMac || this.envAPI.isLinux)) {
+      // use tar xjf to extract .tar.bz2 files
+      await this.extractTarBz2(destFile, this.#installDirectory);
+    } else {
+      throw new Error(`Unsupported archive format: ${destFile}`);
+    }
     return this.getGooseExecutableExtensionStorage();
   }
 
   getGooseExecutableExtensionStorage(): string {
     const executable: string = this.envAPI.isWindows ? 'goose.exe' : 'goose';
-    return join(this.extensionContext.storagePath, 'goose-package', executable);
+    return join(this.#installDirectory, executable);
   }
 
   async selectVersion(cliInfo?: CliTool): Promise<ReleaseArtifactMetadata> {
@@ -127,6 +155,9 @@ export class GooseDownloader implements Disposable {
       }
     } else if (this.envAPI.isMac) {
       switch (architecture) {
+        case 'arm64':
+          assetName = 'goose-aarch64-apple-darwin.tar.bz2';
+          break;
         case 'x64':
           assetName = 'goose-x86_64-apple-darwin.tar.bz2';
           break;
