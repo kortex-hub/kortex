@@ -65,6 +65,9 @@ export interface NavigationParameters {
   [NavigationPage.MCP_DETAILS]: {
     id: string;
   };
+  [NavigationPage.MCP_INSTALL_FROM_REGISTRY]: {
+    serverId: string;
+  };
 }
 
 // the parameters property is optional when the NavigationParameters say it is
