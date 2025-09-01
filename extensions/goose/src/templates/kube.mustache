@@ -31,19 +31,14 @@ spec:
           args: ['run', '--recipe', '/home/goose/recipe.yaml']
           envFrom:
             - secretRef:
-                name: goose-credentials
+                name: goose-{{ provider.name }}-credentials
+            - configMapRef:
+                name: goose-config
           volumeMounts:
-            - name: goose-config-volume
-              mountPath: /home/goose/.config/goose/config.yaml
-              subPath: goose-config.yaml
             - name: goose-recipe-volume
               mountPath: /home/goose/recipe.yaml
               subPath: recipe.yaml
       volumes:
-        # Goose config (Provider, model etc.)
-        - name: goose-config-volume
-          configMap:
-            name: goose-config
         # Goose recipe
         - name: goose-recipe-volume
           configMap:

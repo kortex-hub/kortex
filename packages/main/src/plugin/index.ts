@@ -975,8 +975,11 @@ export class PluginSystem {
         options: {
           namespace: string;
           hideSecrets: boolean;
+          dryrun: boolean;
         },
       ): Promise<string> => {
+        if(!options.dryrun && options.hideSecrets) throw new Error('cannot apply YAML while hidding secrets');
+
         // Get the inference provider to use
         const inferenceProvider = providerRegistry.getProvider(inference.providerId);
         const inferenceConnection: containerDesktopAPI.InferenceProviderConnection | undefined =
@@ -991,11 +994,9 @@ export class PluginSystem {
         const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
           flowProvider.flowConnections.find(({ name }) => name === flow.connectionName);
         if (!flowConnection) throw new Error(`cannot find flow connection with name ${flow.connectionName}`);
-        if (!flowConnection?.deploy?.kubernetes)
-          throw new Error(`cannot find kubernetes deploy method on flow connection ${flow.connectionName}`);
 
-        const { resources } = await flowConnection.deploy.kubernetes({
-          dryrun: true,
+        // Generate the Kubernetes YAML
+        const { resources } = await flowConnection.flow.generateKubernetesYAML({
           provider: inferenceProvider,
           connection: inferenceConnection,
           model: model,
@@ -1003,6 +1004,15 @@ export class PluginSystem {
           namespace: options.namespace,
           hideSecrets: options.hideSecrets,
         });
+
+        if(options.dryrun) {
+          return resources;
+        }
+
+        const currentContext =  kubernetesClient.getCurrentContextName();
+        if(!currentContext) throw new Error('cannot find current context');
+        const objects = await kubernetesClient.applyResourcesFromYAML(currentContext, resources);
+        console.log('[FlowGenerate] created', objects);
 
         return resources;
       },
