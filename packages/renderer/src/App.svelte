@@ -59,6 +59,7 @@ import KubePodDetails from './lib/kube/pods/PodDetails.svelte';
 import KubePodsList from './lib/kube/pods/PodsList.svelte';
 import PortForwardingList from './lib/kubernetes-port-forward/PortForwardingList.svelte';
 import ManifestDetails from './lib/manifest/ManifestDetails.svelte';
+import McpRegistryCreateFromRegistryForm from './lib/mcp/MCPRegistryCreateFromRegistryForm.svelte';
 import McpServerList from './lib/mcp/MCPServerList.svelte';
 import NodeDetails from './lib/node/NodeDetails.svelte';
 import NodesList from './lib/node/NodesList.svelte';
@@ -185,6 +186,9 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
         </Route>
         <Route path="/mcps/:id/*" let:meta>
           <MCPDetails id={meta.params.id} />
+        </Route>
+        <Route path="/mcp-install-from-registry/:serverId/*" breadcrumb="Install MCP Server from Registry" let:meta>
+          <McpRegistryCreateFromRegistryForm serverId={meta.params.serverId} />
         </Route>
 
         <Route path="/containers" breadcrumb="Containers" navigationHint="root">
