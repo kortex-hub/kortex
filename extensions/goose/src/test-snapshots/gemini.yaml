@@ -31,37 +31,15 @@ spec:
             - secretRef:
                 name: goose-credentials
           volumeMounts:
-            - name: goose-config-volume
-              mountPath: /home/goose/.config/goose/config.yaml
-              subPath: goose-config.yaml
             - name: goose-recipe-volume
               mountPath: /home/goose/recipe.yaml
               subPath: recipe.yaml
       volumes:
-        # Goose config (Provider, model etc.)
-        - name: goose-config-volume
-          configMap:
-            name: goose-config
         # Goose recipe
         - name: goose-recipe-volume
           configMap:
             name: goose-recipe-echo
       restartPolicy: Never
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: goose-config
-  labels:
-    app: goose
-  annotations:
-    kortex-hub/version: 1.0.0
-  namespace: default
-data:
-  goose-config.yaml: |
-    GOOSE_PROVIDER: google
-    GOOSE_MODEL: gemini-2.5-pro
-    extensions: {}
 ---
 apiVersion: v1
 kind: ConfigMap

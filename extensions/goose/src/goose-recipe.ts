@@ -22,8 +22,8 @@ import { basename, dirname, join } from 'node:path';
 import type {
   Disposable,
   Flow,
-  FlowDeployKubernetesOptions,
-  FlowDeployKubernetesResult,
+  FlowGenerateKubernetesOptions,
+  FlowGenerateKubernetesResult,
   FlowGenerateOptions,
   Logger,
   Provider,
@@ -100,12 +100,25 @@ export class GooseRecipe implements Disposable {
   }
 
   protected async generate(options: FlowGenerateOptions): Promise<string> {
+    const gooseProviderMap = {
+      gemini: 'google',
+    };
+
+    if (!(options.model.providerId in gooseProviderMap)) {
+      throw Error(`[goose-recipe:generate]: cannot find goose provider for ${options.model.providerId}`);
+    }
+
+    const gooseProvider = gooseProviderMap[options.model.providerId as keyof typeof gooseProviderMap];
     return new RecipeTemplate({
       recipe: {
         name: options.name,
         title: options.name,
         prompt: options.prompt,
         instructions: options.instruction,
+        settings: {
+          goose_provider: gooseProvider,
+          goose_model: options.model.label,
+        },
         extensions: options.mcp.map(server => ({
           ...server,
           headers: Object.entries(server.headers ?? {}).map(([key, value]) => ({
@@ -143,18 +156,16 @@ export class GooseRecipe implements Disposable {
         create: this.create.bind(this),
         execute: this.execute.bind(this),
         generate: this.generate.bind(this),
+        generateKubernetesYAML: this.deployKubernetes.bind(this),
       },
       lifecycle: {},
       status(): ProviderConnectionStatus {
         return 'unknown';
       },
-      deploy: {
-        kubernetes: this.deployKubernetes.bind(this),
-      },
     });
   }
 
-  protected async deployKubernetes(options: FlowDeployKubernetesOptions): Promise<FlowDeployKubernetesResult> {
+  protected async deployKubernetes(options: FlowGenerateKubernetesOptions): Promise<FlowGenerateKubernetesResult> {
     if (options.provider.id !== 'gemini') throw new Error('unsupported provider');
     const path = await this.getFlowPath(options.flowId);
 

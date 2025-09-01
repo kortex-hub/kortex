@@ -47,6 +47,7 @@ UI guidelines -->
 <script lang="ts">
 import { micromark } from 'micromark';
 import { directive, directiveHtml } from 'micromark-extension-directive';
+import { gfmAutolinkLiteral, gfmAutolinkLiteralHtml } from 'micromark-extension-gfm-autolink-literal';
 import { onDestroy, onMount } from 'svelte';
 
 import { button } from './micromark-button-directive';
@@ -76,8 +77,8 @@ const eventListeners: EventListener[] = [];
 // Render the markdown or the html+micromark markdown reactively
 $: markdown
   ? (html = micromark(markdown, {
-      extensions: [directive()],
-      htmlExtensions: [directiveHtml({ button, link, warnings })],
+      extensions: [gfmAutolinkLiteral(), directive()],
+      htmlExtensions: [gfmAutolinkLiteralHtml(), directiveHtml({ button, link, warnings })],
     }))
   : undefined;
 
@@ -88,8 +89,8 @@ onMount(() => {
 
   // Provide micromark + extensions
   html = micromark(text, {
-    extensions: [directive()],
-    htmlExtensions: [directiveHtml({ button, link, warnings })],
+    extensions: [gfmAutolinkLiteral(), directive()],
+    htmlExtensions: [gfmAutolinkLiteralHtml(), directiveHtml({ button, link, warnings })],
   });
 
   // remove href values in each anchor using # for links

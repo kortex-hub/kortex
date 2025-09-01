@@ -535,8 +535,10 @@ export class PluginSystem {
     container.bind<CustomPickRegistry>(CustomPickRegistry).toSelf().inSingletonScope();
     container.bind<OnboardingRegistry>(OnboardingRegistry).toSelf().inSingletonScope();
     container.bind<KubernetesClient>(KubernetesClient).toSelf().inSingletonScope();
+
+    // INIT KUBERNETES
     const kubernetesClient = container.get<KubernetesClient>(KubernetesClient);
-    // disable await kubernetesClient.init();
+    await kubernetesClient.init();
 
     container.bind<CloseBehavior>(CloseBehavior).toSelf().inSingletonScope();
     const closeBehaviorConfiguration = container.get<CloseBehavior>(CloseBehavior);
@@ -851,19 +853,7 @@ export class PluginSystem {
         _listener,
         providerId: string,
         connectionName: string,
-        options: {
-          name: string;
-          description: string;
-          /**
-           * system prompt
-           */
-          prompt: string;
-          instruction: string;
-          /**
-           * MCP ids
-           */
-          mcp: Array<string>;
-        },
+        options: containerDesktopAPI.FlowGenerateOptions & { mcp: string[] },
       ): Promise<string> => {
         const task = taskManager.createTask({
           title: `Generating flow for ${connectionName}'`,
@@ -880,18 +870,18 @@ export class PluginSystem {
            * Painfully recover the headers credentials for a given MCP id
            */
           const accumulator: Array<{
-            name: string,
-            type: 'streamable_http',
-            uri: string,
+            name: string;
+            type: 'streamable_http';
+            uri: string;
             headers?: {
-              [key: string]: string,
-            },
+              [key: string]: string;
+            };
           }> = [];
-          for(const key of options.mcp) {
+          for (const key of options.mcp) {
             // decompose the id (aka KEY) of the MCP server given by the frontend
             const { internalProviderId, serverId, remoteId } = mcpManager.decomposeKey(key);
             // skip non-internal (should not happen)
-            if(internalProviderId !== INTERNAL_PROVIDER_ID) continue;
+            if (internalProviderId !== INTERNAL_PROVIDER_ID) continue;
 
             // Get the server corresponding to the key
             const server = mcpManager.get(key);
@@ -943,8 +933,11 @@ export class PluginSystem {
         options: {
           namespace: string;
           hideSecrets: boolean;
+          dryrun: boolean;
         },
       ): Promise<string> => {
+        if (!options.dryrun && options.hideSecrets) throw new Error('cannot apply YAML while hidding secrets');
+
         // Get the inference provider to use
         const inferenceProvider = providerRegistry.getProvider(inference.providerId);
         const inferenceConnection: containerDesktopAPI.InferenceProviderConnection | undefined =
@@ -959,11 +952,9 @@ export class PluginSystem {
         const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
           flowProvider.flowConnections.find(({ name }) => name === flow.connectionName);
         if (!flowConnection) throw new Error(`cannot find flow connection with name ${flow.connectionName}`);
-        if (!flowConnection?.deploy?.kubernetes)
-          throw new Error(`cannot find kubernetes deploy method on flow connection ${flow.connectionName}`);
 
-        const { resources } = await flowConnection.deploy.kubernetes({
-          dryrun: true,
+        // Generate the Kubernetes YAML
+        const { resources } = await flowConnection.flow.generateKubernetesYAML({
           provider: inferenceProvider,
           connection: inferenceConnection,
           model: model,
@@ -971,6 +962,15 @@ export class PluginSystem {
           namespace: options.namespace,
           hideSecrets: options.hideSecrets,
         });
+
+        if (options.dryrun) {
+          return resources;
+        }
+
+        const currentContext = kubernetesClient.getCurrentContextName();
+        if (!currentContext) throw new Error('cannot find current context');
+        const objects = await kubernetesClient.applyResourcesFromYAML(currentContext, resources);
+        console.log('[FlowGenerate] created', objects);
 
         return resources;
       },
