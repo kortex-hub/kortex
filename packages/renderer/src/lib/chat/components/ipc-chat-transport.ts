@@ -10,7 +10,7 @@ interface Dependencies {
 export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
   constructor(private readonly dependencies: Dependencies) {}
 
-  sendMessages(
+  async sendMessages(
     options: {
       trigger: 'submit-message' | 'regenerate-message';
       chatId: string;
@@ -25,7 +25,7 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
 
     const mcp = this.dependencies.getMCP();
 
-    const stream = new ReadableStream<UIMessageChunk>({
+    return new ReadableStream<UIMessageChunk>({
       async start(controller): Promise<void> {
         await window.inferenceStreamText(
           model.providerId,
@@ -48,8 +48,6 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
         );
       },
     });
-
-    return Promise.resolve(stream);
   }
 
   reconnectToStream(options: { chatId: string } & ChatRequestOptions): Promise<ReadableStream<UIMessageChunk> | null> {
