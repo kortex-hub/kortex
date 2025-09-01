@@ -168,6 +168,9 @@ export class GooseDownloader implements Disposable {
       }
     } else if (this.envAPI.isLinux) {
       switch (architecture) {
+        case 'arm64':
+          assetName = 'goose-aarch64-unknown-linux-gnu.tar.bz2';
+          break;
         case 'x64':
           assetName = 'goose-x86_64-unknown-linux-gnu.tar.bz2';
           break;
