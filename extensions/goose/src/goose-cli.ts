@@ -16,9 +16,20 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 
-import type { cli as CliAPI, CliTool, Disposable, Logger, process as ProcessAPI } from '@kortex-app/api';
-import { env } from '@kortex-app/api';
+import type {
+  cli as CliAPI,
+  CliTool,
+  CliToolInstallationSource,
+  Disposable,
+  env as EnvAPI,
+  Logger,
+  process as ProcessAPI,
+} from '@kortex-app/api';
+
+import type { GooseDownloader, ReleaseArtifactMetadata } from './goose-downloader';
+import { whereBinary } from './utils/system';
 
 export class GooseCLI implements Disposable {
   private cli: CliTool | undefined = undefined;
@@ -26,12 +37,37 @@ export class GooseCLI implements Disposable {
   constructor(
     private readonly cliAPI: typeof CliAPI,
     private readonly processAPI: typeof ProcessAPI,
+    private readonly downloader: GooseDownloader,
+    private readonly envAPI: typeof EnvAPI,
   ) {}
 
-  protected async findGooseVersion(): Promise<string | undefined> {
+  protected async findGooseVersion(): Promise<
+    { path: string; version: string; installationSource: CliToolInstallationSource } | undefined
+  > {
     try {
-      const { stdout } = await this.processAPI.exec('goose', ['--version']);
-      return stdout.trim();
+      const path = this.downloader.getGooseExecutableExtensionStorage();
+      if (existsSync(path)) {
+        const { stdout } = await this.processAPI.exec(path, ['--version']);
+        return {
+          path: path,
+          version: stdout.trim(),
+          installationSource: 'extension',
+        };
+      }
+    } catch (err: unknown) {
+      console.warn(err);
+    }
+
+    const executable: string = this.envAPI.isWindows ? 'goose.exe' : 'goose';
+
+    try {
+      const { stdout } = await this.processAPI.exec(executable, ['--version']);
+      const location = await whereBinary(this.envAPI, this.processAPI, executable);
+      return {
+        path: location,
+        version: stdout.trim(),
+        installationSource: 'external',
+      };
     } catch (err: unknown) {
       return undefined;
     }
@@ -40,29 +76,12 @@ export class GooseCLI implements Disposable {
     return !!this.cli?.version;
   }
 
-  async getGooseFullPath(): Promise<string | undefined> {
-    const cmd = 'goose';
-    if (env.isWindows) {
-      return `${cmd}.exe`;
-    }
-    try {
-      const { stdout } = await this.processAPI.exec('which', ['goose']);
-      return stdout.trim();
-    } catch (err: unknown) {
-      return undefined;
-    }
-  }
-
   async run(flowPath: string, logger: Logger, options: { path: string }): Promise<void> {
+    if (!this.cli?.path) throw new Error('goose not installed');
     const deferred = Promise.withResolvers<void>();
 
-    const cmdPath = await this.getGooseFullPath();
-    if (!cmdPath) {
-      deferred.reject(new Error('goose command not found'));
-      return deferred.promise;
-    }
     // run goose flow execute <flowId> --watch
-    const subprocess = spawn(cmdPath, ['run', '--recipe', flowPath], {
+    const subprocess = spawn(this.cli?.path, ['run', '--recipe', flowPath], {
       env: { GOOSE_RECIPE_PATH: options.path },
     });
 
@@ -86,6 +105,8 @@ export class GooseCLI implements Disposable {
   }
 
   async getRecipes(options: { path: string }): Promise<Array<{ path: string }>> {
+    if (!this.cli?.path) throw new Error('goose not installed');
+
     // skip when no
     if (!this.installed) {
       console.warn('cannot get recipes: goose is not installed');
@@ -93,7 +114,7 @@ export class GooseCLI implements Disposable {
     }
 
     try {
-      const { stdout } = await this.processAPI.exec('goose', ['recipe', 'list', '--format=json'], {
+      const { stdout } = await this.processAPI.exec(this.cli?.path, ['recipe', 'list', '--format=json'], {
         env: { GOOSE_RECIPE_PATH: options.path },
       });
       console.log('[GooseCLI] getRecipes: ', stdout);
@@ -105,15 +126,41 @@ export class GooseCLI implements Disposable {
   }
 
   async init(): Promise<void> {
-    const version = await this.findGooseVersion();
+    const info = await this.findGooseVersion();
 
     this.cli = this.cliAPI.createCliTool({
       name: 'goose',
       displayName: 'Goose',
       markdownDescription: 'Goose CLI',
       images: {},
-      version: version,
+      version: info?.version,
+      path: info?.path,
+      installationSource: info?.installationSource,
     });
+
+    if (!this.cli.version) {
+      // register the minikube installer
+      let artifact: ReleaseArtifactMetadata | undefined;
+
+      this.cli.registerInstaller({
+        selectVersion: async () => {
+          const release = await this.downloader.selectVersion(this.cli);
+          artifact = release;
+          return release.tag.replace('v', '').trim();
+        },
+        doInstall: async () => {
+          if (!artifact) throw new Error('not selected');
+          const installPath = await this.downloader.install(artifact);
+          this.cli?.updateVersion({
+            version: artifact.tag.replace('v', '').trim(),
+            path: installPath,
+          });
+        },
+        doUninstall: () => {
+          throw new Error('not implemented');
+        },
+      });
+    }
   }
 
   dispose(): void {
