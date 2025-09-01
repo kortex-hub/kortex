@@ -44,6 +44,13 @@ export class Gemini implements Disposable {
       name: 'Gemini',
       status: 'unknown',
       id: 'gemini',
+      images: {
+        icon: './icon.png',
+        logo: {
+          dark: './icon.png',
+          light: './icon.png',
+        },
+      },
     });
 
     // register MCP Provider connection factory
