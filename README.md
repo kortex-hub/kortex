@@ -41,7 +41,7 @@ pnpm watch
 
 ### Configure your Gemini API Key
 
-Go to `Settings > Resources`, the Gemini provider should be list. Click on `Grab a key` if you don't have an existing
+Go to `Settings > Resources`, the Gemini provider should be listed. Click on `Grab a key` if you don't have an existing
 Gemini API key. If you already have one, enter it and click the `Create` button. If you go the Chat
 window, you should see a list of Gemini models being listed.
 
