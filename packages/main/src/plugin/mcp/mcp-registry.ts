@@ -50,6 +50,7 @@ interface StorageConfigFormat {
 }
 
 const STORAGE_KEY = 'mcp:registry:configurations';
+export const INTERNAL_PROVIDER_ID = 'internal';
 
 // Definition of all MCP registries (MCP registry is an URL serving MCP providers it implements the MCP registry protocol)
 @injectable()
@@ -134,7 +135,7 @@ export class MCPRegistry {
           },
         });
 
-        await this.mcpManager.registerMCPClient('internal', server.name, transport, remote.url);
+        await this.mcpManager.registerMCPClient(INTERNAL_PROVIDER_ID, server.id, config.remoteId, server.name, transport, remote.url);
       }
     });
   }
@@ -295,7 +296,7 @@ export class MCPRegistry {
       },
     });
 
-    await this.mcpManager.registerMCPClient('internal', name, transport, remote.url);
+    await this.mcpManager.registerMCPClient(INTERNAL_PROVIDER_ID, serverId, remoteId, name, transport, remote.url);
 
     // persist configuration
     await this.saveConfiguration({
@@ -303,6 +304,19 @@ export class MCPRegistry {
       remoteId,
       headers,
     });
+  }
+
+  public async getCredentials(serverId: string, remoteId: number): Promise<{
+    headers: Record<string, string>,
+  }> {
+    const configs = await this.getConfigurations();
+
+    const configuration = configs.find((item) => item.serverId === serverId && item.remoteId === remoteId);
+    if(!configuration) throw new Error(`Configuration not found for serverId ${serverId} and remoteId ${remoteId}`);
+
+    return {
+      headers: configuration.headers,
+    };
   }
 
   async getConfigurations(): Promise<Array<StorageConfigFormat>> {

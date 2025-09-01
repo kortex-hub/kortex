@@ -446,9 +446,6 @@ importers:
       '@ai-sdk/provider':
         specifier: ^2.0.0
         version: 2.0.0
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.17.2
-        version: 1.17.2
 
   packages/mcp-registry:
     devDependencies:
