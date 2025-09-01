@@ -156,10 +156,12 @@ async function generate(): Promise<void> {
                 />
               </div>
 
-              {#if showFlowConnectionSelector}
-              <FlowConnectionSelector class="" bind:value={flowProviderConnectionKey}/>
-              {/if}
-              <Button inProgress={loading} disabled={!flowProviderConnectionKey || !name} onclick={generate}>Generate</Button>
+              <div class="flex w-full">
+                {#if showFlowConnectionSelector}
+                <FlowConnectionSelector class="" bind:value={flowProviderConnectionKey}/>
+                {/if}
+                <Button class="ml-auto" inProgress={loading} disabled={!flowProviderConnectionKey || !name} onclick={generate}>Generate</Button>
+              </div>
             </form>
           </div>
       {:else}
