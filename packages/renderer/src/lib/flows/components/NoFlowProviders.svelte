@@ -1,6 +1,7 @@
 <script lang="ts">
 import { Button, Link } from '@podman-desktop/ui-svelte';
 import { toast } from 'svelte-sonner';
+import { router } from 'tinro';
 
 import { combinedInstalledExtensions } from '/@/stores/all-installed-extensions';
 
@@ -41,9 +42,10 @@ let extension = $derived($combinedInstalledExtensions.find(e => e.id === 'kortex
     <div class="max-w-2xl space-y-4">
       <p class="text-gray-500">To get started with flows, please follow these steps:</p>
       
-      <ol class="text-left text-gray-500 space-y-3 list-decimal list-inside">
-        <li>Install the Goose CLI by running:
-          <code class="block bg-gray-800 text-gray-200 p-2 mt-1 rounded font-mono text-sm">curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | bash</code>
+      <ol class="text-center text-gray-500 space-y-3 list-inside">
+        <li>
+          <Link on:click={(): void => router.goto('/preferences/cli-tools')}
+              >Install the Goose CLI</Link>
         </li>
         <li class="flex items-center gap-2">Once the CLI is installed, restart the Goose extension using this button:
           <Button onclick={restartAndCheck}>Check</Button>
