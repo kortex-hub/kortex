@@ -421,7 +421,7 @@ declare module '@kortex-app/api' {
     namespace: string;
   }
 
-  export interface FlowGenerate6Options {
+  export interface FlowGenerateOptions {
     name: string;
     description: string;
     /**
