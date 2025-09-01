@@ -50,7 +50,7 @@ const suggestedActions = [
 				onclick={async (): Promise<void> => {
 
 					if (suggestedAction.requiredMcp?.some(m => !selectedMCP.has(m))) {
-    					toast.error(`You need to enable the following MCP first: ${suggestedAction.requiredMcp.map(m => m.split(':')[1]).join(', ')}`);
+    					toast.error(`You need to enable the following MCP first: ${suggestedAction.requiredMcp.map(m => { const parts = m.split(':'); return parts[parts.length - 1]; }).join(', ')}`);
 						return;
 					}
 
