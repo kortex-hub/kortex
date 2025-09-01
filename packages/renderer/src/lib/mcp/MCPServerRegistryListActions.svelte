@@ -2,15 +2,20 @@
 import { faPlusCircle } from '@fortawesome/free-solid-svg-icons';
 import type { components } from 'mcp-registry';
 
+import { handleNavigation } from '/@/navigation';
+import { NavigationPage } from '/@api/navigation-page';
+
 import ListItemButtonIcon from '../ui/ListItemButtonIcon.svelte';
-import McpRegistryCreateFromRegistryModal from './MCPRegistryCreateFromRegistryModal.svelte';
 
 export let object: components['schemas']['ServerDetail'];
 
-let createFromRegistryModal = false;
-
-function closeModals(): void {
-  createFromRegistryModal = false;
+function createRegistry(): void {
+  const serverId = object.id;
+  if (!serverId) {
+    console.error('No id found for MCP registry server');
+    return;
+  }
+  handleNavigation({ page: NavigationPage.MCP_INSTALL_FROM_REGISTRY, parameters: { serverId } });
 }
 </script>
 
@@ -19,13 +24,7 @@ function closeModals(): void {
  <ListItemButtonIcon
     title="Install Remote server"
     icon={faPlusCircle}
-    onClick={(): boolean => createFromRegistryModal = true}
+    onClick={createRegistry}
     />
 
 {/if}
-
-  {#if createFromRegistryModal}
-    <McpRegistryCreateFromRegistryModal
-      mcpRegistryServerDetail={object}
-      closeCallback={closeModals} />
-  {/if}
