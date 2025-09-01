@@ -1,6 +1,5 @@
 <script lang="ts">
 import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
-import { onMount } from 'svelte';
 import { SvelteSet } from 'svelte/reactivity';
 
 import MCPSelector from '/@/lib/chat/components/mcp-selector.svelte';
@@ -35,11 +34,7 @@ let flowProviderConnectionKey: string | undefined = $state<string>();
 flowCreationStore.set(undefined);
 
 let hasInstalledFlowProviders = $state(window.hasInstalledFlowProviders());
-let showFlowConnectionSelector = $state(true);
-
-onMount(() => {
-  // If there is exactly one available flow connection across all providers,
-  // preselect it so the user can directly generate the flow.
+let showFlowConnectionSelector = $derived.by(() => {
   try {
     const allFlowConnections = $providerInfos.flatMap(p =>
       (p.flowConnections ?? []).map(c => ({ providerId: p.id, connectionName: c.name })),
@@ -47,12 +42,13 @@ onMount(() => {
     if (allFlowConnections.length === 1) {
       const only = allFlowConnections[0];
       flowProviderConnectionKey = `${only.providerId}:${only.connectionName}`;
-      showFlowConnectionSelector = false;
+      return false;
     }
   } catch (e) {
     // ignore errors in auto-select logic to avoid blocking UI
     console.error('Flow auto-select skipped:', e);
   }
+  return true;
 });
 
 function retryCheck(): void {
@@ -129,8 +125,8 @@ async function generate(): Promise<void> {
               <div class="flex flex-col">
                 <span>Model</span>
                     <ModelSelector
-                        class="order-1 md:order-2" 
-                        models={models} 
+                        class="order-1 md:order-2"
+                        models={models}
                         bind:value={selectedModel}
                     />
               </div>
