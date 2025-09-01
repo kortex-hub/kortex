@@ -62,7 +62,6 @@ import type {
   UpdateVmConnectionEvent,
   VmProviderConnection,
 } from '@kortex-app/api';
-import type { Transport as MCPTransport } from '@modelcontextprotocol/sdk/shared/transport.d.ts';
 import { inject, injectable } from 'inversify';
 
 import type { Event } from '/@api/event.js';
@@ -1334,7 +1333,7 @@ export class ProviderRegistry {
    * @deprecated
    */
   isMCPConnection(connection: ProviderConnection): connection is MCPProviderConnection {
-    return 'transport' in connection;
+    return 'mcp' in connection;
   }
 
   isFlowConnection(connection: ProviderConnection): connection is FlowProviderConnection {
@@ -1910,12 +1909,6 @@ export class ProviderRegistry {
       throw new Error('No inference connection found');
     }
     return connections[0].sdk;
-  }
-
-  getMCPTransports(): Array<MCPTransport> {
-    return Array.from(this.providers.values()).flatMap(({ mcpConnections }) =>
-      mcpConnections.map(({ transport }) => transport),
-    );
   }
 
   getMCPProviderConnection(internalProviderId: string): Array<MCPProviderConnection> {

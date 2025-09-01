@@ -189,7 +189,7 @@ import { KubernetesClient } from './kubernetes/kubernetes-client.js';
 import { downloadGuideList } from './learning-center/learning-center.js';
 import { LearningCenterInit } from './learning-center-init.js';
 import { LibpodApiInit } from './libpod-api-enable/libpod-api-init.js';
-import { MCPRegistry } from './mcp/mcp-registry.js';
+import { INTERNAL_PROVIDER_ID, MCPRegistry } from './mcp/mcp-registry.js';
 import { MessageBox } from './message-box.js';
 import { NavigationItemsInit } from './navigation-items-init.js';
 import { OnboardingRegistry } from './onboarding-registry.js';
@@ -851,7 +851,19 @@ export class PluginSystem {
         _listener,
         providerId: string,
         connectionName: string,
-        options: containerDesktopAPI.FlowGenerateOptions,
+        options: {
+          name: string;
+          description: string;
+          /**
+           * system prompt
+           */
+          prompt: string;
+          instruction: string;
+          /**
+           * MCP ids
+           */
+          mcp: Array<string>;
+        },
       ): Promise<string> => {
         const task = taskManager.createTask({
           title: `Generating flow for ${connectionName}'`,
@@ -864,8 +876,42 @@ export class PluginSystem {
             flowProvider.flowConnections.find(({ name }) => name === connectionName);
           if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
 
+          /**
+           * Painfully recover the headers credentials for a given MCP id
+           */
+          const accumulator: Array<{
+            name: string,
+            type: 'streamable_http',
+            uri: string,
+            headers?: {
+              [key: string]: string,
+            },
+          }> = [];
+          for(const key of options.mcp) {
+            // decompose the id (aka KEY) of the MCP server given by the frontend
+            const { internalProviderId, serverId, remoteId } = mcpManager.decomposeKey(key);
+            // skip non-internal (should not happen)
+            if(internalProviderId !== INTERNAL_PROVIDER_ID) continue;
+
+            // Get the server corresponding to the key
+            const server = mcpManager.get(key);
+            // Collect the credentials
+            const init = await mcpRegistry.getCredentials(serverId, remoteId);
+
+            accumulator.push({
+              name: server.name,
+              type: 'streamable_http',
+              uri: server.url,
+              headers: init.headers ?? {},
+            });
+          }
+
           // Generate the raw string
-          const generated = await flowConnection.flow.generate(options);
+          const generated = await flowConnection.flow.generate({
+            ...options,
+            mcp: accumulator,
+          });
+
           // Save it
           const flowId = await flowConnection.flow.create(generated);
 
