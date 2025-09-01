@@ -1148,30 +1148,6 @@ export function initExposure(): void {
     },
   );
 
-  contextBridge.exposeInMainWorld(
-    'createMCPProviderConnection',
-    async (
-      internalProviderId: string,
-      params: { [key: string]: unknown },
-      key: symbol,
-      keyLogger: (key: symbol, eventName: 'log' | 'warn' | 'error' | 'finish', args: string[]) => void,
-      tokenId: number | undefined,
-      taskId: number | undefined,
-    ): Promise<void> => {
-      onDataCallbacksTaskConnectionId++;
-      onDataCallbacksTaskConnectionKeys.set(onDataCallbacksTaskConnectionId, key);
-      onDataCallbacksTaskConnectionLogs.set(onDataCallbacksTaskConnectionId, keyLogger);
-      return ipcInvoke(
-        'provider-registry:createMCPProviderConnection',
-        internalProviderId,
-        params,
-        onDataCallbacksTaskConnectionId,
-        tokenId,
-        taskId,
-      );
-    },
-  );
-
   // callbacks for streamText
   let onDataCallbacksStreamTextId = 0;
   const onDataCallbacksStreamText = new Map<
