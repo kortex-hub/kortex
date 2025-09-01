@@ -27,6 +27,7 @@ import { GooseRecipe } from './goose-recipe';
 export async function activate(extensionContext: ExtensionContext): Promise<void> {
   const octokit = new Octokit();
   const gooseDownloader = new GooseDownloader(extensionContext, octokit, env, window);
+  await gooseDownloader.init();
   extensionContext.subscriptions.push(gooseDownloader);
 
   const gooseCLI = new GooseCLI(cli, process, gooseDownloader, env);

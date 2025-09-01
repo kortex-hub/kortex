@@ -43,12 +43,23 @@ export interface ReleaseArtifactMetadata extends QuickPickItem {
 }
 
 export class GooseDownloader implements Disposable {
+  #installDirectory: string;
+
   constructor(
     private readonly extensionContext: ExtensionContext,
     private readonly octokit: Octokit,
     private readonly envAPI: typeof EnvAPI,
     private readonly windowAPI: typeof WindowAPI,
-  ) {}
+  ) {
+    this.#installDirectory = join(this.extensionContext.storagePath, 'goose-package');
+  }
+
+  async init(): Promise<void> {
+    // ensure the install directory exists
+    if (!existsSync(this.#installDirectory)) {
+      await mkdir(this.#installDirectory, { recursive: true });
+    }
+  }
 
   dispose(): void {}
 
@@ -70,7 +81,7 @@ export class GooseDownloader implements Disposable {
       await directory.extract({ path: this.extensionContext.storagePath });
     } else if (destFile.endsWith('.tar.bz2') && (this.envAPI.isMac || this.envAPI.isLinux)) {
       // use tar xjf to extract .tar.bz2 files
-      await this.extractTarBz2(destFile, this.extensionContext.storagePath);
+      await this.extractTarBz2(destFile, this.#installDirectory);
     } else {
       throw new Error(`Unsupported archive format: ${destFile}`);
     }
@@ -79,7 +90,7 @@ export class GooseDownloader implements Disposable {
 
   getGooseExecutableExtensionStorage(): string {
     const executable: string = this.envAPI.isWindows ? 'goose.exe' : 'goose';
-    return join(this.extensionContext.storagePath, 'goose-package', executable);
+    return join(this.#installDirectory, executable);
   }
 
   async selectVersion(cliInfo?: CliTool): Promise<ReleaseArtifactMetadata> {
