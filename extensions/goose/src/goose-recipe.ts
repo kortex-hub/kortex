@@ -123,6 +123,15 @@ export class GooseRecipe implements Disposable {
       id: 'goose',
       name: 'goose',
       status: 'unknown',
+      emptyConnectionMarkdownDescription:
+        'Provides support of running recipes with prompts. See the [Goose documentation](https://block.github.io/goose/docs/getting-started/installation) for more information.',
+      images: {
+        icon: './icon.png',
+        logo: {
+          dark: './icon.png',
+          light: './icon.png',
+        },
+      },
     });
 
     this.connection = this.gooseProvider.registerFlowProviderConnection({
