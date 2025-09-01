@@ -14,10 +14,15 @@
     "configuration": {
       "title": "Gemini",
       "properties": {
+        "gemini.factory._description": {
+          "type": "markdown",
+          "scope": "InferenceProviderConnectionFactory",
+          "markdownDescription": "Provide a Gemini key. Please note that it is possible to have a key on the free tier\n\n:button[Grab a key]{href=\"https://aistudio.google.com/app/apikey\"}"
+        },
         "gemini.factory.apiKey": {
           "type": "string",
           "scope": "InferenceProviderConnectionFactory",
-          "description": "apiKey"
+          "description": "Enter your Gemini API key (GEMINI_API_KEY)"
         }
       }
     }
