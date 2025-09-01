@@ -100,12 +100,25 @@ export class GooseRecipe implements Disposable {
   }
 
   protected async generate(options: FlowGenerateOptions): Promise<string> {
+    const gooseProviderMap = {
+      gemini: 'google',
+    };
+
+    if (!(options.model.providerId in gooseProviderMap)) {
+      throw Error(`[goose-recipe:generate]: cannot find goose provider for ${options.model.providerId}`);
+    }
+
+    const gooseProvider = gooseProviderMap[options.model.providerId as keyof typeof gooseProviderMap];
     return new RecipeTemplate({
       recipe: {
         name: options.name,
         title: options.name,
         prompt: options.prompt,
         instructions: options.instruction,
+        settings: {
+          goose_provider: gooseProvider,
+          goose_model: options.model.label,
+        },
         extensions: options.mcp.map(server => ({
           ...server,
           headers: Object.entries(server.headers ?? {}).map(([key, value]) => ({

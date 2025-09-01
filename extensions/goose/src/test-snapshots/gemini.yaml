@@ -59,8 +59,6 @@ metadata:
   namespace: default
 data:
   goose-config.yaml: |
-    GOOSE_PROVIDER: google
-    GOOSE_MODEL: gemini-2.5-pro
     extensions: {}
 ---
 apiVersion: v1

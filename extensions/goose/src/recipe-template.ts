@@ -31,6 +31,10 @@ export interface RecipeTemplateOptions {
       uri: string;
       headers: Array<{ key: string; value: string }>;
     }>;
+    settings: {
+      goose_provider: string;
+      goose_model: string;
+    };
   };
 }
 
