@@ -535,8 +535,10 @@ export class PluginSystem {
     container.bind<CustomPickRegistry>(CustomPickRegistry).toSelf().inSingletonScope();
     container.bind<OnboardingRegistry>(OnboardingRegistry).toSelf().inSingletonScope();
     container.bind<KubernetesClient>(KubernetesClient).toSelf().inSingletonScope();
+
+    // INIT KUBERNETES
     const kubernetesClient = container.get<KubernetesClient>(KubernetesClient);
-    // disable await kubernetesClient.init();
+    await kubernetesClient.init();
 
     container.bind<CloseBehavior>(CloseBehavior).toSelf().inSingletonScope();
     const closeBehaviorConfiguration = container.get<CloseBehavior>(CloseBehavior);
@@ -880,18 +882,18 @@ export class PluginSystem {
            * Painfully recover the headers credentials for a given MCP id
            */
           const accumulator: Array<{
-            name: string,
-            type: 'streamable_http',
-            uri: string,
+            name: string;
+            type: 'streamable_http';
+            uri: string;
             headers?: {
-              [key: string]: string,
-            },
+              [key: string]: string;
+            };
           }> = [];
-          for(const key of options.mcp) {
+          for (const key of options.mcp) {
             // decompose the id (aka KEY) of the MCP server given by the frontend
             const { internalProviderId, serverId, remoteId } = mcpManager.decomposeKey(key);
             // skip non-internal (should not happen)
-            if(internalProviderId !== INTERNAL_PROVIDER_ID) continue;
+            if (internalProviderId !== INTERNAL_PROVIDER_ID) continue;
 
             // Get the server corresponding to the key
             const server = mcpManager.get(key);
