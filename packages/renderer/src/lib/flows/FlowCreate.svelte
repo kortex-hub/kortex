@@ -29,7 +29,7 @@ let name: string = $state('');
 let description: string = $state('');
 let instruction: string = $state($flowCreationStore?.prompt ?? '');
 let prompt: string = $state('You are a helpful assistant.');
-let flowProviderConnectionKey: string | undefined = $state<string>();
+let flowProviderConnectionKey: string | undefined = $derived('');
 flowCreationStore.set(undefined);
 
 let hasInstalledFlowProviders = $state(window.hasInstalledFlowProviders());
