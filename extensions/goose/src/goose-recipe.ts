@@ -80,7 +80,6 @@ export class GooseRecipe implements Disposable {
   }
 
   protected async create(content: string): Promise<string> {
-    console.log('GooseRecipe.create', content);
     const parsed = parse(content);
     const name = parsed['name'].toLowerCase();
 
