@@ -76,29 +76,12 @@ export class GooseCLI implements Disposable {
     return !!this.cli?.version;
   }
 
-  async getGooseFullPath(): Promise<string | undefined> {
-    const cmd = 'goose';
-    if (this.envAPI.isWindows) {
-      return `${cmd}.exe`;
-    }
-    try {
-      const { stdout } = await this.processAPI.exec('which', ['goose']);
-      return stdout.trim();
-    } catch (err: unknown) {
-      return undefined;
-    }
-  }
-
   async run(flowPath: string, logger: Logger, options: { path: string }): Promise<void> {
+    if (!this.cli?.path) throw new Error('goose not installed');
     const deferred = Promise.withResolvers<void>();
 
-    const cmdPath = await this.getGooseFullPath();
-    if (!cmdPath) {
-      deferred.reject(new Error('goose command not found'));
-      return deferred.promise;
-    }
     // run goose flow execute <flowId> --watch
-    const subprocess = spawn(cmdPath, ['run', '--recipe', flowPath], {
+    const subprocess = spawn(this.cli?.path, ['run', '--recipe', flowPath], {
       env: { GOOSE_RECIPE_PATH: options.path },
     });
 
@@ -122,6 +105,8 @@ export class GooseCLI implements Disposable {
   }
 
   async getRecipes(options: { path: string }): Promise<Array<{ path: string }>> {
+    if (!this.cli?.path) throw new Error('goose not installed');
+
     // skip when no
     if (!this.installed) {
       console.warn('cannot get recipes: goose is not installed');
@@ -129,7 +114,7 @@ export class GooseCLI implements Disposable {
     }
 
     try {
-      const { stdout } = await this.processAPI.exec('goose', ['recipe', 'list', '--format=json'], {
+      const { stdout } = await this.processAPI.exec(this.cli?.path, ['recipe', 'list', '--format=json'], {
         env: { GOOSE_RECIPE_PATH: options.path },
       });
       console.log('[GooseCLI] getRecipes: ', stdout);
