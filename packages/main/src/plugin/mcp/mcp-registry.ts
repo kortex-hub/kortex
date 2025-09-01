@@ -128,6 +128,14 @@ export class MCPRegistry {
           continue;
         }
 
+        // client already exists ?
+        const existingServers = await this.mcpManager.listMCPRemoteServers();
+        const existing = existingServers.find(srv => srv.id.includes(server.id ?? 'unknown'));
+        if (existing) {
+          console.log(`[MCPRegistry] MCP client for server ${server.id} already exists, skipping`);
+          continue;
+        }
+
         // create transport
         const transport = new StreamableHTTPClientTransport(new URL(remote.url), {
           requestInit: {
@@ -135,7 +143,14 @@ export class MCPRegistry {
           },
         });
 
-        await this.mcpManager.registerMCPClient(INTERNAL_PROVIDER_ID, server.id, config.remoteId, server.name, transport, remote.url);
+        await this.mcpManager.registerMCPClient(
+          INTERNAL_PROVIDER_ID,
+          server.id,
+          config.remoteId,
+          server.name,
+          transport,
+          remote.url,
+        );
       }
     });
   }
@@ -306,13 +321,16 @@ export class MCPRegistry {
     });
   }
 
-  public async getCredentials(serverId: string, remoteId: number): Promise<{
-    headers: Record<string, string>,
+  public async getCredentials(
+    serverId: string,
+    remoteId: number,
+  ): Promise<{
+    headers: Record<string, string>;
   }> {
     const configs = await this.getConfigurations();
 
-    const configuration = configs.find((item) => item.serverId === serverId && item.remoteId === remoteId);
-    if(!configuration) throw new Error(`Configuration not found for serverId ${serverId} and remoteId ${remoteId}`);
+    const configuration = configs.find(item => item.serverId === serverId && item.remoteId === remoteId);
+    if (!configuration) throw new Error(`Configuration not found for serverId ${serverId} and remoteId ${remoteId}`);
 
     return {
       headers: configuration.headers,
