@@ -853,7 +853,7 @@ export class PluginSystem {
         _listener,
         providerId: string,
         connectionName: string,
-        options: containerDesktopAPI.FlowGenerateOptions & { mcp: string[] },
+        options: containerDesktopAPI.FlowGenerateOptions & { mcp: MCPRemoteServerInfo[] },
       ): Promise<string> => {
         const task = taskManager.createTask({
           title: `Generating flow for ${connectionName}'`,
@@ -877,21 +877,21 @@ export class PluginSystem {
               [key: string]: string;
             };
           }> = [];
-          for (const key of options.mcp) {
-            // decompose the id (aka KEY) of the MCP server given by the frontend
-            const { internalProviderId, serverId, remoteId } = mcpManager.decomposeKey(key);
+          for (const {
+            name,
+            url,
+            infos: { internalProviderId, serverId, remoteId },
+          } of options.mcp) {
             // skip non-internal (should not happen)
             if (internalProviderId !== INTERNAL_PROVIDER_ID) continue;
 
-            // Get the server corresponding to the key
-            const server = mcpManager.get(key);
             // Collect the credentials
             const init = await mcpRegistry.getCredentials(serverId, remoteId);
 
             accumulator.push({
-              name: server.name,
+              name,
               type: 'streamable_http',
-              uri: server.url,
+              uri: url,
               headers: init.headers ?? {},
             });
           }

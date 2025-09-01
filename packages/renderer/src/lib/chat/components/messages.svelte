@@ -1,9 +1,9 @@
 <script lang="ts">
 import type { UIMessage } from '@ai-sdk/svelte';
 import { onMount } from 'svelte';
-import type { SvelteSet } from 'svelte/reactivity';
 
 import { getLock } from '/@/lib/chat/hooks/lock';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import Overview from './messages/overview.svelte';
 import PreviewMessage from './messages/preview-message.svelte';
@@ -24,7 +24,7 @@ let {
   loading: boolean;
   messages: UIMessage[];
   selectedModel?: ModelInfo;
-  selectedMCP: SvelteSet<string>;
+  selectedMCP: MCPRemoteServerInfo[];
 } = $props();
 
 let mounted = $state(false);

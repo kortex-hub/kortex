@@ -1,6 +1,5 @@
 <script lang="ts">
 /* eslint-disable import/no-duplicates */
-import { SvelteSet } from 'svelte/reactivity';
 import { innerWidth } from 'svelte/reactivity/window';
 /* eslint-enable import/no-duplicates */
 import { router } from 'tinro';
@@ -8,6 +7,7 @@ import { router } from 'tinro';
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import type { Chat, User } from '../../../../../main/src/chat/db/schema';
 import PlusIcon from './icons/plus.svelte';
@@ -24,14 +24,14 @@ let {
   models,
   selectedModel = $bindable<ModelInfo | undefined>(),
   // selected under the form `${internalProviderId}:${connectionName}``
-  selectedMCP = $bindable(new SvelteSet()),
+  selectedMCP = $bindable(),
 }: {
   user: User | undefined;
   chat: Chat | undefined;
   readonly: boolean;
   selectedModel: ModelInfo | undefined;
   models: Array<ModelInfo>;
-  selectedMCP: Set<string>;
+  selectedMCP: MCPRemoteServerInfo[];
 } = $props();
 
 const sidebar = useSidebar();

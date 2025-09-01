@@ -1,11 +1,12 @@
 import { writable } from 'svelte/store';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 export interface FlowCreationData {
   prompt: string;
   model: ModelInfo;
-  mcp: Set<string>;
+  mcp: MCPRemoteServerInfo[];
 }
 
 /**

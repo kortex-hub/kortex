@@ -1,8 +1,10 @@
 <script lang="ts">
 import type { Chat } from '@ai-sdk/svelte';
-import type { SvelteSet } from 'svelte/reactivity';
 import { fly } from 'svelte/transition';
 import { toast } from 'svelte-sonner';
+
+import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import { Button } from './ui/button';
 
@@ -11,7 +13,7 @@ let {
   selectedMCP,
 }: {
   chatClient: Chat;
-  selectedMCP: SvelteSet<string>;
+  selectedMCP: MCPRemoteServerInfo[];
 } = $props();
 
 const suggestedActions = [
@@ -19,7 +21,7 @@ const suggestedActions = [
     title: 'What are the last 5 issues of Github',
     label: 'repository podman-desktop/podman-desktop?',
     action: 'What are the last 5 issues of Github repository podman-desktop/podman-desktop?',
-    requiredMcp: ['internal:123e4567-e89b-12d3-a456-426614172000:0:GitHub MCP server'],
+    requiredMcp: ['internal:123e4567-e89b-12d3-a456-426614172000:0'],
   },
   {
     title: 'Write code to',
@@ -49,8 +51,26 @@ const suggestedActions = [
 				variant="ghost"
 				onclick={async (): Promise<void> => {
 
-					if (suggestedAction.requiredMcp?.some(m => !selectedMCP.has(m))) {
-    					toast.error(`You need to enable the following MCP first: ${suggestedAction.requiredMcp.map(m => { const parts = m.split(':'); return parts[parts.length - 1]; }).join(', ')}`);
+          const mcpsToEnable = suggestedAction.requiredMcp?.flatMap(id => {
+
+            const selected = selectedMCP.find(mcp => mcp.id === id);
+            const mcpInfo = $mcpRemoteServerInfos.find(mcp => mcp.id === id);
+
+           if (!mcpInfo)
+           {
+            throw Error(`Suggested action ${suggestedAction.action} requires MCP with id ${id} but it was not found.`);
+           }
+
+            if (selected)
+          {
+            return [];
+          } 
+          return [mcpInfo.name];
+          });
+
+
+					if (mcpsToEnable?.length) {
+    					toast.error(`You need to enable the following MCP first: ${mcpsToEnable.join(', ')}`);
 						return;
 					}
 
