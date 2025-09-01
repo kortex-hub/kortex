@@ -1,5 +1,6 @@
 <script lang="ts">
 import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
+import { onMount } from 'svelte';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { generate as generateWords } from 'random-words';
 import { SvelteSet } from 'svelte/reactivity';
@@ -35,7 +36,9 @@ let flowProviderConnectionKey: string | undefined = $state<string>();
 flowCreationStore.set(undefined);
 
 let hasInstalledFlowProviders = $state(window.hasInstalledFlowProviders());
-let showFlowConnectionSelector = $derived.by(() => {
+let showFlowConnectionSelector = $state(true);
+
+onMount(() => {
   try {
     const allFlowConnections = $providerInfos.flatMap(p =>
       (p.flowConnections ?? []).map(c => ({ providerId: p.id, connectionName: c.name })),
@@ -43,13 +46,12 @@ let showFlowConnectionSelector = $derived.by(() => {
     if (allFlowConnections.length === 1) {
       const only = allFlowConnections[0];
       flowProviderConnectionKey = `${only.providerId}:${only.connectionName}`;
-      return false;
+      showFlowConnectionSelector = false;
     }
   } catch (e) {
     // ignore errors in auto-select logic to avoid blocking UI
     console.error('Flow auto-select skipped:', e);
   }
-  return true;
 });
 
 function retryCheck(): void {
