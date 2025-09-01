@@ -17,11 +17,18 @@
  ***********************************************************************/
 
 import { existsSync } from 'node:fs';
-import { mkdir,writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { arch } from 'node:os';
 import { join } from 'node:path';
 
-import type { CliTool, Disposable, env as EnvAPI, ExtensionContext, QuickPickItem,window as WindowAPI } from '@kortex-app/api';
+import type {
+  CliTool,
+  Disposable,
+  env as EnvAPI,
+  ExtensionContext,
+  QuickPickItem,
+  window as WindowAPI,
+} from '@kortex-app/api';
 import type { components as OctokitComponents } from '@octokit/openapi-types';
 import type { Octokit } from '@octokit/rest';
 import { Open } from 'unzipper';
@@ -29,7 +36,7 @@ import { Open } from 'unzipper';
 const GITHUB_ORG = 'block';
 const GITHUB_REPO = 'goose';
 
-export interface ReleaseArtifactMetadata extends QuickPickItem{
+export interface ReleaseArtifactMetadata extends QuickPickItem {
   tag: string;
   id: number;
 }
@@ -54,11 +61,8 @@ export class GooseDownloader implements Disposable {
   }
 
   getGooseExecutableExtensionStorage(): string {
-    if(this.envAPI.isWindows) {
-      return join(this.extensionContext.storagePath, 'goose-package', 'goose.exe');
-    } else {
-      throw new Error('not implemented');
-    }
+    const executable: string = this.envAPI.isWindows ? 'goose.exe' : 'goose';
+    return join(this.extensionContext.storagePath, 'goose-package', executable);
   }
 
   async selectVersion(cliInfo?: CliTool): Promise<ReleaseArtifactMetadata> {
