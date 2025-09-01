@@ -325,7 +325,7 @@ export function initExposure(): void {
     async (
       providerId: string,
       connectionName: string,
-      options: containerDesktopAPI.FlowGenerateOptions,
+      options: Omit<containerDesktopAPI.FlowGenerateOptions, 'mcp'> & { mcp: string[] },
     ): Promise<string> => {
       return ipcInvoke('flows:generate', providerId, connectionName, options);
     },
@@ -347,6 +347,7 @@ export function initExposure(): void {
       options: {
         namespace: string;
         hideSecrets: boolean;
+        dryrun: boolean;
       },
     ): Promise<string> => {
       return ipcInvoke('flows:deploy:kubernetes', inference, flow, options);

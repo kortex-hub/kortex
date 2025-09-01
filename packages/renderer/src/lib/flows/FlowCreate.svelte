@@ -1,5 +1,7 @@
 <script lang="ts">
 import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { generate as generateWords } from 'random-words';
 import { SvelteSet } from 'svelte/reactivity';
 
 import MCPSelector from '/@/lib/chat/components/mcp-selector.svelte';
@@ -25,7 +27,7 @@ let error: string | undefined = $state();
 let loading: boolean = $state(false);
 
 // form field
-let name: string = $state('');
+let name: string = $state(`flow-${generateWords({ exactly: 2, join: '-' })}`);
 let description: string = $state('');
 let instruction: string = $state($flowCreationStore?.prompt ?? '');
 let prompt: string = $state('You are a helpful assistant.');
@@ -54,22 +56,34 @@ function retryCheck(): void {
   hasInstalledFlowProviders = window.hasInstalledFlowProviders();
 }
 
+const formValidContent = $derived(
+  !!flowProviderConnectionKey && !!selectedModel && !!name && !!prompt && !!instruction
+    ? {
+        flowProviderConnectionKey,
+        model: {
+          providerId: selectedModel.providerId,
+          label: selectedModel.label,
+        },
+        name,
+        description,
+        mcp: Array.from(selectedMCP.values()),
+        prompt,
+        instruction,
+      }
+    : undefined,
+);
+
 async function generate(): Promise<void> {
-  if (!flowProviderConnectionKey) return;
-  if (loading) return;
+  if (loading || !formValidContent) return;
+
+  const { flowProviderConnectionKey } = formValidContent;
 
   loading = true;
 
   try {
     const [providerId, connectionName] = flowProviderConnectionKey.split(':');
 
-    const flowId = await window.generateFlow(providerId, connectionName, {
-      name: $state.snapshot(name),
-      description: $state.snapshot(description),
-      instruction: $state.snapshot(instruction),
-      prompt: $state.snapshot(prompt),
-      mcp: Array.from(selectedMCP.values()),
-    });
+    const flowId = await window.generateFlow(providerId, connectionName, formValidContent);
 
     handleNavigation({
       page: NavigationPage.FLOW_DETAILS,
@@ -155,12 +169,11 @@ async function generate(): Promise<void> {
                   autofocus
                 />
               </div>
-
               <div class="flex w-full">
                 {#if showFlowConnectionSelector}
                 <FlowConnectionSelector class="" bind:value={flowProviderConnectionKey}/>
                 {/if}
-                <Button class="ml-auto" inProgress={loading} disabled={!flowProviderConnectionKey || !name} onclick={generate}>Generate</Button>
+                <Button class="ml-auto" inProgress={loading} disabled={!formValidContent} onclick={generate}>Generate</Button>
               </div>
             </form>
           </div>
