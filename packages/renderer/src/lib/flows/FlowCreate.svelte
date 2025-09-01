@@ -1,5 +1,7 @@
 <script lang="ts">
 import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { generate as generateWords } from 'random-words';
 import { SvelteSet } from 'svelte/reactivity';
 
 import MCPSelector from '/@/lib/chat/components/mcp-selector.svelte';
@@ -25,7 +27,7 @@ let error: string | undefined = $state();
 let loading: boolean = $state(false);
 
 // form field
-let name: string = $state('');
+let name: string = $state(`flow-${generateWords({ exactly: 2, join: '-' })}`);
 let description: string = $state('');
 let instruction: string = $state($flowCreationStore?.prompt ?? '');
 let prompt: string = $state('You are a helpful assistant.');
