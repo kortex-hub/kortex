@@ -23,9 +23,12 @@
     "@kortex-app/api": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.17.1",
     "mustache": "^4.2.0",
-    "yaml": "^2.8.1"
+    "yaml": "^2.8.1",
+    "unzipper": "^0.11.6",
+    "@octokit/rest": "^21.1.0"
   },
   "devDependencies": {
+    "@types/unzipper": "^0.10.11",
     "@types/mustache": "^4.2.6",
     "mkdirp": "^3.0.1",
     "vite": "^7.0.6",
