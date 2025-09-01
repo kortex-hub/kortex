@@ -17,8 +17,8 @@
  ***********************************************************************/
 
 import { exec } from 'node:child_process';
-import { existsSync, unlinkSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import { arch } from 'node:os';
 import { join } from 'node:path';
 
@@ -86,7 +86,7 @@ export class GooseDownloader implements Disposable {
       throw new Error(`Unsupported archive format: ${destFile}`);
     }
 
-    unlinkSync(destFile);
+    await unlink(destFile);
     return this.getGooseExecutableExtensionStorage();
   }
 
