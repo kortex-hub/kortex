@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { MCPProviderConnection } from '@kortex-app/api';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import {
   isJSONRPCRequest,
@@ -28,7 +27,6 @@ import type { DynamicToolUIPart, ToolSet } from 'ai';
 import { experimental_createMCPClient } from 'ai';
 import { inject, injectable, preDestroy } from 'inversify';
 
-import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info.js';
 
 import { ApiSenderType } from '../api.js';
@@ -74,8 +72,6 @@ export class MCPManager implements AsyncDisposable {
   #mcps: MCPRemoteServerInfo[] = [];
 
   constructor(
-    @inject(ProviderRegistry)
-    private provider: ProviderRegistry,
     @inject(ApiSenderType) private apiSender: ApiSenderType,
   ) {}
 
@@ -87,8 +83,30 @@ export class MCPManager implements AsyncDisposable {
     await Promise.all(Array.from(this.#client.values().map(({ close }) => close())));
   }
 
-  protected getKey(internalProviderId: string, connectionName: string): string {
-    return `${internalProviderId}:${connectionName}`;
+  protected getKey(internalProviderId: string, serverId: string, remoteId: number, connectionName: string): string {
+    return `${internalProviderId}:${serverId}:${remoteId}:${connectionName}`;
+  }
+
+  public get(key: string): MCPRemoteServerInfo {
+    const server = this.#mcps.find(({ id }) => id === key);
+    if(!server) throw new Error(`cannot find MCP server with id ${key}`);
+    return server;
+  }
+
+  public decomposeKey(raw: string): {
+    internalProviderId: string,
+    serverId: string,
+    remoteId: number,
+    connectionName: string,
+  } {
+    const [internalProviderId, serverId, remoteId, connectionName] = raw.split(':');
+    if(!internalProviderId || !serverId || !remoteId || !connectionName) throw new Error('invalid key');
+    return {
+      internalProviderId,
+      serverId,
+      remoteId: Number.parseInt(remoteId),
+      connectionName,
+    };
   }
 
   /**
@@ -118,11 +136,13 @@ export class MCPManager implements AsyncDisposable {
 
   public async registerMCPClient(
     internalProviderId: string,
+    serverId: string,
+    remoteId: number,
     connectionName: string,
     transport: Transport,
     url?: string,
   ): Promise<void> {
-    const key = this.getKey(internalProviderId, connectionName);
+    const key = this.getKey(internalProviderId, serverId, remoteId, connectionName);
 
     // Wrap transport with delegate to record all exchanges
     const wrapped = new MCPTransportDelegate(transport, {
@@ -197,45 +217,7 @@ export class MCPManager implements AsyncDisposable {
     return this.#exchanges.get(key) ?? [];
   }
 
-  protected async registerMCPClientConnection(
-    internalProviderId: string,
-    connection: MCPProviderConnection,
-  ): Promise<void> {
-    return this.registerMCPClient(internalProviderId, connection.name, connection.transport);
-  }
-
-  init(): void {
-    console.log('[MCPManager] Init');
-
-    // register listener for new MCP connections
-    this.provider.onDidRegisterMCPConnection(async ({ providerId, connection }) => {
-      const internalProviderId = this.provider.getMatchingProviderInternalId(providerId);
-
-      await this.registerMCPClientConnection(internalProviderId, connection);
-    });
-
-    // register listener for unregistered MCP connections
-    this.provider.onDidUnregisterMCPConnection(({ providerId, connectionName }) => {
-      const internalProviderId = this.provider.getMatchingProviderInternalId(providerId);
-
-      const client = this.#client.get(this.getKey(internalProviderId, connectionName));
-      if (client) {
-        client.close().catch(console.error);
-        this.#client.delete(this.getKey(providerId, connectionName));
-      }
-    });
-
-    // Get all providers
-    const providers = this.provider.getProviderInfos();
-
-    // try to register all clients
-    Promise.allSettled(
-      providers.flatMap(({ internalId }) => {
-        const connections = this.provider.getMCPProviderConnection(internalId);
-        return connections.map(connection => this.registerMCPClientConnection(internalId, connection));
-      }),
-    ).catch(console.error);
-  }
+  init(): void {}
 
   public async listMCPRemoteServers(): Promise<MCPRemoteServerInfo[]> {
     return this.#mcps;

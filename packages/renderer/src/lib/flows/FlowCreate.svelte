@@ -9,7 +9,6 @@ import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
 import { getModels } from '/@/lib/models/models-utils';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 import { handleNavigation } from '/@/navigation';
-import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import { providerInfos } from '/@/stores/providers';
 import { NavigationPage } from '/@api/navigation-page';
 
@@ -17,7 +16,7 @@ import type { ModelInfo } from '../chat/components/model-info';
 import FlowConnectionSelector from './components/flow-connection-selector.svelte';
 import NoFlowProviders from './components/NoFlowProviders.svelte';
 
-let selectedMCP = $state<Set<string>>($flowCreationStore?.mcp ?? new SvelteSet());
+let selectedMCP: Set<string> = $state<Set<string>>($flowCreationStore?.mcp ?? new SvelteSet());
 let models: Array<ModelInfo> = $derived(getModels($providerInfos));
 let selectedModel = $state<ModelInfo | undefined>($flowCreationStore?.model);
 
@@ -69,11 +68,7 @@ async function generate(): Promise<void> {
       description: $state.snapshot(description),
       instruction: $state.snapshot(instruction),
       prompt: $state.snapshot(prompt),
-      mcp: [...selectedMCP].map(m => ({
-        name: m,
-        type: 'streamable_http',
-        uri: $mcpRemoteServerInfos.find(mcp => mcp.id === m)!.url,
-      })),
+      mcp: Array.from(selectedMCP.values()),
     });
 
     handleNavigation({

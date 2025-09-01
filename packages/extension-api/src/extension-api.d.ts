@@ -41,7 +41,6 @@
 
 declare module '@kortex-app/api' {
   import type { ProviderV2 as AISDKInferenceProvider } from '@ai-sdk/provider';
-  import type { Transport as MCPTransport } from '@modelcontextprotocol/sdk/shared/transport.d.ts';
 
   /**
    * The version of Kortex.
@@ -608,7 +607,9 @@ declare module '@kortex-app/api' {
    */
   export type MCPProviderConnection = {
     name: string;
-    transport: MCPTransport;
+    mcp: {
+       // utility methods
+    },
     lifecycle?: ProviderConnectionLifecycle;
     status(): ProviderConnectionStatus;
   };

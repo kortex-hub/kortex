@@ -19,7 +19,7 @@ const suggestedActions = [
     title: 'What are the last 5 issues of Github',
     label: 'repository podman-desktop/podman-desktop?',
     action: 'What are the last 5 issues of Github repository podman-desktop/podman-desktop?',
-    requiredMcp: ['internal:GitHub MCP server'],
+    requiredMcp: ['internal:123e4567-e89b-12d3-a456-426614172000:0:GitHub MCP server'],
   },
   {
     title: 'Write code to',
