@@ -81,7 +81,7 @@ export class MCPManager implements AsyncDisposable {
     await Promise.all(Array.from(this.#client.values().map(({ close }) => close())));
   }
 
-  public getKey(internalProviderId: string, serverId: string, remoteId: number): string {
+  protected getKey(internalProviderId: string, serverId: string, remoteId: number): string {
     return `${internalProviderId}:${serverId}:${remoteId}`;
   }
 
