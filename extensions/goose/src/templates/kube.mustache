@@ -32,8 +32,6 @@ spec:
           envFrom:
             - secretRef:
                 name: goose-{{ provider.name }}-credentials
-            - configMapRef:
-                name: goose-config
           volumeMounts:
             - name: goose-recipe-volume
               mountPath: /home/goose/recipe.yaml
@@ -44,21 +42,6 @@ spec:
           configMap:
             name: goose-recipe-{{ recipe.name }}
       restartPolicy: Never
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: goose-config
-  labels:
-    app: goose
-  annotations:
-    kortex-hub/version: {{ kortex.version }}
-  namespace: {{ namespace }}
-data:
-  goose-config.yaml: |
-    GOOSE_PROVIDER: {{ provider.name }}
-    GOOSE_MODEL: {{ provider.model }}
-    extensions: {}
 ---
 apiVersion: v1
 kind: ConfigMap

@@ -883,19 +883,7 @@ export class PluginSystem {
         _listener,
         providerId: string,
         connectionName: string,
-        options: {
-          name: string;
-          description: string;
-          /**
-           * system prompt
-           */
-          prompt: string;
-          instruction: string;
-          /**
-           * MCP ids
-           */
-          mcp: Array<string>;
-        },
+        options: containerDesktopAPI.FlowGenerateOptions & { mcp: string[] },
       ): Promise<string> => {
         const task = taskManager.createTask({
           title: `Generating flow for ${connectionName}'`,
@@ -978,7 +966,7 @@ export class PluginSystem {
           dryrun: boolean;
         },
       ): Promise<string> => {
-        if(!options.dryrun && options.hideSecrets) throw new Error('cannot apply YAML while hidding secrets');
+        if (!options.dryrun && options.hideSecrets) throw new Error('cannot apply YAML while hidding secrets');
 
         // Get the inference provider to use
         const inferenceProvider = providerRegistry.getProvider(inference.providerId);
@@ -1005,12 +993,12 @@ export class PluginSystem {
           hideSecrets: options.hideSecrets,
         });
 
-        if(options.dryrun) {
+        if (options.dryrun) {
           return resources;
         }
 
-        const currentContext =  kubernetesClient.getCurrentContextName();
-        if(!currentContext) throw new Error('cannot find current context');
+        const currentContext = kubernetesClient.getCurrentContextName();
+        if (!currentContext) throw new Error('cannot find current context');
         const objects = await kubernetesClient.applyResourcesFromYAML(currentContext, resources);
         console.log('[FlowGenerate] created', objects);
 

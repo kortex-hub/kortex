@@ -56,22 +56,34 @@ function retryCheck(): void {
   hasInstalledFlowProviders = window.hasInstalledFlowProviders();
 }
 
+const formValidContent = $derived(
+  !!flowProviderConnectionKey && !!selectedModel && !!name && !!prompt && !!instruction
+    ? {
+        flowProviderConnectionKey,
+        model: {
+          providerId: selectedModel.providerId,
+          label: selectedModel.label,
+        },
+        name,
+        description,
+        mcp: Array.from(selectedMCP.values()),
+        prompt,
+        instruction,
+      }
+    : undefined,
+);
+
 async function generate(): Promise<void> {
-  if (!flowProviderConnectionKey) return;
-  if (loading) return;
+  if (loading || !formValidContent) return;
+
+  const { flowProviderConnectionKey } = formValidContent;
 
   loading = true;
 
   try {
     const [providerId, connectionName] = flowProviderConnectionKey.split(':');
 
-    const flowId = await window.generateFlow(providerId, connectionName, {
-      name: $state.snapshot(name),
-      description: $state.snapshot(description),
-      instruction: $state.snapshot(instruction),
-      prompt: $state.snapshot(prompt),
-      mcp: Array.from(selectedMCP.values()),
-    });
+    const flowId = await window.generateFlow(providerId, connectionName, formValidContent);
 
     handleNavigation({
       page: NavigationPage.FLOW_DETAILS,
@@ -161,7 +173,7 @@ async function generate(): Promise<void> {
               {#if showFlowConnectionSelector}
               <FlowConnectionSelector class="" bind:value={flowProviderConnectionKey}/>
               {/if}
-              <Button inProgress={loading} disabled={!flowProviderConnectionKey || !name} onclick={generate}>Generate</Button>
+              <Button inProgress={loading} disabled={!formValidContent} onclick={generate}>Generate</Button>
             </form>
           </div>
       {:else}
