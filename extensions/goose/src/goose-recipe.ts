@@ -22,8 +22,8 @@ import { basename, dirname, join } from 'node:path';
 import type {
   Disposable,
   Flow,
-  FlowDeployKubernetesOptions,
-  FlowDeployKubernetesResult,
+  FlowGenerateKubernetesOptions,
+  FlowGenerateKubernetesResult,
   FlowGenerateOptions,
   Logger,
   Provider,
@@ -143,18 +143,16 @@ export class GooseRecipe implements Disposable {
         create: this.create.bind(this),
         execute: this.execute.bind(this),
         generate: this.generate.bind(this),
+        generateKubernetesYAML: this.deployKubernetes.bind(this),
       },
       lifecycle: {},
       status(): ProviderConnectionStatus {
         return 'unknown';
       },
-      deploy: {
-        kubernetes: this.deployKubernetes.bind(this),
-      },
     });
   }
 
-  protected async deployKubernetes(options: FlowDeployKubernetesOptions): Promise<FlowDeployKubernetesResult> {
+  protected async deployKubernetes(options: FlowGenerateKubernetesOptions): Promise<FlowGenerateKubernetesResult> {
     if (options.provider.id !== 'gemini') throw new Error('unsupported provider');
     const path = await this.getFlowPath(options.flowId);
 

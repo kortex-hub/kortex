@@ -65,7 +65,7 @@ flowCurrentLogInfo.subscribe(log => {
   logsTerminal?.write(log);
 });
 
-async function deployKubernetes(): Promise<void> {
+async function deployKubernetes(dryrun: boolean): Promise<void> {
   if (!selectedModel) return;
   if (!provider) return;
   if (!connection) return;
@@ -84,6 +84,7 @@ async function deployKubernetes(): Promise<void> {
     {
       hideSecrets: hideSecrets,
       namespace: 'default',
+      dryrun: dryrun,
     },
   );
   kubernetes = result;
@@ -123,9 +124,7 @@ async function onLogSelectedChange(taskId: string): Promise<void> {
   {#snippet tabsSnippet()}
     <Tab title="Summary" selected={isTabSelected($router.path, 'summary')} url={getTabUrl($router.path, 'summary')} />
     <Tab title="Source" selected={isTabSelected($router.path, 'source')} url={getTabUrl($router.path, 'source')} />
-    {#if connection?.deploy?.kubernetes}
-      <Tab title="Kube" selected={isTabSelected($router.path, 'kube')} url={getTabUrl($router.path, 'kube')} />
-    {/if}
+    <Tab title="Kube" selected={isTabSelected($router.path, 'kube')} url={getTabUrl($router.path, 'kube')} />
     {#if flowExecutions.length > 0 || isTabSelected($router.path, 'run') }
       <Tab title="Run ({flowExecutions.length})" selected={isTabSelected($router.path, 'run')} url={getTabUrl($router.path, 'run')} />
     {/if}
@@ -151,7 +150,8 @@ async function onLogSelectedChange(taskId: string): Promise<void> {
 
         <Checkbox bind:checked={hideSecrets} title="Hide Secrets">Hide Secret</Checkbox>
 
-        <Button onclick={deployKubernetes} disabled={!selectedModel}>Dryrun</Button>
+        <Button onclick={deployKubernetes.bind(undefined, true)} disabled={!selectedModel}>Dryrun</Button>
+        <Button onclick={deployKubernetes.bind(undefined, false)} disabled={!selectedModel}>Apply</Button>
       </div>
 
       {#if kubernetes}
