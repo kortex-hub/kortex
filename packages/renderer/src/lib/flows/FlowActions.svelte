@@ -11,13 +11,14 @@ import ListItemButtonIcon from '../ui/ListItemButtonIcon.svelte';
 
 interface Props {
   object: FlowInfo;
+  onLocalRun: (flowExecuteId: string) => void;
 }
 
-const { object }: Props = $props();
+const { object, onLocalRun }: Props = $props();
 
 let loading: boolean = $state(false);
 
-function navigateToCreateFlow(): void {
+function navigateToRunFlow(): void {
   handleNavigation({
     page: NavigationPage.FLOW_RUN,
     parameters: {
@@ -31,11 +32,11 @@ function navigateToCreateFlow(): void {
 async function executeFlow(): Promise<void> {
   // execute the flow
   const flow = { providerId: object.providerId, connectionName: object.connectionName, flowId: object.id };
-  window.flowExecute(flow).catch((error: unknown) => {
-    console.error('Error executing flow:', error);
-  });
+  const taskId: string = await window.flowExecute(flow);
+  onLocalRun(taskId);
+
   // redirect to the run tab
-  navigateToCreateFlow();
+  navigateToRunFlow();
 }
 
 async function deleteFlow(): Promise<void> {

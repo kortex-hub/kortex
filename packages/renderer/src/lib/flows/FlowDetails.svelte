@@ -41,6 +41,8 @@ let hideSecrets: boolean = $state(true);
 
 let flowContent: string | undefined = $state(undefined);
 
+let selectedFlowExecuteId: string | undefined = $state(undefined);
+
 const flowExecutions = $derived(
   $executeFlowsInfo.filter(
     flow =>
@@ -49,6 +51,12 @@ const flowExecutions = $derived(
       flow.flowInfo.id === flowId,
   ),
 );
+
+$effect(() => {
+  if (!selectedFlowExecuteId && flowExecutions.length > 0) {
+    selectedFlowExecuteId = flowExecutions[flowExecutions.length - 1].taskId;
+  }
+});
 
 async function deployKubernetes(dryrun: boolean): Promise<void> {
   if (!provider) return;
@@ -80,6 +88,10 @@ onMount(() => {
     })
     .catch(console.error);
 });
+
+function setSelectedFlowExecuteId(flowExecuteId: string): void {
+  selectedFlowExecuteId = flowExecuteId;
+}
 </script>
 
 <DetailsPage title={path}>
@@ -93,7 +105,9 @@ onMount(() => {
 
   {/snippet}
     {#snippet actionsSnippet()}
-      <FlowActions object={flowInfo} />
+      <FlowActions
+        object={flowInfo}
+        onLocalRun={setSelectedFlowExecuteId} />
     {/snippet}
   {#snippet contentSnippet()}
     <Route path="/summary" breadcrumb="Summary" navigationHint="tab">
@@ -119,8 +133,7 @@ onMount(() => {
       {/if}
     </Route>
     <Route path="/run" breadcrumb="Run ({flowExecutions.length})" navigationHint="tab">
-
-        <FlowDetailsRun {providerId} {connectionName} {flowId} {flowExecutions} />
+      <FlowDetailsRun {providerId} {connectionName} {flowId} {flowExecutions} bind:selectedFlowExecuteId={selectedFlowExecuteId}/>
     </Route>
 
   {/snippet}
