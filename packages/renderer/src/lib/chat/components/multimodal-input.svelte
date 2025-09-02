@@ -22,11 +22,13 @@ let {
   chatClient,
   class: c,
   selectedMCP,
+  mcpSelectorOpen = $bindable(),
 }: {
   attachments: Attachment[];
   chatClient: Chat;
   class?: string;
   selectedMCP: MCPRemoteServerInfo[];
+  mcpSelectorOpen: boolean;
 } = $props();
 
 let input = $state('');
@@ -145,7 +147,7 @@ $effect.pre(() => {
 
 <div class="relative flex w-full flex-col gap-4">
 	{#if mounted && chatClient.messages.length === 0 && attachments.length === 0 && uploadQueue.length === 0}
-		<SuggestedActions {chatClient} {selectedMCP} />
+		<SuggestedActions {chatClient} {selectedMCP} bind:mcpSelectorOpen={mcpSelectorOpen} />
 	{/if}
 
 	<input

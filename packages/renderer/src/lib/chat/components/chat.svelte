@@ -92,17 +92,18 @@ const chatClient = $derived(
 );
 
 let attachments = $state<Attachment[]>([]);
+let mcpSelectorOpen = $state(false);
 
 const hasModels = $derived(models && models.length > 0);
 </script>
 
 <div class="bg-background flex h-full min-w-0 flex-col">
   {#if hasModels}
-	  <ChatHeader {user} {chat} {readonly} models={models} bind:selectedModel={selectedModel} bind:selectedMCP={selectedMCP} />
+	  <ChatHeader {user} {mcpSelectorOpen} {chat} {readonly} models={models} bind:selectedModel={selectedModel} bind:selectedMCP={selectedMCP} />
   {/if}
   <div class="flex min-h-0 flex-1">
         {#if hasModels}
-            <div class="flex flex-col flex-3/4">
+            <div class="flex flex-col flex-3/4"> 
                 <Messages
                     {readonly}
                     loading={chatClient.status === 'streaming' || chatClient.status === 'submitted'}
@@ -112,7 +113,7 @@ const hasModels = $derived(models && models.length > 0);
                 />
                 <form class="bg-background mx-auto flex w-full gap-2 px-4 pb-4 md:max-w-3xl md:pb-6">
                     {#if !readonly}
-                        <MultimodalInput {attachments} {chatClient} {selectedMCP} class="flex-1" />
+                        <MultimodalInput {attachments} {chatClient} {selectedMCP} bind:mcpSelectorOpen={mcpSelectorOpen} class="flex-1" />
                     {/if}
                 </form>
             </div>
