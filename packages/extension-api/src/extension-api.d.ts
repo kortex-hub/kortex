@@ -414,10 +414,7 @@ declare module '@kortex-app/api' {
 
   export interface FlowGenerateKubernetesOptions {
     flowId: string;
-    provider: Provider;
-    connection: InferenceProviderConnection;
     hideSecrets: boolean;
-    model: InferenceModel;
     namespace: string;
   }
 
