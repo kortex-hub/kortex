@@ -310,6 +310,13 @@ export function initExposure(): void {
   );
 
   contextBridge.exposeInMainWorld(
+    'deleteFlow',
+    async (providerId: string, connectionName: string, flowId: string): Promise<string> => {
+      return ipcInvoke('flows:delete', providerId, connectionName, flowId);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
     'flowDispatchLog',
     async (providerId: string, connectionName: string, flowId: string, taskId: string): Promise<void> => {
       return ipcInvoke('flows:dispatchLog', providerId, connectionName, flowId, taskId);
