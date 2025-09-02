@@ -34,10 +34,6 @@ export enum ProviderConnectionType {
   KUBERNETES = 'kubernetes',
   VM = 'vm',
   INFERENCE = 'inference',
-  /**
-   * @deprecated
-   */
-  MCP = 'mcp',
   FLOW = 'flow',
 }
 
@@ -74,13 +70,6 @@ export interface ProviderVmConnectionInfo extends ProviderConnectionBase {
   connectionType: ProviderConnectionType.VM;
 }
 
-/**
- * @deprecated
- */
-export interface ProviderMCPConnectionInfo extends ProviderConnectionBase {
-  connectionType: ProviderConnectionType.MCP;
-}
-
 export interface ProviderFlowConnectionInfo extends ProviderConnectionBase {
   connectionType: ProviderConnectionType.FLOW;
 }
@@ -97,7 +86,6 @@ export type ProviderConnectionInfo =
   | ProviderKubernetesConnectionInfo
   | ProviderVmConnectionInfo
   | ProviderInferenceConnectionInfo
-  | ProviderMCPConnectionInfo
   | ProviderFlowConnectionInfo;
 
 export interface ProviderInfo {
@@ -111,10 +99,6 @@ export interface ProviderInfo {
   kubernetesConnections: ProviderKubernetesConnectionInfo[];
   vmConnections: ProviderVmConnectionInfo[];
   inferenceConnections: ProviderInferenceConnectionInfo[];
-  /**
-   * @deprecated
-   */
-  mcpConnections: ProviderMCPConnectionInfo[];
   flowConnections: ProviderFlowConnectionInfo[];
 
   status: ProviderStatus;
@@ -162,30 +146,6 @@ export interface ProviderInfo {
   inferenceProviderConnectionCreationDisplayName?: string;
   // optional creation button title (if defined)
   inferenceProviderConnectionCreationButtonTitle?: string;
-
-  /**
-   * MCP Provider connection
-   */
-  // can create provider connection from MCPProviderConnectionFactory params
-  /**
-   * @deprecated
-   */
-  mcpProviderConnectionCreation: boolean;
-  // can initialize provider connection from MCPProviderConnectionFactory params
-  /**
-   * @deprecated
-   */
-  mcpProviderConnectionInitialization: boolean;
-  // optional creation name (if defined)
-  /**
-   * @deprecated
-   */
-  mcpProviderConnectionCreationDisplayName?: string;
-  // optional creation button title (if defined)
-  /**
-   * @deprecated
-   */
-  mcpProviderConnectionCreationButtonTitle?: string;
 
   // other
   emptyConnectionMarkdownDescription?: string;

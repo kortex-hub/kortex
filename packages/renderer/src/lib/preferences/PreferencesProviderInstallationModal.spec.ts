@@ -63,12 +63,9 @@ const providerInfo: ProviderInfo = {
   extensionId: '',
   cleanupSupport: false,
   inferenceConnections: [],
-  mcpConnections: [],
   flowConnections: [],
   inferenceProviderConnectionCreation: false,
   inferenceProviderConnectionInitialization: false,
-  mcpProviderConnectionCreation: false,
-  mcpProviderConnectionInitialization: false,
 };
 
 const closeCallback = vi.fn();
