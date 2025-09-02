@@ -2,12 +2,12 @@
 import { type Chat } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
 import { onMount } from 'svelte';
-import type { SvelteSet } from 'svelte/reactivity';
 import { innerWidth } from 'svelte/reactivity/window';
 import { toast } from 'svelte-sonner';
 
 import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
 import { cn } from '/@/lib/chat/utils/shadcn';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import ArrowUpIcon from './icons/arrow-up.svelte';
 import PaperclipIcon from './icons/paperclip.svelte';
@@ -26,7 +26,7 @@ let {
   attachments: Attachment[];
   chatClient: Chat;
   class?: string;
-  selectedMCP: SvelteSet<string>;
+  selectedMCP: MCPRemoteServerInfo[];
 } = $props();
 
 let input = $state('');
