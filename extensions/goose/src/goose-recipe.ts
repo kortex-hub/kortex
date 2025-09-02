@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 
@@ -95,6 +95,7 @@ export class GooseRecipe implements Disposable {
     const name = parsed['name'].toLowerCase();
 
     const basePath = this.getBasePath();
+    await mkdir(basePath, { recursive: true });
     const fullPath = join(basePath, `${name}.yaml`);
     await writeFile(fullPath, content);
 
