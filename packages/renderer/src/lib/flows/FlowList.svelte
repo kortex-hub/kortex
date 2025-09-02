@@ -3,12 +3,12 @@ import { faPencil } from '@fortawesome/free-solid-svg-icons/faPencil';
 import { Button, NavPage, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 
 import FlowName from '/@/lib/flows/columns/FlowName.svelte';
-import EmptyFlowTable from '/@/lib/flows/components/EmptyFlowTable.svelte';
 import { handleNavigation } from '/@/navigation';
 import { flowsInfos } from '/@/stores/flows';
 import type { FlowInfo } from '/@api/flow-info';
 import { NavigationPage } from '/@api/navigation-page';
 
+import EmptyFlowScreen from './components/EmptyFlowScreen.svelte';
 import NoFlowProviders from './components/NoFlowProviders.svelte';
 import FlowActions from './FlowActions.svelte';
 
@@ -67,7 +67,7 @@ function retryCheck(): void {
       {#await hasInstalledFlowProviders then hasInstalledFlowProvidersC}
         {#if hasInstalledFlowProvidersC}
           {#if $flowsInfos.length === 0}
-            <EmptyFlowTable onclick={navigateToCreateFlow} />
+            <EmptyFlowScreen onclick={navigateToCreateFlow} />
           {:else}
             <Table
               kind="flows"
