@@ -27,6 +27,7 @@ test.each<KubeTemplateOptions & { testName: string }>([
   {
     testName: 'gemini',
     recipe: {
+      flowId: 'demo-flow-id',
       name: 'echo',
       content: `title: "Paris Explorer"
 name: "Paris Explorer"
