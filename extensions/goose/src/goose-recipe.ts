@@ -37,6 +37,16 @@ import type { GooseCLI } from './goose-cli';
 import { KubeTemplate } from './kube-template';
 import { RecipeTemplate } from './recipe-template';
 
+const gooseProviderMap = {
+  gemini: 'google',
+};
+
+function goose2KortexProvider(gooseprovider: string): string {
+  const entry = Object.entries(gooseProviderMap).find(([, v]) => v === gooseprovider);
+  if (!entry) throw new Error(`cannot find inference provider for goose provider ${gooseprovider}`);
+  return entry[0];
+}
+
 export class GooseRecipe implements Disposable {
   private gooseProvider: Provider | undefined = undefined;
   private readonly updateEmitter: EventEmitter<void> = new EventEmitter();
@@ -93,17 +103,28 @@ export class GooseRecipe implements Disposable {
     return Buffer.from(fullPath).toString('base64');
   }
 
+  private async getEnvironmentFromRecipe(flowPath: string): Promise<Record<string, string>> {
+    const content = await readFile(flowPath, 'utf-8');
+    const parsed = parse(content);
+    const gooseProvider = goose2KortexProvider(parsed['settings']['goose_provider']);
+    const gooseModel: string = parsed['settings']['goose_model'];
+    const connection = this.provider
+      .getInferenceConnections()
+      .find(c => c.providerId === gooseProvider && c.connection.models.some(m => m.label === gooseModel));
+    if (!connection) throw new Error(`cannot find connection for ${gooseProvider} ${gooseModel}`);
+    return {
+      GOOGLE_API_KEY: connection.connection.credentials()['gemini:tokens'] ?? 'API_TOKEN',
+    };
+  }
+
   protected async execute(flowId: string, logger: Logger): Promise<void> {
     // execute goose recipe using run
     const flowPath = await this.getFlowPath(flowId);
-    await this.gooseCLI.run(flowPath, logger, { path: this.getBasePath() });
+    const env = await this.getEnvironmentFromRecipe(flowPath);
+    await this.gooseCLI.run(flowPath, logger, { path: this.getBasePath(), env });
   }
 
   protected async generate(options: FlowGenerateOptions): Promise<string> {
-    const gooseProviderMap = {
-      gemini: 'google',
-    };
-
     if (!(options.model.providerId in gooseProviderMap)) {
       throw Error(`[goose-recipe:generate]: cannot find goose provider for ${options.model.providerId}`);
     }

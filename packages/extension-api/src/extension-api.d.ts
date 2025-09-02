@@ -619,6 +619,11 @@ declare module '@kortex-app/api' {
     models: Array<InferenceModel>;
   };
 
+  export interface ProviderInferenceConnection {
+    providerId: string;
+    connection: InferenceProviderConnection;
+  }
+
   export type ProviderConnection =
     | ContainerProviderConnection
     | KubernetesProviderConnection
@@ -1144,6 +1149,7 @@ declare module '@kortex-app/api' {
     export const onDidUnregisterContainerConnection: Event<UnregisterContainerConnectionEvent>;
     export const onDidRegisterContainerConnection: Event<RegisterContainerConnectionEvent>;
     export function getContainerConnections(): ProviderContainerConnection[];
+    export function getInferenceConnections(): ProviderInferenceConnection[];
     /**
      * It returns the lifecycle context for the provider connection.
      * If no context is found it throws an error
