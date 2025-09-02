@@ -29,7 +29,6 @@ export interface KubeTemplateOptions {
   };
   provider: {
     name: string;
-    model: string;
     credentials: {
       env: Array<{ key: string; value: string }>;
     };

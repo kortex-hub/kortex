@@ -25,7 +25,6 @@ import type {
   FlowGenerateKubernetesOptions,
   FlowGenerateKubernetesResult,
   FlowGenerateOptions,
-  InferenceProviderConnection,
   Logger,
   Provider,
   provider as ProviderAPI,
@@ -105,22 +104,9 @@ export class GooseRecipe implements Disposable {
     return Buffer.from(fullPath).toString('base64');
   }
 
-  private async getEnvironmentFromRecipe(flowPath: string): Promise<Record<string, string>> {
-    const content = await readFile(flowPath, 'utf-8');
-    const parsed = parse(content);
-    const kortexProvider = goose2KortexProvider(parsed['settings']['goose_provider']);
-    const gooseModel: string = parsed['settings']['goose_model'];
-    const connection = this.provider
-      .getInferenceConnections()
-      .find(c => c.providerId === kortexProvider && c.connection.models.some(m => m.label === gooseModel));
-    if (!connection) throw new Error(`cannot find connection for ${kortexProvider} ${gooseModel}`);
-    return this.getTokenForProvider({ providerId: kortexProvider, connection: connection.connection });
-  }
-
   protected async execute(flowId: string, logger: Logger): Promise<void> {
+    const { env, flowPath } = await this.getFlowInfos(flowId);
     // execute goose recipe using run
-    const flowPath = await this.getFlowPath(flowId);
-    const env = await this.getEnvironmentFromRecipe(flowPath);
     await this.gooseCLI.run(flowPath, logger, { path: this.getBasePath(), env });
   }
 
@@ -187,38 +173,53 @@ export class GooseRecipe implements Disposable {
       },
     });
   }
-
+  
   protected async delete(flowId: string): Promise<void> {
     const path = await this.getFlowPath(flowId);
     await unlink(path);
   }
-
-  private getTokenForProvider({
-    providerId,
-    connection,
-  }: {
+  
+  private async getFlowInfos(flowId: string): Promise<{
+    env: Record<string, string>;
     providerId: string;
-    connection: InferenceProviderConnection;
-  }): Record<string, string> {
-    switch (providerId) {
-      case 'gemini': {
-        const token = connection.credentials()['gemini:tokens'];
-        if (!token) {
-          throw new Error(`No token for provider ${providerId}`);
+    recipeName: string;
+    flowPath: string;
+    content: string;
+  }> {
+    const flowPath = await this.getFlowPath(flowId);
+
+    const content = await readFile(flowPath, 'utf-8');
+
+    const recipeName = basename(flowPath).split('.')[0];
+
+    const parsed = parse(content);
+
+    const providerId = goose2KortexProvider(parsed['settings']['goose_provider']);
+    const gooseModel: string = parsed['settings']['goose_model'];
+    const connection = this.provider
+      .getInferenceConnections()
+      .find(c => c.providerId === providerId && c.connection.models.some(m => m.label === gooseModel));
+
+    function getEnv(): Record<string, string> {
+      if (!connection) throw new Error(`cannot find connection for ${providerId} ${gooseModel}`);
+
+      switch (providerId) {
+        case 'gemini': {
+          const token = connection.connection.credentials()['gemini:tokens'];
+          if (!token) {
+            throw new Error(`No token for provider ${providerId}`);
+          }
+          return { GOOGLE_API_KEY: token };
         }
-        return { GOOGLE_API_KEY: token };
+        default:
+          throw new Error(`Unsupported provider ${providerId}`);
       }
-      default:
-        throw new Error(`Unsupported provider ${providerId}`);
     }
+    return { env: getEnv(), providerId, recipeName, flowPath, content };
   }
 
   protected async deployKubernetes(options: FlowGenerateKubernetesOptions): Promise<FlowGenerateKubernetesResult> {
-    const path = await this.getFlowPath(options.flowId);
-
-    const content = await readFile(path, 'utf-8');
-
-    const recipeName = basename(path).split('.')[0];
+    const { env, providerId, recipeName, content } = await this.getFlowInfos(options.flowId);
 
     const template = new KubeTemplate({
       kortex: {
@@ -229,12 +230,12 @@ export class GooseRecipe implements Disposable {
         content: content,
       },
       provider: {
-        name: options.provider.id,
-        model: options.model.label,
+        name: providerId,
         credentials: {
-          env: Object.entries(
-            this.getTokenForProvider({ providerId: options.provider.id, connection: options.connection }),
-          ).map(([key, token]) => ({ key, value: options.hideSecrets ? '*'.repeat(token.length) : token })),
+          env: Object.entries(env).map(([key, token]) => ({
+            key,
+            value: options.hideSecrets ? '*'.repeat(token.length) : token,
+          })),
         },
       },
       namespace: options.namespace,
