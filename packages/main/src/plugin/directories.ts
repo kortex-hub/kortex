@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-export interface DirectoryProvider {
+export interface Directories {
   getConfigurationDirectory(): string;
   getPluginsDirectory(): string;
   getPluginsScanDirectory(): string;
@@ -24,4 +24,5 @@ export interface DirectoryProvider {
   getContributionStorageDir(): string;
   getSafeStorageDirectory(): string;
   getDataDirectory(): string;
+  getChatPersistenceDirectory(): string;
 }

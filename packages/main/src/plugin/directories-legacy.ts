@@ -22,7 +22,7 @@ import * as path from 'node:path';
 
 import { injectable } from 'inversify';
 
-import type { DirectoryProvider } from './directory-provider.js';
+import type { Directories } from './directories.js';
 
 /**
  * Directory provider that uses the traditional/legacy directory structure
@@ -30,9 +30,9 @@ import type { DirectoryProvider } from './directory-provider.js';
  * Used for Windows, macOS, and Linux systems with existing configurations
  */
 @injectable()
-export class LegacyDirectories implements DirectoryProvider {
-  static readonly XDG_DATA_DIRECTORY = `.local${path.sep}share${path.sep}containers${path.sep}podman-desktop`;
-  static readonly PODMAN_DESKTOP_HOME_DIR = 'PODMAN_DESKTOP_HOME_DIR';
+export class LegacyDirectories implements Directories {
+  static readonly XDG_DATA_DIRECTORY = `.local${path.sep}share${path.sep}kortex`;
+  static readonly KORTEX_HOME_DIR = 'KORTEX_HOME_DIR';
 
   private readonly configurationDirectory: string;
   private readonly dataDirectory: string;
@@ -42,11 +42,12 @@ export class LegacyDirectories implements DirectoryProvider {
   private readonly contributionStorageDirectory: string;
   private readonly safeStorageDirectory: string;
   private readonly desktopAppHomeDir: string;
+  private readonly chatPersistenceDirectory: string;
 
   constructor() {
     // Check for custom directory override
     this.desktopAppHomeDir =
-      process.env[LegacyDirectories.PODMAN_DESKTOP_HOME_DIR] ??
+      process.env[LegacyDirectories.KORTEX_HOME_DIR] ??
       path.resolve(os.homedir(), LegacyDirectories.XDG_DATA_DIRECTORY);
 
     // Create the base directory if it doesn't exist
@@ -62,6 +63,7 @@ export class LegacyDirectories implements DirectoryProvider {
     this.extensionsStorageDirectory = path.resolve(this.desktopAppHomeDir, 'extensions-storage');
     this.contributionStorageDirectory = path.resolve(this.desktopAppHomeDir, 'contributions');
     this.safeStorageDirectory = path.resolve(this.desktopAppHomeDir, 'safe-storage');
+    this.chatPersistenceDirectory = path.resolve(this.desktopAppHomeDir, 'chat-persistence');
   }
 
   getConfigurationDirectory(): string {

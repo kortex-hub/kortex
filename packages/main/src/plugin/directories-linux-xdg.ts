@@ -21,14 +21,14 @@ import * as path from 'node:path';
 
 import { injectable } from 'inversify';
 
-import type { DirectoryProvider } from './directory-provider.js';
+import type { Directories } from './directories.js';
 
 /**
  * Directory provider that follows XDG Base Directory Specification for Linux
  * This implementation separates configuration and data directories according to XDG standards
  */
 @injectable()
-export class LinuxXDGDirectories implements DirectoryProvider {
+export class LinuxXDGDirectories implements Directories {
   private readonly configurationDirectory: string;
   private readonly dataDirectory: string;
   private readonly pluginsDirectory: string;
@@ -36,17 +36,18 @@ export class LinuxXDGDirectories implements DirectoryProvider {
   private readonly extensionsStorageDirectory: string;
   private readonly contributionStorageDirectory: string;
   private readonly safeStorageDirectory: string;
+  private readonly chatPersistenceDirectory: string;
 
   constructor() {
     // XDG_CONFIG_HOME: user-specific configuration files
     // biome-ignore lint/complexity/useLiteralKeys: XDG_CONFIG_HOME comes from an index signature
     const xdgConfigHome = process.env['XDG_CONFIG_HOME'] ?? path.resolve(os.homedir(), '.config');
-    this.configurationDirectory = path.resolve(xdgConfigHome, 'containers', 'podman-desktop');
+    this.configurationDirectory = path.resolve(xdgConfigHome, 'kortex');
 
     // XDG_DATA_HOME: user-specific data files (plugins, extensions data)
     // biome-ignore lint/complexity/useLiteralKeys: XDG_DATA_HOME comes from an index signature
     const xdgDataHome = process.env['XDG_DATA_HOME'] ?? path.resolve(os.homedir(), '.local', 'share');
-    this.dataDirectory = path.resolve(xdgDataHome, 'containers', 'podman-desktop');
+    this.dataDirectory = path.resolve(xdgDataHome, 'kortex');
 
     // All data-related directories go under dataDirectory
     this.pluginsDirectory = path.resolve(this.dataDirectory, 'plugins');
@@ -54,6 +55,7 @@ export class LinuxXDGDirectories implements DirectoryProvider {
     this.extensionsStorageDirectory = path.resolve(this.dataDirectory, 'extensions-storage');
     this.contributionStorageDirectory = path.resolve(this.dataDirectory, 'contributions');
     this.safeStorageDirectory = path.resolve(this.dataDirectory, 'safe-storage');
+    this.chatPersistenceDirectory = path.resolve(this.dataDirectory, 'chat-persistence');
   }
 
   getConfigurationDirectory(): string {
