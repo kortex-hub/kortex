@@ -1,7 +1,6 @@
 <script lang="ts">
 import type { UIMessage } from '@ai-sdk/svelte';
 import type { DynamicToolUIPart } from 'ai';
-import type { SvelteSet } from 'svelte/reactivity';
 import { fly } from 'svelte/transition';
 import { toast } from 'svelte-sonner';
 import { router } from 'tinro';
@@ -9,6 +8,7 @@ import { router } from 'tinro';
 import { cn } from '/@/lib/chat/utils/shadcn';
 import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
 import Markdown from '/@/lib/markdown/Markdown.svelte';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import PencilEditIcon from '../icons/pencil-edit.svelte';
 import PlusIcon from '../icons/plus.svelte';
@@ -32,7 +32,7 @@ let {
   readonly: boolean;
   loading: boolean;
   selectedModel?: ModelInfo;
-  selectedMCP: SvelteSet<string>;
+  selectedMCP: MCPRemoteServerInfo[];
   allowExportAsFlow: boolean;
 } = $props();
 

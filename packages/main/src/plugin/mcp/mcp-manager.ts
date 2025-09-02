@@ -71,9 +71,7 @@ export class MCPManager implements AsyncDisposable {
 
   #mcps: MCPRemoteServerInfo[] = [];
 
-  constructor(
-    @inject(ApiSenderType) private apiSender: ApiSenderType,
-  ) {}
+  constructor(@inject(ApiSenderType) private apiSender: ApiSenderType) {}
 
   /**
    * Cleanup all clients
@@ -83,30 +81,14 @@ export class MCPManager implements AsyncDisposable {
     await Promise.all(Array.from(this.#client.values().map(({ close }) => close())));
   }
 
-  protected getKey(internalProviderId: string, serverId: string, remoteId: number, connectionName: string): string {
-    return `${internalProviderId}:${serverId}:${remoteId}:${connectionName}`;
+  protected getKey(internalProviderId: string, serverId: string, remoteId: number): string {
+    return `${internalProviderId}:${serverId}:${remoteId}`;
   }
 
   public get(key: string): MCPRemoteServerInfo {
     const server = this.#mcps.find(({ id }) => id === key);
-    if(!server) throw new Error(`cannot find MCP server with id ${key}`);
+    if (!server) throw new Error(`cannot find MCP server with id ${key}`);
     return server;
-  }
-
-  public decomposeKey(raw: string): {
-    internalProviderId: string,
-    serverId: string,
-    remoteId: number,
-    connectionName: string,
-  } {
-    const [internalProviderId, serverId, remoteId, connectionName] = raw.split(':');
-    if(!internalProviderId || !serverId || !remoteId || !connectionName) throw new Error('invalid key');
-    return {
-      internalProviderId,
-      serverId,
-      remoteId: Number.parseInt(remoteId),
-      connectionName,
-    };
   }
 
   /**
@@ -142,7 +124,7 @@ export class MCPManager implements AsyncDisposable {
     transport: Transport,
     url?: string,
   ): Promise<void> {
-    const key = this.getKey(internalProviderId, serverId, remoteId, connectionName);
+    const key = this.getKey(internalProviderId, serverId, remoteId);
 
     // Wrap transport with delegate to record all exchanges
     const wrapped = new MCPTransportDelegate(transport, {
@@ -165,6 +147,7 @@ export class MCPManager implements AsyncDisposable {
 
     const mcpRemoteServerInfo: MCPRemoteServerInfo = {
       id: key,
+      infos: { internalProviderId, remoteId, serverId },
       name: connectionName,
       url: url ?? '',
     };

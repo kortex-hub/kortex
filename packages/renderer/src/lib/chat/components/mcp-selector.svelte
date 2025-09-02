@@ -1,10 +1,10 @@
 <script lang="ts">
 import { faToolbox } from '@fortawesome/free-solid-svg-icons/faToolbox';
-import { SvelteSet } from 'svelte/reactivity';
 import Fa from 'svelte-fa';
 
 import { cn } from '/@/lib/chat/utils/shadcn';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import CheckCircleFillIcon from './icons/check-circle-fill.svelte';
 import ChevronDownIcon from './icons/chevron-down.svelte';
@@ -18,24 +18,25 @@ import {
 } from './ui/dropdown-menu';
 
 let {
-  // selected under the form `${internalProviderId}:${connectionName}``
-  selected = $bindable(new SvelteSet()),
+  selected = $bindable(),
   class: className,
   disabled = false,
 }: {
-  selected: Set<string>;
+  selected: MCPRemoteServerInfo[];
   class?: string;
   disabled?: boolean;
 } = $props();
 
 let open = $state(false);
 
-function onSelect(key: string, event: Event): void {
+function onSelect(mcp: MCPRemoteServerInfo, event: Event): void {
   event.preventDefault(); // prevent dropdown to close itself
-  if (selected.has(key)) {
-    selected.delete(key);
+
+  const index = selected.findIndex(s => s.id === mcp.id);
+  if (index > -1) {
+    selected.splice(index, 1);
   } else {
-    selected.add(key);
+    selected.push(mcp);
   }
 }
 </script>
@@ -50,7 +51,7 @@ function onSelect(key: string, event: Event): void {
         class={cn('data-[state=open]:bg-accent data-[state=open]:text-accent-foreground w-fit md:h-[34px] md:px-2', className)}
       >
         <Fa icon={faToolbox} />
-        {selected.size} selected
+        {selected.length} selected
         <ChevronDownIcon />
       </Button>
     {/snippet}
@@ -67,9 +68,9 @@ function onSelect(key: string, event: Event): void {
       <DropdownMenuGroup>
         {#each $mcpRemoteServerInfos as mcpRemoteServerInfo (mcpRemoteServerInfo.id)}
           <DropdownMenuItem
-            onSelect={onSelect.bind(undefined, mcpRemoteServerInfo.id)}
+            onSelect={onSelect.bind(undefined, mcpRemoteServerInfo)}
             class="group/item flex flex-row items-center justify-between gap-4"
-            data-active={selected.has(mcpRemoteServerInfo.id)}
+            data-active={selected.find(s => s.id === mcpRemoteServerInfo.id)}
           >
             <div class="flex flex-col items-start gap-1">
               <div>{mcpRemoteServerInfo.name}</div>

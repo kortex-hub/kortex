@@ -325,7 +325,7 @@ export function initExposure(): void {
     async (
       providerId: string,
       connectionName: string,
-      options: Omit<containerDesktopAPI.FlowGenerateOptions, 'mcp'> & { mcp: string[] },
+      options: Omit<containerDesktopAPI.FlowGenerateOptions, 'mcp'> & { mcp: MCPRemoteServerInfo[] },
     ): Promise<string> => {
       return ipcInvoke('flows:generate', providerId, connectionName, options);
     },

@@ -3,7 +3,6 @@ import { Chat, type UIMessage } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
 import { Button } from '@podman-desktop/ui-svelte';
 import { untrack } from 'svelte';
-import { SvelteSet } from 'svelte/reactivity';
 import { toast } from 'svelte-sonner';
 import { router } from 'tinro';
 
@@ -11,6 +10,7 @@ import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
 import { getModels } from '/@/lib/models/models-utils';
 import { providerInfos } from '/@/stores/providers';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import type { Chat as DbChat, User } from '../../../../../main/src/chat/db/schema';
 import ChatHeader from './chat-header.svelte';
@@ -34,7 +34,7 @@ let {
 let models: Array<ModelInfo> = $derived(getModels($providerInfos));
 
 let selectedModel = $state<ModelInfo | undefined>(getFirstModel());
-let selectedMCP = new SvelteSet<string>();
+let selectedMCP = $state<MCPRemoteServerInfo[]>([]);
 
 function getFirstModel(): ModelInfo | undefined {
   return models && models.length > 0 ? models[0] : undefined;
@@ -58,7 +58,7 @@ const chatClient = $derived(
         return value;
       },
       getMCP: (): Array<string> => {
-        return Array.from($state.snapshot(selectedMCP).values());
+        return selectedMCP.map(m => m.id);
       },
     }),
     // This way, the client is only recreated when the ID changes, allowing us to fully manage messages

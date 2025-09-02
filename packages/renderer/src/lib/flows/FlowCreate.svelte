@@ -3,7 +3,6 @@ import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { generate as generateWords } from 'random-words';
-import { SvelteSet } from 'svelte/reactivity';
 
 import MCPSelector from '/@/lib/chat/components/mcp-selector.svelte';
 import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
@@ -13,13 +12,14 @@ import { getModels } from '/@/lib/models/models-utils';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 import { handleNavigation } from '/@/navigation';
 import { providerInfos } from '/@/stores/providers';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import { NavigationPage } from '/@api/navigation-page';
 
 import type { ModelInfo } from '../chat/components/model-info';
 import FlowConnectionSelector from './components/flow-connection-selector.svelte';
 import NoFlowProviders from './components/NoFlowProviders.svelte';
 
-let selectedMCP: Set<string> = $state<Set<string>>($flowCreationStore?.mcp ?? new SvelteSet());
+let selectedMCP = $state<MCPRemoteServerInfo[]>($flowCreationStore?.mcp ?? []);
 let models: Array<ModelInfo> = $derived(getModels($providerInfos));
 let selectedModel = $state<ModelInfo | undefined>($flowCreationStore?.model);
 
@@ -68,7 +68,7 @@ const formValidContent = $derived(
         },
         name,
         description,
-        mcp: Array.from(selectedMCP.values()),
+        mcp: $state.snapshot(selectedMCP),
         prompt,
         instruction,
       }
