@@ -104,8 +104,8 @@ export class GooseRecipe implements Disposable {
   }
 
   protected async execute(flowId: string, logger: Logger): Promise<void> {
+    const { env, flowPath } = await this.getFlowInfos(flowId);
     // execute goose recipe using run
-    const { env, flowPath } = await this.getTokenForRecipe(flowId);
     await this.gooseCLI.run(flowPath, logger, { path: this.getBasePath(), env });
   }
 
@@ -172,7 +172,7 @@ export class GooseRecipe implements Disposable {
     });
   }
 
-  private async getTokenForRecipe(flowId: string): Promise<{
+  private async getFlowInfos(flowId: string): Promise<{
     env: Record<string, string>;
     providerId: string;
     recipeName: string;
@@ -212,7 +212,7 @@ export class GooseRecipe implements Disposable {
   }
 
   protected async deployKubernetes(options: FlowGenerateKubernetesOptions): Promise<FlowGenerateKubernetesResult> {
-    const { env, providerId, recipeName, content } = await this.getTokenForRecipe(options.flowId);
+    const { env, providerId, recipeName, content } = await this.getFlowInfos(options.flowId);
 
     const template = new KubeTemplate({
       kortex: {
