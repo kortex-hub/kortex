@@ -25,6 +25,7 @@ import type {
   FlowGenerateKubernetesOptions,
   FlowGenerateKubernetesResult,
   FlowGenerateOptions,
+  InferenceProviderConnection,
   Logger,
   Provider,
   provider as ProviderAPI,
@@ -112,10 +113,7 @@ export class GooseRecipe implements Disposable {
       .getInferenceConnections()
       .find(c => c.providerId === kortexProvider && c.connection.models.some(m => m.label === gooseModel));
     if (!connection) throw new Error(`cannot find connection for ${kortexProvider} ${gooseModel}`);
-    this.checkSupportedProvider(kortexProvider);
-    return {
-      GOOGLE_API_KEY: connection.connection.credentials()['gemini:tokens'] ?? 'API_TOKEN',
-    };
+    return this.getTokenForProvider({ providerId: kortexProvider, connection: connection.connection });
   }
 
   protected async execute(flowId: string, logger: Logger): Promise<void> {
@@ -187,24 +185,32 @@ export class GooseRecipe implements Disposable {
     });
   }
 
-  private checkSupportedProvider(providerId: string): void {
+  private getTokenForProvider({
+    providerId,
+    connection,
+  }: {
+    providerId: string;
+    connection: InferenceProviderConnection;
+  }): Record<string, string> {
     switch (providerId) {
-      case 'gemini':
-        return;
+      case 'gemini': {
+        const token = connection.credentials()['gemini:tokens'];
+        if (!token) {
+          throw new Error(`No token for provider ${providerId}`);
+        }
+        return { GOOGLE_API_KEY: token };
+      }
       default:
         throw new Error(`Unsupported provider ${providerId}`);
     }
   }
 
   protected async deployKubernetes(options: FlowGenerateKubernetesOptions): Promise<FlowGenerateKubernetesResult> {
-    this.checkSupportedProvider(options.provider.id);
     const path = await this.getFlowPath(options.flowId);
 
     const content = await readFile(path, 'utf-8');
 
     const recipeName = basename(path).split('.')[0];
-
-    const token = options.connection.credentials()['gemini:tokens'] ?? 'API_TOKEN';
 
     const template = new KubeTemplate({
       kortex: {
@@ -218,12 +224,9 @@ export class GooseRecipe implements Disposable {
         name: options.provider.id,
         model: options.model.label,
         credentials: {
-          env: [
-            {
-              key: 'GOOGLE_API_KEY',
-              value: options.hideSecrets ? '*'.repeat(token.length) : token,
-            },
-          ],
+          env: Object.entries(
+            this.getTokenForProvider({ providerId: options.provider.id, connection: options.connection }),
+          ).map(([key, token]) => ({ key, value: options.hideSecrets ? '*'.repeat(token.length) : token })),
         },
       },
       namespace: options.namespace,
