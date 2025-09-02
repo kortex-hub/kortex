@@ -8,6 +8,7 @@ import { flowsInfos } from '/@/stores/flows';
 import type { FlowInfo } from '/@api/flow-info';
 import { NavigationPage } from '/@api/navigation-page';
 
+import EmptyFlowScreen from './components/EmptyFlowScreen.svelte';
 import NoFlowProviders from './components/NoFlowProviders.svelte';
 import FlowActions from './FlowActions.svelte';
 
@@ -65,14 +66,18 @@ function retryCheck(): void {
     <div class="w-full flex justify-center">
       {#await hasInstalledFlowProviders then hasInstalledFlowProvidersC}
         {#if hasInstalledFlowProvidersC}
-          <Table
-            kind="flows"
-            data={$flowsInfos.map((flow) => ({ ...flow, selected: false, name: flow.path }))}
-            columns={columns}
-            row={row}
-            defaultSortColumn="Path"
-            key={key}
-          />
+          {#if $flowsInfos.length === 0}
+            <EmptyFlowScreen onclick={navigateToCreateFlow} />
+          {:else}
+            <Table
+              kind="flows"
+              data={$flowsInfos.map((flow) => ({ ...flow, selected: false, name: flow.path }))}
+              columns={columns}
+              row={row}
+              defaultSortColumn="Path"
+              key={key}
+            />
+          {/if}
         {:else}
           <NoFlowProviders {retryCheck} />
         {/if}
