@@ -9,24 +9,26 @@ import type { FlowExecuteInfo } from '/@api/flow-execute-info';
 
 import TerminalWindow from '../ui/TerminalWindow.svelte';
 
-let dropDownFlowId = $state('');
 let logsTerminal: Terminal | undefined;
 
 interface Props {
-  providerId: string;
-  connectionName: string;
-  flowId: string;
-  flowExecutions: FlowExecuteInfo[];
+  readonly providerId: string;
+  readonly connectionName: string;
+  readonly flowId: string;
+  readonly flowExecutions: FlowExecuteInfo[];
+  readonly selectedFlowExecuteId: string | undefined;
 }
 
-let { providerId, connectionName, flowId, flowExecutions }: Props = $props();
+let { providerId, connectionName, flowId, flowExecutions, selectedFlowExecuteId }: Props = $props();
 
-let latest = $derived(flowExecutions.length > 0 ? flowExecutions[flowExecutions.length - 1] : undefined);
+// keep track of the current flow execute id
+let currentFlowExecuteId: string | undefined = $state(undefined);
 
 $effect(() => {
-  if (latest && !dropDownFlowId) {
-    dropDownFlowId = latest.taskId;
-    onLogSelectedChange(dropDownFlowId).catch(console.error);
+  if (selectedFlowExecuteId && currentFlowExecuteId !== selectedFlowExecuteId) {
+    currentFlowExecuteId = selectedFlowExecuteId;
+
+    onLogSelectedChange(selectedFlowExecuteId).catch(console.error);
   }
 });
 
@@ -48,25 +50,23 @@ onDestroy(() => {
 });
 
 async function onLogSelectedChange(taskId: string): Promise<void> {
-  if (taskId === dropDownFlowId) {
-    return; // do not change when selecting current
-  }
-
-  dropDownFlowId = taskId;
   logsTerminal?.clear();
   await window.flowDispatchLog(providerId, connectionName, flowId, taskId);
 }
 </script>
 
 <div class="h-full w-full flex flex-col gap-x-2 items-center">
-  <Dropdown
-    class="text-sm"
-    value={dropDownFlowId}
-    onChange={onLogSelectedChange}
-    options={flowExecutions.map(flowExecution => ({
+  <div class="flex flex-row">
+    <Dropdown
+      class="text-sm"
+      disabled={flowExecutions.length === 0}
+      value={selectedFlowExecuteId}
+      onChange={onLogSelectedChange}
+      options={flowExecutions.map(flowExecution => ({
       value: flowExecution.taskId,
       label: flowExecution.taskId,
     }))}>
-  </Dropdown>
+    </Dropdown>
+  </div>
   <TerminalWindow on:init={onTerminalInit} class="h-full w-full" bind:terminal={logsTerminal} convertEol disableStdIn />
 </div>
