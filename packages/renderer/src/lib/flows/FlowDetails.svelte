@@ -34,6 +34,7 @@ const clusterReachable: boolean = $derived(
     $kubernetesCurrentContextState?.reachable,
 );
 
+let hideSecretsKubernetesYAML = $state(true);
 let loading: boolean = $state(false);
 
 let provider = $derived($providerInfos.find(provider => provider.id === providerId));
@@ -70,7 +71,7 @@ $effect(() => {
   }
 });
 
-async function refreshKubernetes(hideSecrets: boolean): Promise<void> {
+async function refreshKubernetes(checked: boolean): Promise<void> {
   if (!provider) return;
   if (!connection) return;
 
@@ -81,7 +82,7 @@ async function refreshKubernetes(hideSecrets: boolean): Promise<void> {
       connectionName: connection.name,
     },
     {
-      hideSecrets: hideSecrets,
+      hideSecrets: checked,
       namespace: 'default',
       dryrun: true,
     },
@@ -165,7 +166,7 @@ function setSelectedFlowExecuteId(flowExecuteId: string): void {
       </Route>
       <Route path="/kubernetes" breadcrumb="Kube" navigationHint="tab">
         <div class="flex flex-row px-4 items-center justify-between">
-          <Checkbox onclick={refreshKubernetes} title="Hide Secrets">Hide Secret</Checkbox>
+          <Checkbox bind:checked={hideSecretsKubernetesYAML} onclick={refreshKubernetes} title="Hide Secrets">Hide Secret</Checkbox>
           <div class="flex flex-row gap-x-2">
             <KubernetesCurrentContextConnectionBadge />
             <Button
