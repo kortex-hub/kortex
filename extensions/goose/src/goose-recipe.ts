@@ -106,12 +106,13 @@ export class GooseRecipe implements Disposable {
   private async getEnvironmentFromRecipe(flowPath: string): Promise<Record<string, string>> {
     const content = await readFile(flowPath, 'utf-8');
     const parsed = parse(content);
-    const gooseProvider = goose2KortexProvider(parsed['settings']['goose_provider']);
+    const kortexProvider = goose2KortexProvider(parsed['settings']['goose_provider']);
     const gooseModel: string = parsed['settings']['goose_model'];
     const connection = this.provider
       .getInferenceConnections()
-      .find(c => c.providerId === gooseProvider && c.connection.models.some(m => m.label === gooseModel));
-    if (!connection) throw new Error(`cannot find connection for ${gooseProvider} ${gooseModel}`);
+      .find(c => c.providerId === kortexProvider && c.connection.models.some(m => m.label === gooseModel));
+    if (!connection) throw new Error(`cannot find connection for ${kortexProvider} ${gooseModel}`);
+    this.checkSupportedProvider(kortexProvider);
     return {
       GOOGLE_API_KEY: connection.connection.credentials()['gemini:tokens'] ?? 'API_TOKEN',
     };
@@ -186,8 +187,17 @@ export class GooseRecipe implements Disposable {
     });
   }
 
+  private checkSupportedProvider(providerId: string): void {
+    switch (providerId) {
+      case 'gemini':
+        return;
+      default:
+        throw new Error(`Unsupported provider ${providerId}`);
+    }
+  }
+
   protected async deployKubernetes(options: FlowGenerateKubernetesOptions): Promise<FlowGenerateKubernetesResult> {
-    if (options.provider.id !== 'gemini') throw new Error('unsupported provider');
+    this.checkSupportedProvider(options.provider.id);
     const path = await this.getFlowPath(options.flowId);
 
     const content = await readFile(path, 'utf-8');
