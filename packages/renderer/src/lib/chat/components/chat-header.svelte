@@ -72,7 +72,7 @@ const noMcps = $derived($mcpRemoteServerInfos.length === 0);
             bind:value={selectedModel}
         />
         <div class="flex flex-col gap-1">
-            <MCPSelector disabled={noMcps} open={mcpSelectorOpen} bind:selected={selectedMCP}/>
+            <MCPSelector disabled={noMcps} bind:open={mcpSelectorOpen} bind:selected={selectedMCP}/>
             {#if noMcps}
                 <div class="flex items-center gap-1 px-1 text-xs text-muted-foreground">
                     <Button 
