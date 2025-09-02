@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { FlowInfo } from './flow-info';
+import type { FlowInfo } from './flow-info.ts';
 
 export interface FlowExecuteInfo {
   taskId: string;
