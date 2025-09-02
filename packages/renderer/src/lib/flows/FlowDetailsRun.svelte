@@ -1,7 +1,7 @@
 <script lang="ts">
 import { Dropdown } from '@podman-desktop/ui-svelte';
 import type { Terminal } from '@xterm/xterm';
-import { onDestroy, onMount } from 'svelte';
+import { onDestroy } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';
 
 import { flowCurrentLogInfo } from '/@/stores/flow-current-log';
@@ -12,22 +12,23 @@ import TerminalWindow from '../ui/TerminalWindow.svelte';
 let logsTerminal: Terminal | undefined;
 
 interface Props {
-  providerId: string;
-  connectionName: string;
-  flowId: string;
-  flowExecutions: FlowExecuteInfo[];
-  selectedFlowExecuteId: string | undefined;
+  readonly providerId: string;
+  readonly connectionName: string;
+  readonly flowId: string;
+  readonly flowExecutions: FlowExecuteInfo[];
+  readonly selectedFlowExecuteId: string | undefined;
 }
 
-let { providerId, connectionName, flowId, flowExecutions, selectedFlowExecuteId = $bindable() }: Props = $props();
+let { providerId, connectionName, flowId, flowExecutions, selectedFlowExecuteId }: Props = $props();
 
-let latest = $derived(flowExecutions.length > 0 ? flowExecutions[flowExecutions.length - 1] : undefined);
+// keep track of the current flow execute id
+let currentFlowExecuteId: string | undefined = $state(undefined);
 
 $effect(() => {
-  if (latest && !selectedFlowExecuteId) {
-    selectedFlowExecuteId = latest.taskId;
+  if (selectedFlowExecuteId && currentFlowExecuteId !== selectedFlowExecuteId) {
+    currentFlowExecuteId = selectedFlowExecuteId;
+
     onLogSelectedChange(selectedFlowExecuteId).catch(console.error);
-    window.flowDispatchLog(providerId, connectionName, flowId, selectedFlowExecuteId).catch(console.error);
   }
 });
 
@@ -41,12 +42,6 @@ function onTerminalInit(): void {
   });
 }
 
-onMount(() => {
-  if (latest) {
-    window.flowDispatchLog(providerId, connectionName, flowId, latest?.taskId).catch(console.error);
-  }
-});
-
 onDestroy(() => {
   flowExecuteUnsubscriber?.();
   flowCurrentLogUnsubscriber?.();
@@ -55,11 +50,6 @@ onDestroy(() => {
 });
 
 async function onLogSelectedChange(taskId: string): Promise<void> {
-  if (taskId === selectedFlowExecuteId) {
-    return; // do not change when selecting current
-  }
-
-  selectedFlowExecuteId = taskId;
   logsTerminal?.clear();
   await window.flowDispatchLog(providerId, connectionName, flowId, taskId);
 }
@@ -69,6 +59,7 @@ async function onLogSelectedChange(taskId: string): Promise<void> {
   <div class="flex flex-row">
     <Dropdown
       class="text-sm"
+      disabled={flowExecutions.length === 0}
       value={selectedFlowExecuteId}
       onChange={onLogSelectedChange}
       options={flowExecutions.map(flowExecution => ({

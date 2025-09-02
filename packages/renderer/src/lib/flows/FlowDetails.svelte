@@ -52,6 +52,12 @@ const flowExecutions = $derived(
   ),
 );
 
+$effect(() => {
+  if (!selectedFlowExecuteId && flowExecutions.length > 0) {
+    selectedFlowExecuteId = flowExecutions[flowExecutions.length - 1].taskId;
+  }
+});
+
 async function deployKubernetes(dryrun: boolean): Promise<void> {
   if (!provider) return;
   if (!connection) return;
@@ -127,9 +133,7 @@ function onLocalRun(flowExecuteId: string): void {
       {/if}
     </Route>
     <Route path="/run" breadcrumb="Run ({flowExecutions.length})" navigationHint="tab">
-      {#if flowExecutions.length > 0}
-        <FlowDetailsRun {providerId} {connectionName} {flowId} {flowExecutions} bind:selectedFlowExecuteId={selectedFlowExecuteId}/>
-      {/if}
+      <FlowDetailsRun {providerId} {connectionName} {flowId} {flowExecutions} bind:selectedFlowExecuteId={selectedFlowExecuteId}/>
     </Route>
 
   {/snippet}
