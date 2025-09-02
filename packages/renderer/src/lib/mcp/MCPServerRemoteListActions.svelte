@@ -8,7 +8,8 @@ import ListItemButtonIcon from '../ui/ListItemButtonIcon.svelte';
 export let object: MCPRemoteServerInfo;
 
 async function removeMcp(): Promise<void> {
-  await window.removeMcpRemoteServer(object.id);
+  const options = object.infos;
+  await window.removeMcpRemoteServer(object.id, options);
 }
 </script>
 
