@@ -23,6 +23,7 @@ export interface RecipeTemplateOptions {
   recipe: {
     title: string;
     name: string;
+    description: string;
     prompt: string;
     instructions: string;
     extensions: Array<{
