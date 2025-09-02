@@ -33,18 +33,8 @@ let {
 
 let models: Array<ModelInfo> = $derived(getModels($providerInfos));
 
-let selectedModel = $state<ModelInfo | undefined>(getFirstModel());
+let selectedModel = $state<ModelInfo | undefined>();
 let selectedMCP = $state<MCPRemoteServerInfo[]>([]);
-
-function getFirstModel(): ModelInfo | undefined {
-  return models && models.length > 0 ? models[0] : undefined;
-}
-
-$effect(() => {
-  if (!selectedModel && models && models.length > 0) {
-    selectedModel = getFirstModel();
-  }
-});
 
 const chatHistory = ChatHistory.fromContext();
 
