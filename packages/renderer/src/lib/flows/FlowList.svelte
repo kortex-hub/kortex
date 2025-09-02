@@ -3,6 +3,7 @@ import { faPencil } from '@fortawesome/free-solid-svg-icons/faPencil';
 import { Button, NavPage, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 
 import FlowName from '/@/lib/flows/columns/FlowName.svelte';
+import EmptyFlowTable from '/@/lib/flows/components/EmptyFlowTable.svelte';
 import { handleNavigation } from '/@/navigation';
 import { flowsInfos } from '/@/stores/flows';
 import type { FlowInfo } from '/@api/flow-info';
@@ -65,14 +66,18 @@ function retryCheck(): void {
     <div class="w-full flex justify-center">
       {#await hasInstalledFlowProviders then hasInstalledFlowProvidersC}
         {#if hasInstalledFlowProvidersC}
-          <Table
-            kind="flows"
-            data={$flowsInfos.map((flow) => ({ ...flow, selected: false, name: flow.path }))}
-            columns={columns}
-            row={row}
-            defaultSortColumn="Path"
-            key={key}
-          />
+          {#if $flowsInfos.length === 0}
+            <EmptyFlowTable onclick={navigateToCreateFlow} />
+          {:else}
+            <Table
+              kind="flows"
+              data={$flowsInfos.map((flow) => ({ ...flow, selected: false, name: flow.path }))}
+              columns={columns}
+              row={row}
+              defaultSortColumn="Path"
+              key={key}
+            />
+          {/if}
         {:else}
           <NoFlowProviders {retryCheck} />
         {/if}
