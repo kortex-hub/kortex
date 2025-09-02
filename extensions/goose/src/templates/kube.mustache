@@ -5,7 +5,8 @@ metadata:
   labels:
     app: goose
   annotations:
-    kortex-hub/version: {{ kortex.version }}
+    {{& annotations.version }}: {{ kortex.version }}
+    {{& annotations.flowId }}: {{ recipe.flowId }}
   namespace: {{ namespace }}
 stringData:
   {{#provider.credentials.env}}
@@ -19,7 +20,8 @@ metadata:
   labels:
     app: goose
   annotations:
-    kortex-hub/version: {{ kortex.version }}
+    {{& annotations.version }}: {{ kortex.version }}
+    {{& annotations.flowId }}: {{ recipe.flowId }}
   namespace: {{ namespace }}
 spec:
   template:
@@ -50,7 +52,8 @@ metadata:
   labels:
     app: goose
   annotations:
-    kortex-hub/version: {{ kortex.version }}
+    {{& annotations.version }}: {{ kortex.version }}
+    {{& annotations.flowId }}: {{ recipe.flowId }}
   namespace: {{ namespace }}
 data:
   recipe.yaml: |

@@ -219,6 +219,7 @@ export class GooseRecipe implements Disposable {
         version: this.kortexVersion,
       },
       recipe: {
+        flowId: options.flowId,
         name: recipeName,
         content: content,
       },

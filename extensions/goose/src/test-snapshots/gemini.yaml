@@ -6,6 +6,7 @@ metadata:
     app: goose
   annotations:
     kortex-hub/version: 1.0.0
+    kortex-hub/flow-id: demo-flow-id
   namespace: default
 stringData:
     GOOGLE_API_KEY: dummy
@@ -18,6 +19,7 @@ metadata:
     app: goose
   annotations:
     kortex-hub/version: 1.0.0
+    kortex-hub/flow-id: demo-flow-id
   namespace: default
 spec:
   template:
@@ -29,7 +31,7 @@ spec:
           args: ['run', '--recipe', '/home/goose/recipe.yaml']
           envFrom:
             - secretRef:
-                name: goose-credentials
+                name: goose-google-credentials
           volumeMounts:
             - name: goose-recipe-volume
               mountPath: /home/goose/recipe.yaml
@@ -49,6 +51,7 @@ metadata:
     app: goose
   annotations:
     kortex-hub/version: 1.0.0
+    kortex-hub/flow-id: demo-flow-id
   namespace: default
 data:
   recipe.yaml: |

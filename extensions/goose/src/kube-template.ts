@@ -24,6 +24,7 @@ export interface KubeTemplateOptions {
     version: string;
   };
   recipe: {
+    flowId: string;
     name: string;
     content: string;
   };
@@ -37,7 +38,11 @@ export interface KubeTemplateOptions {
   namespace: string;
 }
 
+// https://github.com/packit/ai-workflows/tree/main/goose-container
 export const GOOSE_IMAGE = 'quay.io/jotnar/goose:latest';
+
+export const KORTEX_VERSION_ANNOTATION = 'kortex-hub/version';
+export const KORTEX_FLOW_ID_ANNOTATION = 'kortex-hub/flow-id';
 
 export class KubeTemplate {
   constructor(private readonly options: KubeTemplateOptions) {}
@@ -48,6 +53,11 @@ export class KubeTemplate {
       recipe: {
         ...this.options.recipe,
         content: this.options.recipe.content.split('\n'),
+      },
+      // annotations KEYS
+      annotations: {
+        version: KORTEX_VERSION_ANNOTATION,
+        flowId: KORTEX_FLOW_ID_ANNOTATION,
       },
       container: GOOSE_IMAGE,
     };
