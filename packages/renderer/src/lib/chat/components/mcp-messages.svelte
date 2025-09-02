@@ -35,7 +35,7 @@ function showMcp(): void {
 </script>
 
 {#if open}
-<div class="hidden md:flex md:flex-col md:w-96 md:min-w-96 border-l bg-background/50 h-full">
+<div class="hidden lg:flex lg:flex-col lg:w-96 lg:min-w-96 border-l bg-background/50 h-full">
   <div class="flex items-center justify-between gap-2 px-3 py-2 border-b">
     <div class="flex items-center gap-2">
       <MCPIcon size={16} />
