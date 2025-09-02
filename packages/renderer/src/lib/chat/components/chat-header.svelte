@@ -25,6 +25,7 @@ let {
   selectedModel = $bindable<ModelInfo | undefined>(),
   // selected under the form `${internalProviderId}:${connectionName}``
   selectedMCP = $bindable(),
+  mcpSelectorOpen = $bindable(),
 }: {
   user: User | undefined;
   chat: Chat | undefined;
@@ -32,6 +33,7 @@ let {
   selectedModel: ModelInfo | undefined;
   models: Array<ModelInfo>;
   selectedMCP: MCPRemoteServerInfo[];
+  mcpSelectorOpen: boolean;
 } = $props();
 
 const sidebar = useSidebar();
@@ -70,7 +72,7 @@ const noMcps = $derived($mcpRemoteServerInfos.length === 0);
             bind:value={selectedModel}
         />
         <div class="flex flex-col gap-1">
-            <MCPSelector disabled={noMcps} bind:selected={selectedMCP}/>
+            <MCPSelector disabled={noMcps} open={mcpSelectorOpen} bind:selected={selectedMCP}/>
             {#if noMcps}
                 <div class="flex items-center gap-1 px-1 text-xs text-muted-foreground">
                     <Button 

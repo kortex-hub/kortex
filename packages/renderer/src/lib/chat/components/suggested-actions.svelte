@@ -11,9 +11,11 @@ import { Button } from './ui/button';
 let {
   chatClient,
   selectedMCP,
+  mcpSelectorOpen = $bindable(),
 }: {
   chatClient: Chat;
   selectedMCP: MCPRemoteServerInfo[];
+  mcpSelectorOpen: boolean;
 } = $props();
 
 const suggestedActions = [
@@ -70,7 +72,9 @@ const suggestedActions = [
 
 
 					if (mcpsToEnable?.length) {
-    					toast.error(`You need to enable the following MCP first: ${mcpsToEnable.join(', ')}`);
+              mcpSelectorOpen = true;
+
+    					toast.error(`You need to select the following MCP first: ${mcpsToEnable.join(', ')}`);
 						return;
 					}
 

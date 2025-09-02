@@ -17,17 +17,14 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 
-let {
-  selected = $bindable(),
-  class: className,
-  disabled = false,
-}: {
+interface Props {
   selected: MCPRemoteServerInfo[];
   class?: string;
   disabled?: boolean;
-} = $props();
+  open?: boolean;
+}
 
-let open = $state(false);
+let { selected = $bindable(), class: className, disabled = false, open = $bindable(false) }: Props = $props();
 
 function onSelect(mcp: MCPRemoteServerInfo, event: Event): void {
   event.preventDefault(); // prevent dropdown to close itself
