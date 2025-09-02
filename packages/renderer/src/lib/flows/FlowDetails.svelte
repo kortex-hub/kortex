@@ -50,7 +50,10 @@ let flowContent: string | undefined = $state(undefined);
 
 const flowExecutions = $derived(
   $executeFlowsInfo.filter(
-    flow => flow.flowInfo.connectionName === connectionName && flow.flowInfo.providerId === providerId,
+    flow =>
+      flow.flowInfo.connectionName === connectionName &&
+      flow.flowInfo.providerId === providerId &&
+      flow.flowInfo.id === flowId,
   ),
 );
 

@@ -5,7 +5,6 @@ import { onDestroy } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';
 
 import { flowCurrentLogInfo } from '/@/stores/flow-current-log';
-import { executeFlowsInfo } from '/@/stores/flows-execute';
 import type { FlowExecuteInfo } from '/@api/flow-execute-info';
 
 import TerminalWindow from '../ui/TerminalWindow.svelte';
@@ -22,12 +21,7 @@ interface Props {
 
 let { providerId, connectionName, flowId, flowExecutions }: Props = $props();
 
-let executeInfos: Array<FlowExecuteInfo> = $derived(
-  $executeFlowsInfo.filter(
-    flow => flow.flowInfo.connectionName === connectionName && flow.flowInfo.providerId === providerId,
-  ),
-);
-let latest = $derived(executeInfos.length > 0 ? executeInfos[executeInfos.length - 1] : undefined);
+let latest = $derived(flowExecutions.length > 0 ? flowExecutions[flowExecutions.length - 1] : undefined);
 
 $effect(() => {
   if (latest && !dropDownFlowId) {
