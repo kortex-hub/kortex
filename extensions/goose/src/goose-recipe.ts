@@ -132,6 +132,7 @@ export class GooseRecipe implements Disposable {
     return new RecipeTemplate({
       recipe: {
         name: options.name,
+        description: options.description,
         title: options.name,
         prompt: options.prompt,
         instructions: options.instruction,
