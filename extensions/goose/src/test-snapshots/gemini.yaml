@@ -7,7 +7,6 @@ metadata:
   annotations:
     kortex-hub/version: 1.0.0
     kortex-hub/flow-id: demo-flow-id
-  namespace: default
 stringData:
     GOOGLE_API_KEY: dummy
 ---
@@ -20,7 +19,6 @@ metadata:
   annotations:
     kortex-hub/version: 1.0.0
     kortex-hub/flow-id: demo-flow-id
-  namespace: default
 spec:
   template:
     spec:
@@ -52,18 +50,17 @@ metadata:
   annotations:
     kortex-hub/version: 1.0.0
     kortex-hub/flow-id: demo-flow-id
-  namespace: default
 data:
   recipe.yaml: |
     title: "Paris Explorer"
     name: "Paris Explorer"
     description: "Paris Explorer"
-    
+
     # Required for headless mode
     prompt: "Plan a 7 days trip in Paris, mention per day the planning, starting on monday."
-    
+
     instructions: |
       Your task is to:
       1. List the important monuments
       2. Plan each day of the trip
-          
+
