@@ -25,7 +25,20 @@ let { providerId, connectionName, flowId, flowExecutions }: Props = $props();
 let flowExecuteUnsubscriber: Unsubscriber | undefined;
 let flowCurrentLogUnsubscriber: Unsubscriber | undefined;
 
+function waitFor(fn: () => boolean): Promise<void> {
+  return new Promise(resolve => {
+    const interval = setInterval(() => {
+      if (fn()) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, 10);
+  });
+}
+
 onMount(async () => {
+  // wait that terminal is there before restoring logs
+  await waitFor(() => logsTerminal !== undefined);
   flowCurrentLogUnsubscriber = flowCurrentLogInfo.subscribe(log => {
     logsTerminal?.clear();
     logsTerminal?.write(log);
