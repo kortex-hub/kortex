@@ -61,7 +61,9 @@ onMount(() => {
     </Route>
     <Route path="/messages" breadcrumb="Messages" navigationHint="tab">
       {#if messages.length > 0}
+        <div class="overflow-y-auto h-full">
         <ToolParts tools={messages} />
+        </div>
       {:else}
         <div class="text-sm text-zinc-600 dark:text-zinc-400">No messages recorded yet.</div>
       {/if}
