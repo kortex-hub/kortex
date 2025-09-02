@@ -423,6 +423,9 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
         <Route path="/extensions/details/:id/*" breadcrumb="Extension Details" let:meta navigationHint="details">
           <ExtensionDetails extensionId={meta.params.id} />
         </Route>
+        <Route path="/jobs" breadcrumb="Jobs" navigationHint="root">
+            <JobList />
+        </Route>
       </div>
     </div>
     <HelpActions/>
