@@ -20,7 +20,14 @@ let {
   mcpSelectorOpen: boolean;
 } = $props();
 
-const suggestedActions = [
+type SuggestedAction = {
+  title: string;
+  label: string;
+  action: string;
+  requiredMcp?: string[];
+};
+
+const suggestedActions: SuggestedAction[] = [
   {
     title: 'What are the last 5 issues of Github',
     label: 'repository podman-desktop/podman-desktop?',
@@ -44,7 +51,7 @@ const suggestedActions = [
   },
 ];
 
-async function onclick(suggestedAction: (typeof suggestedActions)[0]): Promise<void> {
+async function onclick(suggestedAction: SuggestedAction): Promise<void> {
   const mcpsToInstall = suggestedAction.requiredMcp?.flatMap(id => {
     const mcpInstalledInfo = $mcpRemoteServerInfos.find(mcp => mcp.infos.serverId === id);
 
