@@ -3,10 +3,7 @@ import { Button, Checkbox, Tab } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 import { router } from 'tinro';
 
-import type { ModelInfo } from '/@/lib/chat/components/model-info';
-import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
 import MonacoEditor from '/@/lib/editor/MonacoEditor.svelte';
-import { getModels } from '/@/lib/models/models-utils';
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
@@ -38,10 +35,6 @@ let flowInfo = $derived({
   connectionName,
 });
 
-let models: Array<ModelInfo> = $derived(getModels($providerInfos));
-
-let selectedModel = $state<ModelInfo | undefined>(undefined);
-
 let kubernetes: string | undefined = $state(undefined);
 
 let hideSecrets: boolean = $state(true);
@@ -58,16 +51,10 @@ const flowExecutions = $derived(
 );
 
 async function deployKubernetes(dryrun: boolean): Promise<void> {
-  if (!selectedModel) return;
   if (!provider) return;
   if (!connection) return;
 
   const result = await window.flowDeployKubernetes(
-    {
-      model: selectedModel.label,
-      providerId: selectedModel.providerId,
-      connectionName: selectedModel.connectionName,
-    },
     {
       flowId: flowId,
       providerId: provider.id,
@@ -121,12 +108,10 @@ onMount(() => {
     </Route>
     <Route path="/kube" breadcrumb="Kube" navigationHint="tab">
       <div class="flex flex-row gap-x-2 items-center">
-        <ModelSelector class="" models={models} bind:value={selectedModel}/>
-
         <Checkbox bind:checked={hideSecrets} title="Hide Secrets">Hide Secret</Checkbox>
 
-        <Button onclick={deployKubernetes.bind(undefined, true)} disabled={!selectedModel}>Dryrun</Button>
-        <Button onclick={deployKubernetes.bind(undefined, false)} disabled={!selectedModel}>Apply</Button>
+        <Button onclick={deployKubernetes.bind(undefined, true)}>Dryrun</Button>
+        <Button onclick={deployKubernetes.bind(undefined, false)}>Apply</Button>
       </div>
 
       {#if kubernetes}

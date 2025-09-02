@@ -935,11 +935,6 @@ export class PluginSystem {
       'flows:deploy:kubernetes',
       async (
         _listener,
-        inference: {
-          providerId: string;
-          connectionName: string;
-          model: string;
-        },
         flow: {
           providerId: string;
           connectionName: string;
@@ -953,15 +948,6 @@ export class PluginSystem {
       ): Promise<string> => {
         if (!options.dryrun && options.hideSecrets) throw new Error('cannot apply YAML while hidding secrets');
 
-        // Get the inference provider to use
-        const inferenceProvider = providerRegistry.getProvider(inference.providerId);
-        const inferenceConnection: containerDesktopAPI.InferenceProviderConnection | undefined =
-          inferenceProvider.inferenceConnections.find(({ name }) => name === inference.connectionName);
-        if (!inferenceConnection)
-          throw new Error(`cannot find inference connection with name ${inference.connectionName}`);
-        const model = inferenceConnection.models.find(({ label }) => inference.model === label);
-        if (!model) throw new Error(`cannot find model with label ${inference.model}`);
-
         // Get the flow provider to use
         const flowProvider = providerRegistry.getProvider(flow.providerId);
         const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
@@ -970,9 +956,6 @@ export class PluginSystem {
 
         // Generate the Kubernetes YAML
         const { resources } = await flowConnection.flow.generateKubernetesYAML({
-          provider: inferenceProvider,
-          connection: inferenceConnection,
-          model: model,
           flowId: flow.flowId,
           namespace: options.namespace,
           hideSecrets: options.hideSecrets,

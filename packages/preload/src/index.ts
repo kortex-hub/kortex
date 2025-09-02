@@ -341,11 +341,6 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld(
     'flowDeployKubernetes',
     async (
-      inference: {
-        providerId: string;
-        connectionName: string;
-        model: string;
-      },
       flow: {
         providerId: string;
         connectionName: string;
@@ -357,7 +352,7 @@ export function initExposure(): void {
         dryrun: boolean;
       },
     ): Promise<string> => {
-      return ipcInvoke('flows:deploy:kubernetes', inference, flow, options);
+      return ipcInvoke('flows:deploy:kubernetes', flow, options);
     },
   );
 
