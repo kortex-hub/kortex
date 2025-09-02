@@ -44,7 +44,7 @@ const suggestedActions = [
   },
 ];
 
-let onclick = async (suggestedAction: (typeof suggestedActions)[0]): Promise<void> => {
+async function onclick(suggestedAction: (typeof suggestedActions)[0]): Promise<void> {
   const mcpsToInstall = suggestedAction.requiredMcp?.flatMap(id => {
     const mcpInstalledInfo = $mcpRemoteServerInfos.find(mcp => mcp.infos.serverId === id);
 
@@ -96,7 +96,7 @@ let onclick = async (suggestedAction: (typeof suggestedActions)[0]): Promise<voi
     role: 'user',
     parts: [{ text: suggestedAction.action, type: 'text' }],
   });
-};
+}
 </script>
 
 <div class="grid w-full gap-2 sm:grid-cols-2">
