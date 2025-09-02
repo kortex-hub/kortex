@@ -1,7 +1,7 @@
 <script lang="ts">
 import { Dropdown } from '@podman-desktop/ui-svelte';
 import type { Terminal } from '@xterm/xterm';
-import { onDestroy, onMount } from 'svelte';
+import { onDestroy } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';
 
 import { flowCurrentLogInfo } from '/@/stores/flow-current-log';
@@ -22,43 +22,29 @@ interface Props {
 
 let { providerId, connectionName, flowId, flowExecutions }: Props = $props();
 
+let executeInfos: Array<FlowExecuteInfo> = $derived(
+  $executeFlowsInfo.filter(
+    flow => flow.flowInfo.connectionName === connectionName && flow.flowInfo.providerId === providerId,
+  ),
+);
+let latest = $derived(executeInfos.length > 0 ? executeInfos[executeInfos.length - 1] : undefined);
+
+$effect(() => {
+  if (latest && !dropDownFlowId) {
+    dropDownFlowId = latest.taskId;
+    onLogSelectedChange(dropDownFlowId).catch(console.error);
+  }
+});
+
 let flowExecuteUnsubscriber: Unsubscriber | undefined;
 let flowCurrentLogUnsubscriber: Unsubscriber | undefined;
 
-function waitFor(fn: () => boolean): Promise<void> {
-  return new Promise(resolve => {
-    const interval = setInterval(() => {
-      if (fn()) {
-        clearInterval(interval);
-        resolve();
-      }
-    }, 10);
-  });
-}
-
-onMount(async () => {
-  // wait that terminal is there before restoring logs
-  await waitFor(() => logsTerminal !== undefined);
+function onTerminalInit(): void {
   flowCurrentLogUnsubscriber = flowCurrentLogInfo.subscribe(log => {
     logsTerminal?.clear();
     logsTerminal?.write(log);
   });
-
-  // when a new execute flow is added, select it
-  flowExecuteUnsubscriber = executeFlowsInfo.subscribe(flows => {
-    const matchingFlows = flows.filter(
-      flow => flow.flowInfo.connectionName === connectionName && flow.flowInfo.providerId === providerId,
-    );
-    if (matchingFlows.length > 0) {
-      const latestFlow = matchingFlows[matchingFlows.length - 1];
-      if (latestFlow.taskId === dropDownFlowId) {
-        return;
-      }
-      dropDownFlowId = latestFlow.taskId;
-      onLogSelectedChange(dropDownFlowId).catch(console.error);
-    }
-  });
-});
+}
 
 onDestroy(() => {
   flowExecuteUnsubscriber?.();
@@ -68,6 +54,11 @@ onDestroy(() => {
 });
 
 async function onLogSelectedChange(taskId: string): Promise<void> {
+  if (taskId === dropDownFlowId) {
+    return; // do not change when selecting current
+  }
+
+  dropDownFlowId = taskId;
   logsTerminal?.clear();
   await window.flowDispatchLog(providerId, connectionName, flowId, taskId);
 }
@@ -76,12 +67,12 @@ async function onLogSelectedChange(taskId: string): Promise<void> {
 <div class="h-full w-full flex flex-col gap-x-2 items-center">
   <Dropdown
     class="text-sm"
-    bind:value={dropDownFlowId}
+    value={dropDownFlowId}
     onChange={onLogSelectedChange}
     options={flowExecutions.map(flowExecution => ({
       value: flowExecution.taskId,
       label: flowExecution.taskId,
     }))}>
   </Dropdown>
-  <TerminalWindow class="h-full w-full" bind:terminal={logsTerminal} convertEol disableStdIn />
+  <TerminalWindow on:init={onTerminalInit} class="h-full w-full" bind:terminal={logsTerminal} convertEol disableStdIn />
 </div>
