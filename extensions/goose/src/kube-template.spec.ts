@@ -52,7 +52,6 @@ instructions: |
     kortex: {
       version: '1.0.0',
     },
-    namespace: 'default',
   },
 ])('$testName', async options => {
   const template = new KubeTemplate(options);

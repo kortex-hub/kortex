@@ -1280,9 +1280,10 @@ export class KubernetesClient {
    * @param yaml content consisting of a stringified YAML
    * @return an array of resources created
    */
-  async applyResourcesFromYAML(context: string, yaml: string): Promise<KubernetesObject[]> {
+  async applyResourcesFromYAML(context: string, yaml: string, namespace?: string): Promise<KubernetesObject[]> {
     const manifests = await this.loadManifestsFromYAML(yaml);
-    return this.applyResources(context, manifests);
+    namespace ??= this.currentNamespace;
+    return this.applyResources(context, manifests, namespace);
   }
 
   /**

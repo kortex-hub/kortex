@@ -7,7 +7,6 @@ metadata:
   annotations:
     {{& annotations.version }}: {{ kortex.version }}
     {{& annotations.flowId }}: {{ recipe.flowId }}
-  namespace: {{ namespace }}
 stringData:
   {{#provider.credentials.env}}
     {{ key }}: {{ value }}
@@ -22,7 +21,6 @@ metadata:
   annotations:
     {{& annotations.version }}: {{ kortex.version }}
     {{& annotations.flowId }}: {{ recipe.flowId }}
-  namespace: {{ namespace }}
 spec:
   template:
     spec:
@@ -54,7 +52,6 @@ metadata:
   annotations:
     {{& annotations.version }}: {{ kortex.version }}
     {{& annotations.flowId }}: {{ recipe.flowId }}
-  namespace: {{ namespace }}
 data:
   recipe.yaml: |
   {{#recipe.content }}
