@@ -1,8 +1,8 @@
 <script lang="ts">
 import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
-import { onMount } from 'svelte';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { generate as generateWords } from 'random-words';
+import { onMount } from 'svelte';
 
 import MCPSelector from '/@/lib/chat/components/mcp-selector.svelte';
 import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
@@ -15,6 +15,7 @@ import { providerInfos } from '/@/stores/providers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import { NavigationPage } from '/@api/navigation-page';
 
+import PlusIcon from '../chat/components/icons/plus.svelte';
 import type { ModelInfo } from '../chat/components/model-info';
 import FlowConnectionSelector from './components/flow-connection-selector.svelte';
 import NoFlowProviders from './components/NoFlowProviders.svelte';
@@ -109,6 +110,12 @@ async function generate(): Promise<void> {
       <div class="px-5 pb-5 min-w-full">
       {#if hasInstalledFlowProvidersC}
           <div class="bg-[var(--pd-content-card-bg)] px-6 py-4">
+            <div class="flex flex-col">
+              <div>You can create a flow using this form by selecting a model, one or several tools (from MCP servers)
+                and specifying instructions.</div>
+              <div>A flow can also be created by exporting a chat session. All information's on this page will then automatically be filled.</div>
+              <div class="flex flex-row gap-1">The export feature in the chat window is available through the <PlusIcon size={14}/>icon</div>
+            </div>
             {#if error}
               <ErrorMessage {error}/>
             {/if}
