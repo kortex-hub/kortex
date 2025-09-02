@@ -69,8 +69,8 @@ function showMcp(): void {
   </div>
 </div>
 {:else}
-<!-- Collapsed rail to reopen the panel on md+ screens -->
-<div class="hidden md:flex md:flex-col md:w-6 md:min-w-6 border-l bg-background/50 h-full items-center justify-center">
+<!-- Collapsed rail to reopen the panel on lg+ screens -->
+<div class="hidden lg:flex lg:flex-col lg:w-6 lg:min-w-6 border-l bg-background/50 h-full items-center justify-center">
   <button
     class="text-xs text-muted-foreground hover:text-foreground whitespace-pre-line"
     title="Show MCP panel"
