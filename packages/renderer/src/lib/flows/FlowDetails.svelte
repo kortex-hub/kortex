@@ -10,7 +10,9 @@ import KubernetesCurrentContextConnectionBadge from '/@/lib/ui/KubernetesCurrent
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
 import { executeFlowsInfo } from '/@/stores/flows-execute';
+import { kubernetesContextsHealths } from '/@/stores/kubernetes-context-health';
 import { kubernetesContexts } from '/@/stores/kubernetes-contexts';
+import { kubernetesCurrentContextState } from '/@/stores/kubernetes-contexts-state';
 import { providerInfos } from '/@/stores/providers';
 import type { KubeContext } from '/@api/kubernetes-context';
 import type { ProviderFlowConnectionInfo } from '/@api/provider-info';
@@ -27,6 +29,11 @@ interface Props {
 let { providerId, connectionName, flowId }: Props = $props();
 
 const currentContext: KubeContext | undefined = $derived($kubernetesContexts?.find(c => c.currentContext));
+const clusterReachable: boolean = $derived(
+  $kubernetesContextsHealths.find(({ contextName }) => contextName === currentContext?.name)?.reachable ??
+    $kubernetesCurrentContextState?.reachable,
+);
+
 let loading: boolean = $state(false);
 
 let provider = $derived($providerInfos.find(provider => provider.id === providerId));
@@ -112,7 +119,7 @@ onMount(() => {
     window.readFlow(providerId, connectionName, flowId).then(content => {
       flowContent = content;
     }),
-    refreshKubernetes(),
+    refreshKubernetes(true),
   ])
     .catch(console.error)
     .finally(() => {
@@ -161,9 +168,8 @@ function setSelectedFlowExecuteId(flowExecuteId: string): void {
           <Checkbox onclick={refreshKubernetes} title="Hide Secrets">Hide Secret</Checkbox>
           <div class="flex flex-row gap-x-2">
             <KubernetesCurrentContextConnectionBadge />
-
             <Button
-              disabled={!currentContext?.error}
+              disabled={!clusterReachable}
               icon={KubernetesIcon}
               onclick={applyKubernetes}>
               Apply
