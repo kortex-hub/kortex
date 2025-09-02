@@ -113,9 +113,7 @@ export class GooseRecipe implements Disposable {
       .getInferenceConnections()
       .find(c => c.providerId === kortexProvider && c.connection.models.some(m => m.label === gooseModel));
     if (!connection) throw new Error(`cannot find connection for ${kortexProvider} ${gooseModel}`);
-    return {
-      GOOGLE_API_KEY: this.getTokenForProvider({ providerId: kortexProvider, connection: connection.connection }),
-    };
+    return this.getTokenForProvider({ providerId: kortexProvider, connection: connection.connection });
   }
 
   protected async execute(flowId: string, logger: Logger): Promise<void> {
@@ -193,14 +191,14 @@ export class GooseRecipe implements Disposable {
   }: {
     providerId: string;
     connection: InferenceProviderConnection;
-  }): string {
+  }): Record<string, string> {
     switch (providerId) {
       case 'gemini': {
         const token = connection.credentials()['gemini:tokens'];
         if (!token) {
           throw new Error(`No token for provider ${providerId}`);
         }
-        return token;
+        return { GOOGLE_API_KEY: token };
       }
       default:
         throw new Error(`Unsupported provider ${providerId}`);
@@ -208,8 +206,6 @@ export class GooseRecipe implements Disposable {
   }
 
   protected async deployKubernetes(options: FlowGenerateKubernetesOptions): Promise<FlowGenerateKubernetesResult> {
-    const token = this.getTokenForProvider({ providerId: options.provider.id, connection: options.connection });
-
     const path = await this.getFlowPath(options.flowId);
 
     const content = await readFile(path, 'utf-8');
@@ -228,12 +224,9 @@ export class GooseRecipe implements Disposable {
         name: options.provider.id,
         model: options.model.label,
         credentials: {
-          env: [
-            {
-              key: 'GOOGLE_API_KEY',
-              value: options.hideSecrets ? '*'.repeat(token.length) : token,
-            },
-          ],
+          env: Object.entries(
+            this.getTokenForProvider({ providerId: options.provider.id, connection: options.connection }),
+          ).map(([key, token]) => ({ key, value: options.hideSecrets ? '*'.repeat(token.length) : token })),
         },
       },
       namespace: options.namespace,
