@@ -43,7 +43,6 @@ async function deleteFlow(): Promise<void> {
     loading = true;
     try {
       await window.deleteFlow(object.providerId, object.connectionName, object.id);
-      await window.refreshFlows();
     } catch (err: unknown) {
       console.error('Error deleting flow:', err);
     } finally {

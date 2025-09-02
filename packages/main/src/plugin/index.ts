@@ -836,6 +836,8 @@ export class PluginSystem {
           flowProvider.flowConnections.find(({ name }) => name === connectionName);
         if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
 
+        flowManager.refresh();
+
         return flowConnection.flow.delete(flowId);
       },
     );
