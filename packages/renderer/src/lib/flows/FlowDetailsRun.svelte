@@ -1,7 +1,7 @@
 <script lang="ts">
 import { Dropdown } from '@podman-desktop/ui-svelte';
 import type { Terminal } from '@xterm/xterm';
-import { onDestroy } from 'svelte';
+import { onDestroy, onMount } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';
 
 import { flowCurrentLogInfo } from '/@/stores/flow-current-log';
@@ -9,7 +9,6 @@ import type { FlowExecuteInfo } from '/@api/flow-execute-info';
 
 import TerminalWindow from '../ui/TerminalWindow.svelte';
 
-let dropDownFlowId = $state('');
 let logsTerminal: Terminal | undefined;
 
 interface Props {
@@ -17,16 +16,18 @@ interface Props {
   connectionName: string;
   flowId: string;
   flowExecutions: FlowExecuteInfo[];
+  selectedFlowExecuteId: string | undefined;
 }
 
-let { providerId, connectionName, flowId, flowExecutions }: Props = $props();
+let { providerId, connectionName, flowId, flowExecutions, selectedFlowExecuteId = $bindable() }: Props = $props();
 
 let latest = $derived(flowExecutions.length > 0 ? flowExecutions[flowExecutions.length - 1] : undefined);
 
 $effect(() => {
-  if (latest && !dropDownFlowId) {
-    dropDownFlowId = latest.taskId;
-    onLogSelectedChange(dropDownFlowId).catch(console.error);
+  if (latest && !selectedFlowExecuteId) {
+    selectedFlowExecuteId = latest.taskId;
+    onLogSelectedChange(selectedFlowExecuteId).catch(console.error);
+    window.flowDispatchLog(providerId, connectionName, flowId, selectedFlowExecuteId).catch(console.error);
   }
 });
 
@@ -40,6 +41,12 @@ function onTerminalInit(): void {
   });
 }
 
+onMount(() => {
+  if (latest) {
+    window.flowDispatchLog(providerId, connectionName, flowId, latest?.taskId).catch(console.error);
+  }
+});
+
 onDestroy(() => {
   flowExecuteUnsubscriber?.();
   flowCurrentLogUnsubscriber?.();
@@ -48,25 +55,27 @@ onDestroy(() => {
 });
 
 async function onLogSelectedChange(taskId: string): Promise<void> {
-  if (taskId === dropDownFlowId) {
+  if (taskId === selectedFlowExecuteId) {
     return; // do not change when selecting current
   }
 
-  dropDownFlowId = taskId;
+  selectedFlowExecuteId = taskId;
   logsTerminal?.clear();
   await window.flowDispatchLog(providerId, connectionName, flowId, taskId);
 }
 </script>
 
 <div class="h-full w-full flex flex-col gap-x-2 items-center">
-  <Dropdown
-    class="text-sm"
-    value={dropDownFlowId}
-    onChange={onLogSelectedChange}
-    options={flowExecutions.map(flowExecution => ({
+  <div class="flex flex-row">
+    <Dropdown
+      class="text-sm"
+      value={selectedFlowExecuteId}
+      onChange={onLogSelectedChange}
+      options={flowExecutions.map(flowExecution => ({
       value: flowExecution.taskId,
       label: flowExecution.taskId,
     }))}>
-  </Dropdown>
+    </Dropdown>
+  </div>
   <TerminalWindow on:init={onTerminalInit} class="h-full w-full" bind:terminal={logsTerminal} convertEol disableStdIn />
 </div>

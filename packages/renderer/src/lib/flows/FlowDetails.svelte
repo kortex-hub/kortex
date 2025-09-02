@@ -41,6 +41,8 @@ let hideSecrets: boolean = $state(true);
 
 let flowContent: string | undefined = $state(undefined);
 
+let selectedFlowExecuteId: string | undefined = $state(undefined);
+
 const flowExecutions = $derived(
   $executeFlowsInfo.filter(
     flow =>
@@ -80,6 +82,10 @@ onMount(() => {
     })
     .catch(console.error);
 });
+
+function onLocalRun(flowExecuteId: string): void {
+  selectedFlowExecuteId = flowExecuteId;
+}
 </script>
 
 <DetailsPage title={path}>
@@ -93,7 +99,9 @@ onMount(() => {
 
   {/snippet}
     {#snippet actionsSnippet()}
-      <FlowActions object={flowInfo} />
+      <FlowActions
+        object={flowInfo}
+        onLocalRun={onLocalRun} />
     {/snippet}
   {#snippet contentSnippet()}
     <Route path="/summary" breadcrumb="Summary" navigationHint="tab">
@@ -119,8 +127,7 @@ onMount(() => {
       {/if}
     </Route>
     <Route path="/run" breadcrumb="Run ({flowExecutions.length})" navigationHint="tab">
-
-        <FlowDetailsRun {providerId} {connectionName} {flowId} {flowExecutions} />
+        <FlowDetailsRun {providerId} {connectionName} {flowId} {flowExecutions} bind:selectedFlowExecuteId={selectedFlowExecuteId}/>
     </Route>
 
   {/snippet}
