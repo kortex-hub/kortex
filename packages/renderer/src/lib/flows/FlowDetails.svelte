@@ -77,6 +77,9 @@ async function deployKubernetes(dryrun: boolean): Promise<void> {
     },
   );
   kubernetes = result;
+  if (!dryrun) {
+    router.goto('/jobs');
+  }
 }
 
 onMount(() => {
