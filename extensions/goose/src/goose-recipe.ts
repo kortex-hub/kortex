@@ -25,6 +25,7 @@ import type {
   FlowGenerateKubernetesOptions,
   FlowGenerateKubernetesResult,
   FlowGenerateOptions,
+  InferenceProviderConnection,
   Logger,
   Provider,
   provider as ProviderAPI,
@@ -112,9 +113,8 @@ export class GooseRecipe implements Disposable {
       .getInferenceConnections()
       .find(c => c.providerId === kortexProvider && c.connection.models.some(m => m.label === gooseModel));
     if (!connection) throw new Error(`cannot find connection for ${kortexProvider} ${gooseModel}`);
-    this.checkSupportedProvider(kortexProvider);
     return {
-      GOOGLE_API_KEY: connection.connection.credentials()['gemini:tokens'] ?? 'API_TOKEN',
+      GOOGLE_API_KEY: this.getTokenForProvider({ providerId: kortexProvider, connection: connection.connection }),
     };
   }
 
@@ -187,24 +187,34 @@ export class GooseRecipe implements Disposable {
     });
   }
 
-  private checkSupportedProvider(providerId: string): void {
+  private getTokenForProvider({
+    providerId,
+    connection,
+  }: {
+    providerId: string;
+    connection: InferenceProviderConnection;
+  }): string {
     switch (providerId) {
-      case 'gemini':
-        return;
+      case 'gemini': {
+        const token = connection.credentials()['gemini:tokens'];
+        if (!token) {
+          throw new Error(`No token for provider ${providerId}`);
+        }
+        return token;
+      }
       default:
         throw new Error(`Unsupported provider ${providerId}`);
     }
   }
 
   protected async deployKubernetes(options: FlowGenerateKubernetesOptions): Promise<FlowGenerateKubernetesResult> {
-    this.checkSupportedProvider(options.provider.id);
+    const token = this.getTokenForProvider({ providerId: options.provider.id, connection: options.connection });
+
     const path = await this.getFlowPath(options.flowId);
 
     const content = await readFile(path, 'utf-8');
 
     const recipeName = basename(path).split('.')[0];
-
-    const token = options.connection.credentials()['gemini:tokens'] ?? 'API_TOKEN';
 
     const template = new KubeTemplate({
       kortex: {
