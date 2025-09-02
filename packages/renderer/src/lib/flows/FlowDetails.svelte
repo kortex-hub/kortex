@@ -127,7 +127,9 @@ function onLocalRun(flowExecuteId: string): void {
       {/if}
     </Route>
     <Route path="/run" breadcrumb="Run ({flowExecutions.length})" navigationHint="tab">
+      {#if flowExecutions.length > 0}
         <FlowDetailsRun {providerId} {connectionName} {flowId} {flowExecutions} bind:selectedFlowExecuteId={selectedFlowExecuteId}/>
+      {/if}
     </Route>
 
   {/snippet}
