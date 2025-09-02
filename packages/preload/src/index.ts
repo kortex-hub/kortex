@@ -1720,6 +1720,10 @@ export function initExposure(): void {
     return ipcInvoke('mcp-manager:fetchMcpRemoteServers');
   });
 
+  contextBridge.exposeInMainWorld('removeMcpRemoteServer', async (serverId: string): Promise<void> => {
+    return ipcInvoke('mcp-manager:removeMcpRemoteServer', serverId);
+  });
+
   contextBridge.exposeInMainWorld(
     'unregisterMCPRegistry',
     async (registry: containerDesktopAPI.MCPRegistry): Promise<void> => {
