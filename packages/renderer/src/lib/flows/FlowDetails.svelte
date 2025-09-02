@@ -89,7 +89,7 @@ onMount(() => {
     .catch(console.error);
 });
 
-function onLocalRun(flowExecuteId: string): void {
+function setSelectedFlowExecuteId(flowExecuteId: string): void {
   selectedFlowExecuteId = flowExecuteId;
 }
 </script>
@@ -107,7 +107,7 @@ function onLocalRun(flowExecuteId: string): void {
     {#snippet actionsSnippet()}
       <FlowActions
         object={flowInfo}
-        onLocalRun={onLocalRun} />
+        onLocalRun={setSelectedFlowExecuteId} />
     {/snippet}
   {#snippet contentSnippet()}
     <Route path="/summary" breadcrumb="Summary" navigationHint="tab">
