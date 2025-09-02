@@ -6,6 +6,7 @@ metadata:
     app: goose
   annotations:
     kortex-hub/version: 1.0.0
+    kortex-hub/flow-id: demo-flow-id
   namespace: default
 stringData:
     GOOGLE_API_KEY: dummy
@@ -18,6 +19,7 @@ metadata:
     app: goose
   annotations:
     kortex-hub/version: 1.0.0
+    kortex-hub/flow-id: demo-flow-id
   namespace: default
 spec:
   template:
@@ -49,6 +51,7 @@ metadata:
     app: goose
   annotations:
     kortex-hub/version: 1.0.0
+    kortex-hub/flow-id: demo-flow-id
   namespace: default
 data:
   recipe.yaml: |
