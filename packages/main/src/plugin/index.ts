@@ -2299,9 +2299,13 @@ export class PluginSystem {
       return mcpManager.listMCPRemoteServers();
     });
 
-    this.ipcHandle('mcp-manager:removeMcpRemoteServer', async (_listener, serverId: string): Promise<void> => {
-      return mcpManager.removeMcpRemoteServer(serverId);
-    });
+    this.ipcHandle(
+      'mcp-manager:removeMcpRemoteServer',
+      async (_listener, key: string, options: { serverId: string; remoteId: number }): Promise<void> => {
+        await mcpRegistry.deleteMcpFromConfiguration(options.serverId, options.remoteId);
+        return mcpManager.removeMcpRemoteServer(key);
+      },
+    );
 
     this.ipcHandle(
       'mcp-manager:getTools',
