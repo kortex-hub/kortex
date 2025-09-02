@@ -828,6 +828,21 @@ export class PluginSystem {
     });
 
     this.ipcHandle(
+      'flows:delete',
+      async (_listener, providerId: string, connectionName: string, flowId: string): Promise<void> => {
+        // Get the flow provider to use
+        const flowProvider = providerRegistry.getProvider(providerId);
+        const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
+          flowProvider.flowConnections.find(({ name }) => name === connectionName);
+        if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
+
+        flowManager.refresh();
+
+        return flowConnection.flow.delete(flowId);
+      },
+    );
+
+    this.ipcHandle(
       'flows:read',
       async (_listener, providerId: string, connectionName: string, flowId: string): Promise<string> => {
         // Get the flow provider to use
@@ -2237,6 +2252,10 @@ export class PluginSystem {
 
     this.ipcHandle('mcp-manager:fetchMcpRemoteServers', async (_listener): Promise<MCPRemoteServerInfo[]> => {
       return mcpManager.listMCPRemoteServers();
+    });
+
+    this.ipcHandle('mcp-manager:removeMcpRemoteServer', async (_listener, serverId: string): Promise<void> => {
+      return mcpManager.removeMcpRemoteServer(serverId);
     });
 
     this.ipcHandle(

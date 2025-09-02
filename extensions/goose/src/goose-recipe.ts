@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 
@@ -94,6 +94,7 @@ export class GooseRecipe implements Disposable {
     const name = parsed['name'].toLowerCase();
 
     const basePath = this.getBasePath();
+    await mkdir(basePath, { recursive: true });
     const fullPath = join(basePath, `${name}.yaml`);
     await writeFile(fullPath, content);
 
@@ -161,6 +162,7 @@ export class GooseRecipe implements Disposable {
         onDidChange: this.updateEmitter.event,
         read: this.read.bind(this),
         create: this.create.bind(this),
+        delete: this.delete.bind(this),
         execute: this.execute.bind(this),
         generate: this.generate.bind(this),
         generateKubernetesYAML: this.deployKubernetes.bind(this),
@@ -171,7 +173,12 @@ export class GooseRecipe implements Disposable {
       },
     });
   }
-
+  
+  protected async delete(flowId: string): Promise<void> {
+    const path = await this.getFlowPath(flowId);
+    await unlink(path);
+  }
+  
   private async getFlowInfos(flowId: string): Promise<{
     env: Record<string, string>;
     providerId: string;
