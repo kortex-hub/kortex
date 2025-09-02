@@ -53,12 +53,9 @@ export function verifyStatus<
     extensionId: '',
     cleanupSupport: false,
     inferenceConnections: [],
-    mcpConnections: [],
     flowConnections: [],
     inferenceProviderConnectionCreation: false,
     inferenceProviderConnectionInitialization: false,
-    mcpProviderConnectionCreation: false,
-    mcpProviderConnectionInitialization: false,
   };
 
   const initializationContext: InitializationContext = { mode: InitializeAndStartMode };

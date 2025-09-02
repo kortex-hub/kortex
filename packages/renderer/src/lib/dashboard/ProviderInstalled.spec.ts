@@ -97,12 +97,9 @@ test('Expect installed provider shows button', async () => {
     extensionId: '',
     cleanupSupport: false,
     inferenceConnections: [],
-    mcpConnections: [],
     flowConnections: [],
     inferenceProviderConnectionCreation: false,
     inferenceProviderConnectionInitialization: false,
-    mcpProviderConnectionCreation: false,
-    mcpProviderConnectionInitialization: false,
   };
 
   const initializationContext: InitializationContext = new InitializationContextImpl(
@@ -157,12 +154,9 @@ test('Expect to see the initialize context error if provider installation fails'
     extensionId: '',
     cleanupSupport: false,
     inferenceConnections: [],
-    mcpConnections: [],
     flowConnections: [],
     inferenceProviderConnectionCreation: false,
     inferenceProviderConnectionInitialization: false,
-    mcpProviderConnectionCreation: false,
-    mcpProviderConnectionInitialization: false,
   };
 
   const initializationContext: InitializationContext = new InitializationContextImpl(

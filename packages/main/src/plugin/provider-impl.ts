@@ -21,12 +21,11 @@ import type {
   ContainerProviderConnection,
   ContainerProviderConnectionFactory,
   Event,
+  FlowProviderConnection,
   InferenceProviderConnection,
   InferenceProviderConnectionFactory,
   KubernetesProviderConnection,
   KubernetesProviderConnectionFactory,
-  MCPProviderConnection,
-  MCPProviderConnectionFactory,
   Provider,
   ProviderAutostart,
   ProviderCleanup,
@@ -42,7 +41,6 @@ import type {
   ProviderUpdate,
   VmProviderConnection,
   VmProviderConnectionFactory,
-  FlowProviderConnection,
 } from '@kortex-app/api';
 
 import type { ContainerProviderRegistry } from './container-registry.js';
@@ -57,7 +55,6 @@ export class ProviderImpl implements Provider, IDisposable {
   private kubernetesProviderConnections: Set<KubernetesProviderConnection>;
   private vmProviderConnections: Set<VmProviderConnection>;
   private inferenceProviderConnections: Set<InferenceProviderConnection>;
-  private mcpProviderConnections: Set<MCPProviderConnection>;
   private flowProviderConnections: Set<FlowProviderConnection>;
 
   // optional factory
@@ -65,7 +62,6 @@ export class ProviderImpl implements Provider, IDisposable {
   private _kubernetesProviderConnectionFactory: KubernetesProviderConnectionFactory | undefined = undefined;
   private _vmProviderConnectionFactory: VmProviderConnectionFactory | undefined = undefined;
   private _inferenceProviderConnectionFactory: InferenceProviderConnectionFactory | undefined = undefined;
-  private _mcpProviderConnectionFactory: MCPProviderConnectionFactory | undefined = undefined;
 
   private _connectionAuditor: Auditor | undefined = undefined;
 
@@ -102,7 +98,6 @@ export class ProviderImpl implements Provider, IDisposable {
     this.kubernetesProviderConnections = new Set();
     this.vmProviderConnections = new Set();
     this.inferenceProviderConnections = new Set();
-    this.mcpProviderConnections = new Set();
     this.flowProviderConnections = new Set();
     this._status = providerOptions.status;
     this._version = providerOptions.version;
@@ -140,10 +135,6 @@ export class ProviderImpl implements Provider, IDisposable {
 
   get inferenceProviderConnectionFactory(): InferenceProviderConnectionFactory | undefined {
     return this._inferenceProviderConnectionFactory;
-  }
-
-  get mcpProviderConnectionFactory(): MCPProviderConnectionFactory | undefined {
-    return this._mcpProviderConnectionFactory;
   }
 
   get connectionAuditor(): Auditor | undefined {
@@ -229,10 +220,6 @@ export class ProviderImpl implements Provider, IDisposable {
     return Array.from(this.inferenceProviderConnections.values());
   }
 
-  get mcpConnections(): MCPProviderConnection[] {
-    return Array.from(this.mcpProviderConnections.values());
-  }
-
   get flowConnections(): FlowProviderConnection[] {
     return Array.from(this.flowProviderConnections.values());
   }
@@ -299,17 +286,6 @@ export class ProviderImpl implements Provider, IDisposable {
     });
   }
 
-  registerMCPProviderConnection(connection: MCPProviderConnection): Disposable {
-    this.mcpProviderConnections.add(connection);
-    const disposable = this.providerRegistry.registerMCPConnection(this, connection);
-    this.providerRegistry.onDidRegisterMCPConnectionCallback(this, connection);
-    return Disposable.create(() => {
-      this.mcpProviderConnections.delete(connection);
-      disposable.dispose();
-      this.providerRegistry.onDidUnregisterMCPConnectionCallback(this, connection);
-    });
-  }
-
   registerFlowProviderConnection(connection: FlowProviderConnection): Disposable {
     this.flowProviderConnections.add(connection);
     const disposable = this.providerRegistry.registerFlowConnection(this, connection);
@@ -318,18 +294,6 @@ export class ProviderImpl implements Provider, IDisposable {
       this.flowProviderConnections.delete(connection);
       disposable.dispose();
       this.providerRegistry.onDidUnregisterFlowConnectionCallback(this, connection);
-    });
-  }
-
-  setMCPProviderConnectionFactory(
-    mcpProviderConnectionFactory: MCPProviderConnectionFactory,
-    connectionAuditor?: Auditor,
-  ): Disposable {
-    this._mcpProviderConnectionFactory = mcpProviderConnectionFactory;
-    this._connectionAuditor = connectionAuditor;
-    return Disposable.create(() => {
-      this._mcpProviderConnectionFactory = undefined;
-      this._connectionAuditor = undefined;
     });
   }
 

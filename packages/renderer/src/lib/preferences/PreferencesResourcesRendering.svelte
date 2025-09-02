@@ -181,22 +181,6 @@ onMount(async () => {
           });
         }
       });
-
-      provider.mcpConnections.forEach(connection => {
-        const mcpConnectionName = getProviderConnectionName(provider, connection);
-        connectionNames.push(mcpConnectionName);
-        // update the map only if the container state is different from last time
-        if (
-          !containerConnectionStatus.has(mcpConnectionName) ||
-          containerConnectionStatus.get(mcpConnectionName)?.status !== connection.status
-        ) {
-          containerConnectionStatus.set(mcpConnectionName, {
-            inProgress: false,
-            action: undefined,
-            status: connection.status,
-          });
-        }
-      });
     });
     // if a machine has been deleted we need to clean its old stored status
     containerConnectionStatus.forEach((v, k) => {
@@ -491,7 +475,6 @@ $effect(() => {
                   || provider.kubernetesProviderConnectionCreation
                   || provider.vmProviderConnectionCreation
                   || provider.inferenceProviderConnectionCreation
-                  || provider.mcpProviderConnectionCreation
                   }
                     {@const providerDisplayName =
                       (provider.containerProviderConnectionCreation
@@ -502,9 +485,7 @@ $effect(() => {
                             ? provider.vmProviderConnectionCreationDisplayName
                             : provider.inferenceProviderConnectionCreation
                               ? provider.inferenceProviderConnectionCreationDisplayName
-                              : provider.mcpProviderConnectionCreation
-                                ? provider.mcpProviderConnectionCreationDisplayName
-                                  : undefined) ?? provider.name}
+                              : undefined) ?? provider.name}
                     {@const buttonTitle =
                       (provider.containerProviderConnectionCreation
                         ? (provider.containerProviderConnectionCreationButtonTitle ?? undefined)
@@ -514,9 +495,7 @@ $effect(() => {
                             ? provider.vmProviderConnectionCreationButtonTitle
                             : provider.inferenceProviderConnectionCreation
                               ? provider.inferenceProviderConnectionCreationButtonTitle
-                              : provider.mcpProviderConnectionCreation
-                                ? provider.mcpProviderConnectionCreationButtonTitle
-                                  : undefined) ?? 'Create new'}
+                              : undefined) ?? 'Create new'}
                     <!-- create new provider button -->
                     <Tooltip bottom tip="Create new {providerDisplayName}">
                       <Button
@@ -760,18 +739,6 @@ $effect(() => {
               provider={provider}
               connection={inferenceConnection}
               connectionStatus={containerConnectionStatus.get(getProviderConnectionName(provider, inferenceConnection))}
-              updateConnectionStatus={updateContainerStatus}
-              addConnectionToRestartingQueue={addConnectionToRestartingQueue}
-            />
-          </div>
-        {/each}
-        {#each provider.mcpConnections as mcpConnection, index (index)}
-          <div class="px-5 py-2 w-[240px]" role="region" aria-label={mcpConnection.name}>
-            <span>{mcpConnection.name} (MCP)</span>
-            <PreferencesConnectionActions
-              provider={provider}
-              connection={mcpConnection}
-              connectionStatus={containerConnectionStatus.get(getProviderConnectionName(provider, mcpConnection))}
               updateConnectionStatus={updateContainerStatus}
               addConnectionToRestartingQueue={addConnectionToRestartingQueue}
             />
