@@ -69,7 +69,7 @@ async function deployKubernetes(dryrun: boolean): Promise<void> {
       connectionName: connection.name,
     },
     {
-      hideSecrets: hideSecrets,
+      hideSecrets: dryrun ? hideSecrets : false, // overwrite hideSecrets when deploying to kubernetes
       namespace: 'default',
       dryrun: dryrun,
     },
