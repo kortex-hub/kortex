@@ -349,6 +349,14 @@ export class MCPRegistry {
     await this.safeStorage?.store(STORAGE_KEY, JSON.stringify([...existing, config]));
   }
 
+  async deleteMcpFromConfiguration(serverId: string, remoteId: number): Promise<void> {
+    const existingConfiguration = await this.getConfigurations();
+    const filtered = existingConfiguration.filter(
+      config => !(config.serverId === serverId && config.remoteId === remoteId),
+    );
+    await this.safeStorage?.store(STORAGE_KEY, JSON.stringify(filtered));
+  }
+
   protected async listMCPServersFromRegistry(registryURL: string): Promise<components['schemas']['ServerList']> {
     // connect to ${registry.serverUrl}/v0/servers and grab the list of servers
     // use fetch
