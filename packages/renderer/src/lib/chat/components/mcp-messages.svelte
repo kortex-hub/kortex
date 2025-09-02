@@ -8,7 +8,7 @@ import ToolParts from './messages/tool-parts.svelte';
 
 let { messages }: { messages: UIMessage[] } = $props();
 
-let open = $state(true);
+let open = $state(false);
 
 function isDynamicTool(part: UIMessagePart<UIDataTypes, UITools>): part is DynamicToolUIPart {
   return part.type === 'dynamic-tool';
@@ -72,12 +72,12 @@ function showMcp(): void {
 <!-- Collapsed rail to reopen the panel on md+ screens -->
 <div class="hidden md:flex md:flex-col md:w-6 md:min-w-6 border-l bg-background/50 h-full items-center justify-center">
   <button
-    class="rotate-[-90deg] text-xs text-muted-foreground hover:text-foreground"
+    class="text-xs text-muted-foreground hover:text-foreground whitespace-pre-line"
     title="Show MCP panel"
     aria-label="Show MCP panel"
     onclick={showMcp}
   >
-    MCP
+    M<br>C<br>P
   </button>
 </div>
 {/if}
