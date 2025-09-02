@@ -6,7 +6,10 @@ import Fa from 'svelte-fa';
 import { handleNavigation } from '/@/navigation';
 import { NavigationPage } from '/@api/navigation-page';
 
-let { mcpsToInstall }: { mcpsToInstall: readonly components['schemas']['ServerDetail'][] } = $props();
+interface Props {
+  mcpsToInstall: readonly components['schemas']['ServerDetail'][];
+}
+let { mcpsToInstall }: Props = $props();
 </script>
 
 <div>
