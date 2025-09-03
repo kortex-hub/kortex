@@ -14,6 +14,7 @@ import PreferencesCliToolsRendering from './PreferencesCliToolsRendering.svelte'
 import PreferencesContainerConnectionRendering from './PreferencesContainerConnectionRendering.svelte';
 import PreferencesKubernetesConnectionRendering from './PreferencesKubernetesConnectionRendering.svelte';
 import PreferencesKubernetesContextsRendering from './PreferencesKubernetesContextsRendering.svelte';
+import PreferencesMcpRegistriesEditing from './PreferencesMCPRegistriesEditing.svelte';
 import PreferencesProviderRendering from './PreferencesProviderRendering.svelte';
 import PreferencesProxiesRendering from './PreferencesProxiesRendering.svelte';
 import PreferencesRegistriesEditing from './PreferencesRegistriesEditing.svelte';
@@ -21,7 +22,6 @@ import PreferencesRendering from './PreferencesRendering.svelte';
 import PreferencesResourcesRendering from './PreferencesResourcesRendering.svelte';
 import PreferencesVmConnectionRendering from './PreferencesVmConnectionRendering.svelte';
 import { isDefaultScope } from './Util';
-import PreferencesMcpRegistriesEditing from './PreferencesMCPRegistriesEditing.svelte';
 
 let properties: IConfigurationPropertyRecordedSchema[];
 let defaultPrefPageId: string;

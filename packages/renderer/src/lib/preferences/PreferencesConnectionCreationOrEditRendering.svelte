@@ -7,13 +7,15 @@ import { onDestroy, onMount } from 'svelte';
 /* eslint-disable import/no-duplicates */
 // https://github.com/import-js/eslint-plugin-import/issues/1479
 import { get, type Unsubscriber } from 'svelte/store';
-import { router } from 'tinro';
 
 import type { ContextUI } from '/@/lib/context/context';
+import { handleNavigation } from '/@/navigation';
 import { context } from '/@/stores/context';
 /* eslint-enable import/no-duplicates */
 import { operationConnectionsInfo } from '/@/stores/operation-connections';
+import { preferencesBackInfoStore } from '/@/stores/preferences-back-info';
 import type { IConfigurationPropertyRecordedSchema } from '/@api/configuration/models.js';
+import { NavigationPage } from '/@api/navigation-page';
 import type {
   ProviderContainerConnectionInfo,
   ProviderInfo,
@@ -467,8 +469,15 @@ async function closePanel(): Promise<void> {
   await cleanup();
 }
 
+const navigationRequest = $state(
+  $preferencesBackInfoStore.navigationRequest ?? ({ page: NavigationPage.RESOURCES } as const),
+);
+const backName = $state($preferencesBackInfoStore.name ?? 'Go back to resources');
+
+preferencesBackInfoStore.set({});
+
 async function closePage(): Promise<void> {
-  router.goto('/preferences/resources');
+  handleNavigation(navigationRequest);
   await window.telemetryTrack(
     connectionInfo ? 'updateProviderConnectionPageUserClosed' : 'createNewProviderConnectionPageUserClosed',
     {
@@ -517,9 +526,9 @@ function preventDefault(handler: (e: SubmitEvent) => Promise<void>): (e: SubmitE
         class="py-3"
         on:click={async (): Promise<void> => {
           await cleanup();
-          router.goto('/preferences/resources');
+          handleNavigation(navigationRequest);
         }}>
-        Go back to resources
+        {backName}
       </Button>
     </EmptyScreen>
   {:else}

@@ -4,23 +4,27 @@ import { onMount } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
 import { router } from 'tinro';
 
+import { type PreferencesBackInfo, preferencesBackInfoStore } from '/@/stores/preferences-back-info';
 import { providerInfos } from '/@/stores/providers';
 import type { CheckStatus, ProviderInfo } from '/@api/provider-info';
 
 import PreferencesProviderInstallationModal from './PreferencesProviderInstallationModal.svelte';
+
+interface Props {
+  provider: ProviderInfo;
+  providerDisplayName: string;
+  buttonTitle: string;
+  preflightChecks: CheckStatus[];
+  preferencesBackInfo?: PreferencesBackInfo;
+}
 
 let {
   provider,
   providerDisplayName,
   buttonTitle,
   preflightChecks = $bindable(),
-}: {
-  provider: ProviderInfo;
-  providerDisplayName: string;
-  buttonTitle: string;
-
-  preflightChecks: CheckStatus[];
-} = $props();
+  preferencesBackInfo,
+}: Props = $props();
 
 let providerInstallationInProgress = new SvelteMap<string, boolean>();
 let displayInstallModal = $state(false);
@@ -43,6 +47,11 @@ onMount(() => {
 
 async function doCreateNew(provider: ProviderInfo, displayName: string): Promise<void> {
   displayInstallModal = false;
+
+  if (preferencesBackInfo) {
+    preferencesBackInfoStore.set(preferencesBackInfo);
+  }
+
   if (provider.status === 'not-installed') {
     providerInstallationInProgress.set(provider.name, true);
     providerToBeInstalled = { provider, displayName };

@@ -2,6 +2,7 @@
 import CreateProviderConnectionButton from '/@/lib/preferences/CreateProviderConnectionButton.svelte';
 import ProviderInfoIcon from '/@/lib/preferences/ProviderInfoIcon.svelte';
 import { providerInfos } from '/@/stores/providers';
+import { NavigationPage } from '/@api/navigation-page';
 </script>
 
 <div class="flex flex-col items-center justify-center w-full p-8 gap-5 text-center bg-[var(--pd-content-bg)]">
@@ -16,7 +17,9 @@ import { providerInfos } from '/@/stores/providers';
         <CreateProviderConnectionButton
           provider={providerInfo}
           providerDisplayName={providerInfo.inferenceProviderConnectionCreationDisplayName ?? providerInfo.name}
-          buttonTitle="Connect" preflightChecks={[]}/>
+          buttonTitle="Connect"
+          preflightChecks={[]}
+          preferencesBackInfo={{name: 'Go back to chat', navigationRequest: {page: NavigationPage.DASHBOARD}}}/>
       </div>
     {/if}
   {/each}

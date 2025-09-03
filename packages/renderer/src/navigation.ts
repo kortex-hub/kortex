@@ -25,7 +25,9 @@ import type { NavigationRequest } from '/@api/navigation-request';
 
 // help method to ensure the handleNavigation is able to infer type properly through the switch
 // ref https://www.typescriptlang.org/docs/handbook/2/conditional-types.html#distributive-conditional-types
-type InferredNavigationRequest<T extends NavigationPage> = T extends NavigationPage ? NavigationRequest<T> : never;
+export type InferredNavigationRequest<T extends NavigationPage> = T extends NavigationPage
+  ? NavigationRequest<T>
+  : never;
 
 /**
  * Navigation hints for setting current page and history (breadcrumbs):
