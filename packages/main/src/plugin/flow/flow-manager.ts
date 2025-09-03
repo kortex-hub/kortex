@@ -190,7 +190,7 @@ export class FlowManager implements Disposable {
     const flows = await connection.flow.all();
     this.#flows.set(key, flows);
 
-    if (connection.flow.installed) {
+    if (connection.flow.isInstalled()) {
       this.#installedProviders.add(key);
     }
 

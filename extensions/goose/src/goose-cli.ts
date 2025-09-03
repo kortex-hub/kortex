@@ -72,7 +72,7 @@ export class GooseCLI implements Disposable {
       return undefined;
     }
   }
-  get installed(): boolean {
+  isInstalled(): boolean {
     return !!this.cli?.version;
   }
 
@@ -108,7 +108,7 @@ export class GooseCLI implements Disposable {
     if (!this.cli?.path) throw new Error('goose not installed');
 
     // skip when no
-    if (!this.installed) {
+    if (!this.isInstalled()) {
       console.warn('cannot get recipes: goose is not installed');
       return [];
     }
