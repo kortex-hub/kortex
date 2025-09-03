@@ -1,23 +1,18 @@
 <script lang="ts">
-import { Button, Checkbox, ErrorMessage, Spinner, Tab } from '@podman-desktop/ui-svelte';
+import { Spinner, Tab } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 import { router } from 'tinro';
 
 import MonacoEditor from '/@/lib/editor/MonacoEditor.svelte';
-import KubernetesIcon from '/@/lib/kube/KubernetesIcon.svelte';
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
-import KubernetesCurrentContextConnectionBadge from '/@/lib/ui/KubernetesCurrentContextConnectionBadge.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
 import { executeFlowsInfo } from '/@/stores/flows-execute';
-import { kubernetesContextsHealths } from '/@/stores/kubernetes-context-health';
-import { kubernetesContexts } from '/@/stores/kubernetes-contexts';
-import { kubernetesCurrentContextState } from '/@/stores/kubernetes-contexts-state';
 import { providerInfos } from '/@/stores/providers';
-import type { KubeContext } from '/@api/kubernetes-context';
 import type { ProviderFlowConnectionInfo } from '/@api/provider-info';
 
 import FlowActions from './FlowActions.svelte';
+import FlowDetailsKubernetes from './FlowDetailsKubernetes.svelte';
 import FlowDetailsRun from './FlowDetailsRun.svelte';
 
 interface Props {
@@ -28,13 +23,6 @@ interface Props {
 
 let { providerId, connectionName, flowId }: Props = $props();
 
-const currentContext: KubeContext | undefined = $derived($kubernetesContexts?.find(c => c.currentContext));
-const clusterReachable: boolean = $derived(
-  $kubernetesContextsHealths.find(({ contextName }) => contextName === currentContext?.name)?.reachable ??
-    $kubernetesCurrentContextState?.reachable,
-);
-
-let hideSecretsKubernetesYAML = $state(true);
 let loading: boolean = $state(false);
 
 let provider = $derived($providerInfos.find(provider => provider.id === providerId));
@@ -50,8 +38,6 @@ let flowInfo = $derived({
   connectionName,
 });
 
-let kubernetes: string | undefined = $state(undefined);
-
 let flowContent: string | undefined = $state(undefined);
 
 let selectedFlowExecuteId: string | undefined = $state(undefined);
@@ -65,55 +51,11 @@ const flowExecutions = $derived(
   ),
 );
 
-let error: string | undefined = $state(undefined);
-
 $effect(() => {
   if (!selectedFlowExecuteId && flowExecutions.length > 0) {
     selectedFlowExecuteId = flowExecutions[flowExecutions.length - 1].taskId;
   }
 });
-
-async function refreshKubernetes(checked: boolean): Promise<void> {
-  if (!provider) return;
-  if (!connection) return;
-
-  const result = await window.flowDeployKubernetes(
-    {
-      flowId: flowId,
-      providerId: provider.id,
-      connectionName: connection.name,
-    },
-    {
-      hideSecrets: checked,
-      namespace: 'default',
-      dryrun: true,
-    },
-  );
-  kubernetes = result;
-}
-
-async function applyKubernetes(): Promise<void> {
-  if (!provider) return;
-  if (!connection) return;
-
-  try {
-    await window.flowDeployKubernetes(
-      {
-        flowId: flowId,
-        providerId: provider.id,
-        connectionName: connection.name,
-      },
-      {
-        hideSecrets: false,
-        namespace: 'default',
-        dryrun: false,
-      },
-    );
-    router.goto('/jobs');
-  } catch (err: unknown) {
-    error = String(err);
-  }
-}
 
 onMount(() => {
   loading = true;
@@ -122,7 +64,6 @@ onMount(() => {
     window.readFlow(providerId, connectionName, flowId).then(content => {
       flowContent = content;
     }),
-    refreshKubernetes(true),
   ])
     .catch(console.error)
     .finally(() => {
@@ -167,24 +108,8 @@ function setSelectedFlowExecuteId(flowExecuteId: string): void {
         <MonacoEditor content={flowContent} language="yaml" readOnly={true} />
       </Route>
       <Route path="/kubernetes" breadcrumb="Kube" navigationHint="tab">
-        {#if error}
-          <ErrorMessage error={error} />
-        {/if}
-        <div class="flex flex-row px-4 items-center justify-between">
-          <Checkbox bind:checked={hideSecretsKubernetesYAML} onclick={refreshKubernetes} title="Hide Secrets">Hide Secret</Checkbox>
-          <div class="flex flex-row gap-x-2">
-            <KubernetesCurrentContextConnectionBadge />
-            <Button
-              disabled={!clusterReachable}
-              icon={KubernetesIcon}
-              onclick={applyKubernetes}>
-              Apply
-            </Button>
-          </div>
-
-        </div>
-        {#if kubernetes}
-          <MonacoEditor content={kubernetes} language="yaml" readOnly={true} />
+        {#if provider && connection}
+        <FlowDetailsKubernetes {connection} {flowId} {provider}/>
         {/if}
       </Route>
       <Route path="/run" breadcrumb="Run ({flowExecutions.length})" navigationHint="tab">
