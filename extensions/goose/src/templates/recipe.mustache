@@ -20,6 +20,9 @@ extensions:
       {{ key }}: "{{ value }}"
     {{/headers }}
   {{/recipe.extensions }}
+  {{^recipe.extensions}}
+  []
+  {{/recipe.extensions}}
 
 
 settings:
