@@ -3,7 +3,6 @@ import type { UIMessage } from '@ai-sdk/svelte';
 import { onMount } from 'svelte';
 
 import { getLock } from '/@/lib/chat/hooks/lock';
-import { hasInstalledFlowProviders } from '/@/stores/flow-providers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import Overview from './messages/overview.svelte';
@@ -61,7 +60,7 @@ $effect(() => {
 	{/if}
 
 	{#each messages as message (message.id)}
-		<PreviewMessage {message} {readonly} {loading} {selectedModel} {selectedMCP} allowExportAsFlow={$hasInstalledFlowProviders}/>
+		<PreviewMessage {message} {readonly} {loading} {selectedModel} {selectedMCP}/>
 	{/each}
 
 	{#if loading && messages.length > 0 && messages[messages.length - 1].role === 'user'}
