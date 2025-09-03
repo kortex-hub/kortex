@@ -24,7 +24,7 @@ let {
 
 let providerInstallationInProgress = new SvelteMap<string, boolean>();
 let displayInstallModal = $state(false);
-let providerToBeInstalled = $state<{ provider: ProviderInfo; displayName: string } | undefined>(undefined);
+let providerToBeInstalled = $state<{ provider: ProviderInfo; displayName: string }>();
 let doExecuteAfterInstallation: (() => void) | undefined = undefined;
 
 onMount(() => {
