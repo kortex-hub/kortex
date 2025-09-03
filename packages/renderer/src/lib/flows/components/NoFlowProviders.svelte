@@ -3,7 +3,7 @@ import { Link } from '@podman-desktop/ui-svelte';
 
 import { combinedInstalledExtensions } from '/@/stores/all-installed-extensions';
 
-import InstallGooseCliLink from './InstallGooseCliLink.svelte';
+import GooseCliInstall from './GooseCliInstall.svelte';
 
 let extension = $derived($combinedInstalledExtensions.find(e => e.id === 'kortex.goose'));
 </script>
@@ -16,7 +16,7 @@ let extension = $derived($combinedInstalledExtensions.find(e => e.id === 'kortex
       
       <ol class="text-center text-gray-500 space-y-3 list-inside">
         <li>
-          <InstallGooseCliLink/>
+          <GooseCliInstall/>
         </li>
       </ol>
 
