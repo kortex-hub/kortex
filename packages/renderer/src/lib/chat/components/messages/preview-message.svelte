@@ -6,7 +6,6 @@ import { toast } from 'svelte-sonner';
 import { router } from 'tinro';
 
 import { cn } from '/@/lib/chat/utils/shadcn';
-import InstallGooseCliLink from '/@/lib/flows/components/InstallGooseCliLink.svelte';
 import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
 import Markdown from '/@/lib/markdown/Markdown.svelte';
 import { hasInstalledFlowProviders } from '/@/stores/flow-providers';
@@ -143,11 +142,7 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type 
 										class="h-fit rounded-md p-[7px] hover:bg-zinc-200 dark:border-zinc-700 hover:dark:bg-zinc-900"
 										onclick={(event): void => {
 											event.preventDefault();
-											if ($hasInstalledFlowProviders) {
-												exportAsFlow();
-											} else {
-												toast.error(InstallGooseCliLink);
-											}
+											exportAsFlow();
 										}}
 										disabled={loading}
 										variant="ghost"
