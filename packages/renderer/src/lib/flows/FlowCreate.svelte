@@ -157,7 +157,7 @@ async function generate(): Promise<void> {
 
               <!-- prompt -->
               <div>
-                <span>Prompt (System prompt)</span>
+                <span>Prompt</span>
                 <Textarea
                   placeholder="Prompt"
                   bind:value={prompt}
@@ -167,7 +167,7 @@ async function generate(): Promise<void> {
                 />
               </div>
 
-              <!-- system prompt -->
+              <!-- instruction -->
               <div>
                 <span>Instruction</span>
                 <Textarea
