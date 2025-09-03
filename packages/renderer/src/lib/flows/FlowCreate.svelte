@@ -8,7 +8,7 @@ import MCPSelector from '/@/lib/chat/components/mcp-selector.svelte';
 import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
 import { Textarea } from '/@/lib/chat/components/ui/textarea';
 import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
-import { getModels } from '/@/lib/models/models-utils';
+import { getFirstModel, getModels } from '/@/lib/models/models-utils';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 import { handleNavigation } from '/@/navigation';
 import { providerInfos } from '/@/stores/providers';
@@ -22,7 +22,7 @@ import NoFlowProviders from './components/NoFlowProviders.svelte';
 
 let selectedMCP = $state<MCPRemoteServerInfo[]>($flowCreationStore?.mcp ?? []);
 let models: Array<ModelInfo> = $derived(getModels($providerInfos));
-let selectedModel = $state<ModelInfo | undefined>($flowCreationStore?.model);
+let selectedModel = $derived<ModelInfo | undefined>($flowCreationStore?.model ?? getFirstModel(models));
 
 // error
 let error: string | undefined = $state();

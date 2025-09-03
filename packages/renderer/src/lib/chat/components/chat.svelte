@@ -8,7 +8,7 @@ import { router } from 'tinro';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
-import { getModels } from '/@/lib/models/models-utils';
+import { getFirstModel, getModels } from '/@/lib/models/models-utils';
 import { providerInfos } from '/@/stores/providers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
@@ -33,18 +33,8 @@ let {
 
 let models: Array<ModelInfo> = $derived(getModels($providerInfos));
 
-let selectedModel = $state<ModelInfo | undefined>(getFirstModel());
+let selectedModel = $derived<ModelInfo | undefined>(getFirstModel(models));
 let selectedMCP = $state<MCPRemoteServerInfo[]>([]);
-
-function getFirstModel(): ModelInfo | undefined {
-  return models && models.length > 0 ? models[0] : undefined;
-}
-
-$effect(() => {
-  if (!selectedModel && models && models.length > 0) {
-    selectedModel = getFirstModel();
-  }
-});
 
 const chatHistory = ChatHistory.fromContext();
 
