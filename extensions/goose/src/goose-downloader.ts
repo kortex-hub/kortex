@@ -107,7 +107,7 @@ export class GooseDownloader implements Disposable {
 
     // Show the quickpick
     const selectedRelease = await this.windowAPI.showQuickPick(releasesMetadata, {
-      placeHolder: 'Select Kind version to download',
+      placeHolder: 'Select Goose CLI version to download',
     });
 
     if (!selectedRelease) {
