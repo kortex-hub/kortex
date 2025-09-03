@@ -53,8 +53,12 @@ const noMcps = $derived($mcpRemoteServerInfos.length === 0);
 						variant="outline"
 						class="order-2 ml-auto px-2 md:order-1 md:ml-0 md:h-fit md:px-2"
 						onclick={():void => {
-							router.goto('/');
-						}}
+              if ($router.path === '/') {
+                router.goto('/chat');
+              } else {
+                router.goto('/');
+              }
+            }}
 					>
 						<PlusIcon />
 						<span class="md:sr-only">New Chat</span>
