@@ -23,6 +23,10 @@ metadata:
     {{& annotations.flowId }}: {{{ recipe.flowId }}}
 spec:
   template:
+    metadata:
+      annotations:
+        {{& annotations.version }}: {{ kortex.version }}
+        {{& annotations.flowId }}: {{{ recipe.flowId }}}
     spec:
       containers:
         - name: goose
