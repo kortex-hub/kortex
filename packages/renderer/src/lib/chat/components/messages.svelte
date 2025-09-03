@@ -28,11 +28,9 @@ let {
 } = $props();
 
 let mounted = $state(false);
-let hasInstalledFlowProviders = $state(false);
 
 onMount(async () => {
   mounted = true;
-  hasInstalledFlowProviders = await window.hasInstalledFlowProviders();
 });
 
 const scrollLock = getLock('messages-scroll');
@@ -62,7 +60,7 @@ $effect(() => {
 	{/if}
 
 	{#each messages as message (message.id)}
-		<PreviewMessage {message} {readonly} {loading} {selectedModel} {selectedMCP} allowExportAsFlow={hasInstalledFlowProviders}/>
+		<PreviewMessage {message} {readonly} {loading} {selectedModel} {selectedMCP}/>
 	{/each}
 
 	{#if loading && messages.length > 0 && messages[messages.length - 1].role === 'user'}

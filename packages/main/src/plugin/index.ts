@@ -815,10 +815,6 @@ export class PluginSystem {
       return flowManager.all();
     });
 
-    this.ipcHandle('flows:hasInstalledFlowProviders', (_listener): boolean => {
-      return flowManager.hasInstalledFlowProviders();
-    });
-
     this.ipcHandle('flows:listExecute', async (_listener): Promise<Array<FlowExecuteInfo>> => {
       return flowManager.listExecutions();
     });
