@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: goose-{{ provider.name }}-credentials
+  name: goose-{{{ provider.name }}}-credentials
   labels:
     app: goose
   annotations:
     {{& annotations.version }}: {{ kortex.version }}
-    {{& annotations.flowId }}: {{ recipe.flowId }}
+    {{& annotations.flowId }}: {{{ recipe.flowId }}}
 stringData:
   {{#provider.credentials.env}}
     {{ key }}: {{ value }}
@@ -20,7 +20,7 @@ metadata:
     app: goose
   annotations:
     {{& annotations.version }}: {{ kortex.version }}
-    {{& annotations.flowId }}: {{ recipe.flowId }}
+    {{& annotations.flowId }}: {{{ recipe.flowId }}}
 spec:
   template:
     spec:
@@ -46,12 +46,12 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: goose-recipe-{{ recipe.name }}
+  name: goose-recipe-{{{ recipe.name }}}
   labels:
     app: goose
   annotations:
     {{& annotations.version }}: {{ kortex.version }}
-    {{& annotations.flowId }}: {{ recipe.flowId }}
+    {{& annotations.flowId }}: {{{ recipe.flowId }}}
 data:
   recipe.yaml: |
   {{#recipe.content }}
