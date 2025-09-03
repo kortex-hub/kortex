@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Button, Checkbox, Spinner, Tab } from '@podman-desktop/ui-svelte';
+import { Button, Checkbox, ErrorMessage, Spinner, Tab } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 import { router } from 'tinro';
 
@@ -65,6 +65,8 @@ const flowExecutions = $derived(
   ),
 );
 
+let error: string | undefined = $state(undefined);
+
 $effect(() => {
   if (!selectedFlowExecuteId && flowExecutions.length > 0) {
     selectedFlowExecuteId = flowExecutions[flowExecutions.length - 1].taskId;
@@ -109,7 +111,7 @@ async function applyKubernetes(): Promise<void> {
     );
     router.goto('/jobs');
   } catch (err: unknown) {
-    console.error('something went wrong while applying resources', err);
+    error = String(err);
   }
 }
 
@@ -165,6 +167,9 @@ function setSelectedFlowExecuteId(flowExecuteId: string): void {
         <MonacoEditor content={flowContent} language="yaml" readOnly={true} />
       </Route>
       <Route path="/kubernetes" breadcrumb="Kube" navigationHint="tab">
+        {#if error}
+          <ErrorMessage error={error} />
+        {/if}
         <div class="flex flex-row px-4 items-center justify-between">
           <Checkbox bind:checked={hideSecretsKubernetesYAML} onclick={refreshKubernetes} title="Hide Secrets">Hide Secret</Checkbox>
           <div class="flex flex-row gap-x-2">
