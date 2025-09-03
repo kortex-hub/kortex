@@ -8,7 +8,7 @@ import { router } from 'tinro';
 import { cn } from '/@/lib/chat/utils/shadcn';
 import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
 import Markdown from '/@/lib/markdown/Markdown.svelte';
-import { hasInstalledFlowProviders } from '/@/stores/flow-providers';
+import { isGooseCliToolInstalled } from '/@/stores/goose-cli-tool';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import PencilEditIcon from '../icons/pencil-edit.svelte';
@@ -146,7 +146,7 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type 
 										}}
 										disabled={loading}
 										variant="ghost"
-										title={$hasInstalledFlowProviders? 'Export as Flow' : 'Install flow provider to enable save.'}
+										title={$isGooseCliToolInstalled? 'Export as Flow' : 'Install flow provider to enable save.'}
 									>
 										<PlusIcon size={14}>
 										</PlusIcon>
