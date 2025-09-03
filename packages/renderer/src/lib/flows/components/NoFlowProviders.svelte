@@ -1,6 +1,5 @@
 <script lang="ts">
 import { Button, Link } from '@podman-desktop/ui-svelte';
-import { toast } from 'svelte-sonner';
 
 import { combinedInstalledExtensions } from '/@/stores/all-installed-extensions';
 
@@ -12,26 +11,9 @@ interface Props {
 
 let { retryCheck }: Props = $props();
 
-async function restartAndCheck(): Promise<void> {
-  if (extension) {
-    if (extension.state === 'started' || extension.state === 'starting') {
-      await window.stopExtension(extension.id);
-    }
-    await window.startExtension(extension.id);
-
-    const maxAttempts = 300;
-    let attempts = 0;
-
-    while (attempts < maxAttempts) {
-      if (extension.state === 'started') {
-        retryCheck();
-        return;
-      }
-      await new Promise(resolve => setTimeout(resolve, 100));
-      attempts++;
-    }
-    toast.error(`Extension did not reach started state within timeout period`);
-  }
+async function refresh(): Promise<void> {
+  await window.refreshFlows();
+  retryCheck();
 }
 
 let extension = $derived($combinedInstalledExtensions.find(e => e.id === 'kortex.goose'));
@@ -48,7 +30,7 @@ let extension = $derived($combinedInstalledExtensions.find(e => e.id === 'kortex
           <InstallGooseCliLink/>
         </li>
         <li class="flex items-center gap-2">Once the CLI is installed, restart the Goose extension using this button:
-          <Button onclick={restartAndCheck}>Check</Button>
+          <Button onclick={refresh}>Check</Button>
         </li>
       </ol>
 
