@@ -29,7 +29,7 @@ let extension = $derived($combinedInstalledExtensions.find(e => e.id === 'kortex
         <li>
           <InstallGooseCliLink/>
         </li>
-        <li class="flex items-center gap-2">Once the CLI is installed, restart the Goose extension using this button:
+        <li class="flex items-center gap-2">Once the CLI is installed, refresh the status using this button:
           <Button onclick={refresh}>Check</Button>
         </li>
       </ol>
