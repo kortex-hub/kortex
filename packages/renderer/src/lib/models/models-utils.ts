@@ -1,3 +1,4 @@
+import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import type { ProviderInfo } from '/@api/provider-info';
 
 export interface ModelInfo {
@@ -24,4 +25,7 @@ export function getModels(providerInfos: ProviderInfo[]): ModelInfo[] {
     },
     [] as Array<ModelInfo>,
   );
+}
+export function getFirstModel(models: Array<ModelInfo>): ModelInfo | undefined {
+  return models && models.length > 0 ? models[0] : undefined;
 }
