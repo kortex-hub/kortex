@@ -3,6 +3,7 @@ import { faPlusCircle } from '@fortawesome/free-solid-svg-icons';
 import { Button, ErrorMessage, FormPage, Input } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
+import McpIcon from '/@/lib/images/MCPIcon.svelte';
 import { mcpRegistriesServerInfos } from '/@/stores/mcp-registry-servers';
 
 import Markdown from '../markdown/Markdown.svelte';
@@ -62,6 +63,7 @@ async function navigateToMcps(): Promise<void> {
 
 {#if mcpRegistryServerDetail}
   <FormPage title="Adding {mcpRegistryServerDetail.name}" inProgress={createInProgress} onclose={navigateToMcps}>
+    {#snippet icon()}<McpIcon size={24} />{/snippet}
     {#snippet content()}
       <div class="p-5 min-w-full h-full flex flex-col text-sm space-y-5">
         <form on:submit|preventDefault={createMcpServer}>
