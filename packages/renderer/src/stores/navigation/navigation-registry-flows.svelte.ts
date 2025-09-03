@@ -15,14 +15,14 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import VolumeIcon from '/@/lib/images/VolumeIcon.svelte';
+import FlowIcon from '/@/lib/images/FlowIcon.svelte';
 
 import type { NavigationRegistryEntry } from './navigation-registry';
 
 export function createNavigationFlowsEntry(): NavigationRegistryEntry {
   const registry: NavigationRegistryEntry = {
     name: 'Flows',
-    icon: { iconComponent: VolumeIcon },
+    icon: { iconComponent: FlowIcon },
     link: '/flows',
     tooltip: 'Flows',
     type: 'entry',

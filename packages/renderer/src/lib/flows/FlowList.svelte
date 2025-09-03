@@ -8,6 +8,7 @@ import { flowsInfos } from '/@/stores/flows';
 import type { FlowInfo } from '/@api/flow-info';
 import { NavigationPage } from '/@api/navigation-page';
 
+import FlowIcon from '../images/FlowIcon.svelte';
 import EmptyFlowScreen from './components/EmptyFlowScreen.svelte';
 import NoFlowProviders from './components/NoFlowProviders.svelte';
 import FlowActions from './FlowActions.svelte';
@@ -16,6 +17,11 @@ type FlowSelectable = FlowInfo & { selected: boolean };
 
 const row = new TableRow<FlowSelectable>({
   selectable: (_): boolean => false,
+});
+
+const itemColumn = new TableColumn<FlowSelectable>('flow', {
+  width: '40px',
+  renderer: FlowIcon,
 });
 
 let pathColumn = new TableColumn<FlowSelectable>('Path', {
@@ -29,7 +35,7 @@ const flowActions = new TableColumn<FlowSelectable>('Actions', {
   overflow: true,
 });
 
-const columns = [pathColumn, flowActions];
+const columns = [itemColumn, pathColumn, flowActions];
 
 function key(flow: FlowSelectable): string {
   return flow.path;
