@@ -14,6 +14,7 @@ import Route from '../../Route.svelte';
 import FormPage from '../ui/FormPage.svelte';
 import TerminalWindow from '../ui/TerminalWindow.svelte';
 import PreferencesConnectionCreationRendering from './PreferencesConnectionCreationOrEditRendering.svelte';
+import ProviderInfoIcon from './ProviderInfoIcon.svelte';
 import { writeToTerminal } from './Util';
 
 interface Props {
@@ -92,14 +93,7 @@ async function stopReceivingLogs(providerInternalId: string): Promise<void> {
 <Route path="/*" breadcrumb={providerInfo?.name} navigationHint="details">
   <FormPage title={title} inProgress={inProgress}>
     {#snippet icon()}
-      {#if providerInfo?.images?.icon}
-        {#if typeof providerInfo.images.icon === 'string'}
-          <img src={providerInfo.images.icon} alt={providerInfo.name} class="max-h-10" />
-          <!-- TODO check theme used for image, now use dark by default -->
-        {:else}
-          <img src={providerInfo.images.icon.dark} alt={providerInfo.name} class="max-h-10" />
-        {/if}
-      {/if}
+     <ProviderInfoIcon {providerInfo}/>
     {/snippet}
 
     {#snippet actions()}

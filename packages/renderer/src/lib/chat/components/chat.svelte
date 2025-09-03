@@ -1,10 +1,8 @@
 <script lang="ts">
 import { Chat, type UIMessage } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
-import { Button } from '@podman-desktop/ui-svelte';
 import { untrack } from 'svelte';
 import { toast } from 'svelte-sonner';
-import { router } from 'tinro';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
@@ -18,6 +16,7 @@ import { IPCChatTransport } from './ipc-chat-transport';
 import McpMessages from './mcp-messages.svelte';
 import Messages from './messages.svelte';
 import MultimodalInput from './multimodal-input.svelte';
+import NoModelsAvailable from './NoModelsAvailable.svelte';
 
 let {
   user,
@@ -109,13 +108,7 @@ const hasModels = $derived(models && models.length > 0);
             </div>
             <McpMessages messages={chatClient.messages} />
         {:else}
-            <div class="flex flex-col items-center justify-center w-full p-8 text-center">
-                <h2 class="text-2xl font-semibold mb-4">No AI Models Available</h2>
-                <p class="text-muted-foreground mb-6">You need to configure at least one AI model to start chatting.</p>
-                <Button onclick={():void => router.goto('/preferences/resources')}>
-                    Configure Models
-                </Button>
-            </div>
+            <NoModelsAvailable />
         {/if}
     </div>
 </div>
