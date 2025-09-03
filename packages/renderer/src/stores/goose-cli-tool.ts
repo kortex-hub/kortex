@@ -8,6 +8,6 @@ export const gooseCliTool = derived(cliToolInfos, $cliToolInfos => {
   return $cliToolInfos.find(c => c.id === gooseCliToolId);
 });
 
-export const hasInstalledFlowProviders = derived(cliToolInfos, $cliToolInfos => {
+export const isGooseCliToolInstalled = derived(cliToolInfos, $cliToolInfos => {
   return !!$cliToolInfos.find(c => c.path && c.id === gooseCliToolId);
 });

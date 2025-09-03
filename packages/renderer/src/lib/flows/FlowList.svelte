@@ -4,8 +4,8 @@ import { Button, NavPage, Table, TableColumn, TableRow } from '@podman-desktop/u
 
 import FlowName from '/@/lib/flows/columns/FlowName.svelte';
 import { handleNavigation } from '/@/navigation';
-import { hasInstalledFlowProviders } from '/@/stores/flow-providers';
 import { flowsInfos } from '/@/stores/flows';
+import { isGooseCliToolInstalled } from '/@/stores/goose-cli-tool';
 import type { FlowInfo } from '/@api/flow-info';
 import { NavigationPage } from '/@api/navigation-page';
 
@@ -51,7 +51,7 @@ function navigateToCreateFlow(): void {
 
 <NavPage searchEnabled={false} title="Flows">
   {#snippet additionalActions()}
-    {#if $hasInstalledFlowProviders}
+    {#if $isGooseCliToolInstalled}
       <Button icon={faPencil} onclick={navigateToCreateFlow}>
         Create
       </Button>
@@ -63,7 +63,7 @@ function navigateToCreateFlow(): void {
 
   {#snippet content()}
     <div class="w-full flex justify-center">
-      {#if $hasInstalledFlowProviders}
+      {#if $isGooseCliToolInstalled}
         {#if $flowsInfos.length === 0}
           <EmptyFlowScreen onclick={navigateToCreateFlow} />
         {:else}
