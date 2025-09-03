@@ -31,8 +31,8 @@ let loading: boolean = $state(false);
 // form field
 let name: string = $state(`flow-${generateWords({ exactly: 2, join: '-' })}`);
 let description: string = $state('');
-let instruction: string = $state($flowCreationStore?.prompt ?? '');
-let prompt: string = $state('You are a helpful assistant.');
+let instruction: string = $state('You are a helpful assistant.');
+let prompt: string = $state($flowCreationStore?.prompt ?? '');
 let flowProviderConnectionKey: string | undefined = $state<string>();
 flowCreationStore.set(undefined);
 
@@ -157,7 +157,7 @@ async function generate(): Promise<void> {
 
               <!-- prompt -->
               <div>
-                <span>Prompt (System prompt)</span>
+                <span>Prompt</span>
                 <Textarea
                   placeholder="Prompt"
                   bind:value={prompt}
@@ -167,7 +167,7 @@ async function generate(): Promise<void> {
                 />
               </div>
 
-              <!-- system prompt -->
+              <!-- instruction -->
               <div>
                 <span>Instruction</span>
                 <Textarea
