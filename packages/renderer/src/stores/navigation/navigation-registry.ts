@@ -61,9 +61,9 @@ let values: NavigationRegistryEntry[] = [];
 let initialized = false;
 const init = (): void => {
   values.push(createNavigationMcpEntry());
-  values.push(createNavigationExtensionEntry());
   values.push(createNavigationFlowsEntry());
   values.push(createNavigationJobsEntry());
+  values.push(createNavigationExtensionEntry());
   values.push(createNavigationExtensionGroup());
   hideItems().catch((err: unknown) => console.error('Error hiding navigation items', err));
 };
