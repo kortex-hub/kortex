@@ -1,10 +1,11 @@
 <script lang="ts">
 import { faPlusCircle } from '@fortawesome/free-solid-svg-icons';
 import { Button, ErrorMessage, FormPage, Input } from '@podman-desktop/ui-svelte';
-import { router } from 'tinro';
 
 import McpIcon from '/@/lib/images/MCPIcon.svelte';
+import { handleNavigation } from '/@/navigation';
 import { mcpRegistriesServerInfos } from '/@/stores/mcp-registry-servers';
+import { NavigationPage } from '/@api/navigation-page';
 
 import Markdown from '../markdown/Markdown.svelte';
 import PasswordInput from '../ui/PasswordInput.svelte';
@@ -57,7 +58,7 @@ async function createMcpServer(): Promise<void> {
 }
 
 async function navigateToMcps(): Promise<void> {
-  router.goto('/mcps');
+  return handleNavigation({ page: NavigationPage.MCP_READY });
 }
 </script>
 

@@ -6,7 +6,24 @@ import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import McpServerListRegistryInstall from './MCPServerListRegistryInstall.svelte';
 import McpServerListRemoteReady from './MCPServerListRemoteReady.svelte';
 
-let selectedTab = $state<'READY' | 'INSTALLABLE'>($mcpRemoteServerInfos.length ? 'READY' : 'INSTALLABLE');
+interface Props {
+  mode?: 'READY' | 'INSTALLABLE';
+}
+
+const { mode }: Props = $props();
+
+let selectedTab = $state<'READY' | 'INSTALLABLE'>('INSTALLABLE');
+
+$effect(() => {
+  if (mode === 'READY') {
+    selectedTab = 'READY';
+  } else if (mode === 'INSTALLABLE') {
+    selectedTab = 'INSTALLABLE';
+  } else {
+    // no mode selected, then use install if no remote mcp, else ready
+    selectedTab = $mcpRemoteServerInfos.length > 0 ? 'READY' : 'INSTALLABLE';
+  }
+});
 </script>
 
 <NavPage searchEnabled={false} title="MCP servers">
