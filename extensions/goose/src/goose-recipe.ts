@@ -173,12 +173,12 @@ export class GooseRecipe implements Disposable {
       },
     });
   }
-  
+
   protected async delete(flowId: string): Promise<void> {
     const path = await this.getFlowPath(flowId);
     await unlink(path);
   }
-  
+
   private async getFlowInfos(flowId: string): Promise<{
     env: Record<string, string>;
     providerId: string;
@@ -200,7 +200,7 @@ export class GooseRecipe implements Disposable {
       .getInferenceConnections()
       .find(c => c.providerId === providerId && c.connection.models.some(m => m.label === gooseModel));
 
-    function getEnv(): Record<string, string> {
+    function getGooseEnv(): Record<string, string> {
       if (!connection) throw new Error(`cannot find connection for ${providerId} ${gooseModel}`);
 
       switch (providerId) {
@@ -215,7 +215,7 @@ export class GooseRecipe implements Disposable {
           throw new Error(`Unsupported provider ${providerId}`);
       }
     }
-    return { env: getEnv(), providerId, recipeName, flowPath, content };
+    return { env: getGooseEnv(), providerId, recipeName, flowPath, content };
   }
 
   protected async deployKubernetes(options: FlowGenerateKubernetesOptions): Promise<FlowGenerateKubernetesResult> {
