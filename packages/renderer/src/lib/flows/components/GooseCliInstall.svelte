@@ -1,5 +1,5 @@
 <script lang="ts">
-import { gooseCliTool } from '/@/stores/flow-providers';
+import { gooseCliTool } from '/@/stores/goose-cli-tool';
 
 import PreferencesCliTool from '../../preferences/PreferencesCliTool.svelte';
 </script>
