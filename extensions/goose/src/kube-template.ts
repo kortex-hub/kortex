@@ -38,7 +38,7 @@ export interface KubeTemplateOptions {
 }
 
 // https://github.com/packit/ai-workflows/tree/main/goose-container
-export const GOOSE_IMAGE = 'quay.io/jotnar/goose:latest';
+export const GOOSE_IMAGE = 'quay.io/kortex/goose:2025-09-03'; //'quay.io/jotnar/goose:latest';
 
 export const KORTEX_VERSION_ANNOTATION = 'kortex-hub/version';
 export const KORTEX_FLOW_ID_ANNOTATION = 'kortex-hub/flow-id';
