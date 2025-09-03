@@ -179,8 +179,8 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
         </Route>
 
         <!-- MCP -->
-        <Route path="/mcps" breadcrumb="MCPs" navigationHint="root">
-          <McpServerList />
+        <Route path="/mcps" breadcrumb="MCPs" navigationHint="root" let:meta>
+          <McpServerList tab="{meta.query.tab}"/>
         </Route>
         <Route path="/mcps/:id/*" let:meta>
           <MCPDetails id={meta.params.id} />
