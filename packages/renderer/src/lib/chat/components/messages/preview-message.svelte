@@ -9,6 +9,7 @@ import { cn } from '/@/lib/chat/utils/shadcn';
 import InstallGooseCliLink from '/@/lib/flows/components/InstallGooseCliLink.svelte';
 import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
 import Markdown from '/@/lib/markdown/Markdown.svelte';
+import { hasInstalledFlowProviders } from '/@/stores/flow-providers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import PencilEditIcon from '../icons/pencil-edit.svelte';
@@ -27,14 +28,12 @@ let {
   loading,
   selectedModel,
   selectedMCP,
-  allowExportAsFlow,
 }: {
   message: UIMessage;
   readonly: boolean;
   loading: boolean;
   selectedModel?: ModelInfo;
   selectedMCP: MCPRemoteServerInfo[];
-  allowExportAsFlow: boolean;
 } = $props();
 
 let mode = $state<'view' | 'edit'>('view');
@@ -143,7 +142,7 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type 
 										onclick={(event): void => {
 											event.preventDefault();
 											populateFlowCreationStore();
-											if (allowExportAsFlow) {
+											if ($hasInstalledFlowProviders) {
 												router.goto('/flows/create');
 											} else {
 												toast.error(InstallGooseCliLink);
@@ -151,7 +150,7 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type 
 										}}
 										disabled={loading}
 										variant="ghost"
-										title={allowExportAsFlow? 'Export as Flow' : 'Install flow provider to enable save.'}
+										title={$hasInstalledFlowProviders? 'Export as Flow' : 'Install flow provider to enable save.'}
 									>
 										<PlusIcon size={14}>
 										</PlusIcon>
