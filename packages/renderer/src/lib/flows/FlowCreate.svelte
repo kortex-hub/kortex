@@ -11,7 +11,7 @@ import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
 import { getFirstModel, getModels } from '/@/lib/models/models-utils';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 import { handleNavigation } from '/@/navigation';
-import { cliToolInfos } from '/@/stores/cli-tools';
+import { hasInstalledFlowProviders } from '/@/stores/flow-providers';
 import { providerInfos } from '/@/stores/providers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import { NavigationPage } from '/@api/navigation-page';
@@ -37,7 +37,6 @@ let prompt: string = $state($flowCreationStore?.prompt ?? '');
 let flowProviderConnectionKey: string | undefined = $state<string>();
 flowCreationStore.set(undefined);
 
-const hasInstalledFlowProviders = $derived($cliToolInfos.find(c => c.path && c.id === 'kortex.goose.goose'));
 let showFlowConnectionSelector = $state(true);
 
 onMount(() => {
@@ -104,7 +103,7 @@ async function generate(): Promise<void> {
 <FormPage title="Flow Create" inProgress={loading}>
   {#snippet content()}
     <div class="px-5 pb-5 min-w-full">
-    {#if hasInstalledFlowProviders}
+    {#if $hasInstalledFlowProviders}
         <div class="bg-[var(--pd-content-card-bg)] px-6 py-4">
           <div class="flex flex-col">
             <div>You can create a flow using this form by selecting a model, one or several tools (from MCP servers)

@@ -3,7 +3,7 @@ import type { UIMessage } from '@ai-sdk/svelte';
 import { onMount } from 'svelte';
 
 import { getLock } from '/@/lib/chat/hooks/lock';
-import { cliToolInfos } from '/@/stores/cli-tools';
+import { hasInstalledFlowProviders } from '/@/stores/flow-providers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import Overview from './messages/overview.svelte';
@@ -29,8 +29,6 @@ let {
 } = $props();
 
 let mounted = $state(false);
-
-const hasInstalledFlowProviders = $derived(!!$cliToolInfos.find(c => c.path && c.id === 'kortex.goose.goose'));
 
 onMount(async () => {
   mounted = true;
@@ -63,7 +61,7 @@ $effect(() => {
 	{/if}
 
 	{#each messages as message (message.id)}
-		<PreviewMessage {message} {readonly} {loading} {selectedModel} {selectedMCP} allowExportAsFlow={hasInstalledFlowProviders}/>
+		<PreviewMessage {message} {readonly} {loading} {selectedModel} {selectedMCP} allowExportAsFlow={$hasInstalledFlowProviders}/>
 	{/each}
 
 	{#if loading && messages.length > 0 && messages[messages.length - 1].role === 'user'}

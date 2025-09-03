@@ -4,7 +4,7 @@ import { Button, NavPage, Table, TableColumn, TableRow } from '@podman-desktop/u
 
 import FlowName from '/@/lib/flows/columns/FlowName.svelte';
 import { handleNavigation } from '/@/navigation';
-import { cliToolInfos } from '/@/stores/cli-tools';
+import { hasInstalledFlowProviders } from '/@/stores/flow-providers';
 import { flowsInfos } from '/@/stores/flows';
 import type { FlowInfo } from '/@api/flow-info';
 import { NavigationPage } from '/@api/navigation-page';
@@ -47,16 +47,11 @@ function navigateToCreateFlow(): void {
     page: NavigationPage.FLOW_CREATE,
   });
 }
-
-const hasInstalledFlowProviders = $derived.by(() => {
-  console.log($cliToolInfos);
-  return $cliToolInfos.find(c => c.path && c.id === 'kortex.goose.goose');
-});
 </script>
 
 <NavPage searchEnabled={false} title="Flows">
   {#snippet additionalActions()}
-    {#if hasInstalledFlowProviders}
+    {#if $hasInstalledFlowProviders}
       <Button icon={faPencil} onclick={navigateToCreateFlow}>
         Create
       </Button>
@@ -68,7 +63,7 @@ const hasInstalledFlowProviders = $derived.by(() => {
 
   {#snippet content()}
     <div class="w-full flex justify-center">
-      {#if hasInstalledFlowProviders}
+      {#if $hasInstalledFlowProviders}
         {#if $flowsInfos.length === 0}
           <EmptyFlowScreen onclick={navigateToCreateFlow} />
         {:else}
