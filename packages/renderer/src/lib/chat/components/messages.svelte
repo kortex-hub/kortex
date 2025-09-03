@@ -3,6 +3,7 @@ import type { UIMessage } from '@ai-sdk/svelte';
 import { onMount } from 'svelte';
 
 import { getLock } from '/@/lib/chat/hooks/lock';
+import { cliToolInfos } from '/@/stores/cli-tools';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import Overview from './messages/overview.svelte';
@@ -28,11 +29,11 @@ let {
 } = $props();
 
 let mounted = $state(false);
-let hasInstalledFlowProviders = $state(false);
+
+const hasInstalledFlowProviders = $derived(!!$cliToolInfos.find(c => c.path && c.id === 'kortex.goose.goose'));
 
 onMount(async () => {
   mounted = true;
-  hasInstalledFlowProviders = await window.hasInstalledFlowProviders();
 });
 
 const scrollLock = getLock('messages-scroll');
