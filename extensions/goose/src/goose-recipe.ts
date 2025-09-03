@@ -158,7 +158,6 @@ export class GooseRecipe implements Disposable {
       name: 'goose-recipes',
       flow: {
         all: this.all.bind(this),
-        installed: this.gooseCLI.installed,
         onDidChange: this.updateEmitter.event,
         read: this.read.bind(this),
         create: this.create.bind(this),

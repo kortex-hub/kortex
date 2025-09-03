@@ -305,10 +305,6 @@ export function initExposure(): void {
     return ipcInvoke('flows:list');
   });
 
-  contextBridge.exposeInMainWorld('hasInstalledFlowProviders', async (): Promise<boolean> => {
-    return ipcInvoke('flows:hasInstalledFlowProviders');
-  });
-
   contextBridge.exposeInMainWorld('listExecuteFlows', async (): Promise<Array<FlowExecuteInfo>> => {
     return ipcInvoke('flows:listExecute');
   });
