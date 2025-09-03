@@ -9,6 +9,9 @@ import MonacoEditor from '/@/lib/editor/MonacoEditor.svelte';
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
+import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+
+import McpIcon from '../images/MCPIcon.svelte';
 
 interface Props {
   id: string;
@@ -25,6 +28,10 @@ async function refreshMessages(): Promise<void> {
     console.error('Failed to fetch MCP exchanges', e);
   }
 }
+
+const mcpServer = $derived($mcpRemoteServerInfos.find(server => server.id === id));
+const mcpServerName = $derived(mcpServer?.name ?? id);
+const mcpServerUrl = $derived(mcpServer?.url ?? '');
 
 onMount(() => {
   window
@@ -44,7 +51,10 @@ onMount(() => {
 });
 </script>
 
-<DetailsPage title={id}>
+<DetailsPage title={mcpServerName} subtitle={id}>
+  {#snippet iconSnippet()}
+      <McpIcon size={24} />
+  {/snippet}
   {#snippet tabsSnippet()}
     <Tab title="Summary" selected={isTabSelected($router.path, 'summary')} url={getTabUrl($router.path, 'summary')} />
     <Tab title="Tools" selected={isTabSelected($router.path, 'tools')} url={getTabUrl($router.path, 'tools')} />
@@ -52,7 +62,10 @@ onMount(() => {
   {/snippet}
   {#snippet contentSnippet()}
     <Route path="/summary" breadcrumb="Summary" navigationHint="tab">
-      <span>content for {id}</span>
+      <div class="flex flex-col p-5 gap-2">
+        <span>url: {mcpServerUrl}</span>
+        <span>id: {id}</span>
+      </div>
     </Route>
     <Route path="/tools" breadcrumb="Tools" navigationHint="tab">
       {#if toolSet}
