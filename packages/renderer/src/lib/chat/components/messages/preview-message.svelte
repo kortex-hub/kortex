@@ -39,7 +39,7 @@ let {
 
 let mode = $state<'view' | 'edit'>('view');
 
-const exportAsFlow = (): void => {
+const populateFlowCreationStore = (): void => {
   if (!selectedModel) {
     toast.error(`There's no selected model to export as a flow.`);
     return;
@@ -57,8 +57,6 @@ const exportAsFlow = (): void => {
     model: selectedModel,
     mcp: selectedMCP,
   });
-
-  router.goto('/flows/create');
 };
 
 const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type === 'dynamic-tool') ?? [];
@@ -144,8 +142,9 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type 
 										class="h-fit rounded-md p-[7px] hover:bg-zinc-200 dark:border-zinc-700 hover:dark:bg-zinc-900"
 										onclick={(event): void => {
 											event.preventDefault();
+											populateFlowCreationStore();
 											if (allowExportAsFlow) {
-												exportAsFlow();
+												router.goto('/flows/create');
 											} else {
 												toast.error(InstallGooseCliLink);
 											}
