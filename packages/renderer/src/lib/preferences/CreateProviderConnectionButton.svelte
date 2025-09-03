@@ -104,7 +104,7 @@ function hideInstallModal(): void {
     aria-label="Create new {providerDisplayName}"
     inProgress={providerInstallationInProgress.get(provider.name)}
     onclick={(): Promise<void> => doCreateNew(provider, providerDisplayName)}>
-    {buttonTitle}
+    {buttonTitle} ...
   </Button>
 </Tooltip>
 
