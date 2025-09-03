@@ -67,7 +67,7 @@ function onSelect(mcp: MCPRemoteServerInfo, event: Event): void {
           <DropdownMenuItem
             onSelect={onSelect.bind(undefined, mcpRemoteServerInfo)}
             class="group/item flex flex-row items-center justify-between gap-4"
-            data-active={selected.find(s => s.id === mcpRemoteServerInfo.id)}
+            data-active={!!selected.find(s => s.id === mcpRemoteServerInfo.id)}
           >
             <div class="flex flex-col items-start gap-1">
               <div>{mcpRemoteServerInfo.name}</div>
