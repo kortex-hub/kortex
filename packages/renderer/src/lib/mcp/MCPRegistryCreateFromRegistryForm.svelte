@@ -57,7 +57,7 @@ async function createMcpServer(): Promise<void> {
 }
 
 async function navigateToMcps(): Promise<void> {
-  router.goto('/mcps');
+  router.goto('/mcps?tab=READY');
 }
 </script>
 

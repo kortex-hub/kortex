@@ -6,7 +6,13 @@ import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import McpServerListRegistryInstall from './MCPServerListRegistryInstall.svelte';
 import McpServerListRemoteReady from './MCPServerListRemoteReady.svelte';
 
-let selectedTab = $state<'READY' | 'INSTALLABLE'>($mcpRemoteServerInfos.length ? 'READY' : 'INSTALLABLE');
+interface Props {
+  tab?: string;
+}
+
+const { tab }: Props = $props();
+
+let selectedTab = $state<'READY' | 'INSTALLABLE'>((tab ?? $mcpRemoteServerInfos.length) ? 'READY' : 'INSTALLABLE');
 </script>
 
 <NavPage searchEnabled={false} title="MCP servers">
