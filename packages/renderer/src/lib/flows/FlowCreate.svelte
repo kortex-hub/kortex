@@ -109,7 +109,7 @@ async function generate(): Promise<void> {
             <div>You can create a flow using this form by selecting a model, one or several tools (from MCP servers)
               and specifying instructions.</div>
             <div>A flow can also be created by exporting a chat session. All information's on this page will then automatically be filled.</div>
-            <div class="flex flex-row gap-1 items-center">The export feature in the chat window is available through the <ExportIcon scale={1}/> icon</div>
+            <div class="flex flex-row gap-1 items-center">The export feature in the chat window is available through the <ExportIcon size="1x"/> icon</div>
           </div>
           {#if error}
             <ErrorMessage {error}/>

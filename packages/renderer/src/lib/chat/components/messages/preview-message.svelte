@@ -148,7 +148,7 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type 
 										variant="ghost"
 										title={$isGooseCliToolInstalled? 'Export as Flow' : 'Install flow provider to enable save.'}
 									>
-										<ExportIcon scale={2}/>
+										<ExportIcon size="2x"/>
 									</Button>
 							{/if}
 						</div>

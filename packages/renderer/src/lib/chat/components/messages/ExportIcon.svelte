@@ -1,12 +1,12 @@
 <script lang="ts">
 import { faFileExport } from '@fortawesome/free-solid-svg-icons/faFileExport';
-import Fa from 'svelte-fa';
+import Fa, { type IconSize } from 'svelte-fa';
 
 let {
-  scale,
+  size,
 }: {
-  scale: number;
+  size: IconSize;
 } = $props();
 </script>
 
-<Fa icon={faFileExport} scale={scale}/>
+<Fa icon={faFileExport} size={size}/>
