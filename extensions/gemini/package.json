@@ -22,7 +22,8 @@
         "gemini.factory.apiKey": {
           "type": "string",
           "scope": "InferenceProviderConnectionFactory",
-          "description": "Enter your Gemini API key (GEMINI_API_KEY)"
+          "description": "Enter your Gemini API key (GEMINI_API_KEY)",
+          "format": "password"
         }
       }
     }
