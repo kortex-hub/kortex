@@ -1,28 +1,30 @@
 <script lang="ts">
-import { Input } from '@podman-desktop/ui-svelte';
-
+import PasswordInput from '/@/lib/ui/PasswordInput.svelte';
 import type { IConfigurationPropertyRecordedSchema } from '/@api/configuration/models';
 
-export let record: IConfigurationPropertyRecordedSchema;
-export let value: string | undefined;
-export let onChange = async (_id: string, _value: string): Promise<void> => {};
+interface Props {
+  record: IConfigurationPropertyRecordedSchema;
+  value: string | undefined;
+  onChange: (id: string, value: string) => Promise<void>;
+}
 
-let invalidEntry = false;
+let { record, value, onChange }: Props = $props();
+
+let invalidEntry = $state(false);
 
 function onInput(event: Event): void {
   const target = event.target as HTMLInputElement;
-  if (record.id && target.value !== value) {
+  if (record.id && target.value !== value)
     onChange(record.id, target.value).catch((_: unknown) => (invalidEntry = true));
-  }
 }
 </script>
 
-<Input
+<PasswordInput
   on:input={onInput}
   class="grow"
   name={record.id}
   placeholder={record.placeholder}
-  value={value}
+  bind:value={value}
   readonly={!!record.readonly}
   id="input-standard-{record.id}"
   aria-invalid={invalidEntry}
