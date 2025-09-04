@@ -1,7 +1,9 @@
 <script lang="ts">
 import type { UIMessage } from '@ai-sdk/svelte';
+import { faFileExport } from '@fortawesome/free-solid-svg-icons/faFileExport';
 import type { DynamicToolUIPart } from 'ai';
 import { fly } from 'svelte/transition';
+import Fa from 'svelte-fa';
 import { toast } from 'svelte-sonner';
 import { router } from 'tinro';
 
@@ -12,7 +14,6 @@ import { isGooseCliToolInstalled } from '/@/stores/goose-cli-tool';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import PencilEditIcon from '../icons/pencil-edit.svelte';
-import PlusIcon from '../icons/plus.svelte';
 import SparklesIcon from '../icons/sparkles.svelte';
 import MessageReasoning from '../message-reasoning.svelte';
 import type { ModelInfo } from '../model-info';
@@ -109,7 +110,7 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type 
 					<MessageReasoning {loading} reasoning={part.text} />
 				{:else if type === 'text'}
 					{#if mode === 'view'}
-						<div class="flex flex-row items-start gap-2">
+						<div class="flex flex-row items-center gap-2">
 							{#if message.role === 'user' && !readonly}
 								<Tooltip>
 									<TooltipTrigger>
@@ -148,8 +149,7 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type 
 										variant="ghost"
 										title={$isGooseCliToolInstalled? 'Export as Flow' : 'Install flow provider to enable save.'}
 									>
-										<PlusIcon size={14}>
-										</PlusIcon>
+										<Fa icon={faFileExport} scale={2}/>
 									</Button>
 							{/if}
 						</div>
