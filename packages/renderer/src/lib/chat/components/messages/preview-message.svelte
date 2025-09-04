@@ -1,9 +1,7 @@
 <script lang="ts">
 import type { UIMessage } from '@ai-sdk/svelte';
-import { faFileExport } from '@fortawesome/free-solid-svg-icons/faFileExport';
 import type { DynamicToolUIPart } from 'ai';
 import { fly } from 'svelte/transition';
-import Fa from 'svelte-fa';
 import { toast } from 'svelte-sonner';
 import { router } from 'tinro';
 
@@ -20,6 +18,7 @@ import type { ModelInfo } from '../model-info';
 import PreviewAttachment from '../preview-attachment.svelte';
 import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import ExportIcon from './ExportIcon.svelte';
 import ToolParts from './tool-parts.svelte';
 
 let {
@@ -149,7 +148,7 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type 
 										variant="ghost"
 										title={$isGooseCliToolInstalled? 'Export as Flow' : 'Install flow provider to enable save.'}
 									>
-										<Fa icon={faFileExport} scale={2}/>
+										<ExportIcon size="2x"/>
 									</Button>
 							{/if}
 						</div>

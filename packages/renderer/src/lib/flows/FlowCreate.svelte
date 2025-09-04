@@ -16,7 +16,7 @@ import { providerInfos } from '/@/stores/providers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import { NavigationPage } from '/@api/navigation-page';
 
-import PlusIcon from '../chat/components/icons/plus.svelte';
+import ExportIcon from '../chat/components/messages/ExportIcon.svelte';
 import type { ModelInfo } from '../chat/components/model-info';
 import FlowConnectionSelector from './components/flow-connection-selector.svelte';
 import NoFlowProviders from './components/NoFlowProviders.svelte';
@@ -109,7 +109,7 @@ async function generate(): Promise<void> {
             <div>You can create a flow using this form by selecting a model, one or several tools (from MCP servers)
               and specifying instructions.</div>
             <div>A flow can also be created by exporting a chat session. All information's on this page will then automatically be filled.</div>
-            <div class="flex flex-row gap-1">The export feature in the chat window is available through the <PlusIcon size={14}/>icon</div>
+            <div class="flex flex-row gap-1 items-center">The export feature in the chat window is available through the <ExportIcon size="1x"/> icon</div>
           </div>
           {#if error}
             <ErrorMessage {error}/>
