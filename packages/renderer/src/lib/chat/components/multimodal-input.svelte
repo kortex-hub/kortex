@@ -91,7 +91,8 @@ async function uploadFile(file: File): Promise<
   formData.append('file', file);
 
   try {
-    const response = await fetch('/api/files/upload', {
+    const port = await window.getUploadServerPort();
+    const response = await fetch(`http://localhost:${port}/api/file/upload`, {
       method: 'POST',
       body: formData,
     });
@@ -202,7 +203,7 @@ $effect.pre(() => {
 	/>
 
 	<div class="absolute bottom-0 flex w-fit flex-row justify-start p-2">
-    
+
 		<Button
 			class="h-fit rounded-md rounded-bl-lg p-[7px] hover:bg-zinc-200 dark:border-zinc-700 hover:dark:bg-zinc-900"
 			onclick={(event): void => {

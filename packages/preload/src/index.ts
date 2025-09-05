@@ -2778,6 +2778,10 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld('unpinStatusBar', async (optionId: string): Promise<void> => {
     return ipcInvoke('statusbar:unpin', optionId);
   });
+
+  contextBridge.exposeInMainWorld('getUploadServerPort', async (): Promise<number> => {
+    return ipcInvoke('uploadServer:getPort');
+  });
 }
 
 // expose methods

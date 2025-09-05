@@ -69,6 +69,7 @@ import type { ExtensionBanner, RecommendedRegistry } from '/@/plugin/recommendat
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import { Uri } from '/@/plugin/types/uri.js';
 import { Updater } from '/@/plugin/updater.js';
+import { FileUploadServer } from '/@/plugin/upload/file-upload-server.js';
 import type { CliToolInfo } from '/@api/cli-tool-info.js';
 import type { ColorInfo } from '/@api/color-info.js';
 import type { CommandInfo } from '/@api/command-info.js';
@@ -701,6 +702,11 @@ export class PluginSystem {
 
     const webviewRegistry = container.get<WebviewRegistry>(WebviewRegistry);
     await webviewRegistry.start();
+
+    container.bind<FileUploadServer>(FileUploadServer).toSelf().inSingletonScope();
+
+    const fileUploadServer = container.get<FileUploadServer>(FileUploadServer);
+    await fileUploadServer.start();
 
     container
       .bind<PromiseWithResolvers<BrowserWindow>>(Promise.withResolvers<BrowserWindow>)
@@ -3281,6 +3287,10 @@ export class PluginSystem {
         return;
       }
       window.close();
+    });
+
+    this.ipcHandle('uploadServer:getPort', async (): Promise<number> => {
+      return fileUploadServer.getServerPort();
     });
 
     this.ipcHandle(

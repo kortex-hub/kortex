@@ -36,6 +36,7 @@ export class Directories {
   private contributionStorageDirectory: string;
   private safeStorageDirectory: string;
   protected desktopAppHomeDir: string;
+  private uploadsDirectory: string;
 
   constructor() {
     // read ENV VAR to override the App Home Dir
@@ -52,6 +53,7 @@ export class Directories {
     this.extensionsStorageDirectory = path.resolve(this.desktopAppHomeDir, 'extensions-storage');
     this.contributionStorageDirectory = path.resolve(this.desktopAppHomeDir, 'contributions');
     this.safeStorageDirectory = path.resolve(this.desktopAppHomeDir, 'safe-storage');
+    this.uploadsDirectory = path.resolve(this.desktopAppHomeDir, 'uploads');
   }
 
   getConfigurationDirectory(): string {
@@ -76,5 +78,9 @@ export class Directories {
 
   public getSafeStorageDirectory(): string {
     return this.safeStorageDirectory;
+  }
+
+  public getUploadsDirectory(): string {
+    return this.uploadsDirectory;
   }
 }
