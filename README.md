@@ -62,4 +62,4 @@ Kortex uses the Goose as a flow provider. So there are two options here:
 
 ### End to end workflow demo
 
-![](media/onboarding-demo.gif)
+![](https://raw.githubusercontent.com/kortex-hub/kortex/media/media/onboarding-demo.gif)
