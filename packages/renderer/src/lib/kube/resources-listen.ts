@@ -39,9 +39,6 @@ export async function listenResources(
   options: ListenResourcesOptions,
   callback: (resoures: KubernetesObject[]) => void,
 ): Promise<IDisposable | undefined> {
-  if (!(await isKubernetesExperimentalMode())) {
-    return;
-  }
   let searchTerm: string = '';
   let contextName: string | undefined;
   let searchTermStoreUnsubscribe: Unsubscriber | undefined;
@@ -114,9 +111,5 @@ function filter(resources: KubernetesObject[], searchTerm: string): KubernetesOb
 }
 
 export async function isKubernetesExperimentalMode(): Promise<boolean> {
-  try {
-    return await window.isExperimentalConfigurationEnabled('kubernetes.statesExperimental');
-  } catch {
-    return false;
-  }
+  return true;
 }

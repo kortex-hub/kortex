@@ -39,7 +39,7 @@ interface KubeContextWithStates extends KubeContext {
 const currentContextName = $derived($kubernetesContexts.find(c => c.currentContext)?.name);
 
 let kubeconfigFilePath: string = $state('');
-let experimentalStates: boolean = $state(false);
+let experimentalStates: boolean = $state(true);
 
 const kubernetesContextsWithStates: KubeContextWithStates[] = $derived(
   $kubernetesContexts
@@ -71,12 +71,6 @@ onMount(async () => {
     }
   } catch (error) {
     kubeconfigFilePath = 'Default is usually ~/.kube/config';
-  }
-
-  try {
-    experimentalStates = await window.isExperimentalConfigurationEnabled('kubernetes.statesExperimental');
-  } catch {
-    // keep default value
   }
 });
 
@@ -363,7 +357,7 @@ async function connect(contextName: string): Promise<void> {
                     {/if}
                     {#if context.isBeingChecked}
                       <div class="ml-1"><Spinner size="12px"></Spinner></div>
-                    {/if}                    
+                    {/if}
                   </div>
                   {#if !$kubernetesContextsState.get(context.name)}
                     <div><Button on:click={(): Promise<void> => connect(context.name)}>Connect</Button></div>

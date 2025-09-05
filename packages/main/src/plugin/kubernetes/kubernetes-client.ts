@@ -268,15 +268,10 @@ export class KubernetesClient {
       }
     }
 
-    const statesExperimental = this.experimentalConfigurationManager.isExperimentalConfigurationEnabled(
-      'kubernetes.statesExperimental',
-    );
-    if (statesExperimental) {
-      const manager = new ContextsManagerExperimental();
-      this.contextsState = manager;
-      this.contextsStatesDispatcher = new ContextsStatesDispatcher(manager, this.apiSender);
-      this.contextsStatesDispatcher.init();
-    }
+    const manager = new ContextsManagerExperimental();
+    this.contextsState = manager;
+    this.contextsStatesDispatcher = new ContextsStatesDispatcher(manager, this.apiSender);
+    this.contextsStatesDispatcher.init();
 
     // Update the property on change
     this.configurationRegistry.onDidChangeConfiguration(async e => {
