@@ -169,7 +169,6 @@ async function removeExistingRegistry(registry: containerDesktopAPI.MCPRegistry)
   </div>
 </div>
 
-1
 {#if showNewRegistryForm}
   <Dialog
     title="Add MCP Registry"
