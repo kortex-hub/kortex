@@ -109,16 +109,14 @@ async function removeExistingRegistry(registry: containerDesktopAPI.MCPRegistry)
                 <div class="w-1/5 flex space-x-2" role="cell">
                 {registry.serverUrl}
               </div>
-                          <div class="w-1/5 flex space-x-2 justify-end" role="cell">
-                            <!-- Add remove button-->
-                            <Button
-                              icon={faTrash}
-                              title="Remove MCP registry"
-                              onclick={(): Promise<void> => removeExistingRegistry(registry)}
-                              disabled={adding || originRegistries.some(r => r.serverUrl === registry.serverUrl)}>Remove</Button>
+              <div class="w-1/5 flex space-x-2 justify-end" role="cell">
+                <!-- Add remove button-->
+                <Button
+                  icon={faTrash}
+                  title="Remove MCP registry"
+                  onclick={(): Promise<void> => removeExistingRegistry(registry)}
+                  disabled={adding || originRegistries.some(r => r.serverUrl === registry.serverUrl)}>Remove</Button>
               </div>
-
-
             </div>
           </div>
           <div class="flex flex-row-reverse w-full pb-3 -mt-2">
@@ -172,7 +170,7 @@ async function removeExistingRegistry(registry: containerDesktopAPI.MCPRegistry)
   </div>
 </div>
 
-
+1
 {#if showNewRegistryForm}
   <Dialog
     title="Add MCP Registry"
