@@ -1,5 +1,5 @@
 import type { Attachment } from '@ai-sdk/ui-utils';
-import type { AssistantModelMessage, ToolModelMessage, UIMessage } from 'ai';
+import type { AssistantModelMessage, FileUIPart, ToolModelMessage, UIMessage } from 'ai';
 
 import type { Document, Message as DBMessage } from '../../../../../main/src/chat/db/schema.js';
 
@@ -36,4 +36,12 @@ export function getTrailingMessageId({ messages }: { messages: Array<ResponseMes
   if (!trailingMessage) return null;
 
   return trailingMessage.id;
+}
+
+export function fileUIPart2Attachment(part: FileUIPart): Attachment {
+  return {
+    name: part.filename ?? part.url.substring(part.url.lastIndexOf('/') + 1),
+    contentType: part.mediaType,
+    url: part.url,
+  };
 }

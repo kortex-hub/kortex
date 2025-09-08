@@ -20,6 +20,7 @@ import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import ExportIcon from './ExportIcon.svelte';
 import ToolParts from './tool-parts.svelte';
+import { fileUIPart2Attachment } from '/@/lib/chat/utils/chat';
 
 let {
   message,
@@ -98,7 +99,7 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type 
 			{#if message.parts.filter(part => part.type === 'file').length > 0}
 				<div class="flex flex-row justify-end gap-2">
 					{#each message.parts.filter(part => part.type === 'file') as attachment (attachment.url)}
-						<PreviewAttachment {attachment} />
+						<PreviewAttachment attachment={fileUIPart2Attachment(attachment)} />
 					{/each}
 				</div>
 			{/if}
