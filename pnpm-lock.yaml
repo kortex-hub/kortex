@@ -103,6 +103,9 @@ importers:
       hpagent:
         specifier: ^1.2.0
         version: 1.2.0
+      mime-types:
+        specifier: ^3.0.1
+        version: 3.0.1
       minimist:
         specifier: ^1.2.8
         version: 1.2.8
@@ -212,6 +215,9 @@ importers:
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9
+      '@types/mime-types':
+        specifier: ^3.0.1
+        version: 3.0.1
       '@types/ms':
         specifier: ^2.1.0
         version: 2.1.0
@@ -2663,6 +2669,9 @@ packages:
 
   '@types/memcached@2.2.10':
     resolution: {integrity: sha512-AM9smvZN55Gzs2wRrqeMHVP7KE8KWgCJO/XL5yCly2xF6EKa4YlbpK+cLSAH4NG/Ah64HrlegmGqW8kYws7Vxg==}
+
+  '@types/mime-types@3.0.1':
+    resolution: {integrity: sha512-xRMsfuQbnRq1Ef+C+RKaENOxXX87Ygl38W1vDfPHRku02TgQr+Qd8iivLtAMcR0KF5/29xlnFihkTlbqFrGOVQ==}
 
   '@types/mime@1.3.5':
     resolution: {integrity: sha512-/pyBZWSLD2n0dcHE3hq8s8ZvcETHtEuF+3E7XVt0Ig2nvsVQXdghHVcEkIWjy9A0wKfTn97a/PSDYohKIlnP/w==}
@@ -10433,6 +10442,8 @@ snapshots:
   '@types/memcached@2.2.10':
     dependencies:
       '@types/node': 22.18.8
+
+  '@types/mime-types@3.0.1': {}
 
   '@types/mime@1.3.5': {}
 
