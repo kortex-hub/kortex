@@ -2745,6 +2745,10 @@ export function initExposure(): void {
     return ipcInvoke('path:relative', from, to);
   });
 
+  contextBridge.exposeInMainWorld('pathMimeType', async (from: string): Promise<string> => {
+    return ipcInvoke('path:mimeType', from);
+  });
+
   contextBridge.exposeInMainWorld(
     'listExtensionDevelopmentFolders',
     async (): Promise<ExtensionDevelopmentFolderInfo[]> => {

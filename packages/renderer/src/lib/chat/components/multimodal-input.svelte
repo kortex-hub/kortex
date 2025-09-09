@@ -34,8 +34,6 @@ let {
 let input = $state('');
 let mounted = $state(false);
 let textareaRef = $state<HTMLTextAreaElement | null>(null);
-let fileInputRef = $state<HTMLInputElement | null>(null);
-let uploadQueue = $state<string[]>([]);
 const storedInput = new LocalStorage('input', '');
 const loading = $derived(chatClient.status === 'streaming' || chatClient.status === 'submitted');
 
@@ -79,58 +77,32 @@ async function submitForm(): Promise<void> {
   }
 }
 
-async function uploadFile(file: File): Promise<
-  | {
-      url: string;
-      name: string;
-      contentType: string;
-    }
-  | undefined
-> {
-  const formData = new FormData();
-  formData.append('file', file);
+function fileUrl(filePath: string): string {
+  let pathName = filePath;
+  pathName = pathName.replace(/\\/g, '/');
 
-  try {
-    const response = await fetch('/api/files/upload', {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      const { url, pathname, contentType } = data;
-
-      return {
-        url,
-        name: pathname,
-        contentType: contentType,
-      };
-    }
-    const { message } = await response.json();
-    toast.error(message);
-  } catch {
-    toast.error('Failed to upload file, please try again!');
+  // Windows drive letter must be prefixed with a slash.
+  if (pathName[0] !== '/') {
+    pathName = `/${pathName}`;
   }
+
+  // Escape required characters for path components.
+  // See: https://tools.ietf.org/html/rfc3986#section-3.3
+  return encodeURI(`file://${pathName}`).replace(/[?#]/g, encodeURIComponent);
 }
 
-async function handleFileChange(
-  event: Event & {
-    currentTarget: EventTarget & HTMLInputElement;
-  },
-): Promise<void> {
-  const files = Array.from(event.currentTarget.files ?? []);
-  uploadQueue = files.map(file => file.name);
-
-  try {
-    const uploadPromises = files.map(file => uploadFile(file));
-    const uploadedAttachments = await Promise.all(uploadPromises);
-    const successfullyUploadedAttachments = uploadedAttachments.filter(attachment => attachment !== undefined);
-
-    attachments = [...attachments, ...successfullyUploadedAttachments];
-  } catch (error) {
-    console.error('Error uploading files!', error);
-  } finally {
-    uploadQueue = [];
+async function handleFile(): Promise<void> {
+  const filepath = await window.openDialog({
+    title: 'Select a file',
+  });
+  if (filepath?.[0]) {
+    const mimeType = await window.pathMimeType(filepath?.[0]);
+    const url = fileUrl(filepath?.[0]);
+    attachments.push({
+      url,
+      name: url.substring(url.lastIndexOf('/') + 1),
+      contentType: mimeType,
+    });
   }
 }
 
@@ -146,35 +118,16 @@ $effect.pre(() => {
 </script>
 
 <div class="relative flex w-full flex-col gap-4">
-	{#if mounted && chatClient.messages.length === 0 && attachments.length === 0 && uploadQueue.length === 0}
+	{#if mounted && chatClient.messages.length === 0 && attachments.length === 0}
 		<SuggestedActions {chatClient} {selectedMCP} bind:mcpSelectorOpen={mcpSelectorOpen} />
 	{/if}
 
-	<input
-		type="file"
-		class="pointer-events-none fixed -top-4 -left-4 size-0.5 opacity-0"
-		bind:this={fileInputRef}
-		multiple
-		onchange={handleFileChange}
-		tabIndex={-1}
-	/>
-
-	{#if attachments.length > 0 || uploadQueue.length > 0}
+	{#if attachments.length > 0}
 		<div class="flex flex-row items-end gap-2 overflow-x-scroll">
 			{#each attachments as attachment (attachment.url)}
 				<PreviewAttachment {attachment} />
 			{/each}
 
-			{#each uploadQueue as filename (filename)}
-				<PreviewAttachment
-					attachment={{
-						url: '',
-						name: filename,
-						contentType: '',
-					}}
-					uploading
-				/>
-			{/each}
 		</div>
 	{/if}
 
@@ -202,12 +155,12 @@ $effect.pre(() => {
 	/>
 
 	<div class="absolute bottom-0 flex w-fit flex-row justify-start p-2">
-    
+
 		<Button
 			class="h-fit rounded-md rounded-bl-lg p-[7px] hover:bg-zinc-200 dark:border-zinc-700 hover:dark:bg-zinc-900"
 			onclick={(event): void => {
 				event.preventDefault();
-				fileInputRef?.click();
+				handleFile().catch(console.error);
 			}}
 			disabled={loading}
 			variant="ghost"
@@ -235,7 +188,7 @@ $effect.pre(() => {
 						event.preventDefault();
 						await submitForm();
 					}}
-					disabled={input.length === 0 || uploadQueue.length > 0}
+					disabled={input.length === 0}
 				>
 				<ArrowUpIcon size={14} />
 			</Button>

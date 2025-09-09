@@ -20,8 +20,10 @@
  * @module preload
  */
 import { EventEmitter } from 'node:events';
+import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import * as url from 'node:url';
 
 import type * as containerDesktopAPI from '@kortex-app/api';
 import type {
@@ -51,6 +53,7 @@ import { app, BrowserWindow, clipboard, ipcMain, shell } from 'electron';
 import type { IpcMainInvokeEvent } from 'electron/main';
 import { Container } from 'inversify';
 import type { components } from 'mcp-registry';
+import { lookup } from 'mime-types';
 
 import type { KubernetesGeneratorInfo } from '/@/plugin/api/KubernetesGeneratorInfo.js';
 import { ExtensionLoader } from '/@/plugin/extension/extension-loader.js';
@@ -229,6 +232,19 @@ export const UPDATER_UPDATE_AVAILABLE_ICON = 'fa fa-exclamation-triangle';
 export interface LoggerWithEnd extends containerDesktopAPI.Logger {
   // when task is finished, this function is called
   onEnd: () => void;
+}
+
+async function convertMessages(messages: UIMessage[]): Promise<UIMessage[]> {
+  for (const message of messages) {
+    for (const part of message.parts) {
+      if (part.type === 'file' && part.url.startsWith('file://')) {
+        const filename = url.fileURLToPath(part.url);
+        const buffer = await fs.promises.readFile(filename);
+        part.url = `data:${part.mediaType};base64,${buffer.toString('base64')}`;
+      }
+    }
+  }
+  return messages;
 }
 
 export class PluginSystem {
@@ -1414,7 +1430,9 @@ export class PluginSystem {
           throw new Error('No user message found');
         }
 
-        const modelMessages = convertToModelMessages(messages);
+        //ai sdk/fetch does not support file:URLs
+        const convertedMessages = await convertMessages(messages);
+        const modelMessages = convertToModelMessages(convertedMessages);
 
         const toolset = await mcpManager.getToolSet(mcp);
 
@@ -3418,6 +3436,10 @@ export class PluginSystem {
 
     this.ipcHandle('path:relative', async (_listener, from: string, to: string): Promise<string> => {
       return path.relative(from, to);
+    });
+
+    this.ipcHandle('path:mimeType', async (_listener, from: string): Promise<string> => {
+      return lookup(from) || 'application/octet-stream';
     });
 
     this.ipcHandle(
