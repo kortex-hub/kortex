@@ -15,7 +15,7 @@ stringData:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: goose-recipe-{{ recipe.name }}
+  name: {{ job.name }}
   labels:
     app: goose
   annotations:

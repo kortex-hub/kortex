@@ -20,6 +20,9 @@ import mustache from 'mustache';
 import template from './templates/kube.mustache?raw';
 
 export interface KubeTemplateOptions {
+  job: {
+    name: string;
+  };
   kortex: {
     version: string;
   };

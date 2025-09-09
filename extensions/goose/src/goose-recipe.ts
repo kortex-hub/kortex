@@ -31,6 +31,7 @@ import type {
   ProviderConnectionStatus,
 } from '@kortex-app/api';
 import { EventEmitter } from '@kortex-app/api';
+import { generate } from 'random-words';
 import { parse } from 'yaml';
 
 import type { GooseCLI } from './goose-cli';
@@ -221,6 +222,9 @@ export class GooseRecipe implements Disposable {
     const { env, providerId, recipeName, content } = await this.getFlowInfos(options.flowId);
 
     const template = new KubeTemplate({
+      job: {
+        name: `goose-flow-${recipeName}-${generate({ exactly: 2, join: '-' })}`,
+      },
       kortex: {
         version: this.kortexVersion,
       },
