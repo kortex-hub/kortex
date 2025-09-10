@@ -1,16 +1,11 @@
 <script lang="ts">
-import { Button } from './ui/button';
-import { useSidebar, Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu } from './ui/sidebar';
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-
-import PlusIcon from './icons/plus.svelte';
-import type { User } from '../../../../../main/src/chat/db/schema';
-
-import SidebarUserNav from './sidebar-user-nav.svelte';
-import { SidebarHistory } from './sidebar-history';
 import { router } from 'tinro';
 
-let { user }: { user?: User } = $props();
+import PlusIcon from './icons/plus.svelte';
+import { SidebarHistory } from './sidebar-history';
+import { Button } from './ui/button';
+import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, useSidebar } from './ui/sidebar';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 const context = useSidebar();
 </script>
@@ -21,7 +16,7 @@ const context = useSidebar();
 			<div class="flex h-10 flex-row items-center justify-between md:h-[34px]">
 				<a
 					href="/"
-					onclick={() => {
+					onclick={(): void => {
 						context.setOpenMobile(false);
 					}}
 					class="flex flex-row items-center gap-3"
@@ -38,7 +33,7 @@ const context = useSidebar();
 								variant="ghost"
 								type="button"
 								class="h-fit p-2"
-								onclick={() => {
+								onclick={(): void => {
 									context.setOpenMobile(false);
 									router.goto('/');
 								}}
@@ -53,11 +48,6 @@ const context = useSidebar();
 		</SidebarMenu>
 	</SidebarHeader>
 	<SidebarContent>
-		<SidebarHistory {user} />
+		<SidebarHistory  />
 	</SidebarContent>
-	<SidebarFooter>
-		{#if user}
-			<SidebarUserNav {user} />
-		{/if}
-	</SidebarFooter>
 </Sidebar>

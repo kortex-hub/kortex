@@ -1155,6 +1155,7 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld(
     'inferenceStreamText',
     async (
+      chatId: string,
       providerId: string,
       connectionName: string,
       modelId: string,
@@ -1168,6 +1169,7 @@ export function initExposure(): void {
       onDataCallbacksStreamText.set(onDataCallbacksStreamTextId, { onChunk, onError, onEnd });
       return ipcInvoke(
         'inference:streamText',
+        chatId,
         providerId,
         connectionName,
         modelId,

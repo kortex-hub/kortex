@@ -19,6 +19,7 @@
 /**
  * @module preload
  */
+import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -137,6 +138,7 @@ import type { ViewInfoUI } from '/@api/view-info.js';
 import type { VolumeInspectInfo, VolumeListInfo } from '/@api/volume-info.js';
 import type { WebviewInfo } from '/@api/webview-info.js';
 
+import { getChatById, saveChat, saveMessages } from '../chat/db/queries.js';
 import { securityRestrictionCurrentHandler } from '../security-restrictions-handler.js';
 import { TrayMenu } from '../tray-menu.js';
 import { isMac } from '../util.js';
@@ -1413,6 +1415,7 @@ export class PluginSystem {
       'inference:streamText',
       async (
         _listener,
+        chatId: string,
         providerId: string,
         connectionName: string,
         modelId: string,
@@ -1434,6 +1437,30 @@ export class PluginSystem {
         const convertedMessages = await convertMessages(messages);
         const modelMessages = convertToModelMessages(convertedMessages);
 
+        const chat = await getChatById({ chatId });
+
+        if (!chat) {
+          const title = 'Chat';
+
+          await saveChat({
+            chatId,
+            title,
+          });
+        }
+
+        await saveMessages({
+          messages: [
+            {
+              chatId,
+              id: userMessage.id,
+              role: 'user',
+              parts: userMessage.parts,
+              attachments: [],
+              createdAt: new Date(),
+            },
+          ],
+        });
+
         const toolset = await mcpManager.getToolSet(mcp);
 
         const streaming = streamText({
@@ -1445,7 +1472,22 @@ export class PluginSystem {
           stopWhen: stepCountIs(5),
         });
 
-        const reader = streaming.toUIMessageStream().getReader();
+        const reader = streaming
+          .toUIMessageStream({
+            onFinish: async ({ messages }): Promise<void> => {
+              await saveMessages({
+                messages: messages.map(message => ({
+                  id: randomUUID().toString(),
+                  role: message.role,
+                  parts: message.parts,
+                  createdAt: new Date(),
+                  attachments: [],
+                  chatId,
+                })),
+              });
+            },
+          })
+          .getReader();
 
         // loop to wait for the stream to finish
         while (true) {

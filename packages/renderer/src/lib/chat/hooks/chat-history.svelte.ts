@@ -1,7 +1,4 @@
 import { getContext, setContext } from 'svelte';
-import { toast } from 'svelte-sonner';
-
-import type { VisibilityType } from '/@/lib/chat/components/visibility-type';
 
 import type { Chat } from '../../../../../main/src/chat/db/schema';
 
@@ -25,33 +22,15 @@ export class ChatHistory {
     this.#revalidating = true;
     chatsPromise
       .then(chats => (this.chats = chats))
+      .catch((e: unknown) => console.error(e))
       .finally(() => {
         this.#loading = false;
         this.#revalidating = false;
       });
   }
 
-  getChatDetails = (chatId: string) => {
+  getChatDetails = (chatId: string): Chat | undefined => {
     return this.chats.find(c => c.id === chatId);
-  };
-
-  updateVisibility = async (chatId: string, visibility: VisibilityType) => {
-    const chat = this.chats.find(c => c.id === chatId);
-    if (chat) {
-      chat.visibility = visibility;
-    }
-    const res = await fetch('/api/chat/visibility', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ chatId, visibility }),
-    });
-    if (!res.ok) {
-      toast.error('Failed to update chat visibility');
-      // try reloading data from source in case another competing mutation caused an issue
-      await this.refetch();
-    }
   };
 
   setContext(): void {

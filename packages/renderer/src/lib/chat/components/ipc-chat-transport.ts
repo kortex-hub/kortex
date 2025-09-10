@@ -28,6 +28,7 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
     return new ReadableStream<UIMessageChunk>({
       async start(controller): Promise<void> {
         await window.inferenceStreamText(
+          options.chatId,
           model.providerId,
           model.connectionName,
           model.label,

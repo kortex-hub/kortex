@@ -7,11 +7,13 @@ export function getModels(providerInfos: ProviderInfo[]): ModelInfo[] {
       if (current.inferenceConnections.length > 0) {
         for (const { name, models } of current.inferenceConnections) {
           accumulator.push(
-            ...models.map((model: { label: string }) => ({
-              providerId: current.id,
-              connectionName: name,
-              label: model.label,
-            })),
+            ...models.map(
+              (model: { label: string }): ModelInfo => ({
+                providerId: current.id,
+                connectionName: name,
+                label: model.label,
+              }),
+            ),
           );
         }
       }

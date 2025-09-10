@@ -9,17 +9,14 @@ import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
-import type { Chat, User } from '../../../../../main/src/chat/db/schema';
 import PlusIcon from './icons/plus.svelte';
 import MCPSelector from './mcp-selector.svelte';
+import SidebarToggle from './sidebar-toggle.svelte';
 import { Button } from './ui/button';
 import { useSidebar } from './ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-import VisibilitySelector from './visibility-selector.svelte';
 
 let {
-  user,
-  chat,
   readonly,
   models,
   selectedModel = $bindable<ModelInfo | undefined>(),
@@ -27,8 +24,6 @@ let {
   selectedMCP = $bindable(),
   mcpSelectorOpen = $bindable(),
 }: {
-  user: User | undefined;
-  chat: Chat | undefined;
   readonly: boolean;
   selectedModel: ModelInfo | undefined;
   models: Array<ModelInfo>;
@@ -42,7 +37,7 @@ const noMcps = $derived($mcpRemoteServerInfos.length === 0);
 </script>
 
 <header class="bg-background sticky top-0 flex items-start gap-2 p-2">
-<!--	<SidebarToggle /> -->
+	<SidebarToggle />
 
 	{#if !sidebar.open || (innerWidth.current ?? 768) < 768}
 		<Tooltip>
@@ -90,13 +85,4 @@ const noMcps = $derived($mcpRemoteServerInfos.length === 0);
             {/if}
         </div>
     {/if}
-    
-    {#if !readonly && chat}
-		<VisibilitySelector {chat} class="order-1 md:order-3" />
-	{/if}
-
-	{#if !user}
-		<Button href="/signin" class="order-5 px-2 py-1.5 md:h-[34px]">Sign In</Button>
-	{/if}
-
 </header>

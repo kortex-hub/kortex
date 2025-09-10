@@ -1,9 +1,11 @@
 <script lang="ts">
-import ChatItem from './item.svelte';
-import type { Chat, User } from '../../../../../../main/src/chat/db/schema';
+import { isToday, isYesterday, subMonths, subWeeks } from 'date-fns';
+import { toast } from 'svelte-sonner';
+import { router } from 'tinro';
 
-import { SidebarGroup, SidebarGroupContent, SidebarMenu } from '../ui/sidebar';
-import { subWeeks, subMonths, isToday, isYesterday } from 'date-fns';
+import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
+
+import type { Chat } from '../../../../../../main/src/chat/db/schema';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,18 +16,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../ui/alert-dialog';
-import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
-import { toast } from 'svelte-sonner';
+import { SidebarGroup, SidebarGroupContent, SidebarMenu } from '../ui/sidebar';
 import { Skeleton } from '../ui/skeleton';
-import { router } from 'tinro';
+import ChatItem from './item.svelte';
 
-let { user }: { user?: User } = $props();
 const chatHistory = ChatHistory.fromContext();
 let alertDialogOpen = $state(false);
 const groupedChats = $derived(groupChatsByDate(chatHistory.chats));
 let chatIdToDelete = $state<string | undefined>(undefined);
 
-//FIXME
 const page = { params: { chatId: '123' } };
 
 type GroupedChats = {
@@ -76,8 +75,8 @@ function groupChatsByDate(chats: Chat[]): GroupedChats {
   );
 }
 
-async function handleDeleteChat() {
-  const deletePromise = (async () => {
+async function handleDeleteChat(): Promise<void> {
+  const deletePromise = (async (): Promise<void> => {
     const res = await fetch('/api/chat', {
       method: 'DELETE',
       headers: {
@@ -94,7 +93,7 @@ async function handleDeleteChat() {
     loading: 'Deleting chat...',
     success: () => {
       chatHistory.chats = chatHistory.chats.filter(chat => chat.id !== chatIdToDelete);
-      chatHistory.refetch();
+      chatHistory.refetch().catch((e: unknown) => console.error(e));
       return 'Chat deleted successfully';
     },
     error: 'Failed to delete chat',
@@ -103,22 +102,12 @@ async function handleDeleteChat() {
   alertDialogOpen = false;
 
   if (chatIdToDelete === page.params.chatId) {
-    await router.goto('/');
+    router.goto('/');
   }
 }
 </script>
 
-{#if !user}
-	<SidebarGroup>
-		<SidebarGroupContent>
-			<div
-				class="flex w-full flex-row items-center justify-center gap-2 px-2 text-sm text-zinc-500"
-			>
-				Login to save and revisit previous chats!
-			</div>
-		</SidebarGroupContent>
-	</SidebarGroup>
-{:else if chatHistory.loading}
+{#if chatHistory.loading}
 	<SidebarGroup>
 		<div class="text-sidebar-foreground/50 px-2 py-1 text-xs">Today</div>
 		<SidebarGroupContent>
@@ -157,7 +146,7 @@ async function handleDeleteChat() {
 							<ChatItem
 								{chat}
 								active={chat.id === page.params.chatId}
-								ondelete={(chatId) => {
+								ondelete={(chatId): void => {
 									chatIdToDelete = chatId;
 									alertDialogOpen = true;
 								}}
