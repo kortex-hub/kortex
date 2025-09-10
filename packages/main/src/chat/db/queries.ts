@@ -7,7 +7,8 @@ import { asc, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/libsql';
 import { migrate } from 'drizzle-orm/libsql/migrator';
 
-import type { Chat, chat, type DBMessage, message } from './schema.js';
+import type { DBChat, DBMessage } from './schema.js';
+import { chat, message } from './schema.js';
 
 const require = createRequire(import.meta.url);
 const { createClient } = require('@libsql/client/sqlite3');
@@ -36,7 +37,7 @@ export async function saveChat({ chatId, title }: { chatId: string; title: strin
   try {
     return await db.insert(chat).values({
       id: chatId,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
       title,
     });
   } catch (error) {
@@ -44,11 +45,7 @@ export async function saveChat({ chatId, title }: { chatId: string; title: strin
   }
 }
 
-export async function deleteChatById({
-  id,
-}: {
-  id: string;
-}): Promise<{ id: string; title: string; createdAt: Date; lastContext: LanguageModelV2Usage | null } | undefined> {
+export async function deleteChatById({ id }: { id: string }): Promise<DBChat | undefined> {
   try {
     await db.delete(message).where(eq(message.chatId, id));
 
@@ -59,7 +56,7 @@ export async function deleteChatById({
   }
 }
 
-export async function getChats(): Promise<Chat[]> {
+export async function getChats(): Promise<DBChat[]> {
   try {
     const chats = await db.select().from(chat).orderBy(asc(chat.createdAt)).limit(200);
     return chats;
@@ -68,7 +65,7 @@ export async function getChats(): Promise<Chat[]> {
   }
 }
 
-export async function getChatById({ chatId }: { chatId: string }): Promise<Chat | null> {
+export async function getChatById({ chatId }: { chatId: string }): Promise<DBChat | null> {
   try {
     const [selectedChat] = await db.select().from(chat).where(eq(chat.id, chatId));
     if (!selectedChat) {
@@ -89,11 +86,7 @@ export async function saveMessages({ messages }: { messages: Array<DBMessage> })
   }
 }
 
-export async function getMessagesByChatId({
-  id,
-}: {
-  id: string;
-}): Promise<{ id: string; chatId: string; role: string; parts: unknown; attachments: unknown; createdAt: Date }[]> {
+export async function getMessagesByChatId({ id }: { id: string }): Promise<DBMessage[]> {
   try {
     return await db.select().from(message).where(eq(message.chatId, id)).orderBy(asc(message.createdAt));
   } catch (error) {

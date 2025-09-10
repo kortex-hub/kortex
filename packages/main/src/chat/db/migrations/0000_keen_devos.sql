@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS "Message" (
 	"chatId" uuid NOT NULL,
 	"role" varchar NOT NULL,
 	"parts" json NOT NULL,
-	"attachments" json NOT NULL,
 	"createdAt" timestamp NOT NULL,
     FOREIGN KEY("chatId") REFERENCES "Chat"("id")
 );

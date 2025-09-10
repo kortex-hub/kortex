@@ -1,25 +1,24 @@
 import type { LanguageModelV2Usage } from '@ai-sdk/provider';
 import type { InferSelectModel } from 'drizzle-orm';
-import { json, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
-export const chat = pgTable('Chat', {
-  id: uuid('id').primaryKey().notNull().defaultRandom(),
-  createdAt: timestamp('createdAt').notNull(),
+export const chat = sqliteTable('Chat', {
+  id: text('id').primaryKey().notNull(),
+  createdAt: text('createdAt').notNull(),
   title: text('title').notNull(),
-  lastContext: jsonb('lastContext').$type<LanguageModelV2Usage | null>(),
+  lastContext: text('lastContext').$type<LanguageModelV2Usage | null>(),
 });
 
-export type Chat = InferSelectModel<typeof chat>;
+export type DBChat = InferSelectModel<typeof chat>;
 
-export const message = pgTable('Message', {
-  id: uuid('id').primaryKey().notNull().defaultRandom(),
-  chatId: uuid('chatId')
+export const message = sqliteTable('Message', {
+  id: text('id').primaryKey().notNull(),
+  chatId: text('chatId')
     .notNull()
     .references(() => chat.id),
-  role: varchar('role').notNull(),
-  parts: json('parts').notNull(),
-  attachments: json('attachments').notNull(),
-  createdAt: timestamp('createdAt').notNull(),
+  role: text('role').notNull(),
+  parts: text('parts').notNull(),
+  createdAt: text('createdAt').notNull(),
 });
 
 export type DBMessage = InferSelectModel<typeof message>;

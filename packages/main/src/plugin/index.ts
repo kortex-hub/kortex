@@ -139,7 +139,7 @@ import type { VolumeInspectInfo, VolumeListInfo } from '/@api/volume-info.js';
 import type { WebviewInfo } from '/@api/webview-info.js';
 
 import { getChatById, getChats, saveChat, saveMessages } from '../chat/db/queries.js';
-import type { Chat } from '../chat/db/schema.js';
+import type { DBChat } from '../chat/db/schema.js';
 import { securityRestrictionCurrentHandler } from '../security-restrictions-handler.js';
 import { TrayMenu } from '../tray-menu.js';
 import { isMac } from '../util.js';
@@ -1455,9 +1455,8 @@ export class PluginSystem {
               chatId,
               id: userMessage.id,
               role: 'user',
-              parts: userMessage.parts,
-              attachments: [],
-              createdAt: new Date(),
+              parts: JSON.stringify(userMessage.parts),
+              createdAt: new Date().toISOString(),
             },
           ],
         });
@@ -1480,9 +1479,8 @@ export class PluginSystem {
                 messages: messages.map(message => ({
                   id: randomUUID().toString(),
                   role: message.role,
-                  parts: message.parts,
-                  createdAt: new Date(),
-                  attachments: [],
+                  parts: JSON.stringify(message.parts),
+                  createdAt: new Date().toISOString(),
                   chatId,
                 })),
               });
@@ -2857,7 +2855,7 @@ export class PluginSystem {
       },
     );
 
-    this.ipcHandle('inference:getChats', async (_listener: Electron.IpcMainInvokeEvent): Promise<Chat[]> => {
+    this.ipcHandle('inference:getChats', async (_listener: Electron.IpcMainInvokeEvent): Promise<DBChat[]> => {
       return getChats();
     });
 

@@ -109,7 +109,7 @@ import type { ViewInfoUI } from '/@api/view-info';
 import type { VolumeInspectInfo, VolumeListInfo } from '/@api/volume-info';
 import type { WebviewInfo } from '/@api/webview-info';
 
-import type { Chat } from '../../main/src/chat/db/schema';
+import type { DBChat } from '../../main/src/chat/db/schema';
 import type { ApiSenderType } from '../../main/src/plugin/api';
 import type { ContextInfo } from '../../main/src/plugin/api/context-info';
 import type { KubernetesGeneratorInfo } from '../../main/src/plugin/api/KubernetesGeneratorInfo';
@@ -1116,7 +1116,7 @@ export function initExposure(): void {
     },
   );
 
-  contextBridge.exposeInMainWorld('inferenceGetChats', async (): Promise<Chat[]> => {
+  contextBridge.exposeInMainWorld('inferenceGetChats', async (): Promise<DBChat[]> => {
     return ipcInvoke('inference:getChats');
   });
 
