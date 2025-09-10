@@ -12,7 +12,7 @@ import { DEFAULT_CHAT_MODEL } from '../ai/models';
 import { SelectedModel } from '../hooks/selected-model.svelte';
 
 // set default user
-const data = { chats: Promise.resolve([]), sidebarCollapsed: true };
+const data = { chats: window.inferenceGetChats(), sidebarCollapsed: true };
 const chatHistory = new ChatHistory(data.chats);
 chatHistory.setContext();
 

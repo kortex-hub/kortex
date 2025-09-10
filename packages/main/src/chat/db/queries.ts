@@ -7,7 +7,7 @@ import { asc, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/libsql';
 import { migrate } from 'drizzle-orm/libsql/migrator';
 
-import { chat, type DBMessage, message } from './schema.js';
+import type { Chat, chat, type DBMessage, message } from './schema.js';
 
 const require = createRequire(import.meta.url);
 const { createClient } = require('@libsql/client/sqlite3');
@@ -59,11 +59,16 @@ export async function deleteChatById({
   }
 }
 
-export async function getChatById({
-  chatId,
-}: {
-  chatId: string;
-}): Promise<{ id: string; createdAt: Date; title: string; lastContext: LanguageModelV2Usage | null } | null> {
+export async function getChats(): Promise<Chat[]> {
+  try {
+    const chats = await db.select().from(chat).orderBy(asc(chat.createdAt)).limit(200);
+    return chats;
+  } catch (error) {
+    throw new Error('bad_request:database: Failed to get chats');
+  }
+}
+
+export async function getChatById({ chatId }: { chatId: string }): Promise<Chat | null> {
   try {
     const [selectedChat] = await db.select().from(chat).where(eq(chat.id, chatId));
     if (!selectedChat) {

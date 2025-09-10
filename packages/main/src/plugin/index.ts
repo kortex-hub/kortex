@@ -138,7 +138,8 @@ import type { ViewInfoUI } from '/@api/view-info.js';
 import type { VolumeInspectInfo, VolumeListInfo } from '/@api/volume-info.js';
 import type { WebviewInfo } from '/@api/webview-info.js';
 
-import { getChatById, saveChat, saveMessages } from '../chat/db/queries.js';
+import { getChatById, getChats, saveChat, saveMessages } from '../chat/db/queries.js';
+import type { Chat } from '../chat/db/schema.js';
 import { securityRestrictionCurrentHandler } from '../security-restrictions-handler.js';
 import { TrayMenu } from '../tray-menu.js';
 import { isMac } from '../util.js';
@@ -2855,6 +2856,10 @@ export class PluginSystem {
         return result.text;
       },
     );
+
+    this.ipcHandle('inference:getChats', async (_listener: Electron.IpcMainInvokeEvent): Promise<Chat[]> => {
+      return getChats();
+    });
 
     this.ipcHandle(
       'provider-registry:createInferenceProviderConnection',
