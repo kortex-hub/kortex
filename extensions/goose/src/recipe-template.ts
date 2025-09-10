@@ -49,6 +49,8 @@ export class RecipeTemplate {
         ...this.options.recipe,
         // hacky way of keeping indentation in mustache
         instructions: this.options.recipe.instructions.split('\n'),
+        description: this.options.recipe.description.split('\n'),
+        prompt: this.options.recipe.prompt.split('\n'),
       },
     };
   }
