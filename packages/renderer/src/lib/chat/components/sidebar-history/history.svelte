@@ -77,14 +77,11 @@ function groupChatsByDate(chats: DBChat[]): GroupedChats {
 
 async function handleDeleteChat(): Promise<void> {
   const deletePromise = (async (): Promise<void> => {
-    const res = await fetch('/api/chat', {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ id: chatIdToDelete }),
-    });
-    if (!res.ok) {
+    if (!chatIdToDelete) {
+      throw new Error();
+    }
+    const res = await window.inferenceDeleteChat(chatIdToDelete);
+    if (!res) {
       throw new Error();
     }
   })();

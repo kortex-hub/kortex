@@ -138,7 +138,14 @@ import type { ViewInfoUI } from '/@api/view-info.js';
 import type { VolumeInspectInfo, VolumeListInfo } from '/@api/volume-info.js';
 import type { WebviewInfo } from '/@api/webview-info.js';
 
-import { getChatById, getChats, getMessagesByChatId, saveChat, saveMessages } from '../chat/db/queries.js';
+import {
+  deleteChatById,
+  getChatById,
+  getChats,
+  getMessagesByChatId,
+  saveChat,
+  saveMessages,
+} from '../chat/db/queries.js';
 import type { DBChat, DBMessage } from '../chat/db/schema.js';
 import { securityRestrictionCurrentHandler } from '../security-restrictions-handler.js';
 import { TrayMenu } from '../tray-menu.js';
@@ -2866,6 +2873,13 @@ export class PluginSystem {
         chatId: string,
       ): Promise<{ chat: DBChat | null; messages: DBMessage[] }> => {
         return { chat: await getChatById({ chatId }), messages: await getMessagesByChatId({ chatId }) };
+      },
+    );
+
+    this.ipcHandle(
+      'inference:deleteChat',
+      async (_listener: Electron.IpcMainInvokeEvent, chatId: string): Promise<DBChat | undefined> => {
+        return deleteChatById({ chatId });
       },
     );
 

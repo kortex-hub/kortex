@@ -1127,6 +1127,10 @@ export function initExposure(): void {
     },
   );
 
+  contextBridge.exposeInMainWorld('inferenceDeleteChat', async (chatId: string): Promise<DBChat | undefined> => {
+    return ipcInvoke('inference:deleteChat', chatId);
+  });
+
   contextBridge.exposeInMainWorld(
     'inferenceGenerate',
     async (internalProviderId: string, connectionName: string, model: string, prompt: string): Promise<string> => {

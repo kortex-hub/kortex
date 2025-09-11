@@ -48,12 +48,12 @@ export async function saveChat({ chatId, title }: { chatId: string; title: strin
   }
 }
 
-export async function deleteChatById({ id }: { id: string }): Promise<DBChat | undefined> {
+export async function deleteChatById({ chatId }: { chatId: string }): Promise<DBChat | undefined> {
   try {
-    await db.delete(message).where(eq(message.chatId, id));
+    await db.delete(message).where(eq(message.chatId, chatId));
 
-    const [chatsDeleted] = await db.delete(chat).where(eq(chat.id, id)).returning();
-    return chatsDeleted;
+    const [chatDeleted] = await db.delete(chat).where(eq(chat.id, chatId)).returning();
+    return chatDeleted;
   } catch (error) {
     throw new Error('bad_request:database: Failed to delete chat by id');
   }
