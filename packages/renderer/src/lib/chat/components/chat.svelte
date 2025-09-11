@@ -10,7 +10,7 @@ import { getModels } from '/@/lib/models/models-utils';
 import { providerInfos } from '/@/stores/providers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
-import type { Chat as DbChat } from '../../../../../main/src/chat/db/schema';
+import type { DBChat } from '../../../../../main/src/chat/db/schema';
 import ChatHeader from './chat-header.svelte';
 import { IPCChatTransport } from './ipc-chat-transport';
 import McpMessages from './mcp-messages.svelte';
@@ -23,7 +23,7 @@ let {
   readonly,
   initialMessages,
 }: {
-  chat: DbChat | undefined;
+  chat: DBChat | undefined;
   initialMessages: UIMessage[];
   readonly: boolean;
 } = $props();

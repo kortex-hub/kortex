@@ -2860,6 +2860,13 @@ export class PluginSystem {
     });
 
     this.ipcHandle(
+      'inference:getChatById',
+      async (_listener: Electron.IpcMainInvokeEvent, chatId: string): Promise<DBChat | null> => {
+        return getChatById({ chatId });
+      },
+    );
+
+    this.ipcHandle(
       'provider-registry:createInferenceProviderConnection',
       async (
         _listener: Electron.IpcMainInvokeEvent,

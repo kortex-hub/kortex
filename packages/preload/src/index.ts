@@ -1120,6 +1120,10 @@ export function initExposure(): void {
     return ipcInvoke('inference:getChats');
   });
 
+  contextBridge.exposeInMainWorld('inferenceGetChatById', async (chatId: string): Promise<DBChat | null> => {
+    return ipcInvoke('inference:getChatById', chatId);
+  });
+
   contextBridge.exposeInMainWorld(
     'inferenceGenerate',
     async (internalProviderId: string, connectionName: string, model: string, prompt: string): Promise<string> => {
