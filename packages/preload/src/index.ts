@@ -109,7 +109,7 @@ import type { ViewInfoUI } from '/@api/view-info';
 import type { VolumeInspectInfo, VolumeListInfo } from '/@api/volume-info';
 import type { WebviewInfo } from '/@api/webview-info';
 
-import type { DBChat } from '../../main/src/chat/db/schema';
+import type { DBChat, DBMessage } from '../../main/src/chat/db/schema';
 import type { ApiSenderType } from '../../main/src/plugin/api';
 import type { ContextInfo } from '../../main/src/plugin/api/context-info';
 import type { KubernetesGeneratorInfo } from '../../main/src/plugin/api/KubernetesGeneratorInfo';
@@ -1120,9 +1120,12 @@ export function initExposure(): void {
     return ipcInvoke('inference:getChats');
   });
 
-  contextBridge.exposeInMainWorld('inferenceGetChatById', async (chatId: string): Promise<DBChat | null> => {
-    return ipcInvoke('inference:getChatById', chatId);
-  });
+  contextBridge.exposeInMainWorld(
+    'inferenceGetChatMessagesById',
+    async (chatId: string): Promise<{ chat: DBChat | null; messages: DBMessage[] }> => {
+      return ipcInvoke('inference:getChatMessagesById', chatId);
+    },
+  );
 
   contextBridge.exposeInMainWorld(
     'inferenceGenerate',

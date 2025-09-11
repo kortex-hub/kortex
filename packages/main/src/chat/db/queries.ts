@@ -89,9 +89,9 @@ export async function saveMessages({ messages }: { messages: Array<DBMessage> })
   }
 }
 
-export async function getMessagesByChatId({ id }: { id: string }): Promise<DBMessage[]> {
+export async function getMessagesByChatId({ chatId }: { chatId: string }): Promise<DBMessage[]> {
   try {
-    return await db.select().from(message).where(eq(message.chatId, id)).orderBy(asc(message.createdAt));
+    return await db.select().from(message).where(eq(message.chatId, chatId)).orderBy(asc(message.createdAt));
   } catch (error) {
     throw new Error('bad_request:database: Failed to get messages by chat id');
   }

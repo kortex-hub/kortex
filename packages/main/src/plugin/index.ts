@@ -138,8 +138,8 @@ import type { ViewInfoUI } from '/@api/view-info.js';
 import type { VolumeInspectInfo, VolumeListInfo } from '/@api/volume-info.js';
 import type { WebviewInfo } from '/@api/webview-info.js';
 
-import { getChatById, getChats, saveChat, saveMessages } from '../chat/db/queries.js';
-import type { DBChat } from '../chat/db/schema.js';
+import { getChatById, getChats, getMessagesByChatId, saveChat, saveMessages } from '../chat/db/queries.js';
+import type { DBChat, DBMessage } from '../chat/db/schema.js';
 import { securityRestrictionCurrentHandler } from '../security-restrictions-handler.js';
 import { TrayMenu } from '../tray-menu.js';
 import { isMac } from '../util.js';
@@ -2860,9 +2860,12 @@ export class PluginSystem {
     });
 
     this.ipcHandle(
-      'inference:getChatById',
-      async (_listener: Electron.IpcMainInvokeEvent, chatId: string): Promise<DBChat | null> => {
-        return getChatById({ chatId });
+      'inference:getChatMessagesById',
+      async (
+        _listener: Electron.IpcMainInvokeEvent,
+        chatId: string,
+      ): Promise<{ chat: DBChat | null; messages: DBMessage[] }> => {
+        return { chat: await getChatById({ chatId }), messages: await getMessagesByChatId({ chatId }) };
       },
     );
 

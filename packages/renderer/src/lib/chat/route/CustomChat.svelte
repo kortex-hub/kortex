@@ -10,6 +10,7 @@ import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte.js';
 
 import { DEFAULT_CHAT_MODEL } from '../ai/models';
 import { SelectedModel } from '../hooks/selected-model.svelte';
+import { convertToUIMessages } from '../utils/chat';
 
 interface Props {
   chatId?: string;
@@ -17,7 +18,7 @@ interface Props {
 
 const { chatId }: Props = $props();
 
-const chatPromise = $derived(chatId ? window.inferenceGetChatById(chatId) : undefined);
+const chatMessagesPromise = $derived(chatId ? window.inferenceGetChatMessagesById(chatId) : undefined);
 
 // set default user
 const data = { chats: window.inferenceGetChats(), sidebarCollapsed: true };
@@ -42,10 +43,10 @@ onMount(() => {
 <SidebarProvider open={!data.sidebarCollapsed}>
 	<AppSidebar />
 	<SidebarInset>
-    {#await chatPromise}
+    {#await chatMessagesPromise}
     Loading
-    {:then chat} 
-      <Chat chat={chat ?? undefined} initialMessages={[]} readonly={false}  />
+    {:then chatMessages} 
+      <Chat chat={chatMessages?.chat ?? undefined} initialMessages={chatMessages?.messages ? convertToUIMessages(chatMessages.messages): []} readonly={false}  />
     {/await}
 </SidebarInset>
 </SidebarProvider>
