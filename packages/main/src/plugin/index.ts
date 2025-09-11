@@ -1456,7 +1456,7 @@ export class PluginSystem {
               id: userMessage.id,
               role: 'user',
               parts: userMessage.parts,
-              createdAt: new Date().toISOString(),
+              createdAt: new Date(),
             },
           ],
         });
@@ -1480,7 +1480,7 @@ export class PluginSystem {
                   id: randomUUID().toString(),
                   role: message.role,
                   parts: message.parts,
-                  createdAt: new Date().toISOString(),
+                  createdAt: new Date(),
                   chatId,
                 })),
               });

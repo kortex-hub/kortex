@@ -1,10 +1,10 @@
 import type { LanguageModelV2Usage } from '@ai-sdk/provider';
 import type { InferSelectModel } from 'drizzle-orm';
-import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const chat = sqliteTable('Chat', {
   id: text('id').primaryKey().notNull(),
-  createdAt: text('createdAt').notNull(),
+  createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
   title: text('title').notNull(),
   lastContext: text('lastContext').$type<LanguageModelV2Usage | null>(),
 });
@@ -18,7 +18,7 @@ export const message = sqliteTable('Message', {
     .references(() => chat.id),
   role: text('role').notNull(),
   parts: text('parts', { mode: 'json' }).notNull(),
-  createdAt: text('createdAt').notNull(),
+  createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
 });
 
 export type DBMessage = InferSelectModel<typeof message>;

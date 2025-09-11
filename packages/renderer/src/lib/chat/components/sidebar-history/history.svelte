@@ -5,7 +5,7 @@ import { router } from 'tinro';
 
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
 
-import type { Chat } from '../../../../../../main/src/chat/db/schema';
+import type { DBChat } from '../../../../../../main/src/chat/db/schema';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,11 +28,11 @@ let chatIdToDelete = $state<string | undefined>(undefined);
 const page = { params: { chatId: '123' } };
 
 type GroupedChats = {
-  today: Chat[];
-  yesterday: Chat[];
-  lastWeek: Chat[];
-  lastMonth: Chat[];
-  older: Chat[];
+  today: DBChat[];
+  yesterday: DBChat[];
+  lastWeek: DBChat[];
+  lastMonth: DBChat[];
+  older: DBChat[];
 };
 const chatGroupTitles = {
   today: 'Today',
@@ -42,7 +42,7 @@ const chatGroupTitles = {
   older: 'Older',
 } as const;
 
-function groupChatsByDate(chats: Chat[]): GroupedChats {
+function groupChatsByDate(chats: DBChat[]): GroupedChats {
   const now = new Date();
   const oneWeekAgo = subWeeks(now, 1);
   const oneMonthAgo = subMonths(now, 1);

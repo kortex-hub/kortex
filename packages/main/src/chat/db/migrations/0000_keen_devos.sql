@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS "Chat" (
     "id" TEXT PRIMARY KEY NOT NULL,
-    "createdAt" TEXT NOT NULL,
+    "createdAt" integer NOT NULL,
     "title" TEXT NOT NULL,
     "lastContext" TEXT
 );
@@ -10,6 +10,6 @@ CREATE TABLE IF NOT EXISTS "Message" (
 	"chatId" uuid NOT NULL,
 	"role" varchar NOT NULL,
 	"parts" json NOT NULL,
-	"createdAt" timestamp NOT NULL,
+	"createdAt" integer NOT NULL,
     FOREIGN KEY("chatId") REFERENCES "Chat"("id")
 );

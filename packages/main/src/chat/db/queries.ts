@@ -40,7 +40,7 @@ export async function saveChat({ chatId, title }: { chatId: string; title: strin
   try {
     return await db.insert(chat).values({
       id: chatId,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
       title,
     });
   } catch (error) {
