@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import type { LanguageModelV2Usage } from '@ai-sdk/provider';
 import type { ResultSet } from '@libsql/client';
-import { asc, eq } from 'drizzle-orm';
+import { asc, desc, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/libsql';
 import { migrate } from 'drizzle-orm/libsql/migrator';
 
@@ -61,7 +61,7 @@ export async function deleteChatById({ id }: { id: string }): Promise<DBChat | u
 
 export async function getChats(): Promise<DBChat[]> {
   try {
-    const chats = await db.select().from(chat).orderBy(asc(chat.createdAt)).limit(200);
+    const chats = await db.select().from(chat).orderBy(desc(chat.createdAt)).limit(200);
     return chats;
   } catch (error) {
     throw new Error('bad_request:database: Failed to get chats');
