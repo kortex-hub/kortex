@@ -15,4 +15,3 @@ dist
 yarn.lock
 extensions/podman/assets/
 .claude
-local.db

@@ -1,5 +1,6 @@
 // Hack to import libsql in electron
 import { createRequire } from 'node:module';
+import { join } from 'node:path';
 
 import type { LanguageModelV2Usage } from '@ai-sdk/provider';
 import type { ResultSet } from '@libsql/client';
@@ -7,13 +8,15 @@ import { asc, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/libsql';
 import { migrate } from 'drizzle-orm/libsql/migrator';
 
+import { Directories } from '/@/plugin/directories.js';
+
 import type { DBChat, DBMessage } from './schema.js';
 import { chat, message } from './schema.js';
 
 const require = createRequire(import.meta.url);
 const { createClient } = require('@libsql/client/sqlite3');
 
-const client = createClient({ url: 'file:local.db' });
+const client = createClient({ url: `file:${join(new Directories().getConfigurationDirectory(), 'local.db')}` });
 
 const db = drizzle(client);
 
