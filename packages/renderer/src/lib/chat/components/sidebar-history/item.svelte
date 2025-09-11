@@ -1,7 +1,7 @@
 <script lang="ts">
 import { router } from 'tinro';
 
-import type { Chat } from '../../../../../../main/src/chat/db/schema';
+import type { DBChat } from '../../../../../../main/src/chat/db/schema';
 import MoreHorizontalIcon from '../icons/more-horizontal.svelte';
 import TrashIcon from '../icons/trash.svelte';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
@@ -12,7 +12,7 @@ let {
   active,
   ondelete,
 }: {
-  chat: Chat;
+  chat: DBChat;
   active: boolean;
   ondelete: (chatId: string) => void;
 } = $props();
