@@ -17,7 +17,7 @@ export const message = sqliteTable('Message', {
     .notNull()
     .references(() => chat.id),
   role: text('role').notNull(),
-  parts: text('parts').notNull(),
+  parts: text('parts', { mode: 'json' }).notNull(),
   createdAt: text('createdAt').notNull(),
 });
 

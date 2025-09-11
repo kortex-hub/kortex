@@ -1455,7 +1455,7 @@ export class PluginSystem {
               chatId,
               id: userMessage.id,
               role: 'user',
-              parts: JSON.stringify(userMessage.parts),
+              parts: userMessage.parts,
               createdAt: new Date().toISOString(),
             },
           ],
@@ -1479,7 +1479,7 @@ export class PluginSystem {
                 messages: messages.map(message => ({
                   id: randomUUID().toString(),
                   role: message.role,
-                  parts: JSON.stringify(message.parts),
+                  parts: message.parts,
                   createdAt: new Date().toISOString(),
                   chatId,
                 })),
