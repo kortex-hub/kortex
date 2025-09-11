@@ -55,8 +55,15 @@ onMount(() => {
   }
 });
 
+const kubernetesNameRegex = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/;
+
 const formValidContent = $derived(
-  !!flowProviderConnectionKey && !!selectedModel && !!name && !!prompt && !!instruction
+  !!flowProviderConnectionKey &&
+    !!selectedModel &&
+    !!name && name.length <= 63 &&
+    kubernetesNameRegex.test(name) &&
+    !!prompt &&
+    !!instruction
     ? {
         flowProviderConnectionKey,
         model: {
