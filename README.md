@@ -67,7 +67,3 @@ Kortex uses the Goose as a flow provider. So there are two options here:
 - use Goose for the local PATH if you have already installed Goose on your workstation.
 - install Goose locally though the Goose extension. Go to the `Settings > CLI` tab and search for `goose`. If no Goose
   executable is found, you can click the `Install` button to install it locally.
-
-### End to end workflow demo
-
-![](https://raw.githubusercontent.com/kortex-hub/kortex/media/media/onboarding-demo.gif)
