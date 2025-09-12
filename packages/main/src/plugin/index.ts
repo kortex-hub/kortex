@@ -44,7 +44,7 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
-import type { DynamicToolUIPart, ToolSet, UIMessage } from 'ai';
+import type { DynamicToolUIPart, UIMessage } from 'ai';
 import { convertToModelMessages, generateText, stepCountIs, streamText } from 'ai';
 import checkDiskSpacePkg from 'check-disk-space';
 import type Dockerode from 'dockerode';
@@ -2793,24 +2793,36 @@ export class PluginSystem {
       'inference:generate',
       async (
         _listener: Electron.IpcMainInvokeEvent,
-        internalProviderId: string,
+        providerId: string,
         connectionName: string,
-        model: string,
-        prompt: string,
+        modelId: string,
+        mcp: Array<string>,
+        messages: UIMessage[],
       ): Promise<string> => {
+        const internalProviderId = providerRegistry.getMatchingProviderInternalId(providerId);
         const sdk = providerRegistry.getInferenceSDK(internalProviderId, connectionName);
-        const languageModel = sdk.languageModel(model);
+        const languageModel = sdk.languageModel(modelId);
 
-        const toolSet: ToolSet = await mcpManager.getToolSet();
+        const userMessage = getMostRecentUserMessage(messages);
 
-        const result = await generateText({
+        if (!userMessage) {
+          throw new Error('No user message found');
+        }
+
+        //ai sdk/fetch does not support file:URLs
+        const convertedMessages = await convertMessages(messages);
+        const modelMessages = convertToModelMessages(convertedMessages);
+
+        const toolset = await mcpManager.getToolSet(mcp);
+
+        const res = await generateText({
           model: languageModel,
-          tools: toolSet,
+          messages: modelMessages,
+          tools: toolset,
           stopWhen: stepCountIs(5),
-          prompt,
         });
-        console.log('result', result);
-        return result.text;
+
+        return res.text;
       },
     );
 

@@ -9,9 +9,11 @@ import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
 import { cn } from '/@/lib/chat/utils/shadcn';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
+import ExportButton from './ExportButton.svelte';
 import ArrowUpIcon from './icons/arrow-up.svelte';
 import PaperclipIcon from './icons/paperclip.svelte';
 import StopIcon from './icons/stop.svelte';
+import type { ModelInfo } from './model-info';
 import PreviewAttachment from './preview-attachment.svelte';
 import SuggestedActions from './suggested-actions.svelte';
 import { Button } from './ui/button';
@@ -22,12 +24,14 @@ let {
   chatClient,
   class: c,
   selectedMCP,
+  selectedModel,
   mcpSelectorOpen = $bindable(),
 }: {
   attachments: Attachment[];
   chatClient: Chat;
   class?: string;
   selectedMCP: MCPRemoteServerInfo[];
+  selectedModel?: ModelInfo;
   mcpSelectorOpen: boolean;
 } = $props();
 
@@ -169,7 +173,7 @@ $effect.pre(() => {
 		</Button>
 	</div>
 
-	<div class="absolute right-0 bottom-0 flex w-fit flex-row justify-end p-2">
+	<div class="absolute right-0 bottom-0 flex w-fit flex-row items-center justify-end p-2">
 		{#if loading}
 			<Button
 				class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
@@ -193,5 +197,7 @@ $effect.pre(() => {
 				<ArrowUpIcon size={14} />
 			</Button>
 		{/if}
+
+		<ExportButton {chatClient} {selectedModel} {selectedMCP} {loading}/>
 	</div>
 </div>

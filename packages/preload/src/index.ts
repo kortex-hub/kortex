@@ -1117,8 +1117,14 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld(
     'inferenceGenerate',
-    async (internalProviderId: string, connectionName: string, model: string, prompt: string): Promise<string> => {
-      return ipcInvoke('inference:generate', internalProviderId, connectionName, model, prompt);
+    async (
+      providerId: string,
+      connectionName: string,
+      modelId: string,
+      mcp: Array<string>,
+      messages: UIMessage[],
+    ): Promise<string> => {
+      return ipcInvoke('inference:generate', providerId, connectionName, modelId, mcp, messages);
     },
   );
 
