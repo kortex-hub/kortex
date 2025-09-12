@@ -24,38 +24,48 @@ let {
   chatClient: Chat;
 } = $props();
 
+let loadingExportAsFlow = $state(false);
+
 const exportAsFlow = async (): Promise<void> => {
   if (!selectedModel) {
     toast.error(`There's no selected model to export as a flow.`);
     return;
   }
 
-  const prompt = await window.inferenceGenerate(
-    selectedModel.providerId,
-    selectedModel.connectionName,
-    selectedModel.label,
-    selectedMCP.map(m => m.id),
-    $state.snapshot(chatClient.messages).concat([
-      {
-        id: crypto.randomUUID(),
-        role: 'user',
-        parts: [
-          {
-            text: 'Use the conversation to make a unique prompt, only return the prompt it will be executed automatically.',
-            type: 'text',
-          },
-        ],
-      },
-    ]),
-  );
+  loadingExportAsFlow = true;
 
-  flowCreationStore.set({
-    prompt,
-    model: selectedModel,
-    mcp: selectedMCP,
-  });
+  try {
+    const prompt = await window.inferenceGenerate(
+      selectedModel.providerId,
+      selectedModel.connectionName,
+      selectedModel.label,
+      selectedMCP.map(m => m.id),
+      $state.snapshot(chatClient.messages).concat([
+        {
+          id: crypto.randomUUID(),
+          role: 'user',
+          parts: [
+            {
+              text: 'Use the conversation to make a unique prompt, only return the prompt it will be executed automatically.',
+              type: 'text',
+            },
+          ],
+        },
+      ]),
+    );
 
-  handleNavigation({ page: NavigationPage.FLOW_CREATE });
+    flowCreationStore.set({
+      prompt,
+      model: selectedModel,
+      mcp: selectedMCP,
+    });
+
+    handleNavigation({ page: NavigationPage.FLOW_CREATE });
+  } catch (e) {
+    console.error(e);
+  } finally {
+    loadingExportAsFlow = false;
+  }
 };
 </script>
 
@@ -65,7 +75,7 @@ const exportAsFlow = async (): Promise<void> => {
 		event.preventDefault();
 		await exportAsFlow();
 	}}
-	disabled={loading || !chatClient.messages.length}
+	disabled={loading || !chatClient.messages.length || loadingExportAsFlow}
 	variant="ghost"
 	title={$isGooseCliToolInstalled? 'Export as Flow' : 'Install flow provider to enable save.'}
 >
