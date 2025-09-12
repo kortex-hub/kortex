@@ -2793,23 +2793,35 @@ export class PluginSystem {
       'inference:generate',
       async (
         _listener: Electron.IpcMainInvokeEvent,
-        internalProviderId: string,
+        providerId: string,
         connectionName: string,
         model: string,
-        prompt: string,
+        mcp: Array<string>,
+        messages: UIMessage[],
       ): Promise<string> => {
+        const internalProviderId = providerRegistry.getMatchingProviderInternalId(providerId);
         const sdk = providerRegistry.getInferenceSDK(internalProviderId, connectionName);
         const languageModel = sdk.languageModel(model);
 
-        const toolSet: ToolSet = await mcpManager.getToolSet();
+        const userMessage = getMostRecentUserMessage(messages);
+
+        if (!userMessage) {
+          throw new Error('No user message found');
+        }
+
+        //ai sdk/fetch does not support file:URLs
+        const convertedMessages = await convertMessages(messages);
+        const modelMessages = convertToModelMessages(convertedMessages);
+
+        const toolSet: ToolSet = await mcpManager.getToolSet(mcp);
 
         const result = await generateText({
           model: languageModel,
+          messages: modelMessages,
           tools: toolSet,
           stopWhen: stepCountIs(5),
-          prompt,
         });
-        console.log('result', result);
+
         return result.text;
       },
     );
