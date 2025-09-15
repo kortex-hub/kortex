@@ -389,8 +389,21 @@ export class MCPRegistry {
       // now, aggregate the servers from the list adding an id being a sha of registryURL::server.name
       serverDetails.push(
         ...serverList.servers.map(server => {
-          const rawId = `${registryURL}::${server.name}`;
-          const id = crypto.createHash('sha256').update(rawId).digest('hex');
+          let id = '';
+          // is there a "_meta": {
+          // "io.modelcontextprotocol.registry/official": {
+          // "id": "..."
+          // field  we can use as id ?
+          if (server._meta?.['io.modelcontextprotocol.registry/official']) {
+            const official = server._meta['io.modelcontextprotocol.registry/official'];
+            if (official.id) {
+              id = official.id;
+            }
+          }
+          if (!id) {
+            const rawId = `${registryURL}::${server.name}`;
+            id = crypto.createHash('sha256').update(rawId).digest('hex');
+          }
           return { ...server, id };
         }),
       );
