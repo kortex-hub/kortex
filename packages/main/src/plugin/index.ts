@@ -44,7 +44,7 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
-import type { DynamicToolUIPart, UIMessage } from 'ai';
+import type { DynamicToolUIPart, ToolSet, UIMessage } from 'ai';
 import { convertToModelMessages, generateText, stepCountIs, streamText } from 'ai';
 import checkDiskSpacePkg from 'check-disk-space';
 import type Dockerode from 'dockerode';
@@ -2813,7 +2813,7 @@ export class PluginSystem {
         const convertedMessages = await convertMessages(messages);
         const modelMessages = convertToModelMessages(convertedMessages);
 
-        const toolSet = await mcpManager.getToolSet(mcp);
+        const toolSet: ToolSet = await mcpManager.getToolSet(mcp);
 
         const result = await generateText({
           model: languageModel,
