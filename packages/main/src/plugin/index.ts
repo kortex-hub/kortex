@@ -2795,13 +2795,13 @@ export class PluginSystem {
         _listener: Electron.IpcMainInvokeEvent,
         providerId: string,
         connectionName: string,
-        modelId: string,
+        model: string,
         mcp: Array<string>,
         messages: UIMessage[],
       ): Promise<string> => {
         const internalProviderId = providerRegistry.getMatchingProviderInternalId(providerId);
         const sdk = providerRegistry.getInferenceSDK(internalProviderId, connectionName);
-        const languageModel = sdk.languageModel(modelId);
+        const languageModel = sdk.languageModel(model);
 
         const userMessage = getMostRecentUserMessage(messages);
 
