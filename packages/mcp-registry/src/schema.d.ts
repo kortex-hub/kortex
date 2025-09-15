@@ -4,7 +4,7 @@
  */
 
 export type paths = {
-  '/servers': {
+  '/v0/servers': {
     parameters: {
       query?: never;
       header?: never;
@@ -48,7 +48,7 @@ export type paths = {
     patch?: never;
     trace?: never;
   };
-  '/servers/{id}': {
+  '/v0/servers/{id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -80,7 +80,7 @@ export type paths = {
             [name: string]: unknown;
           };
           content: {
-            'application/json': components['schemas']['ServerResponse'];
+            'application/json': components['schemas']['ServerDetail'];
           };
         };
         /** @description Server not found */
@@ -105,7 +105,7 @@ export type paths = {
     patch?: never;
     trace?: never;
   };
-  '/publish': {
+  '/v0/publish': {
     parameters: {
       query?: never;
       header?: never;
@@ -115,8 +115,13 @@ export type paths = {
     get?: never;
     put?: never;
     /**
-     * Publish MCP server
-     * @description Publish a new MCP server to the registry or update an existing one
+     * Publish MCP server (Optional)
+     * @description Publish a new MCP server to the registry or update an existing one.
+     *
+     *     **Note**: This endpoint is optional for registry implementations. Read-only registries may not provide this functionality.
+     *
+     *     Authentication mechanism is registry-specific and may vary between implementations.
+     *
      */
     post: {
       parameters: {
@@ -127,7 +132,7 @@ export type paths = {
       };
       requestBody: {
         content: {
-          'application/json': components['schemas']['PublishRequest'];
+          'application/json': components['schemas']['ServerDetail'];
         };
       };
       responses: {
@@ -137,7 +142,7 @@ export type paths = {
             [name: string]: unknown;
           };
           content: {
-            'application/json': components['schemas']['ServerResponse'];
+            'application/json': components['schemas']['ServerDetail'];
           };
         };
         /** @description Unauthorized - Invalid or missing authentication token */
@@ -198,13 +203,13 @@ export type components = {
       source: string;
       /** @example b94b5f7e-c7c6-d760-2c78-a5e9b8a5b8c9 */
       id: string;
+      /**
+       * @description Optional relative path from repository root to the server location within a monorepo structure
+       * @example src/everything
+       */
+      subfolder?: string;
     };
     Server: {
-      /**
-       * Format: uuid
-       * @example 123e4567-e89b-12d3-a456-426614174000
-       */
-      id?: string;
       /**
        * @description Reverse DNS name of the MCP server
        * @example io.github.modelcontextprotocol/filesystem
@@ -223,32 +228,18 @@ export type components = {
        */
       status: 'active' | 'deprecated';
       repository?: components['schemas']['Repository'];
-      version_detail: components['schemas']['VersionDetail'];
+      /**
+       * @description Version string for this server. SHOULD follow semantic versioning (e.g., '1.0.2', '2.1.0-alpha'). Equivalent of Implementation.version in MCP specification.
+       * @example 1.0.2
+       */
+      version: string;
       /** Format: date-time */
       created_at?: string;
       /** Format: date-time */
       updated_at?: string;
     };
-    VersionDetail: {
-      /**
-       * @description Equivalent of Implementation.version in MCP specification.
-       * @example 1.0.2
-       */
-      version: string;
-      /**
-       * Format: date-time
-       * @description Datetime that the MCP server version was published to the registry.
-       * @example 2023-06-15T10:30:00Z
-       */
-      release_date: string;
-      /**
-       * @description Whether the MCP server version is the latest version available in the registry.
-       * @example true
-       */
-      is_latest: boolean;
-    };
     ServerList: {
-      servers: components['schemas']['ServerResponse'][];
+      servers: components['schemas']['ServerDetail'][];
       metadata?: {
         /** @description Cursor for next page of results */
         next_cursor?: string;
@@ -261,10 +252,10 @@ export type components = {
     };
     Package: {
       /**
-       * @description Registry type indicating how to download packages (e.g., 'npm', 'pypi', 'docker-hub', 'nuget', 'mcpb')
+       * @description Registry type indicating how to download packages (e.g., 'npm', 'pypi', 'oci', 'nuget', 'mcpb')
        * @example npm
        * @example pypi
-       * @example docker-hub
+       * @example oci
        * @example nuget
        * @example mcpb
        */
@@ -423,76 +414,50 @@ export type components = {
       $schema?: string;
       packages?: components['schemas']['Package'][];
       remotes?: components['schemas']['Remote'][];
-    };
-    /** @description API response format for MCP servers, including registry metadata and publisher extensions */
-    ServerResponse: {
-      /** @description The core MCP server specification */
-      server: components['schemas']['ServerDetail'];
-      /** @description Registry-specific metadata managed by the MCP registry system */
-      'x-io.modelcontextprotocol.registry': {
+      /** @description Extension metadata using reverse DNS namespacing */
+      _meta?: {
         /**
-         * Format: uuid
-         * @description Unique registry identifier for this server entry
-         * @example 550e8400-e29b-41d4-a716-446655440000
+         * @description Publisher-specific metadata and build information
+         * @example {
+         *       "tool": "publisher-cli",
+         *       "version": "1.2.3",
+         *       "build_info": {
+         *         "commit": "abc123def456",
+         *         "timestamp": "2023-12-01T10:30:00Z",
+         *         "pipeline_id": "build-789"
+         *       }
+         *     }
          */
-        id: string;
-        /**
-         * Format: date-time
-         * @description Timestamp when the server was first published to the registry
-         * @example 2023-12-01T10:30:00Z
-         */
-        published_at: string;
-        /**
-         * Format: date-time
-         * @description Timestamp when the server entry was last updated
-         * @example 2023-12-01T11:00:00Z
-         */
-        updated_at: string;
-        /**
-         * @description Whether this is the latest version of the server
-         * @example true
-         */
-        is_latest: boolean;
-        /**
-         * Format: date-time
-         * @description Release date of the server version
-         * @example 2023-12-01T10:30:00Z
-         */
-        release_date?: string;
-      };
-      /**
-       * @description Publisher-specific metadata and build information attached during publishing
-       * @example {
-       *       "tool": "publisher-cli",
-       *       "version": "1.2.3",
-       *       "build_info": {
-       *         "commit": "abc123def456",
-       *         "timestamp": "2023-12-01T10:30:00Z",
-       *         "pipeline_id": "build-789"
-       *       }
-       *     }
-       */
-      'x-publisher'?: {
-        [key: string]: unknown;
-      };
-    };
-    /** @description Request format for publishing MCP servers to the registry */
-    PublishRequest: {
-      /** @description The MCP server specification to publish */
-      server: components['schemas']['ServerDetail'];
-      /**
-       * @description Publisher-specific metadata and build information
-       * @example {
-       *       "tool": "publisher-cli",
-       *       "version": "1.2.3",
-       *       "build_info": {
-       *         "commit": "abc123def456",
-       *         "timestamp": "2023-12-01T10:30:00Z",
-       *         "pipeline_id": "build-789"
-       *       }
-       *     }
-       */
-      'x-publisher'?: {
+        'io.modelcontextprotocol.registry/publisher-provided'?: {
+          [key: string]: unknown;
+        };
+        /** @description Registry-specific metadata managed by the MCP registry system */
+        'io.modelcontextprotocol.registry/official'?: {
+          /**
+           * Format: uuid
+           * @description Unique registry identifier for this server entry
+           * @example 550e8400-e29b-41d4-a716-446655440000
+           */
+          id: string;
+          /**
+           * Format: date-time
+           * @description Timestamp when the server was first published to the registry
+           * @example 2023-12-01T10:30:00Z
+           */
+          published_at: string;
+          /**
+           * Format: date-time
+           * @description Timestamp when the server entry was last updated
+           * @example 2023-12-01T11:00:00Z
+           */
+          updated_at: string;
+          /**
+           * @description Whether this is the latest version of the server
+           * @example true
+           */
+          is_latest: boolean;
+        };
+      } & {
         [key: string]: unknown;
       };
     };
