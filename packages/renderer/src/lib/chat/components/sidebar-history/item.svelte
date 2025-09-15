@@ -1,6 +1,15 @@
 <script lang="ts">
-import type { Chat } from '../../../../../../main/src/chat/db/schema';
+import { router } from 'tinro';
 
+import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
+
+import type { Chat } from '../../../../../../main/src/chat/db/schema';
+import CheckCircleFillIcon from '../icons/check-circle-fill.svelte';
+import GlobeIcon from '../icons/globe.svelte';
+import LockIcon from '../icons/lock.svelte';
+import MoreHorizontalIcon from '../icons/more-horizontal.svelte';
+import ShareIcon from '../icons/share.svelte';
+import TrashIcon from '../icons/trash.svelte';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,15 +19,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { useSidebar, SidebarMenuAction, SidebarMenuButton, SidebarMenuItem } from '../ui/sidebar';
-import TrashIcon from '../icons/trash.svelte';
-import GlobeIcon from '../icons/globe.svelte';
-import CheckCircleFillIcon from '../icons/check-circle-fill.svelte';
-import LockIcon from '../icons/lock.svelte';
-import ShareIcon from '../icons/share.svelte';
-import MoreHorizontalIcon from '../icons/more-horizontal.svelte';
-import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
-import { router } from 'tinro';
+import { SidebarMenuAction, SidebarMenuButton, SidebarMenuItem,useSidebar } from '../ui/sidebar';
 
 let {
   chat,
@@ -41,7 +42,7 @@ const chatFromHistory = $derived(chatHistory.getChatDetails(chat.id));
 		{#snippet child({ props })}
 			<button
 				{...props}
-				onclick={() => {
+				onclick={(): void => {
 					router.goto(`/chat/${chat.id}`);
 					context.setOpenMobile(false);
 				}}
@@ -74,8 +75,8 @@ const chatFromHistory = $derived(chatHistory.getChatDetails(chat.id));
 				<DropdownMenuSubContent align="start">
 					<DropdownMenuItem
 						class="cursor-pointer flex-row justify-between"
-						onclick={() => {
-							chatHistory.updateVisibility(chat.id, 'private');
+						onclick={(): void => {
+							chatHistory.updateVisibility(chat.id, 'private').catch((e: unknown) => {throw e;});
 						}}
 					>
 						<div class="flex flex-row items-center gap-2">
@@ -88,8 +89,8 @@ const chatFromHistory = $derived(chatHistory.getChatDetails(chat.id));
 					</DropdownMenuItem>
 					<DropdownMenuItem
 						class="cursor-pointer flex-row justify-between"
-						onclick={() => {
-							chatHistory.updateVisibility(chat.id, 'public');
+						onclick={(): void => {
+							chatHistory.updateVisibility(chat.id, 'public').catch((e: unknown) => {throw e;});
 						}}
 					>
 						<div class="flex flex-row items-center gap-2">
@@ -105,7 +106,7 @@ const chatFromHistory = $derived(chatHistory.getChatDetails(chat.id));
 
 			<DropdownMenuItem
 				class="text-destructive focus:bg-destructive/15 focus:text-destructive cursor-pointer dark:text-red-500"
-				onclick={() => ondelete(chat.id)}
+				onclick={():void => ondelete(chat.id)}
 			>
 				<TrashIcon />
 				<span>Delete</span>

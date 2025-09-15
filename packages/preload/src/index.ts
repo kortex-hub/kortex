@@ -107,7 +107,7 @@ import type { PinOption } from '/@api/status-bar/pin-option';
 import type { ViewInfoUI } from '/@api/view-info';
 import type { VolumeInspectInfo, VolumeListInfo } from '/@api/volume-info';
 import type { WebviewInfo } from '/@api/webview-info';
-
+import type { Chat, Message } from '../../main/src/chat/db/schema';
 import type { ApiSenderType } from '../../main/src/plugin/api';
 import type { ContextInfo } from '../../main/src/plugin/api/context-info';
 import type { KubernetesGeneratorInfo } from '../../main/src/plugin/api/KubernetesGeneratorInfo';
@@ -1114,6 +1114,21 @@ export function initExposure(): void {
     },
   );
 
+  contextBridge.exposeInMainWorld('inferenceGetChats', async (): Promise<Chat[]> => {
+    return ipcInvoke('inference:getChats');
+  });
+
+  contextBridge.exposeInMainWorld(
+    'inferenceGetChatMessagesById',
+    async (chatId: string): Promise<{ chat: Chat | null; messages: Message[] }> => {
+      return ipcInvoke('inference:getChatMessagesById', chatId);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('inferenceDeleteChat', async (chatId: string): Promise<Chat | undefined> => {
+    return ipcInvoke('inference:deleteChat', chatId);
+  });
+
   contextBridge.exposeInMainWorld(
     'inferenceGenerate',
     async (internalProviderId: string, connectionName: string, model: string, prompt: string): Promise<string> => {
@@ -1154,6 +1169,7 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld(
     'inferenceStreamText',
     async (
+      chatId: string,
       providerId: string,
       connectionName: string,
       modelId: string,
@@ -1167,6 +1183,7 @@ export function initExposure(): void {
       onDataCallbacksStreamText.set(onDataCallbacksStreamTextId, { onChunk, onError, onEnd });
       return ipcInvoke(
         'inference:streamText',
+        chatId,
         providerId,
         connectionName,
         modelId,

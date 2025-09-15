@@ -1,9 +1,11 @@
 <script lang="ts">
-import ChatItem from './item.svelte';
-import type { Chat, User } from '../../../../../../main/src/chat/db/schema';
+import { isToday, isYesterday,subMonths, subWeeks } from 'date-fns';
+import { toast } from 'svelte-sonner';
+import { router } from 'tinro';
 
-import { SidebarGroup, SidebarGroupContent, SidebarMenu } from '../ui/sidebar';
-import { subWeeks, subMonths, isToday, isYesterday } from 'date-fns';
+import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
+
+import type { Chat, User } from '../../../../../../main/src/chat/db/schema';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,10 +16,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../ui/alert-dialog';
-import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
-import { toast } from 'svelte-sonner';
+import { SidebarGroup, SidebarGroupContent, SidebarMenu } from '../ui/sidebar';
 import { Skeleton } from '../ui/skeleton';
-import { router } from 'tinro';
+import ChatItem from './item.svelte';
 
 let { user }: { user?: User } = $props();
 const chatHistory = ChatHistory.fromContext();
@@ -76,26 +77,20 @@ function groupChatsByDate(chats: Chat[]): GroupedChats {
   );
 }
 
-async function handleDeleteChat() {
-  const deletePromise = (async () => {
-    const res = await fetch('/api/chat', {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ id: chatIdToDelete }),
-    });
-    if (!res.ok) {
+async function handleDeleteChat(): Promise<void> {
+	const deletePromise = (async (): Promise<void> => {
+   if (!chatIdToDelete) {
       throw new Error();
     }
+    await window.inferenceDeleteChat(chatIdToDelete);
   })();
 
   toast.promise(deletePromise, {
     loading: 'Deleting chat...',
     success: () => {
       chatHistory.chats = chatHistory.chats.filter(chat => chat.id !== chatIdToDelete);
-      chatHistory.refetch();
-      return 'Chat deleted successfully';
+      chatHistory.refetch().catch((e: unknown) => console.error(e));
+	        return 'Chat deleted successfully';
     },
     error: 'Failed to delete chat',
   });
@@ -103,7 +98,7 @@ async function handleDeleteChat() {
   alertDialogOpen = false;
 
   if (chatIdToDelete === page.params.chatId) {
-    await router.goto('/');
+    router.goto('/');
   }
 }
 </script>
@@ -157,7 +152,7 @@ async function handleDeleteChat() {
 							<ChatItem
 								{chat}
 								active={chat.id === page.params.chatId}
-								ondelete={(chatId) => {
+								ondelete={(chatId):void => {
 									chatIdToDelete = chatId;
 									alertDialogOpen = true;
 								}}

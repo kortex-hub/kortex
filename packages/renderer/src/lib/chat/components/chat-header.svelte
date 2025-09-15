@@ -12,6 +12,7 @@ import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import type { Chat, User } from '../../../../../main/src/chat/db/schema';
 import PlusIcon from './icons/plus.svelte';
 import MCPSelector from './mcp-selector.svelte';
+import SidebarToggle from './sidebar-toggle.svelte';
 import { Button } from './ui/button';
 import { useSidebar } from './ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
@@ -42,7 +43,7 @@ const noMcps = $derived($mcpRemoteServerInfos.length === 0);
 </script>
 
 <header class="bg-background sticky top-0 flex items-start gap-2 p-2">
-<!--	<SidebarToggle /> -->
+	<SidebarToggle />
 
 	{#if !sidebar.open || (innerWidth.current ?? 768) < 768}
 		<Tooltip>
