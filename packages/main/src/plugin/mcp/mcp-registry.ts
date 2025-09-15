@@ -27,6 +27,7 @@ import { inject, injectable } from 'inversify';
 import type { components } from 'mcp-registry';
 
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
+import { MCPServerDetail } from '/@api/mcp/mcp-server-info.js';
 
 import { ApiSenderType } from '../api.js';
 import { Certificates } from '../certificates.js';
@@ -114,7 +115,7 @@ export class MCPRegistry {
       );
 
       const { servers } = await this.listMCPServersFromRegistry(registry.serverUrl);
-      for (const { server } of servers) {
+      for (const server of servers) {
         if (!server.id) {
           continue;
         }
@@ -373,9 +374,9 @@ export class MCPRegistry {
     return await content.json();
   }
 
-  async listMCPServersFromRegistries(): Promise<Array<components['schemas']['ServerDetail']>> {
+  async listMCPServersFromRegistries(): Promise<Array<MCPServerDetail>> {
     // connect to each registry and grab server details
-    const serverDetails: Array<components['schemas']['ServerResponse']> = [];
+    const serverDetails: Array<MCPServerDetail> = [];
 
     // merge all urls to inspect
     const serverUrls: string[] = this.registries
@@ -385,10 +386,16 @@ export class MCPRegistry {
     for (const registryURL of serverUrls) {
       const serverList: components['schemas']['ServerList'] = await this.listMCPServersFromRegistry(registryURL);
 
-      // now, aggregate the servers from the list
-      serverDetails.push(...serverList.servers);
+      // now, aggregate the servers from the list adding an id being a sha of registryURL::server.name
+      serverDetails.push(
+        ...serverList.servers.map(server => {
+          const rawId = `${registryURL}::${server.name}`;
+          const id = crypto.createHash('sha256').update(rawId).digest('hex');
+          return { ...server, id };
+        }),
+      );
     }
-    return serverDetails.map(({ server }) => server);
+    return serverDetails;
   }
 
   async updateMCPRegistry(registry: kortexAPI.MCPRegistry): Promise<void> {
