@@ -169,7 +169,7 @@ export class FlowManager implements Disposable {
         return connections.map(this.register.bind(this, id));
       }),
     ).finally(() => {
-      this.apiSender.send('flow:collected');
+      this.apiSender.send('flow:updated');
     });
   }
 
@@ -200,7 +200,11 @@ export class FlowManager implements Disposable {
   init(): void {
     // register listener for new Flow connections
     this.provider.onDidRegisterFlowConnection(({ providerId, connection }) => {
-      this.register(providerId, connection).catch(console.error); // do not block exec
+      this.register(providerId, connection)
+        .then(() => {
+          this.apiSender.send('flow:updated');
+        })
+        .catch(console.error); // do not block exec
     });
 
     // register listener for unregistered MCP connections
