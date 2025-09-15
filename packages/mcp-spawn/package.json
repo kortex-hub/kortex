@@ -1,0 +1,25 @@
+{
+  "name": "mcp-runner",
+  "version": "0.0.1",
+  "description": "Logic to run local MCP server through Node",
+  "repository": "https://github.com/kortex-hub/kortex",
+  "publishConfig": {
+    "provenance": true,
+    "access": "public"
+  },
+  "license": "Apache-2.0",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "vitest run --coverage --passWithNoTests",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "^7.1.2",
+    "vitest": "^3.2.4",
+    "ai": "^5.0.11",
+    "mcp-registry": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.17.1"
+  }
+}
