@@ -2,11 +2,7 @@
 
 ## Demonstration video
 
-
-
 https://github.com/user-attachments/assets/2cbe186a-d7b8-4a31-8ac0-4f0964d72448
-
-
 
 ## Prerequisites: Prepare your environment
 
