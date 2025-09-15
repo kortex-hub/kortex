@@ -53,6 +53,8 @@ export class GooseRecipe implements Disposable {
   private readonly updateEmitter: EventEmitter<void> = new EventEmitter();
   private connection: Disposable | undefined = undefined;
 
+  private gooseCliEventDisposable: Disposable | undefined = undefined;
+
   constructor(
     private readonly provider: typeof ProviderAPI,
     private readonly gooseCLI: GooseCLI,
@@ -155,6 +157,27 @@ export class GooseRecipe implements Disposable {
       },
     });
 
+    // subscribe to goose cli event
+    this.gooseCliEventDisposable = this.gooseCLI.event(this.checkGooseCli.bind(this));
+    this.checkGooseCli();
+  }
+
+  protected checkGooseCli(): void {
+    // If is isInstalled let's register flow provider connection
+    if (this.gooseCLI.isInstalled()) {
+      if (!this.connection) {
+        this.registerFlowProviderConnection();
+      }
+    } else {
+      // otherwise cleanup
+      this.connection?.dispose();
+      this.connection = undefined;
+    }
+  }
+
+  protected registerFlowProviderConnection(): void {
+    if (!this.gooseProvider) throw new Error('goose provider need to be initialized');
+
     this.connection = this.gooseProvider.registerFlowProviderConnection({
       name: 'goose-recipes',
       flow: {
@@ -252,6 +275,7 @@ export class GooseRecipe implements Disposable {
   dispose(): void {
     this.gooseProvider?.dispose();
     this.connection?.dispose();
+    this.gooseCliEventDisposable?.dispose();
     this.updateEmitter.dispose();
   }
 }
