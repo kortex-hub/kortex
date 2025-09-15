@@ -2813,12 +2813,12 @@ export class PluginSystem {
         const convertedMessages = await convertMessages(messages);
         const modelMessages = convertToModelMessages(convertedMessages);
 
-        const toolset = await mcpManager.getToolSet(mcp);
+        const toolSet = await mcpManager.getToolSet(mcp);
 
         const result = await generateText({
           model: languageModel,
           messages: modelMessages,
-          tools: toolset,
+          tools: toolSet,
           stopWhen: stepCountIs(5),
         });
 
