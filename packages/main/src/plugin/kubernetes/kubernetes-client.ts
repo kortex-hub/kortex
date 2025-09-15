@@ -87,7 +87,6 @@ import type { V1Route } from '/@api/openshift-types.js';
 
 import { ApiSenderType } from '../api.js';
 import { Emitter } from '../events/emitter.js';
-import { ExperimentalConfigurationManager } from '../experimental-configuration-manager.js';
 import { FilesystemMonitoring } from '../filesystem-monitoring.js';
 import { Telemetry } from '../telemetry/telemetry.js';
 import { Uri } from '../types/uri.js';
@@ -215,8 +214,6 @@ export class KubernetesClient {
     private readonly fileSystemMonitoring: FilesystemMonitoring,
     @inject(Telemetry)
     private readonly telemetry: Telemetry,
-    @inject(ExperimentalConfigurationManager)
-    private readonly experimentalConfigurationManager: ExperimentalConfigurationManager,
   ) {
     this.kubeConfig = new KubeConfig();
     this.contextsState = new ContextsManager(this.apiSender);
