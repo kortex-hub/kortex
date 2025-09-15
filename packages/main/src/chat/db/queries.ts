@@ -29,17 +29,38 @@ import {
   vote,
 } from './schema.js';
 import { unwrapSingleQueryResult } from './utils.js';
+import { Directories } from '/@/plugin/directories.js';
+import { join } from 'node:path';
 
 // Optionally, if not using email/pass login, you can
 // use the Drizzle adapter for Auth.js / NextAuth
 // https://authjs.dev/reference/adapter/drizzle
 
 // biome-ignore lint: Forbidden non-null assertion.
-const sqlite = new Database('sqlite.db');
+const sqlite = new Database(join(new Directories().getConfigurationDirectory(), 'sqlite.db'));
 sqlite.pragma('foreign_keys = ON');
 export const db = drizzle(sqlite, {});
 
 runMigrate(db);
+
+
+async function initializeUserId() {
+  // Approach suggested by @benoitf
+  const defaultUserEmail = "default@localhost"
+  const userGetter = await getUser(defaultUserEmail);
+  if (userGetter.isOk()) {
+    return userGetter.value.id;
+  } else {
+    const newUserGetter = await createAuthUser(defaultUserEmail, "");
+    if (newUserGetter.isOk()) {
+      return newUserGetter.value.id;
+    } else {
+      throw new Error("Cannot create user");
+    }
+  }
+}
+
+export const userIdPromise = initializeUserId();
 
 function generateSecureRandomId(length = 16): string {
   // Generate secure random bytes, then convert to hex string

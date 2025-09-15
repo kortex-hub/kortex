@@ -19,6 +19,7 @@
 /**
  * @module preload
  */
+import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -137,6 +138,16 @@ import type { ViewInfoUI } from '/@api/view-info.js';
 import type { VolumeInspectInfo, VolumeListInfo } from '/@api/volume-info.js';
 import type { WebviewInfo } from '/@api/webview-info.js';
 
+import {
+  deleteChatById,
+  getChatById,
+  getChatsByUserId,
+  getMessagesByChatId,
+  saveChat,
+  saveMessages,
+  userIdPromise,
+} from '../chat/db/queries.js';
+import type { Chat, Message } from '../chat/db/schema.js';
 import { securityRestrictionCurrentHandler } from '../security-restrictions-handler.js';
 import { TrayMenu } from '../tray-menu.js';
 import { isMac } from '../util.js';
@@ -1413,6 +1424,7 @@ export class PluginSystem {
       'inference:streamText',
       async (
         _listener,
+        chatId: string,
         providerId: string,
         connectionName: string,
         modelId: string,
@@ -1434,6 +1446,33 @@ export class PluginSystem {
         const convertedMessages = await convertMessages(messages);
         const modelMessages = convertToModelMessages(convertedMessages);
 
+        const chatGetter = await getChatById({ id: chatId });
+
+        if (!chatGetter.isOk()) {
+          const userId = await userIdPromise;
+
+          const title = 'Chat';
+
+          await saveChat({
+            id: chatId,
+            userId,
+            title,
+          });
+        }
+
+        await saveMessages({
+          messages: [
+            {
+              chatId,
+              id: userMessage.id,
+              role: 'user',
+              parts: userMessage.parts,
+              createdAt: new Date(),
+              attachments: [],
+            },
+          ],
+        });
+
         const toolset = await mcpManager.getToolSet(mcp);
 
         const streaming = streamText({
@@ -1445,8 +1484,22 @@ export class PluginSystem {
           stopWhen: stepCountIs(5),
         });
 
-        const reader = streaming.toUIMessageStream().getReader();
-
+        const reader = streaming
+          .toUIMessageStream({
+            onFinish: async ({ messages }): Promise<void> => {
+              await saveMessages({
+                messages: messages.map(message => ({
+                  id: randomUUID().toString(),
+                  role: message.role,
+                  parts: message.parts,
+                  createdAt: new Date(),
+                  chatId,
+                  attachments: [],
+                })),
+              });
+            },
+          })
+          .getReader();
         // loop to wait for the stream to finish
         while (true) {
           const { done, value } = await reader.read();
@@ -1459,6 +1512,47 @@ export class PluginSystem {
         }
 
         return onDataId;
+      },
+    );
+
+    this.ipcHandle('inference:getChats', async (_listener: Electron.IpcMainInvokeEvent): Promise<Chat[]> => {
+      const id = await userIdPromise;
+
+      return getChatsByUserId({ id }).match(
+        chats => chats,
+        err => {
+          throw err;
+        },
+      );
+    });
+
+    this.ipcHandle(
+      'inference:getChatMessagesById',
+      async (
+        _listener: Electron.IpcMainInvokeEvent,
+        id: string,
+      ): Promise<{ chat: Chat | null; messages: Message[] }> => {
+        return (await getMessagesByChatId({ id })).match(
+          async messages => {
+            const chat = (await getChatById({ id })).match(
+              chat => chat,
+              err => {
+                throw err;
+              },
+            );
+            return { chat, messages };
+          },
+          err => {
+            throw err;
+          },
+        );
+      },
+    );
+
+    this.ipcHandle(
+      'inference:deleteChat',
+      async (_listener: Electron.IpcMainInvokeEvent, id: string): Promise<undefined> => {
+        await deleteChatById({ id });
       },
     );
 
