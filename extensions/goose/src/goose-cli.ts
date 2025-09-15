@@ -27,12 +27,17 @@ import type {
   Logger,
   process as ProcessAPI,
 } from '@kortex-app/api';
+import { EventEmitter } from '@kortex-app/api';
 
 import type { GooseDownloader, ReleaseArtifactMetadata } from './goose-downloader';
 import { whereBinary } from './utils/system';
 
+export const GOOSE_CLI_NAME = 'goose';
+
 export class GooseCLI implements Disposable {
   private cli: CliTool | undefined = undefined;
+  private readonly eventEmitter: EventEmitter<'uninstall' | 'update'> = new EventEmitter();
+  public readonly event = this.eventEmitter.event;
 
   constructor(
     private readonly cliAPI: typeof CliAPI,
@@ -72,7 +77,8 @@ export class GooseCLI implements Disposable {
       return undefined;
     }
   }
-  get installed(): boolean {
+
+  public isInstalled(): boolean {
     return !!this.cli?.version;
   }
 
@@ -108,7 +114,7 @@ export class GooseCLI implements Disposable {
     if (!this.cli?.path) throw new Error('goose not installed');
 
     // skip when no
-    if (!this.installed) {
+    if (!this.isInstalled()) {
       console.warn('cannot get recipes: goose is not installed');
       return [];
     }
@@ -129,13 +135,20 @@ export class GooseCLI implements Disposable {
     const info = await this.findGooseVersion();
 
     this.cli = this.cliAPI.createCliTool({
-      name: 'goose',
+      name: GOOSE_CLI_NAME,
       displayName: 'Goose',
       markdownDescription: 'Goose CLI',
       images: {},
       version: info?.version,
       path: info?.path,
       installationSource: info?.installationSource,
+    });
+
+    this.cli.onDidUpdateVersion(() => {
+      this.eventEmitter.fire('update');
+    });
+    this.cli.onDidUninstall(() => {
+      this.eventEmitter.fire('uninstall');
     });
 
     if (!this.cli.version) {
