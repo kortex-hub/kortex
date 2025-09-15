@@ -2815,14 +2815,14 @@ export class PluginSystem {
 
         const toolset = await mcpManager.getToolSet(mcp);
 
-        const res = await generateText({
+        const result = await generateText({
           model: languageModel,
           messages: modelMessages,
           tools: toolset,
           stopWhen: stepCountIs(5),
         });
 
-        return res.text;
+        return result.text;
       },
     );
 
