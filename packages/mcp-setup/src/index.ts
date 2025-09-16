@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { MCPSpawner } from './mcp-spawner';
-import { NPMSpawner } from './npm-spawner';
+import type { MCPSpawner } from './spawner/mcp-spawner';
+import { NPMSpawner } from './spawner/npm-spawner';
 
 export { type MCPSpawner, NPMSpawner };
