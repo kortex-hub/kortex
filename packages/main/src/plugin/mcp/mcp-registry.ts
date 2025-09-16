@@ -101,6 +101,25 @@ export class MCPRegistry {
     }
   }
 
+  enhanceServerDetail(registryURL: string, server: components['schemas']['ServerDetail']): MCPServerDetail {
+    let id = '';
+    // is there a "_meta": {
+    // "io.modelcontextprotocol.registry/official": {
+    // "id": "..."
+    // field, use it
+    if (server._meta?.['io.modelcontextprotocol.registry/official']) {
+      const official = server._meta['io.modelcontextprotocol.registry/official'];
+      if (official.id) {
+        id = official.id;
+      }
+    }
+    if (!id) {
+      const rawId = `${registryURL}::${server.name}`;
+      id = crypto.createHash('sha256').update(rawId).digest('hex');
+    }
+    return { ...server, id };
+  }
+
   init(): void {
     console.log('[MCPRegistry] init');
     this.safeStorage = this.safeStorageRegistry.getCoreStorage();
@@ -115,7 +134,8 @@ export class MCPRegistry {
       );
 
       const { servers } = await this.listMCPServersFromRegistry(registry.serverUrl);
-      for (const server of servers) {
+      for (const rawServer of servers) {
+        const server = this.enhanceServerDetail(registry.serverUrl, rawServer);
         if (!server.id) {
           continue;
         }
@@ -386,27 +406,8 @@ export class MCPRegistry {
     for (const registryURL of serverUrls) {
       const serverList: components['schemas']['ServerList'] = await this.listMCPServersFromRegistry(registryURL);
 
-      // now, aggregate the servers from the list adding an id being a sha of registryURL::server.name
-      serverDetails.push(
-        ...serverList.servers.map(server => {
-          let id = '';
-          // is there a "_meta": {
-          // "io.modelcontextprotocol.registry/official": {
-          // "id": "..."
-          // field  we can use as id ?
-          if (server._meta?.['io.modelcontextprotocol.registry/official']) {
-            const official = server._meta['io.modelcontextprotocol.registry/official'];
-            if (official.id) {
-              id = official.id;
-            }
-          }
-          if (!id) {
-            const rawId = `${registryURL}::${server.name}`;
-            id = crypto.createHash('sha256').update(rawId).digest('hex');
-          }
-          return { ...server, id };
-        }),
-      );
+      // now, aggregate the servers from the list ensuring each server has an id
+      serverDetails.push(...serverList.servers.map(server => this.enhanceServerDetail(registryURL, server)));
     }
     return serverDetails;
   }
