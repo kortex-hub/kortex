@@ -1,6 +1,8 @@
 <script lang="ts">
+import { faLock } from '@fortawesome/free-solid-svg-icons/faLock';
 import { Input } from '@podman-desktop/ui-svelte';
 import type { components } from 'mcp-registry';
+import Fa from 'svelte-fa';
 
 import Markdown from '/@/lib/markdown/Markdown.svelte';
 import PasswordInput from '/@/lib/ui/PasswordInput.svelte';
@@ -24,8 +26,16 @@ function onInput(
 </script>
 
 <Markdown markdown={object.description} />
-{#if object.is_secret}
-  <PasswordInput oninput={onInput} password={object.value} readonly={readonly} placeholder={placeholder} />
-{:else}
-  <Input value={object.value} oninput={onInput} class="mb-2 w-full"  placeholder={placeholder} required={object.is_required} readonly={readonly} />
-{/if}
+
+<div class="flex flex-row items-center gap-x-2">
+  {#if readonly}
+    <Fa icon={faLock}></Fa>
+  {/if}
+  {#if object.is_secret}
+    <PasswordInput oninput={onInput} password={object.value} readonly={readonly} placeholder={placeholder} />
+  {:else}
+    <Input value={object.value} oninput={onInput} class="mb-2 w-full"  placeholder={placeholder} required={object.is_required} readonly={readonly} />
+  {/if}
+</div>
+
+
