@@ -43,6 +43,7 @@ export class NPMSpawner extends MCPSpawner<'npm'> {
         this.pack.version ? `${this.pack.identifier}@${this.pack.version}` : this.pack.identifier,
         ...PACKAGE_ARGS,
       ],
+      env: this.getEnvironments(),
     });
     this.#disposables.push({
       [Symbol.asyncDispose]: () => {

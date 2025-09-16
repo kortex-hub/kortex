@@ -40,4 +40,33 @@ export abstract class MCPSpawner<T extends string> implements AsyncDisposable {
       return `${argument.default}`;
     }
   }
+
+  protected formatInputWithVariables(input: components['schemas']['InputWithVariables']): string {
+    if (!input.value) {
+      throw new Error('missing value for input');
+    }
+
+    let template = input.value;
+
+    for (const [key, content] of Object.entries(input.variables ?? {})) {
+      const value = content.value ?? content.default;
+      if (content.is_required && !value)
+        throw new Error(`cannot format input with required variable ${key} without any value or default`);
+
+      if (value !== undefined) {
+        template = template.replace(`{${key}}`, value);
+      }
+    }
+    return template;
+  }
+
+  protected getEnvironments(): Record<string, string> {
+    return (this.pack.environment_variables ?? []).reduce(
+      (accumulator, current) => {
+        accumulator[current.name] = this.formatInputWithVariables(current);
+        return accumulator;
+      },
+      {} as Record<string, string>,
+    );
+  }
 }
