@@ -2,13 +2,16 @@
 import { faEye, faEyeSlash } from '@fortawesome/free-regular-svg-icons';
 import { Input } from '@podman-desktop/ui-svelte';
 import { createEventDispatcher, onMount } from 'svelte';
+import type { FormEventHandler } from 'svelte/elements';
 import Fa from 'svelte-fa';
 
-export let id: string;
+export let id: string | undefined = undefined;
 export let name: string | undefined = undefined;
 export let password: string | undefined = undefined;
 export let passwordHidden: boolean = true;
 export let readonly: boolean = false;
+export let placeholder: string = 'password';
+export let oninput: FormEventHandler<HTMLInputElement> | undefined;
 
 let element: HTMLInputElement;
 
@@ -31,13 +34,14 @@ async function onShowHide(event: MouseEvent): Promise<void> {
 
 <Input
   class={$$props.class ?? ''}
-  id="password-{id}"
-  name={name ?? `password-${id}`}
-  placeholder="password"
+  id={id}
+  name={name ?? `${id}`}
+  placeholder={placeholder}
   bind:value={password}
   aria-label="password {id}"
   bind:readonly={readonly}
   on:input
+  oninput={oninput}
   bind:element={element}>
   {#snippet right()}
     <button
