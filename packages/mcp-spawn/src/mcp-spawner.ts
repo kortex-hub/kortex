@@ -23,6 +23,7 @@ export abstract class MCPSpawner<T extends string> implements AsyncDisposable {
 
   abstract spawn(): Promise<Transport>;
   abstract [Symbol.asyncDispose](): PromiseLike<void>;
+  abstract enabled(): Promise<boolean>;
 
   protected getArgument(
     argument: components['schemas']['PositionalArgument'] | components['schemas']['NamedArgument'],
