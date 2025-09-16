@@ -38,7 +38,7 @@ export function deactivate(): void {
 const defaultRegistries: extensionApi.RegistrySuggestedProvider[] = [
   {
     name: 'MCP Registry example',
-    url: 'https://benoitf.github.io/mcp-registry-online',
+    url: 'https://benoitf.github.io/mcp-registry-online-v1.0.0',
     icon: quayIoImage,
   },
 ];
