@@ -116,6 +116,7 @@
     "inversify": "^7.7.1",
     "js-yaml": "^4.1.0",
     "lint-staged": "^16.1.5",
+    "mcp-registry": "workspace:*",
     "minimist": "^1.2.8",
     "msw": "^2.10.4",
     "prettier": "^3.6.2",
@@ -125,8 +126,7 @@
     "validator": "^13.15.15",
     "vite": "^7.1.2",
     "vitest": "^3.2.4",
-    "xvfb-maybe": "^0.2.1",
-    "mcp-registry": "workspace:*"
+    "xvfb-maybe": "^0.2.1"
   },
   "dependencies": {
     "@docker/extension-api-client-types": "0.4.2",
