@@ -27,6 +27,18 @@ import { NPMSpawner } from './npm-spawner';
 const DUMMY_FILENAME = 'hello.txt';
 const DUMMY_CONTENT = 'Hello World';
 
+test('enabled', async () => {
+  const spawner = new NPMSpawner({
+    registry_type: 'npm',
+    identifier: 'dummy',
+    version: 'fake',
+    runtime_arguments: [],
+    package_arguments: [],
+  });
+  const enabled = await spawner.enabled();
+  expect(enabled).toBeTruthy();
+});
+
 test('demo', async () => {
   const tmp = await mkdtemp('npm-spawner');
 
