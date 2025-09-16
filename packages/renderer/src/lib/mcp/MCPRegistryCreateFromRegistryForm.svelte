@@ -57,9 +57,9 @@ async function navigateToMcps(): Promise<void> {
 
           {#if mcpTarget !== undefined}
             {#if 'url' in mcpTarget}  <!-- remote -->
-              <RemoteSetupForm serverId={serverId} remoteIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget}/>
+              <RemoteSetupForm close={navigateToMcps} serverId={serverId} remoteIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget}/>
             {:else} <!-- package -->
-              <PackageSetupForm packageIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget}/>
+              <PackageSetupForm close={navigateToMcps}  packageIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget}/>
             {/if}
           {/if}
         </div>

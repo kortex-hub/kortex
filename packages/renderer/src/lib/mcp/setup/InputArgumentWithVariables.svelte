@@ -21,6 +21,7 @@ let variables: Array<[string, components['schemas']['Input']]> = Object.entries(
   <InputArgument onChange={onChange} object={object} readonly />
 {/if}
 
+<h6>Variables</h6>
 {#each Object.entries(object.variables ?? {}) as [key, value] (key)}
-  <InputArgument onChange={onVariableChange.bind(undefined, key)} object={value} />
+  <InputArgument placeholder={key} onChange={onVariableChange.bind(undefined, key)} object={value} />
 {/each}
