@@ -1,7 +1,7 @@
 {
-  "name": "mcp-runner",
+  "name": "mcp-setup",
   "version": "0.0.1",
-  "description": "Logic to run local MCP server through Node",
+  "description": "Logic to setup and configure MCP Server - Local and Remote",
   "repository": "https://github.com/kortex-hub/kortex",
   "publishConfig": {
     "provenance": true,
