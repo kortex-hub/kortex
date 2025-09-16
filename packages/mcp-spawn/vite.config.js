@@ -18,6 +18,8 @@
 /* eslint-env node */
 import { join } from 'path';
 import { defineConfig } from 'vite';
+import { builtinModules } from 'module';
+import dts from 'vite-plugin-dts';
 
 const PACKAGE_ROOT = __dirname;
 
@@ -30,6 +32,7 @@ export default defineConfig({
       '/@/': join(PACKAGE_ROOT, 'src') + '/',
     },
   },
+  plugins: [dts()],
   base: '',
   server: {
     fs: {
@@ -37,10 +40,17 @@ export default defineConfig({
     },
   },
   build: {
+    target: 'esnext',
     sourcemap: true,
     outDir: 'dist',
     assetsDir: '.',
-
+    lib: {
+      entry: 'src/index.ts',
+      formats: ['cjs'],
+    },
+    rollupOptions: {
+      external: builtinModules.flatMap(p => [p, `node:${p}`]),
+    },
     emptyOutDir: true,
     reportCompressedSize: false,
   },

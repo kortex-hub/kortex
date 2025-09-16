@@ -42,6 +42,9 @@ class McpSpawnerMock extends MCPSpawner<'mock'> {
   spawn(): Promise<Transport> {
     throw new Error('not implemented');
   }
+  enabled(): Promise<boolean> {
+    throw new Error('Method not implemented.');
+  }
 
   public override formatInputWithVariables(input: components['schemas']['InputWithVariables']): string {
     return super.formatInputWithVariables(input);
