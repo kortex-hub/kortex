@@ -19,6 +19,7 @@
     "vite": "^7.1.2",
     "vitest": "^3.2.4",
     "ai": "^5.0.11",
+    "vite-plugin-dts": "^4.5.4",
     "mcp-registry": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.17.1"
   }
