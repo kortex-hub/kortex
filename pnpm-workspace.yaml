@@ -16,3 +16,4 @@ onlyBuiltDependencies:
   - ssh2
   - svelte-preprocess
   - win-ca
+  - 'better-sqlite3'
