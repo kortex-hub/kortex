@@ -11,7 +11,7 @@ import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
 import { getModels } from '/@/lib/models/models-utils';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 import { handleNavigation } from '/@/navigation';
-import { isGooseCliToolInstalled } from '/@/stores/goose-cli-tool';
+import { isFlowConnectionAvailable } from '/@/stores/flow-provider';
 import { providerInfos } from '/@/stores/providers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import { NavigationPage } from '/@api/navigation-page';
@@ -60,7 +60,8 @@ const kubernetesNameRegex = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/;
 const formValidContent = $derived(
   !!flowProviderConnectionKey &&
     !!selectedModel &&
-    !!name && name.length <= 63 &&
+    !!name &&
+    name.length <= 63 &&
     kubernetesNameRegex.test(name) &&
     !!prompt &&
     !!instruction
@@ -110,7 +111,7 @@ async function generate(): Promise<void> {
 <FormPage title="Flow Create" inProgress={loading}>
   {#snippet content()}
     <div class="px-5 pb-5 min-w-full">
-    {#if $isGooseCliToolInstalled}
+    {#if $isFlowConnectionAvailable}
         <div class="bg-[var(--pd-content-card-bg)] px-6 py-4">
           <div class="flex flex-col">
             <div>You can create a flow using this form by selecting a model, one or several tools (from MCP servers)

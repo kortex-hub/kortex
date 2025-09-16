@@ -5,10 +5,11 @@ import { fly } from 'svelte/transition';
 import { toast } from 'svelte-sonner';
 import { router } from 'tinro';
 
+import { fileUIPart2Attachment } from '/@/lib/chat/utils/chat';
 import { cn } from '/@/lib/chat/utils/shadcn';
 import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
 import Markdown from '/@/lib/markdown/Markdown.svelte';
-import { isGooseCliToolInstalled } from '/@/stores/goose-cli-tool';
+import { isFlowConnectionAvailable } from '/@/stores/flow-provider';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import PencilEditIcon from '../icons/pencil-edit.svelte';
@@ -20,7 +21,6 @@ import { Button } from '../ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import ExportIcon from './ExportIcon.svelte';
 import ToolParts from './tool-parts.svelte';
-import { fileUIPart2Attachment } from '/@/lib/chat/utils/chat';
 
 let {
   message,
@@ -147,7 +147,7 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type 
 										}}
 										disabled={loading}
 										variant="ghost"
-										title={$isGooseCliToolInstalled? 'Export as Flow' : 'Install flow provider to enable save.'}
+										title={$isFlowConnectionAvailable? 'Export as Flow' : 'Install flow provider to enable save.'}
 									>
 										<ExportIcon size="2x"/>
 									</Button>
