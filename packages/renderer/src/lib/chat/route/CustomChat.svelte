@@ -17,7 +17,7 @@ interface Props {
 }
 const { chatId }: Props = $props();
 
-const data = { chats: window.inferenceGetChats(), sidebarCollapsed: true, user: {id: 'Guest', email: 'Guest'} };
+const data = { chats: window.inferenceGetChats(), sidebarCollapsed: true, user: { id: 'Guest', email: 'Guest' } };
 
 const chatMessagesPromise = $derived(chatId ? window.inferenceGetChatMessagesById(chatId) : undefined);
 
@@ -42,8 +42,8 @@ onMount(() => {
 <SidebarProvider open={!data.sidebarCollapsed}>
 	<AppSidebar user={data.user} />
 	<SidebarInset>
-        {#await chatMessagesPromise}
-    Loading
+    {#await chatMessagesPromise}
+      Loading
     {:then chatMessages} 
       <Chat chat={chatMessages?.chat ?? undefined} initialMessages={chatMessages?.messages ? convertToUIMessages(chatMessages.messages): []} user={data.user} readonly={false}  />
     {/await}
