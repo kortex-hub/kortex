@@ -54,7 +54,6 @@ const config = {
         '@segment/analytics-node',
         'express',
         'isomorphic-ws',
-        'better-sqlite3',
         ...builtinModules.flatMap(p => [p, `node:${p}`]),
       ],
       output: {
