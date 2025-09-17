@@ -1,5 +1,5 @@
 <script lang="ts">
-import { isToday, isYesterday,subMonths, subWeeks } from 'date-fns';
+import { isToday, isYesterday, subMonths, subWeeks } from 'date-fns';
 import { toast } from 'svelte-sonner';
 import { router } from 'tinro';
 
@@ -24,12 +24,12 @@ interface Props {
   chatId?: string;
   user?: User;
 }
+
 let { user, chatId }: Props = $props();
 const chatHistory = ChatHistory.fromContext();
 let alertDialogOpen = $state(false);
 const groupedChats = $derived(groupChatsByDate(chatHistory.chats));
 let chatIdToDelete = $state<string | undefined>(undefined);
-
 
 type GroupedChats = {
   today: Chat[];
@@ -80,8 +80,8 @@ function groupChatsByDate(chats: Chat[]): GroupedChats {
 }
 
 async function handleDeleteChat(): Promise<void> {
-	const deletePromise = (async (): Promise<void> => {
-   if (!chatIdToDelete) {
+  const deletePromise = (async (): Promise<void> => {
+    if (!chatIdToDelete) {
       throw new Error();
     }
     await window.inferenceDeleteChat(chatIdToDelete);
@@ -92,7 +92,7 @@ async function handleDeleteChat(): Promise<void> {
     success: () => {
       chatHistory.chats = chatHistory.chats.filter(chat => chat.id !== chatIdToDelete);
       chatHistory.refetch().catch((e: unknown) => console.error(e));
-	        return 'Chat deleted successfully';
+      return 'Chat deleted successfully';
     },
     error: 'Failed to delete chat',
   });
