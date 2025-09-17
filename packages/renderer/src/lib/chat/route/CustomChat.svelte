@@ -17,7 +17,7 @@ interface Props {
 }
 const { chatId }: Props = $props();
 
-const data = { chats: window.inferenceGetChats(), sidebarCollapsed: true, user: {id: 'TODO', email: 'TODO'} };
+const data = { chats: window.inferenceGetChats(), sidebarCollapsed: true, user: {id: 'Guest', email: 'Guest'} };
 
 const chatMessagesPromise = $derived(chatId ? window.inferenceGetChatMessagesById(chatId) : undefined);
 
