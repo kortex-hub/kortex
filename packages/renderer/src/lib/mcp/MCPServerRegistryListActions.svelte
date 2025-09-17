@@ -1,13 +1,13 @@
 <script lang="ts">
 import { faPlusCircle } from '@fortawesome/free-solid-svg-icons';
-import type { components } from 'mcp-registry';
 
 import { handleNavigation } from '/@/navigation';
+import type { MCPServerDetail } from '/@api/mcp/mcp-server-info';
 import { NavigationPage } from '/@api/navigation-page';
 
 import ListItemButtonIcon from '../ui/ListItemButtonIcon.svelte';
 
-export let object: components['schemas']['ServerDetail'];
+export let object: MCPServerDetail;
 
 function createRegistry(): void {
   const serverId = object.id;
