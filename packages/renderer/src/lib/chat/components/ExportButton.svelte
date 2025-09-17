@@ -4,7 +4,7 @@ import { toast } from 'svelte-sonner';
 
 import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
 import { handleNavigation } from '/@/navigation';
-import { isGooseCliToolInstalled } from '/@/stores/goose-cli-tool';
+import { isFlowConnectionAvailable } from '/@/stores/flow-provider';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import { NavigationPage } from '/@api/navigation-page';
 
@@ -77,7 +77,7 @@ const exportAsFlow = async (): Promise<void> => {
 	}}
 	disabled={loading || !chatClient.messages.length || loadingExportAsFlow}
 	variant="ghost"
-	title={$isGooseCliToolInstalled? 'Export as Flow' : 'Install flow provider to enable save.'}
+	title={$isFlowConnectionAvailable? 'Export as Flow' : 'Install flow provider to enable save.'}
 >
 	<ExportIcon size="2x"/>
 </Button>

@@ -6,8 +6,6 @@ import { fly } from 'svelte/transition';
 import { fileUIPart2Attachment } from '/@/lib/chat/utils/chat';
 import { cn } from '/@/lib/chat/utils/shadcn';
 import Markdown from '/@/lib/markdown/Markdown.svelte';
-import { isGooseCliToolInstalled } from '/@/stores/goose-cli-tool';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import PencilEditIcon from '../icons/pencil-edit.svelte';
 import SparklesIcon from '../icons/sparkles.svelte';
