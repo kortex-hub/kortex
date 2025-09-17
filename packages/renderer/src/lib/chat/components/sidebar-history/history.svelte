@@ -152,7 +152,7 @@ async function handleDeleteChat(): Promise<void> {
 							<ChatItem
 								{chat}
 								active={chat.id === page.params.chatId}
-								ondelete={(chatId):void => {
+								ondelete={(chatId): void => {
 									chatIdToDelete = chatId;
 									alertDialogOpen = true;
 								}}
