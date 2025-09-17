@@ -20,14 +20,16 @@ import { SidebarGroup, SidebarGroupContent, SidebarMenu } from '../ui/sidebar';
 import { Skeleton } from '../ui/skeleton';
 import ChatItem from './item.svelte';
 
-let { user }: { user?: User } = $props();
+interface Props {
+  chatId?: string;
+  user?: User;
+}
+let { user, chatId }: Props = $props();
 const chatHistory = ChatHistory.fromContext();
 let alertDialogOpen = $state(false);
 const groupedChats = $derived(groupChatsByDate(chatHistory.chats));
 let chatIdToDelete = $state<string | undefined>(undefined);
 
-//FIXME
-const page = { params: { chatId: '123' } };
 
 type GroupedChats = {
   today: Chat[];
@@ -97,7 +99,7 @@ async function handleDeleteChat(): Promise<void> {
 
   alertDialogOpen = false;
 
-  if (chatIdToDelete === page.params.chatId) {
+  if (chatIdToDelete === chatId) {
     router.goto('/');
   }
 }
@@ -151,7 +153,7 @@ async function handleDeleteChat(): Promise<void> {
 						{#each chats as chat (chat.id)}
 							<ChatItem
 								{chat}
-								active={chat.id === page.params.chatId}
+								active={chat.id === chatId}
 								ondelete={(chatId): void => {
 									chatIdToDelete = chatId;
 									alertDialogOpen = true;
