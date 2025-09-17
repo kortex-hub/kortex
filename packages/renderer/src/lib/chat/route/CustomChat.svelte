@@ -40,7 +40,7 @@ onMount(() => {
 	<Toaster position="top-center" />
 
 <SidebarProvider open={!data.sidebarCollapsed}>
-	<AppSidebar user={data.user} />
+	<AppSidebar user={data.user} {chatId} />
 	<SidebarInset>
     {#await chatMessagesPromise}
       Loading

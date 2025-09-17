@@ -10,8 +10,11 @@ import SidebarUserNav from './sidebar-user-nav.svelte';
 import { SidebarHistory } from './sidebar-history';
 import { router } from 'tinro';
 
-let { user }: { user?: User } = $props();
-
+interface Props {
+  chatId?: string;
+  user?: User;
+}
+let { user, chatId }: Props = $props();
 const context = useSidebar();
 </script>
 
@@ -53,7 +56,7 @@ const context = useSidebar();
 		</SidebarMenu>
 	</SidebarHeader>
 	<SidebarContent>
-		<SidebarHistory {user} />
+		<SidebarHistory {user} {chatId} />
 	</SidebarContent>
 	<SidebarFooter>
 		{#if user}
