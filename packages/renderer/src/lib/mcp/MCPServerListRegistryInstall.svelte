@@ -36,9 +36,17 @@ const nameColumn = new TableColumn<MCPServerDetail, string>('Name', {
   comparator: (a, b): number => b.name.localeCompare(a.name),
 });
 
+const descriptionColumn = new TableColumn<MCPServerDetail, string>('Description', {
+  width: '3fr',
+  renderMapping: (obj): string => obj.description,
+  renderer: SimpleColumn,
+  comparator: (a, b): number => b.description.localeCompare(a.description),
+});
+
 const columns = [
   statusColumn,
   nameColumn,
+  descriptionColumn,
   new TableColumn<MCPServerDetail>('Actions', {
     align: 'right',
     renderer: McpServerListActions,
