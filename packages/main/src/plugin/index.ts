@@ -111,6 +111,7 @@ import type { KubernetesContextResources } from '/@api/kubernetes-resources.js';
 import type { KubernetesTroubleshootingInformation } from '/@api/kubernetes-troubleshooting.js';
 import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '/@api/manifest-info.js';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info.js';
+import type { InputWithVariableResponse } from '/@api/mcp/mcp-setup.js';
 import type { Menu } from '/@api/menu.js';
 import type { NetworkInspectInfo } from '/@api/network-info.js';
 import type { NotificationCard, NotificationCardOptions } from '/@api/notification.js';
@@ -2157,14 +2158,22 @@ export class PluginSystem {
     );
 
     this.ipcHandle(
-      'mcp-registry:createMCPServerFromRemoteRegistry',
+      'mcp-registry:setup',
       async (
         _listener,
         serverId: string,
-        remoteId: number,
-        headersParams: { name: string; value: string }[],
+        options:
+          | {
+              type: 'remote';
+              index: number;
+              headers: Record<string, InputWithVariableResponse>;
+            }
+          | {
+              type: 'package';
+              index: number;
+            },
       ): Promise<void> => {
-        await mcpRegistry.createMCPServerFromRemoteRegistry(serverId, remoteId, headersParams);
+        await mcpRegistry.setupMCPServer(serverId, options);
       },
     );
 
@@ -2200,7 +2209,7 @@ export class PluginSystem {
     this.ipcHandle(
       'mcp-manager:removeMcpRemoteServer',
       async (_listener, key: string, options: { serverId: string; remoteId: number }): Promise<void> => {
-        await mcpRegistry.deleteMcpFromConfiguration(options.serverId, options.remoteId);
+        await mcpRegistry.deleteRemoteMcpFromConfiguration(options.serverId, options.remoteId);
         return mcpManager.removeMcpRemoteServer(key);
       },
     );

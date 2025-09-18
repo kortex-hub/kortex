@@ -87,6 +87,7 @@ import type { KubernetesContextResources } from '/@api/kubernetes-resources';
 import type { KubernetesTroubleshootingInformation } from '/@api/kubernetes-troubleshooting';
 import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '/@api/manifest-info';
 import type { MCPRemoteServerInfo, MCPServerDetail } from '/@api/mcp/mcp-server-info';
+import type { InputWithVariableResponse } from '/@api/mcp/mcp-setup';
 import type { Menu } from '/@api/menu.js';
 import type { NetworkInspectInfo } from '/@api/network-info';
 import type { NotificationCard, NotificationCardOptions } from '/@api/notification';
@@ -1683,9 +1684,21 @@ export function initExposure(): void {
   });
 
   contextBridge.exposeInMainWorld(
-    'createMCPServerFromRemoteRegistry',
-    async (serverId: string, remoteId: number, headersParams: { name: string; value: string }[]): Promise<void> => {
-      return ipcInvoke('mcp-registry:createMCPServerFromRemoteRegistry', serverId, remoteId, headersParams);
+    'setupMCP',
+    async (
+      serverId: string,
+      options:
+        | {
+            type: 'remote';
+            index: number;
+            headers: Record<string, InputWithVariableResponse>;
+          }
+        | {
+            type: 'package';
+            index: number;
+          },
+    ): Promise<void> => {
+      return ipcInvoke('mcp-registry:setup', serverId, options);
     },
   );
 

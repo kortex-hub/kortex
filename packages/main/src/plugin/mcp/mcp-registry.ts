@@ -21,6 +21,7 @@ import * as crypto from 'node:crypto';
 import type * as kortexAPI from '@kortex-app/api';
 import { SecretStorage } from '@kortex-app/api';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { HttpsOptions, OptionsOfTextResponseBody } from 'got';
 import { HttpProxyAgent, HttpsProxyAgent } from 'hpagent';
 import { inject, injectable } from 'inversify';
@@ -28,6 +29,7 @@ import type { components } from 'mcp-registry';
 
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { MCPServerDetail } from '/@api/mcp/mcp-server-info.js';
+import { InputWithVariableResponse } from '/@api/mcp/mcp-setup.js';
 
 import { ApiSenderType } from '../api.js';
 import { Certificates } from '../certificates.js';
@@ -37,18 +39,18 @@ import { Telemetry } from '../telemetry/telemetry.js';
 import { Disposable } from '../types/disposable.js';
 import { MCPManager } from './mcp-manager.js';
 
-export interface RegistryAuthInfo {
-  authUrl: string;
-  service?: string;
-  scope?: string;
-  scheme: string;
-}
-
-interface StorageConfigFormat {
+interface RemoteStorageConfigFormat {
   serverId: string;
   remoteId: number;
   headers: { [key: string]: string };
 }
+
+interface PackageStorageConfigFormat {
+  serverId: string;
+  packageId: number;
+}
+
+type StorageConfigFormat = RemoteStorageConfigFormat | PackageStorageConfigFormat;
 
 const STORAGE_KEY = 'mcp:registry:configurations';
 export const INTERNAL_PROVIDER_ID = 'internal';
@@ -144,34 +146,42 @@ export class MCPRegistry {
           continue;
         }
 
-        const remote = server.remotes?.[config.remoteId];
-        if (!remote) {
-          continue;
+        // dealing with remote config
+        if ('remoteId' in config) {
+          const remote = server.remotes?.[config.remoteId];
+          if (!remote) {
+            continue;
+          }
+
+          // client already exists ?
+          const existingServers = await this.mcpManager.listMCPRemoteServers();
+          const existing = existingServers.find(srv => srv.id.includes(server.id ?? 'unknown'));
+          if (existing) {
+            console.log(`[MCPRegistry] MCP client for server ${server.id} already exists, skipping`);
+            continue;
+          }
+
+          // create transport
+          const transport = new StreamableHTTPClientTransport(new URL(remote.url), {
+            requestInit: {
+              headers: config.headers,
+            },
+          });
+
+          await this.mcpManager.registerMCPClient(
+            INTERNAL_PROVIDER_ID,
+            server.id,
+            'remote',
+            config.remoteId,
+            server.name,
+            transport,
+            remote.url,
+            server.description,
+          );
+        } else {
+          // dealing with package config
+          throw new Error('not yet supported');
         }
-
-        // client already exists ?
-        const existingServers = await this.mcpManager.listMCPRemoteServers();
-        const existing = existingServers.find(srv => srv.id.includes(server.id ?? 'unknown'));
-        if (existing) {
-          console.log(`[MCPRegistry] MCP client for server ${server.id} already exists, skipping`);
-          continue;
-        }
-
-        // create transport
-        const transport = new StreamableHTTPClientTransport(new URL(remote.url), {
-          requestInit: {
-            headers: config.headers,
-          },
-        });
-
-        await this.mcpManager.registerMCPClient(
-          INTERNAL_PROVIDER_ID,
-          server.id,
-          config.remoteId,
-          server.name,
-          transport,
-          remote.url,
-        );
       }
     });
   }
@@ -289,46 +299,44 @@ export class MCPRegistry {
     }
   }
 
-  async createMCPServerFromRemoteRegistry(
+  async setupMCPServer(
     serverId: string,
-    remoteId: number,
-    headersParams: { name: string; value: string }[],
+    options:
+      | {
+          type: 'remote';
+          index: number;
+          headers: Record<string, InputWithVariableResponse>;
+        }
+      | {
+          type: 'package';
+          index: number;
+        },
   ): Promise<void> {
-    // create the mcp connection
-    const headers: { [key: string]: string } = {};
-    for (const header of headersParams) {
-      let keyValue = header.value;
-      let keyName = header.name;
-      if (header.name === 'Bearer') {
-        keyName = 'Authorization';
-        keyValue = `Bearer ${keyValue}`;
-      }
-      headers[keyName] = keyValue;
-    }
-
-    // get the remote from the server-id/remoteId
-
+    // Get back the server
     const serverDetails = await this.listMCPServersFromRegistries();
     const serverDetail = serverDetails.find(server => server.id === serverId);
     if (!serverDetail) {
       throw new Error(`MCP server with id ${serverId} not found in remote registry`);
     }
-    // remotes ?
-    const hasRemote = serverDetail.remotes && serverDetail.remotes.length >= remoteId;
-    if (!hasRemote) {
-      throw new Error(`MCP server with id ${serverId} does not have remote with id ${remoteId}`);
-    }
-    const remote = serverDetail?.remotes?.[remoteId];
-    if (!remote) {
-      throw new Error(`MCP server with id ${serverId} does not have remote with id ${remoteId}`);
-    }
 
-    // create transport
-    const transport = new StreamableHTTPClientTransport(new URL(remote.url), {
-      requestInit: {
-        headers,
-      },
-    });
+    let transport: Transport;
+    let config: StorageConfigFormat;
+    switch (options.type) {
+      case 'remote':
+        config = {
+          remoteId: options.index,
+          serverId: serverDetail.id,
+          headers: Object.fromEntries(
+            Object.entries(options.headers).map(([key, response]) => [key, this.format(response)]),
+          ),
+        };
+        transport = this.setupRemote(serverDetail.remotes?.[options.index], config.headers);
+        break;
+      case 'package':
+        throw new Error('not implemented yet');
+      default:
+        throw new Error('invalid options type for setupMCPServer');
+    }
 
     // get values from the server detail
     const { name, description } = serverDetail;
@@ -336,18 +344,45 @@ export class MCPRegistry {
     await this.mcpManager.registerMCPClient(
       INTERNAL_PROVIDER_ID,
       serverId,
-      remoteId,
+      options.type,
+      options.index,
       name,
       transport,
-      remote.url,
       description,
     );
 
     // persist configuration
-    await this.saveConfiguration({
-      serverId,
-      remoteId,
-      headers,
+    await this.saveConfiguration(config);
+  }
+
+  protected format(input: InputWithVariableResponse): string {
+    let template = input.value;
+
+    Object.entries(input.variables).forEach(([key, response]) => {
+      template = template.replace(`{${key}}`, response.value);
+    });
+
+    return template;
+  }
+
+  protected setupRemote(
+    remote: components['schemas']['Remote'] | undefined,
+    headers: Record<string, string>,
+  ): Transport {
+    if (!remote) throw new Error('remote not found');
+
+    /**
+     * HARDCODED BAD BAD BAD
+     */
+    if ('Bearer' in headers) {
+      headers['Authorization'] = headers['Bearer'];
+    }
+
+    // create transport
+    return new StreamableHTTPClientTransport(new URL(remote.url), {
+      requestInit: {
+        headers: headers,
+      },
     });
   }
 
@@ -359,7 +394,10 @@ export class MCPRegistry {
   }> {
     const configs = await this.getConfigurations();
 
-    const configuration = configs.find(item => item.serverId === serverId && item.remoteId === remoteId);
+    const configuration = configs.find(
+      (item): item is RemoteStorageConfigFormat =>
+        'remoteId' in item && item.serverId === serverId && item.remoteId === remoteId,
+    );
     if (!configuration) throw new Error(`Configuration not found for serverId ${serverId} and remoteId ${remoteId}`);
 
     return {
@@ -374,55 +412,32 @@ export class MCPRegistry {
   }
 
   async saveConfiguration(config: StorageConfigFormat): Promise<void> {
-    console.log(`saving ${config.serverId} ${config.remoteId}`);
     const existing = await this.getConfigurations();
     await this.safeStorage?.store(STORAGE_KEY, JSON.stringify([...existing, config]));
   }
 
-  async deleteMcpFromConfiguration(serverId: string, remoteId: number): Promise<void> {
+  async deleteRemoteMcpFromConfiguration(serverId: string, remoteId: number): Promise<void> {
     const existingConfiguration = await this.getConfigurations();
     const filtered = existingConfiguration.filter(
-      config => !(config.serverId === serverId && config.remoteId === remoteId),
+      config => !('remoteId' in config && config.serverId === serverId && config.remoteId === remoteId),
     );
     await this.safeStorage?.store(STORAGE_KEY, JSON.stringify(filtered));
   }
 
-  protected async listMCPServersFromRegistry(
-    registryURL: string,
-    cursor?: string, // optional param for recursion
-  ): Promise<components['schemas']['ServerList']> {
-    const url = new URL(`${registryURL}/v0/servers`);
-    if (cursor) {
-      url.searchParams.set('cursor', cursor);
-    }
-    // ask for latest versions
-    url.searchParams.set('version', 'latest');
+  protected async listMCPServersFromRegistry(registryURL: string): Promise<components['schemas']['ServerList']> {
+    // connect to ${registry.serverUrl}/v0/servers and grab the list of servers
+    // use fetch
 
-    const content = await fetch(url.toString(), {
+    const content = await fetch(`${registryURL}/v0/servers`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
     });
-
     if (!content.ok) {
-      throw new Error(`Failed to fetch MCP servers from ${registryURL}: ${content.statusText}`);
+      console.error(`Failed to fetch MCP servers from ${registryURL}: ${content.statusText}`);
     }
-
-    const data: components['schemas']['ServerList'] = await content.json();
-
-    // If pagination info exists, fetch the next page recursively
-    if (data.metadata?.next_cursor) {
-      const nextPage = await this.listMCPServersFromRegistry(registryURL, data.metadata.next_cursor);
-      return {
-        ...data,
-        servers: [...data.servers, ...nextPage.servers],
-        // merge metadata — keep the last page’s metadata
-        metadata: nextPage.metadata,
-      };
-    }
-
-    return data;
+    return await content.json();
   }
 
   async listMCPServersFromRegistries(): Promise<Array<MCPServerDetail>> {
