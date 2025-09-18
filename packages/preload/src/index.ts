@@ -41,9 +41,10 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
-import type { DynamicToolUIPart, UIMessage, UIMessageChunk } from 'ai';
+import type { DynamicToolUIPart, UIMessageChunk } from 'ai';
 import { contextBridge, ipcRenderer } from 'electron';
 
+import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
 import type { CliToolInfo } from '/@api/cli-tool-info';
 import type { ColorInfo } from '/@api/color-info';
 import type { CommandInfo } from '/@api/command-info';
@@ -1114,12 +1115,9 @@ export function initExposure(): void {
     },
   );
 
-  contextBridge.exposeInMainWorld(
-    'inferenceGenerate',
-    async (internalProviderId: string, connectionName: string, model: string, prompt: string): Promise<string> => {
-      return ipcInvoke('inference:generate', internalProviderId, connectionName, model, prompt);
-    },
-  );
+  contextBridge.exposeInMainWorld('inferenceGenerate', async (params: InferenceParameters): Promise<string> => {
+    return ipcInvoke('inference:generate', params);
+  });
 
   contextBridge.exposeInMainWorld(
     'createInferenceProviderConnection',
@@ -1154,26 +1152,14 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld(
     'inferenceStreamText',
     async (
-      providerId: string,
-      connectionName: string,
-      modelId: string,
-      mcp: Array<string>,
-      messages: UIMessage[],
+      params: InferenceParameters,
       onChunk: (data: UIMessageChunk) => void,
       onError: (error: string) => void,
       onEnd: () => void,
     ): Promise<number> => {
       onDataCallbacksStreamTextId++;
       onDataCallbacksStreamText.set(onDataCallbacksStreamTextId, { onChunk, onError, onEnd });
-      return ipcInvoke(
-        'inference:streamText',
-        providerId,
-        connectionName,
-        modelId,
-        mcp,
-        messages,
-        onDataCallbacksStreamTextId,
-      );
+      return ipcInvoke('inference:streamText', { ...params, onDataId: onDataCallbacksStreamTextId });
     },
   );
 

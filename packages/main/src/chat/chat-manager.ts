@@ -23,16 +23,10 @@ import type { DynamicToolUIPart, ModelMessage, ToolSet, UIMessage } from 'ai';
 import { convertToModelMessages, generateText, stepCountIs, streamText } from 'ai';
 import type { IpcMainInvokeEvent, WebContents } from 'electron';
 
+import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
+
 import type { MCPManager } from '../plugin/mcp/mcp-manager.js';
 import type { ProviderRegistry } from '../plugin/provider-registry.js';
-
-interface InferenceParameters {
-  providerId: string;
-  connectionName: string;
-  modelId: string;
-  mcp: string[];
-  messages: UIMessage[];
-}
 
 export class ChatManager {
   constructor(
