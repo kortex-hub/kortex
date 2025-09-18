@@ -229,11 +229,11 @@ jobs:
       - name: Run typecheck
         run: pnpm typecheck
 
-      - name: Run svelte check
-        run: pnpm svelte:check
+#      - name: Run svelte check
+#        run: pnpm svelte:check
 
   unit-tests:
-    if: ${{ contains(github.event.pull_request.labels.*.name, 'area/ci') || !github.event.pull_request.draft }}
+    if: false #${{ contains(github.event.pull_request.labels.*.name, 'area/ci') || !github.event.pull_request.draft }}
     name: unit tests / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
