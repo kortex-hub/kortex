@@ -386,6 +386,8 @@ export class MCPRegistry {
     if (cursor) {
       url.searchParams.set('cursor', cursor);
     }
+    // ask for latest versions
+    url.searchParams.set('version', 'latest');
 
     const content = await fetch(url.toString(), {
       method: 'GET',
