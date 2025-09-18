@@ -19,7 +19,7 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
-import type { DynamicToolUIPart, ModelMessage, ToolSet, UIMessage } from 'ai';
+import type { DynamicToolUIPart, UIMessage } from 'ai';
 import { convertToModelMessages, generateText, stepCountIs, streamText } from 'ai';
 import type { IpcMainInvokeEvent, WebContents } from 'electron';
 
@@ -69,10 +69,10 @@ export class ChatManager {
 
   private async getInferenceComponents(
     params: InferenceParameters,
-  ): Promise<{ languageModel: ReturnType<typeof sdk.languageModel>; modelMessages: ModelMessage[]; toolset: ToolSet }> {
+  ): Promise<Parameters<typeof streamText>[0] & Parameters<typeof generateText>[0]> {
     const internalProviderId = this.providerRegistry.getMatchingProviderInternalId(params.providerId);
     const sdk = this.providerRegistry.getInferenceSDK(internalProviderId, params.connectionName);
-    const languageModel = sdk.languageModel(params.modelId);
+    const model = sdk.languageModel(params.modelId);
 
     const userMessage = this.getMostRecentUserMessage(params.messages);
 
@@ -82,27 +82,24 @@ export class ChatManager {
 
     // ai sdk/fetch does not support file:URLs
     const convertedMessages = await this.convertMessages(params.messages);
-    const modelMessages = convertToModelMessages(convertedMessages);
+    const messages = convertToModelMessages(convertedMessages);
 
-    const toolset = await this.mcpManager.getToolSet(params.mcp);
+    const tools = await this.mcpManager.getToolSet(params.mcp);
 
-    return { languageModel, modelMessages, toolset };
+    return {
+      model,
+      messages,
+      tools,
+      stopWhen: stepCountIs(5),
+      system: 'You are a friendly assistant! Keep your responses concise and helpful.',
+    };
   }
 
   async streamText(
     _listener: Electron.IpcMainInvokeEvent,
     params: InferenceParameters & { onDataId: number },
   ): Promise<number> {
-    const { languageModel, modelMessages, toolset } = await this.getInferenceComponents(params);
-
-    const streaming = streamText({
-      model: languageModel,
-      messages: modelMessages,
-      system: 'You are a friendly assistant! Keep your responses concise and helpful.',
-      tools: toolset,
-
-      stopWhen: stepCountIs(5),
-    });
+    const streaming = streamText(await this.getInferenceComponents(params));
 
     const reader = streaming.toUIMessageStream().getReader();
 
@@ -121,14 +118,7 @@ export class ChatManager {
   }
 
   async generate(_listener: Electron.IpcMainInvokeEvent, params: InferenceParameters): Promise<string> {
-    const { languageModel, modelMessages, toolset } = await this.getInferenceComponents(params);
-
-    const result = await generateText({
-      model: languageModel,
-      tools: toolset,
-      stopWhen: stepCountIs(5),
-      messages: modelMessages,
-    });
+    const result = await generateText(await this.getInferenceComponents(params));
     return result.text;
   }
 }
