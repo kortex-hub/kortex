@@ -483,7 +483,7 @@ importers:
         specifier: ^0.539.0
         version: 0.539.0(svelte@5.39.9)
       '@podman-desktop/ui-svelte':
-        specifier: ^1.21.0-202508041246-1d7512118b0
+        specifier: ^1.22.0-202509181129-3b9dd05d418
         version: 1.22.0(svelte-fa@4.0.4(svelte@5.39.9))(svelte@5.39.9)
       '@sejohnson/svelte-themes':
         specifier: ^0.0.6
@@ -494,6 +494,9 @@ importers:
       bits-ui:
         specifier: ^2.9.2
         version: 2.11.4(@internationalized/date@3.10.0)(svelte@5.39.9)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
