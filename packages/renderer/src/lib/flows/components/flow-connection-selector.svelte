@@ -2,8 +2,8 @@
 import type { ClassValue } from 'svelte/elements';
 
 import { cn } from '/@/lib/chat/utils/shadcn';
-import {providerInfos} from '/@/stores/providers';
-import type {ProviderFlowConnectionInfo} from '/@api/provider-info';
+import { providerInfos } from '/@/stores/providers';
+import type { ProviderFlowConnectionInfo } from '/@api/provider-info';
 
 import CheckCircleFillIcon from '../../chat/components/icons/check-circle-fill.svelte';
 import ChevronDownIcon from '../../chat/components/icons/chevron-down.svelte';
@@ -30,7 +30,7 @@ let open = $state(false);
 
 let groups: Map<string, Array<ProviderFlowConnectionInfo>> = $derived(
   $providerInfos.reduce((accumulator, provider) => {
-    if(provider.flowConnections?.length > 0) {
+    if (provider.flowConnections?.length > 0) {
       accumulator.set(provider.id, provider.flowConnections);
     }
     return accumulator;
@@ -43,7 +43,7 @@ function onSelect(providerId: string, connection: ProviderFlowConnectionInfo): v
 }
 
 function getKey(providerId: string, connection: ProviderFlowConnectionInfo): string {
-  return`${providerId}:${connection.name}`;
+  return `${providerId}:${connection.name}`;
 }
 </script>
 
