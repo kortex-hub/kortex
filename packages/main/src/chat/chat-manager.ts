@@ -41,8 +41,8 @@ export class ChatManager {
   ) {}
 
   public init(): void {
-    this.ipcHandle('inference:streamText', this.streamText.bind(this));
-    this.ipcHandle('inference:generate', this.generate.bind(this));
+    this.ipcHandle('inference:streamText', (_, params) => this.streamText(params));
+    this.ipcHandle('inference:generate', (_, params) => this.generate(params));
 
     this.ipcHandle('mcp-manager:getExchanges', async (_listener, mcpId: string): Promise<DynamicToolUIPart[]> => {
       return this.mcpManager.getExchanges(mcpId);
@@ -95,10 +95,7 @@ export class ChatManager {
     };
   }
 
-  async streamText(
-    _listener: Electron.IpcMainInvokeEvent,
-    params: InferenceParameters & { onDataId: number },
-  ): Promise<number> {
+  async streamText(params: InferenceParameters & { onDataId: number }): Promise<number> {
     const streaming = streamText(await this.getInferenceComponents(params));
 
     const reader = streaming.toUIMessageStream().getReader();
@@ -117,7 +114,7 @@ export class ChatManager {
     return params.onDataId;
   }
 
-  async generate(_listener: Electron.IpcMainInvokeEvent, params: InferenceParameters): Promise<string> {
+  async generate(params: InferenceParameters): Promise<string> {
     const result = await generateText(await this.getInferenceComponents(params));
     return result.text;
   }
