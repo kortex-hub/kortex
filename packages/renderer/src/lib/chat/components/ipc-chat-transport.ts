@@ -27,12 +27,15 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
 
     return new ReadableStream<UIMessageChunk>({
       async start(controller): Promise<void> {
+        const { providerId, connectionName, label } = model;
         await window.inferenceStreamText(
-          model.providerId,
-          model.connectionName,
-          model.label,
-          mcp,
-          uiMessages,
+          {
+            providerId,
+            connectionName,
+            modelId: label,
+            mcp,
+            messages: uiMessages,
+          },
           (chunk: UIMessageChunk) => {
             console.log('IPCChatTransport->chunk:', chunk);
             controller.enqueue(chunk);

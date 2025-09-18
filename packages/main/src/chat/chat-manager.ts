@@ -15,12 +15,15 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
-import type { DynamicToolUIPart, ToolSet, UIMessage } from 'ai';
+import type { DynamicToolUIPart, ModelMessage, StopCondition, ToolSet, UIMessage } from 'ai';
 import { convertToModelMessages, generateText, stepCountIs, streamText } from 'ai';
 import type { IpcMainInvokeEvent, WebContents } from 'electron';
+
+import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
 
 import type { MCPManager } from '../plugin/mcp/mcp-manager.js';
 import type { ProviderRegistry } from '../plugin/provider-registry.js';
@@ -38,8 +41,8 @@ export class ChatManager {
   ) {}
 
   public init(): void {
-    this.ipcHandle('inference:streamText', this.streamText.bind(this));
-    this.ipcHandle('inference:generate', this.generate.bind(this));
+    this.ipcHandle('inference:streamText', (_, params) => this.streamText(params));
+    this.ipcHandle('inference:generate', (_, params) => this.generate(params));
 
     this.ipcHandle('mcp-manager:getExchanges', async (_listener, mcpId: string): Promise<DynamicToolUIPart[]> => {
       return this.mcpManager.getExchanges(mcpId);
@@ -64,39 +67,40 @@ export class ChatManager {
     return userMessages.at(-1);
   }
 
-  async streamText(
-    _listener: Electron.IpcMainInvokeEvent,
-    providerId: string,
-    connectionName: string,
-    modelId: string,
-    mcp: Array<string>,
-    messages: UIMessage[],
-    onDataId: number,
-  ): Promise<number> {
-    const internalProviderId = this.providerRegistry.getMatchingProviderInternalId(providerId);
-    const sdk = this.providerRegistry.getInferenceSDK(internalProviderId, connectionName);
-    const languageModel = sdk.languageModel(modelId);
+  private async getInferenceComponents(params: InferenceParameters): Promise<{
+    model: ReturnType<typeof sdk.languageModel>;
+    messages: ModelMessage[];
+    tools: ToolSet;
+    stopWhen: StopCondition<ToolSet>;
+    system: string;
+  }> {
+    const internalProviderId = this.providerRegistry.getMatchingProviderInternalId(params.providerId);
+    const sdk = this.providerRegistry.getInferenceSDK(internalProviderId, params.connectionName);
+    const model = sdk.languageModel(params.modelId);
 
-    const userMessage = this.getMostRecentUserMessage(messages);
+    const userMessage = this.getMostRecentUserMessage(params.messages);
 
     if (!userMessage) {
       throw new Error('No user message found');
     }
 
-    //ai sdk/fetch does not support file:URLs
-    const convertedMessages = await this.convertMessages(messages);
-    const modelMessages = convertToModelMessages(convertedMessages);
+    // ai sdk/fetch does not support file:URLs
+    const convertedMessages = await this.convertMessages(params.messages);
+    const messages = convertToModelMessages(convertedMessages);
 
-    const toolset = await this.mcpManager.getToolSet(mcp);
+    const tools = await this.mcpManager.getToolSet(params.mcp);
 
-    const streaming = streamText({
-      model: languageModel,
-      messages: modelMessages,
-      system: 'You are a friendly assistant! Keep your responses concise and helpful.',
-      tools: toolset,
-
+    return {
+      model,
+      messages,
+      tools,
       stopWhen: stepCountIs(5),
-    });
+      system: 'You are a friendly assistant! Keep your responses concise and helpful.',
+    };
+  }
+
+  async streamText(params: InferenceParameters & { onDataId: number }): Promise<number> {
+    const streaming = streamText(await this.getInferenceComponents(params));
 
     const reader = streaming.toUIMessageStream().getReader();
 
@@ -105,34 +109,17 @@ export class ChatManager {
       const { done, value } = await reader.read();
       if (done) {
         // end
-        this.getWebContentsSender().send('inference:streamText-onEnd', onDataId);
+        this.getWebContentsSender().send('inference:streamText-onEnd', params.onDataId);
         break;
       }
-      this.getWebContentsSender().send('inference:streamText-onChunk', onDataId, value);
+      this.getWebContentsSender().send('inference:streamText-onChunk', params.onDataId, value);
     }
 
-    return onDataId;
+    return params.onDataId;
   }
 
-  async generate(
-    _listener: Electron.IpcMainInvokeEvent,
-    internalProviderId: string,
-    connectionName: string,
-    model: string,
-    prompt: string,
-  ): Promise<string> {
-    const sdk = this.providerRegistry.getInferenceSDK(internalProviderId, connectionName);
-    const languageModel = sdk.languageModel(model);
-
-    const toolSet: ToolSet = await this.mcpManager.getToolSet();
-
-    const result = await generateText({
-      model: languageModel,
-      tools: toolSet,
-      stopWhen: stepCountIs(5),
-      prompt,
-    });
-    console.log('result', result);
+  async generate(params: InferenceParameters): Promise<string> {
+    const result = await generateText(await this.getInferenceComponents(params));
     return result.text;
   }
 }
