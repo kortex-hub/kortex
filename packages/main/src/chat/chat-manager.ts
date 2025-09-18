@@ -19,7 +19,7 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
-import type { DynamicToolUIPart, ToolSet, UIMessage } from 'ai';
+import type { DynamicToolUIPart, ModelMessage, ToolSet, UIMessage } from 'ai';
 import { convertToModelMessages, generateText, stepCountIs, streamText } from 'ai';
 import type { IpcMainInvokeEvent, WebContents } from 'electron';
 
@@ -65,15 +65,13 @@ export class ChatManager {
     return userMessages.at(-1);
   }
 
-  async streamText(
-    _listener: Electron.IpcMainInvokeEvent,
+  private async getT(
     providerId: string,
     connectionName: string,
     modelId: string,
     mcp: Array<string>,
     messages: UIMessage[],
-    onDataId: number,
-  ): Promise<number> {
+  ): Promise<{ languageModel: ReturnType<typeof sdk.languageModel>; modelMessages: ModelMessage[]; toolset: ToolSet }> {
     const internalProviderId = this.providerRegistry.getMatchingProviderInternalId(providerId);
     const sdk = this.providerRegistry.getInferenceSDK(internalProviderId, connectionName);
     const languageModel = sdk.languageModel(modelId);
@@ -89,6 +87,26 @@ export class ChatManager {
     const modelMessages = convertToModelMessages(convertedMessages);
 
     const toolset = await this.mcpManager.getToolSet(mcp);
+
+    return { languageModel, modelMessages, toolset };
+  }
+
+  async streamText(
+    _listener: Electron.IpcMainInvokeEvent,
+    providerId: string,
+    connectionName: string,
+    modelId: string,
+    mcp: Array<string>,
+    messages: UIMessage[],
+    onDataId: number,
+  ): Promise<number> {
+    const { languageModel, modelMessages, toolset } = await this.getT(
+      providerId,
+      connectionName,
+      modelId,
+      mcp,
+      messages,
+    );
 
     const streaming = streamText({
       model: languageModel,
@@ -117,23 +135,26 @@ export class ChatManager {
 
   async generate(
     _listener: Electron.IpcMainInvokeEvent,
-    internalProviderId: string,
+    providerId: string,
     connectionName: string,
-    model: string,
-    prompt: string,
+    mcp: Array<string>,
+    modelId: string,
+    messages: UIMessage[],
   ): Promise<string> {
-    const sdk = this.providerRegistry.getInferenceSDK(internalProviderId, connectionName);
-    const languageModel = sdk.languageModel(model);
-
-    const toolSet: ToolSet = await this.mcpManager.getToolSet();
+    const { languageModel, modelMessages, toolset } = await this.getT(
+      providerId,
+      connectionName,
+      modelId,
+      mcp,
+      messages,
+    );
 
     const result = await generateText({
       model: languageModel,
-      tools: toolSet,
+      tools: toolset,
       stopWhen: stepCountIs(5),
-      prompt,
+      messages: modelMessages,
     });
-    console.log('result', result);
     return result.text;
   }
 }
