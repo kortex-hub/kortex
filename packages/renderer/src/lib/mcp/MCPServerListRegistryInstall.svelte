@@ -6,6 +6,7 @@ import { mcpRegistriesServerInfos } from '/@/stores/mcp-registry-servers';
 import type { MCPServerDetail } from '/@api/mcp/mcp-server-info';
 
 import McpIcon from '../images/MCPIcon.svelte';
+import { MCPServerDescriptionColumn } from './mcp-server-columns';
 import McpEmptyScreen from './MCPRegistryEmptyScreen.svelte';
 import McpServerListActions from './MCPServerRegistryListActions.svelte';
 
@@ -36,17 +37,10 @@ const nameColumn = new TableColumn<MCPServerDetail, string>('Name', {
   comparator: (a, b): number => b.name.localeCompare(a.name),
 });
 
-const descriptionColumn = new TableColumn<MCPServerDetail, string>('Description', {
-  width: '3fr',
-  renderMapping: (obj): string => obj.description,
-  renderer: SimpleColumn,
-  comparator: (a, b): number => b.description.localeCompare(a.description),
-});
-
 const columns = [
   statusColumn,
   nameColumn,
-  descriptionColumn,
+  new MCPServerDescriptionColumn(),
   new TableColumn<MCPServerDetail>('Actions', {
     align: 'right',
     renderer: McpServerListActions,

@@ -1,12 +1,12 @@
 <script lang="ts">
 import { Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
-import SimpleColumn from '@podman-desktop/ui-svelte/TableSimpleColumn';
 
 import MCPNameColumn from '/@/lib/mcp/column/MCPNameColumn.svelte';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import McpIcon from '../images/MCPIcon.svelte';
+import { MCPServerDescriptionColumn } from './mcp-server-columns';
 import MCPServerEmptyScreen from './MCPServerEmptyScreen.svelte';
 import McpServerRemoteListActions from './MCPServerRemoteListActions.svelte';
 
@@ -32,20 +32,13 @@ const nameColumn = new TableColumn<MCPRemoteServerInfo>('Name', {
   comparator: (a, b): number => b.name.localeCompare(a.name),
 });
 
-const descriptionColumn = new TableColumn<MCPRemoteServerInfo, string>('Description', {
-  width: '3fr',
-  renderMapping: (obj): string => obj.description,
-  renderer: SimpleColumn,
-  comparator: (a, b): number => b.description.localeCompare(a.description),
-});
-
 const actionsColumn = new TableColumn<MCPRemoteServerInfo>('Actions', {
   align: 'right',
   renderer: McpServerRemoteListActions,
   overflow: true,
 });
 
-const columns = [statusColumn, nameColumn, descriptionColumn, actionsColumn];
+const columns = [statusColumn, nameColumn, new MCPServerDescriptionColumn(), actionsColumn];
 
 const row = new TableRow<MCPRemoteServerInfo>({});
 </script>
