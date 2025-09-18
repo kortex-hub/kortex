@@ -1,7 +1,10 @@
 <script lang="ts">
 import { tick } from 'svelte';
-import { cubicInOut , slide } from 'svelte/easing';
+/* eslint-disable import/no-duplicates */
+import { cubicInOut } from 'svelte/easing';
+import { slide } from 'svelte/transition';
 
+/* eslint-enable simple-import-sort/imports */
 import { getLock } from '/@/lib/chat/hooks/lock';
 
 import ChevronDownIcon from './icons/chevron-down.svelte';

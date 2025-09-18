@@ -1,4 +1,7 @@
-import { createSubscriber,on  } from 'svelte/events';
+/* eslint-disable import/no-duplicates */
+import { on } from 'svelte/events';
+import { createSubscriber } from 'svelte/reactivity';
+/* eslint-enable simple-import-sort/imports */
 
 export class LocalStorage<T> {
   #key: string;
