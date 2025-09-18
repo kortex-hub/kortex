@@ -1,5 +1,6 @@
 <script lang="ts">
 import { ThemeProvider } from '@sejohnson/svelte-themes';
+
 import { Toaster } from '/@/lib/chat/components/ui/sonner';
 
 let { children } = $props();

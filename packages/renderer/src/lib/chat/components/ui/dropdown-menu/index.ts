@@ -1,18 +1,19 @@
 import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
+import type { ComponentProps } from 'svelte';
+
 import CheckboxItem from './dropdown-menu-checkbox-item.svelte';
 import Content from './dropdown-menu-content.svelte';
 import Group from './dropdown-menu-group.svelte';
+import GroupHeading from './dropdown-menu-group-heading.svelte';
 import Item from './dropdown-menu-item.svelte';
 import Label from './dropdown-menu-label.svelte';
 import RadioGroup from './dropdown-menu-radio-group.svelte';
 import RadioItem from './dropdown-menu-radio-item.svelte';
 import Separator from './dropdown-menu-separator.svelte';
 import Shortcut from './dropdown-menu-shortcut.svelte';
-import Trigger from './dropdown-menu-trigger.svelte';
 import SubContent from './dropdown-menu-sub-content.svelte';
 import SubTrigger from './dropdown-menu-sub-trigger.svelte';
-import GroupHeading from './dropdown-menu-group-heading.svelte';
-import type { ComponentProps } from 'svelte';
+import Trigger from './dropdown-menu-trigger.svelte';
 
 const Sub = DropdownMenuPrimitive.Sub;
 const Root = DropdownMenuPrimitive.Root;
@@ -37,19 +38,19 @@ export {
   CheckboxItem,
   Content,
   Root as DropdownMenu,
-  type DropdownMenuProps,
   CheckboxItem as DropdownMenuCheckboxItem,
   type DropdownMenuCheckboxItemProps,
   Content as DropdownMenuContent,
   type DropdownMenuContentProps,
   Group as DropdownMenuGroup,
-  type DropdownMenuGroupProps,
   GroupHeading as DropdownMenuGroupHeading,
   type DropdownMenuGroupHeadingProps,
+  type DropdownMenuGroupProps,
   Item as DropdownMenuItem,
   type DropdownMenuItemProps,
   Label as DropdownMenuLabel,
   type DropdownMenuLabelProps,
+  type DropdownMenuProps,
   RadioGroup as DropdownMenuRadioGroup,
   type DropdownMenuRadioGroupProps,
   RadioItem as DropdownMenuRadioItem,
@@ -59,9 +60,9 @@ export {
   Shortcut as DropdownMenuShortcut,
   type DropdownMenuShortcutProps,
   Sub as DropdownMenuSub,
-  type DropdownMenuSubProps,
   SubContent as DropdownMenuSubContent,
   type DropdownMenuSubContentProps,
+  type DropdownMenuSubProps,
   SubTrigger as DropdownMenuSubTrigger,
   type DropdownMenuSubTriggerProps,
   Trigger as DropdownMenuTrigger,

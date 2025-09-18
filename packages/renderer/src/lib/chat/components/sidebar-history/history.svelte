@@ -1,9 +1,11 @@
 <script lang="ts">
-import ChatItem from './item.svelte';
-import type { Chat, User } from '../../../../../../main/src/chat/db/schema';
+import { isToday, isYesterday,subMonths, subWeeks } from 'date-fns';
+import { toast } from 'svelte-sonner';
+import { router } from 'tinro';
 
-import { SidebarGroup, SidebarGroupContent, SidebarMenu } from '../ui/sidebar';
-import { subWeeks, subMonths, isToday, isYesterday } from 'date-fns';
+import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
+
+import type { Chat, User } from '../../../../../../main/src/chat/db/schema';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,10 +16,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../ui/alert-dialog';
-import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
-import { toast } from 'svelte-sonner';
+import { SidebarGroup, SidebarGroupContent, SidebarMenu } from '../ui/sidebar';
 import { Skeleton } from '../ui/skeleton';
-import { router } from 'tinro';
+import ChatItem from './item.svelte';
 
 let { user }: { user?: User } = $props();
 const chatHistory = ChatHistory.fromContext();

@@ -1,14 +1,13 @@
 <script lang="ts">
-import { Button } from './ui/button';
-import { useSidebar, Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu } from './ui/sidebar';
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-
-import PlusIcon from './icons/plus.svelte';
-import type { User } from '../../../../../main/src/chat/db/schema';
-
-import SidebarUserNav from './sidebar-user-nav.svelte';
-import { SidebarHistory } from './sidebar-history';
 import { router } from 'tinro';
+
+import type { User } from '../../../../../main/src/chat/db/schema';
+import PlusIcon from './icons/plus.svelte';
+import { SidebarHistory } from './sidebar-history';
+import SidebarUserNav from './sidebar-user-nav.svelte';
+import { Button } from './ui/button';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu,useSidebar } from './ui/sidebar';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 let { user }: { user?: User } = $props();
 

@@ -1,7 +1,8 @@
 <script lang="ts">
-import { cn, type WithElementRef } from '/@/lib/chat/utils/shadcn.js';
-import { Skeleton } from '/@/lib/chat/components/ui/skeleton/index.js';
 import type { HTMLAttributes } from 'svelte/elements';
+
+import { Skeleton } from '/@/lib/chat/components/ui/skeleton/index.js';
+import { cn, type WithElementRef } from '/@/lib/chat/utils/shadcn.js';
 
 let {
   ref = $bindable(null),

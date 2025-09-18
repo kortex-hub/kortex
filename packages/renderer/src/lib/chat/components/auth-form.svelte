@@ -17,10 +17,11 @@ export type AuthFormProps = {
 </script>
 
 <script lang="ts">
-	import { Input } from '/@/lib/chat/components/ui/input';
-	import { Label } from '/@/lib/chat/components/ui/label';
 	import type { Snippet } from 'svelte';
 	import { toast } from 'svelte-sonner';
+
+	import { Input } from '/@/lib/chat/components/ui/input';
+	import { Label } from '/@/lib/chat/components/ui/label';
 
 	let { form, submitButton, children }: AuthFormProps = $props();
 
