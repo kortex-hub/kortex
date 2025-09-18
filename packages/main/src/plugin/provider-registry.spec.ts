@@ -203,6 +203,24 @@ test('should send version event if update', async () => {
   }
 });
 
+test('should send status update event on status change', async () => {
+  const providerListenerMock = vi.fn();
+  providerRegistry.addProviderListener(providerListenerMock);
+
+  const provider = providerRegistry.createProvider('id', 'name', {
+    id: 'internalId',
+    name: 'internalName',
+    status: 'installed',
+  });
+
+  provider.updateStatus('started');
+
+  expect(providerListenerMock).toHaveBeenCalledWith(
+    'provider:update-status',
+    expect.objectContaining({ id: 'internalId', name: 'internalName', status: 'started' }),
+  );
+});
+
 test('should initialize provider if there is container connection provider', async () => {
   let providerInternalId: string | undefined;
 
