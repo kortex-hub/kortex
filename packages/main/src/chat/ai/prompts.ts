@@ -34,13 +34,8 @@ import type { ArtifactKind } from '/@api/chat/artifact/artifact-kind.js';
 
 export const regularPrompt = 'You are a friendly assistant! Keep your responses concise and helpful.';
 
-export const systemPrompt = ({ selectedChatModel }: { selectedChatModel: string }) => {
-  if (selectedChatModel === 'chat-model-reasoning') {
-    return regularPrompt;
-  } else {
-    return regularPrompt;
-    // return `${regularPrompt}\n\n${artifactsPrompt}`;
-  }
+export const systemPrompt = ({ _selectedChatModel }: { selectedChatModel: string }): string => {
+  return regularPrompt;
 };
 
 export const codePrompt = `
@@ -75,7 +70,7 @@ export const sheetPrompt = `
 You are a spreadsheet creation assistant. Create a spreadsheet in csv format based on the given prompt. The spreadsheet should contain meaningful column headers and data.
 `;
 
-export const updateDocumentPrompt = (currentContent: string | null, type: ArtifactKind) =>
+export const updateDocumentPrompt = (currentContent: string | null, type: ArtifactKind): string =>
   type === 'text'
     ? `\
 Improve the following contents of the document based on the given prompt.
