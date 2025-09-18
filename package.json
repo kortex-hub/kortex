@@ -55,7 +55,7 @@
     "storybook:dev": "pnpm run storybook:css && cd storybook && pnpm run dev",
     "storybook:build": "pnpm run build:ui && pnpm run storybook:css && cd storybook && pnpm run build",
     "prepare": "husky install",
-    "postinstall": "playwright install chromium && electron-rebuild"
+    "postinstall": "playwright install chromium && electron-builder install-app-deps"
   },
   "lint-staged": {
     "*.{js,ts,tsx,svelte}": [
