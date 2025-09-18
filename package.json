@@ -118,6 +118,7 @@
     "js-yaml": "^4.1.0",
     "lint-staged": "^16.1.5",
     "mcp-registry": "workspace:*",
+    "mcp-spawner": "workspace:*",
     "minimist": "^1.2.8",
     "msw": "^2.10.4",
     "prettier": "^3.6.2",

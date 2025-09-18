@@ -81,8 +81,13 @@ export class MCPManager implements AsyncDisposable {
     await Promise.all(Array.from(this.#client.values().map(({ close }) => close())));
   }
 
-  protected getKey(internalProviderId: string, serverId: string, remoteId: number): string {
-    return `${internalProviderId}:${serverId}:${remoteId}`;
+  protected getKey(
+    internalProviderId: string,
+    serverId: string,
+    setupType: 'remote' | 'package',
+    index: number,
+  ): string {
+    return `${internalProviderId}:${serverId}:${setupType}:${index}`;
   }
 
   public get(key: string): MCPRemoteServerInfo {
@@ -119,12 +124,13 @@ export class MCPManager implements AsyncDisposable {
   public async registerMCPClient(
     internalProviderId: string,
     serverId: string,
-    remoteId: number,
+    setupType: 'remote' | 'package',
+    index: number,
     connectionName: string,
     transport: Transport,
     url?: string,
   ): Promise<void> {
-    const key = this.getKey(internalProviderId, serverId, remoteId);
+    const key = this.getKey(internalProviderId, serverId, setupType, index);
 
     // Wrap transport with delegate to record all exchanges
     const wrapped = new MCPTransportDelegate(transport, {
@@ -147,7 +153,7 @@ export class MCPManager implements AsyncDisposable {
 
     const mcpRemoteServerInfo: MCPRemoteServerInfo = {
       id: key,
-      infos: { internalProviderId, remoteId, serverId },
+      infos: { internalProviderId, remoteId: index, serverId },
       name: connectionName,
       url: url ?? '',
     };

@@ -1,0 +1,26 @@
+{
+  "name": "mcp-setup",
+  "version": "0.0.1",
+  "description": "Logic to setup and configure MCP Server - Local and Remote",
+  "repository": "https://github.com/kortex-hub/kortex",
+  "publishConfig": {
+    "provenance": true,
+    "access": "public"
+  },
+  "license": "Apache-2.0",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "vitest run --coverage --passWithNoTests",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "^7.1.2",
+    "vitest": "^3.2.4",
+    "ai": "^5.0.11",
+    "vite-plugin-dts": "^4.5.4",
+    "mcp-registry": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.17.1"
+  }
+}
