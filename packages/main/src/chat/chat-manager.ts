@@ -26,6 +26,14 @@ import type { IpcMainInvokeEvent, WebContents } from 'electron';
 import type { MCPManager } from '../plugin/mcp/mcp-manager.js';
 import type { ProviderRegistry } from '../plugin/provider-registry.js';
 
+interface InferenceParameters {
+  providerId: string;
+  connectionName: string;
+  modelId: string;
+  mcp: string[];
+  messages: UIMessage[];
+}
+
 export class ChatManager {
   constructor(
     private readonly providerRegistry: ProviderRegistry,
@@ -65,48 +73,33 @@ export class ChatManager {
     return userMessages.at(-1);
   }
 
-  private async getT(
-    providerId: string,
-    connectionName: string,
-    modelId: string,
-    mcp: Array<string>,
-    messages: UIMessage[],
+  private async getInferenceComponents(
+    params: InferenceParameters,
   ): Promise<{ languageModel: ReturnType<typeof sdk.languageModel>; modelMessages: ModelMessage[]; toolset: ToolSet }> {
-    const internalProviderId = this.providerRegistry.getMatchingProviderInternalId(providerId);
-    const sdk = this.providerRegistry.getInferenceSDK(internalProviderId, connectionName);
-    const languageModel = sdk.languageModel(modelId);
+    const internalProviderId = this.providerRegistry.getMatchingProviderInternalId(params.providerId);
+    const sdk = this.providerRegistry.getInferenceSDK(internalProviderId, params.connectionName);
+    const languageModel = sdk.languageModel(params.modelId);
 
-    const userMessage = this.getMostRecentUserMessage(messages);
+    const userMessage = this.getMostRecentUserMessage(params.messages);
 
     if (!userMessage) {
       throw new Error('No user message found');
     }
 
-    //ai sdk/fetch does not support file:URLs
-    const convertedMessages = await this.convertMessages(messages);
+    // ai sdk/fetch does not support file:URLs
+    const convertedMessages = await this.convertMessages(params.messages);
     const modelMessages = convertToModelMessages(convertedMessages);
 
-    const toolset = await this.mcpManager.getToolSet(mcp);
+    const toolset = await this.mcpManager.getToolSet(params.mcp);
 
     return { languageModel, modelMessages, toolset };
   }
 
   async streamText(
     _listener: Electron.IpcMainInvokeEvent,
-    providerId: string,
-    connectionName: string,
-    modelId: string,
-    mcp: Array<string>,
-    messages: UIMessage[],
-    onDataId: number,
+    params: InferenceParameters & { onDataId: number },
   ): Promise<number> {
-    const { languageModel, modelMessages, toolset } = await this.getT(
-      providerId,
-      connectionName,
-      modelId,
-      mcp,
-      messages,
-    );
+    const { languageModel, modelMessages, toolset } = await this.getInferenceComponents(params);
 
     const streaming = streamText({
       model: languageModel,
@@ -124,30 +117,17 @@ export class ChatManager {
       const { done, value } = await reader.read();
       if (done) {
         // end
-        this.getWebContentsSender().send('inference:streamText-onEnd', onDataId);
+        this.getWebContentsSender().send('inference:streamText-onEnd', params.onDataId);
         break;
       }
-      this.getWebContentsSender().send('inference:streamText-onChunk', onDataId, value);
+      this.getWebContentsSender().send('inference:streamText-onChunk', params.onDataId, value);
     }
 
-    return onDataId;
+    return params.onDataId;
   }
 
-  async generate(
-    _listener: Electron.IpcMainInvokeEvent,
-    providerId: string,
-    connectionName: string,
-    mcp: Array<string>,
-    modelId: string,
-    messages: UIMessage[],
-  ): Promise<string> {
-    const { languageModel, modelMessages, toolset } = await this.getT(
-      providerId,
-      connectionName,
-      modelId,
-      mcp,
-      messages,
-    );
+  async generate(_listener: Electron.IpcMainInvokeEvent, params: InferenceParameters): Promise<string> {
+    const { languageModel, modelMessages, toolset } = await this.getInferenceComponents(params);
 
     const result = await generateText({
       model: languageModel,
