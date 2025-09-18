@@ -35,23 +35,26 @@ const exportAsFlow = async (): Promise<void> => {
   loadingExportAsFlow = true;
 
   try {
+    const { providerId, connectionName, label } = selectedModel;
     const prompt = await window.inferenceGenerate(
-      selectedModel.providerId,
-      selectedModel.connectionName,
-      selectedModel.label,
-      selectedMCP.map(m => m.id),
-      $state.snapshot(chatClient.messages).concat([
-        {
-          id: crypto.randomUUID(),
-          role: 'user',
-          parts: [
-            {
-              text: 'Use the conversation to make a unique prompt, only return the prompt it will be executed automatically.',
-              type: 'text',
-            },
-          ],
-        },
-      ]),
+      {
+        providerId,
+        connectionName,
+        modelId: label,
+        mcp: selectedMCP.map(m => m.id),
+        messages: $state.snapshot(chatClient.messages).concat([
+          {
+            id: crypto.randomUUID(),
+            role: 'user',
+            parts: [
+              {
+                text: 'Use the conversation to make a unique prompt, only return the prompt it will be executed automatically.',
+                type: 'text',
+              },
+            ],
+          },
+        ]),
+      },
     );
 
     flowCreationStore.set({
