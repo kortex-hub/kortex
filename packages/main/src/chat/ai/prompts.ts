@@ -34,7 +34,7 @@ import type { ArtifactKind } from '/@api/chat/artifact/artifact-kind.js';
 
 export const regularPrompt = 'You are a friendly assistant! Keep your responses concise and helpful.';
 
-export const systemPrompt = ({ _selectedChatModel }: { selectedChatModel: string }): string => {
+export const systemPrompt = (): string => {
   return regularPrompt;
 };
 
