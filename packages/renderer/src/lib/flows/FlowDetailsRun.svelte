@@ -9,7 +9,7 @@ import type { FlowExecuteInfo } from '/@api/flow-execute-info';
 
 import TerminalWindow from '../ui/TerminalWindow.svelte';
 
-let logsTerminal: Terminal | undefined;
+let logsTerminal: Terminal | undefined = $state(undefined);
 
 interface Props {
   readonly providerId: string;

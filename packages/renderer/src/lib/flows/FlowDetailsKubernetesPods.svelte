@@ -3,7 +3,6 @@ import type { V1Pod } from '@kubernetes/client-node';
 import { TableColumn, TableDurationColumn, TableRow } from '@podman-desktop/ui-svelte';
 import moment from 'moment';
 
-import PodIcon from '../images/PodIcon.svelte';
 import NameColumn from '../kube/column/Name.svelte';
 import StatusColumn from '../kube/column/Status.svelte';
 import { PodUtils } from '../kube/pods/pod-utils';
@@ -71,8 +70,6 @@ const row = new TableRow<PodUI>({ selectable: (_pod): boolean => true });
     filterResource: filterFlowidPod,
   }]}
   singular="pod"
-  plural="pods"
-  icon={PodIcon}
   columns={columns}
   row={row}
 >

@@ -7,7 +7,14 @@ import { router } from 'tinro';
 import { handleNavigation } from '/@/navigation';
 import Route from '/@/Route.svelte';
 import { NavigationPage } from '/@api/navigation-page';
-import type { ProviderContainerConnectionInfo, ProviderInfo, ProviderVmConnectionInfo } from '/@api/provider-info';
+import type {
+  ProviderContainerConnectionInfo,
+  ProviderFlowConnectionInfo,
+  ProviderInferenceConnectionInfo,
+  ProviderInfo,
+  ProviderKubernetesConnectionInfo,
+  ProviderVmConnectionInfo,
+} from '/@api/provider-info';
 
 import { providerInfos } from '../../stores/providers';
 import IconImage from '../appearance/IconImage.svelte';
@@ -85,7 +92,12 @@ async function startConnectionProvider(
 
 function updateConnectionStatus(
   provider: ProviderInfo,
-  connectionInfo: ProviderVmConnectionInfo | ProviderContainerConnectionInfo,
+  connectionInfo:
+    | ProviderFlowConnectionInfo
+    | ProviderVmConnectionInfo
+    | ProviderContainerConnectionInfo
+    | ProviderKubernetesConnectionInfo
+    | ProviderInferenceConnectionInfo,
   action?: string,
   error?: string,
 ): void {

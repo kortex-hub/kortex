@@ -6,7 +6,7 @@ import { cn, type WithElementRef } from '/@/lib/chat/utils/shadcn.js';
 type InputType = Exclude<HTMLInputTypeAttribute, 'file'>;
 
 type Props = WithElementRef<
-  Omit<HTMLInputAttributes, 'type'> & ({ type: 'file'; files?: FileList } | { type?: InputType; files? })
+  Omit<HTMLInputAttributes, 'type'> & ({ type: 'file'; files?: FileList } | { type?: InputType; files?: FileList })
 >;
 
 let {

@@ -7,7 +7,6 @@ import ActionsColumn from '/@/lib/job/columns/Actions.svelte';
 import CompletionsColumn from '/@/lib/job/columns/Completions.svelte';
 import ConditionsColumn from '/@/lib/job/columns/Conditions.svelte';
 
-import JobIcon from '../images/JobIcon.svelte';
 import { JobUtils } from '../job/job-utils';
 import JobEmptyScreen from '../job/JobEmptyScreen.svelte';
 import type { JobUI } from '../job/JobUI';
@@ -77,8 +76,6 @@ function filterFlowidJob(job: V1Job): boolean {
     filterResource: filterFlowidJob,
   }]}
   singular="Job"
-  plural="Jobs"
-  icon={JobIcon}
   columns={columns}
   row={row}
   >

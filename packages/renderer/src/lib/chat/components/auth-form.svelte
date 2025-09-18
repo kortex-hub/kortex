@@ -20,6 +20,11 @@ export type AuthFormProps = {
 	import type { Snippet } from 'svelte';
 	import { toast } from 'svelte-sonner';
 
+	type SubmitFunction<Success, Failure> = () => (params: {
+		result: { type: 'success' | 'failure'; data: Success | Failure };
+		update: () => void;
+	}) => Promise<void>;
+
 	import { Input } from '/@/lib/chat/components/ui/input';
 	import { Label } from '/@/lib/chat/components/ui/label';
 
@@ -29,7 +34,12 @@ export type AuthFormProps = {
 	const enhanceCallback: SubmitFunction<FormSuccessData, FormFailureData> = () => {
 		pending = true;
 		return async ({ result, update }) => {
-			if (result.type === 'failure' && result.data?.message) {
+			if (
+				result.type === 'failure' &&
+				typeof result.data === 'object' &&
+				'message' in result.data &&
+				result.data.message
+			) {
 				toast.error(result.data.message, { duration: 5000 });
 			}
 			pending = false;
@@ -45,7 +55,7 @@ export type AuthFormProps = {
 	});
 </script>
 
-<form method="POST" class="flex flex-col gap-4 px-4 sm:px-16" use:enhance={enhanceCallback}>
+<form method="POST" class="flex flex-col gap-4 px-4 sm:px-16" onsubmit={enhanceCallback}>
 	<div class="flex flex-col gap-2">
 		<Label for="email" class=" text-zinc-600 dark:text-zinc-400">Email Address</Label>
 
