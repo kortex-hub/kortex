@@ -47,7 +47,7 @@ function getKey(providerId: string, connection: ProviderFlowConnectionInfo): str
 }
 </script>
 
-<DropdownMenu {open} onOpenChange={(val): void => (open = val)}>
+<DropdownMenu {open} onOpenChange={(val): boolean => (open = val)}>
 	<DropdownMenuTrigger>
 		{#snippet child({ props })}
 			<Button

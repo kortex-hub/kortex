@@ -1,13 +1,13 @@
 <script lang="ts">
 import { faDownload } from '@fortawesome/free-solid-svg-icons';
-import type { components } from 'mcp-registry';
 import Fa from 'svelte-fa';
 
 import { handleNavigation } from '/@/navigation';
+import type { MCPServerDetail } from '/@api/mcp/mcp-server-info';
 import { NavigationPage } from '/@api/navigation-page';
 
 interface Props {
-  mcpsToInstall: readonly components['schemas']['ServerDetail'][];
+  mcpsToInstall: readonly MCPServerDetail[];
 }
 let { mcpsToInstall }: Props = $props();
 </script>
