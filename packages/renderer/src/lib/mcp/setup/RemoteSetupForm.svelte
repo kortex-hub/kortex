@@ -90,7 +90,7 @@ function onHeaderVariableChange(header: string, variable: string, value: string)
   </div>
 
   <!-- headers -->
-  {#if (object.headers ?? []).length > 0}
+  {#if object.headers?.length}
     <div class="bg-[var(--pd-content-bg)] rounded-md flex flex-col p-2 space-y-2">
       <div class="flex flex-row items-center gap-x-2">
         <Fa icon={faKey} />
@@ -99,7 +99,7 @@ function onHeaderVariableChange(header: string, variable: string, value: string)
 
       <span>Configure headers for authentication and other purposes</span>
       <label for="http-headers" class="text-base font-bold text-[var(--pd-content-card-header-text)]">HTTP Headers</label>
-      {#each (object.headers ?? []) as header (header.name)}
+      {#each object.headers as header (header.name)}
         <div class="border-2 border-dashed rounded-md p-4">
 
           <label for="header-{header.name}" class="text-xl font-bold text-[var(--pd-content-card-header-text)]">{header.name} {header.is_required ? '*' : ''}</label>
