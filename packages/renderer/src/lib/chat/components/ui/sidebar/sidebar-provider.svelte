@@ -10,7 +10,7 @@ import { setSidebar } from './context.svelte.js';
 let {
   ref = $bindable(null),
   open = $bindable(true),
-  onOpenChange = () => {},
+  onOpenChange = (): void => {},
   class: className,
   style,
   children,

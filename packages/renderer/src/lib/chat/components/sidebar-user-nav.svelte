@@ -42,7 +42,7 @@ const theme = getTheme();
 			<DropdownMenuContent side="top" class="w-[--bits-floating-anchor-width]">
 				<DropdownMenuItem
 					class="cursor-pointer"
-					onSelect={() =>
+					onSelect={(): string =>
 						(theme.selectedTheme = theme.resolvedTheme === 'light' ? 'dark' : 'light')}
 				>
 					Toggle {theme.resolvedTheme === 'light' ? 'dark' : 'light'} mode

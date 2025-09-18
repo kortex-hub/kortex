@@ -28,14 +28,17 @@ export class ChatHistory {
       .finally(() => {
         this.#loading = false;
         this.#revalidating = false;
+      })
+      .catch((error: unknown) => {
+        console.error('Failed to load chat history', error);
       });
   }
 
-  getChatDetails = (chatId: string) => {
+  getChatDetails = (chatId: string): Chat | undefined => {
     return this.chats.find(c => c.id === chatId);
   };
 
-  updateVisibility = async (chatId: string, visibility: VisibilityType) => {
+  updateVisibility = async (chatId: string, visibility: VisibilityType): Promise<void> => {
     const chat = this.chats.find(c => c.id === chatId);
     if (chat) {
       chat.visibility = visibility;

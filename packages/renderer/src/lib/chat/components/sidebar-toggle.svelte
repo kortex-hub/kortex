@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 import SidebarLeftIcon from './icons/sidebar-left.svelte';
 import { Button } from './ui/button';
 import { useSidebar } from './ui/sidebar';
@@ -12,7 +12,7 @@ const sidebar = useSidebar();
 		{#snippet child({ props })}
 			<Button
 				{...props}
-				onclick={() => {
+				onclick={(): void => {
 					sidebar.toggle();
 				}}
 				variant="outline"

@@ -38,24 +38,24 @@ class SidebarState {
 
   // Convenience getter for checking if the sidebar is mobile
   // without this, we would need to use `sidebar.isMobile.current` everywhere
-  get isMobile() {
+  get isMobile(): boolean {
     return this.#isMobile.current;
   }
 
   // Event handler to apply to the `<svelte:window>`
-  handleShortcutKeydown = (e: KeyboardEvent) => {
+  handleShortcutKeydown = (e: KeyboardEvent): void => {
     if (e.key === SIDEBAR_KEYBOARD_SHORTCUT && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       this.toggle();
     }
   };
 
-  setOpenMobile = (value: boolean) => {
+  setOpenMobile = (value: boolean): void => {
     this.openMobile = value;
   };
 
-  toggle = () => {
-    return this.#isMobile.current ? (this.openMobile = !this.openMobile) : this.setOpen(!this.open);
+  toggle = (): void => {
+    this.#isMobile.current ? (this.openMobile = !this.openMobile) : this.setOpen(!this.open);
   };
 }
 

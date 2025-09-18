@@ -4,7 +4,7 @@ export class Lock {
   locked = false;
 }
 
-const lockKey = (key: string) => Symbol.for(`lock:${key}`);
+const lockKey = (key: string): symbol => Symbol.for(`lock:${key}`);
 
 export function getLock(key: string): Lock {
   const k = lockKey(key);

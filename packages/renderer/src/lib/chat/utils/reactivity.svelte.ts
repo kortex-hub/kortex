@@ -24,11 +24,11 @@ export class SynchronizedCookie {
     this.#contextKey = Symbol.for(`SynchronizedCookie:${key}`);
   }
 
-  get key() {
+  get key(): string {
     return this.#key;
   }
 
-  get value() {
+  get value(): string {
     return this.#value;
   }
 
@@ -43,7 +43,7 @@ export class SynchronizedCookie {
     this.#value = v;
   }
 
-  setContext() {
+  setContext(): void {
     setContext(this.#contextKey, this);
   }
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { isToday, isYesterday,subMonths, subWeeks } from 'date-fns';
+import { isToday, isYesterday, subMonths, subWeeks } from 'date-fns';
 import { toast } from 'svelte-sonner';
 import { router } from 'tinro';
 
@@ -26,7 +26,6 @@ let alertDialogOpen = $state(false);
 const groupedChats = $derived(groupChatsByDate(chatHistory.chats));
 let chatIdToDelete = $state<string | undefined>(undefined);
 
-//FIXME
 const page = { params: { chatId: '123' } };
 
 type GroupedChats = {
@@ -77,8 +76,8 @@ function groupChatsByDate(chats: Chat[]): GroupedChats {
   );
 }
 
-async function handleDeleteChat() {
-  const deletePromise = (async () => {
+async function handleDeleteChat(): Promise<void> {
+  const deletePromise = (async (): Promise<void> => {
     const res = await fetch('/api/chat', {
       method: 'DELETE',
       headers: {
@@ -95,7 +94,9 @@ async function handleDeleteChat() {
     loading: 'Deleting chat...',
     success: () => {
       chatHistory.chats = chatHistory.chats.filter(chat => chat.id !== chatIdToDelete);
-      chatHistory.refetch();
+      chatHistory.refetch().catch((err: unknown) => {
+        console.error('Failed to refetch chat history', err);
+      });
       return 'Chat deleted successfully';
     },
     error: 'Failed to delete chat',
@@ -104,7 +105,7 @@ async function handleDeleteChat() {
   alertDialogOpen = false;
 
   if (chatIdToDelete === page.params.chatId) {
-    await router.goto('/');
+    router.goto('/');
   }
 }
 </script>
@@ -158,7 +159,7 @@ async function handleDeleteChat() {
 							<ChatItem
 								{chat}
 								active={chat.id === page.params.chatId}
-								ondelete={(chatId) => {
+								ondelete={(chatId): void => {
 									chatIdToDelete = chatId;
 									alertDialogOpen = true;
 								}}

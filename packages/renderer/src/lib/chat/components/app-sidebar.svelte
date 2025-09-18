@@ -6,7 +6,7 @@ import PlusIcon from './icons/plus.svelte';
 import { SidebarHistory } from './sidebar-history';
 import SidebarUserNav from './sidebar-user-nav.svelte';
 import { Button } from './ui/button';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu,useSidebar } from './ui/sidebar';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, useSidebar } from './ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 let { user }: { user?: User } = $props();
@@ -20,7 +20,7 @@ const context = useSidebar();
 			<div class="flex h-10 flex-row items-center justify-between md:h-[34px]">
 				<a
 					href="/"
-					onclick={() => {
+					onclick={(): void => {
 						context.setOpenMobile(false);
 					}}
 					class="flex flex-row items-center gap-3"
@@ -37,7 +37,7 @@ const context = useSidebar();
 								variant="ghost"
 								type="button"
 								class="h-fit p-2"
-								onclick={() => {
+								onclick={(): void => {
 									context.setOpenMobile(false);
 									router.goto('/');
 								}}
