@@ -89,6 +89,10 @@ const config = {
         to: 'win-ca/roots.exe',
       });
     }
+    context.packager.config.extraResources.push({
+      from: 'packages/main/src/chat/db/migrations/',
+      to: 'chat/db/migrations',
+    });
   },
   afterPack: async context => {
     await addElectronFuses(context);

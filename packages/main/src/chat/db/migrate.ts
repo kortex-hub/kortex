@@ -8,10 +8,14 @@ export const runMigrate = (db: BetterSQLite3Database<Record<string, unknown>>): 
 
   const start = Date.now();
 
-  // get current folder
-  const currentFolder = resolve(__dirname);
-
-  const updateFolder = resolve(currentFolder, '..', 'migrations');
+  let updateFolder: string;
+  if (import.meta.env.PROD) {
+    updateFolder = resolve(process.resourcesPath, 'chat', 'db', 'migrations');
+  } else {
+    // get current folder
+    const currentFolder = resolve(__dirname);
+    updateFolder = resolve(currentFolder, '..', 'src', 'chat', 'db', 'migrations');
+  }
 
   const cleanedPath = updateFolder.replace('/[project]', '');
 
