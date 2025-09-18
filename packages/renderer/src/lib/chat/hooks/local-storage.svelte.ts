@@ -23,7 +23,7 @@ export class LocalStorage<T> {
     });
   }
 
-  get value() {
+  get value(): T {
     this.#subscribe();
     const storedValue = localStorage.getItem(this.#key);
     return storedValue === null ? this.#defaultValue : JSON.parse(storedValue);
@@ -33,7 +33,7 @@ export class LocalStorage<T> {
     localStorage.setItem(this.#key, JSON.stringify(v));
   }
 
-  delete() {
+  delete(): void {
     localStorage.removeItem(this.#key);
   }
 }

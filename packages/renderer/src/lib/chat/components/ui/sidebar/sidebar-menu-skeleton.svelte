@@ -15,6 +15,7 @@ let {
 } = $props();
 
 // Random width between 50% and 90%
+// eslint-disable-next-line sonarjs/pseudo-random
 const width = `${Math.floor(Math.random() * 40) + 50}%`;
 </script>
 

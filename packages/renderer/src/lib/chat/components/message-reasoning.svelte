@@ -15,14 +15,18 @@ let { loading, reasoning }: { loading: boolean; reasoning: string } = $props();
 let expanded = $state(false);
 const scrollLock = getLock('messages-scroll');
 
-function lockScrolling() {
+function lockScrolling(): void {
   scrollLock.locked = true;
 }
 
-function unlockScrolling() {
-  tick().then(() => {
-    scrollLock.locked = false;
-  });
+function unlockScrolling(): void {
+  tick()
+    .then(() => {
+      scrollLock.locked = false;
+    })
+    .catch((error: unknown) => {
+      console.error('Unable to unlock scrolling', error);
+    });
 }
 </script>
 
@@ -41,7 +45,7 @@ function unlockScrolling() {
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<div
 				class="cursor-pointer"
-				onclick={() => {
+				onclick={(): void => {
 					expanded = !expanded;
 				}}
 			>

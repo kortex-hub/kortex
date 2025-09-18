@@ -49,7 +49,7 @@ function onSelect(model: ModelInfo): void {
 }
 </script>
 
-<DropdownMenu {open} onOpenChange={(val) => (open = val)}>
+<DropdownMenu {open} onOpenChange={(val): boolean => (open = val)}>
 	<DropdownMenuTrigger>
 		{#snippet child({ props })}
 			<Button

@@ -26,7 +26,7 @@ const sidebar = useSidebar();
 	size="icon"
 	class={cn('size-7', className)}
 	type="button"
-	onclick={(e) => {
+	onclick={(e): void => {
 		onclick?.(e);
 		sidebar.toggle();
 	}}

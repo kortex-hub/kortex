@@ -19,7 +19,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { SidebarMenuAction, SidebarMenuButton, SidebarMenuItem,useSidebar } from '../ui/sidebar';
+import { SidebarMenuAction, SidebarMenuButton, SidebarMenuItem, useSidebar } from '../ui/sidebar';
 
 let {
   chat,
@@ -42,7 +42,7 @@ const chatFromHistory = $derived(chatHistory.getChatDetails(chat.id));
 		{#snippet child({ props })}
 			<button
 				{...props}
-				onclick={() => {
+				onclick={(): void => {
 					router.goto(`/chat/${chat.id}`);
 					context.setOpenMobile(false);
 				}}
@@ -75,8 +75,10 @@ const chatFromHistory = $derived(chatHistory.getChatDetails(chat.id));
 				<DropdownMenuSubContent align="start">
 					<DropdownMenuItem
 						class="cursor-pointer flex-row justify-between"
-						onclick={() => {
-							chatHistory.updateVisibility(chat.id, 'private');
+						onclick={(): void => {
+							chatHistory.updateVisibility(chat.id, 'private').catch((err: unknown) => {
+                console.error('Failed to update chat visibility', err);
+              });
 						}}
 					>
 						<div class="flex flex-row items-center gap-2">
@@ -89,8 +91,10 @@ const chatFromHistory = $derived(chatHistory.getChatDetails(chat.id));
 					</DropdownMenuItem>
 					<DropdownMenuItem
 						class="cursor-pointer flex-row justify-between"
-						onclick={() => {
-							chatHistory.updateVisibility(chat.id, 'public');
+						onclick={(): void => {
+							chatHistory.updateVisibility(chat.id, 'public').catch((err: unknown) => {
+                console.error('Failed to update chat visibility', err);
+              });
 						}}
 					>
 						<div class="flex flex-row items-center gap-2">
@@ -106,7 +110,7 @@ const chatFromHistory = $derived(chatHistory.getChatDetails(chat.id));
 
 			<DropdownMenuItem
 				class="text-destructive focus:bg-destructive/15 focus:text-destructive cursor-pointer dark:text-red-500"
-				onclick={() => ondelete(chat.id)}
+				onclick={(): void => ondelete(chat.id)}
 			>
 				<TrashIcon />
 				<span>Delete</span>

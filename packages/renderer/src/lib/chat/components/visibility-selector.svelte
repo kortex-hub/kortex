@@ -38,7 +38,7 @@ const { label, Icon } = $derived(
 );
 </script>
 
-<DropdownMenu {open} onOpenChange={(val) => (open = val)}>
+<DropdownMenu {open} onOpenChange={(val): boolean => (open = val)}>
 	<DropdownMenuTrigger>
 		{#snippet child({ props })}
 			<Button
@@ -59,8 +59,10 @@ const { label, Icon } = $derived(
 	<DropdownMenuContent align="start" class="min-w-[300px]">
 		{#each visibilities as visibility (visibility.id)}
 			<DropdownMenuItem
-				onSelect={() => {
-					chatHistory.updateVisibility(chat.id, visibility.id);
+				onSelect={(): void => {
+					chatHistory.updateVisibility(chat.id, visibility.id).catch((err: unknown) => {
+            console.error('Failed to update chat visibility', err);
+          });
 					open = false;
 				}}
 				class="group/item flex flex-row items-center justify-between gap-4"
