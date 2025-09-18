@@ -40,7 +40,7 @@ async function navigateToMcps(): Promise<void> {
 </script>
 
 {#if mcpRegistryServerDetail}
-  <FormPage title="Adding {mcpRegistryServerDetail.name}" onclose={navigateToMcps}>
+  <FormPage title="Adding {mcpRegistryServerDetail.name}" inProgress={loading} onclose={navigateToMcps}>
     {#snippet icon()}<McpIcon size={24} />{/snippet}
     {#snippet content()}
 
