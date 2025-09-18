@@ -62,6 +62,8 @@ export function getUser(email: string): ResultAsync<User, DbError> {
       db.select().from(user).where(eq(user.email, email)),
       e => new DbInternalError({ cause: e }),
     );
+    // password is intentionally not used
+    // eslint-disable-next-line sonarjs/no-unused-vars, @typescript-eslint/no-unused-vars
     const { password: _, ...rest } = yield* unwrapSingleQueryResult(userResult, email, 'User');
 
     return ok(rest);
@@ -167,10 +169,10 @@ export function saveChat({
 
 export function deleteChatById({ id }: { id: string }): ResultAsync<undefined, DbError> {
   return safeTry(async function* () {
-    const actions = [
-      () => db.delete(vote).where(eq(vote.chatId, id)),
-      () => db.delete(message).where(eq(message.chatId, id)),
-      () => db.delete(chat).where(eq(chat.id, id)),
+    const actions: Array<() => Promise<unknown>> = [
+      (): Promise<unknown> => db.delete(vote).where(eq(vote.chatId, id)),
+      (): Promise<unknown> => db.delete(message).where(eq(message.chatId, id)),
+      (): Promise<unknown> => db.delete(chat).where(eq(chat.id, id)),
     ];
 
     for (const action of actions) {
@@ -265,7 +267,7 @@ export async function saveDocument({
   kind: never;
   content: string;
   userId: string;
-}) {
+}): Promise<unknown> {
   try {
     return await db.insert(document).values({
       id,
@@ -281,7 +283,16 @@ export async function saveDocument({
   }
 }
 
-export async function getDocumentsById({ id }: { id: string }) {
+// Custom type for DB documents
+interface DbDocument {
+  id: string;
+  createdAt: Date;
+  title: string;
+  content: string | null;
+  kind: 'text' | 'code' | 'image' | 'sheet';
+  userId: string;
+}
+export async function getDocumentsById({ id }: { id: string }): Promise<DbDocument[]> {
   try {
     const documents = await db.select().from(document).where(eq(document.id, id)).orderBy(asc(document.createdAt));
 
@@ -292,7 +303,7 @@ export async function getDocumentsById({ id }: { id: string }) {
   }
 }
 
-export async function getDocumentById({ id }: { id: string }) {
+export async function getDocumentById({ id }: { id: string }): Promise<DbDocument | undefined> {
   try {
     const [selectedDocument] = await db
       .select()
@@ -307,7 +318,13 @@ export async function getDocumentById({ id }: { id: string }) {
   }
 }
 
-export async function deleteDocumentsByIdAfterTimestamp({ id, timestamp }: { id: string; timestamp: Date }) {
+export async function deleteDocumentsByIdAfterTimestamp({
+  id,
+  timestamp,
+}: {
+  id: string;
+  timestamp: Date;
+}): Promise<unknown> {
   try {
     await db.delete(suggestion).where(and(eq(suggestion.documentId, id), gt(suggestion.documentCreatedAt, timestamp)));
 
