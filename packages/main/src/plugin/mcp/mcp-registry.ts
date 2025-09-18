@@ -323,15 +323,15 @@ export class MCPRegistry {
       throw new Error(`MCP server with id ${serverId} does not have remote with id ${remoteId}`);
     }
 
-    const name = serverDetail.name;
-    const description = serverDetail.description;
-
     // create transport
     const transport = new StreamableHTTPClientTransport(new URL(remote.url), {
       requestInit: {
         headers,
       },
     });
+
+    // get values from the server detail
+    const { name, description } = serverDetail;
 
     await this.mcpManager.registerMCPClient(
       INTERNAL_PROVIDER_ID,
