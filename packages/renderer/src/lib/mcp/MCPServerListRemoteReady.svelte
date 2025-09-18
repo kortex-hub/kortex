@@ -6,6 +6,7 @@ import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import McpIcon from '../images/MCPIcon.svelte';
+import { MCPServerDescriptionColumn } from './mcp-server-columns';
 import MCPServerEmptyScreen from './MCPServerEmptyScreen.svelte';
 import McpServerRemoteListActions from './MCPServerRemoteListActions.svelte';
 
@@ -37,7 +38,7 @@ const actionsColumn = new TableColumn<MCPRemoteServerInfo>('Actions', {
   overflow: true,
 });
 
-const columns = [statusColumn, nameColumn, actionsColumn];
+const columns = [statusColumn, nameColumn, new MCPServerDescriptionColumn(), actionsColumn];
 
 const row = new TableRow<MCPRemoteServerInfo>({});
 </script>
