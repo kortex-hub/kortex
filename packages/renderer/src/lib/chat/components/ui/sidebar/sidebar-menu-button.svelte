@@ -26,11 +26,13 @@ export type SidebarMenuButtonSize = VariantProps<typeof sidebarMenuButtonVariant
 </script>
 
 <script lang="ts">
-	import * as Tooltip from '/@/lib/chat/components/ui/tooltip/index.js';
-	import { cn, type WithElementRef, type WithoutChildrenOrChild } from '/@/lib/chat/utils/shadcn.js';
 	import { mergeProps } from 'bits-ui';
 	import type { ComponentProps, Snippet } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
+
+	import * as Tooltip from '/@/lib/chat/components/ui/tooltip/index.js';
+	import { cn, type WithElementRef, type WithoutChildrenOrChild } from '/@/lib/chat/utils/shadcn.js';
+
 	import { useSidebar } from './context.svelte.js';
 
 	let {
@@ -61,7 +63,7 @@ export type SidebarMenuButtonSize = VariantProps<typeof sidebarMenuButtonVariant
 		'data-sidebar': 'menu-button',
 		'data-size': size,
 		'data-active': isActive,
-		...restProps
+		...restProps,
 	});
 </script>
 

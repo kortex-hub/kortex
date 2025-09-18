@@ -1,28 +1,29 @@
 import type { ComponentProps } from 'svelte';
+
 import { useSidebar } from './context.svelte.js';
+import Root from './sidebar.svelte';
 import Content from './sidebar-content.svelte';
 import Footer from './sidebar-footer.svelte';
+import Group from './sidebar-group.svelte';
 import GroupAction from './sidebar-group-action.svelte';
 import GroupContent from './sidebar-group-content.svelte';
 import GroupLabel from './sidebar-group-label.svelte';
-import Group from './sidebar-group.svelte';
 import Header from './sidebar-header.svelte';
 import Input from './sidebar-input.svelte';
 import Inset from './sidebar-inset.svelte';
+import Menu from './sidebar-menu.svelte';
 import MenuAction from './sidebar-menu-action.svelte';
 import MenuBadge from './sidebar-menu-badge.svelte';
 import MenuButton from './sidebar-menu-button.svelte';
 import MenuItem from './sidebar-menu-item.svelte';
 import MenuSkeleton from './sidebar-menu-skeleton.svelte';
+import MenuSub from './sidebar-menu-sub.svelte';
 import MenuSubButton from './sidebar-menu-sub-button.svelte';
 import MenuSubItem from './sidebar-menu-sub-item.svelte';
-import MenuSub from './sidebar-menu-sub.svelte';
-import Menu from './sidebar-menu.svelte';
 import Provider from './sidebar-provider.svelte';
 import Rail from './sidebar-rail.svelte';
 import Separator from './sidebar-separator.svelte';
 import Trigger from './sidebar-trigger.svelte';
-import Root from './sidebar.svelte';
 
 type SidebarProps = ComponentProps<typeof Root>;
 type SidebarContentProps = ComponentProps<typeof Content>;
@@ -73,19 +74,18 @@ export {
   Separator,
   //
   Root as Sidebar,
-  type SidebarProps,
   Content as SidebarContent,
   type SidebarContentProps,
   Footer as SidebarFooter,
   type SidebarFooterProps,
   Group as SidebarGroup,
-  type SidebarGroupProps,
   GroupAction as SidebarGroupAction,
   type SidebarGroupActionProps,
   GroupContent as SidebarGroupContent,
   type SidebarGroupContentProps,
   GroupLabel as SidebarGroupLabel,
   type SidebarGroupLabelProps,
+  type SidebarGroupProps,
   Header as SidebarHeader,
   type SidebarHeaderProps,
   Input as SidebarInput,
@@ -93,7 +93,6 @@ export {
   Inset as SidebarInset,
   type SidebarInsetProps,
   Menu as SidebarMenu,
-  type SidebarMenuProps,
   MenuAction as SidebarMenuAction,
   type SidebarMenuActionProps,
   MenuBadge as SidebarMenuBadge,
@@ -102,14 +101,16 @@ export {
   type SidebarMenuButtonProps,
   MenuItem as SidebarMenuItem,
   type SidebarMenuItemProps,
+  type SidebarMenuProps,
   MenuSkeleton as SidebarMenuSkeleton,
   type SidebarMenuSkeletonProps,
   MenuSub as SidebarMenuSub,
-  type SidebarMenuSubProps,
   MenuSubButton as SidebarMenuSubButton,
   type SidebarMenuSubButtonProps,
   MenuSubItem as SidebarMenuSubItem,
   type SidebarMenuSubItemProps,
+  type SidebarMenuSubProps,
+  type SidebarProps,
   Provider as SidebarProvider,
   type SidebarProviderProps,
   Rail as SidebarRail,

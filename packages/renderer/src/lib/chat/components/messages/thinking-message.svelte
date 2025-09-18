@@ -1,6 +1,7 @@
 <script lang="ts">
-import SparklesIcon from '/@/lib/chat/components/icons/sparkles.svelte';
 import { fly } from 'svelte/transition';
+
+import SparklesIcon from '/@/lib/chat/components/icons/sparkles.svelte';
 </script>
 
 <div

@@ -1,6 +1,15 @@
 <script lang="ts">
-import type { Chat } from '../../../../../../main/src/chat/db/schema';
+import { router } from 'tinro';
 
+import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
+
+import type { Chat } from '../../../../../../main/src/chat/db/schema';
+import CheckCircleFillIcon from '../icons/check-circle-fill.svelte';
+import GlobeIcon from '../icons/globe.svelte';
+import LockIcon from '../icons/lock.svelte';
+import MoreHorizontalIcon from '../icons/more-horizontal.svelte';
+import ShareIcon from '../icons/share.svelte';
+import TrashIcon from '../icons/trash.svelte';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,15 +19,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { useSidebar, SidebarMenuAction, SidebarMenuButton, SidebarMenuItem } from '../ui/sidebar';
-import TrashIcon from '../icons/trash.svelte';
-import GlobeIcon from '../icons/globe.svelte';
-import CheckCircleFillIcon from '../icons/check-circle-fill.svelte';
-import LockIcon from '../icons/lock.svelte';
-import ShareIcon from '../icons/share.svelte';
-import MoreHorizontalIcon from '../icons/more-horizontal.svelte';
-import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
-import { router } from 'tinro';
+import { SidebarMenuAction, SidebarMenuButton, SidebarMenuItem,useSidebar } from '../ui/sidebar';
 
 let {
   chat,

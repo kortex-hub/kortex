@@ -1,6 +1,7 @@
 <script lang="ts">
-import type { WithElementRef } from '/@/lib/chat/utils/types.js';
 import type { SVGAttributes } from 'svelte/elements';
+
+import type { WithElementRef } from '/@/lib/chat/utils/types.js';
 
 let {
   size = 16,

@@ -1,14 +1,15 @@
 import { AlertDialog as AlertDialogPrimitive } from 'bits-ui';
-import Trigger from './alert-dialog-trigger.svelte';
-import Title from './alert-dialog-title.svelte';
+import type { ComponentProps } from 'svelte';
+
 import Action from './alert-dialog-action.svelte';
 import Cancel from './alert-dialog-cancel.svelte';
+import Content from './alert-dialog-content.svelte';
+import Description from './alert-dialog-description.svelte';
 import Footer from './alert-dialog-footer.svelte';
 import Header from './alert-dialog-header.svelte';
 import Overlay from './alert-dialog-overlay.svelte';
-import Content from './alert-dialog-content.svelte';
-import Description from './alert-dialog-description.svelte';
-import type { ComponentProps } from 'svelte';
+import Title from './alert-dialog-title.svelte';
+import Trigger from './alert-dialog-trigger.svelte';
 
 const Root = AlertDialogPrimitive.Root;
 const Portal = AlertDialogPrimitive.Portal;
@@ -26,38 +27,38 @@ type AlertDialogContentProps = ComponentProps<typeof Content>;
 type AlertDialogDescriptionProps = ComponentProps<typeof Description>;
 
 export {
-  Root,
-  Title,
   Action,
-  Cancel,
-  Portal,
-  Footer,
-  Header,
-  Trigger,
-  Overlay,
-  Content,
-  Description,
   //
   Root as AlertDialog,
-  type AlertDialogProps,
-  Title as AlertDialogTitle,
-  type AlertDialogTitleProps,
   Action as AlertDialogAction,
   type AlertDialogActionProps,
   Cancel as AlertDialogCancel,
   type AlertDialogCancelProps,
-  Portal as AlertDialogPortal,
-  type AlertDialogPortalProps,
-  Footer as AlertDialogFooter,
-  type AlertDialogFooterProps,
-  Header as AlertDialogHeader,
-  type AlertDialogHeaderProps,
-  Trigger as AlertDialogTrigger,
-  type AlertDialogTriggerProps,
-  Overlay as AlertDialogOverlay,
-  type AlertDialogOverlayProps,
   Content as AlertDialogContent,
   type AlertDialogContentProps,
   Description as AlertDialogDescription,
   type AlertDialogDescriptionProps,
+  Footer as AlertDialogFooter,
+  type AlertDialogFooterProps,
+  Header as AlertDialogHeader,
+  type AlertDialogHeaderProps,
+  Overlay as AlertDialogOverlay,
+  type AlertDialogOverlayProps,
+  Portal as AlertDialogPortal,
+  type AlertDialogPortalProps,
+  type AlertDialogProps,
+  Title as AlertDialogTitle,
+  type AlertDialogTitleProps,
+  Trigger as AlertDialogTrigger,
+  type AlertDialogTriggerProps,
+  Cancel,
+  Content,
+  Description,
+  Footer,
+  Header,
+  Overlay,
+  Portal,
+  Root,
+  Title,
+  Trigger,
 };

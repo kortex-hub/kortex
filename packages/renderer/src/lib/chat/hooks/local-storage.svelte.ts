@@ -1,5 +1,4 @@
-import { on } from 'svelte/events';
-import { createSubscriber } from 'svelte/reactivity';
+import { createSubscriber,on  } from 'svelte/events';
 
 export class LocalStorage<T> {
   #key: string;

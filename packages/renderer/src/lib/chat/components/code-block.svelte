@@ -1,7 +1,8 @@
 <script lang="ts">
-import { cn } from '/@/lib/chat/utils/shadcn';
 import type { Snippet } from 'svelte';
 import type { ClassValue } from 'svelte/elements';
+
+import { cn } from '/@/lib/chat/utils/shadcn';
 
 let {
   inline,

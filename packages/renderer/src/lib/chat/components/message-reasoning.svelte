@@ -1,11 +1,13 @@
 <script lang="ts">
-import LoaderIcon from './icons/loader.svelte';
-import ChevronDownIcon from './icons/chevron-down.svelte';
-import { Markdown } from './markdown';
-import { slide } from 'svelte/transition';
-import { cubicInOut } from 'svelte/easing';
-import { getLock } from '/@/lib/chat/hooks/lock';
 import { tick } from 'svelte';
+import { cubicInOut , slide } from 'svelte/easing';
+
+import { getLock } from '/@/lib/chat/hooks/lock';
+
+import ChevronDownIcon from './icons/chevron-down.svelte';
+import LoaderIcon from './icons/loader.svelte';
+import { Markdown } from './markdown';
+
 let { loading, reasoning }: { loading: boolean; reasoning: string } = $props();
 let expanded = $state(false);
 const scrollLock = getLock('messages-scroll');

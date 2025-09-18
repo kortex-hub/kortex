@@ -1,15 +1,16 @@
 <script lang="ts">
+import type { ClassValue } from 'svelte/elements';
+
+import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
 import { cn } from '/@/lib/chat/utils/shadcn';
+
+import type { Chat } from '../../../../../main/src/chat/db/schema';
+import CheckCircleFillIcon from './icons/check-circle-fill.svelte';
+import ChevronDownIcon from './icons/chevron-down.svelte';
+import GlobeIcon from './icons/globe.svelte';
+import LockIcon from './icons/lock.svelte';
 import { Button } from './ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
-import ChevronDownIcon from './icons/chevron-down.svelte';
-import LockIcon from './icons/lock.svelte';
-import GlobeIcon from './icons/globe.svelte';
-import CheckCircleFillIcon from './icons/check-circle-fill.svelte';
-import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
-import type { Chat } from '../../../../../main/src/chat/db/schema';
-
-import type { ClassValue } from 'svelte/elements';
 
 let { chat, class: c }: { chat: Chat; class?: ClassValue } = $props();
 

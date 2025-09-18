@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { Attachment } from '@ai-sdk/ui-utils';
+
 import LoaderIcon from './icons/loader.svelte';
 
 let {
@@ -17,7 +18,7 @@ const { name, url, contentType } = $derived(attachment);
 	<div
 		class="bg-muted relative flex aspect-video h-16 w-20 flex-col items-center justify-center rounded-md"
 	>
-		{#if contentType && contentType.startsWith('image')}
+		{#if contentType?.startsWith('image')}
 			<img
 				src={url}
 				alt={name ?? 'An image attachment'}

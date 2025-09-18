@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { ComponentProps } from 'svelte';
+
 import { Input } from '/@/lib/chat/components/ui/input/index.js';
 import { cn } from '/@/lib/chat/utils/shadcn.js';
 

@@ -1,7 +1,9 @@
 <script lang="ts">
+import type { HTMLAttributes } from 'svelte/elements';
+
 import * as Sheet from '/@/lib/chat/components/ui/sheet/index.js';
 import { cn, type WithElementRef } from '/@/lib/chat/utils/shadcn.js';
-import type { HTMLAttributes } from 'svelte/elements';
+
 import { SIDEBAR_WIDTH_MOBILE } from './constants.js';
 import { useSidebar } from './context.svelte.js';
 

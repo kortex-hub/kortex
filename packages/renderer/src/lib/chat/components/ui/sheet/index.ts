@@ -1,13 +1,14 @@
 import { Dialog as SheetPrimitive } from 'bits-ui';
-import Trigger from './sheet-trigger.svelte';
-import Close from './sheet-close.svelte';
-import Overlay from './sheet-overlay.svelte';
-import Content from './sheet-content.svelte';
-import Header from './sheet-header.svelte';
-import Footer from './sheet-footer.svelte';
-import Title from './sheet-title.svelte';
-import Description from './sheet-description.svelte';
 import type { ComponentProps } from 'svelte';
+
+import Close from './sheet-close.svelte';
+import Content from './sheet-content.svelte';
+import Description from './sheet-description.svelte';
+import Footer from './sheet-footer.svelte';
+import Header from './sheet-header.svelte';
+import Overlay from './sheet-overlay.svelte';
+import Title from './sheet-title.svelte';
+import Trigger from './sheet-trigger.svelte';
 
 const Root = SheetPrimitive.Root;
 const Portal = SheetPrimitive.Portal;
@@ -24,35 +25,35 @@ type SheetTitleProps = ComponentProps<typeof Title>;
 type SheetDescriptionProps = ComponentProps<typeof Description>;
 
 export {
-  Root,
   Close,
-  Trigger,
-  Portal,
-  Overlay,
+  type CloseProps,
   Content,
-  Header,
-  Footer,
-  Title,
   Description,
+  Footer,
+  Header,
+  Overlay,
+  Portal,
+  Root,
   //
   Root as Sheet,
-  type SheetProps,
   Close as SheetClose,
-  type CloseProps,
-  Trigger as SheetTrigger,
-  type TriggerProps,
-  Portal as SheetPortal,
-  type SheetPortalProps,
-  Overlay as SheetOverlay,
-  type SheetOverlayProps,
   Content as SheetContent,
   type SheetContentProps,
-  Header as SheetHeader,
-  type SheetHeaderProps,
-  Footer as SheetFooter,
-  type SheetFooterProps,
-  Title as SheetTitle,
-  type SheetTitleProps,
   Description as SheetDescription,
   type SheetDescriptionProps,
+  Footer as SheetFooter,
+  type SheetFooterProps,
+  Header as SheetHeader,
+  type SheetHeaderProps,
+  Overlay as SheetOverlay,
+  type SheetOverlayProps,
+  Portal as SheetPortal,
+  type SheetPortalProps,
+  type SheetProps,
+  Title as SheetTitle,
+  type SheetTitleProps,
+  Trigger as SheetTrigger,
+  Title,
+  Trigger,
+  type TriggerProps,
 };

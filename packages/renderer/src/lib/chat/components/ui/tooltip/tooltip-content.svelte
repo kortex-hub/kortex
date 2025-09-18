@@ -1,5 +1,6 @@
 <script lang="ts">
 import { Tooltip as TooltipPrimitive } from 'bits-ui';
+
 import { cn } from '/@/lib/chat/utils/shadcn.js';
 
 let {

@@ -1,7 +1,8 @@
 <script lang="ts">
 import { DropdownMenu as DropdownMenuPrimitive } from 'bits-ui';
-import { cn } from '/@/lib/chat/utils/shadcn.js';
 import type { ComponentProps } from 'svelte';
+
+import { cn } from '/@/lib/chat/utils/shadcn.js';
 
 let {
   ref = $bindable(null),

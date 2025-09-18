@@ -1,6 +1,9 @@
 <script lang="ts">
-import type { User } from '../../../../../main/src/chat/db/schema';
+import { getTheme } from '@sejohnson/svelte-themes';
+
 import { cn } from '/@//lib/chat/utils/shadcn';
+
+import type { User } from '../../../../../main/src/chat/db/schema';
 import ChevronUp from './icons/chevron-up.svelte';
 import {
   DropdownMenu,
@@ -10,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from './ui/sidebar';
-import { getTheme } from '@sejohnson/svelte-themes';
 
 let { user }: { user: User } = $props();
 const theme = getTheme();

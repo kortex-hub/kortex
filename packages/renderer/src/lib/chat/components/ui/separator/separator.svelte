@@ -1,5 +1,6 @@
 <script lang="ts">
 import { Separator as SeparatorPrimitive } from 'bits-ui';
+
 import { cn } from '/@/lib/chat/utils/shadcn.js';
 
 let { ref = $bindable(null), class: className, ...restProps }: SeparatorPrimitive.RootProps = $props();
