@@ -20,10 +20,8 @@
  * @module preload
  */
 import { EventEmitter } from 'node:events';
-import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import * as url from 'node:url';
 
 import type * as containerDesktopAPI from '@kortex-app/api';
 import type {
@@ -44,8 +42,6 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
-import type { DynamicToolUIPart, ToolSet, UIMessage } from 'ai';
-import { convertToModelMessages, generateText, stepCountIs, streamText } from 'ai';
 import checkDiskSpacePkg from 'check-disk-space';
 import type Dockerode from 'dockerode';
 import type { WebContents } from 'electron';
@@ -139,6 +135,7 @@ import type { VolumeInspectInfo, VolumeListInfo } from '/@api/volume-info.js';
 import type { WebviewInfo } from '/@api/webview-info.js';
 
 import type { ListOrganizerItem } from '../../../api/src/list-organizer.js';
+import { ChatManager } from '../chat/chat-manager.js';
 import { securityRestrictionCurrentHandler } from '../security-restrictions-handler.js';
 import { TrayMenu } from '../tray-menu.js';
 import { isMac } from '../util.js';
@@ -242,19 +239,6 @@ export const UPDATER_UPDATE_AVAILABLE_ICON = 'fa fa-exclamation-triangle';
 export interface LoggerWithEnd extends containerDesktopAPI.Logger {
   // when task is finished, this function is called
   onEnd: () => void;
-}
-
-async function convertMessages(messages: UIMessage[]): Promise<UIMessage[]> {
-  for (const message of messages) {
-    for (const part of message.parts) {
-      if (part.type === 'file' && part.url.startsWith('file://')) {
-        const filename = url.fileURLToPath(part.url);
-        const buffer = await fs.promises.readFile(filename);
-        part.url = `data:${part.mediaType};base64,${buffer.toString('base64')}`;
-      }
-    }
-  }
-  return messages;
 }
 
 export class PluginSystem {
@@ -632,6 +616,9 @@ export class PluginSystem {
 
     const flowManager = container.get<FlowManager>(FlowManager);
     flowManager.init();
+
+    const chatManager = new ChatManager(providerRegistry, mcpManager, this.getWebContentsSender, this.ipcHandle);
+    chatManager.init();
 
     providerRegistry.addProviderListener((name: string, providerInfo: ProviderInfo) => {
       if (name === 'provider:update-status') {
@@ -1446,64 +1433,6 @@ export class PluginSystem {
           tail: logsParams.tail,
           since: logsParams.since,
         });
-      },
-    );
-
-    const getMostRecentUserMessage = (messages: UIMessage[]): UIMessage | undefined => {
-      const userMessages = messages.filter(message => message.role === 'user');
-      return userMessages.at(-1);
-    };
-
-    this.ipcHandle(
-      'inference:streamText',
-      async (
-        _listener,
-        providerId: string,
-        connectionName: string,
-        modelId: string,
-        mcp: Array<string>,
-        messages: UIMessage[],
-        onDataId: number,
-      ): Promise<number> => {
-        const internalProviderId = providerRegistry.getMatchingProviderInternalId(providerId);
-        const sdk = providerRegistry.getInferenceSDK(internalProviderId, connectionName);
-        const languageModel = sdk.languageModel(modelId);
-
-        const userMessage = getMostRecentUserMessage(messages);
-
-        if (!userMessage) {
-          throw new Error('No user message found');
-        }
-
-        //ai sdk/fetch does not support file:URLs
-        const convertedMessages = await convertMessages(messages);
-        const modelMessages = convertToModelMessages(convertedMessages);
-
-        const toolset = await mcpManager.getToolSet(mcp);
-
-        const streaming = streamText({
-          model: languageModel,
-          messages: modelMessages,
-          system: 'You are a friendly assistant! Keep your responses concise and helpful.',
-          tools: toolset,
-
-          stopWhen: stepCountIs(5),
-        });
-
-        const reader = streaming.toUIMessageStream().getReader();
-
-        // loop to wait for the stream to finish
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            // end
-            this.getWebContentsSender().send('inference:streamText-onEnd', onDataId);
-            break;
-          }
-          this.getWebContentsSender().send('inference:streamText-onChunk', onDataId, value);
-        }
-
-        return onDataId;
       },
     );
 
@@ -2337,10 +2266,6 @@ export class PluginSystem {
       },
     );
 
-    this.ipcHandle('mcp-manager:getExchanges', async (_listener, mcpId: string): Promise<DynamicToolUIPart[]> => {
-      return mcpManager.getExchanges(mcpId);
-    });
-
     this.ipcHandle(
       'image-registry:updateRegistry',
       async (_listener, registry: containerDesktopAPI.Registry): Promise<void> => {
@@ -2868,31 +2793,6 @@ export class PluginSystem {
             providerRegistry.createVmProviderConnection(internalProviderId, params, logger, token),
           executeErrorMsg: (err: unknown) => `Something went wrong while trying to create provider: ${err}`,
         });
-      },
-    );
-
-    this.ipcHandle(
-      'inference:generate',
-      async (
-        _listener: Electron.IpcMainInvokeEvent,
-        internalProviderId: string,
-        connectionName: string,
-        model: string,
-        prompt: string,
-      ): Promise<string> => {
-        const sdk = providerRegistry.getInferenceSDK(internalProviderId, connectionName);
-        const languageModel = sdk.languageModel(model);
-
-        const toolSet: ToolSet = await mcpManager.getToolSet();
-
-        const result = await generateText({
-          model: languageModel,
-          tools: toolSet,
-          stopWhen: stepCountIs(5),
-          prompt,
-        });
-        console.log('result', result);
-        return result.text;
       },
     );
 
