@@ -19,7 +19,7 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
-import type { DynamicToolUIPart, UIMessage } from 'ai';
+import type { DynamicToolUIPart, ModelMessage, StopCondition, ToolSet, UIMessage } from 'ai';
 import { convertToModelMessages, generateText, stepCountIs, streamText } from 'ai';
 import type { IpcMainInvokeEvent, WebContents } from 'electron';
 
@@ -67,9 +67,13 @@ export class ChatManager {
     return userMessages.at(-1);
   }
 
-  private async getInferenceComponents(
-    params: InferenceParameters,
-  ): Promise<Parameters<typeof streamText>[0] & Parameters<typeof generateText>[0]> {
+  private async getInferenceComponents(params: InferenceParameters): Promise<{
+    model: ReturnType<typeof sdk.languageModel>;
+    messages: ModelMessage[];
+    tools: ToolSet;
+    stopWhen: StopCondition<ToolSet>;
+    system: string;
+  }> {
     const internalProviderId = this.providerRegistry.getMatchingProviderInternalId(params.providerId);
     const sdk = this.providerRegistry.getInferenceSDK(internalProviderId, params.connectionName);
     const model = sdk.languageModel(params.modelId);
