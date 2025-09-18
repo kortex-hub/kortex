@@ -123,6 +123,7 @@ export class MCPManager implements AsyncDisposable {
     connectionName: string,
     transport: Transport,
     url?: string,
+    description?: string,
   ): Promise<void> {
     const key = this.getKey(internalProviderId, serverId, remoteId);
 
@@ -150,6 +151,7 @@ export class MCPManager implements AsyncDisposable {
       infos: { internalProviderId, remoteId, serverId },
       name: connectionName,
       url: url ?? '',
+      description: description ?? '',
     };
     this.#mcps.push(mcpRemoteServerInfo);
 
