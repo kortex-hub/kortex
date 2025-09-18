@@ -79,11 +79,13 @@ export type SidebarMenuButtonSize = VariantProps<typeof sidebarMenuButtonVariant
 {/snippet}
 
 {#if !tooltipContent}
+  <!-- eslint-disable-next-line sonarjs/no-use-of-empty-return-value -->
 	{@render Button({})}
 {:else}
 	<Tooltip.Root>
 		<Tooltip.Trigger>
 			{#snippet child({ props })}
+        <!-- eslint-disable-next-line sonarjs/no-use-of-empty-return-value -->
 				{@render Button({ props })}
 			{/snippet}
 		</Tooltip.Trigger>
