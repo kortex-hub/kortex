@@ -324,6 +324,7 @@ export class MCPRegistry {
     }
 
     const name = serverDetail.name;
+    const description = serverDetail.description;
 
     // create transport
     const transport = new StreamableHTTPClientTransport(new URL(remote.url), {
@@ -332,7 +333,15 @@ export class MCPRegistry {
       },
     });
 
-    await this.mcpManager.registerMCPClient(INTERNAL_PROVIDER_ID, serverId, remoteId, name, transport, remote.url);
+    await this.mcpManager.registerMCPClient(
+      INTERNAL_PROVIDER_ID,
+      serverId,
+      remoteId,
+      name,
+      transport,
+      remote.url,
+      description,
+    );
 
     // persist configuration
     await this.saveConfiguration({
