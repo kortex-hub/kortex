@@ -24,10 +24,10 @@ import { OpenShiftAI } from './openshiftai';
 export async function activate(extensionContext: ExtensionContext): Promise<void> {
   console.log('starting OpenShift AI extension');
 
-  const gemini = new OpenShiftAI(provider, extensionContext.secrets);
-  extensionContext.subscriptions.push(gemini);
+  const openShiftAI = new OpenShiftAI(provider, extensionContext.secrets);
+  extensionContext.subscriptions.push(openShiftAI);
 
-  await gemini.init();
+  await openShiftAI.init();
 }
 
 export function deactivate(): void {
