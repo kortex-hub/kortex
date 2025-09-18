@@ -19,14 +19,14 @@
 import '@testing-library/jest-dom/vitest';
 
 import { render, screen } from '@testing-library/svelte';
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 
 import type { IConfigurationPropertyRecordedSchema } from '/@api/configuration/models';
 
 import PasswordStringItem from './PasswordStringItem.svelte';
 
 test('Ensure HTMLInputElement', async () => {
-  const record: IConfigurationPropertyRecordedSchema = {
+  const record: IConfigurationPropertyRecordedSchema & { description: string } = {
     id: 'record',
     title: 'record',
     parentId: 'parent.record',
@@ -34,14 +34,14 @@ test('Ensure HTMLInputElement', async () => {
     type: 'string',
   };
 
-  render(PasswordStringItem, { record, value: '' });
-  const input = screen.getByLabelText('password input-standard-record');
+  render(PasswordStringItem, { record, value: '', onChange: vi.fn() });
+  const input = screen.getByLabelText(record.description);
   expect(input).toBeInTheDocument();
   expect(input).toBeInstanceOf(HTMLInputElement);
 });
 
 test('Ensure HTMLInputElement readonly', async () => {
-  const record: IConfigurationPropertyRecordedSchema = {
+  const record: IConfigurationPropertyRecordedSchema & { description: string } = {
     id: 'record',
     title: 'record',
     parentId: 'parent.record',
@@ -51,8 +51,8 @@ test('Ensure HTMLInputElement readonly', async () => {
     readonly: true,
   };
 
-  render(PasswordStringItem, { record, value: '' });
-  const input = screen.getByLabelText('password input-standard-record');
+  render(PasswordStringItem, { record, value: '', onChange: vi.fn() });
+  const input = screen.getByLabelText(record.description);
   expect(input).toBeInTheDocument();
   expect((input as HTMLInputElement).readOnly).toBeTruthy();
 });
