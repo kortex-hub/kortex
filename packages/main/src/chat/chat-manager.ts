@@ -21,23 +21,25 @@ import { fileURLToPath } from 'node:url';
 
 import type { DynamicToolUIPart, ModelMessage, StopCondition, ToolSet, UIMessage } from 'ai';
 import { convertToModelMessages, generateText, stepCountIs, streamText } from 'ai';
-import type { IpcMainInvokeEvent, WebContents } from 'electron';
+import type { WebContents } from 'electron';
+import { inject } from 'inversify';
 
+import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
 
-import type { MCPManager } from '../plugin/mcp/mcp-manager.js';
-import type { ProviderRegistry } from '../plugin/provider-registry.js';
+import { MCPManager } from '../plugin/mcp/mcp-manager.js';
+import { ProviderRegistry } from '../plugin/provider-registry.js';
 
 export class ChatManager {
   constructor(
+    @inject(ProviderRegistry)
     private readonly providerRegistry: ProviderRegistry,
+    @inject(MCPManager)
     private readonly mcpManager: MCPManager,
-    private readonly getWebContentsSender: () => WebContents,
-    private readonly ipcHandle: (
-      channel: string,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      listener: (event: IpcMainInvokeEvent, ...args: any[]) => Promise<void> | any,
-    ) => void,
+    @inject(WebContentsType)
+    private readonly webContents: WebContents,
+    @inject(IPCHandle)
+    private readonly ipcHandle: IPCHandle,
   ) {}
 
   public init(): void {
@@ -109,10 +111,10 @@ export class ChatManager {
       const { done, value } = await reader.read();
       if (done) {
         // end
-        this.getWebContentsSender().send('inference:streamText-onEnd', params.onDataId);
+        this.webContents.send('inference:streamText-onEnd', params.onDataId);
         break;
       }
-      this.getWebContentsSender().send('inference:streamText-onChunk', params.onDataId, value);
+      this.webContents.send('inference:streamText-onChunk', params.onDataId, value);
     }
 
     return params.onDataId;
