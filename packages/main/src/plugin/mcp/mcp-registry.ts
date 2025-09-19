@@ -424,20 +424,42 @@ export class MCPRegistry {
     await this.safeStorage?.store(STORAGE_KEY, JSON.stringify(filtered));
   }
 
-  protected async listMCPServersFromRegistry(registryURL: string): Promise<components['schemas']['ServerList']> {
-    // connect to ${registry.serverUrl}/v0/servers and grab the list of servers
-    // use fetch
+  protected async listMCPServersFromRegistry(
+    registryURL: string,
+    cursor?: string, // optional param for recursion
+  ): Promise<components['schemas']['ServerList']> {
+    const url = new URL(`${registryURL}/v0/servers`);
+    if (cursor) {
+      url.searchParams.set('cursor', cursor);
+    }
+    // ask for latest versions
+    url.searchParams.set('version', 'latest');
 
-    const content = await fetch(`${registryURL}/v0/servers`, {
+    const content = await fetch(url.toString(), {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
     });
+
     if (!content.ok) {
-      console.error(`Failed to fetch MCP servers from ${registryURL}: ${content.statusText}`);
+      throw new Error(`Failed to fetch MCP servers from ${registryURL}: ${content.statusText}`);
     }
-    return await content.json();
+
+    const data: components['schemas']['ServerList'] = await content.json();
+
+    // If pagination info exists, fetch the next page recursively
+    if (data.metadata?.next_cursor) {
+      const nextPage = await this.listMCPServersFromRegistry(registryURL, data.metadata.next_cursor);
+      return {
+        ...data,
+        servers: [...data.servers, ...nextPage.servers],
+        // merge metadata — keep the last page’s metadata
+        metadata: nextPage.metadata,
+      };
+    }
+
+    return data;
   }
 
   async listMCPServersFromRegistries(): Promise<Array<MCPServerDetail>> {
