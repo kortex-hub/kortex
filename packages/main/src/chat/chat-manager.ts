@@ -49,10 +49,6 @@ export class ChatManager {
   ) {}
 
   public async init(): Promise<void> {
-    // Optionally, if not using email/pass login, you can
-    // use the Drizzle adapter for Auth.js / NextAuth
-    // https://authjs.dev/reference/adapter/drizzle
-
     const directory = new Directories().getChatPersistenceDirectory();
     if (!existsSync(directory)) {
       await mkdir(directory, { recursive: true });
