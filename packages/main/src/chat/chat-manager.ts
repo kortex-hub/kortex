@@ -28,8 +28,8 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import type { WebContents } from 'electron';
 import { inject } from 'inversify';
 
-import { Directories } from '/@/plugin/directories.js';
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
+import { Directories } from '/@/plugin/directories.js';
 import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
 
 import { MCPManager } from '../plugin/mcp/mcp-manager.js';
@@ -46,10 +46,12 @@ export class ChatManager {
     private readonly webContents: WebContents,
     @inject(IPCHandle)
     private readonly ipcHandle: IPCHandle,
+    @inject(Directories)
+    private readonly directories: Directories,
   ) {}
 
   public async init(): Promise<void> {
-    const directory = new Directories().getChatPersistenceDirectory();
+    const directory = this.directories.getChatPersistenceDirectory();
     if (!existsSync(directory)) {
       await mkdir(directory, { recursive: true });
     }
