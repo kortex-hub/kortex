@@ -89,6 +89,7 @@ import type { KubernetesContextResources } from '/@api/kubernetes-resources';
 import type { KubernetesTroubleshootingInformation } from '/@api/kubernetes-troubleshooting';
 import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '/@api/manifest-info';
 import type { MCPRemoteServerInfo, MCPServerDetail } from '/@api/mcp/mcp-server-info';
+import type { MCPSetupOptions } from '/@api/mcp/mcp-setup';
 import type { Menu } from '/@api/menu.js';
 import { NavigationPage } from '/@api/navigation-page';
 import type { NavigationRequest } from '/@api/navigation-request';
@@ -1710,12 +1711,9 @@ export function initExposure(): void {
     return ipcInvoke('mcp-manager:getExchanges', mcpId);
   });
 
-  contextBridge.exposeInMainWorld(
-    'createMCPServerFromRemoteRegistry',
-    async (serverId: string, remoteId: number, headersParams: { name: string; value: string }[]): Promise<void> => {
-      return ipcInvoke('mcp-registry:createMCPServerFromRemoteRegistry', serverId, remoteId, headersParams);
-    },
-  );
+  contextBridge.exposeInMainWorld('setupMCP', async (serverId: string, options: MCPSetupOptions): Promise<void> => {
+    return ipcInvoke('mcp-registry:setup', serverId, options);
+  });
 
   contextBridge.exposeInMainWorld('fetchMcpRemoteServers', async (): Promise<MCPRemoteServerInfo[]> => {
     return ipcInvoke('mcp-manager:fetchMcpRemoteServers');

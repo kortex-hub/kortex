@@ -1,13 +1,14 @@
 <script lang="ts">
-import { faPlusCircle } from '@fortawesome/free-solid-svg-icons';
-import { Button, ErrorMessage, FormPage, Input } from '@podman-desktop/ui-svelte';
+import { ErrorMessage, FormPage } from '@podman-desktop/ui-svelte';
+import type { components } from 'mcp-registry';
 import { router } from 'tinro';
 
 import McpIcon from '/@/lib/images/MCPIcon.svelte';
+import type { MCPTarget } from '/@/lib/mcp/setup/mcp-target';
+import MCPSetupDropdown from '/@/lib/mcp/setup/MCPSetupDropdown.svelte';
+import RemoteSetupForm from '/@/lib/mcp/setup/RemoteSetupForm.svelte';
 import { mcpRegistriesServerInfos } from '/@/stores/mcp-registry-servers';
-
-import Markdown from '../markdown/Markdown.svelte';
-import PasswordInput from '../ui/PasswordInput.svelte';
+import type { MCPSetupOptions } from '/@api/mcp/mcp-setup';
 
 interface Props {
   serverId: string;
@@ -15,44 +16,35 @@ interface Props {
 
 const { serverId }: Props = $props();
 
-const mcpRegistryServerDetail = $derived($mcpRegistriesServerInfos.find(server => server.id === serverId));
+let loading: boolean = $state(false);
+let error: string | undefined = $state(undefined);
 
-let createInProgress = $state(false);
-let createFinished = $state(false);
-let createError: string | undefined = $state(undefined);
-
-// get first remote if any
-const remote = $derived(mcpRegistryServerDetail ? mcpRegistryServerDetail.remotes?.[0] : undefined);
-
-const remoteHeadersFields = $derived(
-  (remote?.headers ?? []).map(header => {
-    return { name: header.name ?? '', value: '', isSecret: header.is_secret, description: header.description ?? '' };
-  }),
+const mcpRegistryServerDetail: components['schemas']['ServerDetail'] | undefined = $derived(
+  $mcpRegistriesServerInfos.find(server => server.id === serverId),
 );
 
-async function createMcpServer(): Promise<void> {
-  if (!mcpRegistryServerDetail || !mcpRegistryServerDetail.id) {
-    createError = 'MCP Registry Server Detail is not defined';
-    return;
+let targets: Array<MCPTarget> = $derived([
+  ...(mcpRegistryServerDetail?.remotes ?? []).map((remote, index) => ({ ...remote, index })),
+  ...(mcpRegistryServerDetail?.packages ?? []).map((pack, index) => ({ ...pack, index })),
+]);
+let mcpTarget: MCPTarget | undefined = $state();
+
+$effect(() => {
+  // select default at index 0
+  if (mcpTarget === undefined && targets.length > 0) {
+    mcpTarget = targets[0];
   }
+});
 
-  createError = undefined;
-  // get first remote
-
-  // FIX ME: handle only one remote for now
-  const remoteid = 0;
-  createInProgress = true;
+async function submit(options: MCPSetupOptions): Promise<void> {
   try {
-    await window.createMCPServerFromRemoteRegistry(mcpRegistryServerDetail.id, remoteid, remoteHeadersFields);
-  } catch (error) {
-    console.error('Error creating MCP server from registry:', error);
-    createError = String(error);
+    loading = true;
+    error = undefined;
+    await window.setupMCP(serverId, options);
+  } catch (err: unknown) {
+    error = String(err);
   } finally {
-    createInProgress = false;
-    createFinished = true;
-  }
-  if (!createError) {
-    await navigateToMcps();
+    loading = false;
   }
 }
 
@@ -62,42 +54,39 @@ async function navigateToMcps(): Promise<void> {
 </script>
 
 {#if mcpRegistryServerDetail}
-  <FormPage title="Adding {mcpRegistryServerDetail.name}" inProgress={createInProgress} onclose={navigateToMcps}>
+  <FormPage title="Adding {mcpRegistryServerDetail.name}" inProgress={loading} onclose={navigateToMcps}>
     {#snippet icon()}<McpIcon size={24} />{/snippet}
     {#snippet content()}
-      <div class="p-5 min-w-full h-full flex flex-col text-sm space-y-5">
-        <form on:submit|preventDefault={createMcpServer}>
-          <div class="pb-4">
-            <!-- for each header field, add an input field-->
-            {#each remoteHeadersFields as headerField (headerField.name)}
-              <label for="modalImageTag" class="block mb-2 text-sm font-medium text-[var(--pd-modal-text)]"
-                ><Markdown markdown={headerField.description} /></label>
 
-              {#if headerField.isSecret}
-                <PasswordInput id={headerField.name} bind:password={headerField.value} />
-              {:else}
-                <Input id={headerField.name} bind:value={headerField.value} class="mb-2 w-full" required />
+      <div class="p-5 min-w-full h-full">
+
+        <div class="bg-[var(--pd-content-card-bg)] p-6 space-y-2 lg:p-8 rounded-lg">
+          <div class="flex flex-col gap-y-4">
+            {#if error}
+              <ErrorMessage error={error} />
+            {/if}
+
+            <!-- selecting which remote / package to use -->
+            {#if targets.length > 1}
+              <div class="bg-[var(--pd-content-bg)] rounded-md flex flex-col p-2 space-y-2">
+                <label class="block mb-2 text-xl font-bold text-[var(--pd-content-card-header-text)]">MCP Server Type</label>
+                <MCPSetupDropdown
+                  bind:selected={mcpTarget}
+                  targets={targets}
+                />
+              </div>
+            {/if}
+
+            <!-- display form -->
+            {#if mcpTarget !== undefined}
+              {#if 'url' in mcpTarget}  <!-- remote -->
+                <RemoteSetupForm submit={submit} remoteIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget}/>
+              {:else} <!-- package -->
+                <span>Not yet supported :p</span>
               {/if}
-            {/each}
+            {/if}
           </div>
-          {#if createError}
-            <ErrorMessage error={createError} />
-          {/if}
-
-          {#if !createFinished || createError}
-            <div class="flex w-full justify-end">
-              <Button
-                class="w-auto"
-                icon={faPlusCircle}
-                on:click={async (): Promise<void> => {
-                  await createMcpServer();
-                }}
-                inProgress={createInProgress}>
-                Create
-              </Button>
-            </div>
-          {/if}
-        </form>
+        </div>
       </div>
     {/snippet}
   </FormPage>
