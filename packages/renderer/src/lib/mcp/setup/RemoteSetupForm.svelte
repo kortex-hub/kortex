@@ -86,10 +86,12 @@ function onHeaderVariableChange(header: string, variable: string, value: string)
         </div>
       </div>
       <div class="flex flex-col">
-        <label for="server-url" class="text-base font-bold text-[var(--pd-content-card-header-text)] mb-1">Transport type</label>
-        <div class="flex items-center bg-[var(--pd-label-bg)] p-1 rounded-md text-sm text-[var(--pd-label-text)] gap-x-1 w-min  px-2 py-1">
-          {object.transport_type}
-        </div>
+        {#if object.transport_type}
+          <label for="server-url" class="text-base font-bold text-[var(--pd-content-card-header-text)] mb-1">Transport type</label>
+          <div class="flex items-center bg-[var(--pd-label-bg)] p-1 rounded-md text-sm text-[var(--pd-label-text)] gap-x-1 w-min  px-2 py-1">
+            {object.transport_type}
+          </div>
+        {/if}
       </div>
     </div>
   </div>
