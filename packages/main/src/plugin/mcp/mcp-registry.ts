@@ -17,6 +17,9 @@
  ***********************************************************************/
 
 import * as crypto from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 
 import type * as kortexAPI from '@kortex-app/api';
 import { SecretStorage } from '@kortex-app/api';
@@ -33,6 +36,7 @@ import { InputWithVariableResponse, MCPSetupOptions } from '/@api/mcp/mcp-setup.
 
 import { ApiSenderType } from '../api.js';
 import { Certificates } from '../certificates.js';
+import { Directories } from '../directories.js';
 import { Emitter } from '../events/emitter.js';
 import { Proxy } from '../proxy.js';
 import { Telemetry } from '../telemetry/telemetry.js';
@@ -53,6 +57,7 @@ interface PackageStorageConfigFormat {
 type StorageConfigFormat = RemoteStorageConfigFormat | PackageStorageConfigFormat;
 
 const STORAGE_KEY = 'mcp:registry:configurations';
+const REGISTRIES_FILE = 'mcp-registries.json';
 export const INTERNAL_PROVIDER_ID = 'internal';
 
 // Definition of all MCP registries (MCP registry is an URL serving MCP providers it implements the MCP registry protocol)
@@ -88,6 +93,8 @@ export class MCPRegistry {
     private mcpManager: MCPManager,
     @inject(SafeStorageRegistry)
     private safeStorageRegistry: SafeStorageRegistry,
+    @inject(Directories)
+    private directories: Directories,
   ) {
     this.proxy.onDidUpdateProxy(settings => {
       this.proxySettings = settings;
@@ -122,9 +129,10 @@ export class MCPRegistry {
     return { ...server, id };
   }
 
-  init(): void {
+  async init(): Promise<void> {
     console.log('[MCPRegistry] init');
     this.safeStorage = this.safeStorageRegistry.getCoreStorage();
+    await this.loadRegistriesFromFile();
 
     this.onDidRegisterRegistry(async registry => {
       const configurations = await this.getConfigurations();
@@ -199,6 +207,9 @@ export class MCPRegistry {
       return Disposable.noop();
     }
     this.registries = [...this.registries, registry];
+    this.saveRegistriesToFile().catch((error: unknown) => {
+      console.error('[MCPRegistry] Failed to save registries after registration:', error);
+    });
     this.telemetryService.track('registerRegistry', {
       serverUrl: this.getRegistryHash(registry),
       total: this.registries.length,
@@ -251,6 +262,9 @@ export class MCPRegistry {
     if (filtered.length !== this.registries.length) {
       this._onDidUnregisterRegistry.fire(Object.freeze({ ...registry }));
       this.registries = filtered;
+      this.saveRegistriesToFile().catch((error: unknown) => {
+        console.error('[MCPRegistry] Failed to save registries after unregistration:', error);
+      });
       this.apiSender.send('mcp-registry-unregister', registry);
     }
     this.telemetryService.track('unregisterMCPRegistry', {
@@ -534,5 +548,42 @@ export class MCPRegistry {
       }
     }
     return options;
+  }
+
+  private getRegistriesFilePath(): string {
+    const configDir = this.directories.getConfigurationDirectory();
+    return join(configDir, REGISTRIES_FILE);
+  }
+
+  private async loadRegistriesFromFile(): Promise<void> {
+    try {
+      const filePath = this.getRegistriesFilePath();
+      if (existsSync(filePath)) {
+        const data = await readFile(filePath, 'utf8');
+        const savedRegistries: kortexAPI.MCPRegistry[] = JSON.parse(data);
+        console.log(`[MCPRegistry] Loaded ${savedRegistries.length} registries from file`);
+        this.registries = savedRegistries;
+
+        // Fire events for each loaded registry
+        savedRegistries.forEach(registry => {
+          this.apiSender.send('mcp-registry-register', registry);
+          this._onDidRegisterRegistry.fire(Object.freeze({ ...registry }));
+        });
+      }
+    } catch (error) {
+      console.error('[MCPRegistry] Failed to load registries from file:', error);
+    }
+  }
+
+  private async saveRegistriesToFile(): Promise<void> {
+    try {
+      const filePath = this.getRegistriesFilePath();
+      await mkdir(dirname(filePath), { recursive: true });
+      const data = JSON.stringify(this.registries, null, 2);
+      await writeFile(filePath, data, 'utf8');
+      console.log(`[MCPRegistry] Saved ${this.registries.length} registries to file`);
+    } catch (error) {
+      console.error('[MCPRegistry] Failed to save registries to file:', error);
+    }
   }
 }
