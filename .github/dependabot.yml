@@ -1,0 +1,55 @@
+#
+# Copyright (C) 2025 Red Hat, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/" # adjust if your package.json is in a subfolder
+    schedule:
+      interval: "daily"
+    # Only allow updates for these specific packages
+    allow:
+        - dependency-name: "@ai-sdk/*"
+          dependency-type: "all"
+        - dependency-name: "@modelcontextprotocol/sdk"
+          dependency-type: "all"
+        - dependency-name: "@oslojs/*"
+          dependency-type: "all"
+        - dependency-name: "@types/better-sqlite3"
+          dependency-type: "all"
+        - dependency-name: "@types/mime-types"
+          dependency-type: "all"
+        - dependency-name: "@types/ms"
+          dependency-type: "all"
+        - dependency-name: "ai"
+          dependency-type: "all"
+        - dependency-name: "better-sqlite3"
+          dependency-type: "all"
+        - dependency-name: "bcrypt-ts"
+          dependency-type: "all"
+        - dependency-name: "drizzle-orm"
+          dependency-type: "all"
+        - dependency-name: "mime-types"
+          dependency-type: "all"
+        - dependency-name: "ms"
+          dependency-type: "all"
+        - dependency-name: "neverflow"
+          dependency-type: "all"
+        - dependency-name: "openapi-typescript"
+          dependency-type: "all"
+        - dependency-name: "random-words"
+          dependency-type: "all"
