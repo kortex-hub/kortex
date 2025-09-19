@@ -1,5 +1,5 @@
 <script lang="ts">
-import { FormPage } from '@podman-desktop/ui-svelte';
+import { ErrorMessage, FormPage } from '@podman-desktop/ui-svelte';
 import type { components } from 'mcp-registry';
 import { router } from 'tinro';
 
@@ -8,6 +8,7 @@ import type { MCPTarget } from '/@/lib/mcp/setup/mcp-target';
 import MCPSetupDropdown from '/@/lib/mcp/setup/MCPSetupDropdown.svelte';
 import RemoteSetupForm from '/@/lib/mcp/setup/RemoteSetupForm.svelte';
 import { mcpRegistriesServerInfos } from '/@/stores/mcp-registry-servers';
+import type { MCPSetupOptions } from '/@api/mcp/mcp-setup';
 
 interface Props {
   serverId: string;
@@ -16,6 +17,7 @@ interface Props {
 const { serverId }: Props = $props();
 
 let loading: boolean = $state(false);
+let error: string | undefined = $state(undefined);
 
 const mcpRegistryServerDetail: components['schemas']['ServerDetail'] | undefined = $derived(
   $mcpRegistriesServerInfos.find(server => server.id === serverId),
@@ -34,6 +36,18 @@ $effect(() => {
   }
 });
 
+async function submit(options: MCPSetupOptions): Promise<void> {
+  try {
+    loading = true;
+    error = undefined;
+    await window.setupMCP(serverId, options);
+  } catch (err: unknown) {
+    error = String(err);
+  } finally {
+    loading = false;
+  }
+}
+
 async function navigateToMcps(): Promise<void> {
   router.goto('/mcps?tab=READY');
 }
@@ -48,26 +62,30 @@ async function navigateToMcps(): Promise<void> {
 
         <div class="bg-[var(--pd-content-card-bg)] p-6 space-y-2 lg:p-8 rounded-lg">
           <div class="flex flex-col gap-y-4">
-              <!-- selecting which remote / package to use -->
-              {#if targets.length > 1}
-                <div class="bg-[var(--pd-content-bg)] rounded-md flex flex-col p-2 space-y-2">
-                  <label class="block mb-2 text-xl font-bold text-[var(--pd-content-card-header-text)]">MCP Server Type</label>
-                  <MCPSetupDropdown
-                    bind:selected={mcpTarget}
-                    targets={targets}
-                  />
-                </div>
-              {/if}
+            {#if error}
+              <ErrorMessage error={error} />
+            {/if}
 
-              <!-- display form -->
-              {#if mcpTarget !== undefined}
-                {#if 'url' in mcpTarget}  <!-- remote -->
-                  <RemoteSetupForm close={navigateToMcps} serverId={serverId} remoteIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget}/>
-                {:else} <!-- package -->
-                  <span>Not yet supported :p</span>
-                {/if}
+            <!-- selecting which remote / package to use -->
+            {#if targets.length > 1}
+              <div class="bg-[var(--pd-content-bg)] rounded-md flex flex-col p-2 space-y-2">
+                <label class="block mb-2 text-xl font-bold text-[var(--pd-content-card-header-text)]">MCP Server Type</label>
+                <MCPSetupDropdown
+                  bind:selected={mcpTarget}
+                  targets={targets}
+                />
+              </div>
+            {/if}
+
+            <!-- display form -->
+            {#if mcpTarget !== undefined}
+              {#if 'url' in mcpTarget}  <!-- remote -->
+                <RemoteSetupForm submit={submit} remoteIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget}/>
+              {:else} <!-- package -->
+                <span>Not yet supported :p</span>
               {/if}
-            </div>
+            {/if}
+          </div>
         </div>
       </div>
     {/snippet}

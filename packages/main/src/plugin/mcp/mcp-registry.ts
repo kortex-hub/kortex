@@ -29,7 +29,7 @@ import type { components } from 'mcp-registry';
 
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { MCPServerDetail } from '/@api/mcp/mcp-server-info.js';
-import { InputWithVariableResponse } from '/@api/mcp/mcp-setup.js';
+import { InputWithVariableResponse, MCPSetupOptions } from '/@api/mcp/mcp-setup.js';
 
 import { ApiSenderType } from '../api.js';
 import { Certificates } from '../certificates.js';
@@ -299,19 +299,7 @@ export class MCPRegistry {
     }
   }
 
-  async setupMCPServer(
-    serverId: string,
-    options:
-      | {
-          type: 'remote';
-          index: number;
-          headers: Record<string, InputWithVariableResponse>;
-        }
-      | {
-          type: 'package';
-          index: number;
-        },
-  ): Promise<void> {
+  async setupMCPServer(serverId: string, options: MCPSetupOptions): Promise<void> {
     // Get back the server
     const serverDetails = await this.listMCPServersFromRegistries();
     const serverDetail = serverDetails.find(server => server.id === serverId);

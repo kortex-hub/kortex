@@ -7,17 +7,16 @@ import { SvelteMap } from 'svelte/reactivity';
 import Fa from 'svelte-fa';
 
 import InputArgumentWithVariables from '/@/lib/mcp/setup/InputArgumentWithVariables.svelte';
-import type { InputWithVariableResponse } from '/@api/mcp/mcp-setup';
+import type { InputWithVariableResponse, MCPSetupRemoteOptions } from '/@api/mcp/mcp-setup';
 
 interface Props {
   object: components['schemas']['Remote'];
   loading: boolean;
-  serverId: string;
   remoteIndex: number;
-  close: () => void;
+  submit: (options: MCPSetupRemoteOptions) => Promise<void>;
 }
 
-let { object, close, serverId, remoteIndex, loading = $bindable(false) }: Props = $props();
+let { object, remoteIndex, loading = $bindable(false), submit }: Props = $props();
 
 /**
  * Let's build a map for all our expected headers with the default value selected
@@ -39,18 +38,12 @@ let responses: Map<string, InputWithVariableResponse> = new SvelteMap(
   ]),
 );
 
-async function submit(): Promise<void> {
-  try {
-    loading = true;
-    await window.setupMCP(serverId, {
-      type: 'remote',
-      index: remoteIndex,
-      headers: Object.fromEntries(responses.entries()),
-    });
-    close();
-  } finally {
-    loading = false;
-  }
+async function connect(): Promise<void> {
+  return submit({
+    type: 'remote',
+    index: remoteIndex,
+    headers: Object.fromEntries(responses.entries()),
+  });
 }
 
 function onHeaderChange(header: string, value: string): void {
@@ -130,7 +123,7 @@ function onHeaderVariableChange(header: string, variable: string, value: string)
   <Button
     class="w-auto"
     icon={faPlug}
-    onclick={submit}
+    onclick={connect}
     inProgress={loading}>
     Connect
   </Button>

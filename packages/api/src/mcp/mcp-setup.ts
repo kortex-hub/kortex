@@ -23,3 +23,16 @@ export interface InputResponse {
 export interface InputWithVariableResponse extends InputResponse {
   variables: Record<string, InputResponse>;
 }
+
+export interface MCPSetupRemoteOptions {
+  type: 'remote';
+  index: number;
+  headers: Record<string, InputWithVariableResponse>;
+}
+
+export interface MCPSetupPackageOptions {
+  type: 'package';
+  index: number;
+}
+
+export type MCPSetupOptions = MCPSetupRemoteOptions | MCPSetupPackageOptions;

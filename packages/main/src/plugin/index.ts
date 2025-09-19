@@ -111,7 +111,7 @@ import type { KubernetesContextResources } from '/@api/kubernetes-resources.js';
 import type { KubernetesTroubleshootingInformation } from '/@api/kubernetes-troubleshooting.js';
 import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '/@api/manifest-info.js';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info.js';
-import type { InputWithVariableResponse } from '/@api/mcp/mcp-setup.js';
+import type { MCPSetupOptions } from '/@api/mcp/mcp-setup.js';
 import type { Menu } from '/@api/menu.js';
 import type { NetworkInspectInfo } from '/@api/network-info.js';
 import type { NotificationCard, NotificationCardOptions } from '/@api/notification.js';
@@ -2159,20 +2159,7 @@ export class PluginSystem {
 
     this.ipcHandle(
       'mcp-registry:setup',
-      async (
-        _listener,
-        serverId: string,
-        options:
-          | {
-              type: 'remote';
-              index: number;
-              headers: Record<string, InputWithVariableResponse>;
-            }
-          | {
-              type: 'package';
-              index: number;
-            },
-      ): Promise<void> => {
+      async (_listener, serverId: string, options: MCPSetupOptions): Promise<void> => {
         await mcpRegistry.setupMCPServer(serverId, options);
       },
     );
