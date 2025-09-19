@@ -35,6 +35,7 @@ export class Directories {
   private extensionsStorageDirectory: string;
   private contributionStorageDirectory: string;
   private safeStorageDirectory: string;
+  private chatPersistenceDirectory: string;
   protected desktopAppHomeDir: string;
 
   constructor() {
@@ -52,6 +53,7 @@ export class Directories {
     this.extensionsStorageDirectory = path.resolve(this.desktopAppHomeDir, 'extensions-storage');
     this.contributionStorageDirectory = path.resolve(this.desktopAppHomeDir, 'contributions');
     this.safeStorageDirectory = path.resolve(this.desktopAppHomeDir, 'safe-storage');
+    this.chatPersistenceDirectory = path.resolve(this.desktopAppHomeDir, 'chat-persistence');
   }
 
   getConfigurationDirectory(): string {
@@ -76,5 +78,9 @@ export class Directories {
 
   public getSafeStorageDirectory(): string {
     return this.safeStorageDirectory;
+  }
+
+  public getChatPersistenceDirectory(): string {
+    return this.chatPersistenceDirectory;
   }
 }
