@@ -16,19 +16,25 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { mkdir, readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type { DynamicToolUIPart, ModelMessage, StopCondition, ToolSet, UIMessage } from 'ai';
 import { convertToModelMessages, generateText, stepCountIs, streamText } from 'ai';
+import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
 import type { WebContents } from 'electron';
 import { inject } from 'inversify';
 
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
+import { Directories } from '/@/plugin/directories.js';
 import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
 
 import { MCPManager } from '../plugin/mcp/mcp-manager.js';
 import { ProviderRegistry } from '../plugin/provider-registry.js';
+import { runMigrate } from './db/migrate.js';
 
 export class ChatManager {
   constructor(
@@ -40,9 +46,21 @@ export class ChatManager {
     private readonly webContents: WebContents,
     @inject(IPCHandle)
     private readonly ipcHandle: IPCHandle,
+    @inject(Directories)
+    private readonly directories: Directories,
   ) {}
 
-  public init(): void {
+  public async init(): Promise<void> {
+    const directory = this.directories.getChatPersistenceDirectory();
+    if (!existsSync(directory)) {
+      await mkdir(directory, { recursive: true });
+    }
+    const sqlite = new Database(join(directory, 'chat.db'));
+    sqlite.pragma('foreign_keys = ON');
+    const db = drizzle(sqlite, {});
+
+    runMigrate(db);
+
     this.ipcHandle('inference:streamText', (_, params) => this.streamText(params));
     this.ipcHandle('inference:generate', (_, params) => this.generate(params));
 
