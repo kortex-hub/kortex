@@ -18,6 +18,7 @@
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import type {
   Disposable,
+  InferenceModel,
   Provider,
   provider as ProviderAPI,
   ProviderConnectionStatus,
@@ -49,7 +50,8 @@ export class OpenShiftAI implements Disposable {
       name: 'OpenShift AI',
       status: 'unknown',
       id: 'openshiftai',
-      emptyConnectionMarkdownDescription: 'Provides OpenShift AI integration. Connects Kortex to models running on OpenShift AI.',
+      emptyConnectionMarkdownDescription:
+        'Provides OpenShift AI integration. Connects Kortex to models running on OpenShift AI.',
       images: {
         icon: './icon.png',
         logo: {
@@ -60,7 +62,7 @@ export class OpenShiftAI implements Disposable {
     });
 
     // register inference Provider connection factory
-    this.provider?.setInferenceProviderConnectionFactory({ create: this.inferenceFactory.bind(this) });
+    this.provider.setInferenceProviderConnectionFactory({ create: this.inferenceFactory.bind(this) });
 
     // restore persistent connections
     await this.restoreConnections();
@@ -80,11 +82,7 @@ export class OpenShiftAI implements Disposable {
     }
   }
 
-  /**
-   * Get all connection infos from secret storage
-   * @private
-   */
-  private async getConnectionInfos(): Promise<ConnectionInfo[]> {
+  private async getTokens(): Promise<string[]> {
     // get raw string from secret storage
     let raw: string | undefined;
     try {
@@ -95,7 +93,15 @@ export class OpenShiftAI implements Disposable {
     // if undefined return empty array
     if (!raw) return [];
     // split raw string by token separator
-    return raw.split(TOKEN_SEPARATOR).map(str => {
+    return raw.split(TOKEN_SEPARATOR);
+  }
+
+  /**
+   * Get all connection infos from secret storage
+   * @private
+   */
+  private async getConnectionInfos(): Promise<ConnectionInfo[]> {
+    return (await this.getTokens()).map(str => {
       const [token, baseURL] = str.split(INFO_SEPARATOR);
       return {
         token,
@@ -112,7 +118,7 @@ export class OpenShiftAI implements Disposable {
    */
   private async saveConnectionInfo(token: string, baseURL: string): Promise<void> {
     // get existing tokens
-    const tokens = (await this.getConnectionInfos()).map(t => `${t.token}|${t.baseURL}`);
+    const tokens = await this.getTokens();
     // concat new token with existing tokens
     const raw = [...tokens, `${token}${INFO_SEPARATOR}${baseURL}`].join(TOKEN_SEPARATOR);
     // save to secret storage
@@ -128,7 +134,7 @@ export class OpenShiftAI implements Disposable {
     await this.secrets.store(TOKENS_KEY, raw);
   }
 
-  protected async listModels(baseURL: string, token: string): Promise<Array<{ label: string }>> {
+  protected async listModels({ baseURL, token }: ConnectionInfo): Promise<Array<InferenceModel>> {
     const res = await fetch(`${baseURL}/models`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -145,7 +151,7 @@ export class OpenShiftAI implements Disposable {
 
   private async getToken(coreAPI: CoreV1Api, namespace: string, runtime: string): Promise<string> {
     const secrets = await coreAPI.listNamespacedSecret({ namespace });
-    for(const secret of secrets.items) {
+    for (const secret of secrets.items) {
       if (secret.metadata?.annotations?.['kubernetes.io/service-account.name'] === runtime) {
         if (secret.data?.['token']) {
           return Buffer.from(secret.data['token'], 'base64').toString('utf-8');
@@ -196,13 +202,17 @@ export class OpenShiftAI implements Disposable {
           });
           for (const inferenceService of inferenceServices.items) {
             try {
-              const token = await this.getToken(coreAPI, project.metadata.name, `${inferenceService.spec?.predictor?.model?.runtime}-sa`);
-                if (token && inferenceService.status.url) {
-                  urls.push({
-                    token,
-                    baseURL: `${inferenceService.status.url}/v1`,
-                  });
-                }
+              const token = await this.getToken(
+                coreAPI,
+                project.metadata.name,
+                `${inferenceService.spec?.predictor?.model?.runtime}-sa`,
+              );
+              if (token && inferenceService.status.url) {
+                urls.push({
+                  token,
+                  baseURL: `${inferenceService.status.url}/v1`,
+                });
+              }
             } catch (e) {
               console.error(`Error processing inference service ${inferenceService.metadata.name}`, e);
             }
@@ -215,26 +225,18 @@ export class OpenShiftAI implements Disposable {
     return urls;
   }
 
-  private async registerInferenceProviderConnection({
-    token,
-    baseURL,
-  }: ConnectionInfo): Promise<void> {
+  private async registerInferenceProviderConnection({ token, baseURL }: ConnectionInfo): Promise<void> {
     if (!this.provider) throw new Error('cannot create MCP provider connection: provider is not initialized');
 
     const connectionInfos = await this.getInferenceServices(baseURL, token);
 
-    for(const connectionInfo of connectionInfos) {
+    for (const connectionInfo of connectionInfos) {
       // get hash of the token (used for Map)
-      const key = {
-        token: connectionInfo.token,
-        baseURL: connectionInfo.baseURL,
-      };
-
-      if (this.connections.has(key)) {
+      if (this.connections.has(connectionInfo)) {
         throw new Error(`connection already exists for token (hidden) baseURL ${baseURL}`);
       }
 
-      const models = await this.listModels(connectionInfo.baseURL, connectionInfo.token);
+      const models = await this.listModels(connectionInfo);
 
       // create ProviderV2
       const openai = createOpenAICompatible({
@@ -246,9 +248,9 @@ export class OpenShiftAI implements Disposable {
       // create a clean method
       const clean = async (): Promise<void> => {
         // dispose inference provider connection
-        this.connections.get(key)?.dispose();
+        this.connections.get(connectionInfo)?.dispose();
         // delete map entry
-        this.connections.delete(key);
+        this.connections.delete(connectionInfo);
         // remove token from secret storage
         await this.removeConnectionInfo(token, baseURL);
       };
@@ -269,7 +271,7 @@ export class OpenShiftAI implements Disposable {
           };
         },
       });
-      this.connections.set(key, connectionDisposable);
+      this.connections.set(connectionInfo, connectionDisposable);
     }
   }
 
@@ -295,5 +297,4 @@ export class OpenShiftAI implements Disposable {
     this.connections.forEach(disposable => disposable.dispose());
     this.connections.clear();
   }
-
 }
