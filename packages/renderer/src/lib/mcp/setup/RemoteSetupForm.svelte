@@ -1,7 +1,7 @@
 <script lang="ts">
 import { faKey } from '@fortawesome/free-solid-svg-icons/faKey';
-import { faPlusCircle } from '@fortawesome/free-solid-svg-icons/faPlusCircle';
-import { Button, Input } from '@podman-desktop/ui-svelte';
+import { faPlug } from '@fortawesome/free-solid-svg-icons/faPlug';
+import { Button } from '@podman-desktop/ui-svelte';
 import type { components } from 'mcp-registry';
 import { SvelteMap } from 'svelte/reactivity';
 import Fa from 'svelte-fa';
@@ -82,11 +82,23 @@ function onHeaderVariableChange(header: string, variable: string, value: string)
 <div class="flex flex-col gap-y-4">
   <!-- remote details -->
   <div class="bg-[var(--pd-content-bg)] rounded-md flex flex-col p-2 space-y-2">
-    <label for="headers" class="text-xl font-bold text-[var(--pd-content-card-header-text)]">Remote Server Configuration</label>
+    <label for="headers" class="text-xl font-bold text-[var(--pd-content-card-header-text)]">Remote MCP Definition</label>
     <span>Configure the remote Model Context Protocol server connection</span>
 
-    <label for="server-url" class="text-base font-bold text-[var(--pd-content-card-header-text)]">Server URL *</label>
-    <Input id="server-url" readonly value={object.url}/>
+    <div class="grid grid-cols-2">
+      <div class="flex flex-col">
+        <label for="server-url" class="text-base font-bold text-[var(--pd-content-card-header-text)] mb-1">Server URL</label>
+        <div class="flex items-center bg-[var(--pd-label-bg)] p-1 rounded-md text-sm text-[var(--pd-label-text)] gap-x-1 w-min px-2 py-1">
+          {object.url}
+        </div>
+      </div>
+      <div class="flex flex-col">
+        <label for="server-url" class="text-base font-bold text-[var(--pd-content-card-header-text)] mb-1">Transport type</label>
+        <div class="flex items-center bg-[var(--pd-label-bg)] p-1 rounded-md text-sm text-[var(--pd-label-text)] gap-x-1 w-min  px-2 py-1">
+          {object.transport_type}
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- headers -->
@@ -117,10 +129,10 @@ function onHeaderVariableChange(header: string, variable: string, value: string)
 <div class="flex w-full justify-end">
   <Button
     class="w-auto"
-    icon={faPlusCircle}
+    icon={faPlug}
     onclick={submit}
     inProgress={loading}>
-    Setup
+    Connect
   </Button>
 </div>
 
