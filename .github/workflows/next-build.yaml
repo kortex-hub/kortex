@@ -85,7 +85,7 @@ jobs:
           draft: true
           prerelease: true
           owner: kortex-hub
-          repo: kortex-prereleases
+          repo: prereleases
           token: ${{ secrets.KORTEX_BOT_TOKEN }}
 
   build:
@@ -173,6 +173,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.KORTEX_BOT_TOKEN }}
         with:
           id: ${{ needs.tag.outputs.releaseId}}
-          repo: kortex-hub/prereleases
+          repo: prereleases
           owner: kortex-hub
 
