@@ -1,0 +1,178 @@
+#
+# Copyright (C) 2022-2025 Red Hat, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: next build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+env:
+  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+  DEBUG: electron-builder
+
+permissions:
+  contents: read
+
+jobs:
+
+  tag:
+    name: Tagging
+    runs-on: ubuntu-24.04
+    # disable on forks as secrets are not available
+    if: github.event.repository.fork == false
+    outputs:
+      githubTag: ${{ steps.TAG_UTIL.outputs.githubTag}}
+      kortexVersion: ${{ steps.TAG_UTIL.outputs.kortexVersion}}
+      releaseId: ${{ steps.create_release.outputs.id}}
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+         token: ${{ secrets.KORTEX_BOT_TOKEN }}
+         fetch-depth: 0
+      - name: Generate tag utilities
+        id: TAG_UTIL
+        run: |
+            CURRENT_DAY=$(date +'%Y%m%d')
+            SHORT_SHA1=$(git rev-parse --short HEAD)
+            # grab the version from the package.json
+            KORTEX_VERSION=$(jq -r '.version' package.json)
+            # remove the -next from the version
+            STRIPPED_VERSION=${KORTEX_VERSION%-next}
+            TAG_PATTERN=${STRIPPED_VERSION}-$(date +'%Y%m%d%H%M')-${SHORT_SHA1}
+            echo "githubTag=v$TAG_PATTERN" >> ${GITHUB_OUTPUT}
+            echo "kortexVersion=$TAG_PATTERN" >> ${GITHUB_OUTPUT}
+      - name: tag
+        run: |
+          git config --local user.name ${{ github.actor }}
+          git config --local user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          sed -i  "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.kortexVersion }}\",#g" package.json
+          find extensions/* -maxdepth 2 -name "package.json" | xargs -I {} sed -i "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.kortexVersion }}\",#g" {}
+          # change the repository field to be the prerelease repository in package.json file
+          sed -i "s#\"repository\":\ \"\(.*\)\",#\"repository\":\ \"https://github.com/kortex-hub/prereleases\",#g" package.json
+          cat package.json
+          git add package.json extensions/*/package.json
+          git commit -m "chore: tag ${{ steps.TAG_UTIL.outputs.githubTag }}"
+          echo "Tagging with ${{ steps.TAG_UTIL.outputs.githubTag }}"
+          git tag ${{ steps.TAG_UTIL.outputs.githubTag }}
+          # push tag to the prereleases repository
+          git remote add prereleases https://github.com/kortex-hub/prereleases
+          git push prereleases ${{ steps.TAG_UTIL.outputs.githubTag }}
+
+      - name: Create Release
+        id: create_release
+        uses: ncipollo/release-action@b7eabc95ff50cbeeedec83973935c8f306dfcd0b # v1.20.0
+        with:
+          tag: ${{ steps.TAG_UTIL.outputs.githubTag }}
+          name: ${{ steps.TAG_UTIL.outputs.githubTag }}
+          draft: true
+          prerelease: true
+          owner: kortex-hub
+          repo: kortex-prereleases
+          token: ${{ secrets.KORTEX_BOT_TOKEN }}
+
+  build:
+    name: Build / ${{ matrix.os }}
+    needs: tag
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2025, ubuntu-24.04, macos-15]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          repository: kortex-hub/prereleases
+          ref: ${{ needs.tag.outputs.githubTag}}
+
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        name: Install pnpm
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: "3.x"
+
+      #- name: setup telemetry key for production
+      #  run: |
+      #    sed -i -r -e "s/SEGMENT_KEY = '.*'/SEGMENT_KEY = '${{ secrets.SEGMENT_WRITE_KEY }}'/" packages/main/src/plugin/telemetry/telemetry.ts
+
+      - name: Execute pnpm
+        run: pnpm install
+
+      - name: Install flatpak on Linux
+        if: ${{ matrix.os=='ubuntu-24.04' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install flatpak -y
+          sudo apt-get install flatpak-builder -y
+          sudo apt-get install elfutils -y
+          flatpak remote-add --if-not-exists flathub --user https://flathub.org/repo/flathub.flatpakrepo
+          flatpak install flathub --user -y org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08
+
+      - name: Set macOS environment variables
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          echo "CSC_LINK=${{secrets.CSC_LINK}}" >> $GITHUB_ENV
+          echo "CSC_KEY_PASSWORD=${{secrets.CSC_KEY_PASSWORD}}" >> $GITHUB_ENV
+          echo "APPLE_ID=${{secrets.APPLE_ID}}" >> $GITHUB_ENV
+          echo "APPLE_APP_SPECIFIC_PASSWORD=${{secrets.APPLE_APP_SPECIFIC_PASSWORD}}" >> $GITHUB_ENV
+          echo "APPLE_TEAM_ID=${{secrets.APPLE_TEAM_ID}}" >> $GITHUB_ENV
+
+      #- name: Install Azure SignTool on Windows
+      #  if: startsWith(matrix.os, 'windows')
+      #  run: |
+      #    dotnet tool install --global AzureSignTool --version 3.0.0
+      #    echo "AZURE_KEY_VAULT_CERTIFICATE=${{secrets.AZURE_KEY_VAULT_CERTIFICATE}}" | Out-File -FilePath $env:GITHUB_ENV -Append
+      #    echo "AZURE_KEY_VAULT_CLIENT_ID=${{secrets.AZURE_KEY_VAULT_CLIENT_ID}}" | Out-File -FilePath $env:GITHUB_ENV -Append
+      #    echo "AZURE_KEY_VAULT_SECRET=${{secrets.AZURE_KEY_VAULT_SECRET}}" | Out-File -FilePath $env:GITHUB_ENV -Append
+      #    echo "AZURE_KEY_VAULT_TENANT_ID=${{secrets.AZURE_KEY_VAULT_TENANT_ID}}" | Out-File -FilePath $env:GITHUB_ENV -Append
+      #    echo "AZURE_KEY_VAULT_URL=${{secrets.AZURE_KEY_VAULT_URL}}" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Run Build
+        timeout-minutes: 40
+        run: pnpm compile:next
+        env:
+          GITHUB_TOKEN: ${{ secrets.KORTEX_BOT_TOKEN }}
+
+  release:
+    needs: [tag, build]
+    name: Release
+    runs-on: ubuntu-24.04
+    steps:
+      - name: id
+        run: echo the release id is ${{ needs.tag.outputs.releaseId}}
+
+      - name: Publish release
+        uses: StuYarrow/publish-release@01f2a1365bacd77bad861873a7fdf274ab49eefd # v1.1.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.KORTEX_BOT_TOKEN }}
+        with:
+          id: ${{ needs.tag.outputs.releaseId}}
+          repo: kortex-hub/prereleases
+          owner: kortex-hub
+
