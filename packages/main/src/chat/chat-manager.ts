@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -37,12 +38,10 @@ import { ProviderRegistry } from '../plugin/provider-registry.js';
 import { runMigrate } from './db/migrate.js';
 import { ChatQueries } from './db/queries.js';
 import type { Chat, Message } from './db/schema.js';
-import { randomUUID } from 'node:crypto';
 
 export class ChatManager {
-    private chatQueries!: ChatQueries;
+  private chatQueries!: ChatQueries;
   private userId!: string;
-
 
   constructor(
     @inject(ProviderRegistry)
@@ -66,27 +65,26 @@ export class ChatManager {
 
     runMigrate(db);
 
-    const chatQueries = new ChatQueries(db)
+    const chatQueries = new ChatQueries(db);
 
     this.chatQueries = chatQueries;
 
-
-async function getOrCreateUserId() {
-  const defaultUserEmail = "default@localhost"
-  const userGetter = await chatQueries.getUser(defaultUserEmail);
-  if (userGetter.isOk()) {
-    return userGetter.value.id;
-  } else {
-    const newUserGetter = await chatQueries.createAuthUser(defaultUserEmail, "");
-    if (newUserGetter.isOk()) {
-      return newUserGetter.value.id;
-    } else {
-      throw new Error("Cannot create user");
+    async function getOrCreateUserId(): Promise<string> {
+      const defaultUserEmail = 'default@localhost';
+      const userGetter = await chatQueries.getUser(defaultUserEmail);
+      if (userGetter.isOk()) {
+        return userGetter.value.id;
+      } else {
+        const newUserGetter = await chatQueries.createAuthUser(defaultUserEmail, '');
+        if (newUserGetter.isOk()) {
+          return newUserGetter.value.id;
+        } else {
+          throw new Error('Cannot create user');
+        }
+      }
     }
-  }
-}
 
-this.userId = await getOrCreateUserId();
+    this.userId = await getOrCreateUserId();
 
     this.ipcHandle('inference:streamText', (_, params) => this.streamText(params));
     this.ipcHandle('inference:generate', (_, params) => this.generate(params));
@@ -187,7 +185,6 @@ this.userId = await getOrCreateUserId();
     const chatGetter = await this.chatQueries.getChatById({ id: chatId });
 
     if (!chatGetter.isOk()) {
-
       const title = 'Chat';
 
       await this.chatQueries.saveChat({
