@@ -11,7 +11,7 @@ import ListItemButtonIcon from '../ui/ListItemButtonIcon.svelte';
 
 interface Props {
   object: FlowInfo;
-  onLocalRun: (flowExecuteId: string) => void;
+  onLocalRun?: (flowExecuteId: string) => void;
 }
 
 const { object, onLocalRun }: Props = $props();
@@ -33,7 +33,8 @@ async function executeFlow(): Promise<void> {
   // execute the flow
   const flow = { providerId: object.providerId, connectionName: object.connectionName, flowId: object.id };
   const taskId: string = await window.flowExecute(flow);
-  onLocalRun(taskId);
+  // execute callback if any
+  onLocalRun?.(taskId);
 
   // redirect to the run tab
   navigateToRunFlow();
