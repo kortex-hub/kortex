@@ -614,7 +614,7 @@ export class PluginSystem {
     flowManager.init();
 
     const chatManager = container.get<ChatManager>(ChatManager);
-    chatManager.init();
+    await chatManager.init();
 
     providerRegistry.addProviderListener((name: string, providerInfo: ProviderInfo) => {
       if (name === 'provider:update-status') {
