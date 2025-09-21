@@ -1,5 +1,5 @@
 {
-  "name": "openai",
+  "name": "openai-compatible",
   "displayName": "OpenAI Compatible",
   "description": "Integration for Open AI",
   "version": "0.0.1-next",
