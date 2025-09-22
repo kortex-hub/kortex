@@ -123,6 +123,7 @@
     "fzstd": "^0.1.1",
     "get-tsconfig": "^4.11.0",
     "globals": "^16.4.0",
+    "fullname": "^5.0.0",
     "husky": "^9.1.7",
     "inversify": "^7.10.2",
     "js-yaml": "^4.1.0",

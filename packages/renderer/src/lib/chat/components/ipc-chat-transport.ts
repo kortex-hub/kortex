@@ -30,6 +30,7 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
         const { providerId, connectionName, label } = model;
         await window.inferenceStreamText(
           {
+            chatId: options.chatId,
             providerId,
             connectionName,
             modelId: label,

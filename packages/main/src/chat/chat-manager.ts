@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -26,6 +27,7 @@ import { convertToModelMessages, generateText, stepCountIs, streamText } from 'a
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import type { WebContents } from 'electron';
+import fullName from 'fullname';
 import { inject } from 'inversify';
 
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
@@ -35,8 +37,13 @@ import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
 import { MCPManager } from '../plugin/mcp/mcp-manager.js';
 import { ProviderRegistry } from '../plugin/provider-registry.js';
 import { runMigrate } from './db/migrate.js';
+import { ChatQueries } from './db/queries.js';
+import type { Chat, Message } from './db/schema.js';
 
 export class ChatManager {
+  private chatQueries!: ChatQueries;
+  private userId!: string;
+
   constructor(
     @inject(ProviderRegistry)
     private readonly providerRegistry: ProviderRegistry,
@@ -61,12 +68,72 @@ export class ChatManager {
 
     runMigrate(db);
 
+    const chatQueries = new ChatQueries(db);
+
+    this.chatQueries = chatQueries;
+
+    async function getOrCreateUserId(): Promise<string> {
+      const defaultUserEmail = 'default@localhost';
+      const userGetter = await chatQueries.getUser(defaultUserEmail);
+      if (userGetter.isOk()) {
+        return userGetter.value.id;
+      } else {
+        const newUserGetter = await chatQueries.createAuthUser(defaultUserEmail, '');
+        if (newUserGetter.isOk()) {
+          return newUserGetter.value.id;
+        } else {
+          throw new Error('Cannot create user');
+        }
+      }
+    }
+
+    this.userId = await getOrCreateUserId();
+
     this.ipcHandle('inference:streamText', (_, params) => this.streamText(params));
     this.ipcHandle('inference:generate', (_, params) => this.generate(params));
+    this.ipcHandle('mcp-manager:getExchanges', (_, mcpId: string) => this.getExchanges(mcpId));
+    this.ipcHandle('inference:getChats', () => this.getChats());
+    this.ipcHandle('inference:getChatMessagesById', (_, id: string) => this.getChatMessagesById(id));
+    this.ipcHandle('inference:deleteChat', (_, id: string) => this.deleteChat(id));
+    this.ipcHandle('inference:getFullName', _ => this.getFullName());
+  }
 
-    this.ipcHandle('mcp-manager:getExchanges', async (_listener, mcpId: string): Promise<DynamicToolUIPart[]> => {
-      return this.mcpManager.getExchanges(mcpId);
-    });
+  private async getExchanges(mcpId: string): Promise<DynamicToolUIPart[]> {
+    return this.mcpManager.getExchanges(mcpId);
+  }
+
+  private async getChats(): Promise<Chat[]> {
+    return this.chatQueries.getChatsByUserId({ id: this.userId }).match(
+      chats => chats,
+      err => {
+        throw err;
+      },
+    );
+  }
+
+  private async getChatMessagesById(id: string): Promise<{ chat: Chat | null; messages: Message[] }> {
+    return (await this.chatQueries.getMessagesByChatId({ id })).match(
+      async messages => {
+        const chat = (await this.chatQueries.getChatById({ id })).match(
+          chat => chat,
+          err => {
+            throw err;
+          },
+        );
+        return { chat, messages };
+      },
+      err => {
+        throw err;
+      },
+    );
+  }
+
+  private async deleteChat(id: string): Promise<undefined> {
+    await this.chatQueries.deleteChatById({ id });
+  }
+
+  private async getFullName(): Promise<string | undefined> {
+    return fullName();
   }
 
   private async convertMessages(messages: UIMessage[]): Promise<UIMessage[]> {
@@ -93,6 +160,7 @@ export class ChatManager {
     tools: ToolSet;
     stopWhen: StopCondition<ToolSet>;
     system: string;
+    userMessage: UIMessage;
   }> {
     const internalProviderId = this.providerRegistry.getMatchingProviderInternalId(params.providerId);
     const sdk = this.providerRegistry.getInferenceSDK(internalProviderId, params.connectionName);
@@ -112,6 +180,7 @@ export class ChatManager {
 
     return {
       model,
+      userMessage,
       messages,
       tools,
       stopWhen: stepCountIs(5),
@@ -119,10 +188,53 @@ export class ChatManager {
     };
   }
 
-  async streamText(params: InferenceParameters & { onDataId: number }): Promise<number> {
-    const streaming = streamText(await this.getInferenceComponents(params));
+  async streamText(params: InferenceParameters & { onDataId: number; chatId: string }): Promise<number> {
+    const { chatId } = params;
+    const chatGetter = await this.chatQueries.getChatById({ id: chatId });
 
-    const reader = streaming.toUIMessageStream().getReader();
+    if (!chatGetter.isOk()) {
+      const title = 'Chat';
+
+      await this.chatQueries.saveChat({
+        id: chatId,
+        userId: this.userId,
+        title,
+      });
+    }
+
+    const inferenceComponents = await this.getInferenceComponents(params);
+
+    await this.chatQueries.saveMessages({
+      messages: [
+        {
+          chatId,
+          id: inferenceComponents.userMessage.id,
+          role: 'user',
+          parts: inferenceComponents.userMessage.parts,
+          createdAt: new Date(),
+          attachments: [],
+        },
+      ],
+    });
+
+    const streaming = streamText(inferenceComponents);
+
+    const reader = streaming
+      .toUIMessageStream({
+        onFinish: async ({ messages }): Promise<void> => {
+          await this.chatQueries.saveMessages({
+            messages: messages.map(message => ({
+              id: randomUUID().toString(),
+              role: message.role,
+              parts: message.parts,
+              createdAt: new Date(),
+              chatId,
+              attachments: [],
+            })),
+          });
+        },
+      })
+      .getReader();
 
     // loop to wait for the stream to finish
     while (true) {

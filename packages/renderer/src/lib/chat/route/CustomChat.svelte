@@ -7,16 +7,37 @@ import Chat from '/@/lib/chat/components/chat.svelte';
 import { SidebarInset, SidebarProvider } from '/@/lib/chat/components/ui/sidebar';
 import { Toaster } from '/@/lib/chat/components/ui/sonner';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte.js';
+import { sidebarCollapsed } from '/@/lib/chat/stores/sidebarCollapsed';
 
 import { DEFAULT_CHAT_MODEL } from '../ai/models';
 import { SelectedModel } from '../hooks/selected-model.svelte';
+import { convertToUIMessages } from '../utils/chat';
 
-// set default user
-const data = { chats: Promise.resolve([]), sidebarCollapsed: true, user: { id: 'Guest', email: 'Guest' } };
-const chatHistory = new ChatHistory(data.chats);
+interface Props {
+  chatId?: string;
+}
+const { chatId }: Props = $props();
+
+const chatsPromise = window.inferenceGetChats();
+const chatHistory = new ChatHistory(chatsPromise);
 chatHistory.setContext();
 
-let selectedChatModel: SelectedModel | undefined = undefined;
+const fullNamePromise = window.inferenceGetFullName();
+
+const dataPromise = $derived(async () => {
+  const name = (await fullNamePromise) ?? 'Guest';
+
+  const chats = await chatsPromise;
+
+  const base = { chats, user: { id: name, email: name } };
+  if (chatId) {
+    const chatMessages = await window.inferenceGetChatMessagesById(chatId);
+    return { ...base, chatMessages };
+  }
+  return Promise.resolve(base);
+});
+
+let selectedChatModel: SelectedModel | undefined = $state(undefined);
 
 onMount(() => {
   // define select model to be the default chat model
@@ -28,16 +49,17 @@ onMount(() => {
 {#if selectedChatModel}
 <div class="flex h-full w-full">
 <ThemeProvider attribute="class" disableTransitionOnChange >
-
 	<Toaster position="top-center" />
-
-<SidebarProvider open={!data.sidebarCollapsed}>
-	<AppSidebar user={data.user} />
-	<SidebarInset>
-    <Chat chat={undefined} initialMessages={[]} readonly={false} user={data.user} />
-</SidebarInset>
-</SidebarProvider>
-
+  {#await dataPromise()}
+    Loading
+  {:then data} 
+    <SidebarProvider open={!$sidebarCollapsed} onOpenChange={(open: boolean): void => sidebarCollapsed.set(!open)}>
+      <AppSidebar user={data.user} {chatId} />
+      <SidebarInset>
+        <Chat chat={'chatMessages' in data ? data.chatMessages?.chat ?? undefined : undefined} initialMessages={'chatMessages' in data ? convertToUIMessages(data.chatMessages.messages) : []} user={data.user} readonly={false}  />
+      </SidebarInset>
+    </SidebarProvider>
+  {/await}
 </ThemeProvider>
 </div>
 {/if}

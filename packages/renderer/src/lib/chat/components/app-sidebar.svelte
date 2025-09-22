@@ -9,11 +9,15 @@ import { Button } from './ui/button';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, useSidebar } from './ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
-let { user }: { user?: User } = $props();
-
+interface Props {
+  chatId?: string;
+  user?: User;
+}
+let { user, chatId }: Props = $props();
 const context = useSidebar();
 </script>
 
+{#if context.open}
 <Sidebar class="group-data-[side=left]:border-r-0">
 	<SidebarHeader>
 		<SidebarMenu>
@@ -52,7 +56,7 @@ const context = useSidebar();
 		</SidebarMenu>
 	</SidebarHeader>
 	<SidebarContent>
-		<SidebarHistory {user} />
+		<SidebarHistory {user} {chatId} />
 	</SidebarContent>
 	<SidebarFooter>
 		{#if user}
@@ -60,3 +64,4 @@ const context = useSidebar();
 		{/if}
 	</SidebarFooter>
 </Sidebar>
+{/if}

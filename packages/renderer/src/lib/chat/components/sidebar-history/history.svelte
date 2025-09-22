@@ -20,13 +20,16 @@ import { SidebarGroup, SidebarGroupContent, SidebarMenu } from '../ui/sidebar';
 import { Skeleton } from '../ui/skeleton';
 import ChatItem from './item.svelte';
 
-let { user }: { user?: User } = $props();
+interface Props {
+  chatId?: string;
+  user?: User;
+}
+
+let { user, chatId }: Props = $props();
 const chatHistory = ChatHistory.fromContext();
 let alertDialogOpen = $state(false);
 const groupedChats = $derived(groupChatsByDate(chatHistory.chats));
 let chatIdToDelete = $state<string | undefined>(undefined);
-
-const page = { params: { chatId: '123' } };
 
 type GroupedChats = {
   today: Chat[];
@@ -78,16 +81,10 @@ function groupChatsByDate(chats: Chat[]): GroupedChats {
 
 async function handleDeleteChat(): Promise<void> {
   const deletePromise = (async (): Promise<void> => {
-    const res = await fetch('/api/chat', {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ id: chatIdToDelete }),
-    });
-    if (!res.ok) {
+    if (!chatIdToDelete) {
       throw new Error();
     }
+    await window.inferenceDeleteChat(chatIdToDelete);
   })();
 
   toast.promise(deletePromise, {
@@ -104,7 +101,7 @@ async function handleDeleteChat(): Promise<void> {
 
   alertDialogOpen = false;
 
-  if (chatIdToDelete === page.params.chatId) {
+  if (chatIdToDelete === chatId) {
     router.goto('/');
   }
 }
@@ -158,7 +155,7 @@ async function handleDeleteChat(): Promise<void> {
 						{#each chats as chat (chat.id)}
 							<ChatItem
 								{chat}
-								active={chat.id === page.params.chatId}
+								active={chat.id === chatId}
 								ondelete={(chatId): void => {
 									chatIdToDelete = chatId;
 									alertDialogOpen = true;

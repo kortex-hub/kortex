@@ -115,6 +115,7 @@ import type { VolumeInspectInfo, VolumeListInfo } from '/@api/volume-info';
 import type { WebviewInfo } from '/@api/webview-info';
 
 import type { ListOrganizerItem } from '../../api/src/list-organizer';
+import type { Chat, Message } from '../../main/src/chat/db/schema';
 import type { ApiSenderType } from '../../main/src/plugin/api';
 import type { ContextInfo } from '../../main/src/plugin/api/context-info';
 import type { KubernetesGeneratorInfo } from '../../main/src/plugin/api/KubernetesGeneratorInfo';
@@ -1141,6 +1142,25 @@ export function initExposure(): void {
     },
   );
 
+  contextBridge.exposeInMainWorld('inferenceGetFullName', async (): Promise<string | undefined> => {
+    return ipcInvoke('inference:getFullName');
+  });
+
+  contextBridge.exposeInMainWorld('inferenceGetChats', async (): Promise<Chat[]> => {
+    return ipcInvoke('inference:getChats');
+  });
+
+  contextBridge.exposeInMainWorld(
+    'inferenceGetChatMessagesById',
+    async (chatId: string): Promise<{ chat: Chat | null; messages: Message[] }> => {
+      return ipcInvoke('inference:getChatMessagesById', chatId);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('inferenceDeleteChat', async (chatId: string): Promise<Chat | undefined> => {
+    return ipcInvoke('inference:deleteChat', chatId);
+  });
+
   contextBridge.exposeInMainWorld('inferenceGenerate', async (params: InferenceParameters): Promise<string> => {
     return ipcInvoke('inference:generate', params);
   });
@@ -1178,7 +1198,7 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld(
     'inferenceStreamText',
     async (
-      params: InferenceParameters,
+      params: InferenceParameters & { chatId: string },
       onChunk: (data: UIMessageChunk) => void,
       onError: (error: string) => void,
       onEnd: () => void,
