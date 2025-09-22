@@ -85,4 +85,8 @@ export class LinuxXDGDirectories implements Directories {
   getDataDirectory(): string {
     return this.dataDirectory;
   }
+
+  getChatPersistenceDirectory(): string {
+    return this.chatPersistenceDirectory;
+  }
 }
