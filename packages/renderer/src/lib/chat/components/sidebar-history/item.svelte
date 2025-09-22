@@ -1,24 +1,10 @@
 <script lang="ts">
 import { router } from 'tinro';
 
-import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
-
 import type { Chat } from '../../../../../../main/src/chat/db/schema';
-import CheckCircleFillIcon from '../icons/check-circle-fill.svelte';
-import GlobeIcon from '../icons/globe.svelte';
-import LockIcon from '../icons/lock.svelte';
 import MoreHorizontalIcon from '../icons/more-horizontal.svelte';
-import ShareIcon from '../icons/share.svelte';
 import TrashIcon from '../icons/trash.svelte';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import { SidebarMenuAction, SidebarMenuButton, SidebarMenuItem, useSidebar } from '../ui/sidebar';
 
 let {
@@ -32,9 +18,6 @@ let {
 } = $props();
 
 const context = useSidebar();
-
-const chatHistory = ChatHistory.fromContext();
-const chatFromHistory = $derived(chatHistory.getChatDetails(chat.id));
 </script>
 
 <SidebarMenuItem>
@@ -67,7 +50,7 @@ const chatFromHistory = $derived(chatHistory.getChatDetails(chat.id));
 		</DropdownMenuTrigger>
 
 		<DropdownMenuContent side="bottom" align="end">
-			<DropdownMenuSub>
+			<!-- <DropdownMenuSub>
 				<DropdownMenuSubTrigger class="cursor-pointer">
 					<ShareIcon />
 					<span>Share</span>
@@ -106,7 +89,7 @@ const chatFromHistory = $derived(chatHistory.getChatDetails(chat.id));
 						{/if}
 					</DropdownMenuItem>
 				</DropdownMenuSubContent>
-			</DropdownMenuSub>
+			</DropdownMenuSub> -->
 
 			<DropdownMenuItem
 				class="text-destructive focus:bg-destructive/15 focus:text-destructive cursor-pointer dark:text-red-500"
