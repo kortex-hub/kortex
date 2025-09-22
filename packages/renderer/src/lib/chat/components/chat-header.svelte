@@ -6,6 +6,7 @@ import { router } from 'tinro';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
+import { currentChatId } from '/@/lib/chat/stores/current-chat-id.svelte.js';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
@@ -48,6 +49,7 @@ const noMcps = $derived($mcpRemoteServerInfos.length === 0);
 						variant="outline"
 						class="order-2 ml-auto px-2 md:order-1 md:ml-0 md:h-fit md:px-2"
 						onclick={():void => {
+            	currentChatId.value = undefined;
               if ($router.path === '/') {
                 router.goto('/chat');
               } else {

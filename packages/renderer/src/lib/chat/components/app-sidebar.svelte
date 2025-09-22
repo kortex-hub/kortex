@@ -1,6 +1,8 @@
 <script lang="ts">
 import { router } from 'tinro';
 
+import { currentChatId } from '/@/lib/chat/stores/current-chat-id.svelte.js';
+
 import PlusIcon from './icons/plus.svelte';
 import { SidebarHistory } from './sidebar-history';
 import { Button } from './ui/button';
@@ -40,6 +42,7 @@ const context = useSidebar();
 								class="h-fit p-2"
 								onclick={(): void => {
 									context.setOpenMobile(false);
+									currentChatId.value = undefined;
 									if ($router.path === '/') {
 										router.goto('/chat');
 									} else {

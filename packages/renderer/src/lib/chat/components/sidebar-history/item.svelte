@@ -1,6 +1,8 @@
 <script lang="ts">
 import { router } from 'tinro';
 
+import { currentChatId } from '/@/lib/chat/stores/current-chat-id.svelte.js';
+
 import type { Chat } from '../../../../../../main/src/chat/db/schema';
 import MoreHorizontalIcon from '../icons/more-horizontal.svelte';
 import TrashIcon from '../icons/trash.svelte';
@@ -26,6 +28,7 @@ const context = useSidebar();
 			<button
 				{...props}
 				onclick={(): void => {
+					currentChatId.value = chat.id;
 					router.goto(`/chat/${chat.id}`);
 					context.setOpenMobile(false);
 				}}
