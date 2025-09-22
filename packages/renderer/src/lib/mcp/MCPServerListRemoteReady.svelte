@@ -10,15 +10,23 @@ import { MCPServerDescriptionColumn } from './mcp-server-columns';
 import MCPServerEmptyScreen from './MCPServerEmptyScreen.svelte';
 import McpServerRemoteListActions from './MCPServerRemoteListActions.svelte';
 
+interface Props {
+  filter?: string;
+}
+
+const { filter }: Props = $props();
+
 interface SelectableMCPRemoteServerInfo extends MCPRemoteServerInfo {
   selected?: boolean;
 }
 
 const servers: SelectableMCPRemoteServerInfo[] = $derived(
-  $mcpRemoteServerInfos.map(server => ({
-    ...server,
-    selected: false,
-  })),
+  $mcpRemoteServerInfos
+    .map(server => ({
+      ...server,
+      selected: false,
+    }))
+    .filter(server => server.name.toLowerCase().includes(filter?.toLowerCase() ?? '')),
 );
 
 const statusColumn = new TableColumn<MCPRemoteServerInfo>('Status', {

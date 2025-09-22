@@ -10,17 +10,25 @@ import { MCPServerDescriptionColumn } from './mcp-server-columns';
 import McpEmptyScreen from './MCPRegistryEmptyScreen.svelte';
 import McpServerListActions from './MCPServerRegistryListActions.svelte';
 
+interface Props {
+  filter?: string;
+}
+
+const { filter }: Props = $props();
+
 type SelectableMCPRegistryServerDetailUI = MCPServerDetail & {
   selected?: boolean;
 };
 
 const servers: SelectableMCPRegistryServerDetailUI[] = $derived(
-  $mcpRegistriesServerInfos.map(
-    (server): SelectableMCPRegistryServerDetailUI => ({
-      ...server,
-      selected: false,
-    }),
-  ),
+  $mcpRegistriesServerInfos
+    .map(
+      (server): SelectableMCPRegistryServerDetailUI => ({
+        ...server,
+        selected: false,
+      }),
+    )
+    .filter(server => server.name.toLowerCase().includes(filter?.toLowerCase() ?? '')),
 );
 
 let table: Table<SelectableMCPRegistryServerDetailUI>;
