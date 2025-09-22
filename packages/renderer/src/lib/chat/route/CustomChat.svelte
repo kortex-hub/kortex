@@ -7,6 +7,7 @@ import Chat from '/@/lib/chat/components/chat.svelte';
 import { SidebarInset, SidebarProvider } from '/@/lib/chat/components/ui/sidebar';
 import { Toaster } from '/@/lib/chat/components/ui/sonner';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte.js';
+import { sidebarCollapsed } from '/@/lib/chat/stores/sidebarCollapsed';
 
 import { DEFAULT_CHAT_MODEL } from '../ai/models';
 import { SelectedModel } from '../hooks/selected-model.svelte';
@@ -28,7 +29,7 @@ const dataPromise = $derived(async () => {
 
   const chats = await chatsPromise;
 
-  const base = { sidebarCollapsed: true, chats, user: { id: name, email: name } };
+  const base = { chats, user: { id: name, email: name } };
   if (chatId) {
     const chatMessages = await window.inferenceGetChatMessagesById(chatId);
     return { ...base, chatMessages };
@@ -52,7 +53,7 @@ onMount(() => {
   {#await dataPromise()}
     Loading
   {:then data} 
-    <SidebarProvider open={!data.sidebarCollapsed}>
+    <SidebarProvider open={!$sidebarCollapsed} onOpenChange={(open: boolean): void => sidebarCollapsed.set(!open)}>
       <AppSidebar user={data.user} {chatId} />
       <SidebarInset>
         <Chat chat={'chatMessages' in data ? data.chatMessages?.chat ?? undefined : undefined} initialMessages={'chatMessages' in data ? convertToUIMessages(data.chatMessages.messages) : []} user={data.user} readonly={false}  />

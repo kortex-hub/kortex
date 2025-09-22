@@ -17,6 +17,7 @@ let { user, chatId }: Props = $props();
 const context = useSidebar();
 </script>
 
+{#if context.open}
 <Sidebar class="group-data-[side=left]:border-r-0">
 	<SidebarHeader>
 		<SidebarMenu>
@@ -63,3 +64,4 @@ const context = useSidebar();
 		{/if}
 	</SidebarFooter>
 </Sidebar>
+{/if}
