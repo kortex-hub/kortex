@@ -25,7 +25,6 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
 
     const mcp = this.dependencies.getMCP();
 
-
     return new ReadableStream<UIMessageChunk>({
       async start(controller): Promise<void> {
         const { providerId, connectionName, label } = model;
