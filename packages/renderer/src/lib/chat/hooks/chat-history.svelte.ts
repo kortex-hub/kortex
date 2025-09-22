@@ -64,10 +64,7 @@ export class ChatHistory {
   async refetch(): Promise<void> {
     this.#revalidating = true;
     try {
-      const res = await fetch('/api/history');
-      if (res.ok) {
-        this.chats = await res.json();
-      }
+      this.chats = await window.inferenceGetChats();
     } finally {
       this.#revalidating = false;
     }
