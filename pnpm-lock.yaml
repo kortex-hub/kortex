@@ -59,7 +59,7 @@ importers:
         specifier: ^7.1.0
         version: 7.1.0
       better-sqlite3:
-        specifier: ^12.2.0
+        specifier: ^12.3.0
         version: 12.4.1
       check-disk-space:
         specifier: ^3.4.0
