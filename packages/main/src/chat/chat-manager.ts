@@ -27,6 +27,7 @@ import { convertToModelMessages, generateText, stepCountIs, streamText } from 'a
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import type { WebContents } from 'electron';
+import fullName from 'fullname';
 import { inject } from 'inversify';
 
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
@@ -94,6 +95,7 @@ export class ChatManager {
     this.ipcHandle('inference:getChats', () => this.getChats());
     this.ipcHandle('inference:getChatMessagesById', (_, id: string) => this.getChatMessagesById(id));
     this.ipcHandle('inference:deleteChat', (_, id: string) => this.deleteChat(id));
+    this.ipcHandle('inference:getFullName', _ => this.getFullName());
   }
 
   private async getExchanges(mcpId: string): Promise<DynamicToolUIPart[]> {
@@ -128,6 +130,10 @@ export class ChatManager {
 
   private async deleteChat(id: string): Promise<undefined> {
     await this.chatQueries.deleteChatById({ id });
+  }
+
+  private async getFullName(): Promise<string | undefined> {
+    return fullName();
   }
 
   private async convertMessages(messages: UIMessage[]): Promise<UIMessage[]> {

@@ -17,12 +17,24 @@ interface Props {
 }
 const { chatId }: Props = $props();
 
-const data = { chats: window.inferenceGetChats(), sidebarCollapsed: true, user: { id: 'Guest', email: 'Guest' } };
-
-const chatMessagesPromise = $derived(chatId ? window.inferenceGetChatMessagesById(chatId) : undefined);
-
-const chatHistory = new ChatHistory(data.chats);
+const chatsPromise = window.inferenceGetChats();
+const chatHistory = new ChatHistory(chatsPromise);
 chatHistory.setContext();
+
+const fullNamePromise = window.inferenceGetFullName();
+
+const dataPromise = $derived(async () => {
+  const name = (await fullNamePromise) ?? 'Guest';
+
+  const chats = await chatsPromise;
+
+  const base = { sidebarCollapsed: true, chats, user: { id: name, email: name } };
+  if (chatId) {
+    const chatMessages = await window.inferenceGetChatMessagesById(chatId);
+    return { ...base, chatMessages };
+  }
+  return Promise.resolve(base);
+});
 
 let selectedChatModel: SelectedModel | undefined = $state(undefined);
 
@@ -36,20 +48,17 @@ onMount(() => {
 {#if selectedChatModel}
 <div class="flex h-full w-full">
 <ThemeProvider attribute="class" disableTransitionOnChange >
-
 	<Toaster position="top-center" />
-
-<SidebarProvider open={!data.sidebarCollapsed}>
-	<AppSidebar user={data.user} {chatId} />
-	<SidebarInset>
-    {#await chatMessagesPromise}
-      Loading
-    {:then chatMessages} 
-      <Chat chat={chatMessages?.chat ?? undefined} initialMessages={chatMessages?.messages ? convertToUIMessages(chatMessages.messages): []} user={data.user} readonly={false}  />
-    {/await}
-</SidebarInset>
-</SidebarProvider>
-
+  {#await dataPromise()}
+    Loading
+  {:then data} 
+    <SidebarProvider open={!data.sidebarCollapsed}>
+      <AppSidebar user={data.user} {chatId} />
+      <SidebarInset>
+        <Chat chat={'chatMessages' in data ? data.chatMessages?.chat ?? undefined : undefined} initialMessages={'chatMessages' in data ? convertToUIMessages(data.chatMessages.messages) : []} user={data.user} readonly={false}  />
+      </SidebarInset>
+    </SidebarProvider>
+  {/await}
 </ThemeProvider>
 </div>
 {/if}
