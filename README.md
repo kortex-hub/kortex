@@ -11,7 +11,7 @@ You can develop on either: `Windows`, `macOS` or `Linux`.
 Requirements:
 
 - [Node.js 22+](https://nodejs.org/en/)
-- [pnpm v9.x](https://pnpm.io/installation) (`corepack enable pnpm`)
+- [pnpm v10.x](https://pnpm.io/installation) (`corepack enable pnpm`)
 - [Gemini](https://gemini.google.com) An API token for Gemini is required
 - [Goose](https://github.com/block/goose) Can be installed through the CLI panel
 
