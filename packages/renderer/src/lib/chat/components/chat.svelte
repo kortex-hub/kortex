@@ -88,7 +88,7 @@ const hasModels = $derived(models && models.length > 0);
 
 <div class="bg-background flex h-full min-w-0 flex-col">
   {#if hasModels}
-	  <ChatHeader {user} bind:mcpSelectorOpen={mcpSelectorOpen} {chat} {readonly} models={models} bind:selectedModel={selectedModel} bind:selectedMCP={selectedMCP} />
+	  <ChatHeader {user} bind:mcpSelectorOpen={mcpSelectorOpen} {readonly} models={models} bind:selectedModel={selectedModel} bind:selectedMCP={selectedMCP} />
   {/if}
   <div class="flex min-h-0 flex-1">
         {#if hasModels}
