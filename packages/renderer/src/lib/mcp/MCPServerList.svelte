@@ -33,9 +33,9 @@ let searchTerm = $state('');
   {#snippet content()}
   <div class="flex min-w-full h-full">
       {#if selectedTab === 'READY'}
-        <McpServerListRemoteReady filter={searchTerm}/>
+        <McpServerListRemoteReady bind:filter={searchTerm}/>
       {:else if selectedTab === 'INSTALLABLE'}
-        <McpServerListRegistryInstall filter={searchTerm}/>
+        <McpServerListRegistryInstall bind:filter={searchTerm}/>
       {:else if selectedTab === 'REGISTRIES-EDITING'}
         <McpRegistriesEditing />
         {/if}

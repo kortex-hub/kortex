@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
+import { FilteredEmptyScreen, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 import SimpleColumn from '@podman-desktop/ui-svelte/TableSimpleColumn';
 
 import {
@@ -17,7 +17,7 @@ interface Props {
   filter?: string;
 }
 
-const { filter }: Props = $props();
+let { filter = $bindable() }: Props = $props();
 
 type SelectableMCPRegistryServerDetailUI = MCPServerDetail & {
   selected?: boolean;
@@ -67,11 +67,15 @@ const row = new TableRow<MCPServerDetail>({});
 </script>
 
       {#if servers.length === 0}
+        {#if filter}
+        <FilteredEmptyScreen icon={McpIcon} kind="MCP Servers" bind:searchTerm={filter}/>
+        {:else}
         <McpEmptyScreen />
+        {/if}
       {:else}
 
     <Table
-      kind="volume"
+      kind="mcpServer"
       bind:this={table}
       data={servers}
       columns={columns}

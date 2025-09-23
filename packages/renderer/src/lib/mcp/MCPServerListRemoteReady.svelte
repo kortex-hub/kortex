@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
+import { FilteredEmptyScreen, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 
 import MCPNameColumn from '/@/lib/mcp/column/MCPNameColumn.svelte';
 import { filteredMcpRemoteServerInfos, mcpRemoteServerInfoSearchPattern } from '/@/stores/mcp-remote-servers';
@@ -14,7 +14,7 @@ interface Props {
   filter?: string;
 }
 
-const { filter }: Props = $props();
+let { filter = $bindable() }: Props = $props();
 
 interface SelectableMCPRemoteServerInfo extends MCPRemoteServerInfo {
   selected?: boolean;
@@ -54,7 +54,11 @@ const row = new TableRow<MCPRemoteServerInfo>({});
 </script>
 
 {#if servers.length === 0}
-  <MCPServerEmptyScreen />
+  {#if filter}
+    <FilteredEmptyScreen icon={McpIcon} kind="MCP Servers" bind:searchTerm={filter}/>
+  {:else}
+    <MCPServerEmptyScreen />
+  {/if}
 {:else}
 
   <Table
