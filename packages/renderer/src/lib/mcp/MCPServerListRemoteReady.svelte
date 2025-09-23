@@ -2,7 +2,7 @@
 import { Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 
 import MCPNameColumn from '/@/lib/mcp/column/MCPNameColumn.svelte';
-import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import { filteredMcpRemoteServerInfos, mcpRemoteServerInfoSearchPattern } from '/@/stores/mcp-remote-servers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import McpIcon from '../images/MCPIcon.svelte';
@@ -20,13 +20,15 @@ interface SelectableMCPRemoteServerInfo extends MCPRemoteServerInfo {
   selected?: boolean;
 }
 
+$effect(() => {
+  mcpRemoteServerInfoSearchPattern.set(filter ?? '');
+});
+
 const servers: SelectableMCPRemoteServerInfo[] = $derived(
-  $mcpRemoteServerInfos
-    .map(server => ({
-      ...server,
-      selected: false,
-    }))
-    .filter(server => server.name.toLowerCase().includes(filter?.toLowerCase() ?? '')),
+  $filteredMcpRemoteServerInfos.map(server => ({
+    ...server,
+    selected: false,
+  })),
 );
 
 const statusColumn = new TableColumn<MCPRemoteServerInfo>('Status', {

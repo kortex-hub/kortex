@@ -2,7 +2,10 @@
 import { Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 import SimpleColumn from '@podman-desktop/ui-svelte/TableSimpleColumn';
 
-import { mcpRegistriesServerInfos } from '/@/stores/mcp-registry-servers';
+import {
+  filteredMcpRegistriesServerInfos,
+  mcpRegistriesServerInfosSearchPattern,
+} from '/@/stores/mcp-registry-servers';
 import type { MCPServerDetail } from '/@api/mcp/mcp-server-info';
 
 import McpIcon from '../images/MCPIcon.svelte';
@@ -20,8 +23,12 @@ type SelectableMCPRegistryServerDetailUI = MCPServerDetail & {
   selected?: boolean;
 };
 
+$effect(() => {
+  mcpRegistriesServerInfosSearchPattern.set(filter ?? '');
+});
+
 const servers: SelectableMCPRegistryServerDetailUI[] = $derived(
-  $mcpRegistriesServerInfos
+  $filteredMcpRegistriesServerInfos
     .map(
       (server): SelectableMCPRegistryServerDetailUI => ({
         ...server,
