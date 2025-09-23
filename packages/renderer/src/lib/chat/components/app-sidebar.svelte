@@ -1,19 +1,16 @@
 <script lang="ts">
 import { router } from 'tinro';
 
-import type { User } from '../../../../../main/src/chat/db/schema';
 import PlusIcon from './icons/plus.svelte';
 import { SidebarHistory } from './sidebar-history';
-import SidebarUserNav from './sidebar-user-nav.svelte';
 import { Button } from './ui/button';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, useSidebar } from './ui/sidebar';
+import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, useSidebar } from './ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 interface Props {
   chatId?: string;
-  user?: User;
 }
-let { user, chatId }: Props = $props();
+let { chatId }: Props = $props();
 const context = useSidebar();
 </script>
 
@@ -60,12 +57,7 @@ const context = useSidebar();
 		</SidebarMenu>
 	</SidebarHeader>
 	<SidebarContent>
-		<SidebarHistory {user} {chatId} />
+		<SidebarHistory {chatId} />
 	</SidebarContent>
-	<SidebarFooter>
-		{#if user}
-			<SidebarUserNav {user} />
-		{/if}
-	</SidebarFooter>
 </Sidebar>
 {/if}

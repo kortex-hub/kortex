@@ -10,7 +10,7 @@ import { getModels } from '/@/lib/models/models-utils';
 import { providerInfos } from '/@/stores/providers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
-import type { Chat as DbChat, User } from '../../../../../main/src/chat/db/schema';
+import type { Chat as DbChat } from '../../../../../main/src/chat/db/schema';
 import ChatHeader from './chat-header.svelte';
 import { IPCChatTransport } from './ipc-chat-transport';
 import McpMessages from './mcp-messages.svelte';
@@ -19,12 +19,10 @@ import MultimodalInput from './multimodal-input.svelte';
 import NoModelsAvailable from './NoModelsAvailable.svelte';
 
 let {
-  user,
   chat,
   readonly,
   initialMessages,
 }: {
-  user: User | undefined;
   chat: DbChat | undefined;
   initialMessages: UIMessage[];
   readonly: boolean;
@@ -88,7 +86,7 @@ const hasModels = $derived(models && models.length > 0);
 
 <div class="bg-background flex h-full min-w-0 flex-col">
   {#if hasModels}
-	  <ChatHeader {user} bind:mcpSelectorOpen={mcpSelectorOpen} {readonly} models={models} bind:selectedModel={selectedModel} bind:selectedMCP={selectedMCP} />
+	  <ChatHeader bind:mcpSelectorOpen={mcpSelectorOpen} {readonly} models={models} bind:selectedModel={selectedModel} bind:selectedMCP={selectedMCP} />
   {/if}
   <div class="flex min-h-0 flex-1">
         {#if hasModels}

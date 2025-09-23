@@ -1117,10 +1117,6 @@ export function initExposure(): void {
     },
   );
 
-  contextBridge.exposeInMainWorld('inferenceGetFullName', async (): Promise<string | undefined> => {
-    return ipcInvoke('inference:getFullName');
-  });
-
   contextBridge.exposeInMainWorld('inferenceGetChats', async (): Promise<Chat[]> => {
     return ipcInvoke('inference:getChats');
   });

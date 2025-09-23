@@ -22,14 +22,10 @@ const chatsPromise = window.inferenceGetChats();
 const chatHistory = new ChatHistory(chatsPromise);
 chatHistory.setContext();
 
-const fullNamePromise = window.inferenceGetFullName();
-
 const dataPromise = $derived(async () => {
-  const name = (await fullNamePromise) ?? 'Guest';
-
   const chats = await chatsPromise;
 
-  const base = { chats, user: { id: name, email: name } };
+  const base = { chats };
   if (chatId) {
     const chatMessages = await window.inferenceGetChatMessagesById(chatId);
     return { ...base, chatMessages };
@@ -54,9 +50,9 @@ onMount(() => {
     Loading
   {:then data} 
     <SidebarProvider open={!$sidebarCollapsed} onOpenChange={(open: boolean): void => sidebarCollapsed.set(!open)}>
-      <AppSidebar user={data.user} {chatId} />
+      <AppSidebar {chatId} />
       <SidebarInset>
-        <Chat chat={'chatMessages' in data ? data.chatMessages?.chat ?? undefined : undefined} initialMessages={'chatMessages' in data ? convertToUIMessages(data.chatMessages.messages) : []} user={data.user} readonly={false}  />
+        <Chat chat={'chatMessages' in data ? data.chatMessages?.chat ?? undefined : undefined} initialMessages={'chatMessages' in data ? convertToUIMessages(data.chatMessages.messages) : []} readonly={false}  />
       </SidebarInset>
     </SidebarProvider>
   {/await}

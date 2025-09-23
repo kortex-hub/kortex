@@ -5,7 +5,7 @@ import { router } from 'tinro';
 
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
 
-import type { Chat, User } from '../../../../../../main/src/chat/db/schema';
+import type { Chat } from '../../../../../../main/src/chat/db/schema';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,10 +22,9 @@ import ChatItem from './item.svelte';
 
 interface Props {
   chatId?: string;
-  user?: User;
 }
 
-let { user, chatId }: Props = $props();
+let { chatId }: Props = $props();
 const chatHistory = ChatHistory.fromContext();
 let alertDialogOpen = $state(false);
 const groupedChats = $derived(groupChatsByDate(chatHistory.chats));
@@ -107,17 +106,7 @@ async function handleDeleteChat(): Promise<void> {
 }
 </script>
 
-{#if !user}
-	<SidebarGroup>
-		<SidebarGroupContent>
-			<div
-				class="flex w-full flex-row items-center justify-center gap-2 px-2 text-sm text-zinc-500"
-			>
-				Login to save and revisit previous chats!
-			</div>
-		</SidebarGroupContent>
-	</SidebarGroup>
-{:else if chatHistory.loading}
+{#if chatHistory.loading}
 	<SidebarGroup>
 		<div class="text-sidebar-foreground/50 px-2 py-1 text-xs">Today</div>
 		<SidebarGroupContent>
