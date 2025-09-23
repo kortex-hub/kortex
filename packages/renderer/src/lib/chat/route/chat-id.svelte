@@ -9,6 +9,5 @@ let { data } = $props();
 	chat={data.chat}
 	initialMessages={convertToUIMessages(data.messages)}
 	readonly={data.user?.id !== data.chat.userId}
-	user={data.user}
 />
 <!-- TODO <DataStreamHandler {id} /> -->
