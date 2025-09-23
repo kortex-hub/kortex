@@ -13,7 +13,7 @@
   },
   "main": "packages/main/dist/index.cjs",
   "scripts": {
-    "build": "pnpm run build:main && pnpm run build:preload && pnpm run build:preload-webview && npm run build:preload:types && pnpm run build:renderer && pnpm run build:extensions",
+    "build": "pnpm run build:main && pnpm run build:mcp-setup && pnpm run build:preload && pnpm run build:preload-webview && npm run build:preload:types && pnpm run build:renderer && pnpm run build:extensions",
     "build:main": "cd ./packages/main && vite build",
     "build:extensions": "pnpm run build:extensions:gemini && pnpm run build:extensions:goose && pnpm run build:extensions:mcp-registries && pnpm run build:extensions:openai-compatible && pnpm run build:extensions:openshift-ai",
     "build:extensions:gemini": "cd ./extensions/gemini && pnpm run build",
@@ -23,6 +23,7 @@
     "build:extensions:openshift-ai": "cd ./extensions/openshift-ai && pnpm run build",
     "build:extension-api": "cd ./packages/extension-api && vite build",
     "build:preload": "cd ./packages/preload && vite build",
+    "build:mcp-setup": "cd ./packages/mcp-setup && vite build",
     "build:preload-webview": "cd ./packages/preload-webview && vite build",
     "build:preload:types": "dts-cb -i \"packages/preload/tsconfig.json\" -o \"packages/preload/exposedInMainWorld.d.ts\" && dts-cb -i \"packages/preload-webview/tsconfig.json\" -o \"packages/preload-webview/exposedInWebview.d.ts\"",
     "build:renderer": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite -c packages/renderer/vite.config.js build",
@@ -35,6 +36,7 @@
     "test:unit:coverage": "pnpm run test:unit --coverage",
     "test:main": "vitest --run --project=main --passWithNoTests",
     "test:preload": "vitest --run --project=preload --passWithNoTests",
+    "test:mcp-setup": "vitest --run --project=mcp-setup --passWithNoTests",
     "test:preload-webview": "vitest --run --project=preload-webview",
     "test:extensions": "vitest --run --project=extensions --passWithNoTests",
     "test:renderer": "pnpm run build:preload:types && vitest --run --project=renderer --passWithNoTests",
@@ -134,6 +136,7 @@
     "xvfb-maybe": "^0.2.1"
   },
   "dependencies": {
+    "mcp-setup": "workspace:*",
     "@docker/extension-api-client-types": "0.4.2",
     "@kubernetes/client-node": "^1.3.0",
     "@modelcontextprotocol/sdk": "^1.18.1",

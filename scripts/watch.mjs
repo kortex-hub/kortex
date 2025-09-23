@@ -183,6 +183,26 @@ const setupExtensionApiWatcher = name => {
   spawnProcess.on('exit', process.exit);
 };
 
+/**
+ * Watch mcp-setup package
+ */
+const setupMCPSetupWatcher = () => {
+  const spawnProcess = spawn('pnpm', ['watch'], {
+    cwd: resolve('packages', 'mcp-setup'),
+    shell: process.platform === 'win32',
+  });
+
+  spawnProcess.stdout.on('data', d => d.toString().trim() && console.warn(d.toString(), { timestamp: true }));
+  spawnProcess.stderr.on('data', d => {
+    const data = d.toString().trim();
+    if (!data) return;
+    console.error(data, { timestamp: true });
+  });
+
+  // Stops the watch script when the application has been quit
+  spawnProcess.on('exit', process.exit);
+};
+
 (async () => {
   try {
     const extensions = [];
@@ -227,6 +247,7 @@ const setupExtensionApiWatcher = name => {
     }
     await setupPreloadPackageWatcher(viteDevServer);
     await setupPreloadWebviewPackageWatcher(viteDevServer);
+    await setupMCPSetupWatcher();
     await setupMainPackageWatcher(viteDevServer);
   } catch (e) {
     console.error(e);

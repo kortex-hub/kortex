@@ -26,6 +26,7 @@ import type { HttpsOptions, OptionsOfTextResponseBody } from 'got';
 import { HttpProxyAgent, HttpsProxyAgent } from 'hpagent';
 import { inject, injectable } from 'inversify';
 import type { components } from 'mcp-registry';
+import { getMCPSpawner } from 'mcp-setup';
 
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { IConfigurationNode, IConfigurationRegistry } from '/@api/configuration/models.js';
@@ -49,6 +50,9 @@ interface RemoteStorageConfigFormat {
 interface PackageStorageConfigFormat {
   serverId: string;
   packageId: number;
+  packageArguments: { [key: number]: string };
+  runtimeArguments: { [key: number]: string };
+  environmentVariables: { [key: string]: string };
 }
 
 type StorageConfigFormat = RemoteStorageConfigFormat | PackageStorageConfigFormat;
@@ -207,7 +211,31 @@ export class MCPRegistry {
           );
         } else {
           // dealing with package config
-          throw new Error('not yet supported');
+          // TODO: improve this lot of copy paste from above => we should definitely not start it on startup
+          const pack = server.packages?.[config.packageId];
+          if (!pack) {
+            continue;
+          }
+
+          // client already exists ?
+          const existingServers = await this.mcpManager.listMCPRemoteServers();
+          const existing = existingServers.find(srv => srv.id.includes(server.id ?? 'unknown'));
+          if (existing) {
+            console.log(`[MCPRegistry] MCP client for server ${server.id} already exists, skipping`);
+            continue;
+          }
+
+          const transport = await this.setupPackage(pack, config);
+          await this.mcpManager.registerMCPClient(
+            INTERNAL_PROVIDER_ID,
+            server.id,
+            'package',
+            config.packageId,
+            server.name,
+            transport,
+            undefined,
+            server.description,
+          );
         }
       }
     });
@@ -351,10 +379,24 @@ export class MCPRegistry {
             Object.entries(options.headers).map(([key, response]) => [key, this.format(response)]),
           ),
         };
-        transport = this.setupRemote(serverDetail.remotes?.[options.index], config.headers);
+        transport = await this.setupRemote(serverDetail.remotes?.[options.index], config.headers);
         break;
       case 'package':
-        throw new Error('not implemented yet');
+        config = {
+          packageId: options.index,
+          serverId: serverDetail.id,
+          runtimeArguments: Object.fromEntries(
+            Object.entries(options.runtimeArguments).map(([key, response]) => [key, this.format(response)]),
+          ),
+          packageArguments: Object.fromEntries(
+            Object.entries(options.packageArguments).map(([key, response]) => [key, this.format(response)]),
+          ),
+          environmentVariables: Object.fromEntries(
+            Object.entries(options.environmentVariables).map(([key, response]) => [key, this.format(response)]),
+          ),
+        };
+        transport = await this.setupPackage(serverDetail.packages?.[options.index], config);
+        break;
       default:
         throw new Error('invalid options type for setupMCPServer');
     }
@@ -386,10 +428,10 @@ export class MCPRegistry {
     return template;
   }
 
-  protected setupRemote(
+  protected async setupRemote(
     remote: components['schemas']['Remote'] | undefined,
     headers: Record<string, string>,
-  ): Transport {
+  ): Promise<Transport> {
     if (!remote) throw new Error('remote not found');
 
     /**
@@ -405,6 +447,35 @@ export class MCPRegistry {
         headers: headers,
       },
     });
+  }
+
+  protected async setupPackage(
+    pack: components['schemas']['Package'] | undefined,
+    config: PackageStorageConfigFormat,
+  ): Promise<Transport> {
+    if (!pack) throw new Error('package not found');
+
+    const resolved: components['schemas']['Package'] = {
+      ...pack,
+      runtime_arguments: (pack.runtime_arguments ?? []).map((argument, index) => ({
+        ...argument,
+        value: config.runtimeArguments[index],
+        variables: undefined,
+      })),
+      package_arguments: (pack.package_arguments ?? []).map((argument, index) => ({
+        ...argument,
+        value: config.packageArguments[index],
+        variables: undefined,
+      })),
+      environment_variables: (pack.environment_variables ?? []).map(argument => ({
+        ...argument,
+        value: config.environmentVariables[argument.name],
+        variables: undefined,
+      })),
+    };
+
+    const spawner = getMCPSpawner(resolved);
+    return spawner.spawn();
   }
 
   public async getCredentials(
