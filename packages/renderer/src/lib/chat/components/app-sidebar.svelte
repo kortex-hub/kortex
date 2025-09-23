@@ -43,7 +43,11 @@ const context = useSidebar();
 								class="h-fit p-2"
 								onclick={(): void => {
 									context.setOpenMobile(false);
-									router.goto('/');
+									if ($router.path === '/') {
+										router.goto('/chat');
+									} else {
+										router.goto('/');
+									}
 								}}
 							>
 								<PlusIcon />
