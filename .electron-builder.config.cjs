@@ -160,12 +160,12 @@ const config = {
     branch: 'main',
     files: [
       ['.flatpak-appdata.xml', '/share/metainfo/dev.kortex.Kortex.metainfo.xml'],
-      ['buildResources/icon-512x512.png', '/share/icons/hicolor/512x512/apps/io.podman_desktop.PodmanDesktop.png'],
+      ['buildResources/icon-1024x1024.png', '/share/icons/hicolor/1024x1024/apps/io.podman_desktop.PodmanDesktop.png'],
     ],
   },
   linux: {
     category: 'Development',
-    icon: './buildResources/icon-512x512.png',
+    icon: './buildResources/icon-1024x1024.png',
     target: ['flatpak', { target: 'tar.gz', arch: ['x64', 'arm64'] }],
   },
   mac: {
