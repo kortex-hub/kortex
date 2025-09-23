@@ -3,6 +3,7 @@ import type { components } from '@kortex-hub/mcp-registry-types';
 import { Input } from '@podman-desktop/ui-svelte';
 
 import Markdown from '/@/lib/markdown/Markdown.svelte';
+import FileInput from '/@/lib/ui/FileInput.svelte';
 import PasswordInput from '/@/lib/ui/PasswordInput.svelte';
 
 interface Props {
@@ -43,8 +44,23 @@ function onSelectChange(
         <option value={choice} selected={object.value === choice}>{choice}</option>
       {/each}
     </select>
+  {:else if object.format === 'filepath'}
+    <FileInput
+      options={{
+        selectors: ['openDirectory', 'openFile'],
+      }}
+      value={object.value}
+      onChange={onChange}
+      readonly={readonly}
+      clearable={true} />
   {:else}
-    <Input value={object.value} oninput={onInput} class="mb-2 w-full" placeholder={placeholder} required={object.isRequired} readonly={readonly} />
+    <Input
+      value={object.value}
+      oninput={onInput}
+      class="mb-2 w-full"
+      placeholder={placeholder}
+      required={object.isRequired}
+      readonly={readonly} />
   {/if}
 </div>
 
