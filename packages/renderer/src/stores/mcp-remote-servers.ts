@@ -17,11 +17,23 @@
  ***********************************************************************/
 
 import type { Writable } from 'svelte/store';
-import { writable } from 'svelte/store';
+import { derived, writable } from 'svelte/store';
 
+import { findMatchInLeaves } from '/@/stores/search-util';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 export const mcpRemoteServerInfos: Writable<readonly MCPRemoteServerInfo[]> = writable([]);
+
+export const mcpRemoteServerInfoSearchPattern = writable('');
+
+export const filteredMcpRemoteServerInfos = derived(
+  [mcpRemoteServerInfos, mcpRemoteServerInfoSearchPattern],
+  ([$mcpRemoteServerInfos, $mcpRemoteServerInfoSearchPattern]) => {
+    return $mcpRemoteServerInfoSearchPattern.trim().length
+      ? $mcpRemoteServerInfos.filter(server => findMatchInLeaves(server, $mcpRemoteServerInfoSearchPattern))
+      : $mcpRemoteServerInfos;
+  },
+);
 
 export async function fetchMcpRemoteServers(): Promise<void> {
   const data = await window.fetchMcpRemoteServers();

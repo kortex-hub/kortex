@@ -1,8 +1,11 @@
 <script lang="ts">
-import { Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
+import { FilteredEmptyScreen, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 import SimpleColumn from '@podman-desktop/ui-svelte/TableSimpleColumn';
 
-import { mcpRegistriesServerInfos } from '/@/stores/mcp-registry-servers';
+import {
+  filteredMcpRegistriesServerInfos,
+  mcpRegistriesServerInfosSearchPattern,
+} from '/@/stores/mcp-registry-servers';
 import type { MCPServerDetail } from '/@api/mcp/mcp-server-info';
 
 import McpIcon from '../images/MCPIcon.svelte';
@@ -10,17 +13,29 @@ import { MCPServerDescriptionColumn } from './mcp-server-columns';
 import McpEmptyScreen from './MCPRegistryEmptyScreen.svelte';
 import McpServerListActions from './MCPServerRegistryListActions.svelte';
 
+interface Props {
+  filter?: string;
+}
+
+let { filter = $bindable() }: Props = $props();
+
 type SelectableMCPRegistryServerDetailUI = MCPServerDetail & {
   selected?: boolean;
 };
 
+$effect(() => {
+  mcpRegistriesServerInfosSearchPattern.set(filter ?? '');
+});
+
 const servers: SelectableMCPRegistryServerDetailUI[] = $derived(
-  $mcpRegistriesServerInfos.map(
-    (server): SelectableMCPRegistryServerDetailUI => ({
-      ...server,
-      selected: false,
-    }),
-  ),
+  $filteredMcpRegistriesServerInfos
+    .map(
+      (server): SelectableMCPRegistryServerDetailUI => ({
+        ...server,
+        selected: false,
+      }),
+    )
+    .filter(server => server.name.toLowerCase().includes(filter?.toLowerCase() ?? '')),
 );
 
 let table: Table<SelectableMCPRegistryServerDetailUI>;
@@ -52,11 +67,15 @@ const row = new TableRow<MCPServerDetail>({});
 </script>
 
       {#if servers.length === 0}
+        {#if filter}
+        <FilteredEmptyScreen icon={McpIcon} kind="MCP Servers" bind:searchTerm={filter}/>
+        {:else}
         <McpEmptyScreen />
+        {/if}
       {:else}
 
     <Table
-      kind="volume"
+      kind="mcpServer"
       bind:this={table}
       data={servers}
       columns={columns}

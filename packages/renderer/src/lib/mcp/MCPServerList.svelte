@@ -16,9 +16,11 @@ const { tab }: Props = $props();
 let selectedTab = $state<'READY' | 'INSTALLABLE' | 'REGISTRIES-EDITING'>(
   (tab ?? $mcpRemoteServerInfos.length) ? 'READY' : 'INSTALLABLE',
 );
+
+let searchTerm = $state('');
 </script>
 
-<NavPage searchEnabled={false} title="MCP servers">
+<NavPage bind:searchTerm={searchTerm} title="MCP servers">
     {#snippet tabs()}
     <Button type="tab" on:click={(): string => selectedTab = 'READY'} selected={selectedTab === 'READY'}
       >Ready</Button>
@@ -31,9 +33,9 @@ let selectedTab = $state<'READY' | 'INSTALLABLE' | 'REGISTRIES-EDITING'>(
   {#snippet content()}
   <div class="flex min-w-full h-full">
       {#if selectedTab === 'READY'}
-        <McpServerListRemoteReady />
+        <McpServerListRemoteReady bind:filter={searchTerm}/>
       {:else if selectedTab === 'INSTALLABLE'}
-        <McpServerListRegistryInstall />
+        <McpServerListRegistryInstall bind:filter={searchTerm}/>
       {:else if selectedTab === 'REGISTRIES-EDITING'}
         <McpRegistriesEditing />
         {/if}

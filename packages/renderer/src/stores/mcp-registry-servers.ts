@@ -17,11 +17,25 @@
  ***********************************************************************/
 
 import type { Writable } from 'svelte/store';
-import { writable } from 'svelte/store';
+import { derived, writable } from 'svelte/store';
 
+import { findMatchInLeaves } from '/@/stores/search-util';
 import type { MCPServerDetail } from '/@api/mcp/mcp-server-info';
 
 export const mcpRegistriesServerInfos: Writable<readonly MCPServerDetail[]> = writable([]);
+
+export const mcpRegistriesServerInfosSearchPattern = writable('');
+
+export const filteredMcpRegistriesServerInfos = derived(
+  [mcpRegistriesServerInfosSearchPattern, mcpRegistriesServerInfos],
+  ([$mcpRegistriesServerInfosSearchPattern, $mcpRegistriesServerInfos]) => {
+    return $mcpRegistriesServerInfosSearchPattern.trim().length
+      ? $mcpRegistriesServerInfos.filter(registry =>
+          findMatchInLeaves(registry, $mcpRegistriesServerInfosSearchPattern),
+        )
+      : $mcpRegistriesServerInfos;
+  },
+);
 
 export async function fetchMcpRegistryServers(): Promise<void> {
   const registries = await window.getMcpRegistryServers();
