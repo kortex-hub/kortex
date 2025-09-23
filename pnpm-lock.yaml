@@ -499,7 +499,7 @@ importers:
   packages/renderer:
     dependencies:
       '@ai-sdk/svelte':
-        specifier: ^3.0.48
+        specifier: ^3.0.49
         version: 3.0.60(svelte@5.39.9)(zod@3.25.76)
       '@ai-sdk/ui-utils':
         specifier: ^1.2.11
