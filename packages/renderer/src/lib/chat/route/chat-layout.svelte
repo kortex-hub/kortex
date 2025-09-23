@@ -11,6 +11,6 @@ data.selectedChatModel.setContext();
 </script>
 
 <SidebarProvider open={!data.sidebarCollapsed}>
-	<AppSidebar user={data.user} />
+	<AppSidebar />
 	<SidebarInset>{@render children?.()}</SidebarInset>
 </SidebarProvider>
