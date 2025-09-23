@@ -18,4 +18,25 @@
 
 import type { components } from 'mcp-registry';
 
-export type MCPTarget = (components['schemas']['Remote'] | components['schemas']['Package']) & { index: number };
+import type { InputWithVariableResponse } from '/@api/mcp/mcp-setup';
+
+/**
+ * This function takes as argument a {@link components['schemas']['InputWithVariables']} and generate a {@link InputWithVariableResponse}
+ * It will fill all default value or default to empty string if not defined
+ * @param input
+ */
+export function createInputWithVariables(
+  input: components['schemas']['InputWithVariables'],
+): InputWithVariableResponse {
+  return {
+    value: input.value ?? input.default ?? '',
+    variables: Object.fromEntries(
+      Object.entries(input.variables ?? {}).map(([key, variable]) => [
+        key,
+        {
+          value: variable.value ?? variable.default ?? '',
+        },
+      ]),
+    ),
+  };
+}
