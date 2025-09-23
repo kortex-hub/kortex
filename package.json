@@ -163,7 +163,7 @@
     "electron-context-menu": "4.1.1",
     "electron-updater": "6.6.8",
     "electron-util": "^1.0.0",
-    "drizzle-orm": "^0.44.4",
+    "drizzle-orm": "^0.44.5",
     "express": "^4.21.2",
     "getos": "^3.2.1",
     "got": "^14.4.7",
