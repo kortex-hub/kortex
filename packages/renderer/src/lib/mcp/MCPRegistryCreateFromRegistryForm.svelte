@@ -41,6 +41,7 @@ async function submit(options: MCPSetupOptions): Promise<void> {
     loading = true;
     error = undefined;
     await window.setupMCP(serverId, options);
+    return navigateToMcps();
   } catch (err: unknown) {
     error = String(err);
   } finally {
