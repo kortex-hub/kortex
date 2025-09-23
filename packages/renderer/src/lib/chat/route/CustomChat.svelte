@@ -22,16 +22,9 @@ const chatsPromise = window.inferenceGetChats();
 const chatHistory = new ChatHistory(chatsPromise);
 chatHistory.setContext();
 
-const dataPromise = $derived(async () => {
-  const chats = await chatsPromise;
-
-  const base = { chats };
-  if (chatId) {
-    const chatMessages = await window.inferenceGetChatMessagesById(chatId);
-    return { ...base, chatMessages };
-  }
-  return Promise.resolve(base);
-});
+const chatMessagesPromise = $derived(
+  chatId ? window.inferenceGetChatMessagesById(chatId) : Promise.resolve({ chat: undefined, messages: [] }),
+);
 
 let selectedChatModel: SelectedModel | undefined = $state(undefined);
 
@@ -46,13 +39,13 @@ onMount(() => {
 <div class="flex h-full w-full">
 <ThemeProvider attribute="class" disableTransitionOnChange >
 	<Toaster position="top-center" />
-  {#await dataPromise()}
+  {#await chatMessagesPromise}
     Loading
-  {:then data} 
+  {:then { chat, messages }} 
     <SidebarProvider open={!$sidebarCollapsed} onOpenChange={(open: boolean): void => sidebarCollapsed.set(!open)}>
       <AppSidebar {chatId} />
       <SidebarInset>
-        <Chat chat={'chatMessages' in data ? data.chatMessages?.chat ?? undefined : undefined} initialMessages={'chatMessages' in data ? convertToUIMessages(data.chatMessages.messages) : []} readonly={false}  />
+        <Chat {chat} initialMessages={convertToUIMessages(messages)} readonly={false} />
       </SidebarInset>
     </SidebarProvider>
   {/await}

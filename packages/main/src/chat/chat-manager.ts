@@ -109,19 +109,19 @@ export class ChatManager {
     );
   }
 
-  private async getChatMessagesById(id: string): Promise<{ chat: Chat | null; messages: Message[] }> {
+  private async getChatMessagesById(id: string): Promise<{ chat: Chat | undefined; messages: Message[] }> {
     return (await this.chatQueries.getMessagesByChatId({ id })).match(
       async messages => {
         const chat = (await this.chatQueries.getChatById({ id })).match(
           chat => chat,
-          err => {
-            throw err;
+          () => {
+            return undefined;
           },
         );
         return { chat, messages };
       },
-      err => {
-        throw err;
+      () => {
+        return { chat: undefined, messages: [] };
       },
     );
   }
