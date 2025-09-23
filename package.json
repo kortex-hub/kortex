@@ -50,7 +50,7 @@
     "lint:check": "node --max-old-space-size=8192 node_modules/eslint/bin/eslint.js --cache . --cache-strategy content",
     "svelte:check": "svelte-check --ignore \"packages/ui/dist,packages/renderer/src/lib/ui/DetailsPage.svelte,packages/renderer/src/lib/ui/EngineFormPage.svelte,packages/renderer/src/lib/ui/FormPage.svelte,storybook\"",
     "typecheck:extension-api": "tsc --noEmit -p packages/extension-api/tsconfig.json",
-    "typecheck:main": "tsc --noEmit -p packages/main/tsconfig.json",
+    "typecheck:main": "pnpm run build:mcp-setup && tsc --noEmit -p packages/main/tsconfig.json",
     "typecheck:preload": "tsc --noEmit -p packages/preload/tsconfig.json",
     "typecheck:preload-webview": "tsc --noEmit -p packages/preload-webview/tsconfig.json",
     "typecheck:renderer": "pnpm run build:preload:types && tsc --noEmit -p packages/renderer/tsconfig.json",
