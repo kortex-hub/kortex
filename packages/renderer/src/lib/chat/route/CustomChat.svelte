@@ -22,7 +22,9 @@ const chatsPromise = window.inferenceGetChats();
 const chatHistory = new ChatHistory(chatsPromise);
 chatHistory.setContext();
 
-const chatMessagesPromise = $derived(chatId ? window.inferenceGetChatMessagesById(chatId) : Promise.resolve(undefined));
+const chatMessagesPromise = $derived(
+  chatId ? window.inferenceGetChatMessagesById(chatId) : Promise.resolve({ chat: undefined, messages: [] }),
+);
 
 let selectedChatModel: SelectedModel | undefined = $state(undefined);
 
@@ -39,11 +41,11 @@ onMount(() => {
 	<Toaster position="top-center" />
   {#await chatMessagesPromise}
     Loading
-  {:then chatMessages} 
+  {:then { chat, messages }} 
     <SidebarProvider open={!$sidebarCollapsed} onOpenChange={(open: boolean): void => sidebarCollapsed.set(!open)}>
       <AppSidebar {chatId} />
       <SidebarInset>
-        <Chat chat={chatMessages?.chat ?? undefined} initialMessages={chatMessages?.messages ? convertToUIMessages(chatMessages.messages) : []} readonly={false}  />
+        <Chat {chat} initialMessages={convertToUIMessages(messages)} readonly={false} />
       </SidebarInset>
     </SidebarProvider>
   {/await}

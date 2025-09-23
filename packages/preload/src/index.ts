@@ -1123,7 +1123,7 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld(
     'inferenceGetChatMessagesById',
-    async (chatId: string): Promise<{ chat: Chat | null; messages: Message[] }> => {
+    async (chatId: string): Promise<{ chat: Chat | undefined; messages: Message[] }> => {
       return ipcInvoke('inference:getChatMessagesById', chatId);
     },
   );
