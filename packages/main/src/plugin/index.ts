@@ -779,7 +779,7 @@ export class PluginSystem {
     const authentication = container.get<AuthenticationImpl>(AuthenticationImpl);
     const imageRegistry = container.get<ImageRegistry>(ImageRegistry);
     const mcpRegistry = container.get<MCPRegistry>(MCPRegistry);
-    await mcpRegistry.init();
+    mcpRegistry.init();
 
     await this.setupSecurityRestrictionsOnLinks(messageBox);
 

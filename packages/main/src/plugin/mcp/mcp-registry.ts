@@ -128,10 +128,10 @@ export class MCPRegistry {
     return { ...server, id };
   }
 
-  async init(): Promise<void> {
+  init(): void {
     console.log('[MCPRegistry] init');
     this.safeStorage = this.safeStorageRegistry.getCoreStorage();
-    await this.loadRegistriesFromConfig();
+    this.loadRegistriesFromConfig();
 
     this.onDidRegisterRegistry(async registry => {
       const configurations = await this.getConfigurations();
@@ -206,9 +206,7 @@ export class MCPRegistry {
       return Disposable.noop();
     }
     this.registries = [...this.registries, registry];
-    this.saveRegistriesToConfig().catch((error: unknown) => {
-      console.error('[MCPRegistry] Failed to save registries after registration:', error);
-    });
+    this.saveRegistriesToConfig();
     this.telemetryService.track('registerRegistry', {
       serverUrl: this.getRegistryHash(registry),
       total: this.registries.length,
@@ -261,9 +259,7 @@ export class MCPRegistry {
     if (filtered.length !== this.registries.length) {
       this._onDidUnregisterRegistry.fire(Object.freeze({ ...registry }));
       this.registries = filtered;
-      this.saveRegistriesToConfig().catch((error: unknown) => {
-        console.error('[MCPRegistry] Failed to save registries after unregistration:', error);
-      });
+      this.saveRegistriesToConfig();
       this.apiSender.send('mcp-registry-unregister', registry);
     }
     this.telemetryService.track('unregisterMCPRegistry', {
@@ -549,11 +545,11 @@ export class MCPRegistry {
     return options;
   }
 
-  private async loadRegistriesFromConfig(): Promise<void> {
+  private loadRegistriesFromConfig(): void {
     this.registries = this.configuration.get<kortexAPI.MCPRegistry[]>('registries') ?? [];
   }
 
-  private async saveRegistriesToConfig(): Promise<void> {
-    return this.configuration.update('registries', this.registries);
+  private saveRegistriesToConfig(): void {
+    this.configuration.update('registries', this.registries).catch(console.error);
   }
 }
