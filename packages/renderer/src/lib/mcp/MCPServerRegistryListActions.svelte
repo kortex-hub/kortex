@@ -19,12 +19,8 @@ function createRegistry(): void {
 }
 </script>
 
-{#if (object.remotes?.length ?? 0) > 0}
-
- <ListItemButtonIcon
-    title="Install Remote server"
-    icon={faPlusCircle}
-    onClick={createRegistry}
-    />
-
-{/if}
+<ListItemButtonIcon
+  title="Install Remote server"
+  icon={faPlusCircle}
+  onClick={createRegistry}
+/>
