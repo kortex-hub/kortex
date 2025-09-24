@@ -8,7 +8,7 @@ export interface FlowCreationData {
 }
 
 /**
- * A writable store to temporarily hold the data for a new flow
+ * A state to temporarily hold the data for a new flow
  * when navigating from a chat session to the creation page.
  * It's set to `undefined` after being read to prevent stale data.
  */
