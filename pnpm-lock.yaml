@@ -357,7 +357,7 @@ importers:
   extensions/gemini:
     dependencies:
       '@ai-sdk/google':
-        specifier: ^2.0.15
+        specifier: ^2.0.16
         version: 2.0.17(zod@3.25.76)
       '@kortex-app/api':
         specifier: workspace:*
