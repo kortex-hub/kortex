@@ -2189,7 +2189,7 @@ export class PluginSystem {
     this.ipcHandle(
       'mcp-registry:unregisterMCPRegistry',
       async (_listener, registry: containerDesktopAPI.MCPRegistry): Promise<void> => {
-        return mcpRegistry.unregisterMCPRegistry(registry);
+        return mcpRegistry.unregisterMCPRegistry(registry, true);
       },
     );
 
