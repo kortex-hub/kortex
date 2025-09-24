@@ -104,22 +104,22 @@ export class MCPRegistry {
   }
 
   enhanceServerDetail(registryURL: string, server: components['schemas']['ServerDetail']): MCPServerDetail {
-    let id = '';
+    let serverId = '';
     // is there a "_meta": {
     // "io.modelcontextprotocol.registry/official": {
     // "id": "..."
     // field, use it
     if (server._meta?.['io.modelcontextprotocol.registry/official']) {
       const official = server._meta['io.modelcontextprotocol.registry/official'];
-      if (official.id) {
-        id = official.id;
+      if (official.serverId) {
+        serverId = official.serverId;
       }
     }
-    if (!id) {
+    if (!serverId) {
       const rawId = `${registryURL}::${server.name}`;
-      id = crypto.createHash('sha256').update(rawId).digest('hex');
+      serverId = crypto.createHash('sha256').update(rawId).digest('hex');
     }
-    return { ...server, id };
+    return { ...server, serverId };
   }
 
   init(): void {
@@ -138,10 +138,10 @@ export class MCPRegistry {
       const { servers } = await this.listMCPServersFromRegistry(registry.serverUrl);
       for (const rawServer of servers) {
         const server = this.enhanceServerDetail(registry.serverUrl, rawServer);
-        if (!server.id) {
+        if (!server.serverId) {
           continue;
         }
-        const config = mapping.get(server.id);
+        const config = mapping.get(server.serverId);
         if (!config) {
           continue;
         }
@@ -155,9 +155,9 @@ export class MCPRegistry {
 
           // client already exists ?
           const existingServers = await this.mcpManager.listMCPRemoteServers();
-          const existing = existingServers.find(srv => srv.id.includes(server.id ?? 'unknown'));
+          const existing = existingServers.find(srv => srv.id.includes(server.serverId ?? 'unknown'));
           if (existing) {
-            console.log(`[MCPRegistry] MCP client for server ${server.id} already exists, skipping`);
+            console.log(`[MCPRegistry] MCP client for server ${server.serverId} already exists, skipping`);
             continue;
           }
 
@@ -170,7 +170,7 @@ export class MCPRegistry {
 
           await this.mcpManager.registerMCPClient(
             INTERNAL_PROVIDER_ID,
-            server.id,
+            server.serverId,
             'remote',
             config.remoteId,
             server.name,
@@ -302,7 +302,7 @@ export class MCPRegistry {
   async setupMCPServer(serverId: string, options: MCPSetupOptions): Promise<void> {
     // Get back the server
     const serverDetails = await this.listMCPServersFromRegistries();
-    const serverDetail = serverDetails.find(server => server.id === serverId);
+    const serverDetail = serverDetails.find(server => server.serverId === serverId);
     if (!serverDetail) {
       throw new Error(`MCP server with id ${serverId} not found in remote registry`);
     }
@@ -313,7 +313,7 @@ export class MCPRegistry {
       case 'remote':
         config = {
           remoteId: options.index,
-          serverId: serverDetail.id,
+          serverId: serverDetail.serverId,
           headers: Object.fromEntries(
             Object.entries(options.headers).map(([key, response]) => [key, this.format(response)]),
           ),

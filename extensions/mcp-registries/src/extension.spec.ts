@@ -40,7 +40,7 @@ test('activate is registering 1 registry', async () => {
   // should be called with the right parameters
   expect(vi.mocked(extensionApi.mcpRegistry.suggestRegistry)).toHaveBeenCalledWith({
     name: 'MCP Registry example',
-    url: 'https://kortex-hub.github.io/mcp-registry-online-v1.0.0',
+    url: 'https://kortex-hub.github.io/mcp-registry-online-v1.1.0',
     icon: '/src/images/quay.io.png',
   });
 

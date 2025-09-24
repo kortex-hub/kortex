@@ -86,10 +86,10 @@ function onHeaderVariableChange(header: string, variable: string, value: string)
         </div>
       </div>
       <div class="flex flex-col">
-        {#if object.transport_type}
-          <label for="server-url" class="text-base font-bold text-[var(--pd-content-card-header-text)] mb-1">Transport type</label>
+        {#if object.type}
+          <label for="server-url" class="text-base font-bold text-[var(--pd-content-card-header-text)] mb-1">Type</label>
           <div class="flex items-center bg-[var(--pd-label-bg)] p-1 rounded-md text-sm text-[var(--pd-label-text)] gap-x-1 w-min  px-2 py-1">
-            {object.transport_type}
+            {object.type}
           </div>
         {/if}
       </div>
@@ -109,7 +109,7 @@ function onHeaderVariableChange(header: string, variable: string, value: string)
       {#each object.headers as header (header.name)}
         <div class="border-2 border-dashed rounded-md p-4">
 
-          <label for="header-{header.name}" class="text-xl font-bold text-[var(--pd-content-card-header-text)]">{header.name} {header.is_required ? '*' : ''}</label>
+          <label for="header-{header.name}" class="text-xl font-bold text-[var(--pd-content-card-header-text)]">{header.name} {header.isRequired ? '*' : ''}</label>
           <InputArgumentWithVariables
             onChange={onHeaderChange.bind(undefined, header.name)}
             onVariableChange={onHeaderVariableChange.bind(undefined, header.name)}

@@ -20,7 +20,7 @@ let loading: boolean = $state(false);
 let error: string | undefined = $state(undefined);
 
 const mcpRegistryServerDetail: components['schemas']['ServerDetail'] | undefined = $derived(
-  $mcpRegistriesServerInfos.find(server => server.id === serverId),
+  $mcpRegistriesServerInfos.find(server => server.serverId === serverId),
 );
 
 let targets: Array<MCPTarget> = $derived([

@@ -35,7 +35,7 @@ function onSelectChange(
 
 <Markdown markdown={object.description} />
 <div class="flex flex-row items-center gap-x-2">
-  {#if object.is_secret}
+  {#if object.isSecret}
     <PasswordInput oninput={onInput} password={object.value} readonly={readonly} placeholder={placeholder} />
   {:else if choices.length > 0}
     <select disabled={readonly} value={object.value} onchange={onSelectChange}>
@@ -44,7 +44,7 @@ function onSelectChange(
       {/each}
     </select>
   {:else}
-    <Input value={object.value} oninput={onInput} class="mb-2 w-full" placeholder={placeholder} required={object.is_required} readonly={readonly} />
+    <Input value={object.value} oninput={onInput} class="mb-2 w-full" placeholder={placeholder} required={object.isRequired} readonly={readonly} />
   {/if}
 </div>
 
