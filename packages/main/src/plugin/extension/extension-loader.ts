@@ -1000,7 +1000,7 @@ export class ExtensionLoader implements AsyncDisposable {
     const mcpRegistryInstance = this.mcpRegistry;
     const mcpRegistry: typeof containerDesktopAPI.mcpRegistry = {
       registerRegistry: (registry: containerDesktopAPI.MCPRegistry): Disposable => {
-        return mcpRegistryInstance.registerMCPRegistry(registry);
+        return mcpRegistryInstance.registerMCPRegistry(registry, false);
       },
 
       suggestRegistry: (registry: containerDesktopAPI.MCPRegistrySuggestedProvider): Disposable => {
@@ -1008,7 +1008,7 @@ export class ExtensionLoader implements AsyncDisposable {
       },
 
       unregisterRegistry: (registry: containerDesktopAPI.MCPRegistry): void => {
-        mcpRegistryInstance.unregisterMCPRegistry(registry);
+        mcpRegistryInstance.unregisterMCPRegistry(registry, false);
       },
 
       onDidUpdateRegistry: (listener, thisArg, disposables) => {

@@ -28,6 +28,7 @@ import { inject, injectable } from 'inversify';
 import type { components } from 'mcp-registry';
 
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
+import { IConfigurationNode, IConfigurationRegistry } from '/@api/configuration/models.js';
 import { MCPServerDetail } from '/@api/mcp/mcp-server-info.js';
 import { InputWithVariableResponse, MCPSetupOptions } from '/@api/mcp/mcp-setup.js';
 
@@ -52,13 +53,18 @@ interface PackageStorageConfigFormat {
 
 type StorageConfigFormat = RemoteStorageConfigFormat | PackageStorageConfigFormat;
 
+type InternalMCPRegistry = kortexAPI.MCPRegistry & { save: boolean };
+
 const STORAGE_KEY = 'mcp:registry:configurations';
 export const INTERNAL_PROVIDER_ID = 'internal';
+
+const MCP_SECTION_NAME = 'mcp';
+const MCP_REGISTRIES = 'registries';
 
 // Definition of all MCP registries (MCP registry is an URL serving MCP providers it implements the MCP registry protocol)
 @injectable()
 export class MCPRegistry {
-  private registries: kortexAPI.MCPRegistry[] = [];
+  private registries: InternalMCPRegistry[] = [];
   private suggestedRegistries: kortexAPI.RegistrySuggestedProvider[] = [];
   private providers: Map<string, kortexAPI.MCPRegistryProvider> = new Map();
 
@@ -75,6 +81,8 @@ export class MCPRegistry {
 
   private safeStorage: SecretStorage | undefined = undefined;
 
+  private configuration: kortexAPI.Configuration;
+
   constructor(
     @inject(ApiSenderType)
     private apiSender: ApiSenderType,
@@ -88,6 +96,8 @@ export class MCPRegistry {
     private mcpManager: MCPManager,
     @inject(SafeStorageRegistry)
     private safeStorageRegistry: SafeStorageRegistry,
+    @inject(IConfigurationRegistry)
+    private configurationRegistry: IConfigurationRegistry,
   ) {
     this.proxy.onDidUpdateProxy(settings => {
       this.proxySettings = settings;
@@ -101,6 +111,22 @@ export class MCPRegistry {
     if (this.proxyEnabled) {
       this.proxySettings = this.proxy.proxy;
     }
+
+    const mcpRegistriesConfiguration: IConfigurationNode = {
+      id: 'preferences.mcp',
+      title: 'MCP',
+      type: 'object',
+      properties: {
+        [`${MCP_SECTION_NAME}.${MCP_REGISTRIES}`]: {
+          description: 'MCP registries',
+          type: 'array',
+          hidden: true,
+        },
+      },
+    };
+    this.configurationRegistry.registerConfigurations([mcpRegistriesConfiguration]);
+
+    this.configuration = this.configurationRegistry.getConfiguration(MCP_SECTION_NAME);
   }
 
   enhanceServerDetail(registryURL: string, server: components['schemas']['ServerDetail']): MCPServerDetail {
@@ -125,6 +151,7 @@ export class MCPRegistry {
   init(): void {
     console.log('[MCPRegistry] init');
     this.safeStorage = this.safeStorageRegistry.getCoreStorage();
+    this.loadRegistriesFromConfig();
 
     this.onDidRegisterRegistry(async registry => {
       const configurations = await this.getConfigurations();
@@ -190,7 +217,7 @@ export class MCPRegistry {
     return crypto.createHash('sha512').update(registry.serverUrl).digest('hex');
   }
 
-  registerMCPRegistry(registry: kortexAPI.MCPRegistry): Disposable {
+  registerMCPRegistry(registry: kortexAPI.MCPRegistry, save: boolean): Disposable {
     console.log(`[MCPRegistry] registerMCPRegistry ${registry.serverUrl}`);
     const found = this.registries.find(reg => reg.serverUrl === registry.serverUrl);
     if (found) {
@@ -198,7 +225,10 @@ export class MCPRegistry {
       console.log('Registry already registered, skipping registration');
       return Disposable.noop();
     }
-    this.registries = [...this.registries, registry];
+    this.registries = [...this.registries, { ...registry, save }];
+    if (save) {
+      this.saveRegistriesToConfig();
+    }
     this.telemetryService.track('registerRegistry', {
       serverUrl: this.getRegistryHash(registry),
       total: this.registries.length,
@@ -206,7 +236,7 @@ export class MCPRegistry {
     this.apiSender.send('mcp-registry-register', registry);
     this._onDidRegisterRegistry.fire(Object.freeze({ ...registry }));
     return Disposable.create(() => {
-      this.unregisterMCPRegistry(registry);
+      this.unregisterMCPRegistry(registry, save);
     });
   }
 
@@ -246,11 +276,14 @@ export class MCPRegistry {
     this.apiSender.send('mcp-registry-update', registry);
   }
 
-  unregisterMCPRegistry(registry: kortexAPI.MCPRegistry): void {
+  unregisterMCPRegistry(registry: kortexAPI.MCPRegistry, save: boolean): void {
     const filtered = this.registries.filter(registryItem => registryItem.serverUrl !== registry.serverUrl);
     if (filtered.length !== this.registries.length) {
       this._onDidUnregisterRegistry.fire(Object.freeze({ ...registry }));
       this.registries = filtered;
+      if (save) {
+        this.saveRegistriesToConfig();
+      }
       this.apiSender.send('mcp-registry-unregister', registry);
     }
     this.telemetryService.track('unregisterMCPRegistry', {
@@ -286,7 +319,7 @@ export class MCPRegistry {
         throw new Error(`Registry ${registryCreateOptions.serverUrl} already exists`);
       }
 
-      return this.registerMCPRegistry(registryCreateOptions);
+      return this.registerMCPRegistry(registryCreateOptions, true);
     } catch (error) {
       telemetryOptions = { error: error };
       throw error;
@@ -534,5 +567,21 @@ export class MCPRegistry {
       }
     }
     return options;
+  }
+
+  private loadRegistriesFromConfig(): void {
+    this.registries = (this.configuration.get<kortexAPI.MCPRegistry[]>(MCP_REGISTRIES) ?? []).map(registry => ({
+      ...registry,
+      save: true,
+    }));
+  }
+
+  private saveRegistriesToConfig(): void {
+    this.configuration
+      .update(
+        MCP_REGISTRIES,
+        this.registries.filter(registry => registry.save).map(registry => ({ serverUrl: registry.serverUrl })),
+      )
+      .catch(console.error);
   }
 }
