@@ -89,21 +89,18 @@ describe('OllamaExtension', () => {
   });
 
   test('should unregister and register new connection if models change', async () => {
-    let callCount = 0;
+    const models = [{ name: 'm1' }];
     const handlers = [
       http.get('http://localhost:11434/api/tags', () => {
-        callCount++;
-        if (callCount === 1) {
-          return HttpResponse.json({ models: [{ name: 'm1' }] });
-        }
-        return HttpResponse.json({ models: [{ name: 'm1' }, { name: 'm2' }] });
+        return HttpResponse.json({ models });
       }),
     ];
     server = setupServer(...handlers);
     server.listen();
     await extension.activate();
     expect(ollamaProvider.registerInferenceProviderConnection).toHaveBeenCalledTimes(1);
-    // Simulate timer
+    // Simulate timer, by calling updateModelsAndStatus directly another time with different models
+    models.push({ name: 'm2' });
     await extension.updateModelsAndStatus(ollamaProvider);
     expect(ollamaProvider.registerInferenceProviderConnection).toHaveBeenCalledTimes(2);
   });
