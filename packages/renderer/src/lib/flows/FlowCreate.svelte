@@ -7,7 +7,7 @@ import { onMount } from 'svelte';
 import MCPSelector from '/@/lib/chat/components/mcp-selector.svelte';
 import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
 import { Textarea } from '/@/lib/chat/components/ui/textarea';
-import { flowCreationData } from '/@/lib/flows/flow-creation-data.svelte';
+import { flowCreationData } from '/@/lib/chat/state/flow-creation-data.svelte';
 import { getModels } from '/@/lib/models/models-utils';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 import { handleNavigation } from '/@/navigation';
