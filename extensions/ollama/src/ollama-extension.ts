@@ -56,7 +56,9 @@ export class OllamaExtension {
     let running = true;
     try {
       const res = await fetch('http://localhost:11434/api/tags');
-      if (!res.ok) throw new Error('Ollama not running');
+      if (!res.ok) {
+        throw new Error(`HTTP error, status: ${res.status}`);
+      }
       const data = await res.json();
       models = Array.isArray(data.models) ? data.models : [];
     } catch (_err: unknown) {
@@ -95,7 +97,7 @@ export class OllamaExtension {
           name: 'ollama',
           sdk,
           status() {
-            return running ? 'started' : 'stopped';
+            return 'started';
           },
           models: models.map(model => ({ label: model.name })),
           credentials() {
