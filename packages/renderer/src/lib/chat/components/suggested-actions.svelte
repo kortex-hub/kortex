@@ -59,7 +59,7 @@ async function onclick(suggestedAction: SuggestedAction): Promise<void> {
       return [];
     }
 
-    const mcpInfo = $mcpRegistriesServerInfos.find(mcp => mcp.id === id);
+    const mcpInfo = $mcpRegistriesServerInfos.find(mcp => mcp.serverId === id);
 
     if (!mcpInfo) {
       throw Error(`Suggested action ${suggestedAction.action} requires MCP with id ${id} but it was not found.`);
@@ -83,7 +83,7 @@ async function onclick(suggestedAction: SuggestedAction): Promise<void> {
     if (selected) {
       return [];
     }
-    const mcpInfo = $mcpRegistriesServerInfos.find(mcp => mcp.id === id);
+    const mcpInfo = $mcpRegistriesServerInfos.find(mcp => mcp.serverId === id);
 
     if (!mcpInfo) {
       throw Error(`Suggested action ${suggestedAction.action} requires MCP with id ${id} but it was not found.`);

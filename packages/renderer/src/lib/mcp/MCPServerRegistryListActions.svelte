@@ -10,7 +10,7 @@ import ListItemButtonIcon from '../ui/ListItemButtonIcon.svelte';
 export let object: MCPServerDetail;
 
 function createRegistry(): void {
-  const serverId = object.id;
+  const serverId = object.serverId;
   if (!serverId) {
     console.error('No id found for MCP registry server');
     return;
