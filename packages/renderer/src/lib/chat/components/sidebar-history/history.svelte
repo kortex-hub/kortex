@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../ui/alert-dialog';
+import { Button } from '../ui/button';
 import { SidebarGroup, SidebarGroupContent, SidebarMenu } from '../ui/sidebar';
 import { Skeleton } from '../ui/skeleton';
 import ChatItem from './item.svelte';
@@ -27,6 +28,7 @@ interface Props {
 let { chatId }: Props = $props();
 const chatHistory = ChatHistory.fromContext();
 let alertDialogOpen = $state(false);
+let alertAllDialogOpen = $state(false); // New state for 'Delete All' dialog
 const groupedChats = $derived(groupChatsByDate(chatHistory.chats));
 let chatIdToDelete = $state<string | undefined>(undefined);
 
@@ -104,6 +106,23 @@ async function handleDeleteChat(): Promise<void> {
     router.goto('/');
   }
 }
+
+async function handleDeleteAllChats(): Promise<void> {
+  const deleteAllPromise = window.inferenceDeleteAllChats();
+
+  toast.promise(deleteAllPromise, {
+    loading: 'Deleting all chats...',
+    success: () => {
+      chatHistory.refetch().catch((err: unknown) => {
+        console.error('Failed to refetch chat history', err);
+      });
+      return 'All chats deleted successfully';
+    },
+    error: 'Failed to delete all chats',
+  });
+
+  alertAllDialogOpen = false;
+}
 </script>
 
 {#if chatHistory.loading}
@@ -156,6 +175,18 @@ async function handleDeleteChat(): Promise<void> {
 			</SidebarMenu>
 		</SidebarGroupContent>
 	</SidebarGroup>
+  <SidebarGroup class="mt-auto">
+    <SidebarGroupContent>
+      <Button
+        variant="ghost"
+        class="w-full text-zinc-500 hover:text-red-500"
+        onclick={(): boolean => (alertAllDialogOpen = true)}
+      >
+        Delete all chats
+      </Button>
+    </SidebarGroupContent>
+  </SidebarGroup>
+
 	<AlertDialog bind:open={alertDialogOpen}>
 		<AlertDialogContent>
 			<AlertDialogHeader>
@@ -171,4 +202,19 @@ async function handleDeleteChat(): Promise<void> {
 			</AlertDialogFooter>
 		</AlertDialogContent>
 	</AlertDialog>
+  <AlertDialog bind:open={alertAllDialogOpen}>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Delete all conversations?</AlertDialogTitle>
+        <AlertDialogDescription>
+          This action cannot be undone. This will permanently delete all of your chats.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction onclick={handleDeleteAllChats}>Continue</AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
 {/if}
+

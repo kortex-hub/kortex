@@ -1132,6 +1132,10 @@ export function initExposure(): void {
     return ipcInvoke('inference:deleteChat', chatId);
   });
 
+  contextBridge.exposeInMainWorld('inferenceDeleteAllChats', async (): Promise<undefined> => {
+    return ipcInvoke('inference:deleteAllChats');
+  });
+
   contextBridge.exposeInMainWorld('inferenceGenerate', async (params: InferenceParameters): Promise<string> => {
     return ipcInvoke('inference:generate', params);
   });

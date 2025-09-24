@@ -188,6 +188,23 @@ export class ChatQueries {
     });
   };
 
+  deleteAllChatsForUser = ({ userId }: { userId: string }): ResultAsync<void, DbError> => {
+    const db = this.db;
+    const deleteChatById = this.deleteChatById;
+    return safeTry(async function* () {
+      const chatsToDelete = yield* fromPromise(
+        db.select({ id: chat.id }).from(chat).where(eq(chat.userId, userId)),
+        e => new DbInternalError({ cause: e }),
+      );
+
+      for (const chatEntry of chatsToDelete) {
+        yield* deleteChatById({ id: chatEntry.id });
+      }
+
+      return ok();
+    });
+  };
+
   getChatsByUserId = ({ id }: { id: string }): ResultAsync<Chat[], DbError> => {
     return fromPromise(
       this.db.select().from(chat).where(eq(chat.userId, id)).orderBy(desc(chat.createdAt)),
