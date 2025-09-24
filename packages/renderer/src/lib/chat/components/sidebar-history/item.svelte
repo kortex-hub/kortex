@@ -1,7 +1,7 @@
 <script lang="ts">
 import { router } from 'tinro';
 
-import { currentChatId } from '/@/lib/chat/stores/current-chat-id.svelte.js';
+import { currentChatId } from '/@/lib/chat/state/current-chat-id.svelte';
 
 import type { Chat } from '../../../../../../main/src/chat/db/schema';
 import MoreHorizontalIcon from '../icons/more-horizontal.svelte';

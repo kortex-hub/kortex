@@ -7,7 +7,7 @@ import { onMount } from 'svelte';
 import MCPSelector from '/@/lib/chat/components/mcp-selector.svelte';
 import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
 import { Textarea } from '/@/lib/chat/components/ui/textarea';
-import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
+import { flowCreationData } from '/@/lib/chat/state/flow-creation-data.svelte';
 import { getModels } from '/@/lib/models/models-utils';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 import { handleNavigation } from '/@/navigation';
@@ -21,9 +21,9 @@ import type { ModelInfo } from '../chat/components/model-info';
 import FlowConnectionSelector from './components/flow-connection-selector.svelte';
 import NoFlowProviders from './components/NoFlowProviders.svelte';
 
-let selectedMCP = $state<MCPRemoteServerInfo[]>($flowCreationStore?.mcp ?? []);
+let selectedMCP = $state<MCPRemoteServerInfo[]>(flowCreationData.value?.mcp ?? []);
 let models: Array<ModelInfo> = $derived(getModels($providerInfos));
-let selectedModel = $derived<ModelInfo | undefined>($flowCreationStore?.model ?? models[0]);
+let selectedModel = $derived<ModelInfo | undefined>(flowCreationData.value?.model ?? models[0]);
 
 // error
 let error: string | undefined = $state();
@@ -33,9 +33,9 @@ let loading: boolean = $state(false);
 let name: string = $state(`flow-${generateWords({ exactly: 2, join: '-' })}`);
 let description: string = $state('');
 let instruction: string = $state('You are a helpful assistant.');
-let prompt: string = $state($flowCreationStore?.prompt ?? '');
+let prompt: string = $state(flowCreationData.value?.prompt ?? '');
 let flowProviderConnectionKey: string | undefined = $state<string>();
-flowCreationStore.set(undefined);
+flowCreationData.value = undefined;
 
 let showFlowConnectionSelector = $state(true);
 

@@ -2,7 +2,7 @@
 import { type Chat } from '@ai-sdk/svelte';
 import { toast } from 'svelte-sonner';
 
-import { flowCreationStore } from '/@/lib/flows/flowCreationStore';
+import { flowCreationData } from '/@/lib/chat/state/flow-creation-data.svelte';
 import { handleNavigation } from '/@/navigation';
 import { isFlowConnectionAvailable } from '/@/stores/flow-provider';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
@@ -55,11 +55,11 @@ const exportAsFlow = async (): Promise<void> => {
       ]),
     });
 
-    flowCreationStore.set({
+    flowCreationData.value = {
       prompt,
       model: selectedModel,
       mcp: selectedMCP,
-    });
+    };
 
     handleNavigation({ page: NavigationPage.FLOW_CREATE });
   } catch (e) {

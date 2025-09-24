@@ -7,8 +7,8 @@ import Chat from '/@/lib/chat/components/chat.svelte';
 import { SidebarInset, SidebarProvider } from '/@/lib/chat/components/ui/sidebar';
 import { Toaster } from '/@/lib/chat/components/ui/sonner';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte.js';
-import { currentChatId } from '/@/lib/chat/stores/current-chat-id.svelte.js';
-import { sidebarCollapsed } from '/@/lib/chat/stores/sidebar-collapsed';
+import { currentChatId } from '/@/lib/chat/state/current-chat-id.svelte';
+import { sidebarCollapsed } from '/@/lib/chat/state/sidebar-collapsed.svelte';
 
 import { DEFAULT_CHAT_MODEL } from '../ai/models';
 import { SelectedModel } from '../hooks/selected-model.svelte';
@@ -45,7 +45,7 @@ onMount(() => {
   {#await chatMessagesPromise}
     Loading
   {:then { chat, messages }} 
-    <SidebarProvider open={!$sidebarCollapsed} onOpenChange={(open: boolean): void => sidebarCollapsed.set(!open)}>
+    <SidebarProvider open={!sidebarCollapsed.value} onOpenChange={(open: boolean): boolean => sidebarCollapsed.value = !open}>
       <AppSidebar {chatId} />
       <SidebarInset>
         <Chat {chat} initialMessages={convertToUIMessages(messages)} readonly={false} />
