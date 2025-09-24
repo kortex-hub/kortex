@@ -119,7 +119,6 @@ export class MCPRegistry {
       const rawId = `${registryURL}::${server.name}`;
       serverId = crypto.createHash('sha256').update(rawId).digest('hex');
     }
-    console.log(`Enhanced server ${server.name} with id ${serverId}`);
     return { ...server, serverId };
   }
 
