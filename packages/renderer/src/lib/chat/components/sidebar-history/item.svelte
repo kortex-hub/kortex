@@ -1,8 +1,9 @@
 <script lang="ts">
 import { router } from 'tinro';
 
+import { currentChatId } from '/@/lib/chat/state/current-chat-id.svelte';
+
 import type { Chat } from '../../../../../../main/src/chat/db/schema';
-import { currentChatId } from '../../state/current-chat-id.svelte.js';
 import MoreHorizontalIcon from '../icons/more-horizontal.svelte';
 import TrashIcon from '../icons/trash.svelte';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';

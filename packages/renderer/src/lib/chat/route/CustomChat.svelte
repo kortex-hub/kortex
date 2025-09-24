@@ -7,7 +7,7 @@ import Chat from '/@/lib/chat/components/chat.svelte';
 import { SidebarInset, SidebarProvider } from '/@/lib/chat/components/ui/sidebar';
 import { Toaster } from '/@/lib/chat/components/ui/sonner';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte.js';
-import { currentChatId } from '/@/lib/chat/state/current-chat-id.svelte.js';
+import { currentChatId } from '/@/lib/chat/state/current-chat-id.svelte';
 import { sidebarCollapsed } from '/@/lib/chat/state/sidebar-collapsed.svelte';
 
 import { DEFAULT_CHAT_MODEL } from '../ai/models';
