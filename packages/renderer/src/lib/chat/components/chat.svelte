@@ -33,35 +33,22 @@ let {
 
 let models: Array<ModelInfo> = $derived(getModels($providerInfos));
 
-let mcpFromLastMessage: MCPRemoteServerInfo[] | undefined;
-let modelFromLastMessage: ModelInfo | undefined;
+// Partial because existing messages in database have been set an empty config
+const config = messages[messages.length - 1]?.config as Partial<MessageConfig> | undefined;
 
-if (messages.length) {
-  const message = messages[messages.length - 1];
-  // Partial because existing messages in database have been set an empty config
-  const config = message.config as Partial<MessageConfig>;
+let selectedModel = $derived<ModelInfo | undefined>(
+  config?.connectionName && config?.modelId && config?.providerId
+    ? {
+        connectionName: config.connectionName,
+        label: config.modelId,
+        providerId: config.providerId,
+      }
+    : models[0],
+);
 
-  mcpFromLastMessage = config.mcp?.flatMap(m => {
-    const res = $mcpRemoteServerInfos.find(r => r.id === m);
-
-    if (res) {
-      return [res];
-    }
-    return [];
-  });
-
-  if (config.connectionName && config.modelId && config.providerId) {
-    modelFromLastMessage = {
-      connectionName: config.connectionName,
-      label: config.modelId,
-      providerId: config.providerId,
-    };
-  }
-}
-
-let selectedModel = $derived<ModelInfo | undefined>(modelFromLastMessage ?? models[0]);
-
-let selectedMCP = $state<MCPRemoteServerInfo[]>(mcpFromLastMessage ?? []);
+let selectedMCP = $state<MCPRemoteServerInfo[]>(
+  config?.mcp?.flatMap(mcpId => $mcpRemoteServerInfos.find(r => r.id === mcpId) ?? []) ?? [],
+);
 
 const chatHistory = ChatHistory.fromContext();
 
