@@ -1,7 +1,8 @@
 import type { ChatRequestOptions, ChatTransport, UIMessage, UIMessageChunk } from 'ai';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
-import { currentChatId } from '/@/lib/chat/stores/current-chat-id.svelte.js';
+
+import { currentChatId } from '../state/current-chat-id.svelte.js';
 
 interface Dependencies {
   getModel: () => ModelInfo;
