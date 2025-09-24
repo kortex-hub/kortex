@@ -21,10 +21,10 @@ import { beforeEach, describe, expect, test } from 'vitest';
 
 import { MCPSpawner } from './mcp-spawner';
 
-type MockPack = components['schemas']['Package'] & { registry_type: 'mock' };
+type MockPack = components['schemas']['Package'] & { registryType: 'mock' };
 
 const PACKAGE_MOCK = {
-  registry_type: 'mock',
+  registryType: 'mock',
 } as MockPack;
 
 class McpSpawnerMock extends MCPSpawner<'mock'> {
@@ -73,9 +73,9 @@ describe('MCPSpawner#formatInputWithVariables', () => {
       name: 'input with no variable',
       input: {
         value: '--foo',
-        is_required: true,
+        isRequired: true,
         format: 'string',
-        is_secret: false,
+        isSecret: false,
       },
       expected: '--foo',
     },
@@ -83,15 +83,15 @@ describe('MCPSpawner#formatInputWithVariables', () => {
       name: 'input with one variable containing default',
       input: {
         value: '--foo={bar}',
-        is_required: true,
+        isRequired: true,
         format: 'string',
-        is_secret: false,
+        isSecret: false,
         variables: {
           bar: {
-            is_secret: false,
+            isSecret: false,
             default: 'bar',
             format: 'string',
-            is_required: true,
+            isRequired: true,
           },
         },
       },
@@ -101,15 +101,15 @@ describe('MCPSpawner#formatInputWithVariables', () => {
       name: 'input with one variable containing value and default',
       input: {
         value: '--foo={bar}',
-        is_required: true,
+        isRequired: true,
         format: 'string',
-        is_secret: false,
+        isSecret: false,
         variables: {
           bar: {
-            is_secret: false,
+            isSecret: false,
             default: 'bar',
             format: 'string',
-            is_required: true,
+            isRequired: true,
             value: 'potatoes',
           },
         },
@@ -120,21 +120,21 @@ describe('MCPSpawner#formatInputWithVariables', () => {
       name: 'input with two variables',
       input: {
         value: '--foo={foo},--bar={bar}',
-        is_required: true,
+        isRequired: true,
         format: 'string',
-        is_secret: false,
+        isSecret: false,
         variables: {
           foo: {
-            is_secret: false,
+            isSecret: false,
             default: 'foo',
             format: 'string',
-            is_required: true,
+            isRequired: true,
           },
           bar: {
-            is_secret: false,
+            isSecret: false,
             default: 'bar',
             format: 'string',
-            is_required: true,
+            isRequired: true,
           },
         },
       },
@@ -164,8 +164,8 @@ describe('MCPSpawner#getEnvironments', () => {
       envs: [
         {
           name: 'FOO',
-          is_required: true,
-          is_secret: true,
+          isRequired: true,
+          isSecret: true,
           format: 'string',
           value: 'BAR',
         },
@@ -176,7 +176,7 @@ describe('MCPSpawner#getEnvironments', () => {
     },
   ])('$name', ({ envs, expected }) => {
     const spawner = new McpSpawnerMock({
-      environment_variables: envs,
+      environmentVariables: envs,
     });
     const result = spawner.getEnvironments();
     expect(result).toStrictEqual(expected);

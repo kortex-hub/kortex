@@ -219,16 +219,16 @@ export class MCPRegistry {
 
           // client already exists ?
           const existingServers = await this.mcpManager.listMCPRemoteServers();
-          const existing = existingServers.find(srv => srv.id.includes(server.id ?? 'unknown'));
+          const existing = existingServers.find(srv => srv.id.includes(server.serverId ?? 'unknown'));
           if (existing) {
-            console.log(`[MCPRegistry] MCP client for server ${server.id} already exists, skipping`);
+            console.log(`[MCPRegistry] MCP client for server ${server.serverId} already exists, skipping`);
             continue;
           }
 
           const transport = await this.setupPackage(pack, config);
           await this.mcpManager.registerMCPClient(
             INTERNAL_PROVIDER_ID,
-            server.id,
+            server.serverId,
             'package',
             config.packageId,
             server.name,
@@ -384,7 +384,7 @@ export class MCPRegistry {
       case 'package':
         config = {
           packageId: options.index,
-          serverId: serverDetail.id,
+          serverId: serverDetail.serverId,
           runtimeArguments: Object.fromEntries(
             Object.entries(options.runtimeArguments).map(([key, response]) => [key, this.format(response)]),
           ),
@@ -457,17 +457,17 @@ export class MCPRegistry {
 
     const resolved: components['schemas']['Package'] = {
       ...pack,
-      runtime_arguments: (pack.runtime_arguments ?? []).map((argument, index) => ({
+      runtimeArguments: (pack.runtimeArguments ?? []).map((argument, index) => ({
         ...argument,
         value: config.runtimeArguments[index],
         variables: undefined,
       })),
-      package_arguments: (pack.package_arguments ?? []).map((argument, index) => ({
+      packageArguments: (pack.packageArguments ?? []).map((argument, index) => ({
         ...argument,
         value: config.packageArguments[index],
         variables: undefined,
       })),
-      environment_variables: (pack.environment_variables ?? []).map(argument => ({
+      environmentVariables: (pack.environmentVariables ?? []).map(argument => ({
         ...argument,
         value: config.environmentVariables[argument.name],
         variables: undefined,

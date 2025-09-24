@@ -29,11 +29,11 @@ const DUMMY_CONTENT = 'Hello World';
 
 test('enabled', async () => {
   const spawner = new NPMSpawner({
-    registry_type: 'npm',
+    registryType: 'npm',
     identifier: 'dummy',
     version: 'fake',
-    runtime_arguments: [],
-    package_arguments: [],
+    runtimeArguments: [],
+    packageArguments: [],
   });
   const enabled = await spawner.enabled();
   expect(enabled).toBeTruthy();
@@ -53,24 +53,24 @@ test(
     await writeFile(dummyFile, DUMMY_CONTENT);
 
     const npmSpawner = new NPMSpawner({
-      registry_type: 'npm',
+      registryType: 'npm',
       identifier: '@modelcontextprotocol/server-filesystem',
       version: '2025.8.21',
-      runtime_arguments: [
+      runtimeArguments: [
         {
           name: '--yes',
           type: 'named',
           format: 'boolean',
           default: 'true',
-          is_required: true,
-          is_secret: false,
+          isRequired: true,
+          isSecret: false,
         },
       ],
-      package_arguments: [
+      packageArguments: [
         {
-          is_required: true,
+          isRequired: true,
           default: tmp,
-          is_secret: false,
+          isSecret: false,
           format: 'filepath',
         },
       ],

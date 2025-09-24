@@ -26,16 +26,16 @@ import { NPMSpawner } from './npm-spawner';
  * @param registry_type
  * @param rest
  */
-export function getMCPSpawner({ registry_type, ...rest }: components['schemas']['Package']): MCPSpawner {
-  if (!registry_type) throw new Error('cannot determine how to spawn package: registry_type is missing');
+export function getMCPSpawner({ registryType, ...rest }: components['schemas']['Package']): MCPSpawner {
+  if (!registryType) throw new Error('cannot determine how to spawn package: registry_type is missing');
 
-  switch (registry_type) {
+  switch (registryType) {
     case 'npm':
       return new NPMSpawner({
-        registry_type,
+        registryType,
         ...rest,
       });
     default:
-      throw new Error(`unsupported registry type: ${registry_type}`);
+      throw new Error(`unsupported registry type: ${registryType}`);
   }
 }

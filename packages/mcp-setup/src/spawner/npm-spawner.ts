@@ -29,13 +29,13 @@ export class NPMSpawner extends MCPSpawner<'npm'> {
 
   async spawn(): Promise<Transport> {
     if (!this.pack.identifier) throw new Error('missing identifier in MCP Local Server configuration');
-    if (this.pack.file_sha256) {
+    if (this.pack.fileSha256) {
       console.warn('specified file sha256 is not supported with npx spawner');
     }
 
     // build arguments
-    const RUNTIME_ARGS: Array<string> = (this.pack.runtime_arguments ?? []).map(this.getArgument.bind(this));
-    const PACKAGE_ARGS: Array<string> = (this.pack.package_arguments ?? []).map(this.getArgument.bind(this));
+    const RUNTIME_ARGS: Array<string> = (this.pack.runtimeArguments ?? []).map(this.getArgument.bind(this));
+    const PACKAGE_ARGS: Array<string> = (this.pack.packageArguments ?? []).map(this.getArgument.bind(this));
 
     // let's use package@version if version is specified
     const identifier = this.pack.version ? `${this.pack.identifier}@${this.pack.version}` : this.pack.identifier;

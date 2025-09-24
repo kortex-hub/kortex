@@ -19,7 +19,7 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { components } from 'mcp-registry';
 
 export abstract class MCPSpawner<T extends string = string> implements AsyncDisposable {
-  constructor(protected readonly pack: components['schemas']['Package'] & { registry_type: T }) {}
+  constructor(protected readonly pack: components['schemas']['Package'] & { registryType: T }) {}
 
   abstract spawn(): Promise<Transport>;
   abstract [Symbol.asyncDispose](): PromiseLike<void>;
@@ -30,7 +30,7 @@ export abstract class MCPSpawner<T extends string = string> implements AsyncDisp
   ): string {
     const value = argument.value ?? argument.default;
 
-    if (argument.is_required && !value) {
+    if (argument.isRequired && !value) {
       throw new Error(
         `argument '${argument.description}' does not have a default value: user input is not yet supported`,
       );
@@ -53,7 +53,7 @@ export abstract class MCPSpawner<T extends string = string> implements AsyncDisp
 
     for (const [key, content] of Object.entries(input.variables ?? {})) {
       const value = content.value ?? content.default;
-      if (content.is_required && !value)
+      if (content.isRequired && !value)
         throw new Error(`cannot format input with required variable ${key} without any value or default`);
 
       if (value !== undefined) {
@@ -64,7 +64,7 @@ export abstract class MCPSpawner<T extends string = string> implements AsyncDisp
   }
 
   protected getEnvironments(): Record<string, string> {
-    return (this.pack.environment_variables ?? []).reduce(
+    return (this.pack.environmentVariables ?? []).reduce(
       (accumulator, current) => {
         accumulator[current.name] = this.formatInputWithVariables(current);
         return accumulator;
