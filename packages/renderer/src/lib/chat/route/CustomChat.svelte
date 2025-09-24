@@ -7,6 +7,7 @@ import Chat from '/@/lib/chat/components/chat.svelte';
 import { SidebarInset, SidebarProvider } from '/@/lib/chat/components/ui/sidebar';
 import { Toaster } from '/@/lib/chat/components/ui/sonner';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte.js';
+import { currentChatId } from '/@/lib/chat/stores/current-chat-id.svelte.js';
 import { sidebarCollapsed } from '/@/lib/chat/stores/sidebar-collapsed';
 
 import { DEFAULT_CHAT_MODEL } from '../ai/models';
@@ -16,7 +17,9 @@ import { convertToUIMessages } from '../utils/chat';
 interface Props {
   chatId?: string;
 }
-const { chatId }: Props = $props();
+const { chatId: routerChatId }: Props = $props();
+
+const chatId = $derived(routerChatId ?? currentChatId.value);
 
 const chatsPromise = window.inferenceGetChats();
 const chatHistory = new ChatHistory(chatsPromise);
