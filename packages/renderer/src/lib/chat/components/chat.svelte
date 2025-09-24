@@ -1,16 +1,19 @@
 <script lang="ts">
-import { Chat, type UIMessage } from '@ai-sdk/svelte';
+import { Chat } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
 import { untrack } from 'svelte';
 import { toast } from 'svelte-sonner';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
+import { convertToUIMessages } from '/@/lib/chat/utils/chat';
 import { getModels } from '/@/lib/models/models-utils';
+import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import { providerInfos } from '/@/stores/providers';
+import type { MessageConfig } from '/@api/chat/message-config';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
-import type { Chat as DbChat } from '../../../../../main/src/chat/db/schema';
+import type { Chat as DbChat, Message as DbMessage } from '../../../../../main/src/chat/db/schema';
 import ChatHeader from './chat-header.svelte';
 import { IPCChatTransport } from './ipc-chat-transport';
 import McpMessages from './mcp-messages.svelte';
@@ -21,17 +24,44 @@ import NoModelsAvailable from './NoModelsAvailable.svelte';
 let {
   chat,
   readonly,
-  initialMessages,
+  messages,
 }: {
   chat: DbChat | undefined;
-  initialMessages: UIMessage[];
+  messages: DbMessage[];
   readonly: boolean;
 } = $props();
 
 let models: Array<ModelInfo> = $derived(getModels($providerInfos));
 
-let selectedModel = $derived<ModelInfo | undefined>(models[0]);
-let selectedMCP = $state<MCPRemoteServerInfo[]>([]);
+let mcpFromLastMessage: MCPRemoteServerInfo[] | undefined;
+let modelFromLastMessage: ModelInfo | undefined;
+
+if (messages.length) {
+  const message = messages[messages.length - 1];
+  // Partial because existing messages in database have been set an empty config
+  const config = message.config as Partial<MessageConfig>;
+
+  mcpFromLastMessage = config.mcp?.flatMap(m => {
+    const res = $mcpRemoteServerInfos.find(r => r.id === m);
+
+    if (res) {
+      return [res];
+    }
+    return [];
+  });
+
+  if (config.connectionName && config.modelId && config.providerId) {
+    modelFromLastMessage = {
+      connectionName: config.connectionName,
+      label: config.modelId,
+      providerId: config.providerId,
+    };
+  }
+}
+
+let selectedModel = $derived<ModelInfo | undefined>(modelFromLastMessage ?? models[0]);
+
+let selectedMCP = $state<MCPRemoteServerInfo[]>(mcpFromLastMessage ?? []);
 
 const chatHistory = ChatHistory.fromContext();
 
@@ -50,7 +80,7 @@ const chatClient = $derived(
     }),
     // This way, the client is only recreated when the ID changes, allowing us to fully manage messages
     // clientside while still SSRing them on initial load or when we navigate to a different chat.
-    messages: untrack(() => initialMessages),
+    messages: untrack(() => convertToUIMessages(messages)),
     generateId: crypto.randomUUID.bind(crypto),
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     onFinish: async (): Promise<void> => {
