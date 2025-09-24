@@ -17,7 +17,9 @@ import { convertToUIMessages } from '../utils/chat';
 interface Props {
   chatId?: string;
 }
-const { chatId = currentChatId.value }: Props = $props();
+const { chatId: routerChatId }: Props = $props();
+
+const chatId = $derived(routerChatId ?? currentChatId.value);
 
 const chatsPromise = window.inferenceGetChats();
 const chatHistory = new ChatHistory(chatsPromise);
