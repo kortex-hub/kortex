@@ -15,27 +15,27 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+import type { components } from 'mcp-registry';
 
-export interface InputResponse {
-  value: string;
+import type { MCPSpawner } from './mcp-spawner';
+import { NPMSpawner } from './npm-spawner';
+
+/**
+ * @private By destructuring `registry_type` and reconstructing the object, TypeScript can properly infer the narrowed type in each switch case.
+ *
+ * @param registry_type
+ * @param rest
+ */
+export function getMCPSpawner({ registryType, ...rest }: components['schemas']['Package']): MCPSpawner {
+  if (!registryType) throw new Error('cannot determine how to spawn package: registry_type is missing');
+
+  switch (registryType) {
+    case 'npm':
+      return new NPMSpawner({
+        registryType,
+        ...rest,
+      });
+    default:
+      throw new Error(`unsupported registry type: ${registryType}`);
+  }
 }
-
-export interface InputWithVariableResponse extends InputResponse {
-  variables: Record<string, InputResponse>;
-}
-
-export interface MCPSetupRemoteOptions {
-  type: 'remote';
-  index: number;
-  headers: Record<string, InputWithVariableResponse>;
-}
-
-export interface MCPSetupPackageOptions {
-  type: 'package';
-  index: number;
-  packageArguments: Record<number, InputWithVariableResponse>;
-  runtimeArguments: Record<number, InputWithVariableResponse>;
-  environmentVariables: Record<string, InputWithVariableResponse>;
-}
-
-export type MCPSetupOptions = MCPSetupRemoteOptions | MCPSetupPackageOptions;
