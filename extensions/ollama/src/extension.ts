@@ -30,10 +30,3 @@ export async function deactivate(): Promise<void> {
   await ollamaExtension?.deactivate();
   ollamaExtension = undefined;
 }
-
-// Expose ollamaExtension for testing purposes
-if (process.env.NODE_ENV === 'test') {
-  Object.defineProperty(global, 'ollamaExtension', {
-    get: () => ollamaExtension,
-  });
-}

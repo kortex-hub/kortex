@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import type { ExtensionContext } from '@kortex-app/api';
-import { assert, beforeEach, expect, test, vi } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
 
 import { activate, deactivate } from './extension';
 import { OllamaExtension } from './ollama-extension';
@@ -51,19 +51,4 @@ test('should call deactivate when deactivate is called', async () => {
 
   // Ensure that the deactivate method was called
   expect(OllamaExtension.prototype.deactivate).toHaveBeenCalled();
-});
-
-test('should set ollamaExtension to undefined after deactivate is called', async () => {
-  // Call activate to initialize the extension
-  await activate(extensionContextMock);
-
-  // Call deactivate
-  await deactivate();
-
-  if ('ollamaExtension' in global) {
-    // Ensure that ollamaExtension is set to undefined
-    expect(global.ollamaExtension).toBeUndefined();
-  } else {
-    assert.fail('ollamaExtension not found in global');
-  }
 });
