@@ -16,9 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+// Import to access mocked functionionalities such as using vi.mock (we don't want to actually call node:fs methods)
 import * as fs from 'node:fs';
 
-import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { ApiSenderType } from '/@/plugin/api.js';
 import type { IConfigurationNode } from '/@api/configuration/models.js';
@@ -28,11 +29,21 @@ import { ConfigurationRegistry } from './configuration-registry.js';
 import type { Directories } from './directories.js';
 import type { NotificationRegistry } from './tasks/notification-registry.js';
 
-let configurationRegistry: ConfigurationRegistry;
+// mock the fs module
+vi.mock('node:fs', () => ({
+  readFileSync: vi.fn(),
+  writeFileSync: vi.fn(),
+  cpSync: vi.fn(),
+  promises: {
+    access: vi.fn(),
+    mkdir: vi.fn(),
+    writeFile: vi.fn(),
+    readFile: vi.fn(),
+    copyFile: vi.fn(),
+  },
+}));
 
-// mock the fs methods
-const readFileSync = vi.spyOn(fs, 'readFileSync');
-const cpSync = vi.spyOn(fs, 'cpSync');
+let configurationRegistry: ConfigurationRegistry;
 
 const getConfigurationDirectoryMock = vi.fn();
 const directories = {
@@ -48,21 +59,28 @@ const notificationRegistry = {
 
 let registerConfigurationsDisposable: IDisposable;
 
-beforeAll(() => {
-  // mock the fs module
-  vi.mock('node:fs');
-});
-
-beforeEach(() => {
+beforeEach(async () => {
   vi.resetAllMocks();
   vi.clearAllMocks();
   getConfigurationDirectoryMock.mockReturnValue('/my-config-dir');
 
-  configurationRegistry = new ConfigurationRegistry(apiSender, directories);
-  readFileSync.mockReturnValue(JSON.stringify({}));
+  // Mock basic fs functions needed for initialization
+  const readFileSync = vi.mocked(fs.readFileSync);
+  const accessMock = vi.mocked(fs.promises.access);
+  const mkdirMock = vi.mocked(fs.promises.mkdir);
+  const writeFileMock = vi.mocked(fs.promises.writeFile);
+  const readFileMock = vi.mocked(fs.promises.readFile);
+  const cpSync = vi.mocked(fs.cpSync);
 
+  readFileSync.mockReturnValue(JSON.stringify({}));
+  accessMock.mockResolvedValue(undefined);
+  mkdirMock.mockResolvedValue(undefined);
+  writeFileMock.mockResolvedValue(undefined);
+  readFileMock.mockResolvedValue(JSON.stringify({}));
   cpSync.mockReturnValue(undefined);
-  configurationRegistry.init();
+
+  configurationRegistry = new ConfigurationRegistry(apiSender, directories);
+  await configurationRegistry.init();
 
   const node: IConfigurationNode = {
     id: 'my.fake.property',
@@ -171,17 +189,28 @@ test('Should not find configuration after dispose', async () => {
 });
 
 test('should work with an invalid configuration file', async () => {
+  // Mock fs functions needed for this specific test
+  const readFileSync = vi.mocked(fs.readFileSync);
+  const accessMock = vi.mocked(fs.promises.access);
+  const readFileMock = vi.mocked(fs.promises.readFile);
+  const copyFileMock = vi.mocked(fs.promises.copyFile);
+
   getConfigurationDirectoryMock.mockReturnValue('/my-config-dir');
 
   configurationRegistry = new ConfigurationRegistry(apiSender, directories);
   readFileSync.mockReturnValue('invalid JSON content');
+
+  // Mock fs.promises methods for this test
+  accessMock.mockResolvedValue(undefined);
+  readFileMock.mockResolvedValue('invalid JSON content');
+  copyFileMock.mockResolvedValue(undefined);
 
   // configuration is broken but it should not throw any error, just that config is empty
   const originalConsoleError = console.error;
   const mockedConsoleLog = vi.fn();
   console.error = mockedConsoleLog;
   try {
-    configurationRegistry.init().forEach(notification => notificationRegistry.addNotification(notification));
+    (await configurationRegistry.init()).forEach(notification => notificationRegistry.addNotification(notification));
   } finally {
     console.error = originalConsoleError;
   }
@@ -195,7 +224,7 @@ test('should work with an invalid configuration file', async () => {
   );
 
   // check we did a backup of the file
-  expect(cpSync).toBeCalledWith(
+  expect(copyFileMock).toBeCalledWith(
     expect.stringContaining('settings.json'),
     expect.stringContaining('settings.json.backup'),
   );
@@ -330,6 +359,9 @@ describe('should be notified when a configuration is updated', async () => {
 });
 
 test('should remove the object configuration if value is equal to default one', async () => {
+  // Mock fs function needed for this specific test
+  const writeFileSync = vi.mocked(fs.writeFileSync);
+
   const node: IConfigurationNode = {
     id: 'custom',
     title: 'Test Object Property',
@@ -344,8 +376,6 @@ test('should remove the object configuration if value is equal to default one', 
       },
     },
   };
-
-  const writeFileSync = vi.spyOn(fs, 'writeFileSync');
 
   configurationRegistry.registerConfigurations([node]);
 
