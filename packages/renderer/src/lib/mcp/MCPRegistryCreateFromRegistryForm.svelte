@@ -1,6 +1,6 @@
 <script lang="ts">
+import type { components } from '@kortex-hub/mcp-registry-types';
 import { ErrorMessage, FormPage } from '@podman-desktop/ui-svelte';
-import type { components } from 'mcp-registry';
 import { router } from 'tinro';
 
 import McpIcon from '/@/lib/images/MCPIcon.svelte';
