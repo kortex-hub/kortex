@@ -1,4 +1,4 @@
-import { devices, type PlaywrightTestConfig } from '@playwright/test';
+import type { PlaywrightTestConfig } from '@playwright/test';
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -6,7 +6,7 @@ import { devices, type PlaywrightTestConfig } from '@playwright/test';
 const config: PlaywrightTestConfig = {
   testDir: './src',
   /* Maximum time one test can run for. */
-  timeout: 120_000,
+  timeout: 60_000,
   expect: {
     /**
      * Maximum time expect() should wait for the condition to be met.
@@ -33,22 +33,16 @@ const config: PlaywrightTestConfig = {
   use: {
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
     actionTimeout: 10_000,
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'retain-on-failure',
     /* Take screenshot when test fails */
     screenshot: 'only-on-failure',
-    /* Record video on failure */
     video: 'retain-on-failure',
+    trace: 'retain-on-failure',
   },
 
   /* Configure projects for major browsers */
   projects: [
     {
       name: 'Electron',
-      use: {
-        ...devices['Desktop Chrome'],
-        // Electron launch handled by @podman-desktop/tests-playwright
-      },
       testMatch: '**/*.spec.ts',
     },
   ],
