@@ -15,39 +15,31 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { expect as playExpect } from '@playwright/test';
-import { RunnerOptions, test } from '@podman-desktop/tests-playwright';
-
+import { expect, test } from './fixtures/electron-app';
 import { NavigationBar } from './model/navigation/navigation';
 
 let navigationBar: NavigationBar;
 
-test.use({ runnerOptions: new RunnerOptions({ customFolder: 'kortex-dashboard' }) });
-test.beforeAll(async ({ runner, page }) => {
-  runner.setVideoAndTraceName('dashboard-e2e');
+test.beforeEach(async ({ page }) => {
   navigationBar = new NavigationBar(page);
-});
-
-test.afterAll(async ({ runner }) => {
-  await runner.close();
 });
 
 test.describe.serial('Kortex app start', { tag: '@smoke' }, () => {
   test.describe
     .serial('Application dashboard is opened', () => {
       test('Initial Dashboard page is displayed', async ({ page }) => {
-        await playExpect(page.getByRole('heading', { name: 'No AI Models Available' })).toBeVisible({
+        await expect(page.getByRole('heading', { name: 'No AI Models Available' })).toBeVisible({
           timeout: 15_000,
         });
       });
 
       test('Navigation bar and its items are visible', async () => {
-        await playExpect(navigationBar.navigationLocator).toBeVisible();
-        await playExpect(navigationBar.chatLink).toBeVisible();
-        await playExpect(navigationBar.flowsLink).toBeVisible();
-        await playExpect(navigationBar.mcpLink).toBeVisible();
-        await playExpect(navigationBar.extensionsLink).toBeVisible();
-        await playExpect(navigationBar.settingsLink).toBeVisible();
+        await expect(navigationBar.navigationLocator).toBeVisible();
+        await expect(navigationBar.chatLink).toBeVisible();
+        await expect(navigationBar.flowsLink).toBeVisible();
+        await expect(navigationBar.mcpLink).toBeVisible();
+        await expect(navigationBar.extensionsLink).toBeVisible();
+        await expect(navigationBar.settingsLink).toBeVisible();
       });
     });
 });

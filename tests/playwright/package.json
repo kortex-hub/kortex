@@ -1,0 +1,20 @@
+{
+  "name": "@kortex/tests-playwright",
+  "version": "0.0.1-next",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "test": "playwright test",
+    "test:debug": "playwright test --debug",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report ./output/html-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.48.1",
+    "@podman-desktop/tests-playwright": "^1.21.0",
+    "@types/node": "^22",
+    "typescript": "5.9.2"
+  }
+}
