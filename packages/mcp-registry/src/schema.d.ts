@@ -48,7 +48,7 @@ export type paths = {
     patch?: never;
     trace?: never;
   };
-  '/v0/servers/{id}': {
+  '/v0/servers/{server_id}': {
     parameters: {
       query?: never;
       header?: never;
@@ -57,18 +57,18 @@ export type paths = {
     };
     /**
      * Get MCP server details
-     * @description Returns detailed information about a specific MCP server
+     * @description Returns detailed information about a specific MCP server. Returns latest version by default, or specific version if version query parameter is provided.
      */
     get: {
       parameters: {
         query?: {
-          /** @description Desired MCP server version */
+          /** @description Specific version to retrieve (e.g., "1.0.0"). If not provided, returns latest version. */
           version?: string;
         };
         header?: never;
         path: {
-          /** @description Unique ID of the server */
-          id: string;
+          /** @description Unique server ID (consistent across all versions) */
+          server_id: string;
         };
         cookie?: never;
       };
@@ -81,6 +81,60 @@ export type paths = {
           };
           content: {
             'application/json': components['schemas']['ServerDetail'];
+          };
+        };
+        /** @description Server not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': {
+              /** @example Server not found */
+              error?: string;
+            };
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v0/servers/{server_id}/versions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List all versions of an MCP server
+     * @description Returns all available versions for a specific MCP server, ordered by publication date (newest first)
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Unique server ID (consistent across all versions) */
+          server_id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description A list of all versions for the server */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            'application/json': components['schemas']['ServerList'];
           };
         };
         /** @description Server not found */
@@ -233,10 +287,12 @@ export type components = {
        * @example 1.0.2
        */
       version: string;
-      /** Format: date-time */
-      created_at?: string;
-      /** Format: date-time */
-      updated_at?: string;
+      /**
+       * Format: uri
+       * @description Optional URL to the server's homepage, documentation, or project website. This provides a central link for users to learn more about the server. Particularly useful when the server has custom installation instructions or setup requirements.
+       * @example https://modelcontextprotocol.io/examples
+       */
+      websiteUrl?: string;
     };
     ServerList: {
       servers: components['schemas']['ServerDetail'][];
@@ -259,7 +315,7 @@ export type components = {
        * @example nuget
        * @example mcpb
        */
-      registry_type?: string;
+      registryType?: string;
       /**
        * Format: uri
        * @description Base URL of the package registry
@@ -270,7 +326,7 @@ export type components = {
        * @example https://github.com
        * @example https://gitlab.com
        */
-      registry_base_url?: string;
+      registryBaseUrl?: string;
       /**
        * @description Package identifier - either a package name (for registries) or URL (for direct downloads)
        * @example @modelcontextprotocol/server-brave-search
@@ -286,26 +342,26 @@ export type components = {
        * @description SHA-256 hash of the package file for integrity verification.
        * @example fe333e598595000ae021bd27117db32ec69af6987f507ba7a63c90638ff633ce
        */
-      file_sha256?: string;
+      fileSha256?: string;
       /**
-       * @description A hint to help clients determine the appropriate runtime for the package. This field should be provided when `runtime_arguments` are present.
+       * @description A hint to help clients determine the appropriate runtime for the package. This field should be provided when `runtimeArguments` are present.
        * @example npx
        * @example uvx
        * @example dnx
        */
-      runtime_hint?: string;
-      /** @description A list of arguments to be passed to the package's runtime command (such as docker or npx). The `runtime_hint` field should be provided when `runtime_arguments` are present. */
-      runtime_arguments?: components['schemas']['Argument'][];
+      runtimeHint?: string;
+      /** @description A list of arguments to be passed to the package's runtime command (such as docker or npx). The `runtimeHint` field should be provided when `runtimeArguments` are present. */
+      runtimeArguments?: components['schemas']['Argument'][];
       /** @description A list of arguments to be passed to the package's binary. */
-      package_arguments?: components['schemas']['Argument'][];
+      packageArguments?: components['schemas']['Argument'][];
       /** @description A mapping of environment variables to be set when running the package. */
-      environment_variables?: components['schemas']['KeyValueInput'][];
+      environmentVariables?: components['schemas']['KeyValueInput'][];
     };
     Input: {
       /** @description A description of the input, which clients can use to provide context to the user. */
       description?: string;
       /** @default false */
-      is_required: boolean;
+      isRequired: boolean;
       /**
        * @description Specifies the input format. Supported values include `filepath`, which should be interpreted as a file on the user's filesystem.
        *
@@ -324,7 +380,7 @@ export type components = {
        * @description Indicates whether the input is a secret value (e.g., password, token). If true, clients should handle the value securely.
        * @default false
        */
-      is_secret: boolean;
+      isSecret: boolean;
       /** @description The default value for the input. */
       default?: string;
       /**
@@ -352,12 +408,12 @@ export type components = {
              * @description An identifier-like hint for the value. This is not part of the command line, but can be used by client configuration and to provide hints to users.
              * @example file_path
              */
-            value_hint?: string;
+            valueHint?: string;
             /**
              * @description Whether the argument can be repeated multiple times in the command line.
              * @default false
              */
-            is_repeated: boolean;
+            isRepeated: boolean;
           }
         | unknown
         | unknown
@@ -378,7 +434,7 @@ export type components = {
        * @description Whether the argument can be repeated multiple times.
        * @default false
        */
-      is_repeated: boolean;
+      isRepeated: boolean;
     };
     KeyValueInput: components['schemas']['InputWithVariables'] & {
       /**
@@ -394,7 +450,7 @@ export type components = {
        * @example sse
        * @enum {string}
        */
-      transport_type: 'streamable' | 'sse';
+      type: 'streamable-http' | 'sse';
       /**
        * Format: uri
        * @description Remote server URL
@@ -409,7 +465,7 @@ export type components = {
       /**
        * Format: uri
        * @description JSON Schema URI for this server.json format
-       * @example https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json
+       * @example https://static.modelcontextprotocol.io/schemas/2025-09-16/server.schema.json
        */
       $schema?: string;
       packages?: components['schemas']['Package'][];
@@ -435,27 +491,33 @@ export type components = {
         'io.modelcontextprotocol.registry/official'?: {
           /**
            * Format: uuid
-           * @description Unique registry identifier for this server entry
+           * @description Consistent ID across all versions of a server
            * @example 550e8400-e29b-41d4-a716-446655440000
            */
-          id: string;
+          serverId: string;
+          /**
+           * Format: uuid
+           * @description Unique ID for this specific version
+           * @example 773f9b2e-1a47-4c8d-b5e6-2f8d9c4a7b3e
+           */
+          versionId: string;
           /**
            * Format: date-time
            * @description Timestamp when the server was first published to the registry
            * @example 2023-12-01T10:30:00Z
            */
-          published_at: string;
+          publishedAt: string;
           /**
            * Format: date-time
            * @description Timestamp when the server entry was last updated
            * @example 2023-12-01T11:00:00Z
            */
-          updated_at: string;
+          updatedAt: string;
           /**
            * @description Whether this is the latest version of the server
            * @example true
            */
-          is_latest: boolean;
+          isLatest: boolean;
         };
       } & {
         [key: string]: unknown;

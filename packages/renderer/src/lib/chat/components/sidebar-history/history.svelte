@@ -4,18 +4,10 @@ import { toast } from 'svelte-sonner';
 import { router } from 'tinro';
 
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
+import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
 
 import type { Chat } from '../../../../../../main/src/chat/db/schema';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '../ui/alert-dialog';
+import { Button } from '../ui/button';
 import { SidebarGroup, SidebarGroupContent, SidebarMenu } from '../ui/sidebar';
 import { Skeleton } from '../ui/skeleton';
 import ChatItem from './item.svelte';
@@ -26,7 +18,6 @@ interface Props {
 
 let { chatId }: Props = $props();
 const chatHistory = ChatHistory.fromContext();
-let alertDialogOpen = $state(false);
 const groupedChats = $derived(groupChatsByDate(chatHistory.chats));
 let chatIdToDelete = $state<string | undefined>(undefined);
 
@@ -98,11 +89,24 @@ async function handleDeleteChat(): Promise<void> {
     error: 'Failed to delete chat',
   });
 
-  alertDialogOpen = false;
-
   if (chatIdToDelete === chatId) {
     router.goto('/');
   }
+}
+
+async function handleDeleteAllChats(): Promise<void> {
+  const deleteAllPromise = window.inferenceDeleteAllChats();
+
+  toast.promise(deleteAllPromise, {
+    loading: 'Deleting all chats...',
+    success: () => {
+      chatHistory.refetch().catch((err: unknown) => {
+        console.error('Failed to refetch chat history', err);
+      });
+      return 'All chats deleted successfully';
+    },
+    error: 'Failed to delete all chats',
+  });
 }
 </script>
 
@@ -147,7 +151,7 @@ async function handleDeleteChat(): Promise<void> {
 								active={chat.id === chatId}
 								ondelete={(chatId): void => {
 									chatIdToDelete = chatId;
-									alertDialogOpen = true;
+									withConfirmation(handleDeleteChat, 'This action cannot be undone. This will permanently delete your chat');
 								}}
 							/>
 						{/each}
@@ -156,19 +160,19 @@ async function handleDeleteChat(): Promise<void> {
 			</SidebarMenu>
 		</SidebarGroupContent>
 	</SidebarGroup>
-	<AlertDialog bind:open={alertDialogOpen}>
-		<AlertDialogContent>
-			<AlertDialogHeader>
-				<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-				<AlertDialogDescription>
-					This action cannot be undone. This will permanently delete your chat and remove it from
-					our servers.
-				</AlertDialogDescription>
-			</AlertDialogHeader>
-			<AlertDialogFooter>
-				<AlertDialogCancel>Cancel</AlertDialogCancel>
-				<AlertDialogAction onclick={handleDeleteChat}>Continue</AlertDialogAction>
-			</AlertDialogFooter>
-		</AlertDialogContent>
-	</AlertDialog>
+  <SidebarGroup class="mt-auto">
+    <SidebarGroupContent>
+      <Button
+        variant="ghost"
+        class="w-full text-zinc-500 hover:text-red-500"
+        onclick={(): void => withConfirmation(handleDeleteAllChats, 'This action cannot be undone. This will permanently delete all of your chats')}
+      >
+        Delete all chats
+      </Button>
+    </SidebarGroupContent>
+  </SidebarGroup>
+
+
+
 {/if}
+
