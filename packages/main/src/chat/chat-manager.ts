@@ -62,7 +62,7 @@ export class ChatManager {
     if (!existsSync(directory)) {
       await mkdir(directory, { recursive: true });
     }
-    const sqlite = new Database(join(directory, 'chat.db'));
+    const sqlite = new Database(join(directory, 'chats.db'));
     sqlite.pragma('foreign_keys = ON');
     const db = drizzle(sqlite, {});
 

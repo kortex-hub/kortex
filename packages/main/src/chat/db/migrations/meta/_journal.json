@@ -8,13 +8,6 @@
       "when": 1742595457496,
       "tag": "0000_ambiguous_dragon_man",
       "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1758722289476,
-      "tag": "0001_daily_scarecrow",
-      "breakpoints": true
     }
   ]
 }

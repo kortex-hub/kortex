@@ -24,6 +24,7 @@ CREATE TABLE "Message" (
     "parts" json NOT NULL,
     "attachments" json NOT NULL,
     "createdAt" timestamp NOT NULL,
+    "config" json NOT NULL,
     FOREIGN KEY ("chatId") REFERENCES "Chat"("id") ON DELETE NO ACTION ON UPDATE NO ACTION
 );
 --> statement-breakpoint
