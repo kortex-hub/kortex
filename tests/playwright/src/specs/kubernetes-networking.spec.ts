@@ -105,6 +105,8 @@ test.beforeAll(async ({ runner, welcomePage, page, navigationBar }) => {
     await settingsBar.cliToolsTab.click();
 
     await ensureCliInstalled(page, 'Kind');
+    // workaround for https://github.com/podman-desktop/podman-desktop/issues/13980
+    await ensureCliInstalled(page, 'kubectl');
   }
 
   await createKindCluster(page, CLUSTER_NAME, CLUSTER_CREATION_TIMEOUT, {
@@ -222,12 +224,12 @@ test.describe('Kubernetes networking E2E test', { tag: '@k8s_e2e' }, () => {
       await configurePortForwarding(page, KubernetesResources.Pods, POD_NAME);
     });
 
-    test('Verify new local port response', async () => {
-      await verifyLocalPortResponse(PORT_FORWARDING_ADDRESS, RESPONSE_MESSAGE);
-    });
-
     test('Verify Kubernetes port forwarding page', async ({ page }) => {
       await verifyPortForwardingConfiguration(page, CONTAINER_NAME, LOCAL_PORT, REMOTE_PORT);
+    });
+
+    test('Verify new local port response', async () => {
+      await verifyLocalPortResponse(PORT_FORWARDING_ADDRESS, RESPONSE_MESSAGE);
     });
 
     test('Delete configuration', async ({ page }) => {
