@@ -10,7 +10,7 @@ import { convertToUIMessages } from '/@/lib/chat/utils/chat';
 import { getModels } from '/@/lib/models/models-utils';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import { providerInfos } from '/@/stores/providers';
-import type { MessageConfig } from '/@api/chat/message-config';
+import { MessageConfigSchema } from '/@api/chat/message-config';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import type { Chat as DbChat, Message as DbMessage } from '../../../../../main/src/chat/db/schema';
@@ -33,11 +33,10 @@ let {
 
 let models: Array<ModelInfo> = $derived(getModels($providerInfos));
 
-// Partial because existing messages in database have been set an empty config
-const config = messages[messages.length - 1]?.config as Partial<MessageConfig> | undefined;
+const config = MessageConfigSchema.safeParse(messages[messages.length - 1]?.config).data;
 
 let selectedModel = $derived<ModelInfo | undefined>(
-  config?.connectionName && config?.modelId && config?.providerId
+  config
     ? {
         connectionName: config.connectionName,
         label: config.modelId,
