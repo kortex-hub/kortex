@@ -1,8 +1,8 @@
 <script lang="ts">
 import { faKey } from '@fortawesome/free-solid-svg-icons/faKey';
 import { faPlug } from '@fortawesome/free-solid-svg-icons/faPlug';
+import type { components } from '@kortex-hub/mcp-registry-types';
 import { Button } from '@podman-desktop/ui-svelte';
-import type { components } from 'mcp-registry';
 import { SvelteMap } from 'svelte/reactivity';
 import Fa from 'svelte-fa';
 

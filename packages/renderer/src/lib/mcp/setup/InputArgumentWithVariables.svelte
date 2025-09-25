@@ -1,6 +1,6 @@
 <script lang="ts">
+import type { components } from '@kortex-hub/mcp-registry-types';
 import { Input } from '@podman-desktop/ui-svelte';
-import type { components } from 'mcp-registry';
 
 import Markdown from '/@/lib/markdown/Markdown.svelte';
 import InputArgument from '/@/lib/mcp/setup/InputArgument.svelte';

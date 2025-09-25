@@ -77,7 +77,6 @@ export default [
       'tests/playwright/scripts/**',
       'website/storybook.ts',
       'website/src/pages/storybook/sidebar.cjs',
-      'packages/mcp-registry/**/*',
     ],
   },
   js.configs.recommended,

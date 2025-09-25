@@ -24,6 +24,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 import type * as containerDesktopAPI from '@kortex-app/api';
+import type { components } from '@kortex-hub/mcp-registry-types';
 import type {
   Cluster,
   Context as KubernetesContext,
@@ -48,7 +49,6 @@ import type { WebContents } from 'electron';
 import { app, BrowserWindow, clipboard, ipcMain, shell } from 'electron';
 import type { IpcMainInvokeEvent } from 'electron/main';
 import { Container } from 'inversify';
-import type { components } from 'mcp-registry';
 import { lookup } from 'mime-types';
 
 import type { KubernetesGeneratorInfo } from '/@/plugin/api/KubernetesGeneratorInfo.js';
