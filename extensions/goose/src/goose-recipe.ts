@@ -204,7 +204,7 @@ export class GooseRecipe implements Disposable {
 
   private async getFlowInfos(flowId: string): Promise<{
     env: Record<string, string>;
-    providerId: string;
+    providerId?: string;
     recipeName: string;
     flowPath: string;
     content: string;
@@ -217,14 +217,16 @@ export class GooseRecipe implements Disposable {
 
     const parsed = parse(content);
 
-    const providerId = goose2KortexProvider(parsed['settings']['goose_provider']);
-    const gooseModel: string = parsed['settings']['goose_model'];
+    const providerId = parsed['settings']?.['goose_provider']
+      ? goose2KortexProvider(parsed['settings']['goose_provider'])
+      : undefined;
+    const gooseModel: string | undefined = parsed['settings']?.['goose_model'] ?? undefined;
     const connection = this.provider
       .getInferenceConnections()
       .find(c => c.providerId === providerId && c.connection.models.some(m => m.label === gooseModel));
 
     function getGooseEnv(): Record<string, string> {
-      if (!connection) throw new Error(`cannot find connection for ${providerId} ${gooseModel}`);
+      if (!connection) return {};
 
       switch (providerId) {
         case 'gemini': {
@@ -243,6 +245,10 @@ export class GooseRecipe implements Disposable {
 
   protected async deployKubernetes(options: FlowGenerateKubernetesOptions): Promise<FlowGenerateKubernetesResult> {
     const { env, providerId, recipeName, content } = await this.getFlowInfos(options.flowId);
+
+    if (!providerId) {
+      throw new Error('cannot find provider for this recipe, cannot deploy to kubernetes');
+    }
 
     const template = new KubeTemplate({
       job: {
