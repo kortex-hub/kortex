@@ -53,7 +53,6 @@ export const test = base.extend<ElectronFixtures>({
     await new Promise(resolve => setTimeout(resolve, 3000));
     const page = await electronApp.firstWindow();
     await page.waitForLoadState('domcontentloaded');
-    await page.setViewportSize({ width: 1280, height: 720 });
     await use(page);
   },
 });

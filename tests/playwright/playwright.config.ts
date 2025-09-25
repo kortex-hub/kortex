@@ -21,16 +21,10 @@ const config: PlaywrightTestConfig = {
   testDir: './src',
   timeout: 60_000,
 
-  fullyParallel: false,
-
-  forbidOnly: !!process.env.CI,
-
-  retries: process.env.CI ? 2 : 0,
-
   workers: 1,
 
   reporter: [
-    ['html', { outputFolder: './output/html-results' }],
+    ['html', { outputFolder: './output/tests' }],
     ['json', { outputFile: './output/test-results.json' }],
     ['junit', { outputFile: './output/junit-results.xml' }],
     ['list'],
@@ -50,7 +44,7 @@ const config: PlaywrightTestConfig = {
     },
   ],
 
-  outputDir: './output/test-results',
+  outputDir: './output/tests',
 };
 
 export default config;
