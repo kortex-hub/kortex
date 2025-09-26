@@ -437,7 +437,7 @@ importers:
   extensions/openai-compatible:
     dependencies:
       '@ai-sdk/openai-compatible':
-        specifier: ^1.0.18
+        specifier: ^1.0.19
         version: 1.0.19(zod@4.1.12)
       '@kortex-app/api':
         specifier: workspace:*
@@ -456,7 +456,7 @@ importers:
   extensions/openshift-ai:
     dependencies:
       '@ai-sdk/openai-compatible':
-        specifier: ^1.0.18
+        specifier: ^1.0.19
         version: 1.0.19(zod@4.1.12)
       '@kortex-app/api':
         specifier: workspace:*
