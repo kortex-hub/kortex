@@ -48,6 +48,7 @@ const TYPESCRIPT_PROJECTS = [
   'packages/*/tsconfig.json',
   './extensions/*/tsconfig.json',
   './extensions/*/packages/*/tsconfig.json',
+  './tests/playwright/tsconfig.json',
 ];
 
 export default [

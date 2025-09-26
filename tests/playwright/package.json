@@ -1,0 +1,20 @@
+{
+  "name": "@kortex/tests-playwright",
+  "version": "0.0.1-next",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "test": "playwright test",
+    "test:debug": "playwright test --debug",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report ./output/tests",
+    "postinstall": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.2",
+    "@types/node": "^22",
+    "typescript": "5.9.2"
+  }
+}
