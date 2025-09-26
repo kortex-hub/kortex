@@ -5,8 +5,8 @@ import { router } from 'tinro';
 
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
 import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
+import type { Chat } from '/@api/chat/schema.js';
 
-import type { Chat } from '../../../../../../main/src/chat/db/schema';
 import { Button } from '../ui/button';
 import { SidebarGroup, SidebarGroupContent, SidebarMenu } from '../ui/sidebar';
 import { Skeleton } from '../ui/skeleton';

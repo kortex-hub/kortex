@@ -32,12 +32,13 @@ import { inject } from 'inversify';
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { Directories } from '/@/plugin/directories.js';
 import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
+import type { MessageConfig } from '/@api/chat/message-config.js';
+import type { Chat, Message } from '/@api/chat/schema.js';
 
 import { MCPManager } from '../plugin/mcp/mcp-manager.js';
 import { ProviderRegistry } from '../plugin/provider-registry.js';
 import { runMigrate } from './db/migrate.js';
 import { ChatQueries } from './db/queries.js';
-import type { Chat, Message } from './db/schema.js';
 
 export class ChatManager {
   private chatQueries!: ChatQueries;
@@ -61,7 +62,7 @@ export class ChatManager {
     if (!existsSync(directory)) {
       await mkdir(directory, { recursive: true });
     }
-    const sqlite = new Database(join(directory, 'chat.db'));
+    const sqlite = new Database(join(directory, 'chats.db'));
     sqlite.pragma('foreign_keys = ON');
     const db = drizzle(sqlite, {});
 
@@ -190,9 +191,19 @@ export class ChatManager {
   async streamText(params: InferenceParameters & { onDataId: number; chatId: string }): Promise<number> {
     const { chatId } = params;
     const chatGetter = await this.chatQueries.getChatById({ id: chatId });
+    const inferenceComponents = await this.getInferenceComponents(params);
 
     if (!chatGetter.isOk()) {
-      const title = 'Chat';
+      const title = (
+        await generateText({
+          ...inferenceComponents,
+          system: `\n
+          - you will generate a short title based on the first message a user begins a conversation with
+          - ensure it is not more than 80 characters long
+          - the title should be a summary of the user's message
+          - do not use quotes or colons`,
+        })
+      ).text;
 
       await this.chatQueries.saveChat({
         id: chatId,
@@ -201,8 +212,12 @@ export class ChatManager {
       });
     }
 
-    const inferenceComponents = await this.getInferenceComponents(params);
-
+    const config: MessageConfig = {
+      mcp: params.mcp,
+      modelId: params.modelId,
+      connectionName: params.connectionName,
+      providerId: params.providerId,
+    };
     await this.chatQueries.saveMessages({
       messages: [
         {
@@ -212,6 +227,7 @@ export class ChatManager {
           parts: inferenceComponents.userMessage.parts,
           createdAt: new Date(),
           attachments: [],
+          config,
         },
       ],
     });
@@ -229,6 +245,7 @@ export class ChatManager {
               createdAt: new Date(),
               chatId,
               attachments: [],
+              config,
             })),
           });
         },

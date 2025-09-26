@@ -1,9 +1,9 @@
 import type { Attachment } from '@ai-sdk/ui-utils';
 import type { AssistantModelMessage, FileUIPart, ToolModelMessage, UIMessage } from 'ai';
 
-import type { Document, Message as DBMessage } from '../../../../../main/src/chat/db/schema.js';
+import type { Document, Message } from '/@api/chat/schema.js';
 
-export function convertToUIMessages(messages: Array<DBMessage>): Array<UIMessage> {
+export function convertToUIMessages(messages: Array<Message>): Array<UIMessage> {
   return messages.map(message => ({
     id: message.id,
     parts: message.parts as UIMessage['parts'],
