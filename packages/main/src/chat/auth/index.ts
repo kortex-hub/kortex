@@ -5,8 +5,8 @@ import type { ResultAsync } from 'neverthrow';
 import { ok, safeTry } from 'neverthrow';
 
 import type { ChatQueries } from '/@/chat/db/queries.js';
-import type { Session, User } from '/@/chat/db/schema.js';
 import type { DbError } from '/@api/chat/errors/db.js';
+import type { Session, User } from '/@api/chat/schema.js';
 
 export type SessionValidationResult = { session: Session; user: User } | { session: null; user: null };
 

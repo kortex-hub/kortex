@@ -11,9 +11,9 @@ import { getModels } from '/@/lib/models/models-utils';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import { providerInfos } from '/@/stores/providers';
 import { MessageConfigSchema } from '/@api/chat/message-config';
+import type { Chat as DbChat, Message as DbMessage } from '/@api/chat/schema.js';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
-import type { Chat as DbChat, Message as DbMessage } from '../../../../../main/src/chat/db/schema';
 import ChatHeader from './chat-header.svelte';
 import { IPCChatTransport } from './ipc-chat-transport';
 import McpMessages from './mcp-messages.svelte';

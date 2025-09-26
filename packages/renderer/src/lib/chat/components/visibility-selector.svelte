@@ -3,8 +3,8 @@ import type { ClassValue } from 'svelte/elements';
 
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
 import { cn } from '/@/lib/chat/utils/shadcn';
+import type { Chat } from '/@api/chat/schema.js';
 
-import type { Chat } from '../../../../../main/src/chat/db/schema';
 import CheckCircleFillIcon from './icons/check-circle-fill.svelte';
 import ChevronDownIcon from './icons/chevron-down.svelte';
 import GlobeIcon from './icons/globe.svelte';
