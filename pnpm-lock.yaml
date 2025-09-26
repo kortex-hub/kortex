@@ -59,8 +59,8 @@ importers:
         specifier: ^0.5.16
         version: 0.5.16
       ai:
-        specifier: ^5.0.52
-        version: 5.0.52(zod@4.1.11)
+        specifier: ^5.0.54
+        version: 5.0.54(zod@4.1.11)
       bcrypt-ts:
         specifier: ^7.1.0
         version: 7.1.0
@@ -680,12 +680,6 @@ packages:
 
   '@adobe/css-tools@4.4.3':
     resolution: {integrity: sha512-VQKMkwriZbaOgVCby1UDY/LDk5fIjhQicCvVPFqfe+69fWaPWydbWJ3wRt59/YzIwda1I81loas3oCoHxnqvdA==}
-
-  '@ai-sdk/gateway@1.0.29':
-    resolution: {integrity: sha512-o9LtmBiG2WAgs3GAmL79F8idan/UupxHG8Tyr2gP4aUSOzflM0bsvfzozBp8x6WatQnOx+Pio7YNw45Y6I16iw==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4
 
   '@ai-sdk/gateway@1.0.30':
     resolution: {integrity: sha512-QdrSUryr/CLcsCISokLHOImcHj1adGXk1yy4B3qipqLhcNc33Kj/O/3crI790Qp85oDx7sc4vm7R4raf9RA/kg==}
@@ -2865,12 +2859,6 @@ packages:
   aggregate-error@3.1.0:
     resolution: {integrity: sha512-4I7Td01quW/RpocfNayFdFVk1qSuoh0E7JrbRJ16nH01HhKFQ88INq9Sd+nd72zqRySlr9BmDA8xlEJ6vJMrYA==}
     engines: {node: '>=8'}
-
-  ai@5.0.52:
-    resolution: {integrity: sha512-GLlRHjMlvN9+w7UYGxCpUQ8GgCRv5Z+JCprRH3Q8YbXJ/JyIc6EP9+YRUmQsyExX/qQsuehe7y/LLygarbSTOw==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4
 
   ai@5.0.54:
     resolution: {integrity: sha512-eM3EH4VVCWRMfs17r8HF8RtCN/+vBdpWOQoHSVooIfB0BZerOHyrktrVoDP6G6xatUzGLTvJT3rMKLkbPTLPBg==}
@@ -7581,12 +7569,6 @@ snapshots:
 
   '@adobe/css-tools@4.4.3': {}
 
-  '@ai-sdk/gateway@1.0.29(zod@4.1.11)':
-    dependencies:
-      '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.9(zod@4.1.11)
-      zod: 4.1.11
-
   '@ai-sdk/gateway@1.0.30(zod@4.1.11)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
@@ -9861,14 +9843,6 @@ snapshots:
     dependencies:
       clean-stack: 2.2.0
       indent-string: 4.0.0
-
-  ai@5.0.52(zod@4.1.11):
-    dependencies:
-      '@ai-sdk/gateway': 1.0.29(zod@4.1.11)
-      '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.9(zod@4.1.11)
-      '@opentelemetry/api': 1.9.0
-      zod: 4.1.11
 
   ai@5.0.54(zod@4.1.11):
     dependencies:
