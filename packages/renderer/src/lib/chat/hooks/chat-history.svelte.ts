@@ -2,8 +2,7 @@ import { getContext, setContext } from 'svelte';
 import { toast } from 'svelte-sonner';
 
 import type { VisibilityType } from '/@/lib/chat/components/visibility-type';
-
-import type { Chat } from '../../../../../main/src/chat/db/schema';
+import type { Chat } from '/@api/chat/schema.js';
 
 const contextKey = Symbol('ChatHistory');
 

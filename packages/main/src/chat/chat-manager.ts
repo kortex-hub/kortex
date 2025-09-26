@@ -33,12 +33,12 @@ import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { Directories } from '/@/plugin/directories.js';
 import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
 import type { MessageConfig } from '/@api/chat/message-config.js';
+import type { Chat, Message } from '/@api/chat/schema.js';
 
 import { MCPManager } from '../plugin/mcp/mcp-manager.js';
 import { ProviderRegistry } from '../plugin/provider-registry.js';
 import { runMigrate } from './db/migrate.js';
 import { ChatQueries } from './db/queries.js';
-import type { Chat, Message } from './db/schema.js';
 
 export class ChatManager {
   private chatQueries!: ChatQueries;

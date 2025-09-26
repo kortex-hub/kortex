@@ -9,7 +9,6 @@ import { fromPromise, ok, safeTry } from 'neverthrow';
 
 import type { DbError } from '/@api/chat/errors/db.js';
 import { DbInternalError } from '/@api/chat/errors/db.js';
-
 import {
   type AuthUser,
   type Chat,
@@ -25,7 +24,8 @@ import {
   user,
   type Vote,
   vote,
-} from './schema.js';
+} from '/@api/chat/schema.js';
+
 import { unwrapSingleQueryResult } from './utils.js';
 
 interface DbDocument {
