@@ -304,12 +304,12 @@ jobs:
       - name: Run Smoke E2E tests in ${{ matrix.mode == 'production' && 'Production' || 'Development' }} Mode
         run: |
           if [ ${{ matrix.mode }} == 'production' ]; then
-            echo "Compiling the Podman Desktop in production mode"
+            echo "Compiling Kortex in production mode"
             export ELECTRON_ENABLE_INSPECT=true
             pnpm compile:current --linux dir
-            path=$(realpath ./dist/linux-unpacked/podman-desktop)
-            echo "Podman Desktop built binary: $path"
-            export PODMAN_DESKTOP_BINARY=$path
+            path=$(realpath ./dist/linux-unpacked/kortex)
+            echo "Kortex built binary: $path"
+            export KORTEX_BINARY=$path
           fi
           pnpm test:e2e
 

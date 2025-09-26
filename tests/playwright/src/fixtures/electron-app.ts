@@ -31,18 +31,36 @@ export interface ElectronFixtures {
 export const test = base.extend<ElectronFixtures>({
   // eslint-disable-next-line no-empty-pattern
   electronApp: async ({}, use) => {
-    const electronEnv = {
-      ...process.env,
-      ELECTRON_IS_DEV: '1',
-    };
+    // Filter out undefined values from process.env
+    const electronEnv: Record<string, string> = {};
+    for (const [key, value] of Object.entries(process.env)) {
+      if (value !== undefined) {
+        electronEnv[key] = value;
+      }
+    }
 
-    delete (electronEnv as Record<string, string | undefined>).ELECTRON_RUN_AS_NODE;
+    delete electronEnv.ELECTRON_RUN_AS_NODE;
 
-    const electronApp = await electron.launch({
-      args: ['.', '--no-sandbox'],
-      env: electronEnv,
-      cwd: resolve(__dirname, '../../../..'),
-    });
+    // Check if KORTEX_BINARY is set (production mode) or use development mode
+    const isProductionMode = !!process.env.KORTEX_BINARY;
+    const launchConfig = isProductionMode
+      ? {
+          // Production mode: use the built binary
+          executablePath: process.env.KORTEX_BINARY!,
+          args: ['--no-sandbox'],
+          env: electronEnv,
+        }
+      : {
+          // Development mode: use the source code
+          args: ['.', '--no-sandbox'],
+          env: {
+            ...electronEnv,
+            ELECTRON_IS_DEV: '1',
+          },
+          cwd: resolve(__dirname, '../../../..'),
+        };
+
+    const electronApp = await electron.launch(launchConfig);
 
     await use(electronApp);
 
