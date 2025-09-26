@@ -191,9 +191,19 @@ export class ChatManager {
   async streamText(params: InferenceParameters & { onDataId: number; chatId: string }): Promise<number> {
     const { chatId } = params;
     const chatGetter = await this.chatQueries.getChatById({ id: chatId });
+    const inferenceComponents = await this.getInferenceComponents(params);
 
     if (!chatGetter.isOk()) {
-      const title = 'Chat';
+      const title = (
+        await generateText({
+          ...inferenceComponents,
+          system: `\n
+          - you will generate a short title based on the first message a user begins a conversation with
+          - ensure it is not more than 80 characters long
+          - the title should be a summary of the user's message
+          - do not use quotes or colons`,
+        })
+      ).text;
 
       await this.chatQueries.saveChat({
         id: chatId,
@@ -201,8 +211,6 @@ export class ChatManager {
         title,
       });
     }
-
-    const inferenceComponents = await this.getInferenceComponents(params);
 
     const config: MessageConfig = {
       mcp: params.mcp,
