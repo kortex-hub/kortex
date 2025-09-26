@@ -47,7 +47,7 @@ const exportAsFlow = async (): Promise<void> => {
           role: 'user',
           parts: [
             {
-              text: 'Use the conversation to make a unique prompt, only return the prompt it will be executed automatically.',
+              text: `Help me to build a reproducible prompt to achieve the same result as I got in the conversation above. The prompt will be executed by another LLM without any further user input so it must contain all the information on how to get the same result.`,
               type: 'text',
             },
           ],
