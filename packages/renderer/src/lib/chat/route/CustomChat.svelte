@@ -12,7 +12,6 @@ import { sidebarCollapsed } from '/@/lib/chat/state/sidebar-collapsed.svelte';
 
 import { DEFAULT_CHAT_MODEL } from '../ai/models';
 import { SelectedModel } from '../hooks/selected-model.svelte';
-import { convertToUIMessages } from '../utils/chat';
 
 interface Props {
   chatId?: string;
@@ -48,7 +47,7 @@ onMount(() => {
     <SidebarProvider open={!sidebarCollapsed.value} onOpenChange={(open: boolean): boolean => sidebarCollapsed.value = !open}>
       <AppSidebar {chatId} />
       <SidebarInset>
-        <Chat {chat} initialMessages={convertToUIMessages(messages)} readonly={false} />
+        <Chat {chat} {messages} readonly={false} />
       </SidebarInset>
     </SidebarProvider>
   {/await}

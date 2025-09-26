@@ -32,6 +32,7 @@ import { inject } from 'inversify';
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { Directories } from '/@/plugin/directories.js';
 import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
+import type { MessageConfig } from '/@api/chat/message-config.js';
 
 import { MCPManager } from '../plugin/mcp/mcp-manager.js';
 import { ProviderRegistry } from '../plugin/provider-registry.js';
@@ -61,7 +62,7 @@ export class ChatManager {
     if (!existsSync(directory)) {
       await mkdir(directory, { recursive: true });
     }
-    const sqlite = new Database(join(directory, 'chat.db'));
+    const sqlite = new Database(join(directory, 'chats.db'));
     sqlite.pragma('foreign_keys = ON');
     const db = drizzle(sqlite, {});
 
@@ -203,6 +204,12 @@ export class ChatManager {
 
     const inferenceComponents = await this.getInferenceComponents(params);
 
+    const config: MessageConfig = {
+      mcp: params.mcp,
+      modelId: params.modelId,
+      connectionName: params.connectionName,
+      providerId: params.providerId,
+    };
     await this.chatQueries.saveMessages({
       messages: [
         {
@@ -212,6 +219,7 @@ export class ChatManager {
           parts: inferenceComponents.userMessage.parts,
           createdAt: new Date(),
           attachments: [],
+          config,
         },
       ],
     });
@@ -229,6 +237,7 @@ export class ChatManager {
               createdAt: new Date(),
               chatId,
               attachments: [],
+              config,
             })),
           });
         },
