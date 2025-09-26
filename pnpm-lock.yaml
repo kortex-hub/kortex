@@ -35,8 +35,8 @@ importers:
         specifier: ^1.3.0
         version: 1.3.0(patch_hash=1c34691b2a4cf5f4fdeb73244fb59dccceee5642ddca2ac6c41fe86d9fde86e5)(encoding@0.1.13)
       '@modelcontextprotocol/sdk':
-        specifier: ^1.18.1
-        version: 1.18.1
+        specifier: ^1.18.2
+        version: 1.18.2
       '@oslojs/crypto':
         specifier: ^1.0.1
         version: 1.0.1
@@ -382,8 +382,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/extension-api
       '@modelcontextprotocol/sdk':
-        specifier: ^1.18.1
-        version: 1.18.1
+        specifier: ^1.18.2
+        version: 1.18.2
       '@octokit/rest':
         specifier: ^21.1.0
         version: 21.1.1
@@ -1615,8 +1615,8 @@ packages:
     resolution: {integrity: sha512-9QOtNffcOF/c1seMCDnjckb3R9WHcG34tky+FHpNKKCW0wc/scYLwMtO+ptyGUfMW0/b/n4qRiALlaFHc9Oj7Q==}
     engines: {node: '>= 10.0.0'}
 
-  '@modelcontextprotocol/sdk@1.18.1':
-    resolution: {integrity: sha512-d//GE8/Yh7aC3e7p+kZG8JqqEAwwDUmAfvH1quogtbk+ksS6E0RR6toKKESPYYZVre0meqkJb27zb+dhqE9Sgw==}
+  '@modelcontextprotocol/sdk@1.18.2':
+    resolution: {integrity: sha512-beedclIvFcCnPrYgHsylqiYJVJ/CI47Vyc4tY8no1/Li/O8U4BTlJfy6ZwxkYwx+Mx10nrgwSVrA7VBbhh4slg==}
     engines: {node: '>=18'}
 
   '@mswjs/interceptors@0.39.2':
@@ -4708,6 +4708,10 @@ packages:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
     engines: {node: '>=0.10.0'}
 
+  iconv-lite@0.7.0:
+    resolution: {integrity: sha512-cf6L2Ds3h57VVmkZe+Pn+5APsT7FpqJtEhhieDCvrE2MK5Qk9MyffgQyuxQTm6BChfeZNtcOLHp9IcWRVcIcBQ==}
+    engines: {node: '>=0.10.0'}
+
   ieee754@1.2.1:
     resolution: {integrity: sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==}
 
@@ -5986,9 +5990,8 @@ packages:
   path-to-regexp@6.3.0:
     resolution: {integrity: sha512-Yhpw4T9C6hPpgPeA28us07OJeqZ5EzQTkbfwuhsUg0c237RomFoETJgmp2sa3F/41gfLE6G5cqcYwznmeEeOlQ==}
 
-  path-to-regexp@8.2.0:
-    resolution: {integrity: sha512-TdrF7fW9Rphjq4RjrW0Kp2AW0Ahwu9sRGTkS6bvDi0SCwZlEZYmcfDbEsTz8RVk0EHIS/Vd1bv3JhG+1xZuAyQ==}
-    engines: {node: '>=16'}
+  path-to-regexp@8.3.0:
+    resolution: {integrity: sha512-7jdwVIRtsP8MYpdXSwOS0YdD0Du+qOoF/AEPIt88PcCFrZCzx41oxku1jD88hZBwbNUIEfpqvuhjFaMAqMTWnA==}
 
   path-type@4.0.0:
     resolution: {integrity: sha512-gDKb8aZMDeD/tZWs9P6+q0J9Mwkdl6xMV8TjnGP3qJVJ06bdMgkbBlLU8IdfOsIsFz2BW1rNVT3XuNEl8zPAvw==}
@@ -6222,9 +6225,9 @@ packages:
     resolution: {integrity: sha512-8zGqypfENjCIqGhgXToC8aB2r7YrBX+AQAfIPs/Mlk+BtPTztOvTS01NRW/3Eh60J+a48lt8qsCzirQ6loCVfA==}
     engines: {node: '>= 0.8'}
 
-  raw-body@3.0.0:
-    resolution: {integrity: sha512-RmkhL8CAyCRPXCE28MMH0z2PNWQBNk2Q09ZdxM9IOOXwxwZbN+qbWaatPkdkWIKL2ZVDImrN/pK5HTRz2PcS4g==}
-    engines: {node: '>= 0.8'}
+  raw-body@3.0.1:
+    resolution: {integrity: sha512-9G8cA+tuMS75+6G/TzW8OtLzmBDMo8p1JRxN5AZ+LAp8uxGA8V8GZm4GQ4/N5QNQEnLmg6SS7wyuSmbKepiKqA==}
+    engines: {node: '>= 0.10'}
 
   rc@1.2.8:
     resolution: {integrity: sha512-y3bGgqKj3QBdxLbLkomlohkvsA8gdAiUQlSBJnBhfn+BPxg4bc62d8TcBW15wavDfgexCgccckhcZvywyQYPOw==}
@@ -7897,7 +7900,7 @@ snapshots:
 
   '@electron/notarize@2.5.0':
     dependencies:
-      debug: 4.4.1
+      debug: 4.4.3
       fs-extra: 9.1.0
       promise-retry: 2.0.1
     transitivePeerDependencies:
@@ -7906,7 +7909,7 @@ snapshots:
   '@electron/osx-sign@1.3.1':
     dependencies:
       compare-version: 0.1.2
-      debug: 4.4.1
+      debug: 4.4.3
       fs-extra: 10.1.0
       isbinaryfile: 4.0.10
       minimist: 1.2.8
@@ -7939,7 +7942,7 @@ snapshots:
       '@electron/node-gyp': https://codeload.github.com/electron/node-gyp/tar.gz/06b29aafb7708acef8b3669835c8a7857ebc92d2
       '@malept/cross-spawn-promise': 2.0.0
       chalk: 4.1.2
-      debug: 4.4.1
+      debug: 4.4.3
       detect-libc: 2.1.0
       fs-extra: 10.1.0
       got: 11.8.6
@@ -7958,7 +7961,7 @@ snapshots:
     dependencies:
       '@electron/asar': 3.4.1
       '@malept/cross-spawn-promise': 2.0.0
-      debug: 4.4.1
+      debug: 4.4.3
       dir-compare: 4.2.0
       fs-extra: 11.3.0
       minimatch: 9.0.5
@@ -8483,14 +8486,14 @@ snapshots:
 
   '@malept/flatpak-bundler@0.4.0':
     dependencies:
-      debug: 4.4.1
+      debug: 4.4.3
       fs-extra: 9.1.0
       lodash: 4.17.21
       tmp-promise: 3.0.3
     transitivePeerDependencies:
       - supports-color
 
-  '@modelcontextprotocol/sdk@1.18.1':
+  '@modelcontextprotocol/sdk@1.18.2':
     dependencies:
       ajv: 6.12.6
       content-type: 1.0.5
@@ -8501,7 +8504,7 @@ snapshots:
       express: 5.1.0
       express-rate-limit: 7.5.1(express@5.1.0)
       pkce-challenge: 5.0.0
-      raw-body: 3.0.0
+      raw-body: 3.0.1
       zod: 3.25.76
       zod-to-json-schema: 3.24.6(zod@3.25.76)
     transitivePeerDependencies:
@@ -9371,7 +9374,7 @@ snapshots:
     dependencies:
       '@typescript-eslint/tsconfig-utils': 8.39.1(typescript@5.9.2)
       '@typescript-eslint/types': 8.39.1
-      debug: 4.4.1
+      debug: 4.4.3
       typescript: 5.9.2
     transitivePeerDependencies:
       - supports-color
@@ -9495,7 +9498,7 @@ snapshots:
       '@typescript-eslint/tsconfig-utils': 8.35.1(typescript@5.9.2)
       '@typescript-eslint/types': 8.35.1
       '@typescript-eslint/visitor-keys': 8.35.1
-      debug: 4.4.1
+      debug: 4.4.3
       fast-glob: 3.3.3
       is-glob: 4.0.3
       minimatch: 9.0.5
@@ -10231,7 +10234,7 @@ snapshots:
       iconv-lite: 0.6.3
       on-finished: 2.4.1
       qs: 6.14.0
-      raw-body: 3.0.0
+      raw-body: 3.0.1
       type-is: 2.0.1
     transitivePeerDependencies:
       - supports-color
@@ -12139,6 +12142,10 @@ snapshots:
     dependencies:
       safer-buffer: 2.1.2
 
+  iconv-lite@0.7.0:
+    dependencies:
+      safer-buffer: 2.1.2
+
   ieee754@1.2.1: {}
 
   ignore@5.3.2: {}
@@ -13571,7 +13578,7 @@ snapshots:
 
   path-to-regexp@6.3.0: {}
 
-  path-to-regexp@8.2.0: {}
+  path-to-regexp@8.3.0: {}
 
   path-type@4.0.0: {}
 
@@ -13780,11 +13787,11 @@ snapshots:
       iconv-lite: 0.4.24
       unpipe: 1.0.0
 
-  raw-body@3.0.0:
+  raw-body@3.0.1:
     dependencies:
       bytes: 3.1.2
       http-errors: 2.0.0
-      iconv-lite: 0.6.3
+      iconv-lite: 0.7.0
       unpipe: 1.0.0
 
   rc@1.2.8:
@@ -14049,7 +14056,7 @@ snapshots:
       depd: 2.0.0
       is-promise: 4.0.0
       parseurl: 1.3.3
-      path-to-regexp: 8.2.0
+      path-to-regexp: 8.3.0
     transitivePeerDependencies:
       - supports-color
 
@@ -14497,7 +14504,7 @@ snapshots:
 
   sumchecker@3.0.1:
     dependencies:
-      debug: 4.4.1
+      debug: 4.4.3
     transitivePeerDependencies:
       - supports-color
 
