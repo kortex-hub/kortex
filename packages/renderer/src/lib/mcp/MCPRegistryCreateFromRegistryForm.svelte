@@ -1,31 +1,39 @@
 <script lang="ts">
 import type { components } from '@kortex-hub/mcp-registry-types';
 import { ErrorMessage, FormPage } from '@podman-desktop/ui-svelte';
+import { onMount } from 'svelte';
 import { router } from 'tinro';
 
 import McpIcon from '/@/lib/images/MCPIcon.svelte';
 import type { MCPTarget } from '/@/lib/mcp/setup/mcp-target';
 import MCPSetupDropdown from '/@/lib/mcp/setup/MCPSetupDropdown.svelte';
 import RemoteSetupForm from '/@/lib/mcp/setup/RemoteSetupForm.svelte';
-import { mcpRegistriesServerInfos } from '/@/stores/mcp-registry-servers';
 import type { MCPSetupOptions } from '/@api/mcp/mcp-setup';
 
 interface Props {
+  registryURL: string;
   serverId: string;
 }
 
-const { serverId }: Props = $props();
+const { registryURL, serverId }: Props = $props();
 
 let loading: boolean = $state(false);
 let error: string | undefined = $state(undefined);
 
-const mcpRegistryServerDetail: components['schemas']['ServerDetail'] | undefined = $derived(
-  $mcpRegistriesServerInfos.find(server => server.serverId === serverId),
-);
+let serverDetails: components['schemas']['ServerDetail'] | undefined = $state();
+
+onMount(() => {
+  /**
+   * Collect the server details
+   */
+  window.getMCPServerDetails(registryURL, serverId).then((details) => {
+    serverDetails = details;
+  }).catch(console.error);
+});
 
 let targets: Array<MCPTarget> = $derived([
-  ...(mcpRegistryServerDetail?.remotes ?? []).map((remote, index) => ({ ...remote, index })),
-  ...(mcpRegistryServerDetail?.packages ?? []).map((pack, index) => ({ ...pack, index })),
+  ...(serverDetails?.remotes ?? []).map((remote, index) => ({ ...remote, index })),
+  ...(serverDetails?.packages ?? []).map((pack, index) => ({ ...pack, index })),
 ]);
 let mcpTarget: MCPTarget | undefined = $state();
 
@@ -54,8 +62,10 @@ async function navigateToMcps(): Promise<void> {
 }
 </script>
 
-{#if mcpRegistryServerDetail}
-  <FormPage title="Adding {mcpRegistryServerDetail.name}" inProgress={loading} onclose={navigateToMcps}>
+<span>serverId {serverId}</span>
+<span>registryURL {registryURL}</span>
+{#if serverDetails}
+  <FormPage title="Adding {serverDetails.name}" inProgress={loading} onclose={navigateToMcps}>
     {#snippet icon()}<McpIcon size={24} />{/snippet}
     {#snippet content()}
 

@@ -23,6 +23,7 @@
 import EventEmitter from 'node:events';
 
 import type * as containerDesktopAPI from '@kortex-app/api';
+import type { components } from '@kortex-hub/mcp-registry-types';
 import type {
   Cluster,
   Context,
@@ -87,6 +88,7 @@ import type { ResourceCount } from '/@api/kubernetes-resource-count';
 import type { KubernetesContextResources } from '/@api/kubernetes-resources';
 import type { KubernetesTroubleshootingInformation } from '/@api/kubernetes-troubleshooting';
 import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '/@api/manifest-info';
+import type { MCPConfigInfo } from '/@api/mcp/mcp-config-info';
 import type { MCPRemoteServerInfo, MCPServerDetail } from '/@api/mcp/mcp-server-info';
 import type { MCPSetupOptions } from '/@api/mcp/mcp-setup';
 import type { Menu } from '/@api/menu.js';
@@ -130,7 +132,6 @@ import type {
 import type { Guide } from '../../main/src/plugin/learning-center/learning-center-api';
 import type { ExtensionBanner, RecommendedRegistry } from '../../main/src/plugin/recommendations/recommendations-api';
 import type { IDisposable } from '../../main/src/plugin/types/disposable';
-import { MCPConfigInfo } from '/@api/mcp/mcp-config-info';
 
 export type DialogResultCallback = (openDialogReturnValue: Electron.OpenDialogReturnValue) => void;
 export type OpenSaveDialogResultCallback = (result: string | string[] | undefined) => void;
@@ -1689,8 +1690,19 @@ export function initExposure(): void {
     },
   );
 
-  contextBridge.exposeInMainWorld('getMcpRegistryServers', async (): Promise<MCPServerDetail[]> => {
-    return ipcInvoke('mcp-registry:getMcpRegistryServers');
+  contextBridge.exposeInMainWorld('getMcpRegistryServers', async (
+    registryURL: string, cursor: string | undefined, limit: number | undefined,
+  ): Promise<components['schemas']['ServerList']> => {
+    return ipcInvoke('mcp-registry:getMcpRegistryServers', registryURL, cursor, limit);
+  });
+
+  /**
+   * Get the Server details in a given registry
+   */
+  contextBridge.exposeInMainWorld('getMCPServerDetails', async (
+    registryURL: string, serverId: string, version?: string,
+  ): Promise<components['schemas']['ServerDetail']> => {
+    return ipcInvoke('mcp-registry:getMCPServerDetails', registryURL, serverId, version);
   });
 
   contextBridge.exposeInMainWorld(

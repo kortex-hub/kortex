@@ -24,6 +24,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 import type * as containerDesktopAPI from '@kortex-app/api';
+import { MCPManager } from '@kortex-hub/mcp-manager';
 import type { components } from '@kortex-hub/mcp-registry-types';
 import type {
   Cluster,
@@ -64,6 +65,7 @@ import { KubeGeneratorRegistry } from '/@/plugin/kubernetes/kube-generator-regis
 import { MCPAIClients } from '/@/plugin/mcp/mcp-ai-clients.js';
 import { MCPExchanges } from '/@/plugin/mcp/mcp-exchanges.js';
 import { MCPPersistentStorage } from '/@/plugin/mcp/mcp-persistent-storage.js';
+import { MCPRegistriesClients } from '/@/plugin/mcp/mcp-registries-clients.js';
 import { MCPStatuses } from '/@/plugin/mcp/mcp-statuses.js';
 import { MenuRegistry } from '/@/plugin/menu-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
@@ -113,6 +115,7 @@ import type { ResourceCount } from '/@api/kubernetes-resource-count.js';
 import type { KubernetesContextResources } from '/@api/kubernetes-resources.js';
 import type { KubernetesTroubleshootingInformation } from '/@api/kubernetes-troubleshooting.js';
 import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '/@api/manifest-info.js';
+import type { MCPConfigInfo } from '/@api/mcp/mcp-config-info.js';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info.js';
 import type { MCPSetupOptions } from '/@api/mcp/mcp-setup.js';
 import type { Menu } from '/@api/menu.js';
@@ -220,9 +223,6 @@ import { TaskConnectionUtils } from './util/task-connection-utils.js';
 import { ViewRegistry } from './view-registry.js';
 import { WebviewRegistry } from './webview/webview-registry.js';
 import { WelcomeInit } from './welcome/welcome-init.js';
-import { MCPManager } from '@kortex-hub/mcp-manager';
-import { MCPConfigInfo } from '/@api/mcp/mcp-config-info.js';
-import { MCPRegistriesClients } from '/@/plugin/mcp/mcp-registries-clients.js';
 
 // workaround for ESM
 const checkDiskSpace: (path: string) => Promise<{ free: number }> = checkDiskSpacePkg as unknown as (
@@ -2202,13 +2202,31 @@ export class PluginSystem {
       return mcpRegistries.getRegistries();
     });
 
-    // TODO: improve with pagination
     this.ipcHandle(
       'mcp-registry:getMcpRegistryServers',
-      async (_listener, serverURL: string): Promise<readonly components['schemas']['ServerDetail'][]> => {
-        const client = mcpRegistriesClients.getClient(serverURL);
-        const serverList = await client.getServers();
-        return serverList.servers;
+      async (_listener, registryURL: string, cursor: string | undefined, limit: number | undefined): Promise<components['schemas']['ServerList']> => {
+        const client = mcpRegistriesClients.getClient(registryURL);
+        return await client.getServers({
+          query: {
+            cursor: cursor,
+            limit: limit,
+          },
+        });
+      },
+    );
+
+    this.ipcHandle(
+      'mcp-registry:getMCPServerDetails',
+      async (_listener, registryURL: string, serverId: string, version?: string): Promise<components['schemas']['ServerDetail']> => {
+        const client = mcpRegistriesClients.getClient(registryURL);
+        return await client.getServer({
+          query: {
+            version: version,
+          },
+          path: {
+            server_id: serverId,
+          },
+        });
       },
     );
 

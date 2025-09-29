@@ -6,8 +6,8 @@ import { filteredMcpRemoteServerInfos, mcpRemoteServerInfoSearchPattern } from '
 import type {MCPConfigInfo} from '/@api/mcp/mcp-config-info';
 
 import McpIcon from '../images/MCPIcon.svelte';
+import McpServerRemoteListActions from './MCPServerActions.svelte';
 import MCPServerEmptyScreen from './MCPServerEmptyScreen.svelte';
-import McpServerRemoteListActions from './MCPServerRemoteListActions.svelte';
 
 interface Props {
   filter?: string;
