@@ -545,6 +545,8 @@ export class PluginSystem {
 
     container.bind<MCPExchanges>(MCPExchanges).toSelf().inSingletonScope();
     container.bind<MCPAIClients>(MCPAIClients).toSelf().inSingletonScope();
+    const mcpAIClients = container.get<MCPAIClients>(MCPAIClients);
+
     container.bind<MCPStatuses>(MCPStatuses).toSelf().inSingletonScope();
 
     // others
@@ -924,6 +926,7 @@ export class PluginSystem {
             if (internalProviderId !== INTERNAL_PROVIDER_ID) continue;
 
             // Collect the credentials
+            // TODO: use proper mcpStorage to get credentials
             const init = await mcpRegistry.getCredentials(serverId, remoteId);
 
             accumulator.push({
@@ -2176,50 +2179,54 @@ export class PluginSystem {
     this.ipcHandle(
       'mcp-registry:createMCPRegistry',
       async (_listener, registryCreateOptions: containerDesktopAPI.MCPRegistryCreateOptions): Promise<void> => {
-        await mcpRegistry.createRegistry(registryCreateOptions);
+        await mcpRegistries.createRegistry(registryCreateOptions);
       },
     );
 
+    // TODO: rename to `mcp-manager:register`
     this.ipcHandle(
       'mcp-registry:setup',
       async (_listener, serverId: string, options: MCPSetupOptions): Promise<void> => {
-        await mcpRegistry.setupMCPServer(serverId, options);
+        await mcpRegistries.setupMCPServer(serverId, options);
       },
     );
 
     this.ipcHandle('mcp-registry:getMcpRegistries', async (): Promise<readonly containerDesktopAPI.MCPRegistry[]> => {
-      return mcpRegistry.getRegistries();
+      return mcpRegistries.getRegistries();
     });
 
+    // TODO: improve pagination
     this.ipcHandle(
       'mcp-registry:getMcpRegistryServers',
       async (): Promise<readonly components['schemas']['ServerDetail'][]> => {
-        return mcpRegistry.listMCPServersFromRegistries();
+        return mcpRegistries.listMCPServersFromRegistries();
       },
     );
 
     this.ipcHandle(
       'mcp-registry:getMcpSuggestedRegistries',
       async (): Promise<containerDesktopAPI.MCPRegistrySuggestedProvider[]> => {
-        return mcpRegistry.getSuggestedRegistries();
+        return mcpRegistries.getSuggestedRegistries();
       },
     );
 
     this.ipcHandle(
       'mcp-registry:unregisterMCPRegistry',
       async (_listener, registry: containerDesktopAPI.MCPRegistry): Promise<void> => {
-        return mcpRegistry.unregisterMCPRegistry(registry, true);
+        return mcpRegistries.unregisterMCPRegistry(registry, true);
       },
     );
 
+    // TODO: rename to `mcp-statuses:collect`
     this.ipcHandle('mcp-manager:fetchMcpRemoteServers', async (_listener): Promise<MCPRemoteServerInfo[]> => {
       return mcpManager.listMCPRemoteServers();
     });
 
+    // TODO: rename to `mcp-manager:unregister`
     this.ipcHandle(
       'mcp-manager:removeMcpRemoteServer',
       async (_listener, key: string, options: { serverId: string; remoteId: number }): Promise<void> => {
-        await mcpRegistry.deleteRemoteMcpFromConfiguration(options.serverId, options.remoteId);
+        await mcpRegistries.deleteRemoteMcpFromConfiguration(options.serverId, options.remoteId);
         return mcpManager.removeMcpRemoteServer(key);
       },
     );
@@ -2227,7 +2234,7 @@ export class PluginSystem {
     this.ipcHandle(
       'mcp-manager:getTools',
       async (_listener, mcpId: string): Promise<Record<string, { description: string }>> => {
-        const tools = await mcpManager.getToolSet([mcpId]);
+        const tools = await mcpAIClients.getToolSet([mcpId]);
 
         return Object.fromEntries(
           Object.entries(tools).map(([key, value]) => [
