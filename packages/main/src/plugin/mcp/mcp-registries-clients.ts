@@ -17,10 +17,11 @@
  ***********************************************************************/
 import type * as kortexAPI from '@kortex-app/api';
 import { MCPRegistryClient } from '@kortex-hub/mcp-registry-client';
-import { inject } from 'inversify';
+import { inject, injectable } from 'inversify';
 
 import { McpRegistries } from '/@/plugin/mcp/mcp-registries.js';
 
+@injectable()
 export class MCPRegistriesClients {
   #clients: Map<string, MCPRegistryClient> = new Map();
 
@@ -43,6 +44,12 @@ export class MCPRegistriesClients {
       new MCPRegistryClient({
         baseURL: registry.url,
       }));
+  }
+
+  public getClient(url: string): MCPRegistryClient {
+    const client = this.#clients.get(url);
+    if(!client) throw new Error(`No client found for ${url}`);
+    return client;
   }
 
   init(): void {

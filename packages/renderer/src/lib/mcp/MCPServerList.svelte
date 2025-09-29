@@ -4,8 +4,8 @@ import { Button, NavPage } from '@podman-desktop/ui-svelte';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 
 import McpRegistriesEditing from './MCPRegistriesEditing.svelte';
+import McpServerListRemoteReady from './MCPServerListConfigured.svelte';
 import McpServerListRegistryInstall from './MCPServerListRegistryInstall.svelte';
-import McpServerListRemoteReady from './MCPServerListRemoteReady.svelte';
 
 interface Props {
   tab?: string;
@@ -13,8 +13,8 @@ interface Props {
 
 const { tab }: Props = $props();
 
-let selectedTab = $state<'READY' | 'INSTALLABLE' | 'REGISTRIES-EDITING'>(
-  (tab ?? $mcpRemoteServerInfos.length) ? 'READY' : 'INSTALLABLE',
+let selectedTab = $state<'CONFIGURED' | 'INSTALLABLE' | 'REGISTRIES-EDITING'>(
+  (tab ?? $mcpRemoteServerInfos.length) ? 'CONFIGURED' : 'INSTALLABLE',
 );
 
 let searchTerm = $state('');
@@ -22,8 +22,8 @@ let searchTerm = $state('');
 
 <NavPage bind:searchTerm={searchTerm} title="MCP servers">
     {#snippet tabs()}
-    <Button type="tab" on:click={(): string => selectedTab = 'READY'} selected={selectedTab === 'READY'}
-      >Ready</Button>
+    <Button type="tab" on:click={(): string => selectedTab = 'CONFIGURED'} selected={selectedTab === 'CONFIGURED'}
+      >Configured</Button>
     <Button type="tab" on:click={():string => selectedTab = 'INSTALLABLE'} selected={selectedTab === 'INSTALLABLE'}
       >Install</Button>
     <Button type="tab" on:click={():string => selectedTab = 'REGISTRIES-EDITING'} selected={selectedTab === 'REGISTRIES-EDITING'}
@@ -32,7 +32,7 @@ let searchTerm = $state('');
 
   {#snippet content()}
   <div class="flex min-w-full h-full">
-      {#if selectedTab === 'READY'}
+      {#if selectedTab === 'CONFIGURED'}
         <McpServerListRemoteReady bind:filter={searchTerm}/>
       {:else if selectedTab === 'INSTALLABLE'}
         <McpServerListRegistryInstall bind:filter={searchTerm}/>

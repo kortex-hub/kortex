@@ -221,6 +221,8 @@ import { ViewRegistry } from './view-registry.js';
 import { WebviewRegistry } from './webview/webview-registry.js';
 import { WelcomeInit } from './welcome/welcome-init.js';
 import { MCPManager } from '@kortex-hub/mcp-manager';
+import { MCPConfigInfo } from '/@api/mcp/mcp-config-info.js';
+import { MCPRegistriesClients } from '/@/plugin/mcp/mcp-registries-clients.js';
 
 // workaround for ESM
 const checkDiskSpace: (path: string) => Promise<{ free: number }> = checkDiskSpacePkg as unknown as (
@@ -548,6 +550,11 @@ export class PluginSystem {
     const mcpAIClients = container.get<MCPAIClients>(MCPAIClients);
 
     container.bind<MCPStatuses>(MCPStatuses).toSelf().inSingletonScope();
+    const mcpStatuses = container.get<MCPStatuses>(MCPStatuses);
+
+    container.bind<MCPRegistriesClients>(MCPRegistriesClients).toSelf().inSingletonScope();
+    const mcpRegistriesClients = container.get<MCPRegistriesClients>(MCPRegistriesClients);
+    mcpRegistriesClients.init();
 
     // others
 
@@ -2195,11 +2202,13 @@ export class PluginSystem {
       return mcpRegistries.getRegistries();
     });
 
-    // TODO: improve pagination
+    // TODO: improve with pagination
     this.ipcHandle(
       'mcp-registry:getMcpRegistryServers',
-      async (): Promise<readonly components['schemas']['ServerDetail'][]> => {
-        return mcpRegistries.listMCPServersFromRegistries();
+      async (_listener, serverURL: string): Promise<readonly components['schemas']['ServerDetail'][]> => {
+        const client = mcpRegistriesClients.getClient(serverURL);
+        const serverList = await client.getServers();
+        return serverList.servers;
       },
     );
 
@@ -2217,9 +2226,8 @@ export class PluginSystem {
       },
     );
 
-    // TODO: rename to `mcp-statuses:collect`
-    this.ipcHandle('mcp-manager:fetchMcpRemoteServers', async (_listener): Promise<MCPRemoteServerInfo[]> => {
-      return mcpManager.listMCPRemoteServers();
+    this.ipcHandle('mcp-statuses:collect', async (_listener): Promise<MCPConfigInfo[]> => {
+      return mcpStatuses.collect();
     });
 
     // TODO: rename to `mcp-manager:unregister`

@@ -1,15 +1,15 @@
 <script lang="ts">
 import { handleNavigation } from '/@/navigation';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
+import type {MCPConfigInfo} from '/@api/mcp/mcp-config-info';
 import { NavigationPage } from '/@api/navigation-page';
 
 interface Props {
-  object: MCPRemoteServerInfo;
+  object: MCPConfigInfo;
 }
 
 let { object }: Props = $props();
 
-function openMCPDetails(object: MCPRemoteServerInfo): void {
+function openMCPDetails(object: MCPConfigInfo): void {
   handleNavigation({
     page: NavigationPage.MCP_DETAILS,
     parameters: {

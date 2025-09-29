@@ -22,7 +22,7 @@ import { inject, injectable } from 'inversify';
 
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 
-const STORAGE_KEY = 'mcp:registry:configurations';
+const STORAGE_KEY = 'mcp:configurations';
 
 @injectable()
 export class MCPPersistentStorage implements MCPStorage {

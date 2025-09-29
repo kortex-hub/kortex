@@ -138,8 +138,8 @@
   },
   "dependencies": {
     "@docker/extension-api-client-types": "0.4.2",
-    "@kortex-hub/mcp-manager": "link:../../node/mcp-runner/packages/mcp-manager",
-    "@kortex-hub/mcp-registry-client": "link:../../node/mcp-runner/packages/mcp-registry-client",
+    "@kortex-hub/mcp-manager": "link:../../web/mcp-runner/packages/mcp-manager",
+    "@kortex-hub/mcp-registry-client": "link:../../web/mcp-runner/packages/mcp-registry-client",
     "@kubernetes/client-node": "^1.3.0",
     "@modelcontextprotocol/sdk": "^1.18.2",
     "@oslojs/crypto": "^1.0.1",

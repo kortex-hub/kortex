@@ -3,10 +3,9 @@ import { FilteredEmptyScreen, Table, TableColumn, TableRow } from '@podman-deskt
 
 import MCPNameColumn from '/@/lib/mcp/column/MCPNameColumn.svelte';
 import { filteredMcpRemoteServerInfos, mcpRemoteServerInfoSearchPattern } from '/@/stores/mcp-remote-servers';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
+import type {MCPConfigInfo} from '/@api/mcp/mcp-config-info';
 
 import McpIcon from '../images/MCPIcon.svelte';
-import { MCPServerDescriptionColumn } from './mcp-server-columns';
 import MCPServerEmptyScreen from './MCPServerEmptyScreen.svelte';
 import McpServerRemoteListActions from './MCPServerRemoteListActions.svelte';
 
@@ -16,7 +15,7 @@ interface Props {
 
 let { filter = $bindable() }: Props = $props();
 
-interface SelectableMCPRemoteServerInfo extends MCPRemoteServerInfo {
+interface SelectableMCPConfigInfo extends MCPConfigInfo {
   selected?: boolean;
 }
 
@@ -24,33 +23,33 @@ $effect(() => {
   mcpRemoteServerInfoSearchPattern.set(filter ?? '');
 });
 
-const servers: SelectableMCPRemoteServerInfo[] = $derived(
+const servers: SelectableMCPConfigInfo[] = $derived(
   $filteredMcpRemoteServerInfos.map(server => ({
     ...server,
     selected: false,
   })),
 );
 
-const statusColumn = new TableColumn<MCPRemoteServerInfo>('Status', {
+const statusColumn = new TableColumn<SelectableMCPConfigInfo>('Status', {
   width: '60px',
   renderer: McpIcon,
 });
 
-const nameColumn = new TableColumn<MCPRemoteServerInfo>('Name', {
+const nameColumn = new TableColumn<MCPConfigInfo>('Name', {
   width: '2fr',
   renderer: MCPNameColumn,
   comparator: (a, b): number => b.name.localeCompare(a.name),
 });
 
-const actionsColumn = new TableColumn<MCPRemoteServerInfo>('Actions', {
+const actionsColumn = new TableColumn<MCPConfigInfo>('Actions', {
   align: 'right',
   renderer: McpServerRemoteListActions,
   overflow: true,
 });
 
-const columns = [statusColumn, nameColumn, new MCPServerDescriptionColumn(), actionsColumn];
+const columns = [statusColumn, nameColumn, actionsColumn];
 
-const row = new TableRow<MCPRemoteServerInfo>({});
+const row = new TableRow<MCPConfigInfo>({});
 </script>
 
 {#if servers.length === 0}

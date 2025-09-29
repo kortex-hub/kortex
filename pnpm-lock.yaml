@@ -32,11 +32,11 @@ importers:
         specifier: 0.4.2
         version: 0.4.2
       '@kortex-hub/mcp-manager':
-        specifier: link:../../node/mcp-runner/packages/mcp-manager
-        version: link:../../node/mcp-runner/packages/mcp-manager
+        specifier: link:../../web/mcp-runner/packages/mcp-manager
+        version: link:../../web/mcp-runner/packages/mcp-manager
       '@kortex-hub/mcp-registry-client':
-        specifier: link:../../node/mcp-runner/packages/mcp-registry-client
-        version: link:../../node/mcp-runner/packages/mcp-registry-client
+        specifier: link:../../web/mcp-runner/packages/mcp-registry-client
+        version: link:../../web/mcp-runner/packages/mcp-registry-client
       '@kubernetes/client-node':
         specifier: ^1.3.0
         version: 1.3.0(patch_hash=1c34691b2a4cf5f4fdeb73244fb59dccceee5642ddca2ac6c41fe86d9fde86e5)(encoding@0.1.13)

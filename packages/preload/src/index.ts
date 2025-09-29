@@ -130,6 +130,7 @@ import type {
 import type { Guide } from '../../main/src/plugin/learning-center/learning-center-api';
 import type { ExtensionBanner, RecommendedRegistry } from '../../main/src/plugin/recommendations/recommendations-api';
 import type { IDisposable } from '../../main/src/plugin/types/disposable';
+import { MCPConfigInfo } from '/@api/mcp/mcp-config-info';
 
 export type DialogResultCallback = (openDialogReturnValue: Electron.OpenDialogReturnValue) => void;
 export type OpenSaveDialogResultCallback = (result: string | string[] | undefined) => void;
@@ -1707,8 +1708,8 @@ export function initExposure(): void {
     return ipcInvoke('mcp-registry:setup', serverId, options);
   });
 
-  contextBridge.exposeInMainWorld('fetchMcpRemoteServers', async (): Promise<MCPRemoteServerInfo[]> => {
-    return ipcInvoke('mcp-manager:fetchMcpRemoteServers');
+  contextBridge.exposeInMainWorld('collectMCPStatuses', async (): Promise<MCPConfigInfo[]> => {
+    return ipcInvoke('mcp-statuses:collect');
   });
 
   contextBridge.exposeInMainWorld(

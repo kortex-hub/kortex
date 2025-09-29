@@ -48,9 +48,11 @@ export class MCPStatuses {
     // map to MCPConfigInfo
     return configs.map((config) => {
       return {
-        configId: config.id,
+        id: config.id,
         status: instances.has(config.id) ? 'running' : 'stopped',
         type: config.type,
+        name: config.name,
+        version: config.version,
       };
     });
   }
