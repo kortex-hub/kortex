@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2025 Red Hat, Inc.
+ * Copyright (C) 2022-2025 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,26 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-export interface InputResponse {
-  value: string;
+export interface MCPConfigInfo {
+  status: 'running' | 'stopped';
+  type: 'remote' | 'package';
+  configId: string;
 }
-
-export interface InputWithVariableResponse extends InputResponse {
-  variables: Record<string, InputResponse>;
-}
-
-export interface MCPSetupRemoteOptions {
-  type: 'remote';
-  index: number;
-  headers: Record<string, InputWithVariableResponse>;
-}
-
-export interface MCPSetupPackageOptions {
-  type: 'package';
-  index: number;
-  packageArguments: Record<number, InputWithVariableResponse>;
-  runtimeArguments: Record<number, InputWithVariableResponse>;
-  environmentVariables: Record<string, InputWithVariableResponse>;
-}
-
-export type MCPSetupOptions = MCPSetupRemoteOptions | MCPSetupPackageOptions;

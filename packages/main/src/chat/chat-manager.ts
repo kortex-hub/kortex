@@ -35,10 +35,11 @@ import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
 import type { MessageConfig } from '/@api/chat/message-config.js';
 import type { Chat, Message } from '/@api/chat/schema.js';
 
-import { MCPManager } from '../plugin/mcp/mcp-manager.js';
 import { ProviderRegistry } from '../plugin/provider-registry.js';
 import { runMigrate } from './db/migrate.js';
 import { ChatQueries } from './db/queries.js';
+import { MCPExchanges } from '/@/plugin/mcp/mcp-exchanges.js';
+import { MCPAIClients } from '/@/plugin/mcp/mcp-ai-clients.js';
 
 export class ChatManager {
   private chatQueries!: ChatQueries;
@@ -47,8 +48,10 @@ export class ChatManager {
   constructor(
     @inject(ProviderRegistry)
     private readonly providerRegistry: ProviderRegistry,
-    @inject(MCPManager)
-    private readonly mcpManager: MCPManager,
+    @inject(MCPExchanges)
+    private readonly mcpExchanges: MCPExchanges,
+    @inject(MCPAIClients)
+    private readonly mcpAIClients: MCPAIClients,
     @inject(WebContentsType)
     private readonly webContents: WebContents,
     @inject(IPCHandle)
@@ -99,7 +102,7 @@ export class ChatManager {
   }
 
   private async getExchanges(mcpId: string): Promise<DynamicToolUIPart[]> {
-    return this.mcpManager.getExchanges(mcpId);
+    return this.mcpExchanges.getExchanges(mcpId);
   }
 
   private async getChats(): Promise<Chat[]> {
@@ -176,7 +179,7 @@ export class ChatManager {
     const convertedMessages = await this.convertMessages(params.messages);
     const messages = convertToModelMessages(convertedMessages);
 
-    const tools = await this.mcpManager.getToolSet(params.mcp);
+    const tools = await this.mcpAIClients.getToolSet(params.mcp);
 
     return {
       model,

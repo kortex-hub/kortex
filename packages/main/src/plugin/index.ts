@@ -61,7 +61,10 @@ import type {
   KubernetesGeneratorSelector,
 } from '/@/plugin/kubernetes/kube-generator-registry.js';
 import { KubeGeneratorRegistry } from '/@/plugin/kubernetes/kube-generator-registry.js';
-import { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
+import { MCPAIClients } from '/@/plugin/mcp/mcp-ai-clients.js';
+import { MCPExchanges } from '/@/plugin/mcp/mcp-exchanges.js';
+import { MCPPersistentStorage } from '/@/plugin/mcp/mcp-persistent-storage.js';
+import { MCPStatuses } from '/@/plugin/mcp/mcp-statuses.js';
 import { MenuRegistry } from '/@/plugin/menu-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
 import type { ExtensionBanner, RecommendedRegistry } from '/@/plugin/recommendations/recommendations-api.js';
@@ -190,7 +193,7 @@ import { KubernetesClient } from './kubernetes/kubernetes-client.js';
 import { downloadGuideList } from './learning-center/learning-center.js';
 import { LearningCenterInit } from './learning-center-init.js';
 import { LibpodApiInit } from './libpod-api-enable/libpod-api-init.js';
-import { INTERNAL_PROVIDER_ID, MCPRegistry } from './mcp/mcp-registry.js';
+import { INTERNAL_PROVIDER_ID, McpRegistries } from './mcp/mcp-registries.js';
 import { MessageBox } from './message-box.js';
 import { NavigationItemsInit } from './navigation-items-init.js';
 import { OnboardingRegistry } from './onboarding-registry.js';
@@ -217,6 +220,7 @@ import { TaskConnectionUtils } from './util/task-connection-utils.js';
 import { ViewRegistry } from './view-registry.js';
 import { WebviewRegistry } from './webview/webview-registry.js';
 import { WelcomeInit } from './welcome/welcome-init.js';
+import { MCPManager } from '@kortex-hub/mcp-manager';
 
 // workaround for ESM
 const checkDiskSpace: (path: string) => Promise<{ free: number }> = checkDiskSpacePkg as unknown as (
@@ -524,14 +528,34 @@ export class PluginSystem {
     container.bind<MenuRegistry>(MenuRegistry).toSelf().inSingletonScope();
     container.bind<KubeGeneratorRegistry>(KubeGeneratorRegistry).toSelf().inSingletonScope();
     container.bind<ImageRegistry>(ImageRegistry).toSelf().inSingletonScope();
-    container.bind<MCPRegistry>(MCPRegistry).toSelf().inSingletonScope();
+
+    /**
+     * MCP Related objects
+     */
+    container.bind<MCPPersistentStorage>(MCPPersistentStorage).toSelf().inSingletonScope();
+    const mcpStorage = container.get<MCPPersistentStorage>(MCPPersistentStorage);
+
+    // create MCPManager & bind
+    const mcpManager = new MCPManager(mcpStorage);
+    container.bind<MCPManager>(MCPManager).toConstantValue(mcpManager);
+
+    container.bind<McpRegistries>(McpRegistries).toSelf().inSingletonScope();
+    const mcpRegistries = container.get<McpRegistries>(McpRegistries);
+    mcpRegistries.init();
+
+    container.bind<MCPExchanges>(MCPExchanges).toSelf().inSingletonScope();
+    container.bind<MCPAIClients>(MCPAIClients).toSelf().inSingletonScope();
+    container.bind<MCPStatuses>(MCPStatuses).toSelf().inSingletonScope();
+
+    // others
+
     container.bind<ViewRegistry>(ViewRegistry).toSelf().inSingletonScope();
     container.bind<Context>(Context).toSelf().inSingletonScope();
     container.bind<ContainerProviderRegistry>(ContainerProviderRegistry).toSelf().inSingletonScope();
     container.bind<CancellationTokenRegistry>(CancellationTokenRegistry).toSelf().inSingletonScope();
 
     container.bind<ProviderRegistry>(ProviderRegistry).toSelf().inSingletonScope();
-    container.bind<MCPManager>(MCPManager).toSelf().inSingletonScope();
+
     container.bind<FlowManager>(FlowManager).toSelf().inSingletonScope();
     container.bind<TrayMenuRegistry>(TrayMenuRegistry).toSelf().inSingletonScope();
     container.bind<InputQuickPickRegistry>(InputQuickPickRegistry).toSelf().inSingletonScope();
@@ -606,9 +630,6 @@ export class PluginSystem {
 
     const providerRegistry = container.get<ProviderRegistry>(ProviderRegistry);
     providerRegistry.registerAutostartEngine(autoStartEngine);
-
-    const mcpManager = container.get<MCPManager>(MCPManager);
-    mcpManager.init();
 
     const flowManager = container.get<FlowManager>(FlowManager);
     flowManager.init();
@@ -778,8 +799,6 @@ export class PluginSystem {
     const customPickRegistry = container.get<CustomPickRegistry>(CustomPickRegistry);
     const authentication = container.get<AuthenticationImpl>(AuthenticationImpl);
     const imageRegistry = container.get<ImageRegistry>(ImageRegistry);
-    const mcpRegistry = container.get<MCPRegistry>(MCPRegistry);
-    mcpRegistry.init();
 
     await this.setupSecurityRestrictionsOnLinks(messageBox);
 
