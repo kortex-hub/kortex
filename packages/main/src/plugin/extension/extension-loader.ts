@@ -904,6 +904,9 @@ export class ExtensionLoader implements IAsyncDisposable {
       getInferenceConnections: () => {
         return providerRegistry.getInferenceConnections();
       },
+      getRagConnections: () => {
+        return providerRegistry.getRagConnections();
+      },
       getProviderLifecycleContext(
         providerId: string,
         providerConnectionInfo: containerDesktopAPI.ContainerProviderConnection,
