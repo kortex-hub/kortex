@@ -1,6 +1,7 @@
 <script lang="ts">
 import { faLinkSlash, faPlug, faTrash } from '@fortawesome/free-solid-svg-icons';
 
+import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
 import type { MCPConfigInfo } from '/@api/mcp/mcp-config-info';
 
 import ListItemButtonIcon from '../../ui/ListItemButtonIcon.svelte';
@@ -20,7 +21,9 @@ async function start(): Promise<void> {
 }
 
 async function unregister(): Promise<void> {
-  await window.unregisterMCP(object.id);
+  return withConfirmation(() => {
+    return window.unregisterMCP(object.id);
+  }, `delete configuration ${object.name}`);
 }
 </script>
 
