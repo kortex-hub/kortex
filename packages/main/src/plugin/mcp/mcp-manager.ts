@@ -100,7 +100,10 @@ export class MCPManager implements AsyncDisposable {
    * Must be under the form `${internalProviderId}:${connectionName}`
    * @param selected
    */
-  public async getToolSet(selected: Array<string> | undefined = undefined): Promise<ToolSet> {
+  public async getToolSet(
+    selected: Array<string> | undefined = undefined,
+    ...toolNames: Array<string>
+  ): Promise<ToolSet> {
     const tools = await Promise.all(
       (
         selected?.reduce(
@@ -116,9 +119,23 @@ export class MCPManager implements AsyncDisposable {
       ).map(client => client.tools()),
     );
 
-    return tools.reduce((acc, current) => {
+    const allTools = tools.reduce((acc, current) => {
       return { ...acc, ...current };
     }, {});
+
+    // Filter tools by toolNames if provided
+    if (toolNames.length > 0) {
+      const filteredTools: ToolSet = {};
+      for (const toolName of toolNames) {
+        const tool = allTools[toolName];
+        if (tool) {
+          filteredTools[toolName] = tool;
+        }
+      }
+      return filteredTools;
+    }
+
+    return allTools;
   }
 
   public async registerMCPClient(

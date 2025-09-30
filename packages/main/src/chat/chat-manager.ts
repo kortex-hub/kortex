@@ -176,7 +176,7 @@ export class ChatManager {
     const convertedMessages = await this.convertMessages(params.messages);
     const messages = convertToModelMessages(convertedMessages);
 
-    const tools = await this.mcpManager.getToolSet(params.mcp);
+    const tools = await this.mcpManager.getToolSet(params.mcp, 'list_issues');
 
     return {
       model,
