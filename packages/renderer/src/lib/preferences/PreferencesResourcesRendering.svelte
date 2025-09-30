@@ -404,6 +404,7 @@ $effect(() => {
                   || provider.kubernetesProviderConnectionCreation
                   || provider.vmProviderConnectionCreation
                   || provider.inferenceProviderConnectionCreation
+                  || provider.ragProviderConnectionCreation
                   }
                     {@const providerDisplayName =
                       (provider.containerProviderConnectionCreation
@@ -414,7 +415,9 @@ $effect(() => {
                             ? provider.vmProviderConnectionCreationDisplayName
                             : provider.inferenceProviderConnectionCreation
                               ? provider.inferenceProviderConnectionCreationDisplayName
-                              : undefined) ?? provider.name}
+                              : provider.ragProviderConnectionCreation
+                                ? provider.ragProviderConnectionCreationDisplayName
+                                : undefined) ?? provider.name}
                     {@const buttonTitle =
                       (provider.containerProviderConnectionCreation
                         ? (provider.containerProviderConnectionCreationButtonTitle ?? undefined)
@@ -424,7 +427,9 @@ $effect(() => {
                             ? provider.vmProviderConnectionCreationButtonTitle
                             : provider.inferenceProviderConnectionCreation
                               ? provider.inferenceProviderConnectionCreationButtonTitle
-                              : undefined) ?? 'Create new'}
+                              : provider.ragProviderConnectionCreation
+                                ? provider.ragProviderConnectionCreationButtonTitle
+                                : undefined) ?? 'Create new'}
                     <!-- create new provider button -->
                     <CreateProviderConnectionButton {provider} {providerDisplayName} {buttonTitle} bind:preflightChecks={preflightChecks} />
                   {/if}
@@ -666,6 +671,18 @@ $effect(() => {
             />
           </div>
         {/each}
+          {#each provider.ragConnections as ragConnection, index (index)}
+            <div class="px-5 py-2 w-[240px]" role="region" aria-label={ragConnection.name}>
+              <span>{ragConnection.name} RAG)</span>
+              <PreferencesConnectionActions
+                provider={provider}
+                connection={ragConnection}
+                connectionStatus={containerConnectionStatus.get(getProviderConnectionName(provider, ragConnection))}
+                updateConnectionStatus={updateContainerStatus}
+                addConnectionToRestartingQueue={addConnectionToRestartingQueue}
+              />
+            </div>
+          {/each}
         </div>
       </div>
     {/each}

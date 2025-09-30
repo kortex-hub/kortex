@@ -43,17 +43,21 @@ import type {
   ProviderInstallation,
   ProviderLifecycle,
   ProviderOptions,
+  ProviderRagConnection,
   ProviderStatus,
   ProviderUpdate,
+  RagProviderConnection,
   RegisterContainerConnectionEvent,
   RegisterFlowConnectionEvent,
   RegisterInferenceConnectionEvent,
   RegisterKubernetesConnectionEvent,
+  RegisterRagConnectionEvent,
   RegisterVmConnectionEvent,
   UnregisterContainerConnectionEvent,
   UnregisterFlowConnectionEvent,
   UnregisterInferenceConnectionEvent,
   UnregisterKubernetesConnectionEvent,
+  UnregisterRagConnectionEvent,
   UnregisterVmConnectionEvent,
   UpdateContainerConnectionEvent,
   UpdateKubernetesConnectionEvent,
@@ -75,6 +79,7 @@ import {
   ProviderInferenceConnectionInfo,
   ProviderInfo,
   ProviderKubernetesConnectionInfo,
+  ProviderRagConnectionInfo,
   ProviderVmConnectionInfo,
 } from '/@api/provider-info.js';
 
@@ -126,6 +131,7 @@ export class ProviderRegistry {
   protected kubernetesProviders: Map<string, KubernetesProviderConnection> = new Map();
   protected vmProviders: Map<string, VmProviderConnection> = new Map();
   protected inferenceProviders: Map<string, InferenceProviderConnection> = new Map();
+  protected ragProviders: Map<string, RagProviderConnection> = new Map();
   protected flowProviders: Map<string, FlowProviderConnection> = new Map();
 
   private readonly _onDidUpdateProvider = new Emitter<ProviderEvent>();
@@ -162,6 +168,13 @@ export class ProviderRegistry {
   private readonly _onDidUnregisterInferenceConnection = new Emitter<UnregisterInferenceConnectionEvent>();
   readonly onDidUnregisterInferenceConnection: Event<UnregisterInferenceConnectionEvent> =
     this._onDidUnregisterInferenceConnection.event;
+
+  // RAG
+  private readonly _onDidRegisterRagConnection = new Emitter<RegisterRagConnectionEvent>();
+  readonly onDidRegisterRagConnection: Event<RegisterRagConnectionEvent> = this._onDidRegisterRagConnection.event;
+
+  private readonly _onDidUnregisterRagConnection = new Emitter<UnregisterRagConnectionEvent>();
+  readonly onDidUnregisterRagConnection: Event<UnregisterRagConnectionEvent> = this._onDidUnregisterRagConnection.event;
 
   // Flow
   private readonly _onDidRegisterFlowConnection = new Emitter<RegisterFlowConnectionEvent>();
@@ -723,6 +736,10 @@ export class ProviderRegistry {
     return this.getProviderConnectionInfo(connection) as ProviderInferenceConnectionInfo;
   }
 
+  public getProviderRagConnectionInfo(connection: RagProviderConnection): ProviderRagConnectionInfo {
+    return this.getProviderConnectionInfo(connection) as ProviderRagConnectionInfo;
+  }
+
   public getProviderFlowConnectionInfo(connection: FlowProviderConnection): ProviderFlowConnectionInfo {
     return this.getProviderConnectionInfo(connection) as ProviderFlowConnectionInfo;
   }
@@ -762,6 +779,13 @@ export class ProviderRegistry {
         status: connection.status(),
         connectionType: ProviderConnectionType.INFERENCE,
         models: connection.models,
+      };
+    } else if (this.isRagConnection(connection)) {
+      providerConnection = {
+        name: connection.name,
+        status: connection.status(),
+        connectionType: ProviderConnectionType.RAG,
+        mcpServer: connection.mcpServer,
       };
     } else if (this.isFlowConnection(connection)) {
       providerConnection = {
@@ -809,6 +833,9 @@ export class ProviderRegistry {
     });
     const inferenceConnections: ProviderInferenceConnectionInfo[] = provider.inferenceConnections.map(connection => {
       return this.getProviderInferenceConnectionInfo(connection);
+    });
+    const ragConnections: ProviderRagConnectionInfo[] = provider.ragConnections.map(connection => {
+      return this.getProviderRagConnectionInfo(connection);
     });
     const flowConnections: ProviderFlowConnectionInfo[] = provider.flowConnections.map(connection => {
       return this.getProviderFlowConnectionInfo(connection);
@@ -876,6 +903,18 @@ export class ProviderRegistry {
       inferenceProviderConnectionInitialization = true;
     }
 
+    // RAG connection factory ?
+    let ragProviderConnectionCreation = false;
+    let ragProviderConnectionInitialization = false;
+    const ragProviderConnectionCreationDisplayName = provider.ragProviderConnectionFactory?.creationDisplayName;
+    const ragProviderConnectionCreationButtonTitle = provider.ragProviderConnectionFactory?.creationButtonTitle;
+    if (provider.ragProviderConnectionFactory) {
+      ragProviderConnectionCreation = true;
+    }
+    if (provider?.ragProviderConnectionFactory?.initialize) {
+      ragProviderConnectionInitialization = true;
+    }
+
     const emptyConnectionMarkdownDescription = provider.emptyConnectionMarkdownDescription;
 
     // handle installation
@@ -899,6 +938,7 @@ export class ProviderRegistry {
       kubernetesConnections,
       vmConnections,
       inferenceConnections,
+      ragConnections,
       flowConnections,
       status: provider.status,
       containerProviderConnectionCreation,
@@ -921,6 +961,11 @@ export class ProviderRegistry {
       inferenceProviderConnectionInitialization,
       inferenceProviderConnectionCreationDisplayName,
       inferenceProviderConnectionCreationButtonTitle,
+      // RAG
+      ragProviderConnectionCreation,
+      ragProviderConnectionInitialization,
+      ragProviderConnectionCreationDisplayName,
+      ragProviderConnectionCreationButtonTitle,
       // other
       emptyConnectionMarkdownDescription,
       links: provider.links,
@@ -1110,6 +1155,21 @@ export class ProviderRegistry {
     return provider.inferenceProviderConnectionFactory.create(params, logHandler, token);
   }
 
+  async createRagProviderConnection(
+    internalProviderId: string,
+    params: { [key: string]: unknown },
+    logHandler: Logger,
+    token?: CancellationToken,
+  ): Promise<void> {
+    // grab the correct provider
+    const provider = this.getMatchingProvider(internalProviderId);
+
+    if (!provider.ragProviderConnectionFactory?.create) {
+      throw new Error('The provider does not support RAG connection creation');
+    }
+    return provider.ragProviderConnectionFactory.create(params, logHandler, token);
+  }
+
   // helper method
   protected getMatchingContainerConnectionFromProvider(
     internalProviderId: string,
@@ -1173,12 +1233,27 @@ export class ProviderRegistry {
     // grab the correct provider
     const provider = this.getMatchingProvider(internalProviderId);
 
-    // grab the correct kubernetes connection
+    // grab the correct inference connection
     const connection = provider.inferenceConnections.find(
       connection => connection.name === providerInferenceConnectionInfo.name,
     );
     if (!connection) {
-      throw new Error(`no kubernetes connection matching provider id ${internalProviderId}`);
+      throw new Error(`no inference connection matching provider id ${internalProviderId}`);
+    }
+    return connection;
+  }
+
+  protected getMatchingRagConnectionFromProvider(
+    internalProviderId: string,
+    providerRagConnectionInfo: ProviderRagConnectionInfo,
+  ): RagProviderConnection {
+    // grab the correct provider
+    const provider = this.getMatchingProvider(internalProviderId);
+
+    // grab the correct RAG connection
+    const connection = provider.ragConnections.find(connection => connection.name === providerRagConnectionInfo.name);
+    if (!connection) {
+      throw new Error(`no RAG connection matching provider id ${internalProviderId}`);
     }
     return connection;
   }
@@ -1214,6 +1289,8 @@ export class ProviderRegistry {
         return this.getMatchingKubernetesConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
       case ProviderConnectionType.INFERENCE:
         return this.getMatchingInferenceConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
+      case ProviderConnectionType.RAG:
+        return this.getMatchingRagConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
       case ProviderConnectionType.FLOW:
         return this.getMatchingFlowConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
     }
@@ -1246,6 +1323,10 @@ export class ProviderRegistry {
 
   isInferenceConnection(connection: ProviderConnection): connection is InferenceProviderConnection {
     return 'sdk' in connection;
+  }
+
+  isRagConnection(connection: ProviderConnection): connection is RagProviderConnection {
+    return 'mcpServer' in connection;
   }
 
   isFlowConnection(connection: ProviderConnection): connection is FlowProviderConnection {
@@ -1481,6 +1562,12 @@ export class ProviderRegistry {
     this._onDidRegisterInferenceConnection.fire({ providerId: provider.id });
   }
 
+  onDidRegisterRagConnectionCallback(provider: ProviderImpl, ragProviderConnection: RagProviderConnection): void {
+    this.connectionLifecycleContexts.set(ragProviderConnection, new LifecycleContextImpl());
+    this.apiSender.send('provider-register-rag-connection', { name: ragProviderConnection.name });
+    this._onDidRegisterRagConnection.fire({ providerId: provider.id });
+  }
+
   onDidRegisterFlowConnectionCallback(provider: ProviderImpl, connection: FlowProviderConnection): void {
     this.connectionLifecycleContexts.set(connection, new LifecycleContextImpl());
     this.apiSender.send('provider-register-flow-connection', { name: connection.name });
@@ -1535,6 +1622,11 @@ export class ProviderRegistry {
   ): void {
     this.apiSender.send('provider-unregister-inference-connection', { name: inferenceProviderConnection.name });
     this._onDidUnregisterKubernetesConnection.fire({ providerId: provider.id });
+  }
+
+  onDidUnregisterRagConnectionCallback(provider: ProviderImpl, ragProviderConnection: RagProviderConnection): void {
+    this.apiSender.send('provider-unregister-rag-connection', { name: ragProviderConnection.name });
+    this._onDidUnregisterRagConnection.fire({ providerId: provider.id });
   }
 
   onDidUnregisterFlowConnectionCallback(provider: ProviderImpl, connection: FlowProviderConnection): void {
@@ -1663,10 +1755,50 @@ export class ProviderRegistry {
     });
   }
 
+  registerRagConnection(provider: Provider, ragProviderConnection: RagProviderConnection): Disposable {
+    const providerName = ragProviderConnection.name;
+    const id = `${provider.id}.${providerName}`;
+    this.ragProviders.set(id, ragProviderConnection);
+    this.telemetryService.track('registerRagProviderConnection', {
+      name: ragProviderConnection.name,
+      total: this.ragProviders.size,
+    });
+
+    let previousStatus = ragProviderConnection.status();
+
+    // track the status of the provider
+    const timer = setInterval(() => {
+      const newStatus = ragProviderConnection.status();
+      if (newStatus !== previousStatus) {
+        this.apiSender.send('provider-change', {});
+        previousStatus = newStatus;
+      }
+    }, 2000);
+
+    return Disposable.create(() => {
+      clearInterval(timer);
+      this.ragProviders.delete(id);
+      this.apiSender.send('provider-change', {});
+    });
+  }
+
   getInferenceConnections(): ProviderInferenceConnection[] {
     const connections: ProviderInferenceConnection[] = [];
     this.providers.forEach(provider => {
       provider.inferenceConnections.forEach(connection => {
+        connections.push({
+          providerId: provider.id,
+          connection,
+        });
+      });
+    });
+    return connections;
+  }
+
+  getRagConnections(): ProviderRagConnection[] {
+    const connections: ProviderRagConnection[] = [];
+    this.providers.forEach(provider => {
+      provider.ragConnections.forEach(connection => {
         connections.push({
           providerId: provider.id,
           connection,
@@ -1723,6 +1855,7 @@ export class ProviderRegistry {
         !this.isKubernetesConnection(containerConnection) &&
         !this.isInferenceConnection(containerConnection) &&
         !this.isFlowConnection(containerConnection) &&
+        !this.isRagConnection(containerConnection) &&
         providerConnectionInfo.status === 'started'
       ) {
         shellAccess = containerConnection.shellAccess;

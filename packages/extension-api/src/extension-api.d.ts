@@ -41,6 +41,7 @@
 
 declare module '@kortex-app/api' {
   import type { ProviderV2 as AISDKInferenceProvider } from '@ai-sdk/provider';
+  import type { components } from '@kortex-hub/mcp-registry-types';
 
   /**
    * The version of Kortex.
@@ -650,9 +651,22 @@ declare module '@kortex-app/api' {
     models: Array<InferenceModel>;
   };
 
+  export type RagProviderConnection = {
+    name: string;
+    mcpServer: components['schemas']['ServerDetail'];
+    credentials(): Record<string, string>;
+    lifecycle?: ProviderConnectionLifecycle;
+    status(): ProviderConnectionStatus;
+  };
+
   export interface ProviderInferenceConnection {
     providerId: string;
     connection: InferenceProviderConnection;
+  }
+
+  export interface ProviderRagConnection {
+    providerId: string;
+    connection: RagProviderConnection;
   }
 
   export type ProviderConnection =
@@ -660,6 +674,7 @@ declare module '@kortex-app/api' {
     | KubernetesProviderConnection
     | VmProviderConnection
     | InferenceProviderConnection
+    | RagProviderConnection
     | FlowProviderConnection;
 
   // common set of options for creating a provider
@@ -682,6 +697,12 @@ declare module '@kortex-app/api' {
 
   // create programmatically a InferenceProviderConnection
   export interface InferenceProviderConnectionFactory extends ProviderConnectionFactory {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    create(params: { [key: string]: any }, logger?: Logger, token?: CancellationToken): Promise<void>;
+  }
+
+  // create programmatically a RagProviderConnection
+  export interface RagProviderConnectionFactory extends ProviderConnectionFactory {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     create(params: { [key: string]: any }, logger?: Logger, token?: CancellationToken): Promise<void>;
   }
@@ -883,10 +904,16 @@ declare module '@kortex-app/api' {
       connectionAuditor?: Auditor,
     ): Disposable;
 
+    setRagProviderConnectionFactory(
+      ragProviderConnectionFactory: RagProviderConnectionFactory,
+      connectionAuditor?: Auditor,
+    ): Disposable;
+
     registerContainerProviderConnection(connection: ContainerProviderConnection): Disposable;
     registerKubernetesProviderConnection(connection: KubernetesProviderConnection): Disposable;
     registerVmProviderConnection(connection: VmProviderConnection): Disposable;
     registerInferenceProviderConnection(connection: InferenceProviderConnection): Disposable;
+    registerRagProviderConnection(connection: RagProviderConnection): Disposable;
 
     registerFlowProviderConnection(connection: FlowProviderConnection): Disposable;
 
@@ -1036,6 +1063,12 @@ declare module '@kortex-app/api' {
     providerId: string;
   }
   export interface UnregisterInferenceConnectionEvent {
+    providerId: string;
+  }
+  export interface RegisterRagConnectionEvent {
+    providerId: string;
+  }
+  export interface UnregisterRagConnectionEvent {
     providerId: string;
   }
 
@@ -1243,6 +1276,7 @@ declare module '@kortex-app/api' {
     export const onDidRegisterContainerConnection: Event<RegisterContainerConnectionEvent>;
     export function getContainerConnections(): ProviderContainerConnection[];
     export function getInferenceConnections(): ProviderInferenceConnection[];
+    export function getRagConnections(): ProviderRagConnection[];
     /**
      * It returns the lifecycle context for the provider connection.
      * If no context is found it throws an error
