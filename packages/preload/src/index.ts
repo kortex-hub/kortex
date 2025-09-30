@@ -1736,7 +1736,7 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld(
     'setupMCP',
     async (registryURL: string, serverId: string, options: MCPSetupOptions): Promise<string> => {
-      return ipcInvoke('mcp-registry:setup', registryURL, serverId, options);
+      return ipcInvoke('mcp-manager:setup', registryURL, serverId, options);
     },
   );
 
