@@ -58,9 +58,12 @@ const EMPTY_PROVIDER_MOCK: ProviderInfo = {
   extensionId: '',
   cleanupSupport: false,
   inferenceConnections: [],
+  ragConnections: [],
   flowConnections: [],
   inferenceProviderConnectionCreation: false,
   inferenceProviderConnectionInitialization: false,
+  ragProviderConnectionCreation: false,
+  ragProviderConnectionInitialization: false,
 };
 
 test('Expect that the right machine is displayed', async () => {

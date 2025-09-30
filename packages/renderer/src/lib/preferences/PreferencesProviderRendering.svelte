@@ -57,7 +57,11 @@ let providerDisplayName: string = $derived(
       ? providerInfo?.kubernetesProviderConnectionCreationDisplayName
       : providerInfo?.vmProviderConnectionCreation
         ? providerInfo?.vmProviderConnectionCreationDisplayName
-        : undefined) ?? providerInfo?.name,
+        : providerInfo?.inferenceProviderConnectionCreation
+          ? providerInfo?.inferenceProviderConnectionCreationDisplayName
+          : providerInfo?.ragProviderConnectionCreation
+            ? providerInfo?.ragProviderConnectionCreationDisplayName
+            : undefined) ?? providerInfo?.name,
 );
 
 let title: string = $derived(
@@ -174,6 +178,16 @@ async function stopReceivingLogs(providerInternalId: string): Promise<void> {
             properties={properties}
             propertyScope="InferenceProviderConnectionFactory"
             callback={window.createInferenceProviderConnection}
+            taskId={taskId}
+            bind:inProgress={inProgress} />
+        {/if}
+
+        {#if providerInfo?.ragProviderConnectionCreation === true}
+          <PreferencesConnectionCreationRendering
+            providerInfo={providerInfo}
+            properties={properties}
+            propertyScope="RagProviderConnectionFactory"
+            callback={window.createRagProviderConnection}
             taskId={taskId}
             bind:inProgress={inProgress} />
         {/if}
