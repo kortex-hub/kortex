@@ -19,36 +19,43 @@
 import type { Writable } from 'svelte/store';
 import { derived, writable } from 'svelte/store';
 
+import { EventStore } from '/@/stores/event-store';
 import { findMatchInLeaves } from '/@/stores/search-util';
 import type { MCPConfigInfo } from '/@api/mcp/mcp-config-info';
+import { MCPEvents } from '/@api/mcp/mcp-events';
 
-export const mcpRemoteServerInfos: Writable<readonly MCPConfigInfo[]> = writable([]);
+const windowEvents: Array<string> = [
+  MCPEvents.MCP_REGISTERED,
+  MCPEvents.MCP_UNREGISTERED,
+  MCPEvents.MCP_START,
+  MCPEvents.MCP_STOP,
+];
+
+const windowListeners: Array<string> = ['system-ready'];
+
+export async function checkForUpdate(): Promise<boolean> {
+  return true;
+}
+
+export const mcpConfigsInfo: Writable<MCPConfigInfo[]> = writable([]);
+
+export const mcpConfigsInfoEventStore = new EventStore<Array<MCPConfigInfo>>(
+  'MCP Configs',
+  mcpConfigsInfo,
+  checkForUpdate,
+  windowEvents,
+  windowListeners,
+  window.collectMCPStatuses,
+);
+mcpConfigsInfoEventStore.setup();
 
 export const mcpRemoteServerInfoSearchPattern = writable('');
 
 export const filteredMcpRemoteServerInfos = derived(
-  [mcpRemoteServerInfos, mcpRemoteServerInfoSearchPattern],
+  [mcpConfigsInfo, mcpRemoteServerInfoSearchPattern],
   ([$mcpRemoteServerInfos, $mcpRemoteServerInfoSearchPattern]) => {
     return $mcpRemoteServerInfoSearchPattern.trim().length
       ? $mcpRemoteServerInfos.filter(server => findMatchInLeaves(server, $mcpRemoteServerInfoSearchPattern))
       : $mcpRemoteServerInfos;
   },
 );
-
-export async function fetchMcpRemoteServers(): Promise<void> {
-  const data = await window.collectMCPStatuses();
-  mcpRemoteServerInfos.set(data);
-}
-
-// need to refresh when new registry are updated/deleted
-window.events?.receive('mcp-manager-update', () => {
-  fetchMcpRemoteServers().catch((error: unknown) => {
-    console.error('Failed to fetch registries entries', error);
-  });
-});
-
-window.addEventListener('system-ready', () => {
-  fetchMcpRemoteServers().catch((error: unknown) => {
-    console.error('Failed to fetch registries entries', error);
-  });
-});

@@ -7,8 +7,8 @@ import { router } from 'tinro';
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
 import { currentChatId } from '/@/lib/chat/state/current-chat-id.svelte';
-import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
+import { mcpConfigsInfo } from '/@/stores/mcp-configs-info';
+import type { MCPConfigInfo } from '/@api/mcp/mcp-config-info';
 
 import PlusIcon from './icons/plus.svelte';
 import MCPSelector from './mcp-selector.svelte';
@@ -28,13 +28,13 @@ let {
   readonly: boolean;
   selectedModel: ModelInfo | undefined;
   models: Array<ModelInfo>;
-  selectedMCP: MCPRemoteServerInfo[];
+  selectedMCP: Array<MCPConfigInfo>;
   mcpSelectorOpen: boolean;
 } = $props();
 
 const sidebar = useSidebar();
 
-const noMcps = $derived($mcpRemoteServerInfos.length === 0);
+const noMcps = $derived($mcpConfigsInfo.length === 0);
 </script>
 
 <header class="bg-background sticky top-0 flex items-start gap-2 p-2">
@@ -68,16 +68,16 @@ const noMcps = $derived($mcpRemoteServerInfos.length === 0);
 
 	{#if !readonly}
         <ModelSelector
-            class="order-1 md:order-2" 
-            models={models} 
+            class="order-1 md:order-2"
+            models={models}
             bind:value={selectedModel}
         />
         <div class="flex flex-col gap-1">
             <MCPSelector disabled={noMcps} bind:open={mcpSelectorOpen} bind:selected={selectedMCP}/>
             {#if noMcps}
                 <div class="flex items-center gap-1 px-1 text-xs text-muted-foreground">
-                    <Button 
-                        variant="link" 
+                    <Button
+                        variant="link"
                         class="h-auto p-0 text-xs hover:underline"
                         onclick={():void => router.goto('/mcps')}
                     >
@@ -87,7 +87,7 @@ const noMcps = $derived($mcpRemoteServerInfos.length === 0);
             {/if}
         </div>
     {/if}
-    
+
     <!-- {#if !readonly && chat}
 		<VisibilitySelector {chat} class="order-1 md:order-3" />
 	{/if} -->

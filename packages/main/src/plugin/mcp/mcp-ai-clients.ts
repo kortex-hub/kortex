@@ -27,7 +27,7 @@ import { MCPExchanges } from '/@/plugin/mcp/mcp-exchanges.js';
 type ExtractedMCPClient = Awaited<ReturnType<typeof experimental_createMCPClient>>;
 
 @injectable()
-export class MCPAIClients implements AsyncDisposable  {
+export class MCPAIClients implements AsyncDisposable {
   /**
    * We use the configId as key for the clients
    * @private
@@ -42,24 +42,21 @@ export class MCPAIClients implements AsyncDisposable  {
   ) {}
 
   init(): void {
-    this.mcpManager.onUpdate((event) => {
+    this.mcpManager.onUpdate(event => {
       this.onMCPManagerUpdate(event).catch(console.error);
     });
   }
 
   protected async onMCPManagerUpdate(event: MCPManagerEvent): Promise<void> {
-
     switch (event.type) {
       case 'start':
-        await this.registerMCPClient(event.instance);
-        break;
+        return await this.registerMCPClient(event.instance);
       case 'stop':
-        await this.disposeConfig(event.configId);
-        break;
+        return await this.disposeClient(event.configId);
     }
   }
 
-  protected async disposeConfig(configId: string): Promise<void> {
+  protected async disposeClient(configId: string): Promise<void> {
     try {
       await this.#clients.get(configId)?.close();
     } finally {
@@ -69,8 +66,8 @@ export class MCPAIClients implements AsyncDisposable  {
 
   protected async registerMCPClient(instance: MCPInstance): Promise<void> {
     // dispose of any existing client
-    if(this.#clients.has(instance.configId)) {
-      await this.disposeConfig(instance.configId);
+    if (this.#clients.has(instance.configId)) {
+      await this.disposeClient(instance.configId);
     }
 
     // create a delegate to record all exchanges
@@ -108,7 +105,6 @@ export class MCPAIClients implements AsyncDisposable  {
 
   @preDestroy()
   async [Symbol.asyncDispose](): Promise<void> {
-    await Promise.all(Array.from(this.#clients.values().map((mcpClient) => mcpClient.close())));
+    await Promise.all(Array.from(this.#clients.values().map(mcpClient => mcpClient.close())));
   }
 }
-

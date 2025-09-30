@@ -26,9 +26,12 @@ onMount(() => {
   /**
    * Collect the server details
    */
-  window.getMCPServerDetails(registryURL, serverId).then((details) => {
-    serverDetails = details;
-  }).catch(console.error);
+  window
+    .getMCPServerDetails(registryURL, serverId)
+    .then(details => {
+      serverDetails = details;
+    })
+    .catch(console.error);
 });
 
 let targets: Array<MCPTarget> = $derived([
@@ -48,7 +51,8 @@ async function submit(options: MCPSetupOptions): Promise<void> {
   try {
     loading = true;
     error = undefined;
-    await window.setupMCP(serverId, options);
+    const configId = await window.setupMCP(registryURL, serverId, options);
+    console.log('configId', configId);
     return navigateToMcps();
   } catch (err: unknown) {
     error = String(err);
@@ -62,8 +66,6 @@ async function navigateToMcps(): Promise<void> {
 }
 </script>
 
-<span>serverId {serverId}</span>
-<span>registryURL {registryURL}</span>
 {#if serverDetails}
   <FormPage title="Adding {serverDetails.name}" inProgress={loading} onclose={navigateToMcps}>
     {#snippet icon()}<McpIcon size={24} />{/snippet}

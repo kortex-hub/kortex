@@ -20,22 +20,22 @@ interface Props {
 
 let { filter = $bindable(), scrollToTop }: Props = $props();
 
-let loading: boolean = $state(false);
-
 let selectedMCPRegistry: MCPRegistry | MCPRegistrySuggestedProvider | undefined = $state();
 
 $effect(() => {
-  if(selectedMCPRegistry) return;
+  if (selectedMCPRegistry) return;
 
-  if($mcpRegistriesInfos.length > 0) {
+  if ($mcpRegistriesInfos.length > 0) {
     selectedMCPRegistry = $mcpRegistriesInfos[0];
-  } else if($mcpRegistriesSuggestedInfos.length > 0) {
+  } else if ($mcpRegistriesSuggestedInfos.length > 0) {
     selectedMCPRegistry = $mcpRegistriesSuggestedInfos[0];
   }
 });
 
 let store: MCPRegistryStore | undefined = $derived(
-  selectedMCPRegistry?new MCPRegistryStore(('url' in selectedMCPRegistry)?selectedMCPRegistry.url:selectedMCPRegistry.serverUrl): undefined,
+  selectedMCPRegistry
+    ? new MCPRegistryStore('url' in selectedMCPRegistry ? selectedMCPRegistry.url : selectedMCPRegistry.serverUrl)
+    : undefined,
 );
 
 const statusColumn = new TableColumn<components['schemas']['ServerDetail']>('Status', {
@@ -76,7 +76,7 @@ const row = new TableRow<components['schemas']['ServerDetail']>({});
 </div>
 
 {#if store !== undefined}
-  {#key store}
+  {#key selectedMCPRegistry}
     <PaginatedTable
       kind="mcpServer"
       store={store}

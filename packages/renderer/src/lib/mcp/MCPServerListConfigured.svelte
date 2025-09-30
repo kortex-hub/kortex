@@ -1,12 +1,14 @@
 <script lang="ts">
 import { FilteredEmptyScreen, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 
+import MCPConfiguredRegistry from '/@/lib/mcp/column/MCPConfiguredRegistry.svelte';
+import MCPConfiguredStatus from '/@/lib/mcp/column/MCPConfiguredStatus.svelte';
 import MCPNameColumn from '/@/lib/mcp/column/MCPNameColumn.svelte';
-import { filteredMcpRemoteServerInfos, mcpRemoteServerInfoSearchPattern } from '/@/stores/mcp-remote-servers';
-import type {MCPConfigInfo} from '/@api/mcp/mcp-config-info';
+import { filteredMcpRemoteServerInfos, mcpRemoteServerInfoSearchPattern } from '/@/stores/mcp-configs-info';
+import type { MCPConfigInfo } from '/@api/mcp/mcp-config-info';
 
 import McpIcon from '../images/MCPIcon.svelte';
-import McpServerRemoteListActions from './MCPServerActions.svelte';
+import McpServerRemoteListActions from './column/MCPConfiguredActions.svelte';
 import MCPServerEmptyScreen from './MCPServerEmptyScreen.svelte';
 
 interface Props {
@@ -32,7 +34,7 @@ const servers: SelectableMCPConfigInfo[] = $derived(
 
 const statusColumn = new TableColumn<SelectableMCPConfigInfo>('Status', {
   width: '60px',
-  renderer: McpIcon,
+  renderer: MCPConfiguredStatus,
 });
 
 const nameColumn = new TableColumn<MCPConfigInfo>('Name', {
@@ -41,13 +43,20 @@ const nameColumn = new TableColumn<MCPConfigInfo>('Name', {
   comparator: (a, b): number => b.name.localeCompare(a.name),
 });
 
+const registryColumn = new TableColumn<MCPConfigInfo>('Registry', {
+  width: '3fr',
+  overflow: true,
+  renderer: MCPConfiguredRegistry,
+  comparator: (a, b): number => b.registryURL.localeCompare(a.registryURL),
+});
+
 const actionsColumn = new TableColumn<MCPConfigInfo>('Actions', {
   align: 'right',
   renderer: McpServerRemoteListActions,
   overflow: true,
 });
 
-const columns = [statusColumn, nameColumn, actionsColumn];
+const columns = [statusColumn, nameColumn, registryColumn, actionsColumn];
 
 const row = new TableRow<MCPConfigInfo>({});
 </script>
@@ -59,12 +68,13 @@ const row = new TableRow<MCPConfigInfo>({});
     <MCPServerEmptyScreen />
   {/if}
 {:else}
-
-  <Table
-    kind="mcp"
-    data={servers}
-    columns={columns}
-    row={row}
-    defaultSortColumn="Name">
-  </Table>
+  <div class="flex">
+    <Table
+      kind="mcp"
+      data={servers}
+      columns={columns}
+      row={row}
+      defaultSortColumn="Name">
+    </Table>
+  </div>
 {/if}

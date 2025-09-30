@@ -5,7 +5,7 @@ import { toast } from 'svelte-sonner';
 import { flowCreationData } from '/@/lib/chat/state/flow-creation-data.svelte';
 import { handleNavigation } from '/@/navigation';
 import { isFlowConnectionAvailable } from '/@/stores/flow-provider';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
+import type { MCPConfigInfo } from '/@api/mcp/mcp-config-info';
 import { NavigationPage } from '/@api/navigation-page';
 
 import ExportIcon from './messages/ExportIcon.svelte';
@@ -19,7 +19,7 @@ let {
   chatClient,
 }: {
   selectedModel?: ModelInfo;
-  selectedMCP: MCPRemoteServerInfo[];
+  selectedMCP: MCPConfigInfo[];
   loading: boolean;
   chatClient: Chat;
 } = $props();

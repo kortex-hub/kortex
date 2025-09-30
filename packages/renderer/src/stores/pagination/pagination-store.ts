@@ -16,11 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Readable as SvelteReadable, Subscriber, Unsubscriber,Writable } from 'svelte/store';
+import type { Readable as SvelteReadable, Subscriber, Unsubscriber, Writable } from 'svelte/store';
 import { writable } from 'svelte/store';
 
 export interface PageResponse<T> {
-  items: Array<T>
+  items: Array<T>;
   cursor?: string;
 }
 
@@ -41,7 +41,7 @@ export abstract class PaginationStore<T> implements SvelteReadable<Array<T>> {
   }
 
   public hasNext(): boolean {
-    return this.#cursor !== undefined;
+    return !!this.#cursor;
   }
 
   public reset(): Promise<void> {
@@ -57,7 +57,7 @@ export abstract class PaginationStore<T> implements SvelteReadable<Array<T>> {
     this.#store.set(items);
   }
 
-  public subscribe(run: Subscriber<Array<T>>, invalidate?: (() => void)): Unsubscriber {
+  public subscribe(run: Subscriber<Array<T>>, invalidate?: () => void): Unsubscriber {
     return this.#store.subscribe(run, invalidate);
   }
 }

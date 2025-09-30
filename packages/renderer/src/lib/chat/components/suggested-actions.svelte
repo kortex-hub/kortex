@@ -1,24 +1,18 @@
 <script lang="ts">
 import type { Chat } from '@ai-sdk/svelte';
 import { fly } from 'svelte/transition';
-import { toast } from 'svelte-sonner';
 
-import { mcpRegistriesServerInfos } from '/@/stores/mcp-registry-servers';
-import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
+import type { MCPConfigInfo } from '/@api/mcp/mcp-config-info';
 
-import McpsToInstallToast from './McpsToInstallToast.svelte';
 import { Button } from './ui/button';
 
-let {
-  chatClient,
-  selectedMCP,
-  mcpSelectorOpen = $bindable(),
-}: {
+interface Props {
   chatClient: Chat;
-  selectedMCP: MCPRemoteServerInfo[];
+  selectedMCP: MCPConfigInfo[];
   mcpSelectorOpen: boolean;
-} = $props();
+}
+
+let { chatClient }: Props = $props();
 
 type SuggestedAction = {
   title: string;
@@ -52,14 +46,15 @@ const suggestedActions: SuggestedAction[] = [
 ];
 
 async function onclick(suggestedAction: SuggestedAction): Promise<void> {
-  const mcpsToInstall = suggestedAction.requiredMcp?.flatMap(id => {
-    const mcpInstalledInfo = $mcpRemoteServerInfos.find(mcp => mcp.infos.serverId === id);
+  // eslint-disable-next-line sonarjs/no-commented-code
+  /* const mcpsToInstall = suggestedAction.requiredMcp?.flatMap(id => {
+    const mcpInstalledInfo = $mcpConfigsInfo.find(mcp => mcp.serverId === id);
 
     if (mcpInstalledInfo) {
       return [];
     }
 
-    const mcpInfo = $mcpRegistriesServerInfos.find(mcp => mcp.serverId === id);
+    const mcpInfo = $mcpConfigsInfo.find(mcp => mcp.serverId === id);
 
     if (!mcpInfo) {
       throw Error(`Suggested action ${suggestedAction.action} requires MCP with id ${id} but it was not found.`);
@@ -78,7 +73,7 @@ async function onclick(suggestedAction: SuggestedAction): Promise<void> {
   }
 
   const mcpsToSelect = suggestedAction.requiredMcp?.flatMap(id => {
-    const selected = selectedMCP.find(mcp => mcp.infos.serverId === id);
+    const selected = selectedMCP.find(mcp => mcp.serverId === id);
 
     if (selected) {
       return [];
@@ -98,6 +93,8 @@ async function onclick(suggestedAction: SuggestedAction): Promise<void> {
     toast.error(`You need to select the following MCP first: ${mcpsToSelect.join(', ')}`);
     return;
   }
+
+   */
 
   await chatClient.sendMessage({
     role: 'user',

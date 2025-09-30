@@ -24,7 +24,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 import type * as containerDesktopAPI from '@kortex-app/api';
-import { MCPManager } from '@kortex-hub/mcp-manager';
+import { type MCPInstance, MCPManager } from '@kortex-hub/mcp-manager';
 import type { components } from '@kortex-hub/mcp-registry-types';
 import type {
   Cluster,
@@ -67,6 +67,7 @@ import { MCPExchanges } from '/@/plugin/mcp/mcp-exchanges.js';
 import { MCPPersistentStorage } from '/@/plugin/mcp/mcp-persistent-storage.js';
 import { MCPRegistriesClients } from '/@/plugin/mcp/mcp-registries-clients.js';
 import { MCPStatuses } from '/@/plugin/mcp/mcp-statuses.js';
+import { resolveInputWithVariableResponse } from '/@/plugin/mcp/utils.js';
 import { MenuRegistry } from '/@/plugin/menu-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
 import type { ExtensionBanner, RecommendedRegistry } from '/@/plugin/recommendations/recommendations-api.js';
@@ -116,7 +117,6 @@ import type { KubernetesContextResources } from '/@api/kubernetes-resources.js';
 import type { KubernetesTroubleshootingInformation } from '/@api/kubernetes-troubleshooting.js';
 import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '/@api/manifest-info.js';
 import type { MCPConfigInfo } from '/@api/mcp/mcp-config-info.js';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info.js';
 import type { MCPSetupOptions } from '/@api/mcp/mcp-setup.js';
 import type { Menu } from '/@api/menu.js';
 import type { NetworkInspectInfo } from '/@api/network-info.js';
@@ -196,7 +196,7 @@ import { KubernetesClient } from './kubernetes/kubernetes-client.js';
 import { downloadGuideList } from './learning-center/learning-center.js';
 import { LearningCenterInit } from './learning-center-init.js';
 import { LibpodApiInit } from './libpod-api-enable/libpod-api-init.js';
-import { INTERNAL_PROVIDER_ID, McpRegistries } from './mcp/mcp-registries.js';
+import { McpRegistries } from './mcp/mcp-registries.js';
 import { MessageBox } from './message-box.js';
 import { NavigationItemsInit } from './navigation-items-init.js';
 import { OnboardingRegistry } from './onboarding-registry.js';
@@ -537,24 +537,27 @@ export class PluginSystem {
     container.bind<MCPPersistentStorage>(MCPPersistentStorage).toSelf().inSingletonScope();
     const mcpStorage = container.get<MCPPersistentStorage>(MCPPersistentStorage);
 
-    // create MCPManager & bind
-    const mcpManager = new MCPManager(mcpStorage);
-    container.bind<MCPManager>(MCPManager).toConstantValue(mcpManager);
-
     container.bind<McpRegistries>(McpRegistries).toSelf().inSingletonScope();
     const mcpRegistries = container.get<McpRegistries>(McpRegistries);
     mcpRegistries.init();
 
     container.bind<MCPExchanges>(MCPExchanges).toSelf().inSingletonScope();
-    container.bind<MCPAIClients>(MCPAIClients).toSelf().inSingletonScope();
-    const mcpAIClients = container.get<MCPAIClients>(MCPAIClients);
-
-    container.bind<MCPStatuses>(MCPStatuses).toSelf().inSingletonScope();
-    const mcpStatuses = container.get<MCPStatuses>(MCPStatuses);
 
     container.bind<MCPRegistriesClients>(MCPRegistriesClients).toSelf().inSingletonScope();
     const mcpRegistriesClients = container.get<MCPRegistriesClients>(MCPRegistriesClients);
     mcpRegistriesClients.init();
+
+    // create MCPManager & bind
+    const mcpManager = new MCPManager(mcpStorage, mcpRegistriesClients);
+    container.bind<MCPManager>(MCPManager).toConstantValue(mcpManager);
+
+    container.bind<MCPAIClients>(MCPAIClients).toSelf().inSingletonScope();
+    const mcpAIClients = container.get<MCPAIClients>(MCPAIClients);
+    mcpAIClients.init();
+
+    container.bind<MCPStatuses>(MCPStatuses).toSelf().inSingletonScope();
+    const mcpStatuses = container.get<MCPStatuses>(MCPStatuses);
+    mcpStatuses.init();
 
     // others
 
@@ -900,7 +903,7 @@ export class PluginSystem {
         _listener,
         providerId: string,
         connectionName: string,
-        options: containerDesktopAPI.FlowGenerateOptions & { mcp: MCPRemoteServerInfo[] },
+        options: Omit<containerDesktopAPI.FlowGenerateOptions, 'mcp'> & { mcp: MCPConfigInfo[] },
       ): Promise<string> => {
         const task = taskManager.createTask({
           title: `Generating flow for ${connectionName}'`,
@@ -918,29 +921,39 @@ export class PluginSystem {
            */
           const accumulator: Array<{
             name: string;
-            type: 'streamable_http';
+            type: 'streamable_http' | 'sse';
             uri: string;
             headers?: {
               [key: string]: string;
             };
           }> = [];
-          for (const {
-            name,
-            url,
-            infos: { internalProviderId, serverId, remoteId },
-          } of options.mcp) {
-            // skip non-internal (should not happen)
-            if (internalProviderId !== INTERNAL_PROVIDER_ID) continue;
 
+          for (const mcpConfigInfo of options.mcp) {
             // Collect the credentials
-            // TODO: use proper mcpStorage to get credentials
-            const init = await mcpRegistry.getCredentials(serverId, remoteId);
+            const config = await mcpStorage.get(mcpConfigInfo.id);
+
+            if (config.type !== 'remote') {
+              console.warn('non-remote config cannot be added to flow generation for now.');
+              continue;
+            }
+
+            const details = await mcpRegistriesClients.getClient(config.registryURL).getServer({
+              path: {
+                server_id: config.serverId,
+              },
+            });
+
+            const remote = details.remotes?.[config.remoteId];
+            if (!remote) {
+              console.warn(`invalid index for config ${config.id}`);
+              continue;
+            }
 
             accumulator.push({
-              name,
-              type: 'streamable_http',
-              uri: url,
-              headers: init.headers ?? {},
+              name: config.name,
+              type: remote.type === 'streamable-http' ? 'streamable_http' : 'sse',
+              uri: remote.url,
+              headers: config.headers,
             });
           }
 
@@ -2190,11 +2203,61 @@ export class PluginSystem {
       },
     );
 
-    // TODO: rename to `mcp-manager:register`
     this.ipcHandle(
       'mcp-registry:setup',
-      async (_listener, serverId: string, options: MCPSetupOptions): Promise<void> => {
-        await mcpRegistries.setupMCPServer(serverId, options);
+      async (_listener, registryURL: string, serverId: string, options: MCPSetupOptions): Promise<string> => {
+        const client = mcpRegistriesClients.getClient(registryURL);
+        const server = await client.getServer({
+          path: {
+            server_id: serverId,
+          },
+        });
+
+        let mcpInstance: MCPInstance;
+        switch (options.type) {
+          case 'remote':
+            mcpInstance = await mcpManager.registerRemote(
+              registryURL,
+              server,
+              options.index,
+              Object.fromEntries(
+                Object.entries(options.headers).map(([key, response]) => [
+                  key,
+                  resolveInputWithVariableResponse(response),
+                ]),
+              ),
+            );
+            break;
+          case 'package':
+            mcpInstance = await mcpManager.registerPackage(
+              registryURL,
+              server,
+              options.index,
+              // runtimeArguments
+              Object.fromEntries(
+                Object.entries(options.runtimeArguments).map(([key, response]) => [
+                  key,
+                  resolveInputWithVariableResponse(response),
+                ]),
+              ),
+              // packageArguments
+              Object.fromEntries(
+                Object.entries(options.packageArguments).map(([key, response]) => [
+                  key,
+                  resolveInputWithVariableResponse(response),
+                ]),
+              ),
+              // environmentVariables
+              Object.fromEntries(
+                Object.entries(options.environmentVariables).map(([key, response]) => [
+                  key,
+                  resolveInputWithVariableResponse(response),
+                ]),
+              ),
+            );
+            break;
+        }
+        return mcpInstance.configId;
       },
     );
 
@@ -2204,7 +2267,12 @@ export class PluginSystem {
 
     this.ipcHandle(
       'mcp-registry:getMcpRegistryServers',
-      async (_listener, registryURL: string, cursor: string | undefined, limit: number | undefined): Promise<components['schemas']['ServerList']> => {
+      async (
+        _listener,
+        registryURL: string,
+        cursor: string | undefined,
+        limit: number | undefined,
+      ): Promise<components['schemas']['ServerList']> => {
         const client = mcpRegistriesClients.getClient(registryURL);
         return await client.getServers({
           query: {
@@ -2217,7 +2285,12 @@ export class PluginSystem {
 
     this.ipcHandle(
       'mcp-registry:getMCPServerDetails',
-      async (_listener, registryURL: string, serverId: string, version?: string): Promise<components['schemas']['ServerDetail']> => {
+      async (
+        _listener,
+        registryURL: string,
+        serverId: string,
+        version?: string,
+      ): Promise<components['schemas']['ServerDetail']> => {
         const client = mcpRegistriesClients.getClient(registryURL);
         return await client.getServer({
           query: {
@@ -2248,19 +2321,22 @@ export class PluginSystem {
       return mcpStatuses.collect();
     });
 
-    // TODO: rename to `mcp-manager:unregister`
-    this.ipcHandle(
-      'mcp-manager:removeMcpRemoteServer',
-      async (_listener, key: string, options: { serverId: string; remoteId: number }): Promise<void> => {
-        await mcpRegistries.deleteRemoteMcpFromConfiguration(options.serverId, options.remoteId);
-        return mcpManager.removeMcpRemoteServer(key);
-      },
-    );
+    this.ipcHandle('mcp-manager:start', async (_listener, configId: string): Promise<void> => {
+      await mcpManager.start(configId);
+    });
+
+    this.ipcHandle('mcp-manager:stop', async (_listener, configId: string): Promise<void> => {
+      return mcpManager.stop(configId);
+    });
+
+    this.ipcHandle('mcp-manager:unregister', async (_listener, configId: string): Promise<void> => {
+      return mcpManager.unregister(configId);
+    });
 
     this.ipcHandle(
       'mcp-manager:getTools',
-      async (_listener, mcpId: string): Promise<Record<string, { description: string }>> => {
-        const tools = await mcpAIClients.getToolSet([mcpId]);
+      async (_listener, configId: string): Promise<Record<string, { description: string }>> => {
+        const tools = await mcpAIClients.getToolSet([configId]);
 
         return Object.fromEntries(
           Object.entries(tools).map(([key, value]) => [

@@ -1,6 +1,6 @@
 <script lang="ts" generics="T extends { name?: string }">
 import type { TableColumn, TableRow } from '@podman-desktop/ui-svelte';
-import { Button,Table } from '@podman-desktop/ui-svelte';
+import { Button, Table } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 
 import type { PaginationStore } from '/@/stores/pagination/pagination-store';
@@ -21,21 +21,28 @@ let { kind, store, columns, row, defaultSortColumn, loading = $bindable(), scrol
 let hasNext: boolean = $state(false);
 
 onMount(() => {
-  store.subscribe(() => {
+  store
+    .init()
+    .catch(console.error)
+    .finally(() => {
+      loading = false;
+    });
+  return store.subscribe(() => {
     hasNext = store.hasNext();
-  });
-  store.init().catch(console.error).finally(() => {
-    loading = false;
   });
 });
 
 function nextPage(): void {
   loading = true;
-  store.next().then(() => {
-    scrollToTop();
-  }).catch(console.error).finally(() => {
-    loading = false;
-  });
+  store
+    .next()
+    .then(() => {
+      scrollToTop();
+    })
+    .catch(console.error)
+    .finally(() => {
+      loading = false;
+    });
 }
 </script>
 

@@ -13,7 +13,7 @@ import FormPage from '/@/lib/ui/FormPage.svelte';
 import { handleNavigation } from '/@/navigation';
 import { isFlowConnectionAvailable } from '/@/stores/flow-provider';
 import { providerInfos } from '/@/stores/providers';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
+import type { MCPConfigInfo } from '/@api/mcp/mcp-config-info';
 import { NavigationPage } from '/@api/navigation-page';
 
 import ExportIcon from '../chat/components/messages/ExportIcon.svelte';
@@ -21,7 +21,7 @@ import type { ModelInfo } from '../chat/components/model-info';
 import FlowConnectionSelector from './components/flow-connection-selector.svelte';
 import NoFlowProviders from './components/NoFlowProviders.svelte';
 
-let selectedMCP = $state<MCPRemoteServerInfo[]>(flowCreationData.value?.mcp ?? []);
+let selectedMCP = $state<MCPConfigInfo[]>(flowCreationData.value?.mcp ?? []);
 let models: Array<ModelInfo> = $derived(getModels($providerInfos));
 let selectedModel = $derived<ModelInfo | undefined>(flowCreationData.value?.model ?? models[0]);
 

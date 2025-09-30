@@ -30,8 +30,6 @@ import { Disposable } from '../types/disposable.js';
 
 type InternalMCPRegistry = kortexAPI.MCPRegistry & { save: boolean };
 
-export const INTERNAL_PROVIDER_ID = 'internal';
-
 const MCP_SECTION_NAME = 'mcp';
 const MCP_REGISTRIES = 'registries';
 

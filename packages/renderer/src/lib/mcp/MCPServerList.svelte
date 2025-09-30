@@ -1,7 +1,7 @@
 <script lang="ts">
 import { Button, NavPage } from '@podman-desktop/ui-svelte';
 
-import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import { mcpConfigsInfo } from '/@/stores/mcp-configs-info';
 
 import McpRegistriesEditing from './MCPRegistriesEditing.svelte';
 import McpServerListRemoteReady from './MCPServerListConfigured.svelte';
@@ -16,13 +16,13 @@ const { tab }: Props = $props();
 let container: HTMLDivElement;
 
 let selectedTab = $state<'CONFIGURED' | 'INSTALLABLE' | 'REGISTRIES-EDITING'>(
-  (tab ?? $mcpRemoteServerInfos.length) ? 'CONFIGURED' : 'INSTALLABLE',
+  (tab ?? $mcpConfigsInfo.length) ? 'CONFIGURED' : 'INSTALLABLE',
 );
 
 let searchTerm = $state('');
 
 function scrollToTop(): void {
-  container.scrollTo({ top: 0, left: 0, behavior: 'smooth'});
+  container.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
 }
 </script>
 

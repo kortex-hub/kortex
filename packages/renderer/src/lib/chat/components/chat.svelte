@@ -8,11 +8,11 @@ import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
 import { convertToUIMessages } from '/@/lib/chat/utils/chat';
 import { getModels } from '/@/lib/models/models-utils';
-import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import { mcpConfigsInfo } from '/@/stores/mcp-configs-info';
 import { providerInfos } from '/@/stores/providers';
 import { MessageConfigSchema } from '/@api/chat/message-config';
 import type { Chat as DbChat, Message as DbMessage } from '/@api/chat/schema.js';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
+import type { MCPConfigInfo } from '/@api/mcp/mcp-config-info';
 
 import ChatHeader from './chat-header.svelte';
 import { IPCChatTransport } from './ipc-chat-transport';
@@ -45,8 +45,8 @@ let selectedModel = $derived<ModelInfo | undefined>(
     : models[0],
 );
 
-let selectedMCP = $state<MCPRemoteServerInfo[]>(
-  config?.mcp?.flatMap(mcpId => $mcpRemoteServerInfos.find(r => r.id === mcpId) ?? []) ?? [],
+let selectedMCP = $state<MCPConfigInfo[]>(
+  config?.mcp?.flatMap(mcpId => $mcpConfigsInfo.find(r => r.id === mcpId) ?? []) ?? [],
 );
 
 const chatHistory = ChatHistory.fromContext();
@@ -106,7 +106,7 @@ const hasModels = $derived(models && models.length > 0);
   {/if}
   <div class="flex min-h-0 flex-1">
         {#if hasModels}
-            <div class="flex flex-col flex-3/4"> 
+            <div class="flex flex-col flex-3/4">
                 <Messages
                     {readonly}
                     loading={chatClient.status === 'streaming' || chatClient.status === 'submitted'}
