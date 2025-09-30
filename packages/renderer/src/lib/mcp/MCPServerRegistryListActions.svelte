@@ -7,14 +7,19 @@ import { NavigationPage } from '/@api/navigation-page';
 
 import ListItemButtonIcon from '../ui/ListItemButtonIcon.svelte';
 
-export let object: components['schemas']['ServerDetail'] & { registryURL: string };
+interface Props {
+  object: components['schemas']['ServerDetail'] & { registryURL: string };
+}
+
+let { object }: Props = $props();
 
 function createRegistry(): void {
   const metadata = object._meta?.['io.modelcontextprotocol.registry/official'];
-  if(!metadata) throw new Error('No metadata found for MCP registry server');
+  if (!metadata) throw new Error('No metadata found for MCP registry server');
 
   handleNavigation({
-    page: NavigationPage.MCP_INSTALL_FROM_REGISTRY, parameters: {
+    page: NavigationPage.MCP_INSTALL_FROM_REGISTRY,
+    parameters: {
       serverId: metadata.serverId,
       registryURL: object.registryURL,
     },
