@@ -186,8 +186,8 @@ importers:
         specifier: 'workspace:'
         version: link:packages/extension-api
       '@kortex-hub/mcp-registry-types':
-        specifier: ^1.1.0
-        version: 1.1.0
+        specifier: ^1.2.3
+        version: 1.2.3
       '@rollup/plugin-commonjs':
         specifier: ^28.0.6
         version: 28.0.6(rollup@4.46.2)
@@ -1597,8 +1597,8 @@ packages:
     peerDependencies:
       jsep: ^0.4.0||^1.0.0
 
-  '@kortex-hub/mcp-registry-types@1.1.0':
-    resolution: {integrity: sha512-V1z/J8MXajEb/UFBYgS8QWVj4+X3KoSSSMkehziJU2j3rDkQkO7J9vfqgesze46mpuu7LJ0yFAkUcTlZ2xrY+A==}
+  '@kortex-hub/mcp-registry-types@1.2.3':
+    resolution: {integrity: sha512-vNVgNt10al3RZsIUwf3VrZl+7qeyDhoNU3VSTLS5K0caXbbuP3KZWzNBDUHZ891oHOX2glXjJSnReOuD5GO/Dw==}
 
   '@kubernetes/client-node@1.3.0':
     resolution: {integrity: sha512-IE0yrIpOT97YS5fg2QpzmPzm8Wmcdf4ueWMn+FiJSI3jgTTQT1u+LUhoYpdfhdHAVxdrNsaBg2C0UXSnOgMoCQ==}
@@ -8455,7 +8455,7 @@ snapshots:
     dependencies:
       jsep: 1.4.0
 
-  '@kortex-hub/mcp-registry-types@1.1.0': {}
+  '@kortex-hub/mcp-registry-types@1.2.3': {}
 
   '@kubernetes/client-node@1.3.0(patch_hash=1c34691b2a4cf5f4fdeb73244fb59dccceee5642ddca2ac6c41fe86d9fde86e5)(encoding@0.1.13)':
     dependencies:
