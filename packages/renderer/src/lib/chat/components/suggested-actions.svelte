@@ -32,7 +32,7 @@ const suggestedActions: SuggestedAction[] = [
     title: 'What are the last 5 issues of GitHub',
     label: 'repository podman-desktop/podman-desktop?',
     action: 'What are the last 5 issues of GitHub repository podman-desktop/podman-desktop?',
-    requiredMcp: ['123e4567-e89b-12d3-a456-426614172000'],
+    requiredMcp: ['com.github.mcp'],
   },
   {
     title: 'Write code to',
