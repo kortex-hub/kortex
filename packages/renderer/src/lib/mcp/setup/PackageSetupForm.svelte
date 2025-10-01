@@ -2,8 +2,8 @@
 import { faPlay } from '@fortawesome/free-solid-svg-icons/faPlay';
 import { faTableList } from '@fortawesome/free-solid-svg-icons/faTableList';
 import { faWrench } from '@fortawesome/free-solid-svg-icons/faWrench';
+import type { components } from '@kortex-hub/mcp-registry-types';
 import { Button } from '@podman-desktop/ui-svelte';
-import type { components } from 'mcp-registry';
 import { SvelteMap } from 'svelte/reactivity';
 
 import FormSection from '/@/lib/mcp/setup/FormSection.svelte';
@@ -21,13 +21,13 @@ interface Props {
 let { object, packageIndex, loading = $bindable(false), submit, cancel }: Props = $props();
 
 let runtimeArgumentsResponses = new SvelteMap<number, InputWithVariableResponse>(
-  (object.runtime_arguments ?? []).map((argument, index) => [index, createInputWithVariables(argument)]),
+  (object.runtimeArguments ?? []).map((argument, index) => [index, createInputWithVariables(argument)]),
 );
 let packageArgumentsResponses = new SvelteMap<number, InputWithVariableResponse>(
-  (object.package_arguments ?? []).map((argument, index) => [index, createInputWithVariables(argument)]),
+  (object.packageArguments ?? []).map((argument, index) => [index, createInputWithVariables(argument)]),
 );
 let environmentVariablesResponses = new SvelteMap<string, InputWithVariableResponse>(
-  (object.environment_variables ?? []).map(argument => [argument.name, createInputWithVariables(argument)]),
+  (object.environmentVariables ?? []).map(argument => [argument.name, createInputWithVariables(argument)]),
 );
 
 function updateArgumentValue<K extends string | number>(
@@ -92,9 +92,9 @@ async function spawn(): Promise<void> {
       <div class="flex flex-col">
         <label for="server-url" class="text-base font-bold text-[var(--pd-content-card-header-text)] mb-1">Registry</label>
         <div class="flex items-center bg-[var(--pd-label-bg)] p-1 rounded-md text-sm text-[var(--pd-label-text)] gap-x-1 w-max px-2 py-1">
-          <span>{object.registry_type}</span>
-          {#if object.registry_base_url}
-            <span>({object.registry_base_url})</span>
+          <span>{object.registryType}</span>
+          {#if object.registryBaseUrl}
+            <span>({object.registryBaseUrl})</span>
           {/if}
         </div>
       </div>
@@ -117,31 +117,31 @@ async function spawn(): Promise<void> {
     </div>
   </div>
 
-  {#if object.runtime_arguments?.length}
+  {#if object.runtimeArguments?.length}
     <FormSection
       title="Runtime Arguments"
       icon={faWrench}
-      args={object.runtime_arguments.map((argument, index) => ({...argument, key: index }))}
+      args={object.runtimeArguments.map((argument, index) => ({...argument, key: index }))}
       updateArgumentValue={updateArgumentValue.bind(undefined, runtimeArgumentsResponses)}
       updateArgumentVariableValue={updateArgumentVariableValue.bind(undefined, runtimeArgumentsResponses)}
     />
   {/if}
 
-  {#if object.package_arguments?.length}
+  {#if object.packageArguments?.length}
     <FormSection
       title="Package Arguments"
       icon={faWrench}
-      args={object.package_arguments.map((argument, index) => ({...argument, key: index }))}
+      args={object.packageArguments.map((argument, index) => ({...argument, key: index }))}
       updateArgumentValue={updateArgumentValue.bind(undefined, packageArgumentsResponses)}
       updateArgumentVariableValue={updateArgumentVariableValue.bind(undefined, packageArgumentsResponses)}
     />
   {/if}
 
-  {#if object.environment_variables?.length}
+  {#if object.environmentVariables?.length}
     <FormSection
       title="Environment Variables"
       icon={faTableList}
-      args={object.environment_variables.map((argument) => ({...argument, key: argument.name }))}
+      args={object.environmentVariables.map((argument) => ({...argument, key: argument.name }))}
       updateArgumentValue={updateArgumentValue.bind(undefined, environmentVariablesResponses)}
       updateArgumentVariableValue={updateArgumentVariableValue.bind(undefined, environmentVariablesResponses)}
     />
