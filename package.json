@@ -84,7 +84,7 @@
     "@eslint/js": "^9.37.0",
     "@playwright/test": "1.56.0",
     "@kortex-app/api": "workspace:",
-    "@kortex-hub/mcp-registry-types": "^1.1.0",
+    "@kortex-hub/mcp-registry-types": "^1.2.3",
     "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.2",

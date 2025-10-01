@@ -129,23 +129,8 @@ export class MCPRegistry {
     this.configuration = this.configurationRegistry.getConfiguration(MCP_SECTION_NAME);
   }
 
-  enhanceServerDetail(registryURL: string, server: components['schemas']['ServerDetail']): MCPServerDetail {
-    let serverId = '';
-    // is there a "_meta": {
-    // "io.modelcontextprotocol.registry/official": {
-    // "id": "..."
-    // field, use it
-    if (server._meta?.['io.modelcontextprotocol.registry/official']) {
-      const official = server._meta['io.modelcontextprotocol.registry/official'];
-      if (official.serverId) {
-        serverId = official.serverId;
-      }
-    }
-    if (!serverId) {
-      const rawId = `${registryURL}::${server.name}`;
-      serverId = crypto.createHash('sha256').update(rawId).digest('hex');
-    }
-    return { ...server, serverId };
+  enhanceServerDetail(server: components['schemas']['ServerDetail']): MCPServerDetail {
+    return { ...server, serverId: encodeURI(server.name) };
   }
 
   init(): void {
@@ -164,7 +149,7 @@ export class MCPRegistry {
 
       const { servers } = await this.listMCPServersFromRegistry(registry.serverUrl);
       for (const rawServer of servers) {
-        const server = this.enhanceServerDetail(registry.serverUrl, rawServer);
+        const server = this.enhanceServerDetail(rawServer.server);
         if (!server.serverId) {
           continue;
         }
@@ -470,8 +455,8 @@ export class MCPRegistry {
     const data: components['schemas']['ServerList'] = await content.json();
 
     // If pagination info exists, fetch the next page recursively
-    if (data.metadata?.next_cursor) {
-      const nextPage = await this.listMCPServersFromRegistry(registryURL, data.metadata.next_cursor);
+    if (data.metadata?.nextCursor) {
+      const nextPage = await this.listMCPServersFromRegistry(registryURL, data.metadata.nextCursor);
       return {
         ...data,
         servers: [...data.servers, ...nextPage.servers],
@@ -496,7 +481,7 @@ export class MCPRegistry {
       const serverList: components['schemas']['ServerList'] = await this.listMCPServersFromRegistry(registryURL);
 
       // now, aggregate the servers from the list ensuring each server has an id
-      serverDetails.push(...serverList.servers.map(server => this.enhanceServerDetail(registryURL, server)));
+      serverDetails.push(...serverList.servers.map(({ server }) => this.enhanceServerDetail(server)));
     }
     return serverDetails;
   }
