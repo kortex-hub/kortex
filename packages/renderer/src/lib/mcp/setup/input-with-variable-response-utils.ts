@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { components } from 'mcp-registry';
+import type { components } from '@kortex-hub/mcp-registry-types';
 
 import type { InputWithVariableResponse } from '/@api/mcp/mcp-setup';
 

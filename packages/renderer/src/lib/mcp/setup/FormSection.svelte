@@ -1,7 +1,7 @@
 <script lang="ts" generics="T">
 import type { IconDefinition } from '@fortawesome/fontawesome-common-types';
 import { faKey } from '@fortawesome/free-solid-svg-icons/faKey';
-import type { components } from 'mcp-registry';
+import type { components } from '@kortex-hub/mcp-registry-types';
 import Fa from 'svelte-fa';
 
 import InputArgumentWithVariables from '/@/lib/mcp/setup/InputArgumentWithVariables.svelte';
@@ -34,7 +34,7 @@ let { title, description, icon = faKey, args, updateArgumentValue, updateArgumen
 
   {#each args as argument (argument.key)}
     {#if 'name' in argument}
-      <label for="{title}-argument-{argument.name}" class="text-xl font-bold text-[var(--pd-content-card-header-text)]">{argument.name} {argument.is_required ? '*' : ''}</label>
+      <label for="{title}-argument-{argument.name}" class="text-xl font-bold text-[var(--pd-content-card-header-text)]">{argument.name} {argument.isRequired ? '*' : ''}</label>
     {/if}
     <div class="border-2 border-dashed rounded-md p-4">
       <InputArgumentWithVariables
