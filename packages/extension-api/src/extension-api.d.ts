@@ -432,7 +432,7 @@ declare module '@kortex-app/api' {
     };
     mcp: Array<{
       name: string;
-      type: 'streamable_http';
+      type: 'streamable_http' | 'sse';
       uri: string;
       headers?: {
         [key: string]: string;

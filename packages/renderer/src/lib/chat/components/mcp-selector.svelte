@@ -3,8 +3,8 @@ import { faToolbox } from '@fortawesome/free-solid-svg-icons/faToolbox';
 import Fa from 'svelte-fa';
 
 import { cn } from '/@/lib/chat/utils/shadcn';
-import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
+import { mcpConfigsInfo } from '/@/stores/mcp-configs-info';
+import type { MCPConfigInfo } from '/@api/mcp/mcp-config-info';
 
 import CheckCircleFillIcon from './icons/check-circle-fill.svelte';
 import ChevronDownIcon from './icons/chevron-down.svelte';
@@ -18,7 +18,7 @@ import {
 } from './ui/dropdown-menu';
 
 interface Props {
-  selected: MCPRemoteServerInfo[];
+  selected: Array<MCPConfigInfo>;
   class?: string;
   disabled?: boolean;
   open?: boolean;
@@ -26,7 +26,7 @@ interface Props {
 
 let { selected = $bindable(), class: className, disabled = false, open = $bindable(false) }: Props = $props();
 
-function onSelect(mcp: MCPRemoteServerInfo, event: Event): void {
+function onSelect(mcp: MCPConfigInfo, event: Event): void {
   event.preventDefault(); // prevent dropdown to close itself
 
   const index = selected.findIndex(s => s.id === mcp.id);
@@ -54,7 +54,7 @@ function onSelect(mcp: MCPRemoteServerInfo, event: Event): void {
     {/snippet}
   </DropdownMenuTrigger>
   <DropdownMenuContent align="start" class="min-w-[300px]">
-    {#if $mcpRemoteServerInfos.length === 0}
+    {#if $mcpConfigsInfo.length === 0}
           <DropdownMenuItem
             disabled
             class="group/item flex flex-row items-center justify-between gap-4"
@@ -63,14 +63,15 @@ function onSelect(mcp: MCPRemoteServerInfo, event: Event): void {
           </DropdownMenuItem>
     {/if}
       <DropdownMenuGroup>
-        {#each $mcpRemoteServerInfos as mcpRemoteServerInfo (mcpRemoteServerInfo.id)}
+        {#each $mcpConfigsInfo as mcpConfigInfo (mcpConfigInfo.id)}
           <DropdownMenuItem
-            onSelect={onSelect.bind(undefined, mcpRemoteServerInfo)}
+            disabled={mcpConfigInfo.status !== 'running'}
+            onSelect={onSelect.bind(undefined, mcpConfigInfo)}
             class="group/item flex flex-row items-center justify-between gap-4"
-            data-active={!!selected.find(s => s.id === mcpRemoteServerInfo.id)}
+            data-active={!!selected.find(s => s.id === mcpConfigInfo.id)}
           >
             <div class="flex flex-col items-start gap-1">
-              <div>{mcpRemoteServerInfo.name}</div>
+              <div>{mcpConfigInfo.name}</div>
             </div>
 
             <div

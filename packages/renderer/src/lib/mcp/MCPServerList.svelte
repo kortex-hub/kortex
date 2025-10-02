@@ -1,11 +1,11 @@
 <script lang="ts">
 import { Button, NavPage } from '@podman-desktop/ui-svelte';
 
-import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import { mcpConfigsInfo } from '/@/stores/mcp-configs-info';
 
 import McpRegistriesEditing from './MCPRegistriesEditing.svelte';
-import McpServerListRegistryInstall from './MCPServerListRegistryInstall.svelte';
-import McpServerListRemoteReady from './MCPServerListRemoteReady.svelte';
+import McpServerListRemoteReady from './MCPServerListConfigured.svelte';
+import MCPServerListRegistryAvailable from './MCPServerListRegistryAvailable.svelte';
 
 interface Props {
   tab?: string;
@@ -13,17 +13,23 @@ interface Props {
 
 const { tab }: Props = $props();
 
-let selectedTab = $state<'READY' | 'INSTALLABLE' | 'REGISTRIES-EDITING'>(
-  (tab ?? $mcpRemoteServerInfos.length) ? 'READY' : 'INSTALLABLE',
+let container: HTMLDivElement;
+
+let selectedTab = $state<'CONFIGURED' | 'INSTALLABLE' | 'REGISTRIES-EDITING'>(
+  (tab ?? $mcpConfigsInfo.length) ? 'CONFIGURED' : 'INSTALLABLE',
 );
 
 let searchTerm = $state('');
+
+function scrollToTop(): void {
+  container.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+}
 </script>
 
 <NavPage bind:searchTerm={searchTerm} title="MCP servers">
     {#snippet tabs()}
-    <Button type="tab" on:click={(): string => selectedTab = 'READY'} selected={selectedTab === 'READY'}
-      >Ready</Button>
+    <Button type="tab" on:click={(): string => selectedTab = 'CONFIGURED'} selected={selectedTab === 'CONFIGURED'}
+      >Configured</Button>
     <Button type="tab" on:click={():string => selectedTab = 'INSTALLABLE'} selected={selectedTab === 'INSTALLABLE'}
       >Install</Button>
     <Button type="tab" on:click={():string => selectedTab = 'REGISTRIES-EDITING'} selected={selectedTab === 'REGISTRIES-EDITING'}
@@ -31,15 +37,14 @@ let searchTerm = $state('');
   {/snippet}
 
   {#snippet content()}
-  <div class="flex min-w-full h-full">
-      {#if selectedTab === 'READY'}
+    <div bind:this={container} class="flex flex-col w-full h-full overflow-y-scroll">
+      {#if selectedTab === 'CONFIGURED'}
         <McpServerListRemoteReady bind:filter={searchTerm}/>
       {:else if selectedTab === 'INSTALLABLE'}
-        <McpServerListRegistryInstall bind:filter={searchTerm}/>
+        <MCPServerListRegistryAvailable scrollToTop={scrollToTop} bind:filter={searchTerm}/>
       {:else if selectedTab === 'REGISTRIES-EDITING'}
         <McpRegistriesEditing />
-        {/if}
+      {/if}
     </div>
-
   {/snippet}
 </NavPage>

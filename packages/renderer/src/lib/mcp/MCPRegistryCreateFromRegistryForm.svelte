@@ -1,31 +1,43 @@
 <script lang="ts">
 import type { components } from '@kortex-hub/mcp-registry-types';
 import { ErrorMessage, FormPage } from '@podman-desktop/ui-svelte';
+import { onMount } from 'svelte';
 import { router } from 'tinro';
 
 import McpIcon from '/@/lib/images/MCPIcon.svelte';
 import type { MCPTarget } from '/@/lib/mcp/setup/mcp-target';
 import MCPSetupDropdown from '/@/lib/mcp/setup/MCPSetupDropdown.svelte';
 import RemoteSetupForm from '/@/lib/mcp/setup/RemoteSetupForm.svelte';
-import { mcpRegistriesServerInfos } from '/@/stores/mcp-registry-servers';
 import type { MCPSetupOptions } from '/@api/mcp/mcp-setup';
 
 interface Props {
-  serverId: string;
+  registryURL: string;
+  serverName: string;
+  serverVersion?: string;
 }
 
-const { serverId }: Props = $props();
+const { registryURL, serverName, serverVersion }: Props = $props();
 
 let loading: boolean = $state(false);
 let error: string | undefined = $state(undefined);
 
-const mcpRegistryServerDetail: components['schemas']['ServerDetail'] | undefined = $derived(
-  $mcpRegistriesServerInfos.find(server => server.serverId === serverId),
-);
+let serverDetails: components['schemas']['ServerDetail'] | undefined = $state();
+
+onMount(() => {
+  /**
+   * Collect the server details
+   */
+  window
+    .getMCPServerDetails(registryURL, serverName, serverVersion)
+    .then(details => {
+      serverDetails = details;
+    })
+    .catch(console.error);
+});
 
 let targets: Array<MCPTarget> = $derived([
-  ...(mcpRegistryServerDetail?.remotes ?? []).map((remote, index) => ({ ...remote, index })),
-  ...(mcpRegistryServerDetail?.packages ?? []).map((pack, index) => ({ ...pack, index })),
+  ...(serverDetails?.remotes ?? []).map((remote, index) => ({ ...remote, index })),
+  ...(serverDetails?.packages ?? []).map((pack, index) => ({ ...pack, index })),
 ]);
 let mcpTarget: MCPTarget | undefined = $state();
 
@@ -40,7 +52,8 @@ async function submit(options: MCPSetupOptions): Promise<void> {
   try {
     loading = true;
     error = undefined;
-    await window.setupMCP(serverId, options);
+    const configId = await window.setupMCP(options);
+    console.log('configId', configId);
     return navigateToMcps();
   } catch (err: unknown) {
     error = String(err);
@@ -54,41 +67,42 @@ async function navigateToMcps(): Promise<void> {
 }
 </script>
 
-{#if mcpRegistryServerDetail}
-  <FormPage title="Adding {mcpRegistryServerDetail.name}" inProgress={loading} onclose={navigateToMcps}>
+{#if serverDetails}
+  <FormPage title="Adding {serverDetails.name}" inProgress={loading} onclose={navigateToMcps}>
     {#snippet icon()}<McpIcon size={24} />{/snippet}
     {#snippet content()}
+      {#if serverDetails}
+        <div class="p-5 min-w-full h-full">
 
-      <div class="p-5 min-w-full h-full">
-
-        <div class="bg-[var(--pd-content-card-bg)] p-6 space-y-2 lg:p-8 rounded-lg">
-          <div class="flex flex-col gap-y-4">
-            {#if error}
-              <ErrorMessage error={error} />
-            {/if}
-
-            <!-- selecting which remote / package to use -->
-            {#if targets.length > 1}
-              <div class="bg-[var(--pd-content-bg)] rounded-md flex flex-col p-2 space-y-2">
-                <label class="block mb-2 text-xl font-bold text-[var(--pd-content-card-header-text)]">MCP Server Type</label>
-                <MCPSetupDropdown
-                  bind:selected={mcpTarget}
-                  targets={targets}
-                />
-              </div>
-            {/if}
-
-            <!-- display form -->
-            {#if mcpTarget !== undefined}
-              {#if 'url' in mcpTarget}  <!-- remote -->
-                <RemoteSetupForm submit={submit} remoteIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget}/>
-              {:else} <!-- package -->
-                <span>Not yet supported :p</span>
+          <div class="bg-[var(--pd-content-card-bg)] p-6 space-y-2 lg:p-8 rounded-lg">
+            <div class="flex flex-col gap-y-4">
+              {#if error}
+                <ErrorMessage error={error} />
               {/if}
-            {/if}
+
+              <!-- selecting which remote / package to use -->
+              {#if targets.length > 1}
+                <div class="bg-[var(--pd-content-bg)] rounded-md flex flex-col p-2 space-y-2">
+                  <label class="block mb-2 text-xl font-bold text-[var(--pd-content-card-header-text)]">MCP Server Type</label>
+                  <MCPSetupDropdown
+                    bind:selected={mcpTarget}
+                    targets={targets}
+                  />
+                </div>
+              {/if}
+
+              <!-- display form -->
+              {#if mcpTarget !== undefined}
+                {#if 'url' in mcpTarget}  <!-- remote -->
+                  <RemoteSetupForm submit={submit} registryURL={registryURL} serverName={serverDetails.name} serverVersion={serverDetails.version} remoteIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget}/>
+                {:else} <!-- package -->
+                  <span>Not yet supported :p</span>
+                {/if}
+              {/if}
+            </div>
           </div>
         </div>
-      </div>
+      {/if}
     {/snippet}
   </FormPage>
 {/if}

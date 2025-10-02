@@ -23,6 +23,7 @@
 import EventEmitter from 'node:events';
 
 import type * as containerDesktopAPI from '@kortex-app/api';
+import type { components } from '@kortex-hub/mcp-registry-types';
 import type {
   Cluster,
   Context,
@@ -87,7 +88,7 @@ import type { ResourceCount } from '/@api/kubernetes-resource-count';
 import type { KubernetesContextResources } from '/@api/kubernetes-resources';
 import type { KubernetesTroubleshootingInformation } from '/@api/kubernetes-troubleshooting';
 import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '/@api/manifest-info';
-import type { MCPRemoteServerInfo, MCPServerDetail } from '/@api/mcp/mcp-server-info';
+import type { MCPConfigInfo } from '/@api/mcp/mcp-config-info';
 import type { MCPSetupOptions } from '/@api/mcp/mcp-setup';
 import type { Menu } from '/@api/menu.js';
 import type { NetworkInspectInfo } from '/@api/network-info';
@@ -330,7 +331,7 @@ export function initExposure(): void {
     async (
       providerId: string,
       connectionName: string,
-      options: Omit<containerDesktopAPI.FlowGenerateOptions, 'mcp'> & { mcp: MCPRemoteServerInfo[] },
+      options: Omit<containerDesktopAPI.FlowGenerateOptions, 'mcp'> & { mcp: MCPConfigInfo[] },
     ): Promise<string> => {
       return ipcInvoke('flows:generate', providerId, connectionName, options);
     },
@@ -1688,27 +1689,60 @@ export function initExposure(): void {
     },
   );
 
-  contextBridge.exposeInMainWorld('getMcpRegistryServers', async (): Promise<MCPServerDetail[]> => {
-    return ipcInvoke('mcp-registry:getMcpRegistryServers');
-  });
+  contextBridge.exposeInMainWorld(
+    'getMcpRegistryServers',
+    async (
+      registryURL: string,
+      cursor: string | undefined,
+      limit: number | undefined,
+    ): Promise<components['schemas']['ServerList']> => {
+      return ipcInvoke('mcp-registry:getMcpRegistryServers', registryURL, cursor, limit);
+    },
+  );
+
+  /**
+   * Get the Server details in a given registry
+   */
+  contextBridge.exposeInMainWorld(
+    'getMCPServerDetails',
+    async (
+      registryURL: string,
+      serverName: string,
+      version?: string,
+    ): Promise<components['schemas']['ServerDetail']> => {
+      return ipcInvoke('mcp-registry:getMCPServerDetails', registryURL, serverName, version);
+    },
+  );
 
   contextBridge.exposeInMainWorld(
     'getMcpToolSet',
-    async (mcpId: string): Promise<Record<string, { description: string }>> => {
-      return ipcInvoke('mcp-manager:getTools', mcpId);
+    async (configId: string): Promise<Record<string, { description: string }>> => {
+      return ipcInvoke('mcp-manager:getTools', configId);
     },
   );
+
+  contextBridge.exposeInMainWorld('startMCP', async (configId: string): Promise<void> => {
+    return ipcInvoke('mcp-manager:start', configId);
+  });
+
+  contextBridge.exposeInMainWorld('stopMCP', async (configId: string): Promise<void> => {
+    return ipcInvoke('mcp-manager:stop', configId);
+  });
+
+  contextBridge.exposeInMainWorld('unregisterMCP', async (configId: string): Promise<void> => {
+    return ipcInvoke('mcp-manager:unregister', configId);
+  });
 
   contextBridge.exposeInMainWorld('getMcpExchanges', async (mcpId: string): Promise<DynamicToolUIPart[]> => {
     return ipcInvoke('mcp-manager:getExchanges', mcpId);
   });
 
-  contextBridge.exposeInMainWorld('setupMCP', async (serverId: string, options: MCPSetupOptions): Promise<void> => {
-    return ipcInvoke('mcp-registry:setup', serverId, options);
+  contextBridge.exposeInMainWorld('setupMCP', async (options: MCPSetupOptions): Promise<string> => {
+    return ipcInvoke('mcp-manager:setup', options);
   });
 
-  contextBridge.exposeInMainWorld('fetchMcpRemoteServers', async (): Promise<MCPRemoteServerInfo[]> => {
-    return ipcInvoke('mcp-manager:fetchMcpRemoteServers');
+  contextBridge.exposeInMainWorld('collectMCPStatuses', async (): Promise<MCPConfigInfo[]> => {
+    return ipcInvoke('mcp-statuses:collect');
   });
 
   contextBridge.exposeInMainWorld(

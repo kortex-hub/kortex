@@ -6,12 +6,12 @@ import { router } from 'tinro';
 
 import ToolParts from '/@/lib/chat/components/messages/tool-parts.svelte';
 import MonacoEditor from '/@/lib/editor/MonacoEditor.svelte';
+import MCPConfiguredActions from '/@/lib/mcp/column/MCPConfiguredActions.svelte';
+import MCPConfiguredStatus from '/@/lib/mcp/column/MCPConfiguredStatus.svelte';
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
-import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
-
-import McpIcon from '../images/MCPIcon.svelte';
+import { mcpConfigsInfo } from '/@/stores/mcp-configs-info';
 
 interface Props {
   id: string;
@@ -29,18 +29,27 @@ async function refreshMessages(): Promise<void> {
   }
 }
 
-const mcpServer = $derived($mcpRemoteServerInfos.find(server => server.id === id));
+const mcpServer = $derived($mcpConfigsInfo.find(server => server.id === id));
 const mcpServerName = $derived(mcpServer?.name ?? id);
-const mcpServerUrl = $derived(mcpServer?.url ?? '');
+
+$effect(() => {
+  if (!toolSet && mcpServer?.status !== 'running') {
+    toolSet = undefined;
+  }
+});
+
+$effect(() => {
+  if (toolSet === undefined && mcpServer?.status === 'running') {
+    window
+      .getMcpToolSet(id)
+      .then(content => {
+        toolSet = JSON.stringify(content, undefined, 2);
+      })
+      .catch(console.error);
+  }
+});
 
 onMount(() => {
-  window
-    .getMcpToolSet(id)
-    .then(content => {
-      toolSet = JSON.stringify(content, undefined, 2);
-    })
-    .catch(console.error);
-
   // Initial load of messages
   refreshMessages().catch(console.error);
 
@@ -51,35 +60,41 @@ onMount(() => {
 });
 </script>
 
-<DetailsPage title={mcpServerName} subtitle={id}>
-  {#snippet iconSnippet()}
-      <McpIcon size={24} />
-  {/snippet}
-  {#snippet tabsSnippet()}
-    <Tab title="Summary" selected={isTabSelected($router.path, 'summary')} url={getTabUrl($router.path, 'summary')} />
-    <Tab title="Tools" selected={isTabSelected($router.path, 'tools')} url={getTabUrl($router.path, 'tools')} />
-    <Tab title="Messages" selected={isTabSelected($router.path, 'messages')} url={getTabUrl($router.path, 'messages')} />
-  {/snippet}
-  {#snippet contentSnippet()}
-    <Route path="/summary" breadcrumb="Summary" navigationHint="tab">
-      <div class="flex flex-col p-5 gap-2">
-        <span>url: {mcpServerUrl}</span>
-        <span>id: {id}</span>
-      </div>
-    </Route>
-    <Route path="/tools" breadcrumb="Tools" navigationHint="tab">
-      {#if toolSet}
-        <MonacoEditor readOnly content={toolSet} language="json"/>
+{#if mcpServer}
+  <DetailsPage title={mcpServerName} subtitle={id}>
+    {#snippet iconSnippet()}
+        <MCPConfiguredStatus object={mcpServer} />
+    {/snippet}
+    {#snippet tabsSnippet()}
+      <Tab title="Summary" selected={isTabSelected($router.path, 'summary')} url={getTabUrl($router.path, 'summary')} />
+      {#if mcpServer.status === 'running'}
+        <Tab title="Tools" selected={isTabSelected($router.path, 'tools')} url={getTabUrl($router.path, 'tools')} />
+        <Tab title="Messages" selected={isTabSelected($router.path, 'messages')} url={getTabUrl($router.path, 'messages')} />
       {/if}
-    </Route>
-    <Route path="/messages" breadcrumb="Messages" navigationHint="tab">
-      {#if messages.length > 0}
-        <div class="overflow-y-auto h-full">
-        <ToolParts tools={messages} />
+    {/snippet}
+    {#snippet actionsSnippet()}
+      <MCPConfiguredActions object={mcpServer}/>
+    {/snippet}
+    {#snippet contentSnippet()}
+      <Route path="/summary" breadcrumb="Summary" navigationHint="tab">
+        <div class="flex flex-col p-5 gap-2">
+          <span>id: {id}</span>
         </div>
-      {:else}
-        <div class="text-sm text-zinc-600 dark:text-zinc-400">No messages recorded yet.</div>
-      {/if}
-    </Route>
-  {/snippet}
-</DetailsPage>
+      </Route>
+      <Route path="/tools" breadcrumb="Tools" navigationHint="tab">
+        {#if toolSet}
+          <MonacoEditor readOnly content={toolSet} language="json"/>
+        {/if}
+      </Route>
+      <Route path="/messages" breadcrumb="Messages" navigationHint="tab">
+        {#if messages.length > 0}
+          <div class="overflow-y-auto h-full">
+          <ToolParts tools={messages} />
+          </div>
+        {:else}
+          <div class="text-sm text-zinc-600 dark:text-zinc-400">No messages recorded yet.</div>
+        {/if}
+      </Route>
+    {/snippet}
+  </DetailsPage>
+{/if}

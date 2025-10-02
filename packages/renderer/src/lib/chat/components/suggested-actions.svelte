@@ -1,30 +1,36 @@
 <script lang="ts">
 import type { Chat } from '@ai-sdk/svelte';
+// eslint-disable-next-line import/no-duplicates
+import { get } from 'svelte/store';
+// eslint-disable-next-line import/no-duplicates
 import { fly } from 'svelte/transition';
 import { toast } from 'svelte-sonner';
 
-import { mcpRegistriesServerInfos } from '/@/stores/mcp-registry-servers';
-import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
+import McpsToInstallToast from '/@/lib/chat/components/McpsToInstallToast.svelte';
+import type { SuggestedMCP } from '/@/lib/chat/components/suggested-mcp';
+import { mcpConfigsInfo } from '/@/stores/mcp-configs-info';
+import type { MCPConfigInfo } from '/@api/mcp/mcp-config-info';
 
-import McpsToInstallToast from './McpsToInstallToast.svelte';
 import { Button } from './ui/button';
 
-let {
-  chatClient,
-  selectedMCP,
-  mcpSelectorOpen = $bindable(),
-}: {
+interface Props {
   chatClient: Chat;
-  selectedMCP: MCPRemoteServerInfo[];
+  selectedMCP: MCPConfigInfo[];
   mcpSelectorOpen: boolean;
-} = $props();
+}
+
+let { chatClient, selectedMCP, mcpSelectorOpen = $bindable() }: Props = $props();
 
 type SuggestedAction = {
   title: string;
   label: string;
   action: string;
-  requiredMcp?: string[];
+  requiredMcp?: Array<SuggestedMCP>;
+};
+
+const GITHUB_MCP: SuggestedMCP = {
+  serverName: 'com.github.mcp',
+  registryURL: 'https://kortex-hub.github.io/mcp-registry-online/v1.2.3/',
 };
 
 const suggestedActions: SuggestedAction[] = [
@@ -32,7 +38,7 @@ const suggestedActions: SuggestedAction[] = [
     title: 'What are the last 5 issues of GitHub',
     label: 'repository podman-desktop/podman-desktop?',
     action: 'What are the last 5 issues of GitHub repository podman-desktop/podman-desktop?',
-    requiredMcp: ['com.github.mcp'],
+    requiredMcp: [GITHUB_MCP],
   },
   {
     title: 'Write code to',
@@ -51,51 +57,38 @@ const suggestedActions: SuggestedAction[] = [
   },
 ];
 
+function isSelected(suggested: SuggestedMCP): boolean {
+  return selectedMCP.some(
+    selected => selected.name === suggested.serverName && selected.registryURL === suggested.registryURL,
+  );
+}
+
+function hasConfig(suggested: SuggestedMCP): boolean {
+  return get(mcpConfigsInfo).some(
+    config => config.name === suggested.serverName && config.registryURL === suggested.registryURL,
+  );
+}
+
 async function onclick(suggestedAction: SuggestedAction): Promise<void> {
-  const mcpsToInstall = suggestedAction.requiredMcp?.flatMap(id => {
-    const mcpInstalledInfo = $mcpRemoteServerInfos.find(mcp => mcp.infos.serverId === id);
-
-    if (mcpInstalledInfo) {
-      return [];
-    }
-
-    const mcpInfo = $mcpRegistriesServerInfos.find(mcp => mcp.serverId === id);
-
-    if (!mcpInfo) {
-      throw Error(`Suggested action ${suggestedAction.action} requires MCP with id ${id} but it was not found.`);
-    }
-
-    return [mcpInfo];
-  });
-
-  if (mcpsToInstall?.length) {
+  // 1. found MCP that need to be installed
+  const mpcToInstall = (suggestedAction.requiredMcp ?? []).filter(suggested => !hasConfig(suggested));
+  if (mpcToInstall.length > 0) {
     toast.error(McpsToInstallToast, {
       componentProps: {
-        mcpsToInstall,
+        mcpsToInstall: mpcToInstall,
       },
     });
     return;
   }
 
-  const mcpsToSelect = suggestedAction.requiredMcp?.flatMap(id => {
-    const selected = selectedMCP.find(mcp => mcp.infos.serverId === id);
-
-    if (selected) {
-      return [];
-    }
-    const mcpInfo = $mcpRegistriesServerInfos.find(mcp => mcp.serverId === id);
-
-    if (!mcpInfo) {
-      throw Error(`Suggested action ${suggestedAction.action} requires MCP with id ${id} but it was not found.`);
-    }
-
-    return [mcpInfo.name];
-  });
-
-  if (mcpsToSelect?.length) {
+  // 2. found MCP that need to be selected
+  const mpcsToSelect = (suggestedAction.requiredMcp ?? []).filter(suggested => !isSelected(suggested));
+  if (mpcsToSelect?.length) {
     mcpSelectorOpen = true;
 
-    toast.error(`You need to select the following MCP first: ${mcpsToSelect.join(', ')}`);
+    toast.error(
+      `You need to select the following MCP first: ${mpcsToSelect.map(suggested => suggested.serverName).join(', ')}`,
+    );
     return;
   }
 

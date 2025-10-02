@@ -24,7 +24,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 import type * as containerDesktopAPI from '@kortex-app/api';
-import type { components } from '@kortex-hub/mcp-registry-types';
+import { MCPManager } from '@kortex-hub/mcp-runner';
 import type {
   Cluster,
   Context as KubernetesContext,
@@ -61,7 +61,12 @@ import type {
   KubernetesGeneratorSelector,
 } from '/@/plugin/kubernetes/kube-generator-registry.js';
 import { KubeGeneratorRegistry } from '/@/plugin/kubernetes/kube-generator-registry.js';
-import { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
+import { MCPAIClients } from '/@/plugin/mcp/mcp-ai-clients.js';
+import { MCPExchanges } from '/@/plugin/mcp/mcp-exchanges.js';
+import { MCPIPCHandler } from '/@/plugin/mcp/mcp-ipc-handler.js';
+import { MCPPersistentStorage } from '/@/plugin/mcp/mcp-persistent-storage.js';
+import { MCPRegistriesClients } from '/@/plugin/mcp/mcp-registries-clients.js';
+import { MCPStatuses } from '/@/plugin/mcp/mcp-statuses.js';
 import { MenuRegistry } from '/@/plugin/menu-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
 import type { ExtensionBanner, RecommendedRegistry } from '/@/plugin/recommendations/recommendations-api.js';
@@ -110,8 +115,7 @@ import type { ResourceCount } from '/@api/kubernetes-resource-count.js';
 import type { KubernetesContextResources } from '/@api/kubernetes-resources.js';
 import type { KubernetesTroubleshootingInformation } from '/@api/kubernetes-troubleshooting.js';
 import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '/@api/manifest-info.js';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info.js';
-import type { MCPSetupOptions } from '/@api/mcp/mcp-setup.js';
+import type { MCPConfigInfo } from '/@api/mcp/mcp-config-info.js';
 import type { Menu } from '/@api/menu.js';
 import type { NetworkInspectInfo } from '/@api/network-info.js';
 import type { NotificationCard, NotificationCardOptions } from '/@api/notification.js';
@@ -190,7 +194,7 @@ import { KubernetesClient } from './kubernetes/kubernetes-client.js';
 import { downloadGuideList } from './learning-center/learning-center.js';
 import { LearningCenterInit } from './learning-center-init.js';
 import { LibpodApiInit } from './libpod-api-enable/libpod-api-init.js';
-import { INTERNAL_PROVIDER_ID, MCPRegistry } from './mcp/mcp-registry.js';
+import { McpRegistries } from './mcp/mcp-registries.js';
 import { MessageBox } from './message-box.js';
 import { NavigationItemsInit } from './navigation-items-init.js';
 import { OnboardingRegistry } from './onboarding-registry.js';
@@ -524,14 +528,35 @@ export class PluginSystem {
     container.bind<MenuRegistry>(MenuRegistry).toSelf().inSingletonScope();
     container.bind<KubeGeneratorRegistry>(KubeGeneratorRegistry).toSelf().inSingletonScope();
     container.bind<ImageRegistry>(ImageRegistry).toSelf().inSingletonScope();
-    container.bind<MCPRegistry>(MCPRegistry).toSelf().inSingletonScope();
+
+    /**
+     * MCP Related objects
+     */
+    container.bind<MCPPersistentStorage>(MCPPersistentStorage).toSelf().inSingletonScope();
+    const mcpStorage = container.get<MCPPersistentStorage>(MCPPersistentStorage);
+
+    container.bind<McpRegistries>(McpRegistries).toSelf().inSingletonScope();
+    container.bind<MCPExchanges>(MCPExchanges).toSelf().inSingletonScope();
+    container.bind<MCPRegistriesClients>(MCPRegistriesClients).toSelf().inSingletonScope();
+
+    // create the MCP Manager
+    const mcpManager = new MCPManager(mcpStorage);
+    container.bind<MCPManager>(MCPManager).toConstantValue(mcpManager);
+    container.bind<MCPAIClients>(MCPAIClients).toSelf().inSingletonScope();
+    container.bind<MCPStatuses>(MCPStatuses).toSelf().inSingletonScope();
+    container.bind(MCPIPCHandler).toSelf().inSingletonScope();
+    const mcpIPCHandler = container.get<MCPIPCHandler>(MCPIPCHandler);
+    mcpIPCHandler.init();
+
+    // others
+
     container.bind<ViewRegistry>(ViewRegistry).toSelf().inSingletonScope();
     container.bind<Context>(Context).toSelf().inSingletonScope();
     container.bind<ContainerProviderRegistry>(ContainerProviderRegistry).toSelf().inSingletonScope();
     container.bind<CancellationTokenRegistry>(CancellationTokenRegistry).toSelf().inSingletonScope();
 
     container.bind<ProviderRegistry>(ProviderRegistry).toSelf().inSingletonScope();
-    container.bind<MCPManager>(MCPManager).toSelf().inSingletonScope();
+
     container.bind<FlowManager>(FlowManager).toSelf().inSingletonScope();
     container.bind<TrayMenuRegistry>(TrayMenuRegistry).toSelf().inSingletonScope();
     container.bind<InputQuickPickRegistry>(InputQuickPickRegistry).toSelf().inSingletonScope();
@@ -606,9 +631,6 @@ export class PluginSystem {
 
     const providerRegistry = container.get<ProviderRegistry>(ProviderRegistry);
     providerRegistry.registerAutostartEngine(autoStartEngine);
-
-    const mcpManager = container.get<MCPManager>(MCPManager);
-    mcpManager.init();
 
     const flowManager = container.get<FlowManager>(FlowManager);
     flowManager.init();
@@ -778,8 +800,6 @@ export class PluginSystem {
     const customPickRegistry = container.get<CustomPickRegistry>(CustomPickRegistry);
     const authentication = container.get<AuthenticationImpl>(AuthenticationImpl);
     const imageRegistry = container.get<ImageRegistry>(ImageRegistry);
-    const mcpRegistry = container.get<MCPRegistry>(MCPRegistry);
-    mcpRegistry.init();
 
     await this.setupSecurityRestrictionsOnLinks(messageBox);
 
@@ -872,7 +892,7 @@ export class PluginSystem {
         _listener,
         providerId: string,
         connectionName: string,
-        options: containerDesktopAPI.FlowGenerateOptions & { mcp: MCPRemoteServerInfo[] },
+        options: Omit<containerDesktopAPI.FlowGenerateOptions, 'mcp'> & { mcp: MCPConfigInfo[] },
       ): Promise<string> => {
         const task = taskManager.createTask({
           title: `Generating flow for ${connectionName}'`,
@@ -890,28 +910,27 @@ export class PluginSystem {
            */
           const accumulator: Array<{
             name: string;
-            type: 'streamable_http';
+            type: 'streamable_http' | 'sse';
             uri: string;
             headers?: {
               [key: string]: string;
             };
           }> = [];
-          for (const {
-            name,
-            url,
-            infos: { internalProviderId, serverId, remoteId },
-          } of options.mcp) {
-            // skip non-internal (should not happen)
-            if (internalProviderId !== INTERNAL_PROVIDER_ID) continue;
 
+          for (const mcpConfigInfo of options.mcp) {
             // Collect the credentials
-            const init = await mcpRegistry.getCredentials(serverId, remoteId);
+            const config = await mcpStorage.get(mcpConfigInfo.id);
+
+            if (config.type !== 'remote') {
+              console.warn('non-remote config cannot be added to flow generation for now.');
+              continue;
+            }
 
             accumulator.push({
-              name,
-              type: 'streamable_http',
-              uri: url,
-              headers: init.headers ?? {},
+              name: config.server.name,
+              type: config.remote.type === 'streamable-http' ? 'streamable_http' : 'sse',
+              uri: config.remote.url,
+              headers: config.headers,
             });
           }
 
@@ -2151,73 +2170,6 @@ export class PluginSystem {
         registryCreateOptions: containerDesktopAPI.RegistryCreateOptions,
       ): Promise<void> => {
         await imageRegistry.createRegistry(providerName, registryCreateOptions);
-      },
-    );
-
-    this.ipcHandle(
-      'mcp-registry:createMCPRegistry',
-      async (_listener, registryCreateOptions: containerDesktopAPI.MCPRegistryCreateOptions): Promise<void> => {
-        await mcpRegistry.createRegistry(registryCreateOptions);
-      },
-    );
-
-    this.ipcHandle(
-      'mcp-registry:setup',
-      async (_listener, serverId: string, options: MCPSetupOptions): Promise<void> => {
-        await mcpRegistry.setupMCPServer(serverId, options);
-      },
-    );
-
-    this.ipcHandle('mcp-registry:getMcpRegistries', async (): Promise<readonly containerDesktopAPI.MCPRegistry[]> => {
-      return mcpRegistry.getRegistries();
-    });
-
-    this.ipcHandle(
-      'mcp-registry:getMcpRegistryServers',
-      async (): Promise<readonly components['schemas']['ServerDetail'][]> => {
-        return mcpRegistry.listMCPServersFromRegistries();
-      },
-    );
-
-    this.ipcHandle(
-      'mcp-registry:getMcpSuggestedRegistries',
-      async (): Promise<containerDesktopAPI.MCPRegistrySuggestedProvider[]> => {
-        return mcpRegistry.getSuggestedRegistries();
-      },
-    );
-
-    this.ipcHandle(
-      'mcp-registry:unregisterMCPRegistry',
-      async (_listener, registry: containerDesktopAPI.MCPRegistry): Promise<void> => {
-        return mcpRegistry.unregisterMCPRegistry(registry, true);
-      },
-    );
-
-    this.ipcHandle('mcp-manager:fetchMcpRemoteServers', async (_listener): Promise<MCPRemoteServerInfo[]> => {
-      return mcpManager.listMCPRemoteServers();
-    });
-
-    this.ipcHandle(
-      'mcp-manager:removeMcpRemoteServer',
-      async (_listener, key: string, options: { serverId: string; remoteId: number }): Promise<void> => {
-        await mcpRegistry.deleteRemoteMcpFromConfiguration(options.serverId, options.remoteId);
-        return mcpManager.removeMcpRemoteServer(key);
-      },
-    );
-
-    this.ipcHandle(
-      'mcp-manager:getTools',
-      async (_listener, mcpId: string): Promise<Record<string, { description: string }>> => {
-        const tools = await mcpManager.getToolSet([mcpId]);
-
-        return Object.fromEntries(
-          Object.entries(tools).map(([key, value]) => [
-            key,
-            {
-              description: value.description ?? '',
-            },
-          ]),
-        );
       },
     );
 

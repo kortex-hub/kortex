@@ -7,7 +7,7 @@ import { toast } from 'svelte-sonner';
 
 import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
 import { cn } from '/@/lib/chat/utils/shadcn';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
+import type { MCPConfigInfo } from '/@api/mcp/mcp-config-info';
 
 import ExportButton from './ExportButton.svelte';
 import ArrowUpIcon from './icons/arrow-up.svelte';
@@ -30,7 +30,7 @@ let {
   attachments: Attachment[];
   chatClient: Chat;
   class?: string;
-  selectedMCP: MCPRemoteServerInfo[];
+  selectedMCP: MCPConfigInfo[];
   selectedModel?: ModelInfo;
   mcpSelectorOpen: boolean;
 } = $props();

@@ -65,7 +65,7 @@ import {
   QuickPickItemKind,
 } from '../input-quickpick/input-quickpick-registry.js';
 import { KubernetesClient } from '../kubernetes/kubernetes-client.js';
-import { MCPRegistry } from '../mcp/mcp-registry.js';
+import { McpRegistries } from '../mcp/mcp-registries.js';
 import { MessageBox } from '../message-box.js';
 import { ModuleLoader } from '../module-loader.js';
 import { OnboardingRegistry } from '../onboarding-registry.js';
@@ -215,8 +215,8 @@ export class ExtensionLoader implements AsyncDisposable {
     private extensionDevelopmentFolder: ExtensionDevelopmentFolders,
     @inject(ExtensionAnalyzer)
     private extensionAnalyzer: ExtensionAnalyzer,
-    @inject(MCPRegistry)
-    private mcpRegistry: MCPRegistry,
+    @inject(McpRegistries)
+    private mcpRegistry: McpRegistries,
   ) {
     this.pluginsDirectory = directories.getPluginsDirectory();
     this.pluginsScanDirectory = directories.getPluginsScanDirectory();

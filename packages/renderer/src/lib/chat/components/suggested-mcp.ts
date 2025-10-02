@@ -16,32 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-export interface InputResponse {
-  value: string;
-}
-
-export interface InputWithVariableResponse extends InputResponse {
-  variables: Record<string, InputResponse>;
-}
-
-export interface BaseMCPSetupOptions {
-  registryURL: string;
+export interface SuggestedMCP {
   serverName: string;
-  serverVersion: string;
+  registryURL: string;
 }
-
-export interface MCPSetupRemoteOptions extends BaseMCPSetupOptions {
-  type: 'remote';
-  index: number;
-  headers: Record<string, InputWithVariableResponse>;
-}
-
-export interface MCPSetupPackageOptions extends BaseMCPSetupOptions {
-  type: 'package';
-  index: number;
-  packageArguments: Record<number, InputWithVariableResponse>;
-  runtimeArguments: Record<number, InputWithVariableResponse>;
-  environmentVariables: Record<string, InputWithVariableResponse>;
-}
-
-export type MCPSetupOptions = MCPSetupRemoteOptions | MCPSetupPackageOptions;
