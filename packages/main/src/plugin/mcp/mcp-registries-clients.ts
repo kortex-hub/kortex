@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 import type * as kortexAPI from '@kortex-app/api';
-import { MCPRegistryClient } from '@kortex-hub/mcp-registry-client';
+import { MCPRegistryClient } from '@kortex-hub/mcp-runner';
 import { inject, injectable } from 'inversify';
 
 import { McpRegistries } from '/@/plugin/mcp/mcp-registries.js';

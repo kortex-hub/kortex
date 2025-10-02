@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import { SecretStorage } from '@kortex-app/api';
-import type { MCPConfigurations,Storage as MCPStorage } from '@kortex-hub/mcp-manager';
+import type { MCPConfigurations, Storage as MCPStorage } from '@kortex-hub/mcp-runner';
 import { inject, injectable } from 'inversify';
 
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
@@ -42,16 +42,14 @@ export class MCPPersistentStorage implements MCPStorage {
 
   async delete(configId: string): Promise<void> {
     const existingConfiguration = await this.values();
-    const filtered = existingConfiguration.filter(
-      ({ id }) => id !== configId,
-    );
+    const filtered = existingConfiguration.filter(({ id }) => id !== configId);
     await this.#safeStorage.store(STORAGE_KEY, JSON.stringify(filtered));
   }
 
   async get(configId: string): Promise<MCPConfigurations> {
     const all = await this.values();
     const config = all.find(({ id }) => id === configId);
-    if(!config) throw new Error(`Configuration ${configId} not found`);
+    if (!config) throw new Error(`Configuration ${configId} not found`);
     return config;
   }
 

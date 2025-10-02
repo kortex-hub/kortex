@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { MCPInstance, MCPManager, type MCPManagerEvent } from '@kortex-hub/mcp-manager';
+import { MCPInstance, MCPManager, type MCPManagerEvent } from '@kortex-hub/mcp-runner';
 import { experimental_createMCPClient, ToolSet } from 'ai';
 import { inject, injectable, preDestroy } from 'inversify';
 

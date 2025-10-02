@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { type MCPConfigurations, MCPInstance, MCPManager, type Storage as MCPStorage } from '@kortex-hub/mcp-manager';
+import { type MCPConfigurations, MCPInstance, MCPManager, type Storage as MCPStorage } from '@kortex-hub/mcp-runner';
 import { inject, injectable } from 'inversify';
 
 import { ApiSenderType } from '/@/plugin/api.js';

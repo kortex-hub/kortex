@@ -17,8 +17,8 @@
  ***********************************************************************/
 
 import type containerDesktopAPI from '@kortex-app/api';
-import { type MCPInstance, MCPManager } from '@kortex-hub/mcp-manager';
 import type { components } from '@kortex-hub/mcp-registry-types';
+import { type MCPInstance, MCPManager } from '@kortex-hub/mcp-runner';
 import type { IpcMainInvokeEvent } from 'electron/main';
 import { inject, injectable } from 'inversify';
 

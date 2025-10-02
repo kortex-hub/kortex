@@ -17,9 +17,8 @@
  ***********************************************************************/
 
 import type containerDesktopAPI from '@kortex-app/api';
-import type { MCPInstance, MCPManager } from '@kortex-hub/mcp-manager';
-import type { MCPRegistryClient } from '@kortex-hub/mcp-registry-client';
 import type { components } from '@kortex-hub/mcp-registry-types';
+import type { MCPInstance, MCPManager, MCPRegistryClient } from '@kortex-hub/mcp-runner';
 import type { IpcMainInvokeEvent } from 'electron/main';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 

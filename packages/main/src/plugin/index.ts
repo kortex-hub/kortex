@@ -24,7 +24,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 import type * as containerDesktopAPI from '@kortex-app/api';
-import { MCPManager } from '@kortex-hub/mcp-manager';
+import { MCPManager } from '@kortex-hub/mcp-runner';
 import type {
   Cluster,
   Context as KubernetesContext,

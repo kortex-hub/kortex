@@ -16,8 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { MCPConfigurations } from '@kortex-hub/mcp-manager';
 import type { components } from '@kortex-hub/mcp-registry-types';
+import type { MCPConfigurations } from '@kortex-hub/mcp-runner';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { MCPPersistentStorage } from '/@/plugin/mcp/mcp-persistent-storage.js';

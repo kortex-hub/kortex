@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { MCPInstance } from '@kortex-hub/mcp-manager';
+import { MCPInstance } from '@kortex-hub/mcp-runner';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import {
   isJSONRPCRequest,
@@ -63,8 +63,7 @@ export class MCPExchanges {
   constructor(
     @inject(ApiSenderType)
     private apiSender: ApiSenderType,
-  ) {
-  }
+  ) {}
 
   /**
    * Record an input for the given client key.

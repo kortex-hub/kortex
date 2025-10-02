@@ -20,6 +20,7 @@ interface Props {
 
 let { filter = $bindable(), scrollToTop }: Props = $props();
 
+let loading = $state(false);
 let selectedMCPRegistry: MCPRegistry | MCPRegistrySuggestedProvider | undefined = $state();
 
 $effect(() => {
@@ -50,10 +51,14 @@ const nameColumn = new TableColumn<components['schemas']['ServerDetail'], string
   comparator: (a, b): number => b.name.localeCompare(a.name),
 });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const columns = [
   statusColumn,
   nameColumn,
-  new TableColumn<components['schemas']['ServerDetail'] & { registryURL: string }>('Actions', {
+  new TableColumn<
+    components['schemas']['ServerDetail'],
+    components['schemas']['ServerDetail'] & { registryURL: string }
+  >('Actions', {
     align: 'right',
     renderer: McpServerListActions,
     renderMapping: (object): components['schemas']['ServerDetail'] & { registryURL: string } => ({
@@ -82,6 +87,7 @@ const row = new TableRow<components['schemas']['ServerDetail']>({});
       store={store}
       columns={columns}
       row={row}
+      bind:loading={loading}
       scrollToTop={scrollToTop}
       defaultSortColumn="Name">
     </PaginatedTable>

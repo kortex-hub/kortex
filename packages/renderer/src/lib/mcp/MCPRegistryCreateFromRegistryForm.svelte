@@ -71,37 +71,38 @@ async function navigateToMcps(): Promise<void> {
   <FormPage title="Adding {serverDetails.name}" inProgress={loading} onclose={navigateToMcps}>
     {#snippet icon()}<McpIcon size={24} />{/snippet}
     {#snippet content()}
+      {#if serverDetails}
+        <div class="p-5 min-w-full h-full">
 
-      <div class="p-5 min-w-full h-full">
-
-        <div class="bg-[var(--pd-content-card-bg)] p-6 space-y-2 lg:p-8 rounded-lg">
-          <div class="flex flex-col gap-y-4">
-            {#if error}
-              <ErrorMessage error={error} />
-            {/if}
-
-            <!-- selecting which remote / package to use -->
-            {#if targets.length > 1}
-              <div class="bg-[var(--pd-content-bg)] rounded-md flex flex-col p-2 space-y-2">
-                <label class="block mb-2 text-xl font-bold text-[var(--pd-content-card-header-text)]">MCP Server Type</label>
-                <MCPSetupDropdown
-                  bind:selected={mcpTarget}
-                  targets={targets}
-                />
-              </div>
-            {/if}
-
-            <!-- display form -->
-            {#if mcpTarget !== undefined}
-              {#if 'url' in mcpTarget}  <!-- remote -->
-                <RemoteSetupForm submit={submit} registryURL={registryURL} serverName={serverDetails.name} serverVersion={serverDetails.version} remoteIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget}/>
-              {:else} <!-- package -->
-                <span>Not yet supported :p</span>
+          <div class="bg-[var(--pd-content-card-bg)] p-6 space-y-2 lg:p-8 rounded-lg">
+            <div class="flex flex-col gap-y-4">
+              {#if error}
+                <ErrorMessage error={error} />
               {/if}
-            {/if}
+
+              <!-- selecting which remote / package to use -->
+              {#if targets.length > 1}
+                <div class="bg-[var(--pd-content-bg)] rounded-md flex flex-col p-2 space-y-2">
+                  <label class="block mb-2 text-xl font-bold text-[var(--pd-content-card-header-text)]">MCP Server Type</label>
+                  <MCPSetupDropdown
+                    bind:selected={mcpTarget}
+                    targets={targets}
+                  />
+                </div>
+              {/if}
+
+              <!-- display form -->
+              {#if mcpTarget !== undefined}
+                {#if 'url' in mcpTarget}  <!-- remote -->
+                  <RemoteSetupForm submit={submit} registryURL={registryURL} serverName={serverDetails.name} serverVersion={serverDetails.version} remoteIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget}/>
+                {:else} <!-- package -->
+                  <span>Not yet supported :p</span>
+                {/if}
+              {/if}
+            </div>
           </div>
         </div>
-      </div>
+      {/if}
     {/snippet}
   </FormPage>
 {/if}
