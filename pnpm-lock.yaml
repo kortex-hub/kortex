@@ -32,11 +32,11 @@ importers:
         specifier: 0.4.2
         version: 0.4.2
       '@kortex-hub/mcp-manager':
-        specifier: link:../../web/mcp-runner/packages/mcp-manager
-        version: link:../../web/mcp-runner/packages/mcp-manager
+        specifier: ^0.1.0
+        version: 0.1.0
       '@kortex-hub/mcp-registry-client':
-        specifier: link:../../web/mcp-runner/packages/mcp-registry-client
-        version: link:../../web/mcp-runner/packages/mcp-registry-client
+        specifier: ^0.1.0
+        version: 0.1.0
       '@kubernetes/client-node':
         specifier: ^1.3.0
         version: 1.3.0(patch_hash=1c34691b2a4cf5f4fdeb73244fb59dccceee5642ddca2ac6c41fe86d9fde86e5)(encoding@0.1.13)
@@ -1602,6 +1602,12 @@ packages:
     engines: {node: '>= 10.16.0'}
     peerDependencies:
       jsep: ^0.4.0||^1.0.0
+
+  '@kortex-hub/mcp-manager@0.1.0':
+    resolution: {integrity: sha512-7WwyWZgKgsDK0hhSnKDbHcc/WKP1/WBGrfSyKqy80D8oQySGor962Eh8TbJQSLP3fA1nQbJklbQV6q669YvBaQ==}
+
+  '@kortex-hub/mcp-registry-client@0.1.0':
+    resolution: {integrity: sha512-wPEzuQQ8l5j5Ac0F4GsPSLizicZmof80Dt3yxeSG51kz7J+pVOppFgvMwWWSvEP2DZ1tgwgim/gwTao/KX+WWA==}
 
   '@kortex-hub/mcp-registry-types@1.2.3':
     resolution: {integrity: sha512-vNVgNt10al3RZsIUwf3VrZl+7qeyDhoNU3VSTLS5K0caXbbuP3KZWzNBDUHZ891oHOX2glXjJSnReOuD5GO/Dw==}
@@ -8460,6 +8466,14 @@ snapshots:
   '@jsep-plugin/regex@1.0.4(jsep@1.4.0)':
     dependencies:
       jsep: 1.4.0
+
+  '@kortex-hub/mcp-manager@0.1.0':
+    dependencies:
+      '@modelcontextprotocol/sdk': 1.18.2
+    transitivePeerDependencies:
+      - supports-color
+
+  '@kortex-hub/mcp-registry-client@0.1.0': {}
 
   '@kortex-hub/mcp-registry-types@1.2.3': {}
 
