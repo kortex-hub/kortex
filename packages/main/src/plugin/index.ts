@@ -3211,19 +3211,19 @@ export class PluginSystem {
   }
 
   getLogHandler(channel: string, loggerId: string): LoggerWithEnd {
+    const safeSend = (messageType: string, data?: unknown): void => {
+      try {
+        this.getWebContentsSender().send(channel, loggerId, messageType, data);
+      } catch (err) {
+        console.error('Failed to send log message to renderer:', err);
+      }
+    };
+
     return {
-      log: (...data: unknown[]): void => {
-        this.getWebContentsSender().send(channel, loggerId, 'log', data);
-      },
-      warn: (...data: unknown[]): void => {
-        this.getWebContentsSender().send(channel, loggerId, 'warn', data);
-      },
-      error: (...data: unknown[]): void => {
-        this.getWebContentsSender().send(channel, loggerId, 'error', data);
-      },
-      onEnd: (): void => {
-        this.getWebContentsSender().send(channel, loggerId, 'finish');
-      },
+      log: (...data: unknown[]): void => safeSend('log', data),
+      warn: (...data: unknown[]): void => safeSend('warn', data),
+      error: (...data: unknown[]): void => safeSend('error', data),
+      onEnd: (): void => safeSend('finish'),
     };
   }
 
