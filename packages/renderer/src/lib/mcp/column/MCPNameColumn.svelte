@@ -1,6 +1,6 @@
 <script lang="ts">
 import { handleNavigation } from '/@/navigation';
-import type {MCPConfigInfo} from '/@api/mcp/mcp-config-info';
+import type { MCPConfigInfo } from '/@api/mcp/mcp-config-info';
 import { NavigationPage } from '/@api/navigation-page';
 
 interface Props {
