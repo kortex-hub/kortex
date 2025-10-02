@@ -61,6 +61,7 @@ import type {
   KubernetesGeneratorSelector,
 } from '/@/plugin/kubernetes/kube-generator-registry.js';
 import { KubeGeneratorRegistry } from '/@/plugin/kubernetes/kube-generator-registry.js';
+import { MCPExchanges } from '/@/plugin/mcp/mcp-exchanges.js';
 import { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
 import { MenuRegistry } from '/@/plugin/menu-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
@@ -530,6 +531,7 @@ export class PluginSystem {
     container.bind<ContainerProviderRegistry>(ContainerProviderRegistry).toSelf().inSingletonScope();
     container.bind<CancellationTokenRegistry>(CancellationTokenRegistry).toSelf().inSingletonScope();
 
+    container.bind<MCPExchanges>(MCPExchanges).toSelf().inSingletonScope();
     container.bind<ProviderRegistry>(ProviderRegistry).toSelf().inSingletonScope();
     container.bind<MCPManager>(MCPManager).toSelf().inSingletonScope();
     container.bind<FlowManager>(FlowManager).toSelf().inSingletonScope();
