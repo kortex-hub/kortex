@@ -87,7 +87,7 @@ async function onclick(suggestedAction: SuggestedAction): Promise<void> {
     mcpSelectorOpen = true;
 
     toast.error(
-      `You need to select the following MCP first: ${mpcsToSelect.map(suggested => suggested.name).join(', ')}`,
+      `You need to select the following MCP first: ${mpcsToSelect.map(suggested => suggested.serverName).join(', ')}`,
     );
     return;
   }
