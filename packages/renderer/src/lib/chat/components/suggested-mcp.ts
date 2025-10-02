@@ -17,7 +17,6 @@
  ***********************************************************************/
 
 export interface SuggestedMCP {
-  name: string;
+  serverName: string;
   registryURL: string;
-  serverId: string;
 }

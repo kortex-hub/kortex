@@ -66,7 +66,7 @@ export interface NavigationParameters {
     id: string;
   };
   [NavigationPage.MCP_INSTALL_FROM_REGISTRY]: {
-    serverId: string;
+    serverName: string;
     registryURL: string;
   };
 }

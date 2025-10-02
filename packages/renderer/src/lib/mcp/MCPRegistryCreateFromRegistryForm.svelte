@@ -12,10 +12,11 @@ import type { MCPSetupOptions } from '/@api/mcp/mcp-setup';
 
 interface Props {
   registryURL: string;
-  serverId: string;
+  serverName: string;
+  serverVersion?: string;
 }
 
-const { registryURL, serverId }: Props = $props();
+const { registryURL, serverName, serverVersion }: Props = $props();
 
 let loading: boolean = $state(false);
 let error: string | undefined = $state(undefined);
@@ -27,7 +28,7 @@ onMount(() => {
    * Collect the server details
    */
   window
-    .getMCPServerDetails(registryURL, serverId)
+    .getMCPServerDetails(registryURL, serverName, serverVersion)
     .then(details => {
       serverDetails = details;
     })
@@ -51,7 +52,7 @@ async function submit(options: MCPSetupOptions): Promise<void> {
   try {
     loading = true;
     error = undefined;
-    const configId = await window.setupMCP(registryURL, serverId, options);
+    const configId = await window.setupMCP(options);
     console.log('configId', configId);
     return navigateToMcps();
   } catch (err: unknown) {
@@ -93,7 +94,7 @@ async function navigateToMcps(): Promise<void> {
             <!-- display form -->
             {#if mcpTarget !== undefined}
               {#if 'url' in mcpTarget}  <!-- remote -->
-                <RemoteSetupForm submit={submit} remoteIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget}/>
+                <RemoteSetupForm submit={submit} registryURL={registryURL} serverName={serverDetails.name} serverVersion={serverDetails.version} remoteIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget}/>
               {:else} <!-- package -->
                 <span>Not yet supported :p</span>
               {/if}

@@ -65,10 +65,9 @@ export class MCPStatuses {
         id: config.id,
         status: instances.has(config.id) ? 'running' : 'stopped',
         type: config.type,
-        name: config.name,
-        version: config.version,
+        name: config.server.name,
+        version: config.server.version,
         registryURL: config.registryURL,
-        serverId: config.serverId,
       };
     });
   }

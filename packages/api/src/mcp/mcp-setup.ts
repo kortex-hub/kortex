@@ -24,13 +24,19 @@ export interface InputWithVariableResponse extends InputResponse {
   variables: Record<string, InputResponse>;
 }
 
-export interface MCPSetupRemoteOptions {
+export interface BaseMCPSetupOptions {
+  registryURL: string;
+  serverName: string;
+  serverVersion: string;
+}
+
+export interface MCPSetupRemoteOptions extends BaseMCPSetupOptions {
   type: 'remote';
   index: number;
   headers: Record<string, InputWithVariableResponse>;
 }
 
-export interface MCPSetupPackageOptions {
+export interface MCPSetupPackageOptions extends BaseMCPSetupOptions {
   type: 'package';
   index: number;
   packageArguments: Record<number, InputWithVariableResponse>;

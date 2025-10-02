@@ -29,9 +29,8 @@ type SuggestedAction = {
 };
 
 const GITHUB_MCP: SuggestedMCP = {
-  serverId: 'com.github.mcp',
-  registryURL: 'https://kortex-hub.github.io/mcp-registry-online-v1.1.0',
-  name: 'GitHub MCP',
+  serverName: 'com.github.mcp',
+  registryURL: 'https://kortex-hub.github.io/mcp-registry-online/v1.2.3/',
 };
 
 const suggestedActions: SuggestedAction[] = [
@@ -60,13 +59,13 @@ const suggestedActions: SuggestedAction[] = [
 
 function isSelected(suggested: SuggestedMCP): boolean {
   return selectedMCP.some(
-    selected => selected.serverId === suggested.serverId && selected.registryURL === suggested.registryURL,
+    selected => selected.name === suggested.serverName && selected.registryURL === suggested.registryURL,
   );
 }
 
 function hasConfig(suggested: SuggestedMCP): boolean {
   return get(mcpConfigsInfo).some(
-    config => config.serverId === suggested.serverId && config.registryURL === suggested.registryURL,
+    config => config.name === suggested.serverName && config.registryURL === suggested.registryURL,
   );
 }
 

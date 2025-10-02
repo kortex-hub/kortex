@@ -135,20 +135,15 @@ class MCPIPCHandlerTest extends MCPIPCHandler {
     return super.getMCPTools(_, configId);
   }
 
-  public override async setupMCP(
-    _: IpcMainInvokeEvent,
-    registryURL: string,
-    serverId: string,
-    options: MCPSetupOptions,
-  ): Promise<string> {
-    return super.setupMCP(_, registryURL, serverId, options);
-  }
-
   public override async createMCPRegistry(
     _: IpcMainInvokeEvent,
     registryCreateOptions: containerDesktopAPI.MCPRegistryCreateOptions,
   ): Promise<void> {
     return super.createMCPRegistry(_, registryCreateOptions);
+  }
+
+  public override async setupMCP(_: IpcMainInvokeEvent, options: MCPSetupOptions): Promise<string> {
+    return super.setupMCP(_, options);
   }
 }
 
@@ -290,12 +285,15 @@ describe('MCPIPCHandler#getMCPTools', () => {
 describe('MCPIPCHandler#setupMCP', () => {
   test('should call MCPManager.registerRemote for remote type', async () => {
     const options = {
+      registryURL: 'registry-url',
+      serverName: 'server-name',
+      serverVersion: '3.5.6',
       type: 'remote',
       index: 0,
       headers: { Authorization: { value: 'Bearer foo', variables: {} } },
     } as MCPSetupRemoteOptions;
 
-    await mcpIPCHandlerTest.setupMCP(IPC_MAIN_INVOKE_EVENT, 'registry-url', 'server-id', options);
+    await mcpIPCHandlerTest.setupMCP(IPC_MAIN_INVOKE_EVENT, options);
 
     expect(MCP_REGISTRIES_CLIENTS.getClient).toHaveBeenCalledExactlyOnceWith('registry-url');
     expect(MCP_REGISTRY_CLIENT.getServer).toHaveBeenCalledExactlyOnceWith({

@@ -15,7 +15,7 @@ function navigateToMCPForm(mcp: SuggestedMCP): void {
   handleNavigation({
     page: NavigationPage.MCP_INSTALL_FROM_REGISTRY,
     parameters: {
-      serverId: mcp.serverId,
+      serverName: mcp.serverName,
       registryURL: mcp.registryURL,
     },
   });
@@ -25,14 +25,14 @@ function navigateToMCPForm(mcp: SuggestedMCP): void {
 <div>
   <p class="text-sm font-medium">The following MCPs are required to use this suggestion:</p>
   <ul class="pt-2">
-    {#each mcpsToInstall as mcp (mcp.serverId)}
+    {#each mcpsToInstall as mcp (mcp.serverName)}
       <li>
         <button
           class="w-full text-left p-2 rounded-md hover:bg-charcoal-600"
           onclick={navigateToMCPForm.bind(undefined, mcp)}>
             <div class='flex items-center'>
           <Fa icon={faDownload} class="mr-2" />
-          {mcp.name}</div>
+          {mcp.serverName}</div>
         </button>
       </li>
     {/each}

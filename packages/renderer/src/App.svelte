@@ -190,9 +190,9 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
         <Route path="/mcps/:id/*" let:meta>
           <MCPDetails id={meta.params.id} />
         </Route>
-        <Route path="/mcp-install-from-registry/:registryURL/:serverId/*" breadcrumb="Install MCP Server from Registry" let:meta>
+        <Route path="/mcp-install-from-registry/:registryURL/:encodedServerName/*" breadcrumb="Install MCP Server from Registry" let:meta>
           <!-- decode using BASE 64 the registry URL -->
-          <McpRegistryCreateFromRegistryForm registryURL={atob(meta.params.registryURL)} serverId={meta.params.serverId} />
+          <McpRegistryCreateFromRegistryForm registryURL={atob(meta.params.registryURL)} serverName={decodeURI(meta.params.encodedServerName)} />
         </Route>
 
         <Route path="/containers" breadcrumb="Containers" navigationHint="root">

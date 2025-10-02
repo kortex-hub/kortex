@@ -20,15 +20,22 @@ import type { components } from '@kortex-hub/mcp-registry-types';
 import { type PageResponse, PaginationStore } from '/@/stores/pagination/pagination-store';
 
 export class MCPRegistryStore extends PaginationStore<components['schemas']['ServerDetail']> {
-  constructor(public baseURL: string, cursor?: string, limit?: number) {
+  constructor(
+    public baseURL: string,
+    cursor?: string,
+    limit?: number,
+  ) {
     super(cursor, limit);
   }
 
-  protected async fetch(cursor: string | undefined, limit: number | undefined): Promise<PageResponse<components['schemas']['ServerDetail']>> {
+  protected async fetch(
+    cursor: string | undefined,
+    limit: number | undefined,
+  ): Promise<PageResponse<components['schemas']['ServerDetail']>> {
     const serverList = await window.getMcpRegistryServers(this.baseURL, cursor, limit);
     return {
-      items: serverList.servers,
-      cursor: serverList.metadata?.next_cursor,
+      items: serverList.servers.map(server => server.server),
+      cursor: serverList.metadata?.nextCursor,
     };
   }
 }

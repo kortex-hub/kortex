@@ -14,13 +14,10 @@ interface Props {
 let { object }: Props = $props();
 
 function createRegistry(): void {
-  const metadata = object._meta?.['io.modelcontextprotocol.registry/official'];
-  if (!metadata) throw new Error('No metadata found for MCP registry server');
-
   handleNavigation({
     page: NavigationPage.MCP_INSTALL_FROM_REGISTRY,
     parameters: {
-      serverId: metadata.serverId,
+      serverName: object.name,
       registryURL: object.registryURL,
     },
   });

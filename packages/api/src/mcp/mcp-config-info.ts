@@ -35,8 +35,4 @@ export interface MCPConfigInfo {
    * The registry URL
    */
   registryURL: string;
-  /**
-   * UUID of the MCP server
-   */
-  serverId: string;
 }

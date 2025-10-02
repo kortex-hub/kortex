@@ -538,10 +538,9 @@ export class PluginSystem {
     container.bind<McpRegistries>(McpRegistries).toSelf().inSingletonScope();
     container.bind<MCPExchanges>(MCPExchanges).toSelf().inSingletonScope();
     container.bind<MCPRegistriesClients>(MCPRegistriesClients).toSelf().inSingletonScope();
-    const mcpRegistriesClients = container.get<MCPRegistriesClients>(MCPRegistriesClients);
 
     // create the MCP Manager
-    const mcpManager = new MCPManager(mcpStorage, mcpRegistriesClients);
+    const mcpManager = new MCPManager(mcpStorage);
     container.bind<MCPManager>(MCPManager).toConstantValue(mcpManager);
     container.bind<MCPAIClients>(MCPAIClients).toSelf().inSingletonScope();
     container.bind<MCPStatuses>(MCPStatuses).toSelf().inSingletonScope();
@@ -927,22 +926,10 @@ export class PluginSystem {
               continue;
             }
 
-            const details = await mcpRegistriesClients.getClient(config.registryURL).getServer({
-              path: {
-                server_id: config.serverId,
-              },
-            });
-
-            const remote = details.remotes?.[config.remoteId];
-            if (!remote) {
-              console.warn(`invalid index for config ${config.id}`);
-              continue;
-            }
-
             accumulator.push({
-              name: config.name,
-              type: remote.type === 'streamable-http' ? 'streamable_http' : 'sse',
-              uri: remote.url,
+              name: config.server.name,
+              type: config.remote.type === 'streamable-http' ? 'streamable_http' : 'sse',
+              uri: config.remote.url,
               headers: config.headers,
             });
           }

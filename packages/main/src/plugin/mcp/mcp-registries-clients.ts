@@ -16,14 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 import type * as kortexAPI from '@kortex-app/api';
-import type { MCPRegistriesClients as IMCPRegistriesClients } from '@kortex-hub/mcp-manager';
 import { MCPRegistryClient } from '@kortex-hub/mcp-registry-client';
 import { inject, injectable } from 'inversify';
 
 import { McpRegistries } from '/@/plugin/mcp/mcp-registries.js';
 
 @injectable()
-export class MCPRegistriesClients implements IMCPRegistriesClients {
+export class MCPRegistriesClients {
   #clients: Map<string, MCPRegistryClient> = new Map();
 
   constructor(
@@ -51,7 +50,8 @@ export class MCPRegistriesClients implements IMCPRegistriesClients {
 
   public getClient(url: string): MCPRegistryClient {
     const client = this.#clients.get(url);
-    if (!client) throw new Error(`No client found for ${url}`);
+    if (!client)
+      throw new Error(`No client found for ${url}, available clients: ${Array.from(this.#clients.keys()).join(',')}`);
     return client;
   }
 

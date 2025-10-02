@@ -1705,8 +1705,12 @@ export function initExposure(): void {
    */
   contextBridge.exposeInMainWorld(
     'getMCPServerDetails',
-    async (registryURL: string, serverId: string, version?: string): Promise<components['schemas']['ServerDetail']> => {
-      return ipcInvoke('mcp-registry:getMCPServerDetails', registryURL, serverId, version);
+    async (
+      registryURL: string,
+      serverName: string,
+      version?: string,
+    ): Promise<components['schemas']['ServerDetail']> => {
+      return ipcInvoke('mcp-registry:getMCPServerDetails', registryURL, serverName, version);
     },
   );
 
@@ -1733,12 +1737,9 @@ export function initExposure(): void {
     return ipcInvoke('mcp-manager:getExchanges', mcpId);
   });
 
-  contextBridge.exposeInMainWorld(
-    'setupMCP',
-    async (registryURL: string, serverId: string, options: MCPSetupOptions): Promise<string> => {
-      return ipcInvoke('mcp-manager:setup', registryURL, serverId, options);
-    },
-  );
+  contextBridge.exposeInMainWorld('setupMCP', async (options: MCPSetupOptions): Promise<string> => {
+    return ipcInvoke('mcp-manager:setup', options);
+  });
 
   contextBridge.exposeInMainWorld('collectMCPStatuses', async (): Promise<MCPConfigInfo[]> => {
     return ipcInvoke('mcp-statuses:collect');

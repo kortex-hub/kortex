@@ -17,6 +17,7 @@
  ***********************************************************************/
 
 import type { MCPConfigurations } from '@kortex-hub/mcp-manager';
+import type { components } from '@kortex-hub/mcp-registry-types';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { MCPPersistentStorage } from '/@/plugin/mcp/mcp-persistent-storage.js';
@@ -32,26 +33,36 @@ const MOCK_SAFE_STORAGE_REGISTRY: SafeStorageRegistry = {
   getCoreStorage: vi.fn(),
 } as unknown as SafeStorageRegistry;
 
+const REMOTE_FOO: components['schemas']['Remote'] = {
+  headers: [],
+  url: 'https://foo.bar',
+  type: 'streamable-http',
+};
+
 const MOCK_CONFIG: MCPConfigurations = {
   id: 'test-config-id',
-  name: 'Test Config',
+  server: {
+    name: 'Test Config',
+    version: '1.4.1',
+    description: 'bar',
+  },
   type: 'remote',
-  headers: {},
-  remoteId: 0,
-  serverId: 'uuid',
-  version: '1.0.1',
+  remote: REMOTE_FOO,
   registryURL: 'foo.bar.com',
+  headers: {},
 };
 
 const MOCK_CONFIG_2: MCPConfigurations = {
   id: 'test-config-id-2',
-  name: 'Test Config 2',
+  server: {
+    name: 'Test Config 2',
+    version: '1.0.1',
+    description: 'bar',
+  },
   type: 'remote',
-  headers: {},
-  remoteId: 0,
-  serverId: 'uuid',
-  version: '1.0.1',
+  remote: REMOTE_FOO,
   registryURL: 'foo.bar2.com',
+  headers: {},
 };
 
 let mcpPersistentStorage: MCPPersistentStorage;

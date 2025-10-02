@@ -10,13 +10,24 @@ import InputArgumentWithVariables from '/@/lib/mcp/setup/InputArgumentWithVariab
 import type { InputWithVariableResponse, MCPSetupRemoteOptions } from '/@api/mcp/mcp-setup';
 
 interface Props {
+  registryURL: string;
+  serverName: string;
+  serverVersion: string;
   object: components['schemas']['Remote'];
   loading: boolean;
   remoteIndex: number;
   submit: (options: MCPSetupRemoteOptions) => Promise<void>;
 }
 
-let { object, remoteIndex, loading = $bindable(false), submit }: Props = $props();
+let {
+  registryURL,
+  serverName,
+  serverVersion,
+  object,
+  remoteIndex,
+  loading = $bindable(false),
+  submit,
+}: Props = $props();
 
 /**
  * Let's build a map for all our expected headers with the default value selected
@@ -40,6 +51,9 @@ let responses: Map<string, InputWithVariableResponse> = new SvelteMap(
 
 async function connect(): Promise<void> {
   return submit({
+    registryURL,
+    serverName,
+    serverVersion,
     type: 'remote',
     index: remoteIndex,
     headers: Object.fromEntries(responses.entries()),

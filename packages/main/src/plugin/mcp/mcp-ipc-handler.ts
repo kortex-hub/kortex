@@ -95,18 +95,26 @@ export class MCPIPCHandler {
   protected async getMCPServerDetails(
     _: IpcMainInvokeEvent,
     registryURL: string,
-    serverId: string,
+    serverName: string,
     version?: string,
   ): Promise<components['schemas']['ServerDetail']> {
     const client = this.mcpRegistriesClients.getClient(registryURL);
-    return await client.getServer({
-      query: {
-        version: version,
-      },
-      path: {
-        server_id: serverId,
-      },
-    });
+    if (version) {
+      const { server } = await client.getServerVersion({
+        path: {
+          serverName: encodeURI(serverName),
+          version: encodeURI(version),
+        },
+      });
+      return server;
+    } else {
+      const { server } = await client.getServer({
+        path: {
+          serverName: serverName,
+        },
+      });
+      return server;
+    }
   }
 
   protected async getMcpSuggestedRegistries(): Promise<containerDesktopAPI.MCPRegistrySuggestedProvider[]> {
@@ -155,36 +163,38 @@ export class MCPIPCHandler {
     );
   }
 
-  protected async setupMCP(
-    _: IpcMainInvokeEvent,
-    registryURL: string,
-    serverId: string,
-    options: MCPSetupOptions,
-  ): Promise<string> {
-    const client = this.mcpRegistriesClients.getClient(registryURL);
-    const server = await client.getServer({
+  protected async setupMCP(_: IpcMainInvokeEvent, options: MCPSetupOptions): Promise<string> {
+    const client = this.mcpRegistriesClients.getClient(options.registryURL);
+    const { server } = await client.getServerVersion({
       path: {
-        server_id: serverId,
+        serverName: encodeURI(options.serverName),
+        version: encodeURI(options.serverVersion),
       },
     });
 
     let mcpInstance: MCPInstance;
     switch (options.type) {
-      case 'remote':
+      case 'remote': {
+        const remote = server.remotes?.[options.index];
+        if (!remote) throw new Error('invalid index for remotes');
         mcpInstance = await this.mcpManager.registerRemote(
-          registryURL,
+          options.registryURL,
           server,
-          options.index,
+          remote,
           Object.fromEntries(
             Object.entries(options.headers).map(([key, response]) => [key, resolveInputWithVariableResponse(response)]),
           ),
         );
         break;
-      case 'package':
+      }
+      case 'package': {
+        const pack = server.packages?.[options.index];
+        if (!pack) throw new Error('invalid index for remotes');
+
         mcpInstance = await this.mcpManager.registerPackage(
-          registryURL,
+          options.registryURL,
           server,
-          options.index,
+          pack,
           // runtimeArguments
           Object.fromEntries(
             Object.entries(options.runtimeArguments).map(([key, response]) => [
@@ -208,6 +218,7 @@ export class MCPIPCHandler {
           ),
         );
         break;
+      }
     }
     return mcpInstance.configId;
   }
