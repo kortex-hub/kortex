@@ -53,7 +53,7 @@ importers:
         specifier: ^0.5.16
         version: 0.5.16
       ai:
-        specifier: ^5.0.59
+        specifier: ^5.0.60
         version: 5.0.60(zod@4.1.12)
       bcrypt-ts:
         specifier: ^7.1.0
