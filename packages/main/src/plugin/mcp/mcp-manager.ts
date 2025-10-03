@@ -17,61 +17,30 @@
  ***********************************************************************/
 
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import {
-  isJSONRPCRequest,
-  isJSONRPCResponse,
-  JSONRPCRequest,
-  JSONRPCResponse,
-} from '@modelcontextprotocol/sdk/types.js';
-import type { DynamicToolUIPart, ToolSet } from 'ai';
+import type { ToolSet } from 'ai';
 import { experimental_createMCPClient } from 'ai';
 import { inject, injectable, preDestroy } from 'inversify';
 
+import { MCPExchanges, MCPMessageExchange } from '/@/plugin/mcp/mcp-exchanges.js';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info.js';
 
 import { ApiSenderType } from '../api.js';
-import { MCPTransportDelegate } from './mcp-transport-delegate.js';
 
 /**
  * experimental_createMCPClient return `Promise<MCPClient>` but they did not exported this type...
  */
 type ExtractedMCPClient = Awaited<ReturnType<typeof experimental_createMCPClient>>;
 
-// Exchanges are represented as DynamicToolUIPart so the renderer can display them directly
-export type MCPMessageExchange = DynamicToolUIPart;
-
-function JSONRPCRequest2UIPart(message: JSONRPCRequest): DynamicToolUIPart {
-  const rawParams: unknown = (message as { params?: unknown }).params;
-  let toolName = 'unknown';
-  let inputArg: unknown = undefined;
-  if (rawParams && typeof rawParams === 'object') {
-    const p = rawParams as Record<string, unknown>;
-    if (typeof p['name'] === 'string') {
-      toolName = p['name'] as string;
-    }
-    inputArg = (p as Record<string, unknown>)['arguments'];
-  }
-  const toolCallId = String(message.id);
-  return {
-    type: 'dynamic-tool',
-    state: 'input-available',
-    toolCallId,
-    toolName,
-    input: inputArg,
-  };
-}
-
 @injectable()
 export class MCPManager implements AsyncDisposable {
-  /**
-   * Stores all JSON-RPC message exchanges per MCP client key.
-   */
-  #exchanges: Map<string, Array<MCPMessageExchange>> = new Map<string, Array<MCPMessageExchange>>();
   #client: Map<string, ExtractedMCPClient> = new Map<string, ExtractedMCPClient>();
 
   #mcps: MCPRemoteServerInfo[] = [];
 
-  constructor(@inject(ApiSenderType) private apiSender: ApiSenderType) {}
+  constructor(
+    @inject(ApiSenderType) private apiSender: ApiSenderType,
+    @inject(MCPExchanges) private exchanges: MCPExchanges,
+  ) {}
 
   /**
    * Cleanup all clients
@@ -94,6 +63,13 @@ export class MCPManager implements AsyncDisposable {
     const server = this.#mcps.find(({ id }) => id === key);
     if (!server) throw new Error(`cannot find MCP server with id ${key}`);
     return server;
+  }
+
+  /**
+   * Returns the list of recorded exchanges for a given client key.
+   */
+  public getExchanges(key: string): MCPMessageExchange[] {
+    return this.exchanges.getExchanges(key);
   }
 
   /**
@@ -133,19 +109,7 @@ export class MCPManager implements AsyncDisposable {
   ): Promise<void> {
     const key = this.getKey(internalProviderId, serverId, setupType, index);
 
-    // Wrap transport with delegate to record all exchanges
-    const wrapped = new MCPTransportDelegate(transport, {
-      onSend: (message): void => {
-        if (isJSONRPCRequest(message)) {
-          this.recordInput(key, message);
-        }
-      },
-      onReceive: (message, _extra): void => {
-        if (isJSONRPCResponse(message)) {
-          this.recordOutput(key, message);
-        }
-      },
-    });
+    const wrapped = this.exchanges.createMiddleware(key, transport);
 
     const client = await experimental_createMCPClient({ transport: wrapped });
 
@@ -165,49 +129,6 @@ export class MCPManager implements AsyncDisposable {
     this.apiSender.send('mcp-manager-update');
   }
 
-  /**
-   * Record an input for the given client key.
-   */
-  protected recordInput(key: string, message: JSONRPCRequest): void {
-    if (message.method === 'tools/call') {
-      const arr = this.#exchanges.get(key) ?? [];
-      const part = JSONRPCRequest2UIPart(message);
-      arr.push(part);
-      this.#exchanges.set(key, arr);
-    }
-  }
-
-  /**
-   * Record an output for the given client key.
-   */
-  protected recordOutput(key: string, message: JSONRPCResponse): void {
-    const arr = this.#exchanges.get(key) ?? [];
-    const id = String(message.id);
-    const exchange = arr.find(e => e.toolCallId === id);
-    if (exchange) {
-      // JSON-RPC response can be either result or error
-      const hasResult = 'result' in message;
-      const hasError = 'error' in message;
-      if (hasError && message['error'] !== undefined) {
-        // Wrap error in a shape that the UI component understands
-        exchange.output = { isError: true, toolResult: message['error'] };
-        exchange.state = 'output-available';
-      } else if (hasResult) {
-        exchange.output = message['result'];
-        exchange.state = 'output-available';
-      } else {
-        // No result and no error - leave as-is
-      }
-    }
-    this.apiSender.send('mcp-manager-update');
-  }
-  /**
-   * Returns the list of recorded exchanges for a given client key.
-   */
-  public getExchanges(key: string): MCPMessageExchange[] {
-    return this.#exchanges.get(key) ?? [];
-  }
-
   init(): void {}
 
   public async listMCPRemoteServers(): Promise<MCPRemoteServerInfo[]> {
@@ -223,7 +144,7 @@ export class MCPManager implements AsyncDisposable {
 
     // remove the instance
     this.#client.delete(key);
-    this.#exchanges.delete(key);
+    this.exchanges.clearExchanges(key);
 
     // clear from the #mcps list
     this.#mcps = this.#mcps.filter(mcp => mcp.id !== key);
