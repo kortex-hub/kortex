@@ -8,7 +8,7 @@ import { isFlowConnectionAvailable } from '/@/stores/flow-provider';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import { NavigationPage } from '/@api/navigation-page';
 
-import ExportIcon from './messages/ExportIcon.svelte';
+import FlowIcon from '../../images/FlowIcon.svelte';
 import type { ModelInfo } from './model-info';
 import { Button } from './ui/button';
 
@@ -25,6 +25,8 @@ let {
 } = $props();
 
 let loadingExportAsFlow = $state(false);
+
+let title = $derived($isFlowConnectionAvailable ? 'Export as Flow' : 'Install flow provider to enable save.');
 
 const exportAsFlow = async (): Promise<void> => {
   if (!selectedModel) {
@@ -67,7 +69,8 @@ const exportAsFlow = async (): Promise<void> => {
 	}}
 	disabled={loading || !chatClient.messages.length || loadingExportAsFlow}
 	variant="ghost"
-	title={$isFlowConnectionAvailable? 'Export as Flow' : 'Install flow provider to enable save.'}
+	{title}
 >
-	<ExportIcon size="2x"/>
+  <FlowIcon size={2}/>
+  {title}
 </Button>
