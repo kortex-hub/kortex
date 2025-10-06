@@ -25,4 +25,17 @@ const mcpRegistry = {
 };
 
 const plugin = { mcpRegistry };
+const provider = {
+  createProvider: vi.fn(),
+};
+
+const env = {
+  createTelemetryLogger: vi.fn(),
+};
+
+const process = {
+  exec: vi.fn(),
+};
+
+const plugin = { provider, mcpRegistry, env, process };
 module.exports = plugin;
