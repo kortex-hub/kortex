@@ -18,7 +18,7 @@
 
 import z from 'zod';
 
-export const kubernetesNameRegex = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/;
+const kubernetesNameRegex = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/;
 
 export const FlowGenerationParametersSchema = z.object({
   name: z

@@ -13,7 +13,7 @@ import FormPage from '/@/lib/ui/FormPage.svelte';
 import { handleNavigation } from '/@/navigation';
 import { isFlowConnectionAvailable } from '/@/stores/flow-provider';
 import { providerInfos } from '/@/stores/providers';
-import { kubernetesNameRegex } from '/@api/chat/flow-generation-parameters-schema';
+import { FlowGenerationParametersSchema } from '/@api/chat/flow-generation-parameters-schema';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import { NavigationPage } from '/@api/navigation-page';
 
@@ -56,24 +56,20 @@ onMount(() => {
   }
 });
 
+const validatedInput = $derived(FlowGenerationParametersSchema.safeParse({ name, description, prompt }));
+
 const formValidContent = $derived(
-  !!flowProviderConnectionKey &&
-    !!selectedModel &&
-    !!name &&
-    name.length <= 63 &&
-    kubernetesNameRegex.test(name) &&
-    !!prompt &&
-    !!instruction
+  !!flowProviderConnectionKey && !!selectedModel && validatedInput.data && !!instruction
     ? {
         flowProviderConnectionKey,
         model: {
           providerId: selectedModel.providerId,
           label: selectedModel.label,
         },
-        name,
-        description,
+        name: validatedInput.data.name,
+        description: validatedInput.data.description,
         mcp: $state.snapshot(selectedMCP),
-        prompt,
+        prompt: validatedInput.data.prompt,
         instruction,
       }
     : undefined,
