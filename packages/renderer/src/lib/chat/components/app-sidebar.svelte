@@ -3,7 +3,7 @@ import { router } from 'tinro';
 
 import { currentChatId } from '/@/lib/chat/state/current-chat-id.svelte';
 
-import PlusIcon from './icons/plus.svelte';
+import PenToSquareIcon from './icons/PenToSquareIcon.svelte';
 import { SidebarHistory } from './sidebar-history';
 import { Button } from './ui/button';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, useSidebar } from './ui/sidebar';
@@ -50,7 +50,7 @@ const context = useSidebar();
 									}
 								}}
 							>
-								<PlusIcon />
+								<PenToSquareIcon />
 							</Button>
 						{/snippet}
 					</TooltipTrigger>

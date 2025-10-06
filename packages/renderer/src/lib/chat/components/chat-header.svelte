@@ -10,7 +10,7 @@ import { currentChatId } from '/@/lib/chat/state/current-chat-id.svelte';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
-import PlusIcon from './icons/plus.svelte';
+import PenToSquareIcon from './icons/PenToSquareIcon.svelte';
 import MCPSelector from './mcp-selector.svelte';
 import SidebarToggle from './sidebar-toggle.svelte';
 import { Button } from './ui/button';
@@ -57,8 +57,8 @@ const noMcps = $derived($mcpRemoteServerInfos.length === 0);
               }
             }}
 					>
-						<PlusIcon />
-						<span class="md:sr-only">New Chat</span>
+						<PenToSquareIcon />
+						<span>New Chat</span>
 					</Button>
 				{/snippet}
 			</TooltipTrigger>
