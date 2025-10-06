@@ -1166,6 +1166,13 @@ export function initExposure(): void {
   });
 
   contextBridge.exposeInMainWorld(
+    'inferenceGenerateFlowParams',
+    async (params: InferenceParameters): Promise<{ prompt: string }> => {
+      return ipcInvoke('inference:generateFlowParams', params);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
     'createInferenceProviderConnection',
     async (
       internalProviderId: string,
