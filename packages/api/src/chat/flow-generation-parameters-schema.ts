@@ -26,7 +26,8 @@ export const FlowGenerationParametersSchema = z.object({
     .regex(kubernetesNameRegex)
     .describe(
       `Name of the flow that will be saved. The name must match the kubernetes name regex /${kubernetesNameRegex.source}/.`,
-    ),
+    )
+    .max(253),
   description: z.string().describe('Description of the flow, give a short description of what the flow does.'),
   prompt: z
     .string()
