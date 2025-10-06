@@ -13,7 +13,7 @@ export const FlowGenerationParametersSchema = z.object({
   prompt: z
     .string()
     .describe(
-      'Help me to build a reproducible prompt to achieve the same result as I got in the conversation above. The prompt will be executed by another LLM without any further user input so it must contain all the information on how to get the same result.',
+      'Help me create a reproducible prompt that achieves the same result as in the conversation above. The prompt will be executed by another LLM without any further user input, so it must include all the necessary information to reproduce the same outcome.',
     ),
 });
 
