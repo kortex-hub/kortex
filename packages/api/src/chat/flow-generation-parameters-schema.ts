@@ -18,20 +18,21 @@
 
 import z from 'zod';
 
+const nameMaxLength = 63;
 export const FlowGenerationParametersSchema = z.object({
   name: z
     .string()
     .describe(
       `A unique name for the flow, formatted as a DNS subdomain (e.g., "my-new-flow"). It must be lowercase and contain only letters, numbers, and hyphens. It cannot start or end with a hyphen.`,
     )
-    .max(253)
-    .transform(
-      val =>
-        val
-          .trim()
-          .toLowerCase()
-          .replace(/\s+/g, '-') // Replace spaces with hyphens
-          .replace(/[^a-z0-9-]/g, ''), // Remove all other invalid characters
+    .max(nameMaxLength)
+    .transform(val =>
+      val
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/[^a-z0-9-]/g, '') // Remove all other invalid characters
+        .slice(0, nameMaxLength),
     )
     .pipe(z.string().regex(/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/, 'Invalid DNS subdomain name after transformation.')),
   description: z.string().describe('Description of the flow, give a short description of what the flow does.'),
