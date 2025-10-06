@@ -18,16 +18,22 @@
 
 import z from 'zod';
 
-const kubernetesNameRegex = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/;
-
 export const FlowGenerationParametersSchema = z.object({
   name: z
     .string()
-    .regex(kubernetesNameRegex)
     .describe(
-      `Name of the flow that will be saved. The name must match the kubernetes name regex /${kubernetesNameRegex.source}/.`,
+      `A unique name for the flow, formatted as a DNS subdomain (e.g., "my-new-flow"). It must be lowercase and contain only letters, numbers, and hyphens. It cannot start or end with a hyphen.`,
     )
-    .max(253),
+    .max(253)
+    .transform(
+      val =>
+        val
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, '-') // Replace spaces with hyphens
+          .replace(/[^a-z0-9-]/g, ''), // Remove all other invalid characters
+    )
+    .pipe(z.string().regex(/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/, 'Invalid DNS subdomain name after transformation.')),
   description: z.string().describe('Description of the flow, give a short description of what the flow does.'),
   prompt: z
     .string()
