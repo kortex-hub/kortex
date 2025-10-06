@@ -23,11 +23,12 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type { DynamicToolUIPart, ModelMessage, StopCondition, ToolSet, UIMessage } from 'ai';
-import { convertToModelMessages, generateText, stepCountIs, streamText } from 'ai';
+import { convertToModelMessages, generateObject, generateText, stepCountIs, streamText } from 'ai';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import type { WebContents } from 'electron';
 import { inject } from 'inversify';
+import z from 'zod';
 
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { Directories } from '/@/plugin/directories.js';
@@ -91,6 +92,7 @@ export class ChatManager {
 
     this.ipcHandle('inference:streamText', (_, params) => this.streamText(params));
     this.ipcHandle('inference:generate', (_, params) => this.generate(params));
+    this.ipcHandle('inference:generateFlowParams', (_, params) => this.generateFlowParams(params));
     this.ipcHandle('mcp-manager:getExchanges', (_, mcpId: string) => this.getExchanges(mcpId));
     this.ipcHandle('inference:getChats', () => this.getChats());
     this.ipcHandle('inference:getChatMessagesById', (_, id: string) => this.getChatMessagesById(id));
@@ -269,5 +271,19 @@ export class ChatManager {
   async generate(params: InferenceParameters): Promise<string> {
     const result = await generateText(await this.getInferenceComponents(params));
     return result.text;
+  }
+
+  async generateFlowParams(params: InferenceParameters): Promise<{ prompt: string }> {
+    const result = await generateObject({
+      ...(await this.getInferenceComponents(params)),
+      schema: z.object({
+        prompt: z
+          .string()
+          .describe(
+            'Help me to build a reproducible prompt to achieve the same result as I got in the conversation above. The prompt will be executed by another LLM without any further user input so it must contain all the information on how to get the same result.',
+          ),
+      }),
+    });
+    return result.object;
   }
 }

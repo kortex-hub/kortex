@@ -36,23 +36,12 @@ const exportAsFlow = async (): Promise<void> => {
 
   try {
     const { providerId, connectionName, label } = selectedModel;
-    const prompt = await window.inferenceGenerate({
+    const { prompt } = await window.inferenceGenerateFlowParams({
       providerId,
       connectionName,
       modelId: label,
       mcp: selectedMCP.map(m => m.id),
-      messages: $state.snapshot(chatClient.messages).concat([
-        {
-          id: crypto.randomUUID(),
-          role: 'user',
-          parts: [
-            {
-              text: `Help me to build a reproducible prompt to achieve the same result as I got in the conversation above. The prompt will be executed by another LLM without any further user input so it must contain all the information on how to get the same result.`,
-              type: 'text',
-            },
-          ],
-        },
-      ]),
+      messages: $state.snapshot(chatClient.messages),
     });
 
     flowCreationData.value = {
