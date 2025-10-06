@@ -1,8 +1,8 @@
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
+import type { FlowGenerationParameters } from '/@api/chat/flow-generation-parameters-schema';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
-export interface FlowCreationData {
-  prompt: string;
+export interface FlowCreationData extends FlowGenerationParameters {
   model: ModelInfo;
   mcp: MCPRemoteServerInfo[];
 }
