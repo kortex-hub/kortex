@@ -174,6 +174,7 @@ $effect.pre(() => {
 	</div>
 
 	<div class="absolute right-0 bottom-0 flex w-fit flex-row items-center justify-end p-2">
+		<ExportButton {chatClient} {selectedModel} {selectedMCP} {loading}/>
 		{#if loading}
 			<Button
 				class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
@@ -198,7 +199,5 @@ $effect.pre(() => {
 				<ArrowUpIcon size={14} />
 			</Button>
 		{/if}
-
-		<ExportButton {chatClient} {selectedModel} {selectedMCP} {loading}/>
 	</div>
 </div>
