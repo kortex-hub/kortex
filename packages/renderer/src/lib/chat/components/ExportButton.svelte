@@ -8,7 +8,7 @@ import { isFlowConnectionAvailable } from '/@/stores/flow-provider';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import { NavigationPage } from '/@api/navigation-page';
 
-import ExportIcon from './messages/ExportIcon.svelte';
+import FlowIcon from '../../images/FlowIcon.svelte';
 import type { ModelInfo } from './model-info';
 import { Button } from './ui/button';
 
@@ -80,5 +80,5 @@ const exportAsFlow = async (): Promise<void> => {
 	variant="ghost"
 	title={$isFlowConnectionAvailable? 'Export as Flow' : 'Install flow provider to enable save.'}
 >
-	<ExportIcon size="2x"/>
+  <FlowIcon size={2}/>
 </Button>
