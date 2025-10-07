@@ -192,7 +192,7 @@ $effect.pre(() => {
 						event.preventDefault();
 						await submitForm();
 					}}
-					disabled={input.length === 0}
+					disabled={input.trim().length === 0}
 				>
 				<ArrowUpIcon size={14} />
 			</Button>
