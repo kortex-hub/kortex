@@ -291,6 +291,28 @@ export default [
   },
 
   {
+    files: ['extensions/**'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../*', '../../*', '../../../*'],
+              message: 'Use absolute imports (e.g. /@/...) instead of relative imports.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  {
     files: ['packages/renderer/**'],
     languageOptions: {
       globals: {
