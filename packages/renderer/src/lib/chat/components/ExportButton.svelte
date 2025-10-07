@@ -36,7 +36,7 @@ const exportAsFlow = async (): Promise<void> => {
 
   try {
     const { providerId, connectionName, label } = selectedModel;
-    const { prompt } = await window.inferenceGenerateFlowParams({
+    const generatedFlowParams = await window.inferenceGenerateFlowParams({
       providerId,
       connectionName,
       modelId: label,
@@ -45,7 +45,7 @@ const exportAsFlow = async (): Promise<void> => {
     });
 
     flowCreationData.value = {
-      prompt,
+      ...generatedFlowParams,
       model: selectedModel,
       mcp: selectedMCP,
     };

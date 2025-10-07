@@ -28,10 +28,13 @@ import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import type { WebContents } from 'electron';
 import { inject } from 'inversify';
-import z from 'zod';
 
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { Directories } from '/@/plugin/directories.js';
+import {
+  FlowGenerationParameters,
+  FlowGenerationParametersSchema,
+} from '/@api/chat/flow-generation-parameters-schema.js';
 import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
 import type { MessageConfig } from '/@api/chat/message-config.js';
 import type { Chat, Message } from '/@api/chat/schema.js';
@@ -273,16 +276,10 @@ export class ChatManager {
     return result.text;
   }
 
-  async generateFlowParams(params: InferenceParameters): Promise<{ prompt: string }> {
+  async generateFlowParams(params: InferenceParameters): Promise<FlowGenerationParameters> {
     const result = await generateObject({
       ...(await this.getInferenceComponents(params)),
-      schema: z.object({
-        prompt: z
-          .string()
-          .describe(
-            'Help me to build a reproducible prompt to achieve the same result as I got in the conversation above. The prompt will be executed by another LLM without any further user input so it must contain all the information on how to get the same result.',
-          ),
-      }),
+      schema: FlowGenerationParametersSchema,
     });
     return result.object;
   }
