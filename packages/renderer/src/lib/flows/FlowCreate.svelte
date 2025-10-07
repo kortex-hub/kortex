@@ -13,6 +13,7 @@ import FormPage from '/@/lib/ui/FormPage.svelte';
 import { handleNavigation } from '/@/navigation';
 import { isFlowConnectionAvailable } from '/@/stores/flow-provider';
 import { providerInfos } from '/@/stores/providers';
+import { FlowGenerationParametersSchema } from '/@api/chat/flow-generation-parameters-schema';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import { NavigationPage } from '/@api/navigation-page';
 
@@ -30,8 +31,8 @@ let error: string | undefined = $state();
 let loading: boolean = $state(false);
 
 // form field
-let name: string = $state(`flow-${generateWords({ exactly: 2, join: '-' })}`);
-let description: string = $state('');
+let name: string = $state(flowCreationData.value?.name ?? `flow-${generateWords({ exactly: 2, join: '-' })}`);
+let description: string = $state(flowCreationData.value?.description ?? '');
 let instruction: string = $state('You are a helpful assistant.');
 let prompt: string = $state(flowCreationData.value?.prompt ?? '');
 let flowProviderConnectionKey: string | undefined = $state<string>();
@@ -55,26 +56,20 @@ onMount(() => {
   }
 });
 
-const kubernetesNameRegex = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/;
+const validatedInput = $derived(FlowGenerationParametersSchema.safeParse({ name, description, prompt }));
 
 const formValidContent = $derived(
-  !!flowProviderConnectionKey &&
-    !!selectedModel &&
-    !!name &&
-    name.length <= 63 &&
-    kubernetesNameRegex.test(name) &&
-    !!prompt &&
-    !!instruction
+  !!flowProviderConnectionKey && !!selectedModel && validatedInput.data && !!instruction
     ? {
         flowProviderConnectionKey,
         model: {
           providerId: selectedModel.providerId,
           label: selectedModel.label,
         },
-        name,
-        description,
+        name: validatedInput.data.name,
+        description: validatedInput.data.description,
         mcp: $state.snapshot(selectedMCP),
-        prompt,
+        prompt: validatedInput.data.prompt,
         instruction,
       }
     : undefined,

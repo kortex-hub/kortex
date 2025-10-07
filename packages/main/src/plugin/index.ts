@@ -62,6 +62,7 @@ import type {
 } from '/@/plugin/kubernetes/kube-generator-registry.js';
 import { KubeGeneratorRegistry } from '/@/plugin/kubernetes/kube-generator-registry.js';
 import { MCPExchanges } from '/@/plugin/mcp/mcp-exchanges.js';
+import { MCPIPCHandler } from '/@/plugin/mcp/mcp-ipc-handler.js';
 import { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
 import { MenuRegistry } from '/@/plugin/menu-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
@@ -526,6 +527,7 @@ export class PluginSystem {
     container.bind<KubeGeneratorRegistry>(KubeGeneratorRegistry).toSelf().inSingletonScope();
     container.bind<ImageRegistry>(ImageRegistry).toSelf().inSingletonScope();
     container.bind<MCPRegistry>(MCPRegistry).toSelf().inSingletonScope();
+    container.bind<MCPIPCHandler>(MCPIPCHandler).toSelf().inSingletonScope();
     container.bind<ViewRegistry>(ViewRegistry).toSelf().inSingletonScope();
     container.bind<Context>(Context).toSelf().inSingletonScope();
     container.bind<ContainerProviderRegistry>(ContainerProviderRegistry).toSelf().inSingletonScope();
@@ -782,6 +784,9 @@ export class PluginSystem {
     const imageRegistry = container.get<ImageRegistry>(ImageRegistry);
     const mcpRegistry = container.get<MCPRegistry>(MCPRegistry);
     mcpRegistry.init();
+
+    const mcpIPCHandler = container.get<MCPIPCHandler>(MCPIPCHandler);
+    mcpIPCHandler.init();
 
     await this.setupSecurityRestrictionsOnLinks(messageBox);
 
@@ -2153,13 +2158,6 @@ export class PluginSystem {
         registryCreateOptions: containerDesktopAPI.RegistryCreateOptions,
       ): Promise<void> => {
         await imageRegistry.createRegistry(providerName, registryCreateOptions);
-      },
-    );
-
-    this.ipcHandle(
-      'mcp-registry:createMCPRegistry',
-      async (_listener, registryCreateOptions: containerDesktopAPI.MCPRegistryCreateOptions): Promise<void> => {
-        await mcpRegistry.createRegistry(registryCreateOptions);
       },
     );
 

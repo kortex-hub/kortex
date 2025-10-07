@@ -23,7 +23,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type { DynamicToolUIPart, ModelMessage, StopCondition, ToolSet, UIMessage } from 'ai';
-import { convertToModelMessages, generateText, stepCountIs, streamText } from 'ai';
+import { convertToModelMessages, generateObject, generateText, stepCountIs, streamText } from 'ai';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import type { WebContents } from 'electron';
@@ -31,6 +31,10 @@ import { inject } from 'inversify';
 
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { Directories } from '/@/plugin/directories.js';
+import {
+  FlowGenerationParameters,
+  FlowGenerationParametersSchema,
+} from '/@api/chat/flow-generation-parameters-schema.js';
 import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
 import type { MessageConfig } from '/@api/chat/message-config.js';
 import type { Chat, Message } from '/@api/chat/schema.js';
@@ -91,6 +95,7 @@ export class ChatManager {
 
     this.ipcHandle('inference:streamText', (_, params) => this.streamText(params));
     this.ipcHandle('inference:generate', (_, params) => this.generate(params));
+    this.ipcHandle('inference:generateFlowParams', (_, params) => this.generateFlowParams(params));
     this.ipcHandle('mcp-manager:getExchanges', (_, mcpId: string) => this.getExchanges(mcpId));
     this.ipcHandle('inference:getChats', () => this.getChats());
     this.ipcHandle('inference:getChatMessagesById', (_, id: string) => this.getChatMessagesById(id));
@@ -269,5 +274,13 @@ export class ChatManager {
   async generate(params: InferenceParameters): Promise<string> {
     const result = await generateText(await this.getInferenceComponents(params));
     return result.text;
+  }
+
+  async generateFlowParams(params: InferenceParameters): Promise<FlowGenerationParameters> {
+    const result = await generateObject({
+      ...(await this.getInferenceComponents(params)),
+      schema: FlowGenerationParametersSchema,
+    });
+    return result.object;
   }
 }
