@@ -24,7 +24,8 @@ import NoFlowProviders from './components/NoFlowProviders.svelte';
 
 let selectedMCP = $state<MCPRemoteServerInfo[]>(flowCreationData.value?.mcp ?? []);
 let models: Array<ModelInfo> = $derived(getModels($providerInfos));
-let selectedModel = $derived<ModelInfo | undefined>(flowCreationData.value?.model ?? models[0]);
+let flowCreationDataModel = $state<ModelInfo | undefined>(flowCreationData.value?.model);
+let selectedModel = $derived<ModelInfo | undefined>(flowCreationDataModel ?? models[0]);
 
 // error
 let error: string | undefined = $state();
