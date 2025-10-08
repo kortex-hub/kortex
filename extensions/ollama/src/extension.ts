@@ -1,10 +1,9 @@
 /**********************************************************************
- * Copyright (C) 2022 Red Hat, Inc.
+ * Copyright (C) 2025 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
@@ -16,17 +15,18 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-/**
- * Mock the extension API for vitest.
- * This file is referenced from vitest.config.js file.
- */
-const mcpRegistry = {
-  suggestRegistry: vi.fn(),
-};
+import type { ExtensionContext } from '@kortex-app/api';
 
-const provider = {
-  createProvider: vi.fn(),
-};
+import { OllamaExtension } from './ollama-extension';
 
-const plugin = { provider, mcpRegistry };
-module.exports = plugin;
+let ollamaExtension: OllamaExtension | undefined;
+
+export async function activate(extensionContext: ExtensionContext): Promise<void> {
+  ollamaExtension ??= new OllamaExtension(extensionContext);
+  await ollamaExtension.activate();
+}
+
+export async function deactivate(): Promise<void> {
+  await ollamaExtension?.deactivate();
+  ollamaExtension = undefined;
+}
