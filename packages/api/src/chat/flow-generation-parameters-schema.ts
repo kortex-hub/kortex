@@ -16,9 +16,16 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import type { ZodType } from 'zod';
 import z from 'zod';
 
-export const FlowGenerationParametersSchema = z.object({
+export type FlowGenerationParameters = {
+  name: string;
+  description: string;
+  prompt: string;
+};
+
+export const FlowGenerationParametersSchema: ZodType<FlowGenerationParameters> = z.object({
   name: z
     .string()
     .describe(
@@ -40,5 +47,3 @@ export const FlowGenerationParametersSchema = z.object({
       'Help me create a reproducible prompt that achieves the same result as in the conversation above. The prompt will be executed by another LLM without any further user input, so it must include all the necessary information to reproduce the same outcome.',
     ),
 });
-
-export type FlowGenerationParameters = z.output<typeof FlowGenerationParametersSchema>;
