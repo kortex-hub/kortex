@@ -659,6 +659,16 @@ declare module '@kortex-app/api' {
     status(): ProviderConnectionStatus;
   };
 
+  export type Chunk = {
+    id: string;
+    text: string;
+  }
+
+  export type ChunkProvider = {
+    name: string;
+    index(doc: Uri): Promise<Chunk[]>;
+  };
+
   export interface ProviderInferenceConnection {
     providerId: string;
     connection: InferenceProviderConnection;
@@ -669,12 +679,18 @@ declare module '@kortex-app/api' {
     connection: RagProviderConnection;
   }
 
+  export interface ProviderChunkerConnection {
+    providerId: string;
+    connection: ChunkProvider;
+  }
+
   export type ProviderConnection =
     | ContainerProviderConnection
     | KubernetesProviderConnection
     | VmProviderConnection
     | InferenceProviderConnection
     | RagProviderConnection
+    | ChunkProvider
     | FlowProviderConnection;
 
   // common set of options for creating a provider
@@ -914,6 +930,7 @@ declare module '@kortex-app/api' {
     registerVmProviderConnection(connection: VmProviderConnection): Disposable;
     registerInferenceProviderConnection(connection: InferenceProviderConnection): Disposable;
     registerRagProviderConnection(connection: RagProviderConnection): Disposable;
+    registerChunkerProviderConnection(connection: ChunkProvider): Disposable;
 
     registerFlowProviderConnection(connection: FlowProviderConnection): Disposable;
 
@@ -1069,6 +1086,12 @@ declare module '@kortex-app/api' {
     providerId: string;
   }
   export interface UnregisterRagConnectionEvent {
+    providerId: string;
+  }
+  export interface RegisterChunkerConnectionEvent {
+    providerId: string;
+  }
+  export interface UnregisterChunkerConnectionEvent {
     providerId: string;
   }
 
@@ -5280,5 +5303,9 @@ declare module '@kortex-app/api' {
      * @throws {Error} If the repository is not hosted on GitHub.
      */
     constructor(url: string);
+  }
+
+  namespace rag {
+    export function registerChunkProvider(provider: ChunkProvider): Disposable;
   }
 }
