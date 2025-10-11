@@ -105,6 +105,7 @@ import type {
 } from '/@api/provider-info';
 import type { ProxyState } from '/@api/proxy';
 import type { PullEvent } from '/@api/pull-event';
+import type { RagEnvironment } from '/@api/rag/rag-environment';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info';
 import type { StatusBarEntryDescriptor } from '/@api/status-bar';
 import type { PinOption } from '/@api/status-bar/pin-option';
@@ -1510,6 +1511,10 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld('getProviderInfos', async (): Promise<ProviderInfo[]> => {
     return ipcInvoke('provider-registry:getProviderInfos');
+  });
+
+  contextBridge.exposeInMainWorld('getRagEnvironments', async (): Promise<RagEnvironment[]> => {
+    return ipcInvoke('rag-environment-registry:getRagEnvironments');
   });
 
   contextBridge.exposeInMainWorld('getCliToolInfos', async (): Promise<CliToolInfo[]> => {

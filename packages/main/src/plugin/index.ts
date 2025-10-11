@@ -128,6 +128,7 @@ import type {
 } from '/@api/provider-info.js';
 import type { ProxyState } from '/@api/proxy.js';
 import type { PullEvent } from '/@api/pull-event.js';
+import type { RagEnvironment } from '/@api/rag/rag-environment.js';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info.js';
 import type { StatusBarEntryDescriptor } from '/@api/status-bar.js';
 import type { PinOption } from '/@api/status-bar/pin-option.js';
@@ -198,6 +199,7 @@ import { OnboardingRegistry } from './onboarding-registry.js';
 import { OpenDevToolsInit } from './open-devtools-init.js';
 import { ProviderRegistry } from './provider-registry.js';
 import { Proxy } from './proxy.js';
+import { RagEnvironmentRegistry } from './rag-environment-registry.js';
 import { RecommendationsRegistry } from './recommendations/recommendations-registry.js';
 import { ReleaseNotesBannerInit } from './release-notes-banner-init.js';
 import { SafeStorageRegistry } from './safe-storage/safe-storage-registry.js';
@@ -544,6 +546,7 @@ export class PluginSystem {
     container.bind<KubernetesClient>(KubernetesClient).toSelf().inSingletonScope();
     container.bind<ChatManager>(ChatManager).toSelf().inSingletonScope();
     container.bind<SchedulerRegistry>(SchedulerRegistry).toSelf().inSingletonScope();
+    container.bind<RagEnvironmentRegistry>(RagEnvironmentRegistry).toSelf().inSingletonScope();
 
     // INIT KUBERNETES
     const kubernetesClient = container.get<KubernetesClient>(KubernetesClient);
@@ -785,6 +788,7 @@ export class PluginSystem {
     const mcpRegistry = container.get<MCPRegistry>(MCPRegistry);
     const schedulerRegistry = container.get<SchedulerRegistry>(SchedulerRegistry);
     mcpRegistry.init();
+    const ragEnvironmentRegistry = container.get<RagEnvironmentRegistry>(RagEnvironmentRegistry);
 
     const mcpIPCHandler = container.get<MCPIPCHandler>(MCPIPCHandler);
     mcpIPCHandler.init();
@@ -1710,6 +1714,10 @@ export class PluginSystem {
 
     this.ipcHandle('provider-registry:getProviderInfos', async (): Promise<ProviderInfo[]> => {
       return providerRegistry.getProviderInfos();
+    });
+
+    this.ipcHandle('rag-environment-registry:getRagEnvironments', async (): Promise<RagEnvironment[]> => {
+      return ragEnvironmentRegistry.getAllRagEnvironments();
     });
 
     this.ipcHandle(

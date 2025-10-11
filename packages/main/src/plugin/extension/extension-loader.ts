@@ -1634,7 +1634,7 @@ export class ExtensionLoader implements IAsyncDisposable {
       navigation,
       RepositoryInfoParser,
       mcpRegistry,
-      rag
+      rag,
     };
   }
 
