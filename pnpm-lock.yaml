@@ -434,8 +434,8 @@ importers:
   extensions/openai-compatible:
     dependencies:
       '@ai-sdk/openai-compatible':
-        specifier: ^1.0.20
-        version: 1.0.20(zod@4.1.12)
+        specifier: ^1.0.22
+        version: 1.0.22(zod@4.1.12)
       '@kortex-app/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
@@ -453,8 +453,8 @@ importers:
   extensions/openshift-ai:
     dependencies:
       '@ai-sdk/openai-compatible':
-        specifier: ^1.0.20
-        version: 1.0.20(zod@4.1.12)
+        specifier: ^1.0.22
+        version: 1.0.22(zod@4.1.12)
       '@kortex-app/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
@@ -702,8 +702,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/openai-compatible@1.0.20':
-    resolution: {integrity: sha512-UIg7dj79wYsmHFyk8snF9q2qhbQZMI0XiUNhilMg/4htPqYF0z6Q5GSRMUtYEo7yN14a8g0KeVOawE6+H4VYcg==}
+  '@ai-sdk/openai-compatible@1.0.22':
+    resolution: {integrity: sha512-Q+lwBIeMprc/iM+vg1yGjvzRrp74l316wDpqWdbmd4VXXlllblzGsUgBLTeKvcEapFTgqk0FRETvSb58Y6dsfA==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -716,6 +716,12 @@ packages:
 
   '@ai-sdk/provider-utils@3.0.11':
     resolution: {integrity: sha512-4hgHj89VqyOHzGaV85TkcgvO8WjecVF35TOUVg+C56vnzpWSgdIZu/ZWZNdZ6BTrv8y0N1toBWW7XcWiRRicLg==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/provider-utils@3.0.12':
+    resolution: {integrity: sha512-ZtbdvYxdMoria+2SlNarEk6Hlgyf+zzcznlD55EAl+7VZvJaSg2sqPvwArY7L6TfDEDJsnCq0fdhBSkYo0Xqdg==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -2360,11 +2366,11 @@ packages:
   '@types/node@22.17.1':
     resolution: {integrity: sha512-y3tBaz+rjspDTylNjAX37jEC3TETEFGNJL6uQDxwF9/8GLLIjW1rvVHlynyuUKMnMr1Roq8jOv3vkopBjC4/VA==}
 
+  '@types/node@22.18.10':
+    resolution: {integrity: sha512-anNG/V/Efn/YZY4pRzbACnKxNKoBng2VTFydVu8RRs5hQjikP8CQfaeAV59VFSCzKNp90mXiVXW2QzV56rwMrg==}
+
   '@types/node@22.18.6':
     resolution: {integrity: sha512-r8uszLPpeIWbNKtvWRt/DbVi5zbqZyj1PTmhRMqBMvDnaz1QpmSKujUtJLrqGZeoM8v72MfYggDceY4K1itzWQ==}
-
-  '@types/node@22.18.9':
-    resolution: {integrity: sha512-5yBtK0k/q8PjkMXbTfeIEP/XVYnz1R9qZJ3yUicdEW7ppdDJfe+MqXEhpqDL3mtn4Wvs1u0KLEG0RXzCgNpsSg==}
 
   '@types/node@24.1.0':
     resolution: {integrity: sha512-ut5FthK5moxFKH2T1CUOC6ctR67rQRvvHdFLCD2Ql6KXmMuCrjsSsRI9UsLCm9M18BMwClv4pn327UvB7eeO1w==}
@@ -4298,8 +4304,8 @@ packages:
     resolution: {integrity: sha512-/kP8CAwxzLVEeFrMm4kMmy4CCDlpipyA7MYLVrdJIkV0fYF0UaigQHRsxHiuY/GEea+bh4KSv3TIlgr+2UL6bw==}
     engines: {node: '>=12.0.0'}
 
-  exponential-backoff@3.1.2:
-    resolution: {integrity: sha512-8QxYTVXUkuy7fIIoitQkPwGonB8F3Zj8eEO8Sqg9Zv/bkI7RJAzowee4gr81Hak/dUTpA2Z7VfQgoijjPNlUZA==}
+  exponential-backoff@3.1.3:
+    resolution: {integrity: sha512-ZgEeZXj30q+I0EN+CbSSpIyPaJ5HVQD18Z1m+u1FXbAeT94mr1zw50q4q6jiiC447Nl/YTcIYSAftiGqetwXCA==}
 
   express-rate-limit@7.5.1:
     resolution: {integrity: sha512-7iN8iPMDzOMHPUYllBEsQdWVB6fPDMPqwjBaFrgr4Jgr/+okjvzAy+UHlYYL/Vs0OsOrMkwS6PJDkFlJwoxUnw==}
@@ -7626,10 +7632,10 @@ snapshots:
       '@ai-sdk/provider-utils': 3.0.11(zod@4.1.12)
       zod: 4.1.12
 
-  '@ai-sdk/openai-compatible@1.0.20(zod@4.1.12)':
+  '@ai-sdk/openai-compatible@1.0.22(zod@4.1.12)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.11(zod@4.1.12)
+      '@ai-sdk/provider-utils': 3.0.12(zod@4.1.12)
       zod: 4.1.12
 
   '@ai-sdk/provider-utils@2.2.8(zod@4.1.12)':
@@ -7647,6 +7653,13 @@ snapshots:
       zod: 4.1.11
 
   '@ai-sdk/provider-utils@3.0.11(zod@4.1.12)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0
+      '@standard-schema/spec': 1.0.0
+      eventsource-parser: 3.0.6
+      zod: 4.1.12
+
+  '@ai-sdk/provider-utils@3.0.12(zod@4.1.12)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
       '@standard-schema/spec': 1.0.0
@@ -7943,7 +7956,7 @@ snapshots:
   '@electron/node-gyp@https://codeload.github.com/electron/node-gyp/tar.gz/06b29aafb7708acef8b3669835c8a7857ebc92d2':
     dependencies:
       env-paths: 2.2.1
-      exponential-backoff: 3.1.2
+      exponential-backoff: 3.1.3
       glob: 8.1.0
       graceful-fs: 4.2.11
       make-fetch-happen: 10.2.1
@@ -9251,14 +9264,14 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
-  '@types/node@22.18.6':
-    dependencies:
-      undici-types: 6.21.0
-
-  '@types/node@22.18.9':
+  '@types/node@22.18.10':
     dependencies:
       undici-types: 6.21.0
     optional: true
+
+  '@types/node@22.18.6':
+    dependencies:
+      undici-types: 6.21.0
 
   '@types/node@24.1.0':
     dependencies:
@@ -9269,7 +9282,7 @@ snapshots:
 
   '@types/pg@8.15.4':
     dependencies:
-      '@types/node': 22.18.9
+      '@types/node': 22.18.10
       pg-protocol: 1.10.3
       pg-types: 2.2.0
     optional: true
@@ -11656,7 +11669,7 @@ snapshots:
 
   expect-type@1.2.1: {}
 
-  exponential-backoff@3.1.2: {}
+  exponential-backoff@3.1.3: {}
 
   express-rate-limit@7.5.1(express@5.1.0):
     dependencies:
@@ -13454,7 +13467,7 @@ snapshots:
   node-gyp@9.4.1:
     dependencies:
       env-paths: 2.2.1
-      exponential-backoff: 3.1.2
+      exponential-backoff: 3.1.3
       glob: 7.2.3
       graceful-fs: 4.2.11
       make-fetch-happen: 10.2.1
