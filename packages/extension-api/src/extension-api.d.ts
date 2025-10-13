@@ -651,9 +651,28 @@ declare module '@kortex-app/api' {
     models: Array<InferenceModel>;
   };
 
+  export type MCPRemoteServerConfig = {
+    type: 'remote';
+    remote: components['schemas']['Remote'];
+    headers: Record<string, string>;
+  };
+
+  export type MCPPackageServerConfig = {
+    type: 'package';
+    package: components['schemas']['Package'];
+    runtimeArguments: Record<number, string>;
+    packageArguments: Record<number, string>;
+    environmentVariables: Record<string, string>;
+  };
+
+  export type MCPServerConfig = MCPRemoteServerConfig | MCPPackageServerConfig;
+
   export type RagProviderConnection = {
     name: string;
-    mcpServer: components['schemas']['ServerDetail'];
+    mcpServer: {
+      server: components['schemas']['ServerDetail'];
+      config: MCPServerConfig;
+    };
     credentials(): Record<string, string>;
     lifecycle?: ProviderConnectionLifecycle;
     status(): ProviderConnectionStatus;
@@ -662,7 +681,7 @@ declare module '@kortex-app/api' {
   export type Chunk = {
     id: string;
     text: string;
-  }
+  };
 
   export type ChunkProvider = {
     name: string;
