@@ -220,6 +220,7 @@ import { TaskConnectionUtils } from './util/task-connection-utils.js';
 import { ViewRegistry } from './view-registry.js';
 import { WebviewRegistry } from './webview/webview-registry.js';
 import { WelcomeInit } from './welcome/welcome-init.js';
+import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 
 // workaround for ESM
 const checkDiskSpace: (path: string) => Promise<{ free: number }> = checkDiskSpacePkg as unknown as (
@@ -529,6 +530,7 @@ export class PluginSystem {
     container.bind<ImageRegistry>(ImageRegistry).toSelf().inSingletonScope();
     container.bind<MCPRegistry>(MCPRegistry).toSelf().inSingletonScope();
     container.bind<MCPIPCHandler>(MCPIPCHandler).toSelf().inSingletonScope();
+    container.bind<ChunkProviderRegistry>(ChunkProviderRegistry).toSelf().inSingletonScope();
     container.bind<ViewRegistry>(ViewRegistry).toSelf().inSingletonScope();
     container.bind<Context>(Context).toSelf().inSingletonScope();
     container.bind<ContainerProviderRegistry>(ContainerProviderRegistry).toSelf().inSingletonScope();

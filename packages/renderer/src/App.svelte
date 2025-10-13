@@ -62,6 +62,7 @@ import ManifestDetails from './lib/manifest/ManifestDetails.svelte';
 import McpRegistryCreateFromRegistryForm from './lib/mcp/MCPRegistryCreateFromRegistryForm.svelte';
 import McpServerList from './lib/mcp/MCPServerList.svelte';
 import NodeDetails from './lib/node/NodeDetails.svelte';
+import RAGEnvironmentList from './lib/rag/RAGEnvironmentList.svelte';
 import NodesList from './lib/node/NodesList.svelte';
 import Onboarding from './lib/onboarding/Onboarding.svelte';
 import DeployPodToKube from './lib/pod/DeployPodToKube.svelte';
@@ -192,6 +193,11 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
         </Route>
         <Route path="/mcp-install-from-registry/:serverId/*" breadcrumb="Install MCP Server from Registry" let:meta>
           <McpRegistryCreateFromRegistryForm serverId={decodeURIComponent(meta.params.serverId)} />
+        </Route>
+
+        <!-- RAG Environments -->
+        <Route path="/rag-environments" breadcrumb="RAG Environments" navigationHint="root">
+          <RAGEnvironmentList />
         </Route>
 
         <Route path="/containers" breadcrumb="Containers" navigationHint="root">
