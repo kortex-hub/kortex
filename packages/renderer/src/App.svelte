@@ -62,7 +62,6 @@ import ManifestDetails from './lib/manifest/ManifestDetails.svelte';
 import McpRegistryCreateFromRegistryForm from './lib/mcp/MCPRegistryCreateFromRegistryForm.svelte';
 import McpServerList from './lib/mcp/MCPServerList.svelte';
 import NodeDetails from './lib/node/NodeDetails.svelte';
-import RAGEnvironmentList from './lib/rag/RAGEnvironmentList.svelte';
 import NodesList from './lib/node/NodesList.svelte';
 import Onboarding from './lib/onboarding/Onboarding.svelte';
 import DeployPodToKube from './lib/pod/DeployPodToKube.svelte';
@@ -72,6 +71,8 @@ import PodsList from './lib/pod/PodsList.svelte';
 import PreferencesPage from './lib/preferences/PreferencesPage.svelte';
 import PVCDetails from './lib/pvc/PVCDetails.svelte';
 import PVCList from './lib/pvc/PVCList.svelte';
+import RAGEnvironmentDetails from './lib/rag/RAGEnvironmentDetails.svelte';
+import RAGEnvironmentList from './lib/rag/RAGEnvironmentList.svelte';
 import ServiceDetails from './lib/service/ServiceDetails.svelte';
 import ServicesList from './lib/service/ServicesList.svelte';
 import StatusBar from './lib/statusbar/StatusBar.svelte';
@@ -198,6 +199,9 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
         <!-- RAG Environments -->
         <Route path="/rag-environments" breadcrumb="RAG Environments" navigationHint="root">
           <RAGEnvironmentList />
+        </Route>
+        <Route path="/rag-environments/:name/*" let:meta breadcrumb="RAG Environment Details" navigationHint="details">
+          <RAGEnvironmentDetails name={meta.params.name} />
         </Route>
 
         <Route path="/containers" breadcrumb="Containers" navigationHint="root">
