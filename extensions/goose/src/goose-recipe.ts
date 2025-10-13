@@ -32,7 +32,7 @@ import type {
 } from '@kortex-app/api';
 import { EventEmitter } from '@kortex-app/api';
 import { generate } from 'random-words';
-import { parse } from 'yaml';
+import { parse, stringify } from 'yaml';
 
 import type { GooseCLI } from './goose-cli';
 import { KubeTemplate } from './kube-template';
@@ -46,6 +46,17 @@ function goose2KortexProvider(gooseprovider: string): string {
   const entry = Object.entries(gooseProviderMap).find(([, v]) => v === gooseprovider);
   if (!entry) throw new Error(`cannot find inference provider for goose provider ${gooseprovider}`);
   return entry[0];
+}
+
+export interface RecipeExtension {
+  name: string;
+  type: string;
+  uri: string;
+  headers?: Record<string, string>;
+}
+
+export interface RecipeWithExtensions {
+  extensions?: Array<RecipeExtension>;
 }
 
 export class GooseRecipe implements Disposable {
@@ -249,6 +260,7 @@ export class GooseRecipe implements Disposable {
     if (!providerId) {
       throw new Error('cannot find provider for this recipe, cannot deploy to kubernetes');
     }
+    const processedContent = options.hideSecrets ? this.hideSecretsInRecipeContent(content) : content;
 
     const template = new KubeTemplate({
       job: {
@@ -260,7 +272,7 @@ export class GooseRecipe implements Disposable {
       recipe: {
         flowId: options.flowId,
         name: recipeName,
-        content: content,
+        content: processedContent,
       },
       provider: {
         name: providerId,
@@ -276,6 +288,65 @@ export class GooseRecipe implements Disposable {
     return {
       resources: template.render(),
     };
+  }
+
+  hideSecretsInRecipeContent(content: string): string {
+    try {
+      const parsed = parse(content);
+
+      if (parsed.extensions) {
+        parsed.extensions = this.processExtensions(parsed.extensions);
+      }
+
+      return this.stringifyRecipe(parsed);
+    } catch (error) {
+      console.warn('Failed to parse recipe content for secret hiding:', error);
+      return content;
+    }
+  }
+
+  private processExtensions(extensions: RecipeExtension[]): RecipeExtension[] {
+    return extensions.map(extension => {
+      if (extension.headers) {
+        const processedHeaders = this.processHeaders(extension.headers);
+        if (processedHeaders !== extension.headers) {
+          return {
+            ...extension,
+            headers: processedHeaders,
+          };
+        }
+      }
+      return extension;
+    });
+  }
+
+  private processHeaders(headers: Record<string, string>): Record<string, string> {
+    const hasSensitiveHeaders = Object.keys(headers).some(key => this.isSensitiveHeader(key));
+
+    if (!hasSensitiveHeaders) {
+      return headers;
+    }
+
+    const processed: Record<string, string> = {};
+
+    for (const [key, value] of Object.entries(headers)) {
+      const isSensitive = this.isSensitiveHeader(key);
+      processed[key] = isSensitive ? '*'.repeat(value.length) : value;
+    }
+
+    return processed;
+  }
+
+  private isSensitiveHeader(key: string): boolean {
+    const sensitiveKeys = ['authorization', 'x-api-key', 'api-key', 'token'];
+    return sensitiveKeys.includes(key.toLowerCase());
+  }
+
+  private stringifyRecipe(parsed: RecipeWithExtensions): string {
+    return stringify(parsed, {
+      indent: 2,
+      lineWidth: -1,
+    });
   }
 
   dispose(): void {
