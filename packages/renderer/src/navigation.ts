@@ -59,8 +59,7 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
       );
       break;
     case NavigationPage.MCP_INSTALL_FROM_REGISTRY:
-      console.log(`goto /mcp-install-from-registry/${request.parameters.serverId}`, request.parameters);
-      router.goto(`/mcp-install-from-registry/${request.parameters.serverId}`);
+      router.goto(`/mcp-install-from-registry/${btoa(request.parameters.serverId)}`);
       break;
     case NavigationPage.CONTAINERS:
       router.goto('/containers');
