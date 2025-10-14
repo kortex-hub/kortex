@@ -23,6 +23,8 @@ metadata:
     {{& annotations.flowId }}: {{{ recipe.flowId }}}
 spec:
   template:
+    labels:
+      app: goose
     metadata:
       annotations:
         {{& annotations.version }}: {{ kortex.version }}
