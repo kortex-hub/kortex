@@ -29,16 +29,15 @@ export class NavigationBar {
 
   constructor(page: Page) {
     this.page = page;
-    this.navigationLocator = this.page.getByRole('navigation', {
-      name: 'AppNavigation',
-    });
+    this.navigationLocator = this.page.getByRole('navigation', { name: 'AppNavigation' });
     this.chatLink = this.navigationLocator.getByRole('link', { name: 'Chat' });
     this.mcpLink = this.navigationLocator.getByRole('link', { name: 'MCP' });
     this.flowsLink = this.navigationLocator.getByRole('link', { name: 'Flows', exact: true });
     this.settingsLink = this.navigationLocator.getByRole('link', { name: 'Settings', exact: true });
-    this.extensionsLink = this.navigationLocator.getByRole('link', {
-      name: 'Extensions',
-      exact: true,
-    });
+    this.extensionsLink = this.navigationLocator.getByRole('link', { name: 'Extensions', exact: true });
+  }
+
+  getAllLinks(): Locator[] {
+    return [this.chatLink, this.flowsLink, this.mcpLink, this.extensionsLink, this.settingsLink];
   }
 }

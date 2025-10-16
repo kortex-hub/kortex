@@ -1,0 +1,85 @@
+/**********************************************************************
+ * Copyright (C) 2025 Red Hat, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ***********************************************************************/
+import { expect, test } from '../fixtures/electron-app';
+import { NavigationBar } from '../model/navigation/navigation';
+import { SettingsPage } from '../model/navigation/pages/settings-page';
+import { preferenceOptions } from '../model/navigation/pages/settings-preferences-tab-page';
+import { proxyConfigurations } from '../model/navigation/pages/settings-proxy-tab-page';
+import { featuredResources, resourcesWithCreateButton } from '../model/navigation/pages/settings-resources-tab-page';
+
+let navigationBar: NavigationBar;
+let settingsPage: SettingsPage;
+
+test.beforeEach(async ({ page }) => {
+  navigationBar = new NavigationBar(page);
+  settingsPage = new SettingsPage(page);
+  await navigationBar.settingsLink.click();
+});
+
+test.describe('Settings page navigation', { tag: '@smoke' }, () => {
+  test('[TC-01] All settings tabs are visible', async () => {
+    for (const tab of settingsPage.getAllTabs()) {
+      await expect(tab).toBeVisible();
+    }
+  });
+
+  test('[TC-02] Resources tab shows all providers with create buttons', async () => {
+    await settingsPage.resourcesTab.click();
+    for (const resourceId of featuredResources) {
+      await expect(settingsPage.resourcesPage.getResourceRegion(resourceId)).toBeVisible();
+    }
+    for (const displayName of resourcesWithCreateButton) {
+      const createButton = settingsPage.resourcesPage.getResourceCreateButton(displayName);
+      await expect(createButton).toBeVisible();
+      await expect(createButton).toBeEnabled();
+    }
+  });
+
+  test('[TC-03] CLI tab shows goose CLI tool', async () => {
+    await settingsPage.cliTab.click();
+    await expect(settingsPage.cliPage.toolName).toBeVisible();
+    await expect(settingsPage.cliPage.toolName).toHaveText('goose');
+  });
+
+  test('[TC-04] Proxy tab configurations', async () => {
+    await settingsPage.proxyTab.click();
+    await settingsPage.proxyPage.verifyProxyConfigurationOptions();
+    for (const field of settingsPage.proxyPage.getProxyFields()) {
+      await expect(field).toBeVisible();
+    }
+    for (const config of proxyConfigurations) {
+      await settingsPage.proxyPage.selectProxyConfigurationAndVerifyFields(config.option, config.editable);
+    }
+  });
+
+  test('[TC-05] Preferences submenu items are visible and can be interacted with', async () => {
+    await settingsPage.preferencesTab.click();
+    for (const option of preferenceOptions()) {
+      await settingsPage.preferencesPage.selectPreference(option);
+    }
+  });
+
+  test('[TC-06] Preferences search filters options correctly', async () => {
+    await settingsPage.preferencesTab.click();
+    for (const option of preferenceOptions()) {
+      await settingsPage.preferencesPage.searchPreferences(option);
+      await expect(settingsPage.preferencesPage.getPreferenceContent(option)).toBeVisible();
+      await settingsPage.preferencesPage.clearSearch();
+    }
+  });
+});
