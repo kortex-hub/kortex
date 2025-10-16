@@ -33,6 +33,9 @@ export interface MCPSetupRemoteOptions {
 export interface MCPSetupPackageOptions {
   type: 'package';
   index: number;
+  runtimeArguments: Record<number, InputWithVariableResponse>;
+  packageArguments: Record<number, InputWithVariableResponse>;
+  environmentVariables: Record<string, InputWithVariableResponse>;
 }
 
 export type MCPSetupOptions = MCPSetupRemoteOptions | MCPSetupPackageOptions;
