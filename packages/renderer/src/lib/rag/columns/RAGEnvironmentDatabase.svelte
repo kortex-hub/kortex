@@ -1,20 +1,15 @@
 <script lang="ts">
-import { providerInfos } from '/@/stores/providers';
-import type { RagEnvironment } from '/@api/rag/rag-environment';
+  import { getDatabaseName } from '/@/lib/rag/rag-environment-utils.svelte';
+  import { providerInfos } from '/@/stores/providers';
+  import type { RagEnvironment } from '/@api/rag/rag-environment';
 
-interface Props {
+  interface Props {
   object: RagEnvironment;
 }
 
 const { object }: Props = $props();
 
-// Extract database name from connection ID or show the ID
-const ragProvider = $providerInfos
-  .find(provider => provider.id === object.ragConnection.providerId);
-const ragConnection = ragProvider?.ragConnections.find(
-  connection => connection.name === object.ragConnection.name,
-);
-const databaseName = ragConnection?.name ? `${ragConnection.name} (${ragProvider?.name})` : `N/A`;
+const databaseName = getDatabaseName($providerInfos, object);
 </script>
 
 <div class="flex items-center">

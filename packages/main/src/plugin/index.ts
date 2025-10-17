@@ -128,6 +128,7 @@ import type {
 } from '/@api/provider-info.js';
 import type { ProxyState } from '/@api/proxy.js';
 import type { PullEvent } from '/@api/pull-event.js';
+import type { ChunkProviderInfo } from '/@api/rag/chunk-provider-info.js';
 import type { RagEnvironment } from '/@api/rag/rag-environment.js';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info.js';
 import type { StatusBarEntryDescriptor } from '/@api/status-bar.js';
@@ -791,6 +792,7 @@ export class PluginSystem {
     const schedulerRegistry = container.get<SchedulerRegistry>(SchedulerRegistry);
     mcpRegistry.init();
     const ragEnvironmentRegistry = container.get<RagEnvironmentRegistry>(RagEnvironmentRegistry);
+    const chunkProviderRegistry = container.get<ChunkProviderRegistry>(ChunkProviderRegistry);
 
     const mcpIPCHandler = container.get<MCPIPCHandler>(MCPIPCHandler);
     mcpIPCHandler.init();
@@ -1720,6 +1722,10 @@ export class PluginSystem {
 
     this.ipcHandle('rag-environment-registry:getRagEnvironments', async (): Promise<RagEnvironment[]> => {
       return ragEnvironmentRegistry.getAllRagEnvironments();
+    });
+
+    this.ipcHandle('chunk-provider-registry:getChunkProviders', async (): Promise<ChunkProviderInfo[]> => {
+      return chunkProviderRegistry.getChunkProviders();
     });
 
     this.ipcHandle(
