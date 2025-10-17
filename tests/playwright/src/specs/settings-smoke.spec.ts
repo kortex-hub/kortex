@@ -39,47 +39,47 @@ test.describe('Settings page navigation', { tag: '@smoke' }, () => {
   });
 
   test('[TC-02] Resources tab shows all providers with create buttons', async () => {
-    await settingsPage.resourcesTab.click();
+    const resourcesPage = await settingsPage.openResources();
     for (const resourceId of featuredResources) {
-      await expect(settingsPage.resourcesPage.getResourceRegion(resourceId)).toBeVisible();
+      await expect(resourcesPage.getResourceRegion(resourceId)).toBeVisible();
     }
     for (const displayName of resourcesWithCreateButton) {
-      const createButton = settingsPage.resourcesPage.getResourceCreateButton(displayName);
+      const createButton = resourcesPage.getResourceCreateButton(displayName);
       await expect(createButton).toBeVisible();
       await expect(createButton).toBeEnabled();
     }
   });
 
   test('[TC-03] CLI tab shows goose CLI tool', async () => {
-    await settingsPage.cliTab.click();
-    await expect(settingsPage.cliPage.toolName).toBeVisible();
-    await expect(settingsPage.cliPage.toolName).toHaveText('goose');
+    const cliPage = await settingsPage.openCli();
+    await expect(cliPage.toolName).toBeVisible();
+    await expect(cliPage.toolName).toHaveText('goose');
   });
 
   test('[TC-04] Proxy tab configurations', async () => {
-    await settingsPage.proxyTab.click();
-    await settingsPage.proxyPage.verifyProxyConfigurationOptions();
-    for (const field of settingsPage.proxyPage.getProxyFields()) {
+    const proxyPage = await settingsPage.openProxy();
+    await proxyPage.verifyProxyConfigurationOptions();
+    for (const field of proxyPage.getProxyFields()) {
       await expect(field).toBeVisible();
     }
     for (const config of proxyConfigurations) {
-      await settingsPage.proxyPage.selectProxyConfigurationAndVerifyFields(config.option, config.editable);
+      await proxyPage.selectProxyConfigurationAndVerifyFields(config.option, config.editable);
     }
   });
 
   test('[TC-05] Preferences submenu items are visible and can be interacted with', async () => {
-    await settingsPage.preferencesTab.click();
+    const preferencesPage = await settingsPage.openPreferences();
     for (const option of preferenceOptions()) {
-      await settingsPage.preferencesPage.selectPreference(option);
+      await preferencesPage.selectPreference(option);
     }
   });
 
   test('[TC-06] Preferences search filters options correctly', async () => {
-    await settingsPage.preferencesTab.click();
+    const preferencesPage = await settingsPage.openPreferences();
     for (const option of preferenceOptions()) {
-      await settingsPage.preferencesPage.searchPreferences(option);
-      await expect(settingsPage.preferencesPage.getPreferenceContent(option)).toBeVisible();
-      await settingsPage.preferencesPage.clearSearch();
+      await preferencesPage.searchPreferences(option);
+      await expect(preferencesPage.getPreferenceContent(option)).toBeVisible();
+      await preferencesPage.clearSearch();
     }
   });
 });

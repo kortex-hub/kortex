@@ -19,10 +19,10 @@
 import type { Locator, Page } from '@playwright/test';
 
 import { BasePage } from './base-page';
-import { CliTabPage } from './settings-cli-tab-page';
-import { PreferencesTabPage } from './settings-preferences-tab-page';
-import { ProxyTabPage } from './settings-proxy-tab-page';
-import { ResourcesTabPage } from './settings-resources-tab-page';
+import { SettingsCliPage } from './settings-cli-tab-page';
+import { SettingsPreferencesPage } from './settings-preferences-tab-page';
+import { SettingsProxyPage } from './settings-proxy-tab-page';
+import { SettingsResourcesPage } from './settings-resources-tab-page';
 
 export class SettingsPage extends BasePage {
   readonly resourcesTab: Locator;
@@ -38,20 +38,32 @@ export class SettingsPage extends BasePage {
     this.preferencesTab = page.getByRole('link', { name: 'Preferences' });
   }
 
-  get resourcesPage(): ResourcesTabPage {
-    return new ResourcesTabPage(this.page);
+  async openResources(): Promise<SettingsResourcesPage> {
+    await this.resourcesTab.click();
+    const resourcesPage = new SettingsResourcesPage(this.page);
+    await resourcesPage.waitForLoad();
+    return resourcesPage;
   }
 
-  get cliPage(): CliTabPage {
-    return new CliTabPage(this.page);
+  async openCli(): Promise<SettingsCliPage> {
+    await this.cliTab.click();
+    const cliPage = new SettingsCliPage(this.page);
+    await cliPage.waitForLoad();
+    return cliPage;
   }
 
-  get proxyPage(): ProxyTabPage {
-    return new ProxyTabPage(this.page);
+  async openProxy(): Promise<SettingsProxyPage> {
+    await this.proxyTab.click();
+    const proxyPage = new SettingsProxyPage(this.page);
+    await proxyPage.waitForLoad();
+    return proxyPage;
   }
 
-  get preferencesPage(): PreferencesTabPage {
-    return new PreferencesTabPage(this.page);
+  async openPreferences(): Promise<SettingsPreferencesPage> {
+    await this.preferencesTab.click();
+    const preferencesPage = new SettingsPreferencesPage(this.page);
+    await preferencesPage.waitForLoad();
+    return preferencesPage;
   }
 
   getAllTabs(): Locator[] {

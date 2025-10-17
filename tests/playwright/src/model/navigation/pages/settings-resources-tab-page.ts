@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 import { BasePage } from './base-page';
 
@@ -32,9 +32,13 @@ export const resourcesWithCreateButton = Object.values(resources)
   .filter(r => r.hasCreateButton)
   .map(r => r.displayName);
 
-export class ResourcesTabPage extends BasePage {
+export class SettingsResourcesPage extends BasePage {
   constructor(page: Page) {
     super(page);
+  }
+
+  async waitForLoad(): Promise<void> {
+    await expect(this.getResourceRegion(featuredResources[0])).toBeVisible();
   }
 
   getResourceRegion(resourceId: string): Locator {

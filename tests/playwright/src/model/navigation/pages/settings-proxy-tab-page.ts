@@ -28,7 +28,7 @@ export const proxyConfigurations = [
 
 export type ProxyConfigurationOption = (typeof proxyConfigurations)[number]['option'];
 
-export class ProxyTabPage extends BasePage {
+export class SettingsProxyPage extends BasePage {
   readonly proxyConfigDropdown: Locator;
   readonly httpProxyField: Locator;
   readonly httpsProxyField: Locator;
@@ -42,6 +42,10 @@ export class ProxyTabPage extends BasePage {
     this.httpsProxyField = page.locator('#httpsProxy');
     this.noProxyField = page.locator('#noProxy');
     this.proxyUpdateButton = page.getByRole('button', { name: 'Update' });
+  }
+
+  async waitForLoad(): Promise<void> {
+    await expect(this.proxyConfigDropdown).toBeVisible();
   }
 
   getProxyFields(): Locator[] {

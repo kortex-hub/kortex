@@ -36,12 +36,16 @@ export enum PreferenceOption {
 
 export const preferenceOptions = (): PreferenceOption[] => Object.values(PreferenceOption);
 
-export class PreferencesTabPage extends BasePage {
+export class SettingsPreferencesPage extends BasePage {
   readonly searchField: Locator;
 
   constructor(page: Page) {
     super(page);
     this.searchField = page.getByLabel('search preferences');
+  }
+
+  async waitForLoad(): Promise<void> {
+    await expect(this.searchField).toBeVisible();
   }
 
   async searchPreferences(searchTerm: string): Promise<void> {
