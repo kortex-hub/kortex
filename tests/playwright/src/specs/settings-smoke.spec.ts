@@ -28,6 +28,8 @@ let settingsPage: SettingsPage;
 test.beforeEach(async ({ page }) => {
   navigationBar = new NavigationBar(page);
   settingsPage = new SettingsPage(page);
+  // Wait for navigation bar to be ready before clicking
+  await expect(navigationBar.navigationLocator).toBeVisible({ timeout: 30_000 });
   await navigationBar.settingsLink.click();
 });
 
