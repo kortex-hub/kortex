@@ -1,0 +1,24 @@
+{
+  "name": "docling",
+  "displayName": "Docling Chunk Provider",
+  "description": "Registers a Docling chunk provider for RAG",
+  "version": "0.0.1-next",
+  "publisher": "kortex",
+  "license": "Apache-2.0",
+  "engines": {
+    "kortex": "^0.0.1"
+  },
+  "main": "./dist/extension.js",
+  "source": "./src/extension.ts",
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest watch --coverage",
+    "watch": "vite build --watch"
+  },
+  "devDependencies": {
+    "@kortex-app/api": "workspace:*",
+    "vite": "^7.1.2",
+    "vitest": "^3.1.4"
+  }
+}
