@@ -17,6 +17,8 @@
  ***********************************************************************/
 
 import { createGoogleGenerativeAI, type GoogleGenerativeAIProvider } from '@ai-sdk/google';
+import type { Model, Pager } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import type {
   CancellationToken,
   Disposable,
@@ -44,6 +46,8 @@ vi.mock(import('@ai-sdk/google'), () => ({
   createGoogleGenerativeAI: vi.fn(),
 }));
 
+vi.mock(import('@google/genai'));
+
 const GOOGLE_AI_PROVIDER_MOCK: GoogleGenerativeAIProvider = {} as unknown as GoogleGenerativeAIProvider;
 
 const PROVIDER_API_MOCK: typeof ProviderAPI = {
@@ -69,6 +73,42 @@ beforeEach(() => {
 
   vi.mocked(PROVIDER_API_MOCK.createProvider).mockReturnValue(PROVIDER_MOCK as Provider);
   vi.mocked(createGoogleGenerativeAI).mockReturnValue(GOOGLE_AI_PROVIDER_MOCK);
+
+  // Mock GoogleGenAI prototype models.list to return async iterable Pager
+  const mockModels: Model[] = [
+    {
+      name: 'models/gemini-2.5-flash',
+      version: 'Latest',
+      supportedActions: ['generateContent'],
+    } as Model,
+    {
+      name: 'models/gemini-2.5-pro',
+      version: 'Latest',
+      supportedActions: ['generateContent'],
+    } as Model,
+    {
+      name: 'models/gemini-model1',
+      version: '1.0.0',
+      supportedActions: ['generateContent'],
+    } as Model,
+    {
+      name: 'models/gemini-model2',
+      version: 'Latest',
+      supportedActions: ['fooBar'],
+    } as Model,
+  ];
+
+  // Create async iterable mock
+  const mockPager = {
+    async *[Symbol.asyncIterator]() {
+      for (const model of mockModels) {
+        yield model;
+      }
+    },
+  } as unknown as Pager<Model>;
+
+  const mockList = vi.fn().mockResolvedValue(mockPager);
+  vi.mocked(GoogleGenAI).prototype.models = { list: mockList };
 });
 
 test('constructor should not do anything', async () => {
@@ -88,6 +128,13 @@ describe('init', () => {
       name: 'Gemini',
       status: 'unknown',
       id: 'gemini',
+      images: {
+        icon: './icon.png',
+        logo: {
+          dark: './icon.png',
+          light: './icon.png',
+        },
+      },
     });
   });
 
@@ -140,6 +187,11 @@ describe('factory', () => {
       apiKey: 'dummyKey',
     });
 
+    // ensure GoogleGenAI was created for fetching models
+    expect(GoogleGenAI).toHaveBeenCalledWith({
+      apiKey: 'dummyKey',
+    });
+
     // ensure the connection has been registered
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledOnce();
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith({
@@ -149,6 +201,8 @@ describe('factory', () => {
         delete: expect.any(Function),
       },
       sdk: GOOGLE_AI_PROVIDER_MOCK,
+      models: [{ label: 'gemini-2.5-flash' }, { label: 'gemini-2.5-pro' }],
+      credentials: expect.any(Function),
     });
   });
 });
