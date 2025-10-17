@@ -1,6 +1,9 @@
 export interface RagEnvironment {
   name: string;
-  ragConnectionId: string;
+  ragConnection: {
+    name: string;
+    providerId: string;
+  };
   chunkerId: string;
   indexedFiles: string[];
   pendingFiles: string[];

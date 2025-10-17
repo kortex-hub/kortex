@@ -1,4 +1,5 @@
 <script lang="ts">
+import { providerInfos } from '/@/stores/providers';
 import type { RagEnvironment } from '/@api/rag/rag-environment';
 
 interface Props {
@@ -8,7 +9,12 @@ interface Props {
 const { object }: Props = $props();
 
 // Extract database name from connection ID or show the ID
-const databaseName = object.ragConnectionId;
+const ragProvider = $providerInfos
+  .find(provider => provider.id === object.ragConnection.providerId);
+const ragConnection = ragProvider?.ragConnections.find(
+  connection => connection.name === object.ragConnection.name,
+);
+const databaseName = ragConnection?.name ? `${ragConnection.name} (${ragProvider?.name})` : `N/A`;
 </script>
 
 <div class="flex items-center">

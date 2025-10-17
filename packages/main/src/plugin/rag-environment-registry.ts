@@ -22,22 +22,15 @@ import { basename, resolve } from 'node:path';
 
 import { inject, injectable } from 'inversify';
 
-import { RagEnvironment } from './rag-environment.js';
+import { RagEnvironment } from '/@api/rag/rag-environment.js';
 
 import { Directories } from './directories.js';
-import { RagEnvironmentInfo } from '/@api/rag/rag-environment-info.js';
-import { ProviderRegistry } from '/@/plugin/provider-registry.js';
-import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 
 @injectable()
 export class RagEnvironmentRegistry {
   #ragDirectory: string;
 
   constructor(
-    @inject(ProviderRegistry)
-    private providerRegistry: ProviderRegistry,
-    @inject(ChunkProviderRegistry)
-    private chunkProviderRegistry: ChunkProviderRegistry,
     @inject(Directories)
     private directories: Directories,
   ) {
@@ -83,26 +76,22 @@ export class RagEnvironmentRegistry {
     }
   }
 
-  private resolveRagEnvironment(ragEnvironment: RagEnvironment): RagEnvironmentInfo {
-    this.providerRegistry.getProviderFlowConnectionInfo()
-  }
-
   /**
    * Get all RAG environments
    * @returns Array of all RAG environments
    */
-  public async getAllRagEnvironments(): Promise<RagEnvironmentInfo[]> {
+  public async getAllRagEnvironments(): Promise<RagEnvironment[]> {
 
     try {
       const files = await readdir(this.#ragDirectory);
-      const ragEnvironments: RagEnvironmentInfo[] = [];
+      const ragEnvironments: RagEnvironment[] = [];
 
       for (const file of files) {
         if (file.endsWith('.json')) {
           const name = basename(file, '.json');
           const ragEnvironment = await this.getRagEnvironment(name);
           if (ragEnvironment) {
-            ragEnvironments.push(resolve(ragEnvironment));
+            ragEnvironments.push(ragEnvironment);
           }
         }
       }
