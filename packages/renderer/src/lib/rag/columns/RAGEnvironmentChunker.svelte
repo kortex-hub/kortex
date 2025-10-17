@@ -1,5 +1,7 @@
 <script lang="ts">
 import type { RagEnvironment } from '/@api/rag/rag-environment';
+import { chunkProviders } from '/@/stores/chunk-providers';
+import { getChunkProviderName } from '/@/lib/rag/rag-environment-utils.svelte';
 
 interface Props {
   object: RagEnvironment;
@@ -8,7 +10,7 @@ interface Props {
 const { object }: Props = $props();
 
 // Extract chunker name from ID or show the ID
-const chunkerName = object.chunkerId;
+const chunkerName = getChunkProviderName($chunkProviders, object);
 </script>
 
 <div class="flex items-center">

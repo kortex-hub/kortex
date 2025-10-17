@@ -22,6 +22,8 @@ import type {
 } from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
+import { ChunkProviderInfo } from '/@api/rag/chunk-provider-info.js';
+
 import { ApiSenderType } from './api.js';
 
 @injectable()
@@ -31,7 +33,7 @@ export class ChunkProviderRegistry {
   constructor(@inject(ApiSenderType) private apiSender: ApiSenderType) {}
 
   registerChunkProvider(extensionId: string, provider: ChunkProvider): Disposable {
-    const id = `${extensionId}-${provider.name}`;
+    const id = `${extensionId}.${provider.name}`;
     this._chunkProviders.set(id, provider);
     this.apiSender.send('chunker-provider-update', { id });
     return {
@@ -42,7 +44,10 @@ export class ChunkProviderRegistry {
     };
   }
 
-  getChunkProviders(): ChunkProvider[] {
-    return [...this._chunkProviders.values()];
+  getChunkProviders(): ChunkProviderInfo[] {
+    return Array.from(this._chunkProviders.entries().map(entry => ({
+      id: entry[0],
+      name: entry[1].name,
+    })));
   }
 }

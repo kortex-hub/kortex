@@ -6,6 +6,9 @@ import { ragEnvironments } from '/@/stores/rag-environments';
 import RAGIcon from '../images/RAGIcon.svelte';
 import RAGFilePath from './columns/RAGFilePath.svelte';
 import RAGFileStatus from './columns/RAGFileStatus.svelte';
+import { getChunkProviderName, getDatabaseName } from '/@/lib/rag/rag-environment-utils.svelte';
+import { providerInfos } from '/@/stores/providers';
+import { chunkProviders } from '/@/stores/chunk-providers';
 
 interface Props {
   name: string;
@@ -54,6 +57,9 @@ const row = new TableRow<FileWithStatus>({
 function key(file: FileWithStatus): string {
   return file.path;
 }
+
+const databaseName = $derived(getDatabaseName($providerInfos, ragEnvironment));
+const chunkProviderName = $derived(getChunkProviderName($chunkProviders, ragEnvironment));
 </script>
 
 {#if ragEnvironment}
@@ -66,7 +72,7 @@ function key(file: FileWithStatus): string {
             <div class="flex flex-col">
               <div class="text-lg font-semibold text-[var(--pd-content-text)]">{ragEnvironment.name}</div>
               <div class="text-sm text-[var(--pd-content-text-secondary)]">
-                RAG Connection: {ragEnvironment.ragConnectionId} | Chunker: {ragEnvironment.chunkerId}
+                RAG Connection: {databaseName} | Chunker: {chunkProviderName}
               </div>
             </div>
           </div>
