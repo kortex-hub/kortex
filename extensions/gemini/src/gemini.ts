@@ -18,6 +18,7 @@
 import { createHash } from 'node:crypto';
 
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { GoogleGenAI } from '@google/genai';
 import type {
   Disposable,
   Provider,
@@ -141,6 +142,8 @@ export class Gemini implements Disposable {
       await this.removeToken(token);
     };
 
+    const models = await this.getGeminiModels(token);
+
     const connectionDisposable = this.provider.registerInferenceProviderConnection({
       name: this.maskKey(token),
       sdk: google,
@@ -150,14 +153,7 @@ export class Gemini implements Disposable {
       lifecycle: {
         delete: clean.bind(this),
       },
-      models: [
-        {
-          label: 'gemini-2.5-flash',
-        },
-        {
-          label: 'gemini-2.5-pro',
-        },
-      ],
+      models: models,
       credentials(): Record<string, string> {
         return {
           [TOKENS_KEY]: token,
@@ -165,6 +161,19 @@ export class Gemini implements Disposable {
       },
     });
     this.connections.set(tokenHash, connectionDisposable);
+  }
+
+  private async getGeminiModels(token: string): Promise<Array<{ label: string }>> {
+    const ai = new GoogleGenAI({ apiKey: token });
+    const geminiModels = await ai.models.list();
+    const models: Array<{ label: string }> = [];
+    for await (const model of geminiModels) {
+      if (model.version?.includes('Latest') && model.name && model.supportedActions?.includes('generateContent')) {
+        const label = model.name.replace('models/', '');
+        models.push({ label: label });
+      }
+    }
+    return models;
   }
 
   private maskKey(name: string): string {
