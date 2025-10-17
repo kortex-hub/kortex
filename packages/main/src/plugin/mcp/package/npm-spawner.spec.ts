@@ -16,26 +16,18 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-export interface InputResponse {
-  value: string;
-}
+import { expect, test } from 'vitest';
 
-export interface InputWithVariableResponse extends InputResponse {
-  variables: Record<string, InputResponse>;
-}
+import { NPMSpawner } from './npm-spawner.js';
 
-export interface MCPSetupRemoteOptions {
-  type: 'remote';
-  index: number;
-  headers: Record<string, InputWithVariableResponse>;
-}
-
-export interface MCPSetupPackageOptions {
-  type: 'package';
-  index: number;
-  runtimeArguments: Record<number, InputWithVariableResponse>;
-  packageArguments: Record<number, InputWithVariableResponse>;
-  environmentVariables: Record<string, InputWithVariableResponse>;
-}
-
-export type MCPSetupOptions = MCPSetupRemoteOptions | MCPSetupPackageOptions;
+test('enabled', async () => {
+  const spawner = new NPMSpawner({
+    registryType: 'npm',
+    identifier: 'dummy',
+    version: 'fake',
+    runtimeArguments: [],
+    packageArguments: [],
+  });
+  const enabled = await spawner.enabled();
+  expect(enabled).toBeTruthy();
+});
