@@ -1,6 +1,9 @@
 <script lang="ts">
-import { NavPage, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
+import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { Button, NavPage, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 
+import { chunkProviders } from '/@/stores/chunk-providers';
+import { providerInfos } from '/@/stores/providers';
 import { ragEnvironments } from '/@/stores/rag-environments';
 import type { RagEnvironment } from '/@api/rag/rag-environment';
 
@@ -11,6 +14,7 @@ import RAGEnvironmentName from './columns/RAGEnvironmentName.svelte';
 import RAGEnvironmentSources from './columns/RAGEnvironmentSources.svelte';
 import RAGEnvironmentStatus from './columns/RAGEnvironmentStatus.svelte';
 import EmptyRAGEnvironmentScreen from './components/EmptyRAGEnvironmentScreen.svelte';
+import RAGEnvironmentCreateModal from './RAGEnvironmentCreateModal.svelte';
 
 type RAGEnvironmentSelectable = RagEnvironment & { selected: boolean };
 
@@ -53,9 +57,38 @@ const columns = [statusColumn, nameColumn, databaseColumn, chunkerColumn, source
 function key(env: RAGEnvironmentSelectable): string {
   return env.name;
 }
+
+let showCreateModal = $state(false);
+
+function openCreateModal(): void {
+  showCreateModal = true;
+}
+
+function closeCreateModal(): void {
+  showCreateModal = false;
+}
+
+async function handleCreateEnvironment(
+  name: string,
+  ragConnection: { name: string; providerId: string },
+  chunkerId: string,
+): Promise<void> {
+  try {
+    await window.createRagEnvironment(name, ragConnection, chunkerId);
+    closeCreateModal();
+  } catch (error) {
+    console.error('Failed to create RAG environment:', error);
+  }
+}
 </script>
 
 <NavPage searchEnabled={false} title="Knowledge Bases">
+  {#snippet additionalActions()}
+    <Button icon={faPlus} onclick={openCreateModal}>
+      New Knowledge Base
+    </Button>
+  {/snippet}
+
   {#snippet content()}
     <div class="w-full flex justify-center">
       {#if $ragEnvironments.length === 0}
@@ -73,3 +106,12 @@ function key(env: RAGEnvironmentSelectable): string {
     </div>
   {/snippet}
 </NavPage>
+
+{#if showCreateModal}
+  <RAGEnvironmentCreateModal
+    providers={$providerInfos}
+    chunkProviders={$chunkProviders}
+    closeCallback={closeCreateModal}
+    onCreate={handleCreateEnvironment}
+  />
+{/if}

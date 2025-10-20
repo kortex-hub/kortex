@@ -1,6 +1,7 @@
 <script lang="ts">
 import { NavPage, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 
+import { mount } from 'svelte';
 import { ragEnvironments } from '/@/stores/rag-environments';
 
 import RAGIcon from '../images/RAGIcon.svelte';

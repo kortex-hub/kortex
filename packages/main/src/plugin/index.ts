@@ -1724,6 +1724,26 @@ export class PluginSystem {
       return ragEnvironmentRegistry.getAllRagEnvironments();
     });
 
+    this.ipcHandle(
+      'rag-environment-registry:createRagEnvironment',
+      async (
+        _listener,
+        name: string,
+        ragConnection: { name: string; providerId: string },
+        chunkerId: string,
+      ): Promise<void> => {
+        const ragEnvironment: RagEnvironment = {
+          name,
+          ragConnection,
+          chunkerId,
+          indexedFiles: [],
+          pendingFiles: [],
+        };
+        await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
+        this.getWebContentsSender().send('rag-environment-created', ragEnvironment);
+      },
+    );
+
     this.ipcHandle('chunk-provider-registry:getChunkProviders', async (): Promise<ChunkProviderInfo[]> => {
       return chunkProviderRegistry.getChunkProviders();
     });
