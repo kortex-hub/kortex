@@ -18,24 +18,51 @@
 
 import { expect, type Page } from '@playwright/test';
 
-export async function waitForAppReady(page: Page, timeout = 120_000): Promise<void> {
-  await expect(page.locator('main').first()).toBeVisible({ timeout });
-  const initializingScreen = page.locator('main.flex.flex-row.w-screen.h-screen.justify-center');
+const TIMEOUTS = {
+  DEFAULT: 120_000,
+  INITIALIZING_SCREEN: 180_000,
+  WELCOME_PAGE: 30_000,
+} as const;
+
+const SELECTORS = {
+  MAIN_ANY: 'main',
+  MAIN_INITIALIZING: 'main.flex.flex-row.w-screen.h-screen.justify-center',
+  MAIN_APP_CONTAINER: 'main.flex.flex-col.w-screen.h-screen.overflow-hidden',
+  TITLE_BAR: 'header#navbar',
+  WELCOME_PAGE: 'div:has-text("Get started with Kortex")',
+  NAVIGATION: { role: 'navigation' as const, name: 'AppNavigation' },
+} as const;
+
+export async function waitForAppReady(page: Page, timeout = TIMEOUTS.DEFAULT): Promise<void> {
+  await expect(page.locator(SELECTORS.MAIN_ANY).first()).toBeVisible({ timeout });
+  await waitForInitializingScreenToDisappear(page);
+  await expect(page.locator(SELECTORS.MAIN_APP_CONTAINER)).toBeVisible({ timeout });
+  await expect(page.locator(SELECTORS.TITLE_BAR)).toBeVisible({ timeout });
+  await handleWelcomePageIfPresent(page);
+}
+
+export async function waitForNavigationReady(page: Page, timeout = TIMEOUTS.DEFAULT): Promise<void> {
+  await waitForAppReady(page, timeout);
+  await expect(page.getByRole(SELECTORS.NAVIGATION.role, { name: SELECTORS.NAVIGATION.name })).toBeVisible({
+    timeout,
+  });
+}
+
+async function waitForInitializingScreenToDisappear(page: Page): Promise<void> {
+  const initializingScreen = page.locator(SELECTORS.MAIN_INITIALIZING);
   const isInitializing = await initializingScreen.isVisible().catch(() => false);
+
   if (isInitializing) {
-    await expect(initializingScreen).toBeHidden({ timeout: 180_000 });
-  }
-  await expect(page.locator('main.flex.flex-col.w-screen.h-screen.overflow-hidden')).toBeVisible({ timeout });
-  await expect(page.locator('header#navbar')).toBeVisible({ timeout });
-  const welcomePage = page.locator('div:has-text("Get started with Kortex")').first();
-  try {
-    await expect(welcomePage).toBeHidden({ timeout: 30_000 });
-  } catch {
-    // Welcome page not present or already hidden, continue
+    await expect(initializingScreen).toBeHidden({ timeout: TIMEOUTS.INITIALIZING_SCREEN });
   }
 }
 
-export async function waitForNavigationReady(page: Page, timeout = 120_000): Promise<void> {
-  await waitForAppReady(page, timeout);
-  await expect(page.getByRole('navigation', { name: 'AppNavigation' })).toBeVisible({ timeout });
+async function handleWelcomePageIfPresent(page: Page): Promise<void> {
+  const welcomePage = page.locator(SELECTORS.WELCOME_PAGE).first();
+
+  try {
+    await expect(welcomePage).toBeHidden({ timeout: TIMEOUTS.WELCOME_PAGE });
+  } catch {
+    // Welcome page not present or already hidden - this is expected on subsequent runs
+  }
 }
