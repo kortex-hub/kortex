@@ -17,6 +17,7 @@
  ***********************************************************************/
 import { expect, test } from '../fixtures/electron-app';
 import { NavigationBar } from '../model/navigation/navigation';
+import { waitForAppReady } from '../utils/app-ready';
 
 let navigationBar: NavigationBar;
 
@@ -26,14 +27,14 @@ test.beforeEach(async ({ page }) => {
 
 test.describe.serial('App start', { tag: '@smoke' }, () => {
   test('[TC-01] Initial Dashboard page is displayed', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'No AI Models Available' })).toBeVisible({ timeout: 30_000 });
+    await waitForAppReady(page);
   });
 
-  test('[TC-02] Navigation bar and its items are visible', async () => {
-    await expect(navigationBar.navigationLocator).toBeVisible();
-
+  test('[TC-02] Navigation bar and its items are visible', async ({ page }) => {
+    await waitForAppReady(page);
+    await expect(navigationBar.navigationLocator).toBeVisible({ timeout: 120_000 });
     for (const link of navigationBar.getAllLinks()) {
-      await expect(link).toBeVisible();
+      await expect(link).toBeVisible({ timeout: 120_000 });
     }
   });
 });

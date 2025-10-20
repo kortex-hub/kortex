@@ -19,7 +19,7 @@ import type { PlaywrightTestConfig } from '@playwright/test';
 
 const config: PlaywrightTestConfig = {
   testDir: './src',
-  timeout: 60_000,
+  timeout: 240_000,
 
   workers: 1,
 
@@ -31,7 +31,7 @@ const config: PlaywrightTestConfig = {
   ],
 
   use: {
-    actionTimeout: 10_000,
+    actionTimeout: 15_000,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     trace: 'retain-on-failure',

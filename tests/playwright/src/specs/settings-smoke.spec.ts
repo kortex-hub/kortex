@@ -21,6 +21,7 @@ import { SettingsPage } from '../model/navigation/pages/settings-page';
 import { preferenceOptions } from '../model/navigation/pages/settings-preferences-tab-page';
 import { proxyConfigurations } from '../model/navigation/pages/settings-proxy-tab-page';
 import { featuredResources, resourcesWithCreateButton } from '../model/navigation/pages/settings-resources-tab-page';
+import { waitForNavigationReady } from '../utils/app-ready';
 
 let navigationBar: NavigationBar;
 let settingsPage: SettingsPage;
@@ -28,8 +29,7 @@ let settingsPage: SettingsPage;
 test.beforeEach(async ({ page }) => {
   navigationBar = new NavigationBar(page);
   settingsPage = new SettingsPage(page);
-  // Wait for navigation bar to be ready before clicking
-  await expect(navigationBar.navigationLocator).toBeVisible({ timeout: 30_000 });
+  await waitForNavigationReady(page);
   await navigationBar.settingsLink.click();
 });
 
