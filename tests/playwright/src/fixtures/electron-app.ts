@@ -76,6 +76,15 @@ export const test = base.extend<ElectronFixtures>({
       throw error;
     }
     await page.waitForLoadState('load', { timeout: 90_000 });
+    try {
+      await page.waitForSelector('main', { timeout: 30_000, state: 'attached' });
+    } catch (error) {
+      const url = page.url();
+      const isClosed = page.isClosed();
+      console.error('Page fixture failed - main element not found:', { url, isClosed });
+      throw error;
+    }
+
     await use(page);
   },
 });

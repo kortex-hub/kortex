@@ -34,7 +34,15 @@ const SELECTORS = {
 } as const;
 
 export async function waitForAppReady(page: Page, timeout = TIMEOUTS.DEFAULT): Promise<void> {
-  await expect(page.locator(SELECTORS.MAIN_ANY).first()).toBeVisible({ timeout });
+  try {
+    await expect(page.locator(SELECTORS.MAIN_ANY).first()).toBeVisible({ timeout });
+  } catch (error) {
+    const url = page.url();
+    const title = await page.title().catch(() => 'Unable to get title');
+    const html = await page.content().catch(() => 'Unable to get content');
+    console.error('Failed to find main element. Page state:', { url, title, htmlLength: html.length });
+    throw error;
+  }
   await waitForInitializingScreenToDisappear(page);
   await expect(page.locator(SELECTORS.MAIN_APP_CONTAINER)).toBeVisible({ timeout });
   await expect(page.locator(SELECTORS.TITLE_BAR)).toBeVisible({ timeout });
