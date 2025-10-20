@@ -18,12 +18,12 @@
 
 import { expect, type Page } from '@playwright/test';
 
-export async function waitForAppReady(page: Page, timeout = 180_000): Promise<void> {
+export async function waitForAppReady(page: Page, timeout = 120_000): Promise<void> {
   await expect(page.locator('main').first()).toBeVisible({ timeout });
   const initializingScreen = page.locator('main.flex.flex-row.w-screen.h-screen.justify-center');
   const isInitializing = await initializingScreen.isVisible().catch(() => false);
   if (isInitializing) {
-    await expect(initializingScreen).toBeHidden({ timeout: 300_000 });
+    await expect(initializingScreen).toBeHidden({ timeout: 180_000 });
   }
   await expect(page.locator('main.flex.flex-col.w-screen.h-screen.overflow-hidden')).toBeVisible({ timeout });
   await expect(page.locator('header#navbar')).toBeVisible({ timeout });
@@ -35,7 +35,7 @@ export async function waitForAppReady(page: Page, timeout = 180_000): Promise<vo
   }
 }
 
-export async function waitForNavigationReady(page: Page, timeout = 180_000): Promise<void> {
+export async function waitForNavigationReady(page: Page, timeout = 120_000): Promise<void> {
   await waitForAppReady(page, timeout);
   await expect(page.getByRole('navigation', { name: 'AppNavigation' })).toBeVisible({ timeout });
 }

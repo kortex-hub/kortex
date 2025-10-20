@@ -70,12 +70,12 @@ export const test = base.extend<ElectronFixtures>({
   page: async ({ electronApp }, use) => {
     let page: Page;
     try {
-      page = await electronApp.firstWindow({ timeout: 180_000 });
+      page = await electronApp.firstWindow({ timeout: 120_000 });
     } catch (error) {
       console.error('Failed to get first window:', error);
       throw error;
     }
-    await page.waitForLoadState('load', { timeout: 120_000 });
+    await page.waitForLoadState('load', { timeout: 90_000 });
     await use(page);
   },
 });
