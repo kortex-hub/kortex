@@ -478,10 +478,14 @@ export class MCPRegistry {
       .concat(this.suggestedRegistries.map(registry => registry.url));
 
     for (const registryURL of serverUrls) {
-      const serverList: components['schemas']['ServerList'] = await this.listMCPServersFromRegistry(registryURL);
+      try {
+        const serverList: components['schemas']['ServerList'] = await this.listMCPServersFromRegistry(registryURL);
 
-      // now, aggregate the servers from the list ensuring each server has an id
-      serverDetails.push(...serverList.servers.map(({ server }) => this.enhanceServerDetail(server)));
+        // now, aggregate the servers from the list ensuring each server has an id
+        serverDetails.push(...serverList.servers.map(({ server }) => this.enhanceServerDetail(server)));
+      } catch (error: unknown) {
+        console.error(`Failed fetch for registry ${registryURL}`);
+      }
     }
     return serverDetails;
   }
