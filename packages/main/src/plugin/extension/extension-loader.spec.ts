@@ -2665,7 +2665,7 @@ test('ExtensionLoader async dispose should stop all extensions', async () => {
   expect(activateMock).toHaveBeenCalledOnce();
   expect(deactivateMock).not.toHaveBeenCalled();
 
-  await extensionLoader[Symbol.asyncDispose]();
+  await extensionLoader.asyncDispose();
 
   expect(deactivateMock).toHaveBeenCalledOnce();
 });

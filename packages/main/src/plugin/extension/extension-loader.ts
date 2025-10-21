@@ -32,6 +32,7 @@ import {
 import { MenuRegistry } from '/@/plugin/menu-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
 import { WebviewRegistry } from '/@/plugin/webview/webview-registry.js';
+import type { IAsyncDisposable } from '/@api/async-disposable.js';
 import { type IConfigurationNode, IConfigurationRegistry } from '/@api/configuration/models.js';
 import type { Event } from '/@api/event.js';
 import type { ExtensionError, ExtensionInfo, ExtensionUpdateInfo } from '/@api/extension-info.js';
@@ -117,7 +118,7 @@ export interface AnalyzedExtensionWithApi extends AnalyzedExtension {
  * Handle the loading of an extension
  */
 @injectable()
-export class ExtensionLoader implements AsyncDisposable {
+export class ExtensionLoader implements IAsyncDisposable {
   private moduleLoader: ModuleLoader;
 
   protected activatedExtensions = new Map<string, ActivatedExtension>();
@@ -226,7 +227,7 @@ export class ExtensionLoader implements AsyncDisposable {
   }
 
   @preDestroy()
-  async [Symbol.asyncDispose](): Promise<void> {
+  async asyncDispose(): Promise<void> {
     await this.stopAllExtensions();
 
     // clear maps
