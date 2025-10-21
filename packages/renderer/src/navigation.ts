@@ -150,7 +150,7 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
       router.goto(`/preferences/container-connection/edit/${request.parameters.provider}/${request.parameters.name}`);
       break;
     case NavigationPage.MCP_DETAILS:
-      router.goto(`/mcps/${request.parameters.id}/summary`);
+      router.goto(`/mcps/${encodeURIComponent(request.parameters.id)}/summary`);
       break;
   }
 };
