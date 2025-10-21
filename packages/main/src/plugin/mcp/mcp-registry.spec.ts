@@ -86,7 +86,10 @@ test('listMCPServersFromRegistries', async () => {
   const mcpServersFromRegistries = await mcpRegistry.listMCPServersFromRegistries();
   const serverNames = mcpServersFromRegistries.map(server => server.name);
 
-  expect(consoleErrorSpy).toHaveBeenCalledWith('Failed fetch for registry https://registry2.io');
+  expect(consoleErrorSpy).toHaveBeenCalledWith(
+    'Failed fetch for registry https://registry2.io',
+    new Error('Failed to fetch MCP servers from https://registry2.io: undefined'),
+  );
   expect(mcpServersFromRegistries).toHaveLength(3);
   expect(serverNames).toEqual(
     expect.arrayContaining(['Registry 1 server 1', 'Registry 3 server 1', 'Registry 3 server 2']),
