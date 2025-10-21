@@ -18,6 +18,8 @@
 import type { components } from '@kortex-hub/mcp-registry-types';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
+import type { IAsyncDisposable } from '/@api/async-disposable.js';
+
 export type ResolvedServerPackage = Omit<
   components['schemas']['Package'],
   'packageArguments' | 'runtimeArguments' | 'environmentVariables'
@@ -27,10 +29,10 @@ export type ResolvedServerPackage = Omit<
   environmentVariables?: Record<string, string>;
 };
 
-export abstract class MCPSpawner<T extends string = string> implements AsyncDisposable {
+export abstract class MCPSpawner<T extends string = string> implements IAsyncDisposable {
   constructor(protected readonly pack: ResolvedServerPackage & { registryType: T }) {}
 
   abstract spawn(): Promise<Transport>;
-  abstract [Symbol.asyncDispose](): PromiseLike<void>;
+  abstract asyncDispose(): Promise<void>;
   abstract enabled(): Promise<boolean>;
 }

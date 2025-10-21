@@ -17,10 +17,12 @@
  ***********************************************************************/
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
+import type { IAsyncDisposable } from '/@api/async-disposable.js';
+
 import type { MCPSpawner, ResolvedServerPackage } from './mcp-spawner.js';
 import { NPMSpawner } from './npm-spawner.js';
 
-export class MCPPackage implements AsyncDisposable {
+export class MCPPackage implements IAsyncDisposable {
   readonly #spawner: MCPSpawner;
 
   constructor(pack: ResolvedServerPackage) {
@@ -48,7 +50,7 @@ export class MCPPackage implements AsyncDisposable {
     return this.#spawner.enabled();
   }
 
-  [Symbol.asyncDispose](): PromiseLike<void> {
-    return this.#spawner[Symbol.asyncDispose]();
+  asyncDispose(): Promise<void> {
+    return this.#spawner.asyncDispose();
   }
 }

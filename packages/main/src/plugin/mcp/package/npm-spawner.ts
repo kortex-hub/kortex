@@ -20,12 +20,14 @@ import { exec } from 'node:child_process';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
+import type { IAsyncDisposable } from '/@api/async-disposable.js';
+
 import { MCPSpawner } from './mcp-spawner.js';
 
 const NPX_COMMAND = 'npx';
 
 export class NPMSpawner extends MCPSpawner<'npm'> {
-  #disposables: Array<AsyncDisposable> = [];
+  #disposables: Array<IAsyncDisposable> = [];
 
   async spawn(): Promise<Transport> {
     if (!this.pack.identifier) throw new Error('missing identifier in MCP Local Server configuration');
@@ -44,7 +46,7 @@ export class NPMSpawner extends MCPSpawner<'npm'> {
       env: this.pack.environmentVariables,
     });
     this.#disposables.push({
-      [Symbol.asyncDispose]: () => {
+      asyncDispose: (): Promise<void> => {
         return transport.close();
       },
     });
@@ -66,7 +68,7 @@ export class NPMSpawner extends MCPSpawner<'npm'> {
     return promise;
   }
 
-  async [Symbol.asyncDispose](): Promise<void> {
-    await Promise.allSettled(this.#disposables.map(disposable => disposable[Symbol.asyncDispose]()));
+  async asyncDispose(): Promise<void> {
+    await Promise.allSettled(this.#disposables.map(disposable => disposable.asyncDispose()));
   }
 }

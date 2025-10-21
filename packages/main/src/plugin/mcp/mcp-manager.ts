@@ -22,6 +22,7 @@ import { experimental_createMCPClient } from 'ai';
 import { inject, injectable, preDestroy } from 'inversify';
 
 import { MCPExchanges, MCPMessageExchange } from '/@/plugin/mcp/mcp-exchanges.js';
+import { IAsyncDisposable } from '/@api/async-disposable.js';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info.js';
 
 import { ApiSenderType } from '../api.js';
@@ -32,7 +33,7 @@ import { ApiSenderType } from '../api.js';
 type ExtractedMCPClient = Awaited<ReturnType<typeof experimental_createMCPClient>>;
 
 @injectable()
-export class MCPManager implements AsyncDisposable {
+export class MCPManager implements IAsyncDisposable {
   #client: Map<string, ExtractedMCPClient> = new Map<string, ExtractedMCPClient>();
 
   #mcps: MCPRemoteServerInfo[] = [];
@@ -46,7 +47,7 @@ export class MCPManager implements AsyncDisposable {
    * Cleanup all clients
    */
   @preDestroy()
-  async [Symbol.asyncDispose](): Promise<void> {
+  async asyncDispose(): Promise<void> {
     await Promise.all(Array.from(this.#client.values().map(({ close }) => close())));
   }
 
