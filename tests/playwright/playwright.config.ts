@@ -24,7 +24,7 @@ const config: PlaywrightTestConfig = {
   workers: 1,
 
   reporter: [
-    ['html', { outputFolder: './output/tests' }],
+    ['html', { outputFolder: './output/html-report' }],
     ['json', { outputFile: './output/test-results.json' }],
     ['junit', { outputFile: './output/junit-results.xml' }],
     ['list'],
@@ -37,6 +37,8 @@ const config: PlaywrightTestConfig = {
     trace: 'retain-on-failure',
   },
 
+  preserveOutput: 'always',
+
   projects: [
     {
       name: 'Electron',
@@ -44,7 +46,7 @@ const config: PlaywrightTestConfig = {
     },
   ],
 
-  outputDir: './output/tests',
+  outputDir: './output/test-results',
 };
 
 export default config;

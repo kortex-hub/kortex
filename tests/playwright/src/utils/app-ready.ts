@@ -69,8 +69,13 @@ async function handleWelcomePageIfPresent(page: Page): Promise<void> {
   const welcomePage = page.locator(SELECTORS.WELCOME_PAGE).first();
 
   try {
-    await expect(welcomePage).toBeHidden({ timeout: TIMEOUTS.WELCOME_PAGE });
+    const isVisible = await welcomePage.isVisible({ timeout: 5_000 });
+    if (isVisible) {
+      const skipButton = page.getByRole('button', { name: 'Skip' });
+      await skipButton.click();
+      await expect(welcomePage).toBeHidden({ timeout: TIMEOUTS.WELCOME_PAGE });
+    }
   } catch {
-    // Welcome page not present or already hidden - this is expected on subsequent runs
+    // Welcome page not present or already dismissed - expected on subsequent runs
   }
 }

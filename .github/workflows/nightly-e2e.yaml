@@ -99,8 +99,8 @@ jobs:
         if: always()
         with:
           name: results-e2e-${{ matrix.os }}-${{ matrix.mode }}
-          path: |
-            tests/**/output/*
+          path: tests/playwright/output/**
+          retention-days: 30
 
   macos-e2e-tests:
     name: ${{ matrix.os }} - ${{ matrix.mode }} e2e tests
@@ -168,5 +168,5 @@ jobs:
         if: always()
         with:
           name: results-e2e-${{ matrix.os }}-${{ matrix.mode }}
-          path: |
-            tests/**/output/*
+          path: tests/playwright/output/**
+          retention-days: 30

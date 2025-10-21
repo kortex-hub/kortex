@@ -20,8 +20,30 @@ import { fileURLToPath } from 'node:url';
 
 import { _electron as electron, type ElectronApplication, type Page, test as base } from '@playwright/test';
 
+import { waitForAppReady } from '../utils/app-ready';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+const TIMEOUTS = {
+  FIRST_WINDOW: 120_000,
+  PAGE_LOAD: 90_000,
+  WINDOW_EVENT: 120_000,
+  NON_DEVTOOLS_WINDOW: 60_000,
+} as const;
+
+async function getDevModeWindow(electronApp: ElectronApplication): Promise<Page> {
+  await electronApp.waitForEvent('window', { timeout: TIMEOUTS.WINDOW_EVENT });
+  const windows = electronApp.windows();
+  const appWindow = windows.find(w => !w.url().startsWith('devtools://'));
+  return (
+    appWindow ??
+    (await electronApp.waitForEvent('window', {
+      timeout: TIMEOUTS.NON_DEVTOOLS_WINDOW,
+      predicate: page => !page.url().startsWith('devtools://'),
+    }))
+  );
+}
 
 export interface ElectronFixtures {
   electronApp: ElectronApplication;
@@ -61,30 +83,20 @@ export const test = base.extend<ElectronFixtures>({
         };
 
     const electronApp = await electron.launch(launchConfig);
-
     await use(electronApp);
-
     await electronApp.close();
   },
 
   page: async ({ electronApp }, use) => {
-    let page: Page;
-    try {
-      page = await electronApp.firstWindow({ timeout: 120_000 });
-    } catch (error) {
-      console.error('Failed to get first window:', error);
-      throw error;
-    }
-    await page.waitForLoadState('load', { timeout: 90_000 });
-    try {
-      await page.waitForSelector('main', { timeout: 30_000, state: 'attached' });
-    } catch (error) {
-      const url = page.url();
-      const isClosed = page.isClosed();
-      console.error('Page fixture failed - main element not found:', { url, isClosed });
-      throw error;
-    }
-
+    const isProductionMode = !!process.env.KORTEX_BINARY;
+    const page = isProductionMode
+      ? await electronApp.firstWindow({ timeout: TIMEOUTS.FIRST_WINDOW })
+      : await getDevModeWindow(electronApp).catch(async (error: unknown) => {
+          console.error('Failed to get dev window, falling back to firstWindow:', error);
+          return electronApp.firstWindow();
+        });
+    await page.waitForLoadState('load', { timeout: TIMEOUTS.PAGE_LOAD });
+    await waitForAppReady(page);
     await use(page);
   },
 });
