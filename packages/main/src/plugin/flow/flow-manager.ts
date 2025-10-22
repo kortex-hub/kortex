@@ -18,7 +18,7 @@
 import type { Disposable, Flow, FlowProviderConnection, Logger } from '@kortex-app/api';
 import { inject, injectable, preDestroy } from 'inversify';
 
-import { ApiSenderType } from '/@/plugin/api.js';
+import { ApiSenderType, IPCHandle } from '/@/plugin/api.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { FlowExecuteInfo } from '/@api/flow-execute-info.js';
 import type { FlowInfo } from '/@api/flow-info.js';
@@ -64,6 +64,8 @@ export class FlowManager implements Disposable {
     private apiSender: ApiSenderType,
     @inject(TaskManager)
     private taskManager: TaskManager,
+    @inject(IPCHandle)
+    private readonly ipcHandle: IPCHandle,
   ) {}
 
   /**
@@ -198,6 +200,42 @@ export class FlowManager implements Disposable {
   }
 
   init(): void {
+    this.ipcHandle('flows:list', async (_listener): Promise<Array<FlowInfo>> => {
+      return this.all();
+    });
+
+    this.ipcHandle('flows:listExecute', async (_listener): Promise<Array<FlowExecuteInfo>> => {
+      return this.listExecutions();
+    });
+
+    this.ipcHandle('flows:getLogCurrent', async (_listener): Promise<string> => {
+      return this.getLogCurrent();
+    });
+    this.ipcHandle(
+      'flows:dispatchLog',
+      async (_listener, providerId: string, connectionName: string, flowId: string, taskId: string): Promise<void> => {
+        return this.dispatchLog(providerId, connectionName, flowId, taskId);
+      },
+    );
+    this.ipcHandle(
+      'flows:execute',
+      async (
+        _listener,
+        flow: {
+          providerId: string;
+          connectionName: string;
+          flowId: string;
+        },
+      ): Promise<string> => {
+        // Get the flow provider to use
+        return this.execute(flow.providerId, flow.connectionName, flow.flowId);
+      },
+    );
+
+    this.ipcHandle('flows:refresh', async (): Promise<void> => {
+      return this.refresh();
+    });
+
     // register listener for new Flow connections
     this.provider.onDidRegisterFlowConnection(({ providerId, connection }) => {
       this.register(providerId, connection)
