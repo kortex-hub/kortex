@@ -26,11 +26,11 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe.serial('App start', { tag: '@smoke' }, () => {
-  test('[TC-01] Initial Dashboard page is displayed', async ({ page }) => {
+  test('[APP-01] Initial Dashboard page is displayed', async ({ page }) => {
     await waitForAppReady(page);
   });
 
-  test('[TC-02] Navigation bar and its items are visible', async ({ page }) => {
+  test('[APP-02] Navigation bar and its items are visible', async ({ page }) => {
     await waitForAppReady(page);
     await expect(navigationBar.navigationLocator).toBeVisible({ timeout: 120_000 });
     for (const link of navigationBar.getAllLinks()) {

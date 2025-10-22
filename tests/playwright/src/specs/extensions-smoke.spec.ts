@@ -37,14 +37,14 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe('Extensions page navigation', { tag: '@smoke' }, () => {
-  test('[TC-01] Extension navigation tabs are accessible', async () => {
+  test('[EXT-01] Extension navigation tabs are accessible', async () => {
     for (const tab of extensionsPage.getAllTabs()) {
       await expect(tab).toBeVisible();
       await expect(tab).toBeEnabled();
     }
   });
 
-  test('[TC-02] Search functionality filters extensions correctly', async () => {
+  test('[EXT-02] Search functionality filters extensions correctly', async () => {
     await expect(extensionsPage.searchField).toBeVisible();
     await expect(extensionsPage.searchField).toBeEnabled();
     for (const extension of builtInExtensions) {
@@ -55,7 +55,7 @@ test.describe('Extensions page navigation', { tag: '@smoke' }, () => {
     }
   });
 
-  test('[TC-03] Built-in extensions lifecycle and controls validation', async () => {
+  test('[EXT-03] Built-in extensions lifecycle and controls validation', async () => {
     const installedPage = await extensionsPage.openInstalled();
     for (const extension of builtInExtensions) {
       await expect(installedPage.getExtension(extension.locator)).toBeVisible();

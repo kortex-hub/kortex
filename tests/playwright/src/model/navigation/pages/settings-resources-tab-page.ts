@@ -19,6 +19,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
 import { BasePage } from './base-page';
+import { SettingsCreateGeminiPage } from './settings-create-gemini-page';
 
 export const resources = {
   openshiftai: { displayName: 'OpenShift AI', hasCreateButton: true },
@@ -47,5 +48,31 @@ export class SettingsResourcesPage extends BasePage {
 
   getResourceCreateButton(displayName: string): Locator {
     return this.page.getByRole('button', { name: `Create new ${displayName}` });
+  }
+
+  async openCreateGeminiPage(): Promise<SettingsCreateGeminiPage> {
+    await this.getResourceCreateButton(resources.gemini.displayName).click();
+    const createGeminiPage = new SettingsCreateGeminiPage(this.page);
+    await createGeminiPage.waitForLoad();
+    return createGeminiPage;
+  }
+
+  getCreatedResourcesFor(resourceId: keyof typeof resources): Locator {
+    const resourceRegion = this.getResourceRegion(resourceId);
+    return resourceRegion.getByRole('region').filter({ hasText: '(Inference)' });
+  }
+
+  getCreatedResourceFor(resourceId: keyof typeof resources): Locator {
+    return this.getCreatedResourcesFor(resourceId).first();
+  }
+
+  getDeleteButtonForCreatedResource(resource: Locator): Locator {
+    return resource.getByRole('button', { name: 'Delete' });
+  }
+
+  async deleteCreatedResourceFor(resourceId: keyof typeof resources): Promise<void> {
+    const resource = this.getCreatedResourceFor(resourceId);
+    const deleteButton = this.getDeleteButtonForCreatedResource(resource);
+    await deleteButton.click();
   }
 }

@@ -34,13 +34,13 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe('Settings page navigation', { tag: '@smoke' }, () => {
-  test('[TC-01] All settings tabs are visible', async () => {
+  test('[SET-01] All settings tabs are visible', async () => {
     for (const tab of settingsPage.getAllTabs()) {
       await expect(tab).toBeVisible();
     }
   });
 
-  test('[TC-02] Resources tab shows all providers with create buttons', async () => {
+  test('[SET-02] Resources tab shows all providers with create buttons', async () => {
     const resourcesPage = await settingsPage.openResources();
     for (const resourceId of featuredResources) {
       await expect(resourcesPage.getResourceRegion(resourceId)).toBeVisible();
@@ -52,13 +52,13 @@ test.describe('Settings page navigation', { tag: '@smoke' }, () => {
     }
   });
 
-  test('[TC-03] CLI tab shows goose CLI tool', async () => {
+  test('[SET-03] CLI tab shows goose CLI tool', async () => {
     const cliPage = await settingsPage.openCli();
     await expect(cliPage.toolName).toBeVisible();
     await expect(cliPage.toolName).toHaveText('goose');
   });
 
-  test('[TC-04] Proxy tab configurations', async () => {
+  test('[SET-04] Proxy tab configurations', async () => {
     const proxyPage = await settingsPage.openProxy();
     await proxyPage.verifyProxyConfigurationOptions();
     for (const field of proxyPage.getProxyFields()) {
@@ -69,19 +69,40 @@ test.describe('Settings page navigation', { tag: '@smoke' }, () => {
     }
   });
 
-  test('[TC-05] Preferences submenu items are visible and can be interacted with', async () => {
+  test('[SET-05] Preferences submenu items are visible and can be interacted with', async () => {
     const preferencesPage = await settingsPage.openPreferences();
     for (const option of preferenceOptions()) {
       await preferencesPage.selectPreference(option);
     }
   });
 
-  test('[TC-06] Preferences search filters options correctly', async () => {
+  test('[SET-06] Preferences search filters options correctly', async () => {
     const preferencesPage = await settingsPage.openPreferences();
     for (const option of preferenceOptions()) {
       await preferencesPage.searchPreferences(option);
       await expect(preferencesPage.getPreferenceContent(option)).toBeVisible();
       await preferencesPage.clearSearch();
     }
+  });
+
+  test('[SET-07] Create a new Gemini resource', async () => {
+    const resourceId = 'gemini';
+    if (process.env.CI) {
+      test.skip(true, 'Skipping Gemini resource creation test on CI');
+      return;
+    }
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    if (!geminiApiKey) {
+      test.skip(true, 'GEMINI_API_KEY environment variable is not set');
+      return;
+    }
+    const resourcesPage = await settingsPage.openResources();
+    const createGeminiPage = await resourcesPage.openCreateGeminiPage();
+    await createGeminiPage.createAndGoBack(geminiApiKey);
+    await resourcesPage.waitForLoad();
+    const geminiResource = resourcesPage.getCreatedResourceFor(resourceId);
+    await expect(geminiResource).toBeVisible({ timeout: 5_000 });
+    await resourcesPage.deleteCreatedResourceFor(resourceId);
+    await expect(geminiResource).not.toBeVisible();
   });
 });
