@@ -24,6 +24,7 @@ import type {
   CliToolInstallationSource,
   Disposable,
   env as EnvAPI,
+  FlowGenerateCommandLineResult,
   Logger,
   process as ProcessAPI,
 } from '@kortex-app/api';
@@ -82,13 +83,26 @@ export class GooseCLI implements Disposable {
     return !!this.cli?.version;
   }
 
-  async run(flowPath: string, logger: Logger, options: { path: string; env?: Record<string, string> }): Promise<void> {
+  generateCommandLine(
+    flowPath: string,
+    options: { path: string; env?: Record<string, string> },
+  ): FlowGenerateCommandLineResult {
     if (!this.cli?.path) throw new Error('goose not installed');
+    return {
+      command: this.cli.path,
+      args: ['run', '--recipe', flowPath],
+      env: { GOOSE_RECIPE_PATH: options.path, ...options.env },
+    };
+  }
+
+  async run(flowPath: string, logger: Logger, options: { path: string; env?: Record<string, string> }): Promise<void> {
     const deferred = Promise.withResolvers<void>();
 
+    const commandLine = this.generateCommandLine(flowPath, options);
+
     // run goose flow execute <flowId> --watch
-    const subprocess = spawn(this.cli?.path, ['run', '--recipe', flowPath], {
-      env: { GOOSE_RECIPE_PATH: options.path, ...options.env },
+    const subprocess = spawn(commandLine.command, commandLine.args, {
+      env: commandLine.env,
     });
 
     subprocess.stdout.on('data', data => {
