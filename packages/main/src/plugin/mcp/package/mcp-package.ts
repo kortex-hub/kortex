@@ -46,10 +46,6 @@ export class MCPPackage implements IAsyncDisposable {
     return this.#spawner.spawn();
   }
 
-  enabled(): Promise<boolean> {
-    return this.#spawner.enabled();
-  }
-
   asyncDispose(): Promise<void> {
     return this.#spawner.asyncDispose();
   }

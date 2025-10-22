@@ -34,5 +34,4 @@ export abstract class MCPSpawner<T extends string = string> implements IAsyncDis
 
   abstract spawn(): Promise<Transport>;
   abstract asyncDispose(): Promise<void>;
-  abstract enabled(): Promise<boolean>;
 }

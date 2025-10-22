@@ -15,8 +15,6 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { exec } from 'node:child_process';
-
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
@@ -51,21 +49,6 @@ export class NPMSpawner extends MCPSpawner<'npm'> {
       },
     });
     return transport;
-  }
-
-  async enabled(): Promise<boolean> {
-    const { promise, resolve } = Promise.withResolvers<boolean>();
-
-    // eslint-disable-next-line sonarjs/os-command
-    exec(`${NPX_COMMAND} --version`, error => {
-      if (!error) {
-        resolve(true);
-      } else {
-        resolve(false);
-      }
-    });
-
-    return promise;
   }
 
   async asyncDispose(): Promise<void> {

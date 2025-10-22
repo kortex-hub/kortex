@@ -216,11 +216,6 @@ export class MCPRegistry {
             environmentVariables: config.environmentVariables,
           });
 
-          const isEnabled = await spawner.enabled();
-          if (!isEnabled) {
-            console.warn('cannot start MCP package, it is not enabled');
-            continue;
-          }
           const transport = await spawner.spawn();
           await this.mcpManager.registerMCPClient(
             INTERNAL_PROVIDER_ID,
@@ -423,10 +418,6 @@ export class MCPRegistry {
           runtimeArguments: config.runtimeArguments,
           environmentVariables: config.environmentVariables,
         });
-        const isEnabled = await spawner.enabled();
-        if (!isEnabled) {
-          throw new Error('cannot start MCP package, it is not enabled');
-        }
         transport = await spawner.spawn();
         break;
       }
