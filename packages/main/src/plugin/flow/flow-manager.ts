@@ -211,12 +211,14 @@ export class FlowManager implements Disposable {
     this.ipcHandle('flows:getLogCurrent', async (_listener): Promise<string> => {
       return this.getLogCurrent();
     });
+
     this.ipcHandle(
       'flows:dispatchLog',
       async (_listener, providerId: string, connectionName: string, flowId: string, taskId: string): Promise<void> => {
         return this.dispatchLog(providerId, connectionName, flowId, taskId);
       },
     );
+
     this.ipcHandle(
       'flows:execute',
       async (
