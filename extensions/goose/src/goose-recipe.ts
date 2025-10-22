@@ -22,6 +22,8 @@ import { basename, dirname, join } from 'node:path';
 import type {
   Disposable,
   Flow,
+  FlowGenerateCommandLineOptions,
+  FlowGenerateCommandLineResult,
   FlowGenerateKubernetesOptions,
   FlowGenerateKubernetesResult,
   FlowGenerateOptions,
@@ -124,6 +126,11 @@ export class GooseRecipe implements Disposable {
     await this.gooseCLI.run(flowPath, logger, { path: this.getBasePath(), env });
   }
 
+  protected async generateCommandLine(options: FlowGenerateCommandLineOptions): Promise<FlowGenerateCommandLineResult> {
+    const { env, flowPath } = await this.getFlowInfos(options.flowId);
+    return this.gooseCLI.generateCommandLine(flowPath, { path: this.getBasePath(), env });
+  }
+
   protected async generate(options: FlowGenerateOptions): Promise<string> {
     if (!(options.model.providerId in gooseProviderMap)) {
       throw Error(`[goose-recipe:generate]: cannot find goose provider for ${options.model.providerId}`);
@@ -199,6 +206,7 @@ export class GooseRecipe implements Disposable {
         delete: this.delete.bind(this),
         execute: this.execute.bind(this),
         generate: this.generate.bind(this),
+        generateCommandLine: this.generateCommandLine.bind(this),
         generateKubernetesYAML: this.deployKubernetes.bind(this),
       },
       lifecycle: {},

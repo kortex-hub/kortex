@@ -418,6 +418,10 @@ declare module '@kortex-app/api' {
     namespace: string;
   }
 
+  export interface FlowGenerateCommandLineOptions {
+    flowId: string;
+  }
+
   export interface FlowGenerateCommandLineResult {
     command: string;
     args: string[];
@@ -471,6 +475,12 @@ declare module '@kortex-app/api' {
        * @experimental expect change
        */
       generate(options?: FlowGenerateOptions): Promise<string>;
+
+      /**
+       * @experimental expect change
+       */
+      generateCommandLine(options: FlowGenerateCommandLineOptions): Promise<FlowGenerateCommandLineResult>;
+
       /**
        * @experimental expect change
        */
