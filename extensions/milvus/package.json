@@ -1,0 +1,38 @@
+{
+  "name": "milvus",
+  "displayName": "Milvus RAG Provider",
+  "description": "Provides Milvus vector database for RAG",
+  "version": "0.0.1-next",
+  "publisher": "kortex",
+  "license": "Apache-2.0",
+  "engines": {
+    "kortex": "^0.0.1"
+  },
+  "main": "./dist/extension.js",
+  "source": "./src/extension.ts",
+  "contributes": {
+    "configuration": {
+      "title": "Milvus",
+      "properties": {
+        "milvus.name": {
+          "type": "string",
+          "default": "",
+          "description": "Name for the Milvus connection",
+          "scope": "RagProviderConnectionFactory"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest watch --coverage",
+    "watch": "vite build --watch"
+  },
+  "devDependencies": {
+    "@kortex-app/api": "workspace:*",
+    "@types/dockerode": "^3.3.44",
+    "vite": "^7.1.2",
+    "vitest": "^3.1.4"
+  }
+}

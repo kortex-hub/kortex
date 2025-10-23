@@ -667,12 +667,16 @@ declare module '@kortex-app/api' {
 
   export type MCPServerConfig = MCPRemoteServerConfig | MCPPackageServerConfig;
 
+  export type MCPServerDetail = components['schemas']['ServerDetail'];
+
+  export type MCPServer = {
+    server: MCPServerDetail;
+    config: MCPServerConfig;
+  }
+
   export type RagProviderConnection = {
     name: string;
-    mcpServer: {
-      server: components['schemas']['ServerDetail'];
-      config: MCPServerConfig;
-    };
+    mcpServer: MCPServer;
     credentials(): Record<string, string>;
     lifecycle?: ProviderConnectionLifecycle;
     status(): ProviderConnectionStatus;
