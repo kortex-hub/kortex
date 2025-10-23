@@ -19,6 +19,8 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
 import { BasePage } from './base-page';
+import { McpEditRegistriesTabPage } from './mcp-edit-registries-tab-page';
+import { McpInstallTabPage } from './mcp-install-tab-page';
 
 export class McpServersPage extends BasePage {
   readonly searchMcpServersField: Locator;
@@ -36,5 +38,21 @@ export class McpServersPage extends BasePage {
 
   async waitForLoad(): Promise<void> {
     await expect(this.searchMcpServersField).toBeVisible();
+  }
+
+  async openEditRegistriesTab(): Promise<McpEditRegistriesTabPage> {
+    await expect(this.editRegistriesTabButton).toBeEnabled();
+    await this.editRegistriesTabButton.click();
+    const editRegistriesTabPage = new McpEditRegistriesTabPage(this.page);
+    await editRegistriesTabPage.waitForLoad();
+    return editRegistriesTabPage;
+  }
+
+  async openInstallTab(): Promise<McpInstallTabPage> {
+    await expect(this.installTabButton).toBeEnabled();
+    await this.installTabButton.click();
+    const installTabPage = new McpInstallTabPage(this.page);
+    await installTabPage.waitForLoad();
+    return installTabPage;
   }
 }

@@ -18,9 +18,9 @@
 
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import { McpServersPage } from './mcp-servers-page';
+import { BasePage } from './base-page';
 
-export class McpInstallTabPage extends McpServersPage {
+export class McpInstallTabPage extends BasePage {
   readonly availableMcpServersTable: Locator;
 
   constructor(page: Page) {

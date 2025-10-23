@@ -18,9 +18,9 @@
 
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import { McpServersPage } from './mcp-servers-page';
+import { BasePage } from './base-page';
 
-export class McpEditRegistriesTabPage extends McpServersPage {
+export class McpEditRegistriesTabPage extends BasePage {
   readonly addMcpRegistryButton: Locator;
   readonly registriesTable: Locator;
   readonly addMcpRegistryDialog: Locator;
@@ -30,6 +30,10 @@ export class McpEditRegistriesTabPage extends McpServersPage {
     this.addMcpRegistryButton = page.getByRole('button', { name: 'Add MCP registry' });
     this.registriesTable = page.getByRole('table', { name: 'Registries' });
     this.addMcpRegistryDialog = page.getByRole('dialog', { name: 'Add MCP Registry' });
+  }
+
+  public async waitForLoad(): Promise<void> {
+    await expect(this.registriesTable).toBeVisible();
   }
 
   public async getRegistryByUrl(registryUrl: string): Promise<Locator> {

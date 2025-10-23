@@ -16,9 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Page } from '@playwright/test';
-import { McpEditRegistriesTabPage } from 'src/model/navigation/pages/mcp-edit-registries-tab-page';
-import { McpInstallTabPage } from 'src/model/navigation/pages/mcp-install-tab-page';
 import { McpServersPage } from 'src/model/navigation/pages/mcp-servers-page';
 
 import { expect, test } from '../fixtures/electron-app';
@@ -37,34 +34,19 @@ test.beforeEach(async ({ page }) => {
   await mcpServersPage.waitForLoad();
 });
 
-test.describe('MCP page smoke tests', { tag: '@smoke' }, () => {
-  test('[MCP-01] Add a new MCP Registry', async ({ page }) => {
-    const editRegistriesTab = await openEditRegistriesTab(mcpServersPage, page);
+test.describe('MCP page navigation', { tag: '@smoke' }, () => {
+  test('[MCP-01] Add a new MCP Registry', async () => {
+    const editRegistriesTab = await mcpServersPage.openEditRegistriesTab();
     await editRegistriesTab.addNewMcpRegistry(REGISTRY_URL);
     const newRegistry = await editRegistriesTab.getRegistryByUrl(REGISTRY_URL);
     await expect(newRegistry).toBeVisible();
   });
 
-  test('[MCP-02] New MCP servers should be available to install', async ({ page }) => {
-    const installTab = await openInstallTab(mcpServersPage, page);
-    const rowCount = await installTab.availableMcpServersTable.getByRole('row').count();
-    // The amount of MCP servers should be greater than one, excluding header row
-    expect(rowCount - 1, 'Expected more than one default MCP server row').toBeGreaterThan(1);
+  test('[MCP-02] New MCP servers should be available to install', async () => {
+    const installTab = await mcpServersPage.openInstallTab();
+    //The number of MCP servers should be greater than 2, including the default MCP server and the header row.
+    await expect
+      .poll(async () => await installTab.availableMcpServersTable.getByRole('row').count(), { timeout: 30_000 })
+      .toBeGreaterThan(2);
   });
 });
-
-async function openEditRegistriesTab(mcpServersPage: McpServersPage, page: Page): Promise<McpEditRegistriesTabPage> {
-  await expect(mcpServersPage.editRegistriesTabButton).toBeEnabled();
-  await mcpServersPage.editRegistriesTabButton.click();
-  const editRegistriesTab = new McpEditRegistriesTabPage(page);
-  await editRegistriesTab.waitForLoad();
-  return editRegistriesTab;
-}
-
-async function openInstallTab(mcpServersPage: McpServersPage, page: Page): Promise<McpInstallTabPage> {
-  await expect(mcpServersPage.installTabButton).toBeEnabled();
-  await mcpServersPage.installTabButton.click();
-  const installTabPage = new McpInstallTabPage(page);
-  await installTabPage.waitForLoad();
-  return installTabPage;
-}
