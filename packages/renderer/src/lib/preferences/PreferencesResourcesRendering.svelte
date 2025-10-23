@@ -673,7 +673,7 @@ $effect(() => {
         {/each}
           {#each provider.ragConnections as ragConnection, index (index)}
             <div class="px-5 py-2 w-[240px]" role="region" aria-label={ragConnection.name}>
-              <span>{ragConnection.name} RAG)</span>
+              <span>{ragConnection.name} (RAG)</span>
               <PreferencesConnectionActions
                 provider={provider}
                 connection={ragConnection}
