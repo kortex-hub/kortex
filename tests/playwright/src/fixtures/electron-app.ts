@@ -25,14 +25,14 @@ import { waitForAppReady } from '../utils/app-ready';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const TIMEOUTS = {
+export const TIMEOUTS = {
   FIRST_WINDOW: 120_000,
   PAGE_LOAD: 90_000,
   WINDOW_EVENT: 120_000,
   NON_DEVTOOLS_WINDOW: 60_000,
 } as const;
 
-async function getDevModeWindow(electronApp: ElectronApplication): Promise<Page> {
+export async function getDevModeWindow(electronApp: ElectronApplication): Promise<Page> {
   await electronApp.waitForEvent('window', { timeout: TIMEOUTS.WINDOW_EVENT });
   const windows = electronApp.windows();
   const appWindow = windows.find(w => !w.url().startsWith('devtools://'));
@@ -45,6 +45,52 @@ async function getDevModeWindow(electronApp: ElectronApplication): Promise<Page>
   );
 }
 
+export async function launchElectronApp(): Promise<ElectronApplication> {
+  // Filter out undefined values from process.env
+  const electronEnv: Record<string, string> = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value !== undefined) {
+      electronEnv[key] = value;
+    }
+  }
+
+  delete electronEnv.ELECTRON_RUN_AS_NODE;
+
+  // Check if KORTEX_BINARY is set (production mode) or use development mode
+  const isProductionMode = !!process.env.KORTEX_BINARY;
+  const launchConfig = isProductionMode
+    ? {
+        // Production mode: use the built binary
+        executablePath: process.env.KORTEX_BINARY!,
+        args: ['--no-sandbox'],
+        env: electronEnv,
+      }
+    : {
+        // Development mode: use the source code
+        args: ['.', '--no-sandbox'],
+        env: {
+          ...electronEnv,
+          ELECTRON_IS_DEV: '1',
+        },
+        cwd: resolve(__dirname, '../../../..'),
+      };
+
+  return await electron.launch(launchConfig);
+}
+
+export async function getFirstPage(electronApp: ElectronApplication): Promise<Page> {
+  const isProductionMode = !!process.env.KORTEX_BINARY;
+  const page = isProductionMode
+    ? await electronApp.firstWindow({ timeout: TIMEOUTS.FIRST_WINDOW })
+    : await getDevModeWindow(electronApp).catch(async (error: unknown) => {
+        console.error('Failed to get dev window, falling back to firstWindow:', error);
+        return electronApp.firstWindow();
+      });
+  await page.waitForLoadState('load', { timeout: TIMEOUTS.PAGE_LOAD });
+  await waitForAppReady(page);
+  return page;
+}
+
 export interface ElectronFixtures {
   electronApp: ElectronApplication;
   page: Page;
@@ -52,51 +98,14 @@ export interface ElectronFixtures {
 
 export const test = base.extend<ElectronFixtures>({
   // eslint-disable-next-line no-empty-pattern
-  electronApp: async ({}, use) => {
-    // Filter out undefined values from process.env
-    const electronEnv: Record<string, string> = {};
-    for (const [key, value] of Object.entries(process.env)) {
-      if (value !== undefined) {
-        electronEnv[key] = value;
-      }
-    }
-
-    delete electronEnv.ELECTRON_RUN_AS_NODE;
-
-    // Check if KORTEX_BINARY is set (production mode) or use development mode
-    const isProductionMode = !!process.env.KORTEX_BINARY;
-    const launchConfig = isProductionMode
-      ? {
-          // Production mode: use the built binary
-          executablePath: process.env.KORTEX_BINARY!,
-          args: ['--no-sandbox'],
-          env: electronEnv,
-        }
-      : {
-          // Development mode: use the source code
-          args: ['.', '--no-sandbox'],
-          env: {
-            ...electronEnv,
-            ELECTRON_IS_DEV: '1',
-          },
-          cwd: resolve(__dirname, '../../../..'),
-        };
-
-    const electronApp = await electron.launch(launchConfig);
+  electronApp: async ({}, use): Promise<void> => {
+    const electronApp = await launchElectronApp();
     await use(electronApp);
     await electronApp.close();
   },
 
-  page: async ({ electronApp }, use) => {
-    const isProductionMode = !!process.env.KORTEX_BINARY;
-    const page = isProductionMode
-      ? await electronApp.firstWindow({ timeout: TIMEOUTS.FIRST_WINDOW })
-      : await getDevModeWindow(electronApp).catch(async (error: unknown) => {
-          console.error('Failed to get dev window, falling back to firstWindow:', error);
-          return electronApp.firstWindow();
-        });
-    await page.waitForLoadState('load', { timeout: TIMEOUTS.PAGE_LOAD });
-    await waitForAppReady(page);
+  page: async ({ electronApp }, use): Promise<void> => {
+    const page = await getFirstPage(electronApp);
     await use(page);
   },
 });

@@ -28,6 +28,8 @@ export const resources = {
   gemini: { displayName: 'Gemini', hasCreateButton: true },
 } as const;
 
+export type SettingsResourceId = keyof typeof resources;
+
 export const featuredResources = Object.keys(resources) as (keyof typeof resources)[];
 export const resourcesWithCreateButton = Object.values(resources)
   .filter(r => r.hasCreateButton)

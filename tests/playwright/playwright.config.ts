@@ -17,7 +17,14 @@
  ***********************************************************************/
 import type { PlaywrightTestConfig } from '@playwright/test';
 
-const config: PlaywrightTestConfig = {
+import type { ResourceId } from './src/utils/resource-helper';
+
+const config: PlaywrightTestConfig & {
+  projects?: Array<{
+    use?: { resource?: ResourceId };
+    [key: string]: unknown;
+  }>;
+} = {
   testDir: './src',
   timeout: 180_000,
 
@@ -43,6 +50,31 @@ const config: PlaywrightTestConfig = {
     {
       name: 'Electron',
       testMatch: '**/*.spec.ts',
+      testIgnore: '**/chat-smoke.spec.ts',
+    },
+    {
+      name: 'Chat-Gemini',
+      testMatch: '**/chat-smoke.spec.ts',
+      use: {
+        resource: 'gemini',
+      },
+      testIgnore: process.env.GEMINI_API_KEY ? [] : ['**/*'],
+    },
+    {
+      name: 'Chat-OpenAI',
+      testMatch: '**/chat-smoke.spec.ts',
+      use: {
+        resource: 'openai',
+      },
+      testIgnore: ['**/*'], // Disabled until OpenAI resource creation is implemented
+    },
+    {
+      name: 'Chat-OpenShift-AI',
+      testMatch: '**/chat-smoke.spec.ts',
+      use: {
+        resource: 'openshift-ai',
+      },
+      testIgnore: ['**/*'], // Disabled until OpenShift AI resource creation is implemented
     },
   ],
 
