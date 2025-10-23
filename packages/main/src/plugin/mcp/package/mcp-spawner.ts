@@ -15,27 +15,23 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+import type { components } from '@kortex-hub/mcp-registry-types';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
-export interface InputResponse {
-  value: string;
+import type { IAsyncDisposable } from '/@api/async-disposable.js';
+
+export type ResolvedServerPackage = Omit<
+  components['schemas']['Package'],
+  'packageArguments' | 'runtimeArguments' | 'environmentVariables'
+> & {
+  runtimeArguments?: Array<string>;
+  packageArguments?: Array<string>;
+  environmentVariables?: Record<string, string>;
+};
+
+export abstract class MCPSpawner<T extends string = string> implements IAsyncDisposable {
+  constructor(protected readonly pack: ResolvedServerPackage & { registryType: T }) {}
+
+  abstract spawn(): Promise<Transport>;
+  abstract asyncDispose(): Promise<void>;
 }
-
-export interface InputWithVariableResponse extends InputResponse {
-  variables: Record<string, InputResponse>;
-}
-
-export interface MCPSetupRemoteOptions {
-  type: 'remote';
-  index: number;
-  headers: Record<string, InputWithVariableResponse>;
-}
-
-export interface MCPSetupPackageOptions {
-  type: 'package';
-  index: number;
-  runtimeArguments: Record<number, InputWithVariableResponse>;
-  packageArguments: Record<number, InputWithVariableResponse>;
-  environmentVariables: Record<string, InputWithVariableResponse>;
-}
-
-export type MCPSetupOptions = MCPSetupRemoteOptions | MCPSetupPackageOptions;

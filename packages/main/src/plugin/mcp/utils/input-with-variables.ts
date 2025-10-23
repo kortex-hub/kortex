@@ -15,27 +15,22 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+import type { components } from '@kortex-hub/mcp-registry-types';
 
-export interface InputResponse {
-  value: string;
+export function formatInputWithVariables(input: components['schemas']['InputWithVariables']): string | undefined {
+  let template = input.value ?? input.default;
+  if (!template) {
+    return undefined;
+  }
+
+  for (const [key, content] of Object.entries(input.variables ?? {})) {
+    const value = content.value ?? content.default;
+    if (content.isRequired && !value)
+      throw new Error(`cannot format input with required variable ${key} without any value or default`);
+
+    if (value !== undefined) {
+      template = template.replace(`{${key}}`, value);
+    }
+  }
+  return template;
 }
-
-export interface InputWithVariableResponse extends InputResponse {
-  variables: Record<string, InputResponse>;
-}
-
-export interface MCPSetupRemoteOptions {
-  type: 'remote';
-  index: number;
-  headers: Record<string, InputWithVariableResponse>;
-}
-
-export interface MCPSetupPackageOptions {
-  type: 'package';
-  index: number;
-  runtimeArguments: Record<number, InputWithVariableResponse>;
-  packageArguments: Record<number, InputWithVariableResponse>;
-  environmentVariables: Record<string, InputWithVariableResponse>;
-}
-
-export type MCPSetupOptions = MCPSetupRemoteOptions | MCPSetupPackageOptions;
