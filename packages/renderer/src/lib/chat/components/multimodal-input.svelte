@@ -187,6 +187,7 @@ $effect.pre(() => {
 			</Button>
 		{:else}
 			<Button
+					aria-label="Send message"
 					class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
 					onclick={async(event): Promise<void> => {
 						event.preventDefault();

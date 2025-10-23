@@ -43,6 +43,7 @@ function onSelect(mcp: MCPRemoteServerInfo, event: Event): void {
     {#snippet child({ props })}
       <Button
         {...props}
+        aria-label="Select MCP servers"
         variant="outline"
         disabled={disabled}
         class={cn('data-[state=open]:bg-accent data-[state=open]:text-accent-foreground w-fit md:h-[34px] md:px-2', className)}
