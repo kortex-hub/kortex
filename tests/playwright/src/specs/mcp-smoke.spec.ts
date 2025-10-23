@@ -22,6 +22,7 @@ import { expect, test } from '../fixtures/electron-app';
 import { NavigationBar } from '../model/navigation/navigation';
 import { waitForNavigationReady } from '../utils/app-ready';
 
+const DEFAULT_REGISTRY: string = 'MCP Registry example';
 const REGISTRY_URL: string = 'https://registry.modelcontextprotocol.io';
 let navigationBar: NavigationBar;
 let mcpServersPage: McpServersPage;
@@ -35,18 +36,31 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe('MCP page navigation', { tag: '@smoke' }, () => {
-  test('[MCP-01] Add a new MCP Registry', async () => {
+  test('[MCP-01] Add and remove MCP registry: verify server list updates accordingly', async () => {
+    //There is a default registry available
     const editRegistriesTab = await mcpServersPage.openEditRegistriesTab();
-    await editRegistriesTab.addNewMcpRegistry(REGISTRY_URL);
-    const newRegistry = await editRegistriesTab.getRegistryByUrl(REGISTRY_URL);
-    await expect(newRegistry).toBeVisible();
-  });
+    await expect.poll(async () => await editRegistriesTab.getTableRow(DEFAULT_REGISTRY)).toBeTruthy();
 
-  test('[MCP-02] New MCP servers should be available to install', async () => {
+    // Get the initial number of available MCP servers
     const installTab = await mcpServersPage.openInstallTab();
-    //The number of MCP servers should be greater than 2, including the default MCP server and the header row.
+    await expect(installTab.noMcpServersAvailableHeading).not.toBeVisible();
+    const initialServerCount = await installTab.countRowsFromTable();
+
+    await mcpServersPage.openEditRegistriesTab();
+    await editRegistriesTab.addNewMcpRegistry(REGISTRY_URL);
+    await expect.poll(async () => await editRegistriesTab.getTableRow(REGISTRY_URL)).toBeTruthy();
+
+    // Verify that new MCP servers are now available for installatio
+    await mcpServersPage.openInstallTab();
     await expect
-      .poll(async () => await installTab.availableMcpServersTable.getByRole('row').count(), { timeout: 30_000 })
-      .toBeGreaterThan(2);
+      .poll(async () => installTab.countRowsFromTable(), { timeout: 30_000 })
+      .toBeGreaterThan(initialServerCount);
+
+    //Remove registry
+    await mcpServersPage.openEditRegistriesTab();
+    await editRegistriesTab.removeRegistry(REGISTRY_URL);
+    await expect.poll(async () => await editRegistriesTab.getTableRow(REGISTRY_URL)).toBeFalsy();
+    await mcpServersPage.openInstallTab();
+    await expect.poll(async () => await installTab.countRowsFromTable()).toBe(initialServerCount);
   });
 });

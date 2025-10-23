@@ -18,29 +18,34 @@
 
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import { BasePage } from './base-page';
+import { McpTabPage } from './mcp-tab-page';
 
-export class McpEditRegistriesTabPage extends BasePage {
+export class McpEditRegistriesTabPage extends McpTabPage {
   readonly addMcpRegistryButton: Locator;
-  readonly registriesTable: Locator;
   readonly addMcpRegistryDialog: Locator;
 
   constructor(page: Page) {
-    super(page);
+    super(page, 'Registries');
     this.addMcpRegistryButton = page.getByRole('button', { name: 'Add MCP registry' });
-    this.registriesTable = page.getByRole('table', { name: 'Registries' });
     this.addMcpRegistryDialog = page.getByRole('dialog', { name: 'Add MCP Registry' });
   }
 
-  public async waitForLoad(): Promise<void> {
-    await expect(this.registriesTable).toBeVisible();
+  async waitForLoad(): Promise<void> {
+    await expect(this.table).toBeVisible();
   }
 
-  public async getRegistryByUrl(registryUrl: string): Promise<Locator> {
-    return this.registriesTable.getByRole('row', { name: registryUrl });
+  async removeRegistry(name: string): Promise<void> {
+    const locator = await this.getTableRow(name);
+    if (locator === undefined) {
+      console.log(`MCP Registry '${name}' does not exist, skipping...`);
+    } else {
+      const removeButton = locator.getByRole('button', { name: 'Remove' });
+      await expect(removeButton).toBeEnabled();
+      await removeButton.click();
+    }
   }
 
-  public async addNewMcpRegistry(registryUrl: string): Promise<void> {
+  async addNewMcpRegistry(registryUrl: string): Promise<void> {
     await expect(this.addMcpRegistryButton).toBeEnabled();
     await this.addMcpRegistryButton.click();
     await this.handleAddMcpRegistryDialog(registryUrl);
