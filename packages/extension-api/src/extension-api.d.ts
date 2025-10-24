@@ -793,6 +793,62 @@ declare module '@kortex-app/api' {
     logo?: string | { light: string; dark: string };
   }
 
+  // details of a scheduled task execution (from getExecution)
+  export interface ProviderScheduleExecution {
+    id: string;
+    lastExecution: Date;
+    output: string;
+    duration: number;
+    exitCode?: number;
+  }
+
+  // item representing a scheduled task (from listing)
+  export interface ProviderScheduleItem {
+    id: string;
+    metadata: Record<string, string>;
+    cronExpression: string;
+  }
+
+  // command to execute for the scheduled task
+  export interface ProviderSchedulerCommand {
+    command: string;
+    env: Record<string, string>;
+    args: string[];
+  }
+
+  // options to schedule a task
+  export interface ProviderSchedulerOptions {
+    command: ProviderSchedulerCommand;
+    cronExpression: string;
+    metadata: Record<string, string>;
+  }
+
+  // result of scheduling a task
+  export interface ProviderScheduleResult {
+    id: string;
+  }
+
+  export interface ProviderSchedulerListOptions {
+    metadataKeys?: string[];
+  }
+
+  // allow to schedule tasks, including listing, canceling and getting execution details
+  export interface ProviderScheduler {
+    name: string;
+
+    // schedule a task and return a schedule id
+    schedule(options: ProviderSchedulerOptions): Promise<ProviderScheduleResult>;
+
+    // cancel a scheduled task by id
+    cancel(id: string): Promise<void>;
+
+    // list scheduled tasks
+    list(options: ProviderSchedulerListOptions): Promise<ProviderScheduleItem[]>;
+
+    // get execution details for a scheduled task
+    getExecution(id: string): Promise<ProviderScheduleExecution | undefined>;
+  }
+
   export interface Provider {
     setContainerProviderConnectionFactory(
       containerProviderConnectionFactory: ContainerProviderConnectionFactory,
@@ -831,6 +887,8 @@ declare module '@kortex-app/api' {
     registerAutostart(autostart: ProviderAutostart): Disposable;
 
     registerCleanup(cleanup: ProviderCleanup): Disposable;
+
+    registerScheduler(scheduler: ProviderScheduler): Disposable;
 
     dispose(): void;
     readonly name: string;
@@ -1155,6 +1213,10 @@ declare module '@kortex-app/api' {
 
   export interface ImageFilesProviderMetadata {
     readonly label: string;
+  }
+
+  export interface SchedulerOptions {
+    name: string;
   }
 
   export namespace provider {

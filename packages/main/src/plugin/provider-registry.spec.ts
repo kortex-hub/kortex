@@ -39,6 +39,7 @@ import type {
 } from '@kortex-app/api';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
+import type { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
 import {
   type CheckStatus,
   type PreflightChecksCallback,
@@ -63,6 +64,8 @@ let autostartEngine: AutostartEngine;
 const apiSenderSendMock = vi.fn();
 
 let containerRegistry: ContainerProviderRegistry;
+
+let schedulerRegistry: SchedulerRegistry;
 
 class TestProviderRegistry extends ProviderRegistry {
   getKubernetesProviders(): Map<string, KubernetesProviderConnection> {
@@ -94,7 +97,11 @@ beforeEach(() => {
     isApiAttached: vi.fn(),
     onApiAttached: vi.fn(),
   } as unknown as ContainerProviderRegistry;
-  providerRegistry = new TestProviderRegistry(apiSender, containerRegistry, telemetry);
+  schedulerRegistry = {
+    register: vi.fn(),
+  } as unknown as SchedulerRegistry;
+
+  providerRegistry = new TestProviderRegistry(apiSender, containerRegistry, telemetry, schedulerRegistry);
   autostartEngine = {
     registerProvider: vi.fn(),
   } as unknown as AutostartEngine;

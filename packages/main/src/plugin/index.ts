@@ -67,6 +67,7 @@ import { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
 import { MenuRegistry } from '/@/plugin/menu-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
 import type { ExtensionBanner, RecommendedRegistry } from '/@/plugin/recommendations/recommendations-api.js';
+import { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import { Uri } from '/@/plugin/types/uri.js';
 import { Updater } from '/@/plugin/updater.js';
@@ -542,6 +543,7 @@ export class PluginSystem {
     container.bind<OnboardingRegistry>(OnboardingRegistry).toSelf().inSingletonScope();
     container.bind<KubernetesClient>(KubernetesClient).toSelf().inSingletonScope();
     container.bind<ChatManager>(ChatManager).toSelf().inSingletonScope();
+    container.bind<SchedulerRegistry>(SchedulerRegistry).toSelf().inSingletonScope();
 
     // INIT KUBERNETES
     const kubernetesClient = container.get<KubernetesClient>(KubernetesClient);
@@ -781,11 +783,13 @@ export class PluginSystem {
     const authentication = container.get<AuthenticationImpl>(AuthenticationImpl);
     const imageRegistry = container.get<ImageRegistry>(ImageRegistry);
     const mcpRegistry = container.get<MCPRegistry>(MCPRegistry);
+    const schedulerRegistry = container.get<SchedulerRegistry>(SchedulerRegistry);
     mcpRegistry.init();
 
     const mcpIPCHandler = container.get<MCPIPCHandler>(MCPIPCHandler);
     mcpIPCHandler.init();
 
+    await schedulerRegistry.init();
     await this.setupSecurityRestrictionsOnLinks(messageBox);
 
     this.ipcHandle('tasks:clear-all', async (): Promise<void> => {
