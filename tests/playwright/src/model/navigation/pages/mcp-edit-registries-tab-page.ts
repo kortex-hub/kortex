@@ -18,7 +18,7 @@
 
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import { McpTabPage } from './mcp-tab-page';
+import { McpTabPage } from './mcp-base-tab-page';
 
 export class McpEditRegistriesTabPage extends McpTabPage {
   readonly addMcpRegistryButton: Locator;

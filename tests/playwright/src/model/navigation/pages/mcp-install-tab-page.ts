@@ -18,7 +18,7 @@
 
 import { expect, type Page } from '@playwright/test';
 
-import { McpTabPage } from './mcp-tab-page';
+import { McpTabPage } from './mcp-base-tab-page';
 
 export class McpInstallTabPage extends McpTabPage {
   constructor(page: Page) {
