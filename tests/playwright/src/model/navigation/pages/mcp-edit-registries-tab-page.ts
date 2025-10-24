@@ -45,7 +45,15 @@ export class McpEditRegistriesTabPage extends McpTabPage {
     }
   }
 
-  async addNewMcpRegistry(registryUrl: string): Promise<void> {
+  async verifyRegistryExists(url: string, timeout?: number): Promise<void> {
+    await expect.poll(async () => await this.getTableRow(url), { timeout: timeout }).toBeTruthy();
+  }
+
+  async verifyRegistryIsRemoved(url: string, timeout?: number): Promise<void> {
+    await expect.poll(async () => await this.getTableRow(url), { timeout: timeout }).toBeFalsy();
+  }
+
+  async addNewRegistry(registryUrl: string): Promise<void> {
     await expect(this.addMcpRegistryButton).toBeEnabled();
     await this.addMcpRegistryButton.click();
     await this.handleAddMcpRegistryDialog(registryUrl);

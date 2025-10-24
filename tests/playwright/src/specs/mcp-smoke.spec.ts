@@ -18,7 +18,7 @@
 
 import { McpServersPage } from 'src/model/navigation/pages/mcp-servers-page';
 
-import { expect, test } from '../fixtures/electron-app';
+import { test } from '../fixtures/electron-app';
 import { NavigationBar } from '../model/navigation/navigation';
 import { waitForNavigationReady } from '../utils/app-ready';
 
@@ -37,30 +37,22 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('MCP page navigation', { tag: '@smoke' }, () => {
   test('[MCP-01] Add and remove MCP registry: verify server list updates accordingly', async () => {
-    //There is a default registry available
     const editRegistriesTab = await mcpServersPage.openEditRegistriesTab();
-    await expect.poll(async () => await editRegistriesTab.getTableRow(DEFAULT_REGISTRY)).toBeTruthy();
-
-    // Get the initial number of available MCP servers
+    await editRegistriesTab.verifyRegistryExists(DEFAULT_REGISTRY);
     const installTab = await mcpServersPage.openInstallTab();
-    await expect(installTab.noMcpServersAvailableHeading).not.toBeVisible();
+    await installTab.verifyInstallTabIsNotEmpty();
     const initialServerCount = await installTab.countRowsFromTable();
 
     await mcpServersPage.openEditRegistriesTab();
-    await editRegistriesTab.addNewMcpRegistry(REGISTRY_URL);
-    await expect.poll(async () => await editRegistriesTab.getTableRow(REGISTRY_URL)).toBeTruthy();
-
-    // Verify that new MCP servers are now available for installatio
+    await editRegistriesTab.addNewRegistry(REGISTRY_URL);
+    await editRegistriesTab.verifyRegistryExists(REGISTRY_URL);
     await mcpServersPage.openInstallTab();
-    await expect
-      .poll(async () => installTab.countRowsFromTable(), { timeout: 30_000 })
-      .toBeGreaterThan(initialServerCount);
+    await installTab.verifyServerCountIncreased(initialServerCount);
 
-    //Remove registry
     await mcpServersPage.openEditRegistriesTab();
     await editRegistriesTab.removeRegistry(REGISTRY_URL);
-    await expect.poll(async () => await editRegistriesTab.getTableRow(REGISTRY_URL)).toBeFalsy();
+    await editRegistriesTab.verifyRegistryIsRemoved(REGISTRY_URL);
     await mcpServersPage.openInstallTab();
-    await expect.poll(async () => await installTab.countRowsFromTable()).toBe(initialServerCount);
+    await installTab.verifyServerCountIsRestored(initialServerCount);
   });
 });
