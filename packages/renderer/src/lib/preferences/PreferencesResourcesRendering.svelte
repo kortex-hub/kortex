@@ -167,6 +167,22 @@ onMount(async () => {
           });
         }
       });
+
+      provider.ragConnections.forEach(connection => {
+        const ragConnectionName = getProviderConnectionName(provider, connection);
+        connectionNames.push(ragConnectionName);
+        // update the map only if the container state is different from last time
+        if (
+          !containerConnectionStatus.has(ragConnectionName) ||
+          containerConnectionStatus.get(ragConnectionName)?.status !== connection.status
+        ) {
+          containerConnectionStatus.set(ragConnectionName, {
+            inProgress: false,
+            action: undefined,
+            status: connection.status,
+          });
+        }
+      });
     });
     // if a machine has been deleted we need to clean its old stored status
     containerConnectionStatus.forEach((v, k) => {
