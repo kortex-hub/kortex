@@ -784,7 +784,7 @@ export class PluginSystem {
     const imageRegistry = container.get<ImageRegistry>(ImageRegistry);
     const mcpRegistry = container.get<MCPRegistry>(MCPRegistry);
     const schedulerRegistry = container.get<SchedulerRegistry>(SchedulerRegistry);
-    mcpRegistry.init();
+    await mcpRegistry.init();
 
     const mcpIPCHandler = container.get<MCPIPCHandler>(MCPIPCHandler);
     mcpIPCHandler.init();
