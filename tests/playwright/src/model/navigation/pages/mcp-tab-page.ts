@@ -38,8 +38,7 @@ export abstract class McpTabPage extends BasePage {
   }
 
   async countRowsFromTable(): Promise<number> {
-    const table = this.content.getByRole('table');
-    const rows = await table.getByRole('row').all();
+    const rows = await this.table.getByRole('row').all();
     return rows.length - 1;
   }
 }
