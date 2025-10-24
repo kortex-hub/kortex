@@ -16,13 +16,16 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { expect, type Page } from '@playwright/test';
+import type { expect, Locator, type Page } from '@playwright/test';
 
 import { McpBaseTabPage } from './mcp-base-tab-page';
 
 export class McpInstallTabPage extends McpBaseTabPage {
+  readonly noMcpServersAvailableHeading: Locator;
+
   constructor(page: Page) {
     super(page, 'mcpServer');
+    this.noMcpServersAvailableHeading = this.table.getByRole('heading', { name: 'No MCP servers available' });
   }
 
   async waitForLoad(): Promise<void> {

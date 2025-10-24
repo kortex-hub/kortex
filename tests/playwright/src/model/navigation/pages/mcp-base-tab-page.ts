@@ -23,13 +23,11 @@ import { BasePage } from './base-page';
 export abstract class McpBaseTabPage extends BasePage {
   readonly content: Locator;
   readonly table: Locator;
-  readonly noMcpServersAvailableHeading: Locator;
 
   constructor(page: Page, tableName: string) {
     super(page);
     this.content = page.getByRole('region', { name: 'content' });
     this.table = this.content.getByRole('table', { name: tableName });
-    this.noMcpServersAvailableHeading = this.table.getByRole('heading', { name: 'No MCP servers available' });
   }
 
   async getTableRow(name: string): Promise<Locator | undefined> {

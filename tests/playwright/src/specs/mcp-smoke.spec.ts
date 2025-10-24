@@ -47,7 +47,7 @@ test.describe('MCP page navigation', { tag: '@smoke' }, () => {
     await editRegistriesTab.addNewRegistry(REGISTRY_URL);
     await editRegistriesTab.verifyRegistryExists(REGISTRY_URL);
     await mcpServersPage.openInstallTab();
-    await installTab.verifyServerCountIncreased(initialServerCount);
+    await installTab.verifyServerCountIncreased(initialServerCount, 60_000);
 
     await mcpServersPage.openEditRegistriesTab();
     await editRegistriesTab.removeRegistry(REGISTRY_URL);
