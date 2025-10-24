@@ -21,7 +21,6 @@ import { expect, type Locator, type Page } from '@playwright/test';
 import { BasePage } from './base-page';
 
 export class ChatPage extends BasePage {
-  readonly header: Locator;
   readonly toggleSidebarButton: Locator;
   readonly mcpDropdown: Locator;
   readonly newChatButton: Locator;
@@ -32,23 +31,18 @@ export class ChatPage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.header = page.locator('header.sticky');
-    this.toggleSidebarButton = this.header.locator('button[data-slot="tooltip-trigger"]').first();
-    this.mcpDropdown = this.header.getByRole('button').filter({ hasText: 'selected' });
-    this.newChatButton = this.header.getByRole('button', { name: 'New Chat' });
-    this.modelDropdownSelector = this.header
-      .getByRole('button')
-      .filter({ hasNotText: /New Chat|selected/ })
-      .first();
+    this.toggleSidebarButton = page.getByRole('button', { name: 'Toggle sidebar' });
+    this.mcpDropdown = page.getByRole('button', { name: 'Select MCP servers' });
+    this.newChatButton = page.getByRole('button', { name: 'New Chat' });
+    this.modelDropdownSelector = page.getByRole('button', { name: 'Select model' });
     this.messageField = page.getByPlaceholder('Send a message...');
-    this.sendButton = page.locator('form button').last();
-    this.suggestedMessagesGrid = page.locator('div.grid').first();
+    this.sendButton = page.getByRole('button', { name: 'Send message' });
+    this.suggestedMessagesGrid = page.getByRole('region', { name: 'Suggested prompts' });
   }
 
   async waitForLoad(): Promise<void> {
     await expect(this.messageField).toBeVisible({ timeout: 10_000 });
-    await expect(this.header).toBeVisible({ timeout: 10_000 });
-    await expect(this.header.locator('button').first()).toBeVisible({ timeout: 10_000 });
+    await expect(this.toggleSidebarButton).toBeVisible({ timeout: 10_000 });
   }
 
   getSuggestedMessages(): Locator {
