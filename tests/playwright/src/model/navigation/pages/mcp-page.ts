@@ -22,7 +22,7 @@ import { BasePage } from './base-page';
 import { McpEditRegistriesTabPage } from './mcp-edit-registries-tab-page';
 import { McpInstallTabPage } from './mcp-install-tab-page';
 
-export class McpServersPage extends BasePage {
+export class McpPage extends BasePage {
   readonly searchMcpServersField: Locator;
   readonly editRegistriesTabButton: Locator;
   readonly installTabButton: Locator;

@@ -18,9 +18,9 @@
 
 import { expect, type Page } from '@playwright/test';
 
-import { McpTabPage } from './mcp-base-tab-page';
+import { McpBaseTabPage } from './mcp-base-tab-page';
 
-export class McpInstallTabPage extends McpTabPage {
+export class McpInstallTabPage extends McpBaseTabPage {
   constructor(page: Page) {
     super(page, 'mcpServer');
   }

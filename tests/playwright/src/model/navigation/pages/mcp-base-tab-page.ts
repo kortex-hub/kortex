@@ -20,7 +20,7 @@ import { type Locator, type Page } from '@playwright/test';
 
 import { BasePage } from './base-page';
 
-export abstract class McpTabPage extends BasePage {
+export abstract class McpBaseTabPage extends BasePage {
   readonly content: Locator;
   readonly table: Locator;
   readonly noMcpServersAvailableHeading: Locator;
