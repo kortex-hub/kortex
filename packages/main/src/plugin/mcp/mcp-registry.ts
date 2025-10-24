@@ -27,6 +27,9 @@ import type { HttpsOptions, OptionsOfTextResponseBody } from 'got';
 import { HttpProxyAgent, HttpsProxyAgent } from 'hpagent';
 import { inject, injectable } from 'inversify';
 
+import { MCPPackage } from '/@/plugin/mcp/package/mcp-package.js';
+import { formatArguments } from '/@/plugin/mcp/utils/arguments.js';
+import { formatKeyValueInputs } from '/@/plugin/mcp/utils/format-key-value-inputs.js';
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { IConfigurationNode, IConfigurationRegistry } from '/@api/configuration/models.js';
 import { MCPServerDetail } from '/@api/mcp/mcp-server-info.js';
@@ -49,6 +52,9 @@ interface RemoteStorageConfigFormat {
 interface PackageStorageConfigFormat {
   serverId: string;
   packageId: number;
+  runtimeArguments?: Array<string>;
+  packageArguments?: Array<string>;
+  environmentVariables?: Record<string, string>;
 }
 
 type StorageConfigFormat = RemoteStorageConfigFormat | PackageStorageConfigFormat;
@@ -191,8 +197,36 @@ export class MCPRegistry {
             server.description,
           );
         } else {
-          // dealing with package config
-          throw new Error('not yet supported');
+          const pack = server.packages?.[config.packageId];
+          if (!pack) {
+            continue;
+          }
+
+          // client already exists ?
+          const existingServers = await this.mcpManager.listMCPRemoteServers();
+          const existing = existingServers.find(srv => srv.id.includes(server.serverId ?? 'unknown'));
+          if (existing) {
+            console.log(`[MCPRegistry] MCP client for server ${server.serverId} already exists, skipping`);
+            continue;
+          }
+          const spawner = new MCPPackage({
+            ...pack,
+            packageArguments: config.packageArguments,
+            runtimeArguments: config.runtimeArguments,
+            environmentVariables: config.environmentVariables,
+          });
+
+          const transport = await spawner.spawn();
+          await this.mcpManager.registerMCPClient(
+            INTERNAL_PROVIDER_ID,
+            server.serverId,
+            'package',
+            config.packageId,
+            server.name,
+            transport,
+            undefined,
+            server.description,
+          );
         }
       }
     });
@@ -333,13 +367,60 @@ export class MCPRegistry {
           remoteId: options.index,
           serverId: serverDetail.serverId,
           headers: Object.fromEntries(
-            Object.entries(options.headers).map(([key, response]) => [key, this.format(response)]),
+            Object.entries(options.headers).map(([key, response]) => [
+              key,
+              this.formatInputWithVariableResponse(response),
+            ]),
           ),
         };
         transport = this.setupRemote(serverDetail.remotes?.[options.index], config.headers);
         break;
-      case 'package':
-        throw new Error('not implemented yet');
+      case 'package': {
+        const pack = serverDetail.packages?.[options.index];
+        if (!pack) throw new Error('package not found');
+
+        config = {
+          packageId: options.index,
+          serverId: serverDetail.serverId,
+          runtimeArguments: formatArguments(
+            pack.runtimeArguments,
+            Object.fromEntries(
+              Object.entries(options.runtimeArguments).map(([key, response]) => [
+                key,
+                this.formatInputWithVariableResponse(response),
+              ]),
+            ),
+          ),
+          // if the user provided package arguments, we want to override it
+          packageArguments: formatArguments(
+            pack.packageArguments,
+            Object.fromEntries(
+              Object.entries(options.packageArguments).map(([key, response]) => [
+                key,
+                this.formatInputWithVariableResponse(response),
+              ]),
+            ),
+          ),
+          // if the user provided environment variables, we want to override it
+          environmentVariables: formatKeyValueInputs(
+            pack.environmentVariables,
+            Object.fromEntries(
+              Object.entries(options.environmentVariables).map(([key, response]) => [
+                key,
+                this.formatInputWithVariableResponse(response),
+              ]),
+            ),
+          ),
+        };
+        const spawner = new MCPPackage({
+          ...pack,
+          packageArguments: config.packageArguments,
+          runtimeArguments: config.runtimeArguments,
+          environmentVariables: config.environmentVariables,
+        });
+        transport = await spawner.spawn();
+        break;
+      }
       default:
         throw new Error('invalid options type for setupMCPServer');
     }
@@ -361,7 +442,7 @@ export class MCPRegistry {
     await this.saveConfiguration(config);
   }
 
-  protected format(input: InputWithVariableResponse): string {
+  protected formatInputWithVariableResponse(input: InputWithVariableResponse): string {
     let template = input.value;
 
     Object.entries(input.variables).forEach(([key, response]) => {

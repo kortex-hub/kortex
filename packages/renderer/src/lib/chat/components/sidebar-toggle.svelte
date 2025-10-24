@@ -12,6 +12,7 @@ const sidebar = useSidebar();
 		{#snippet child({ props })}
 			<Button
 				{...props}
+				aria-label="Toggle sidebar"
 				onclick={(): void => {
 					sidebar.toggle();
 				}}

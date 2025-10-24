@@ -106,7 +106,7 @@ async function onclick(suggestedAction: SuggestedAction): Promise<void> {
 }
 </script>
 
-<div class="grid w-full gap-2 sm:grid-cols-2">
+<div role="region" aria-label="Suggested prompts" class="grid w-full gap-2 sm:grid-cols-2">
 	{#each suggestedActions as suggestedAction, i (suggestedAction.title)}
 		<div
 			in:fly|global={{ opacity: 0, y: 20, delay: 50 * i, duration: 400 }}
