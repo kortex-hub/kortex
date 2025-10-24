@@ -34,16 +34,14 @@ interface TestFixtures {
 
 export const test = base.extend<TestFixtures, WorkerFixtures>({
   resource: [
-    // eslint-disable-next-line no-empty-pattern, @typescript-eslint/no-explicit-any
-    async ({}, use): Promise<void> => {
+    async (_fixtures, use): Promise<void> => {
       await use('gemini' as ResourceId);
     },
     { scope: 'worker', option: true },
   ],
 
   workerElectronApp: [
-    // eslint-disable-next-line no-empty-pattern
-    async ({}, use): Promise<void> => {
+    async (_fixtures, use): Promise<void> => {
       const electronApp = await launchElectronApp();
       await use(electronApp);
       await electronApp.close();
