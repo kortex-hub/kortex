@@ -400,6 +400,18 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.1.0)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(msw@2.10.4(@types/node@24.1.0)(typescript@5.9.2))(terser@5.36.0)(tsx@4.20.3)(yaml@2.8.1)
 
+  extensions/docling:
+    devDependencies:
+      '@kortex-app/api':
+        specifier: workspace:*
+        version: link:../../packages/extension-api
+      vite:
+        specifier: ^7.1.2
+        version: 7.1.2(@types/node@24.1.0)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.36.0)(tsx@4.20.3)(yaml@2.8.1)
+      vitest:
+        specifier: ^3.1.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.1.0)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(msw@2.10.4(@types/node@24.1.0)(typescript@5.9.2))(terser@5.36.0)(tsx@4.20.3)(yaml@2.8.1)
+
   extensions/gemini:
     dependencies:
       '@ai-sdk/google':
@@ -568,7 +580,7 @@ importers:
         version: 2.0.0
       '@kortex-hub/mcp-registry-types':
         specifier: ^1.1.0
-        version: 1.1.0
+        version: 1.2.3
 
   packages/preload-webview:
     devDependencies:
@@ -1111,7 +1123,6 @@ packages:
   '@epic-web/invariant@1.0.0':
     resolution: {integrity: sha512-lrTPqgvfFQtR/eY/qkIzp98OGdNJu0m5ji3q/nJI8v3SXkRKEnWiOxMmbvcSoAIzv/cGiuvRy57k4suKQSAdwA==}
 
-  '@esbuild/aix-ppc64@0.25.12':
     resolution: {integrity: sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==}
     engines: {node: '>=18'}
     cpu: [ppc64]
