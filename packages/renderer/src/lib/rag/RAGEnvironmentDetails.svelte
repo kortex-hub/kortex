@@ -1,14 +1,15 @@
 <script lang="ts">
-import { Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
+import { TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
+
+import { getChunkProviderName, getDatabaseName } from '/@/lib/rag/rag-environment-utils.svelte';
+import { chunkProviders } from '/@/stores/chunk-providers';
+import { providerInfos } from '/@/stores/providers';
 import { ragEnvironments } from '/@/stores/rag-environments';
 
 import RAGIcon from '../images/RAGIcon.svelte';
 import RAGFilePath from './columns/RAGFilePath.svelte';
 import RAGFileStatus from './columns/RAGFileStatus.svelte';
-import { getChunkProviderName, getDatabaseName } from '/@/lib/rag/rag-environment-utils.svelte';
-import { providerInfos } from '/@/stores/providers';
-import { chunkProviders } from '/@/stores/chunk-providers';
 
 interface Props {
   name: string;
@@ -47,30 +48,37 @@ const statusColumn = new TableColumn<FileWithStatus>('Status', {
   renderer: RAGFileStatus,
 });
 
-const pathColumn = new TableColumn<FileWithStatus>('File Path', {
-  width: '3fr',
-  renderer: RAGFilePath,
-});
-
-const columns = [statusColumn, pathColumn];
-
-const row = new TableRow<FileWithStatus>({
-  selectable: (_): boolean => false,
-});
-
-function key(file: FileWithStatus): string {
-  return file.path;
-}
-
 const databaseName = $derived(getDatabaseName($providerInfos, ragEnvironment));
 const chunkProviderName = $derived(getChunkProviderName($chunkProviders, ragEnvironment));
 
-function goBack() {
+function goBack(): void {
   router.goto('/rag');
 }
 
-function setTab(tab: TabType) {
+function setTab(tab: TabType): void {
   activeTab = tab;
+}
+
+async function handleAddFile(): Promise<void> {
+  if (!ragEnvironment) return;
+
+  try {
+    const selectedFiles = await window.openDialog({
+      title: 'Select file to add to RAG environment',
+      selectors: ['openFile'],
+    });
+
+    if (selectedFiles && selectedFiles.length > 0) {
+      const filePath = selectedFiles[0];
+      const result = await window.addFileToPendingFiles(ragEnvironment.name, filePath);
+
+      if (!result) {
+        console.error('Failed to add file to RAG environment');
+      }
+    }
+  } catch (error: unknown) {
+    console.error('Error selecting file:', error);
+  }
 }
 </script>
 
@@ -202,7 +210,12 @@ function setTab(tab: TabType) {
         </div>
       {:else if activeTab === 'sources'}
         <!-- Sources Tab -->
-        <div class="upload-area border-2 border-dashed border-[var(--pd-content-divider)] rounded-lg py-12 px-6 text-center cursor-pointer hover:border-[var(--pd-button-primary)] hover:bg-[color-mix(in_srgb,var(--pd-button-primary)_5%,transparent)] transition-all duration-200 mb-6">
+        <div
+          class="upload-area border-2 border-dashed border-[var(--pd-content-divider)] rounded-lg py-12 px-6 text-center cursor-pointer hover:border-[var(--pd-button-primary)] hover:bg-[color-mix(in_srgb,var(--pd-button-primary)_5%,transparent)] transition-all duration-200 mb-6"
+          onclick={handleAddFile}
+          role="button"
+          tabindex="0"
+        >
           <svg class="upload-icon w-12 h-12 mx-auto mb-4 text-[var(--pd-content-text-secondary)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
             <polyline points="17 8 12 3 7 8"/>
