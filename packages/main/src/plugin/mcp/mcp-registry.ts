@@ -32,7 +32,7 @@ import { formatArguments } from '/@/plugin/mcp/utils/arguments.js';
 import { formatKeyValueInputs } from '/@/plugin/mcp/utils/format-key-value-inputs.js';
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { IConfigurationNode, IConfigurationRegistry } from '/@api/configuration/models.js';
-import { MCPServerDetail } from '/@api/mcp/mcp-server-info.js';
+import { MCPServerDetail, MCPServerListSchema } from '/@api/mcp/mcp-server-info.js';
 import { InputWithVariableResponse, MCPSetupOptions } from '/@api/mcp/mcp-setup.js';
 
 import { ApiSenderType } from '../api.js';
@@ -533,7 +533,16 @@ export class MCPRegistry {
       throw new Error(`Failed to fetch MCP servers from ${registryURL}: ${content.statusText}`);
     }
 
-    const data: components['schemas']['ServerList'] = await content.json();
+    const jsonData = await content.json();
+
+    // Validate against schema
+    const validationResult = MCPServerListSchema.safeParse(jsonData);
+
+    if (!validationResult.success) {
+      throw new Error(`Invalid response from MCP registry ${registryURL}: ${validationResult.error.message}`);
+    }
+
+    const data = validationResult.data;
 
     // If pagination info exists, fetch the next page recursively
     if (data.metadata?.nextCursor) {
