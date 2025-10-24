@@ -21,6 +21,7 @@ import * as crypto from 'node:crypto';
 import type * as kortexAPI from '@kortex-app/api';
 import { SecretStorage } from '@kortex-app/api';
 import type { components } from '@kortex-hub/mcp-registry-types';
+import { createValidator } from '@kortex-hub/mcp-registry-types';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { HttpsOptions, OptionsOfTextResponseBody } from 'got';
@@ -149,89 +150,93 @@ export class MCPRegistry {
     this.loadRegistriesFromConfig();
 
     this.onDidRegisterRegistry(async registry => {
-      const configurations = await this.getConfigurations();
-      console.log(`[MCPRegistry] found ${configurations.length} saved configurations`);
+      try {
+        const configurations = await this.getConfigurations();
+        console.log(`[MCPRegistry] found ${configurations.length} saved configurations`);
 
-      // serverId => config
-      const mapping: Map<string, StorageConfigFormat> = new Map(
-        configurations.map(config => [config.serverId, config]),
-      );
+        // serverId => config
+        const mapping: Map<string, StorageConfigFormat> = new Map(
+          configurations.map(config => [config.serverId, config]),
+        );
 
-      const { servers } = await this.listMCPServersFromRegistry(registry.serverUrl);
-      for (const rawServer of servers) {
-        const server = this.enhanceServerDetail(rawServer.server);
-        if (!server.serverId) {
-          continue;
+        const { servers } = await this.listMCPServersFromRegistry(registry.serverUrl);
+        for (const rawServer of servers) {
+          const server = this.enhanceServerDetail(rawServer.server);
+          if (!server.serverId) {
+            continue;
+          }
+          const config = mapping.get(server.serverId);
+          if (!config) {
+            continue;
+          }
+
+          // dealing with remote config
+          if ('remoteId' in config) {
+            const remote = server.remotes?.[config.remoteId];
+            if (!remote) {
+              continue;
+            }
+
+            // client already exists ?
+            const existingServers = await this.mcpManager.listMCPRemoteServers();
+            const existing = existingServers.find(srv => srv.id.includes(server.serverId ?? 'unknown'));
+            if (existing) {
+              console.log(`[MCPRegistry] MCP client for server ${server.serverId} already exists, skipping`);
+              continue;
+            }
+
+            // create transport
+            const transport = new StreamableHTTPClientTransport(new URL(remote.url), {
+              requestInit: {
+                headers: config.headers,
+              },
+            });
+
+            await this.mcpManager.registerMCPClient(
+              INTERNAL_PROVIDER_ID,
+              server.serverId,
+              'remote',
+              config.remoteId,
+              server.name,
+              transport,
+              remote.url,
+              server.description,
+            );
+          } else {
+            const pack = server.packages?.[config.packageId];
+            if (!pack) {
+              continue;
+            }
+
+            // client already exists ?
+            const existingServers = await this.mcpManager.listMCPRemoteServers();
+            const existing = existingServers.find(srv => srv.id.includes(server.serverId ?? 'unknown'));
+            if (existing) {
+              console.log(`[MCPRegistry] MCP client for server ${server.serverId} already exists, skipping`);
+              continue;
+            }
+            const spawner = new MCPPackage({
+              ...pack,
+              packageArguments: config.packageArguments,
+              runtimeArguments: config.runtimeArguments,
+              environmentVariables: config.environmentVariables,
+            });
+
+            const transport = await spawner.spawn();
+            await this.mcpManager.registerMCPClient(
+              INTERNAL_PROVIDER_ID,
+              server.serverId,
+              'package',
+              config.packageId,
+              server.name,
+              transport,
+              undefined,
+              server.description,
+            );
+          }
         }
-        const config = mapping.get(server.serverId);
-        if (!config) {
-          continue;
-        }
-
-        // dealing with remote config
-        if ('remoteId' in config) {
-          const remote = server.remotes?.[config.remoteId];
-          if (!remote) {
-            continue;
-          }
-
-          // client already exists ?
-          const existingServers = await this.mcpManager.listMCPRemoteServers();
-          const existing = existingServers.find(srv => srv.id.includes(server.serverId ?? 'unknown'));
-          if (existing) {
-            console.log(`[MCPRegistry] MCP client for server ${server.serverId} already exists, skipping`);
-            continue;
-          }
-
-          // create transport
-          const transport = new StreamableHTTPClientTransport(new URL(remote.url), {
-            requestInit: {
-              headers: config.headers,
-            },
-          });
-
-          await this.mcpManager.registerMCPClient(
-            INTERNAL_PROVIDER_ID,
-            server.serverId,
-            'remote',
-            config.remoteId,
-            server.name,
-            transport,
-            remote.url,
-            server.description,
-          );
-        } else {
-          const pack = server.packages?.[config.packageId];
-          if (!pack) {
-            continue;
-          }
-
-          // client already exists ?
-          const existingServers = await this.mcpManager.listMCPRemoteServers();
-          const existing = existingServers.find(srv => srv.id.includes(server.serverId ?? 'unknown'));
-          if (existing) {
-            console.log(`[MCPRegistry] MCP client for server ${server.serverId} already exists, skipping`);
-            continue;
-          }
-          const spawner = new MCPPackage({
-            ...pack,
-            packageArguments: config.packageArguments,
-            runtimeArguments: config.runtimeArguments,
-            environmentVariables: config.environmentVariables,
-          });
-
-          const transport = await spawner.spawn();
-          await this.mcpManager.registerMCPClient(
-            INTERNAL_PROVIDER_ID,
-            server.serverId,
-            'package',
-            config.packageId,
-            server.name,
-            transport,
-            undefined,
-            server.description,
-          );
-        }
+      } catch (error: unknown) {
+        console.error(`[MCPRegistry] Failed to auto-register servers from registry ${registry.serverUrl}:`, error);
       }
     });
   }
@@ -520,6 +525,32 @@ export class MCPRegistry {
       config => !('remoteId' in config && config.serverId === serverId && config.remoteId === remoteId),
     );
     await this.safeStorage?.store(STORAGE_KEY, JSON.stringify(filtered));
+  }
+
+  /**
+   * Validates JSON data against the ServerList schema.
+   * Uses the cached validator loaded during initialization.
+   *
+   * @param jsonData - The data to validate
+   * @param registryName - The name/URL of the registry (for error messages)
+   * @returns true if valid or if validation is skipped, false if invalid
+   */
+  private validateServerListData(jsonData: unknown, registryName: string): boolean {
+    // Skip validation if schema wasn't loaded
+
+    const validator = createValidator('ServerList');
+    const isValid = validator(jsonData);
+
+    if (!isValid) {
+      const data = jsonData as components['schemas']['ServerList'];
+      const serverNames = data?.servers?.map(s => s.server?.name).filter(Boolean) ?? [];
+      console.warn(
+        `[MCPRegistry] Failed to validate MCP servers from registry '${registryName}'. ` +
+          `Affected servers: ${serverNames.length > 0 ? serverNames.join(', ') : 'none'}`,
+      );
+    }
+
+    return isValid;
   }
 
   protected async listMCPServersFromRegistry(
