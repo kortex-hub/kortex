@@ -25,12 +25,15 @@ import { inject, injectable } from 'inversify';
 import { RagEnvironment } from '/@api/rag/rag-environment.js';
 
 import { Directories } from './directories.js';
+import { ApiSenderType } from '/@/plugin/api.js';
 
 @injectable()
 export class RagEnvironmentRegistry {
   #ragDirectory: string;
 
   constructor(
+    @inject(ApiSenderType)
+    private apiSender: ApiSenderType,
     @inject(Directories)
     private directories: Directories,
   ) {
@@ -53,7 +56,8 @@ export class RagEnvironmentRegistry {
   public async saveOrUpdate(ragEnvironment: RagEnvironment): Promise<void> {
     await this.ensureRagDirectoryExists();
     const filePath = this.getRagEnvironmentFilePath(ragEnvironment.name);
-    return writeFile(filePath, JSON.stringify(ragEnvironment, undefined, 2));
+    await writeFile(filePath, JSON.stringify(ragEnvironment, undefined, 2));
+    this.apiSender.send('rag-environment-updated', { name: ragEnvironment.name });
   }
 
   /**
@@ -131,5 +135,36 @@ export class RagEnvironmentRegistry {
   public hasRagEnvironment(name: string): boolean {
     const filePath = this.getRagEnvironmentFilePath(name);
     return existsSync(filePath);
+  }
+
+  /**
+   * Add a file to the RAG environment's pending files
+   * @param name The name of the RAG environment
+   * @param filePath The path of the file to add
+   * @returns true if the file was added successfully, false otherwise
+   */
+  public async addFileToPendingFiles(name: string, filePath: string): Promise<boolean> {
+    const ragEnvironment = await this.getRagEnvironment(name);
+    if (!ragEnvironment) {
+      console.error(`RAG environment ${name} not found`);
+      return false;
+    }
+
+    // Check if file is already in indexed or pending files
+    if (ragEnvironment.indexedFiles.includes(filePath) || ragEnvironment.pendingFiles.includes(filePath)) {
+      console.warn(`File ${filePath} is already in RAG environment ${name}`);
+      return false;
+    }
+
+    // Add file to pending files
+    ragEnvironment.pendingFiles.push(filePath);
+
+    try {
+      await this.saveOrUpdate(ragEnvironment);
+      return true;
+    } catch (error) {
+      console.error(`Failed to add file to RAG environment ${name}:`, error);
+      return false;
+    }
   }
 }

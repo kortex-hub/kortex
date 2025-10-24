@@ -1740,6 +1740,13 @@ export class PluginSystem {
       },
     );
 
+    this.ipcHandle(
+      'rag-environment-registry:addFileToPendingFiles',
+      async (_listener, name: string, filePath: string): Promise<boolean> => {
+        return await ragEnvironmentRegistry.addFileToPendingFiles(name, filePath);
+      },
+    );
+
     this.ipcHandle('chunk-provider-registry:getChunkProviders', async (): Promise<ChunkProviderInfo[]> => {
       return chunkProviderRegistry.getChunkProviders();
     });

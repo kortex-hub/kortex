@@ -1524,6 +1524,13 @@ export function initExposure(): void {
     },
   );
 
+  contextBridge.exposeInMainWorld(
+    'addFileToPendingFiles',
+    async (name: string, filePath: string): Promise<boolean> => {
+      return ipcInvoke('rag-environment-registry:addFileToPendingFiles', name, filePath);
+    },
+  );
+
   contextBridge.exposeInMainWorld('getChunkProviders', async (): Promise<ChunkProviderInfo[]> => {
     return ipcInvoke('chunk-provider-registry:getChunkProviders');
   });
