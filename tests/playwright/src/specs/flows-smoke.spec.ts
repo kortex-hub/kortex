@@ -19,7 +19,7 @@
 import type { FlowsPage } from 'src/model/navigation/pages/flows-page';
 import { hasApiKey, PROVIDERS } from 'src/utils/resource-helper';
 
-import { test } from '../fixtures/chat-fixtures';
+import { expect, test } from '../fixtures/chat-fixtures';
 import { waitForNavigationReady } from '../utils/app-ready';
 
 const flowName = 'custom-flow-smoke-test';
@@ -38,7 +38,7 @@ test.beforeAll(async ({ page, navigationBar, resource }) => {
 
 test.describe.serial('Flow page e2e test suite', { tag: '@smoke' }, () => {
   test('Check that Flows page is displayed and empty', async () => {
-    await flowsPage.checkIfFlowsPageIsEmpty();
+    await expect.poll(async () => flowsPage.checkIfFlowsPageIsEmpty()).toBeTruthy();
   });
 
   test('Check that user can create a new flow', async ({ navigationBar }) => {
