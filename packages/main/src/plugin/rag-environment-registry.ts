@@ -20,12 +20,16 @@ import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 
+import { type ChunkProvider } from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
+import { ApiSenderType } from '/@/plugin/api.js';
+import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
+import { TaskManager } from '/@/plugin/tasks/task-manager.js';
+import { Uri } from '/@/plugin/types/uri.js';
 import { RagEnvironment } from '/@api/rag/rag-environment.js';
 
 import { Directories } from './directories.js';
-import { ApiSenderType } from '/@/plugin/api.js';
 
 @injectable()
 export class RagEnvironmentRegistry {
@@ -36,6 +40,10 @@ export class RagEnvironmentRegistry {
     private apiSender: ApiSenderType,
     @inject(Directories)
     private directories: Directories,
+    @inject(ChunkProviderRegistry)
+    private chunkProviderRegistry: ChunkProviderRegistry,
+    @inject(TaskManager)
+    private taskManager: TaskManager,
   ) {
     // Create the rag directory inside the kortex home directory
     this.#ragDirectory = resolve(this.directories.getConfigurationDirectory(), '..', 'rag');
@@ -156,6 +164,14 @@ export class RagEnvironmentRegistry {
       return false;
     }
 
+    const chunkProvider = this.chunkProviderRegistry.findProviderById(ragEnvironment.chunkerId);
+    if (!chunkProvider) {
+      console.error(`Chunk provider with ID ${ragEnvironment.chunkerId} not found`);
+      return false;
+    }
+
+    this.indexFile(ragEnvironment, filePath, chunkProvider).catch((err: unknown) => console.error(`Error indexing file: ${filePath}`, err));
+
     // Add file to pending files
     ragEnvironment.pendingFiles.push(filePath);
 
@@ -166,5 +182,26 @@ export class RagEnvironmentRegistry {
       console.error(`Failed to add file to RAG environment ${name}:`, error);
       return false;
     }
+  }
+
+  private async indexFile(ragEnvironment: RagEnvironment, filePath: string, chunkProvider: ChunkProvider): Promise<void> {
+    const task = this.taskManager.createTask({
+      title: `Indexing ${filePath} on ${ragEnvironment.name}`,
+    });
+    task.state = 'running';
+    task.status = 'in-progress';
+    try {
+      await chunkProvider.index(Uri.file(filePath));
+      ragEnvironment.indexedFiles.push(filePath);
+      ragEnvironment.pendingFiles = ragEnvironment.pendingFiles.filter(f => f !== filePath);
+      await this.saveOrUpdate(ragEnvironment);
+      task.status = 'success';
+    } catch (err: unknown) {
+      task.status = 'failure';
+    } finally {
+      task.state = 'completed';
+    }
+
+
   }
 }

@@ -18,24 +18,23 @@
 
 import * as api from '@kortex-app/api';
 
+import { Docling } from './docling';
+
+let docling: Docling | undefined;
+
 export async function activate(extensionContext: api.ExtensionContext): Promise<void> {
-  // Create the Docling chunk provider
-  const doclingChunkProvider: api.ChunkProvider = {
-    name: 'docling',
-    async index(doc: api.Uri): Promise<api.Chunk[]> {
-      // TODO: Implement actual Docling chunking logic
-      // For now, return empty array as placeholder
-      return [];
-    },
-  };
+  console.log('Starting Docling extension');
 
-  // Register the chunk provider
-  const disposable = api.rag.registerChunkProvider(doclingChunkProvider);
-
-  // Add to subscriptions for proper cleanup
-  extensionContext.subscriptions.push(disposable);
+  docling = new Docling(extensionContext);
+  docling.init().catch(err => console.error);
 }
 
-export function deactivate(): void {
-  console.log('stopping docling extension');
+export async function deactivate(): Promise<void> {
+  console.log('Stopping Docling extension');
+
+  // Shutdown the Docling chunker
+  if (docling) {
+    await docling.shutdown();
+    docling = undefined;
+  }
 }
