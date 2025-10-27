@@ -15,13 +15,14 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { test } from '../fixtures/chat-fixtures';
+import { expect, test } from '../fixtures/chat-fixtures';
 import { NavigationBar } from '../model/navigation/navigation';
 import { ChatPage } from '../model/navigation/pages/chat-page';
 import { waitForNavigationReady } from '../utils/app-ready';
 import { hasApiKey, PROVIDERS } from '../utils/resource-helper';
 
 let navigationBar: NavigationBar;
+let chatPage: ChatPage;
 
 test.describe('Chat page navigation', { tag: '@smoke' }, () => {
   test.beforeAll(async ({ resource }) => {
@@ -38,13 +39,26 @@ test.describe('Chat page navigation', { tag: '@smoke' }, () => {
     navigationBar = new NavigationBar(page);
     await waitForNavigationReady(page);
     await navigationBar.chatLink.click();
+    chatPage = new ChatPage(page);
+    await chatPage.waitForLoad();
   });
 
-  test('[CHAT-01] All chat UI elements are visible', async ({ page }) => {
-    const chatPage = new ChatPage(page);
-    await chatPage.waitForLoad();
+  test('[CHAT-01] All chat UI elements are visible', async () => {
     await chatPage.verifyHeaderElementsVisible();
     await chatPage.verifyInputAreaVisible();
     await chatPage.verifySuggestedMessagesVisible();
+  });
+
+  test('[CHAT-02] Create and check new chat history item', async () => {
+    await chatPage.toggleSidebar();
+    const initialCount = await chatPage.getChatHistoryCount();
+    await chatPage.toggleSidebar();
+    const suggestedMessages = chatPage.getSuggestedMessages();
+    await suggestedMessages.last().click();
+    await chatPage.waitForResponse();
+    await chatPage.toggleSidebar();
+    await chatPage.verifySidebarVisible();
+    const newCount = await chatPage.getChatHistoryCount();
+    expect(newCount).toBeGreaterThan(initialCount);
   });
 });

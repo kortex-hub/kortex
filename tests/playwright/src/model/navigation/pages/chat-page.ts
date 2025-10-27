@@ -24,20 +24,24 @@ export class ChatPage extends BasePage {
   readonly toggleSidebarButton: Locator;
   readonly mcpDropdown: Locator;
   readonly newChatButton: Locator;
+  readonly sidebarNewChatButton: Locator;
   readonly modelDropdownSelector: Locator;
   readonly messageField: Locator;
   readonly sendButton: Locator;
   readonly suggestedMessagesGrid: Locator;
+  readonly chatHistoryItems: Locator;
 
   constructor(page: Page) {
     super(page);
     this.toggleSidebarButton = page.getByRole('button', { name: 'Toggle sidebar' });
     this.mcpDropdown = page.getByRole('button', { name: 'Select MCP servers' });
     this.newChatButton = page.getByRole('button', { name: 'New Chat' });
+    this.sidebarNewChatButton = page.locator('[data-sidebar="header"] button[data-tooltip-trigger]').first();
     this.modelDropdownSelector = page.getByRole('button', { name: 'Select model' });
     this.messageField = page.getByPlaceholder('Send a message...');
     this.sendButton = page.getByRole('button', { name: 'Send message' });
     this.suggestedMessagesGrid = page.getByRole('region', { name: 'Suggested prompts' });
+    this.chatHistoryItems = page.locator('li[data-sidebar="menu-item"]');
   }
 
   async waitForLoad(): Promise<void> {
@@ -68,5 +72,42 @@ export class ChatPage extends BasePage {
     for (let i = 0; i < Math.min(count, minCount); i++) {
       await expect(suggestedMessages.nth(i)).toBeVisible();
     }
+  }
+
+  async verifySidebarVisible(): Promise<void> {
+    await expect(this.chatHistoryItems.first()).toBeVisible({ timeout: 2_000 });
+  }
+
+  async verifySidebarHidden(): Promise<void> {
+    await expect(this.chatHistoryItems.first()).not.toBeVisible({ timeout: 2_000 });
+  }
+
+  async toggleSidebar(): Promise<void> {
+    await this.toggleSidebarButton.click();
+    await this.page.waitForTimeout(1_000);
+  }
+
+  async sendMessage(message: string): Promise<void> {
+    await this.messageField.fill(message);
+    await this.sendButton.click();
+  }
+
+  async waitForResponse(timeout = 5_000): Promise<void> {
+    await this.page.waitForTimeout(timeout);
+  }
+
+  async clickNewChat(): Promise<void> {
+    const isSidebarOpen = await this.chatHistoryItems.isVisible();
+    if (isSidebarOpen) {
+      await this.sidebarNewChatButton.click();
+    } else {
+      await this.newChatButton.click();
+    }
+    await expect(this.suggestedMessagesGrid).toBeVisible({ timeout: 5_000 });
+  }
+
+  async getChatHistoryCount(): Promise<number> {
+    await this.page.waitForTimeout(5_000);
+    return await this.chatHistoryItems.count();
   }
 }
