@@ -25,10 +25,9 @@ import { waitForNavigationReady } from '../utils/app-ready';
 const flowName = 'custom-flow-smoke-test';
 let flowsPage: FlowsPage;
 
+test.skip(!!process.env.CI, 'Skipping flow tests on CI');
+
 test.beforeAll(async ({ page, navigationBar, resource }) => {
-  if (process.env.CI) {
-    test.skip(true, 'Skipping chat test on CI');
-  }
   if (!hasApiKey(resource)) {
     const provider = PROVIDERS[resource];
     test.skip(true, `${provider.envVarName} environment variable is not set`);
