@@ -50,4 +50,8 @@ export class ChunkProviderRegistry {
       name: entry[1].name,
     })));
   }
+
+  findProviderById(chunkerId: string): ChunkProvider | undefined {
+    return this._chunkProviders.get(chunkerId);
+  }
 }
