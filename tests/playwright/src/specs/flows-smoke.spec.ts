@@ -37,22 +37,22 @@ test.beforeAll(async ({ page, navigationBar, resource }) => {
 });
 
 test.describe.serial('Flow page e2e test suite', { tag: '@smoke' }, () => {
-  test('Check that Flows page is displayed and empty', async () => {
+  test('[FLOW-01] Check that Flows page is displayed and empty', async () => {
     await expect.poll(async () => flowsPage.checkIfFlowsPageIsEmpty()).toBeTruthy();
   });
 
-  test('Check that user can create a new flow', async ({ navigationBar }) => {
+  test('[FLOW-02] Check that user can create a new flow', async ({ navigationBar }) => {
     await flowsPage.createFlow(flowName);
     flowsPage = await navigationBar.navigateToFlowsPage();
     await flowsPage.ensureRowExists(flowName, 30_000, false);
   });
 
-  test('Check that user can run the created flow', async () => {
+  test('[FLOW-03] Check that user can run the created flow', async () => {
     const flowDetailsPage = await flowsPage.runFlowByName(flowName);
     await flowDetailsPage.waitForLoad();
   });
 
-  test('Check that user can delete the created flow', async ({ navigationBar }) => {
+  test('[FLOW-04] Check that user can delete the created flow', async ({ navigationBar }) => {
     flowsPage = await navigationBar.navigateToFlowsPage();
     await flowsPage.deleteFlowByName(flowName);
     await flowsPage.ensureRowDoesNotExist(flowName, 30_000, false);

@@ -86,6 +86,7 @@ export class FlowsCreatePage extends BasePage {
     }
 
     if (flowParameters.model) {
+      await expect(this.selectModelDropdown).toBeVisible();
       await this.selectModelDropdown.click();
       await this.page.getByRole('menuitem', { name: flowParameters.model }).click();
       await expect(this.selectModelDropdown).toContainText(flowParameters.model);
