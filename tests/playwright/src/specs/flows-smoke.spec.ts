@@ -53,7 +53,7 @@ test.describe.serial('Flow page e2e test suite', { tag: '@smoke' }, () => {
   });
 
   test('Check that user can delete the created flow', async ({ navigationBar }) => {
-    const flowsPage = await navigationBar.navigateToFlowsPage();
+    flowsPage = await navigationBar.navigateToFlowsPage();
     await flowsPage.deleteFlowByName(flowName);
     await flowsPage.ensureRowDoesNotExist(flowName, 30_000, false);
   });
