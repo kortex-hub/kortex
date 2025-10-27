@@ -18,9 +18,9 @@
 
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import { McpBaseTabPage } from './mcp-base-tab-page';
+import { BaseTablePage } from './base-table-page';
 
-export class McpEditRegistriesTabPage extends McpBaseTabPage {
+export class McpEditRegistriesTabPage extends BaseTablePage {
   readonly addMcpRegistryButton: Locator;
   readonly addMcpRegistryDialog: Locator;
 
@@ -35,7 +35,7 @@ export class McpEditRegistriesTabPage extends McpBaseTabPage {
   }
 
   async removeRegistry(name: string): Promise<void> {
-    const locator = await this.getTableRow(name);
+    const locator = await this.getTableRowByName(name);
     if (locator === undefined) {
       console.log(`MCP Registry '${name}' does not exist, skipping...`);
     } else {
@@ -43,14 +43,6 @@ export class McpEditRegistriesTabPage extends McpBaseTabPage {
       await expect(removeButton).toBeEnabled();
       await removeButton.click();
     }
-  }
-
-  async verifyRegistryExists(url: string, timeout?: number): Promise<void> {
-    await expect.poll(async () => await this.getTableRow(url), { timeout: timeout }).toBeTruthy();
-  }
-
-  async verifyRegistryIsRemoved(url: string, timeout?: number): Promise<void> {
-    await expect.poll(async () => await this.getTableRow(url), { timeout: timeout }).toBeFalsy();
   }
 
   async addNewRegistry(registryUrl: string): Promise<void> {

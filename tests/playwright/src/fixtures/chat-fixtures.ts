@@ -15,10 +15,10 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { type ElectronApplication, type Page, test as base } from '@playwright/test';
+import { type ElectronApplication, type Page } from '@playwright/test';
 
 import { createResource, deleteResource, type ResourceId } from '../utils/resource-helper';
-import { getFirstPage, launchElectronApp } from './electron-app';
+import { getFirstPage, launchElectronApp, test as base } from './electron-app';
 
 interface WorkerFixtures {
   workerElectronApp: ElectronApplication;

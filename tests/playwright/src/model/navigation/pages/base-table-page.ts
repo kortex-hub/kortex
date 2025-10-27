@@ -16,27 +16,35 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { type Locator, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 import { BasePage } from './base-page';
 
-export abstract class McpBaseTabPage extends BasePage {
+export abstract class BaseTablePage extends BasePage {
   readonly content: Locator;
   readonly table: Locator;
 
   constructor(page: Page, tableName: string) {
     super(page);
-    this.content = page.getByRole('region', { name: 'content' });
+    this.content = this.page.getByRole('region', { name: 'content' });
     this.table = this.content.getByRole('table', { name: tableName });
   }
 
-  async getTableRow(name: string): Promise<Locator | undefined> {
-    const locator = this.table.getByRole('row', { name: name, exact: true });
+  async getTableRowByName(name: string, exact = true): Promise<Locator | undefined> {
+    const locator = this.table.getByRole('row').and(this.page.getByLabel(name, { exact: exact }));
     return (await locator.count()) > 0 ? locator : undefined;
   }
 
   async countRowsFromTable(): Promise<number> {
     const rows = await this.table.getByRole('row').all();
     return rows.length - 1;
+  }
+
+  async ensureRowExists(name: string, timeout = 30_000, exact = true): Promise<void> {
+    await expect.poll(async () => await this.getTableRowByName(name, exact), { timeout: timeout }).toBeTruthy();
+  }
+
+  async ensureRowDoesNotExist(name: string, timeout = 30_000, exact = true): Promise<void> {
+    await expect.poll(async () => await this.getTableRowByName(name, exact), { timeout: timeout }).toBeFalsy();
   }
 }

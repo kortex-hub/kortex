@@ -19,6 +19,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { _electron as electron, type ElectronApplication, type Page, test as base } from '@playwright/test';
+import { NavigationBar } from 'src/model/navigation/navigation';
 
 import { waitForAppReady } from '../utils/app-ready';
 
@@ -94,6 +95,7 @@ export async function getFirstPage(electronApp: ElectronApplication): Promise<Pa
 export interface ElectronFixtures {
   electronApp: ElectronApplication;
   page: Page;
+  navigationBar: NavigationBar;
 }
 
 export const test = base.extend<ElectronFixtures>({
@@ -107,6 +109,11 @@ export const test = base.extend<ElectronFixtures>({
   page: async ({ electronApp }, use): Promise<void> => {
     const page = await getFirstPage(electronApp);
     await use(page);
+  },
+
+  navigationBar: async ({ page }, use) => {
+    const navigationBar = new NavigationBar(page);
+    await use(navigationBar);
   },
 });
 

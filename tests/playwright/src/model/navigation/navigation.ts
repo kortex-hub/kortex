@@ -16,7 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { type Locator, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
+
+import { FlowsPage } from './pages/flows-page';
 
 export class NavigationBar {
   readonly page: Page;
@@ -39,5 +41,14 @@ export class NavigationBar {
 
   getAllLinks(): Locator[] {
     return [this.chatLink, this.flowsLink, this.mcpLink, this.extensionsLink, this.settingsLink];
+  }
+
+  async navigateToFlowsPage(): Promise<FlowsPage> {
+    await expect(this.flowsLink).toBeVisible();
+    await this.flowsLink.click();
+
+    const flowsPage = new FlowsPage(this.page);
+    await flowsPage.waitForLoad();
+    return flowsPage;
   }
 }

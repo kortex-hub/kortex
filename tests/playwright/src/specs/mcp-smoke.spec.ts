@@ -38,20 +38,20 @@ test.beforeEach(async ({ page }) => {
 test.describe('MCP page navigation', { tag: '@smoke' }, () => {
   test('[MCP-01] Add and remove MCP registry: verify server list updates accordingly', async () => {
     const editRegistriesTab = await mcpServersPage.openEditRegistriesTab();
-    await editRegistriesTab.verifyRegistryExists(DEFAULT_REGISTRY);
+    await editRegistriesTab.ensureRowExists(DEFAULT_REGISTRY);
     const installTab = await mcpServersPage.openInstallTab();
     await installTab.verifyInstallTabIsNotEmpty();
     const initialServerCount = await installTab.countRowsFromTable();
 
     await mcpServersPage.openEditRegistriesTab();
     await editRegistriesTab.addNewRegistry(REGISTRY_URL);
-    await editRegistriesTab.verifyRegistryExists(REGISTRY_URL);
+    await editRegistriesTab.ensureRowExists(REGISTRY_URL);
     await mcpServersPage.openInstallTab();
     await installTab.verifyServerCountIncreased(initialServerCount, 60_000);
 
     await mcpServersPage.openEditRegistriesTab();
     await editRegistriesTab.removeRegistry(REGISTRY_URL);
-    await editRegistriesTab.verifyRegistryIsRemoved(REGISTRY_URL);
+    await editRegistriesTab.ensureRowDoesNotExist(REGISTRY_URL);
     await mcpServersPage.openInstallTab();
     await installTab.verifyServerCountIsRestored(initialServerCount);
   });
