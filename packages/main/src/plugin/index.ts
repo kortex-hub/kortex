@@ -128,6 +128,7 @@ import type {
 import type { ProxyState } from '/@api/proxy.js';
 import type { PullEvent } from '/@api/pull-event.js';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info.js';
+import { SecretManager } from '/@api/secret-manager.js';
 import type { StatusBarEntryDescriptor } from '/@api/status-bar.js';
 import type { PinOption } from '/@api/status-bar/pin-option.js';
 import type { ViewInfoUI } from '/@api/view-info.js';
@@ -948,11 +949,21 @@ export class PluginSystem {
         const { resources } = await flowConnection.flow.generateKubernetesYAML({
           flowId: flow.flowId,
           namespace: options.namespace,
-          hideSecrets: options.hideSecrets,
+          hideSecrets: false,
         });
 
+        let processedResources = resources;
+        if (options.hideSecrets) {
+          const sensitiveKeys = flowConnection.flow.getSensitiveKeys?.() ?? [];
+
+          const secretValues = (await flowConnection.flow.getSecretValues?.(flow.flowId)) ?? [];
+
+          const secretManager = new SecretManager(sensitiveKeys, secretValues);
+          processedResources = secretManager.hideSecretsInYaml(resources);
+        }
+
         if (options.dryrun) {
-          return resources;
+          return processedResources;
         }
 
         const currentContext = kubernetesClient.getCurrentContextName();
@@ -960,7 +971,7 @@ export class PluginSystem {
         const objects = await kubernetesClient.applyResourcesFromYAML(currentContext, resources);
         console.log('[FlowGenerate] created', objects);
 
-        return resources;
+        return processedResources;
       },
     );
 
