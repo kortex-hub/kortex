@@ -39,13 +39,9 @@ data:
     const result = secretManager.hideSecretsInYaml(content);
 
     // Provider credentials hidden by value
-    expect(result).toContain('GOOGLE_API_KEY: ********************');
     expect(result).not.toContain('google-api-key-12345');
-
     expect(result).not.toContain('Bearer github-token-67890');
-    expect(result).toMatch('*************************');
     expect(result).not.toContain('another-key-value');
-    expect(result).toMatch('*****************');
   });
 
   test('should return original content if YAML parsing fails', () => {

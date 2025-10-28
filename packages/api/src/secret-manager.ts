@@ -30,6 +30,8 @@ export interface RecipeWithExtensions {
 }
 
 export class SecretManager {
+  /** Fixed-length mask to hide secrets without revealing their actual length */
+  private static readonly MASK = '********************';
   constructor(
     private readonly sensitiveKeys: string[],
     private readonly secretValues: string[],
@@ -52,8 +54,7 @@ export class SecretManager {
     let result = content;
     for (const secretValue of this.secretValues) {
       if (secretValue && secretValue.length > 0) {
-        const maskedValue = '*'.repeat(secretValue.length);
-        result = result.replace(secretValue, maskedValue);
+        result = result.replaceAll(secretValue, SecretManager.MASK);
       }
     }
     return result;
@@ -124,7 +125,7 @@ export class SecretManager {
 
     for (const [key, value] of Object.entries(headers)) {
       const sensitive = this.isSensitive(key);
-      processed[key] = sensitive ? '*'.repeat(value.length) : value;
+      processed[key] = sensitive ? SecretManager.MASK : value;
     }
     return processed;
   }
