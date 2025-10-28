@@ -17,16 +17,10 @@
  ***********************************************************************/
 
 import { expect, type Locator, type Page } from '@playwright/test';
+import type { ProxyConfigurationOption } from 'src/model/core/types';
+import { proxyConfigurations } from 'src/model/core/types';
 
 import { BasePage } from './base-page';
-
-export const proxyConfigurations = [
-  { option: 'System', editable: false },
-  { option: 'Manual', editable: true },
-  { option: 'Disabled', editable: false },
-] as const;
-
-export type ProxyConfigurationOption = (typeof proxyConfigurations)[number]['option'];
 
 export class SettingsProxyPage extends BasePage {
   readonly proxyConfigDropdown: Locator;

@@ -16,23 +16,18 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { McpPage } from 'src/model/navigation/pages/mcp-page';
+import type { McpPage } from 'src/model/navigation/pages/mcp-page';
 
 import { test } from '../fixtures/electron-app';
-import { NavigationBar } from '../model/navigation/navigation';
 import { waitForNavigationReady } from '../utils/app-ready';
 
 const DEFAULT_REGISTRY: string = 'MCP Registry example';
 const REGISTRY_URL: string = 'https://registry.modelcontextprotocol.io';
-let navigationBar: NavigationBar;
 let mcpServersPage: McpPage;
 
-test.beforeEach(async ({ page }) => {
-  navigationBar = new NavigationBar(page);
-  mcpServersPage = new McpPage(page);
+test.beforeEach(async ({ page, navigationBar }) => {
   await waitForNavigationReady(page);
-  await navigationBar.mcpLink.click();
-  await mcpServersPage.waitForLoad();
+  mcpServersPage = await navigationBar.navigateToMCPPage();
 });
 
 test.describe('MCP page navigation', { tag: '@smoke' }, () => {

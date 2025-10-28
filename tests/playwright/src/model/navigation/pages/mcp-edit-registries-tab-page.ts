@@ -36,13 +36,15 @@ export class McpEditRegistriesTabPage extends BaseTablePage {
 
   async removeRegistry(name: string): Promise<void> {
     const locator = await this.getTableRowByName(name);
-    if (locator === undefined) {
+
+    if (!locator) {
       console.log(`MCP Registry '${name}' does not exist, skipping...`);
-    } else {
-      const removeButton = locator.getByRole('button', { name: 'Remove' });
-      await expect(removeButton).toBeEnabled();
-      await removeButton.click();
+      return;
     }
+
+    const removeButton = locator.getByRole('button', { name: 'Remove' });
+    await expect(removeButton).toBeEnabled();
+    await removeButton.click();
   }
 
   async addNewRegistry(registryUrl: string): Promise<void> {

@@ -16,12 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 import { expect, test } from '../fixtures/chat-fixtures';
-import { NavigationBar } from '../model/navigation/navigation';
-import { ChatPage } from '../model/navigation/pages/chat-page';
+import type { ChatPage } from '../model/navigation/pages/chat-page';
 import { waitForNavigationReady } from '../utils/app-ready';
 import { hasApiKey, PROVIDERS } from '../utils/resource-helper';
 
-let navigationBar: NavigationBar;
 let chatPage: ChatPage;
 
 test.describe('Chat page navigation', { tag: '@smoke' }, () => {
@@ -35,12 +33,9 @@ test.describe('Chat page navigation', { tag: '@smoke' }, () => {
     }
   });
 
-  test.beforeEach(async ({ page }) => {
-    navigationBar = new NavigationBar(page);
+  test.beforeEach(async ({ page, navigationBar }) => {
     await waitForNavigationReady(page);
-    await navigationBar.chatLink.click();
-    chatPage = new ChatPage(page);
-    await chatPage.waitForLoad();
+    chatPage = await navigationBar.navigateToChatPage();
   });
 
   test('[CHAT-01] All chat UI elements are visible', async () => {

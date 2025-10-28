@@ -69,7 +69,7 @@ export class ChatPage extends BasePage {
     const suggestedMessages = this.getSuggestedMessages();
     const count = await suggestedMessages.count();
     expect(count).toBeGreaterThanOrEqual(minCount);
-    for (let i = 0; i < Math.min(count, minCount); i++) {
+    for (let i = 0; i < minCount; i++) {
       await expect(suggestedMessages.nth(i)).toBeVisible();
     }
   }

@@ -39,6 +39,8 @@ export class SettingsCreateGeminiPage extends BasePage {
 
   async create(apiKey: string): Promise<void> {
     await this.apiKeyInput.fill(apiKey);
+    await expect(this.apiKeyInput).toHaveValue(apiKey);
+    await expect(this.createButton).toBeEnabled();
     await this.createButton.click();
   }
 

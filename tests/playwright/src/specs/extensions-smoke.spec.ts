@@ -15,25 +15,18 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+import { BADGE_TEXT, builtInExtensions } from 'src/model/core/types';
+
 import { expect, test } from '../fixtures/electron-app';
-import { NavigationBar } from '../model/navigation/navigation';
-import {
-  BADGE_TEXT,
-  builtInExtensions,
-  Button,
-  ExtensionStatus,
-} from '../model/navigation/pages/extensions-installed-tab-page';
 import { ExtensionsPage } from '../model/navigation/pages/extensions-page';
 import { waitForNavigationReady } from '../utils/app-ready';
 
-let navigationBar: NavigationBar;
 let extensionsPage: ExtensionsPage;
 
-test.beforeEach(async ({ page }) => {
-  navigationBar = new NavigationBar(page);
+test.beforeEach(async ({ page, navigationBar }) => {
   extensionsPage = new ExtensionsPage(page);
   await waitForNavigationReady(page);
-  await navigationBar.extensionsLink.click();
+  await navigationBar.navigateToExtensionsPage();
 });
 
 test.describe('Extensions page navigation', { tag: '@smoke' }, () => {
@@ -45,11 +38,9 @@ test.describe('Extensions page navigation', { tag: '@smoke' }, () => {
   });
 
   test('[EXT-02] Search functionality filters extensions correctly', async () => {
-    await expect(extensionsPage.searchField).toBeVisible();
     await expect(extensionsPage.searchField).toBeEnabled();
     for (const extension of builtInExtensions) {
       await extensionsPage.searchExtension(extension.name);
-      await expect(extensionsPage.searchField).toHaveValue(extension.name);
       await extensionsPage.verifySearchResults(extension.locator);
       await extensionsPage.clearSearch();
     }
@@ -62,21 +53,14 @@ test.describe('Extensions page navigation', { tag: '@smoke' }, () => {
       const badge = installedPage.getExtensionBadge(extension.locator);
       await expect(badge).toBeVisible();
       await expect(badge).toHaveText(BADGE_TEXT);
-      const deleteButton = installedPage.getExtensionButton(extension.locator, Button.DELETE);
+      const deleteButton = installedPage.getDeleteButtonForExtension(extension.locator);
       await expect(deleteButton).toBeVisible();
       await expect(deleteButton).toBeDisabled();
-      const initialState = await installedPage.getExtensionState(extension.locator);
-      if (initialState === ExtensionStatus.RUNNING) {
-        await installedPage.stopExtensionAndVerify(extension.locator);
-        await expect(deleteButton).toBeDisabled();
-        await installedPage.startExtensionAndVerify(extension.locator);
-        await expect(deleteButton).toBeDisabled();
-      } else if (initialState === ExtensionStatus.STOPPED) {
-        await installedPage.startExtensionAndVerify(extension.locator);
-        await expect(deleteButton).toBeDisabled();
-        await installedPage.stopExtensionAndVerify(extension.locator);
-        await expect(deleteButton).toBeDisabled();
-      }
+
+      await installedPage.toggleExtensionState(extension.locator);
+      await expect(deleteButton).toBeDisabled();
+      await installedPage.toggleExtensionState(extension.locator);
+      await expect(deleteButton).toBeDisabled();
     }
   });
 });

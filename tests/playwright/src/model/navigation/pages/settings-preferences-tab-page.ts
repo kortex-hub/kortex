@@ -17,24 +17,9 @@
  ***********************************************************************/
 
 import { expect, type Locator, type Page } from '@playwright/test';
+import type { PreferenceOption } from 'src/model/core/types';
 
 import { BasePage } from './base-page';
-
-export enum PreferenceOption {
-  APPEARANCE = 'Appearance',
-  EDITOR = 'Editor',
-  EXIT_ON_CLOSE = 'Exit On Close',
-  EXPERIMENTAL_STATUS_BAR = 'Experimental (Status Bar Providers)',
-  EXTENSIONS = 'Extensions',
-  KUBERNETES = 'Kubernetes',
-  TASKS = 'Tasks',
-  TELEMETRY = 'Telemetry',
-  TERMINAL = 'Terminal',
-  USER_CONFIRMATION = 'User Confirmation',
-  WINDOW = 'Window',
-}
-
-export const preferenceOptions = (): PreferenceOption[] => Object.values(PreferenceOption);
 
 export class SettingsPreferencesPage extends BasePage {
   readonly searchField: Locator;
@@ -50,10 +35,12 @@ export class SettingsPreferencesPage extends BasePage {
 
   async searchPreferences(searchTerm: string): Promise<void> {
     await this.searchField.fill(searchTerm);
+    await expect(this.searchField).toHaveValue(searchTerm);
   }
 
   async clearSearch(): Promise<void> {
     await this.searchField.clear();
+    await expect(this.searchField).toHaveValue('');
   }
 
   getPreferenceLink(option: PreferenceOption): Locator {

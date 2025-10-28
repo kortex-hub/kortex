@@ -17,23 +17,10 @@
  ***********************************************************************/
 
 import { expect, type Locator, type Page } from '@playwright/test';
+import { featuredResources, resources } from 'src/model/core/types';
 
 import { BasePage } from './base-page';
 import { SettingsCreateGeminiPage } from './settings-create-gemini-page';
-
-export const resources = {
-  openshiftai: { displayName: 'OpenShift AI', hasCreateButton: true },
-  openai: { displayName: 'OpenAI', hasCreateButton: true },
-  goose: { displayName: 'goose', hasCreateButton: false },
-  gemini: { displayName: 'Gemini', hasCreateButton: true },
-} as const;
-
-export type SettingsResourceId = keyof typeof resources;
-
-export const featuredResources = Object.keys(resources) as (keyof typeof resources)[];
-export const resourcesWithCreateButton = Object.values(resources)
-  .filter(r => r.hasCreateButton)
-  .map(r => r.displayName);
 
 export class SettingsResourcesPage extends BasePage {
   constructor(page: Page) {

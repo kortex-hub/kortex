@@ -15,22 +15,23 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+import {
+  featuredResources,
+  preferenceOptions,
+  proxyConfigurations,
+  resourcesWithCreateButton,
+} from 'src/model/core/types';
+
 import { expect, test } from '../fixtures/electron-app';
-import { NavigationBar } from '../model/navigation/navigation';
 import { SettingsPage } from '../model/navigation/pages/settings-page';
-import { preferenceOptions } from '../model/navigation/pages/settings-preferences-tab-page';
-import { proxyConfigurations } from '../model/navigation/pages/settings-proxy-tab-page';
-import { featuredResources, resourcesWithCreateButton } from '../model/navigation/pages/settings-resources-tab-page';
 import { waitForNavigationReady } from '../utils/app-ready';
 
-let navigationBar: NavigationBar;
 let settingsPage: SettingsPage;
 
-test.beforeEach(async ({ page }) => {
-  navigationBar = new NavigationBar(page);
+test.beforeEach(async ({ page, navigationBar }) => {
   settingsPage = new SettingsPage(page);
   await waitForNavigationReady(page);
-  await navigationBar.settingsLink.click();
+  await navigationBar.navigateToSettingsPage();
 });
 
 test.describe('Settings page navigation', { tag: '@smoke' }, () => {

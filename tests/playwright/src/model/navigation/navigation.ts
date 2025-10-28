@@ -18,7 +18,11 @@
 
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import { ChatPage } from './pages/chat-page';
+import { ExtensionsPage } from './pages/extensions-page';
 import { FlowsPage } from './pages/flows-page';
+import { McpPage } from './pages/mcp-page';
+import { SettingsPage } from './pages/settings-page';
 
 export class NavigationBar {
   readonly page: Page;
@@ -50,5 +54,41 @@ export class NavigationBar {
     const flowsPage = new FlowsPage(this.page);
     await flowsPage.waitForLoad();
     return flowsPage;
+  }
+
+  async navigateToSettingsPage(): Promise<SettingsPage> {
+    await expect(this.settingsLink).toBeVisible();
+    await this.settingsLink.click();
+
+    const settingsPage = new SettingsPage(this.page);
+    await settingsPage.waitForLoad();
+    return settingsPage;
+  }
+
+  async navigateToExtensionsPage(): Promise<ExtensionsPage> {
+    await expect(this.extensionsLink).toBeVisible();
+    await this.extensionsLink.click();
+
+    const extensionsPage = new ExtensionsPage(this.page);
+    await extensionsPage.waitForLoad();
+    return extensionsPage;
+  }
+
+  async navigateToMCPPage(): Promise<McpPage> {
+    await expect(this.mcpLink).toBeVisible();
+    await this.mcpLink.click();
+
+    const mcpPage = new McpPage(this.page);
+    await mcpPage.waitForLoad();
+    return mcpPage;
+  }
+
+  async navigateToChatPage(): Promise<ChatPage> {
+    await expect(this.chatLink).toBeVisible();
+    await this.chatLink.click();
+
+    const chatPage = new ChatPage(this.page);
+    await chatPage.waitForLoad();
+    return chatPage;
   }
 }

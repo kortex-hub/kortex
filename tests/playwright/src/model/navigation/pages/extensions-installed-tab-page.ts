@@ -18,41 +18,10 @@
 
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
+import type { ExtensionLocator } from 'src/model/core/types';
+import { BadgeType, builtInExtensions, Button, ExtensionStatus, State } from 'src/model/core/types';
 
 import { BasePage } from './base-page';
-
-export const builtInExtensions = [
-  { name: 'Default MCP Registries', locator: 'kortex.mcp-registries' },
-  { name: 'Gemini', locator: 'kortex.gemini' },
-  { name: 'goose', locator: 'kortex.goose' },
-  { name: 'OpenAI Compatible', locator: 'kortex.openai-compatible' },
-  { name: 'OpenShift AI', locator: 'kortex.openshift-ai' },
-] as const;
-
-export type ExtensionLocator = (typeof builtInExtensions)[number]['locator'];
-
-export enum Button {
-  STOP = 'Stop',
-  START = 'Start',
-  DELETE = 'Delete',
-}
-
-export enum State {
-  ACTIVE = 'ACTIVE',
-  DISABLED = 'DISABLED',
-}
-
-export const BADGE_TEXT = 'built-in Extension' as const;
-
-export enum BadgeType {
-  BUILT_IN = 'badge-built-in Extension',
-}
-
-export enum ExtensionStatus {
-  RUNNING = 'running',
-  STOPPED = 'stopped',
-  UNKNOWN = 'unknown',
-}
 
 export class ExtensionsInstalledPage extends BasePage {
   constructor(page: Page) {
@@ -63,57 +32,88 @@ export class ExtensionsInstalledPage extends BasePage {
     await expect(this.getExtension(builtInExtensions[0].locator)).toBeVisible();
   }
 
-  getExtension(locator: ExtensionLocator): Locator {
+  public getExtension(locator: ExtensionLocator): Locator {
     return this.page.getByLabel(locator);
   }
 
-  getExtensionButton(locator: ExtensionLocator, buttonType: Button): Locator {
-    const extensionElement = this.getExtension(locator);
-    return extensionElement.getByLabel(buttonType);
-  }
-
-  getExtensionBadge(locator: ExtensionLocator): Locator {
+  public getExtensionBadge(locator: ExtensionLocator): Locator {
     const extensionElement = this.getExtension(locator);
     return extensionElement.getByLabel(BadgeType.BUILT_IN);
   }
 
-  async clickExtensionButton(locator: ExtensionLocator, buttonType: Button): Promise<void> {
-    await this.getExtensionButton(locator, buttonType).click();
-  }
-
-  extensionState(locator: ExtensionLocator): Locator {
-    const extensionElement = this.getExtension(locator);
-    return extensionElement.getByLabel('Extension Status Label');
-  }
-
-  async getExtensionState(locator: ExtensionLocator): Promise<ExtensionStatus> {
+  public async getExtensionState(locator: ExtensionLocator): Promise<ExtensionStatus> {
     try {
-      const statusLabel = this.extensionState(locator);
-      const status = await statusLabel.textContent();
+      const statusLabel = this.extensionStateLocator(locator);
+      const status = (await statusLabel.textContent()) ?? '';
 
-      if (status === State.ACTIVE) {
-        return ExtensionStatus.RUNNING;
-      } else if (status === State.DISABLED) {
-        return ExtensionStatus.STOPPED;
-      } else {
-        return ExtensionStatus.UNKNOWN;
+      switch (status) {
+        case State.ACTIVE:
+          return ExtensionStatus.RUNNING;
+
+        case State.DISABLED:
+          return ExtensionStatus.STOPPED;
+
+        default:
+          return ExtensionStatus.UNKNOWN;
       }
     } catch {
       return ExtensionStatus.UNKNOWN;
     }
   }
 
-  async stopExtensionAndVerify(locator: ExtensionLocator): Promise<void> {
+  public async stopExtensionAndVerify(locator: ExtensionLocator, timeout = 10_000): Promise<void> {
     await this.clickExtensionButton(locator, Button.STOP);
-    await expect(this.extensionState(locator)).toHaveText(State.DISABLED, {
-      timeout: 5_000,
+    await expect(this.extensionStateLocator(locator)).toHaveText(State.DISABLED, {
+      timeout,
     });
   }
 
-  async startExtensionAndVerify(locator: ExtensionLocator): Promise<void> {
+  public async startExtensionAndVerify(locator: ExtensionLocator, timeout = 5_000): Promise<void> {
     await this.clickExtensionButton(locator, Button.START);
-    await expect(this.extensionState(locator)).toHaveText(State.ACTIVE, {
-      timeout: 5_000,
+    await expect(this.extensionStateLocator(locator)).toHaveText(State.ACTIVE, {
+      timeout,
     });
+  }
+
+  public async toggleExtensionState(locator: ExtensionLocator): Promise<void> {
+    const currentState = await this.getExtensionState(locator);
+    switch (currentState) {
+      case ExtensionStatus.RUNNING:
+        await this.stopExtensionAndVerify(locator);
+        break;
+      case ExtensionStatus.STOPPED:
+        await this.startExtensionAndVerify(locator);
+        break;
+      default:
+        throw new Error(`Cannot toggle extension with unknown state: ${locator}`);
+    }
+  }
+
+  public getDeleteButtonForExtension(locator: ExtensionLocator): Locator {
+    return this.getExtensionButton(locator, Button.DELETE);
+  }
+
+  public getStartButtonForExtension(locator: ExtensionLocator): Locator {
+    return this.getExtensionButton(locator, Button.START);
+  }
+
+  public getStopButtonForExtension(locator: ExtensionLocator): Locator {
+    return this.getExtensionButton(locator, Button.STOP);
+  }
+
+  private extensionStateLocator(locator: ExtensionLocator): Locator {
+    const extensionElement = this.getExtension(locator);
+    return extensionElement.getByLabel('Extension Status Label');
+  }
+
+  private async clickExtensionButton(locator: ExtensionLocator, buttonType: Button): Promise<void> {
+    const button = this.getExtensionButton(locator, buttonType);
+    await expect(button).toBeEnabled();
+    await button.click();
+  }
+
+  private getExtensionButton(locator: ExtensionLocator, buttonType: Button): Locator {
+    const extensionElement = this.getExtension(locator);
+    return extensionElement.getByLabel(buttonType);
   }
 }

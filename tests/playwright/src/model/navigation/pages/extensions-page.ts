@@ -18,9 +18,10 @@
 
 import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
+import type { ExtensionLocator } from 'src/model/core/types';
+import { builtInExtensions } from 'src/model/core/types';
 
 import { BasePage } from './base-page';
-import { builtInExtensions, type ExtensionLocator } from './extensions-installed-tab-page';
 import { ExtensionsInstalledPage } from './extensions-installed-tab-page';
 
 export class ExtensionsPage extends BasePage {
@@ -37,6 +38,13 @@ export class ExtensionsPage extends BasePage {
     this.localExtensionsTab = page.getByRole('button', { name: 'Local Extensions', exact: true });
   }
 
+  async waitForLoad(): Promise<void> {
+    await expect(this.searchField).toBeVisible();
+    await expect(this.installedTab).toBeVisible();
+    await expect(this.catalogTab).toBeVisible();
+    await expect(this.localExtensionsTab).toBeVisible();
+  }
+
   async openInstalled(): Promise<ExtensionsInstalledPage> {
     await this.installedTab.click();
     const installedPage = new ExtensionsInstalledPage(this.page);
@@ -50,10 +58,12 @@ export class ExtensionsPage extends BasePage {
 
   async searchExtension(searchTerm: string): Promise<void> {
     await this.searchField.fill(searchTerm);
+    await expect(this.searchField).toHaveValue(searchTerm);
   }
 
   async clearSearch(): Promise<void> {
     await this.searchField.clear();
+    await expect(this.searchField).toHaveValue('');
   }
 
   async verifySearchResults(searchedExtensionLocator: ExtensionLocator): Promise<void> {

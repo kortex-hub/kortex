@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 import { BasePage } from './base-page';
 import { SettingsCliPage } from './settings-cli-tab-page';
@@ -38,29 +38,44 @@ export class SettingsPage extends BasePage {
     this.preferencesTab = page.getByRole('link', { name: 'Preferences' });
   }
 
+  async waitForLoad(): Promise<void> {
+    await expect(this.resourcesTab).toBeVisible();
+    await expect(this.cliTab).toBeVisible();
+    await expect(this.proxyTab).toBeVisible();
+    await expect(this.preferencesTab).toBeVisible();
+  }
+
   async openResources(): Promise<SettingsResourcesPage> {
+    await expect(this.resourcesTab).toBeVisible();
     await this.resourcesTab.click();
+
     const resourcesPage = new SettingsResourcesPage(this.page);
     await resourcesPage.waitForLoad();
     return resourcesPage;
   }
 
   async openCli(): Promise<SettingsCliPage> {
+    await expect(this.cliTab).toBeVisible();
     await this.cliTab.click();
+
     const cliPage = new SettingsCliPage(this.page);
     await cliPage.waitForLoad();
     return cliPage;
   }
 
   async openProxy(): Promise<SettingsProxyPage> {
+    await expect(this.proxyTab).toBeVisible();
     await this.proxyTab.click();
+
     const proxyPage = new SettingsProxyPage(this.page);
     await proxyPage.waitForLoad();
     return proxyPage;
   }
 
   async openPreferences(): Promise<SettingsPreferencesPage> {
+    await expect(this.preferencesTab).toBeVisible();
     await this.preferencesTab.click();
+
     const preferencesPage = new SettingsPreferencesPage(this.page);
     await preferencesPage.waitForLoad();
     return preferencesPage;

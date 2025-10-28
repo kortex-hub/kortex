@@ -32,17 +32,17 @@ export class McpInstallTabPage extends BaseTablePage {
     await expect(this.table).toBeVisible();
   }
 
-  async verifyServerCountIncreased(initialServerCount: number, timeout?: number): Promise<void> {
+  async verifyServerCountIncreased(initialServerCount: number, timeout = 10_000): Promise<void> {
     await expect
       .poll(async () => await this.countRowsFromTable(), { timeout: timeout })
       .toBeGreaterThan(initialServerCount);
   }
 
-  async verifyServerCountIsRestored(initialServerCount: number, timeout?: number): Promise<void> {
+  async verifyServerCountIsRestored(initialServerCount: number, timeout = 10_000): Promise<void> {
     await expect.poll(async () => await this.countRowsFromTable(), { timeout: timeout }).toBe(initialServerCount);
   }
 
-  async verifyInstallTabIsNotEmpty(timeout?: number): Promise<void> {
+  async verifyInstallTabIsNotEmpty(timeout = 10_000): Promise<void> {
     await expect(this.noMcpServersAvailableHeading).not.toBeVisible({ timeout: timeout });
   }
 }
