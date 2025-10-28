@@ -18,15 +18,14 @@
 import { BADGE_TEXT, builtInExtensions } from 'src/model/core/types';
 
 import { expect, test } from '../fixtures/electron-app';
-import { ExtensionsPage } from '../model/navigation/pages/extensions-page';
+import type { ExtensionsPage } from '../model/navigation/pages/extensions-page';
 import { waitForNavigationReady } from '../utils/app-ready';
 
 let extensionsPage: ExtensionsPage;
 
 test.beforeEach(async ({ page, navigationBar }) => {
-  extensionsPage = new ExtensionsPage(page);
   await waitForNavigationReady(page);
-  await navigationBar.navigateToExtensionsPage();
+  extensionsPage = await navigationBar.navigateToExtensionsPage();
 });
 
 test.describe('Extensions page navigation', { tag: '@smoke' }, () => {
