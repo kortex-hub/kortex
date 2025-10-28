@@ -23,15 +23,14 @@ import {
 } from 'src/model/core/types';
 
 import { expect, test } from '../fixtures/electron-app';
-import { SettingsPage } from '../model/navigation/pages/settings-page';
+import type { SettingsPage } from '../model/navigation/pages/settings-page';
 import { waitForNavigationReady } from '../utils/app-ready';
 
 let settingsPage: SettingsPage;
 
 test.beforeEach(async ({ page, navigationBar }) => {
-  settingsPage = new SettingsPage(page);
   await waitForNavigationReady(page);
-  await navigationBar.navigateToSettingsPage();
+  settingsPage = await navigationBar.navigateToSettingsPage();
 });
 
 test.describe('Settings page navigation', { tag: '@smoke' }, () => {
