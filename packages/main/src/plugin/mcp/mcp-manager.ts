@@ -16,9 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { experimental_createMCPClient } from '@ai-sdk/mcp';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { ToolSet } from 'ai';
-import { experimental_createMCPClient } from 'ai';
 import { inject, injectable, preDestroy } from 'inversify';
 
 import { MCPExchanges, MCPMessageExchange } from '/@/plugin/mcp/mcp-exchanges.js';
