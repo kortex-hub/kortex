@@ -16,11 +16,12 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { copyFile, mkdir, readFile, rm } from 'node:fs/promises';
+import { copyFile, mkdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 
 import * as api from '@kortex-app/api';
+import { Uri } from '@kortex-app/api';
 import type { ContainerInfo } from 'dockerode';
 
 const DOCLING_IMAGE = 'quay.io/jeffmaury/docling-kortex:latest';
@@ -36,8 +37,7 @@ type DoclingContainerInfo = {
 export class Docling {
   private containerInfo: DoclingContainerInfo | undefined = undefined;
 
-  constructor(private extensionContext: api.ExtensionContext) {
-  }
+  constructor(private extensionContext: api.ExtensionContext) {}
 
   /**
    * Get a random port for the container
@@ -51,11 +51,7 @@ export class Docling {
 
     try {
       // List all containers (running and stopped) with Docling labels
-      const { stdout } = await api.process.exec('podman', [
-        'ps',
-        '-a',
-        '--format', 'json',
-      ]);
+      const { stdout } = await api.process.exec('podman', ['ps', '-a', '--format', 'json']);
 
       if (!stdout || stdout.trim() === '') {
         console.log('No existing Docling containers found');
@@ -70,7 +66,7 @@ export class Docling {
 
         if (doclingPort) {
           console.log(`Found container: (with port ${doclingPort}, state: ${container.State}`);
-           return {
+          return {
             containerId: container.Id,
             port: parseInt(doclingPort, 10),
             workspaceFolder: doclingFolder,
@@ -82,7 +78,6 @@ export class Docling {
       return undefined;
     }
   }
-
 
   /**
    * Initialize the Docling chunker by starting the container
@@ -258,17 +253,16 @@ export class Docling {
       const chunks: api.Chunk[] = [];
       for (let i = 0; i < result.chunk_count; i++) {
         const chunkPath = join(folderPath, `chunk${i}.txt`);
-        const chunkText = await readFile(chunkPath, 'utf-8');
         chunks.push({
-          id: `${docUri.fsPath}-chunk-${i}`,
-          text: chunkText,
+          text: Uri.file(chunkPath),
         });
       }
 
       return chunks;
-    } finally {
+    } catch (err: unknown) {
       // Clean up the document folder
       await rm(folderPath, { recursive: true, force: true }).catch(() => {});
+      throw err;
     }
   }
 }

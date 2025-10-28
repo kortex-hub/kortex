@@ -29,6 +29,9 @@
     "test:watch": "vitest watch --coverage",
     "watch": "vite build --watch"
   },
+  "dependencies": {
+    "@zilliz/milvus2-sdk-node": "^2.6.2"
+  },
   "devDependencies": {
     "@kortex-app/api": "workspace:*",
     "@types/dockerode": "^3.3.44",
