@@ -17,7 +17,7 @@
  ***********************************************************************/
 import { describe, expect, test } from 'vitest';
 
-import { SecretManager } from './secret-manager';
+import { SecretManager } from './secret-manager.js';
 
 describe('SecretManager', () => {
   test('should hide values and keys', () => {
