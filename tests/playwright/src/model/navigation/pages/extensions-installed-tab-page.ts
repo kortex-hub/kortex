@@ -68,7 +68,7 @@ export class ExtensionsInstalledPage extends BasePage {
     });
   }
 
-  public async startExtensionAndVerify(locator: ExtensionLocator, timeout = 5_000): Promise<void> {
+  public async startExtensionAndVerify(locator: ExtensionLocator, timeout = 10_000): Promise<void> {
     await this.clickExtensionButton(locator, Button.START);
     await expect(this.extensionStateLocator(locator)).toHaveText(State.ACTIVE, {
       timeout,

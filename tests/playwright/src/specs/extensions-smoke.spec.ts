@@ -46,7 +46,7 @@ test.describe('Extensions page navigation', { tag: '@smoke' }, () => {
   });
 
   test('[EXT-03] Built-in extensions lifecycle and controls validation', async () => {
-    const installedPage = await extensionsPage.openInstalled();
+    const installedPage = await extensionsPage.openInstalledTab();
     for (const extension of builtInExtensions) {
       await expect(installedPage.getExtension(extension.locator)).toBeVisible();
       const badge = installedPage.getExtensionBadge(extension.locator);

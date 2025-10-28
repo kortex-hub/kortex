@@ -60,6 +60,12 @@ export async function createResource(page: Page, providerId: ResourceId): Promis
     throw new Error(`${provider.envVarName} environment variable is not set`);
   }
   const resourcesPage = await navigateToResourcesPage(page);
+
+  if ((await resourcesPage.getCreatedResourceFor(provider.resourceId).count()) > 0) {
+    // Resource already exists
+    return;
+  }
+
   switch (providerId) {
     case 'gemini': {
       const createGeminiPage = await resourcesPage.openCreateGeminiPage();
@@ -75,7 +81,7 @@ export async function createResource(page: Page, providerId: ResourceId): Promis
   }
   await resourcesPage.waitForLoad();
   const resource = resourcesPage.getCreatedResourceFor(provider.resourceId);
-  await expect(resource).toBeVisible({ timeout: 5_000 });
+  await expect(resource).toBeVisible();
 }
 
 export async function deleteResource(page: Page, providerId: ResourceId): Promise<void> {

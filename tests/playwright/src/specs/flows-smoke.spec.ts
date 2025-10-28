@@ -19,7 +19,7 @@
 import type { FlowsPage } from 'src/model/navigation/pages/flows-page';
 import { hasApiKey, PROVIDERS } from 'src/utils/resource-helper';
 
-import { expect, test } from '../fixtures/chat-fixtures';
+import { expect, test } from '../fixtures/provider-fixtures';
 import { waitForNavigationReady } from '../utils/app-ready';
 
 const flowName = 'custom-flow-smoke-test';

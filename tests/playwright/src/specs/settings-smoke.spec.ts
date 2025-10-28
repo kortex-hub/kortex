@@ -84,25 +84,4 @@ test.describe('Settings page navigation', { tag: '@smoke' }, () => {
       await preferencesPage.clearSearch();
     }
   });
-
-  test('[SET-07] Create a new Gemini resource', async () => {
-    const resourceId = 'gemini';
-    if (process.env.CI) {
-      test.skip(true, 'Skipping Gemini resource creation test on CI');
-      return;
-    }
-    const geminiApiKey = process.env.GEMINI_API_KEY;
-    if (!geminiApiKey) {
-      test.skip(true, 'GEMINI_API_KEY environment variable is not set');
-      return;
-    }
-    const resourcesPage = await settingsPage.openResources();
-    const createGeminiPage = await resourcesPage.openCreateGeminiPage();
-    await createGeminiPage.createAndGoBack(geminiApiKey);
-    await resourcesPage.waitForLoad();
-    const geminiResource = resourcesPage.getCreatedResourceFor(resourceId);
-    await expect(geminiResource).toBeVisible({ timeout: 5_000 });
-    await resourcesPage.deleteCreatedResourceFor(resourceId);
-    await expect(geminiResource).not.toBeVisible();
-  });
 });

@@ -43,6 +43,7 @@ export class McpPage extends BasePage {
   async openEditRegistriesTab(): Promise<McpEditRegistriesTabPage> {
     await expect(this.editRegistriesTabButton).toBeEnabled();
     await this.editRegistriesTabButton.click();
+
     const editRegistriesTabPage = new McpEditRegistriesTabPage(this.page);
     await editRegistriesTabPage.waitForLoad();
     return editRegistriesTabPage;
@@ -51,6 +52,7 @@ export class McpPage extends BasePage {
   async openInstallTab(): Promise<McpInstallTabPage> {
     await expect(this.installTabButton).toBeEnabled();
     await this.installTabButton.click();
+
     const installTabPage = new McpInstallTabPage(this.page);
     await installTabPage.waitForLoad();
     return installTabPage;

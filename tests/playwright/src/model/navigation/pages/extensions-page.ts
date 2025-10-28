@@ -45,8 +45,10 @@ export class ExtensionsPage extends BasePage {
     await expect(this.localExtensionsTab).toBeVisible();
   }
 
-  async openInstalled(): Promise<ExtensionsInstalledPage> {
+  async openInstalledTab(): Promise<ExtensionsInstalledPage> {
+    await expect(this.installedTab).toBeVisible();
     await this.installedTab.click();
+
     const installedPage = new ExtensionsInstalledPage(this.page);
     await installedPage.waitForLoad();
     return installedPage;

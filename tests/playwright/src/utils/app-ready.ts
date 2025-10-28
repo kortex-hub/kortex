@@ -65,17 +65,14 @@ async function waitForInitializingScreenToDisappear(page: Page): Promise<void> {
   }
 }
 
-async function handleWelcomePageIfPresent(page: Page): Promise<void> {
+async function handleWelcomePageIfPresent(page: Page, timeout = 5_000): Promise<void> {
   const welcomePage = page.locator(SELECTORS.WELCOME_PAGE).first();
 
   try {
-    const isVisible = await welcomePage.isVisible({ timeout: 5_000 });
-    if (isVisible) {
-      const skipButton = page.getByRole('button', { name: 'Skip' });
-      await skipButton.click();
-      await expect(welcomePage).toBeHidden({ timeout: TIMEOUTS.WELCOME_PAGE });
-    }
+    await expect(welcomePage).not.toBeVisible({ timeout: timeout });
   } catch {
-    // Welcome page not present or already dismissed - expected on subsequent runs
+    const skipButton = page.getByRole('button', { name: 'Skip' });
+    await skipButton.click();
+    await expect(welcomePage).toBeHidden({ timeout: TIMEOUTS.WELCOME_PAGE });
   }
 }
