@@ -672,19 +672,20 @@ declare module '@kortex-app/api' {
   export type MCPServer = {
     server: MCPServerDetail;
     config: MCPServerConfig;
-  }
+  };
 
   export type RagProviderConnection = {
     name: string;
     mcpServer: MCPServer;
     credentials(): Record<string, string>;
+    index(doc: Uri, chunks: Uri[]): Promise<void>;
+    unindex(doc: Uri): Promise<void>;
     lifecycle?: ProviderConnectionLifecycle;
     status(): ProviderConnectionStatus;
   };
 
   export type Chunk = {
-    id: string;
-    text: string;
+    text: Uri;
   };
 
   export type ChunkProvider = {

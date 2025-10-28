@@ -20,11 +20,12 @@ import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 
-import { type ChunkProvider } from '@kortex-app/api';
+import { type ChunkProvider, ProviderRagConnection } from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
 import { ApiSenderType } from '/@/plugin/api.js';
 import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
+import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import { Uri } from '/@/plugin/types/uri.js';
 import { RagEnvironment } from '/@api/rag/rag-environment.js';
@@ -42,6 +43,8 @@ export class RagEnvironmentRegistry {
     private directories: Directories,
     @inject(ChunkProviderRegistry)
     private chunkProviderRegistry: ChunkProviderRegistry,
+    @inject(ProviderRegistry)
+    private providerRegistry: ProviderRegistry,
     @inject(TaskManager)
     private taskManager: TaskManager,
   ) {
@@ -50,7 +53,7 @@ export class RagEnvironmentRegistry {
   }
 
   private async ensureRagDirectoryExists(): Promise<void> {
-      await mkdir(this.#ragDirectory, { recursive: true });
+    await mkdir(this.#ragDirectory, { recursive: true });
   }
 
   private getRagEnvironmentFilePath(name: string): string {
@@ -93,7 +96,6 @@ export class RagEnvironmentRegistry {
    * @returns Array of all RAG environments
    */
   public async getAllRagEnvironments(): Promise<RagEnvironment[]> {
-
     try {
       const files = await readdir(this.#ragDirectory);
       const ragEnvironments: RagEnvironment[] = [];
@@ -170,7 +172,21 @@ export class RagEnvironmentRegistry {
       return false;
     }
 
-    this.indexFile(ragEnvironment, filePath, chunkProvider).catch((err: unknown) => console.error(`Error indexing file: ${filePath}`, err));
+    const ragConnection = this.providerRegistry
+      .getRagConnections()
+      .find(
+        connection =>
+          connection.providerId === ragEnvironment.ragConnection.providerId &&
+          connection.connection.name === ragEnvironment.ragConnection.name,
+      );
+    if (!ragConnection) {
+      console.error(`Rag connection ${ragEnvironment.ragConnection.name} not found`);
+      return false;
+    }
+
+    this.indexFile(ragEnvironment, filePath, chunkProvider, ragConnection).catch((err: unknown) =>
+      console.error(`Error indexing file: ${filePath}`, err),
+    );
 
     // Add file to pending files
     ragEnvironment.pendingFiles.push(filePath);
@@ -184,24 +200,46 @@ export class RagEnvironmentRegistry {
     }
   }
 
-  private async indexFile(ragEnvironment: RagEnvironment, filePath: string, chunkProvider: ChunkProvider): Promise<void> {
-    const task = this.taskManager.createTask({
-      title: `Indexing ${filePath} on ${ragEnvironment.name}`,
+  private async indexFile(
+    ragEnvironment: RagEnvironment,
+    filePath: string,
+    chunkProvider: ChunkProvider,
+    ragConnection: ProviderRagConnection,
+  ): Promise<void> {
+    const chunkTask = this.taskManager.createTask({
+      title: `Chunking ${filePath} on ${ragEnvironment.name}`,
     });
-    task.state = 'running';
-    task.status = 'in-progress';
+    chunkTask.state = 'running';
+    chunkTask.status = 'in-progress';
     try {
-      await chunkProvider.index(Uri.file(filePath));
-      ragEnvironment.indexedFiles.push(filePath);
-      ragEnvironment.pendingFiles = ragEnvironment.pendingFiles.filter(f => f !== filePath);
-      await this.saveOrUpdate(ragEnvironment);
-      task.status = 'success';
+      const chunks = await chunkProvider.index(Uri.file(filePath));
+      chunkTask.status = 'success';
+      const indexTask = this.taskManager.createTask({
+        title: `Indexing ${filePath} on ${ragEnvironment.name}`,
+      });
+      indexTask.state = 'running';
+      indexTask.status = 'in-progress';
+      try {
+        await ragConnection.connection.index(
+          Uri.file(filePath),
+          chunks.map(chunk => chunk.text),
+        );
+        ragEnvironment.indexedFiles.push(filePath);
+        ragEnvironment.pendingFiles = ragEnvironment.pendingFiles.filter(file => file !== filePath);
+        await this.saveOrUpdate(ragEnvironment);
+        this.apiSender.send('rag-environment-updated', { name: ragEnvironment.name });
+        indexTask.status = 'success';
+      } catch (err: unknown) {
+        indexTask.status = 'failure';
+        indexTask.error = String(err);
+      } finally {
+        indexTask.state = 'completed';
+      }
     } catch (err: unknown) {
-      task.status = 'failure';
+      chunkTask.status = 'failure';
+      chunkTask.error = String(err);
     } finally {
-      task.state = 'completed';
+      chunkTask.state = 'completed';
     }
-
-
   }
 }
