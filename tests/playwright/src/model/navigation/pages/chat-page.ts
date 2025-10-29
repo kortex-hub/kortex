@@ -25,11 +25,16 @@ export class ChatPage extends BasePage {
   readonly mcpDropdown: Locator;
   readonly newChatButton: Locator;
   readonly sidebarNewChatButton: Locator;
+  readonly deleteAllChatsButton: Locator;
   readonly modelDropdownSelector: Locator;
   readonly messageField: Locator;
   readonly sendButton: Locator;
   readonly suggestedMessagesGrid: Locator;
   readonly chatHistoryItems: Locator;
+  readonly conversationMessages: Locator;
+  readonly chatHistoryItem: Locator;
+  readonly chatHistoryItemMenuAction: Locator;
+  readonly chatHistoryEmptyMessage: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -37,11 +42,16 @@ export class ChatPage extends BasePage {
     this.mcpDropdown = page.getByRole('button', { name: 'Select MCP servers' });
     this.newChatButton = page.getByRole('button', { name: 'New Chat' });
     this.sidebarNewChatButton = page.locator('[data-sidebar="header"] button[data-tooltip-trigger]').first();
+    this.deleteAllChatsButton = page.getByRole('button', { name: 'Delete all chats' });
     this.modelDropdownSelector = page.getByRole('button', { name: 'Select model' });
     this.messageField = page.getByPlaceholder('Send a message...');
     this.sendButton = page.getByRole('button', { name: 'Send message' });
     this.suggestedMessagesGrid = page.getByRole('region', { name: 'Suggested prompts' });
     this.chatHistoryItems = page.locator('li[data-sidebar="menu-item"]');
+    this.conversationMessages = page.locator('div[data-role]');
+    this.chatHistoryItem = page.locator('button[data-sidebar="menu-button"]');
+    this.chatHistoryItemMenuAction = page.locator('button[data-sidebar="menu-action"]');
+    this.chatHistoryEmptyMessage = page.getByText('Your conversations will appear here once you start chatting!');
   }
 
   async waitForLoad(): Promise<void> {
@@ -74,24 +84,28 @@ export class ChatPage extends BasePage {
     }
   }
 
-  async verifySidebarVisible(): Promise<void> {
-    await expect(this.chatHistoryItems.first()).toBeVisible({ timeout: 2_000 });
+  async ensureSidebarVisible(): Promise<void> {
+    const isSidebarOpen = await this.sidebarNewChatButton.isVisible();
+    if (!isSidebarOpen) {
+      await this.toggleSidebarButton.click();
+      await expect(this.sidebarNewChatButton).toBeVisible();
+    }
   }
 
-  async verifySidebarHidden(): Promise<void> {
-    await expect(this.chatHistoryItems.first()).not.toBeVisible({ timeout: 2_000 });
+  async ensureSidebarHidden(): Promise<void> {
+    const isSidebarOpen = await this.sidebarNewChatButton.isVisible();
+    if (isSidebarOpen) {
+      await this.toggleSidebarButton.click();
+      await expect(this.sidebarNewChatButton).not.toBeVisible();
+    }
   }
 
-  async toggleSidebar(): Promise<void> {
-    await this.toggleSidebarButton.click();
-    await this.page.waitForTimeout(1_000);
-  }
-
-  async sendMessage(message: string): Promise<void> {
+  async sendMessage(message: string, timeout = 5_000): Promise<void> {
     await this.messageField.fill(message);
     await expect(this.messageField).toHaveValue(message);
     await expect(this.sendButton).toBeEnabled();
     await this.sendButton.click();
+    await this.page.waitForTimeout(timeout);
   }
 
   async waitForResponse(timeout = 5_000): Promise<void> {
@@ -99,17 +113,50 @@ export class ChatPage extends BasePage {
   }
 
   async clickNewChat(): Promise<void> {
-    const isSidebarOpen = await this.chatHistoryItems.isVisible();
+    const isSidebarOpen = await this.sidebarNewChatButton.isVisible();
     if (isSidebarOpen) {
       await this.sidebarNewChatButton.click();
     } else {
       await this.newChatButton.click();
     }
-    await expect(this.suggestedMessagesGrid).toBeVisible({ timeout: 5_000 });
+    await expect(this.suggestedMessagesGrid).toBeVisible();
   }
 
   async getChatHistoryCount(): Promise<number> {
-    await this.page.waitForTimeout(5_000);
     return await this.chatHistoryItems.count();
+  }
+
+  async clickChatHistoryItemByIndex(index: number): Promise<void> {
+    await this.chatHistoryItems.nth(index).locator(this.chatHistoryItem).click();
+  }
+
+  private async confirmDeletion(): Promise<void> {
+    const confirmButton = this.page.getByRole('button', { name: 'Yes' });
+    await expect(confirmButton).toBeVisible();
+    await confirmButton.click();
+  }
+
+  async deleteChatHistoryItemByIndex(index: number): Promise<void> {
+    const item = this.chatHistoryItems.nth(index);
+    await item.locator(this.chatHistoryItemMenuAction).click();
+    await this.page.getByRole('menuitem', { name: 'Delete' }).click();
+    await this.confirmDeletion();
+  }
+
+  async deleteAllChatHistoryItems(): Promise<void> {
+    await this.deleteAllChatsButton.click();
+    await this.confirmDeletion();
+  }
+
+  async waitForChatHistoryCount(expectedCount: number, timeout = 10_000): Promise<void> {
+    await expect(this.chatHistoryItems).toHaveCount(expectedCount, { timeout });
+  }
+
+  async verifyChatHistoryEmpty(): Promise<void> {
+    await expect(this.chatHistoryEmptyMessage).toBeVisible();
+  }
+
+  async verifyConversationMessage(message: string): Promise<void> {
+    await expect(this.conversationMessages.locator('p').getByText(message, { exact: true })).toBeVisible();
   }
 }

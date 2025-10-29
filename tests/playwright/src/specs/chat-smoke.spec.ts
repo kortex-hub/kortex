@@ -15,14 +15,14 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { expect, test } from '../fixtures/provider-fixtures';
+import { test } from '../fixtures/provider-fixtures';
 import type { ChatPage } from '../model/navigation/pages/chat-page';
 import { waitForNavigationReady } from '../utils/app-ready';
 import { hasApiKey, PROVIDERS } from '../utils/resource-helper';
 
 let chatPage: ChatPage;
 
-test.describe('Chat page navigation', { tag: '@smoke' }, () => {
+test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
   test.beforeAll(async ({ resource }) => {
     if (process.env.CI) {
       test.skip(true, 'Skipping chat test on CI');
@@ -45,15 +45,47 @@ test.describe('Chat page navigation', { tag: '@smoke' }, () => {
   });
 
   test('[CHAT-02] Create and check new chat history item', async () => {
-    await chatPage.toggleSidebar();
-    const initialCount = await chatPage.getChatHistoryCount();
-    await chatPage.toggleSidebar();
+    await chatPage.ensureSidebarVisible();
+    let expectedCount = await chatPage.getChatHistoryCount();
     const suggestedMessages = chatPage.getSuggestedMessages();
     await suggestedMessages.last().click();
     await chatPage.waitForResponse();
-    await chatPage.toggleSidebar();
-    await chatPage.verifySidebarVisible();
-    const newCount = await chatPage.getChatHistoryCount();
-    expect(newCount).toBeGreaterThan(initialCount);
+    expectedCount++;
+    await chatPage.waitForChatHistoryCount(expectedCount);
+  });
+
+  test('[CHAT-03] Create and switch between multiple chat sessions without data loss', async () => {
+    await chatPage.ensureSidebarVisible();
+    let expectedCount = await chatPage.getChatHistoryCount();
+
+    await chatPage.clickNewChat();
+    const firstMessage = 'What is Kubernetes?';
+    await chatPage.sendMessage(firstMessage);
+    expectedCount++;
+    await chatPage.waitForChatHistoryCount(expectedCount);
+
+    await chatPage.clickNewChat();
+    const secondMessage = 'Explain Docker containers';
+    await chatPage.sendMessage(secondMessage);
+    expectedCount++;
+    await chatPage.waitForChatHistoryCount(expectedCount);
+
+    await chatPage.clickChatHistoryItemByIndex(1);
+    await chatPage.verifyConversationMessage(firstMessage);
+
+    await chatPage.clickChatHistoryItemByIndex(0);
+    await chatPage.verifyConversationMessage(secondMessage);
+  });
+
+  test('[CHAT-04] Delete single chat item and then delete all remaining items', async () => {
+    await chatPage.ensureSidebarVisible();
+    let expectedCount = await chatPage.getChatHistoryCount();
+
+    await chatPage.deleteChatHistoryItemByIndex(0);
+    expectedCount--;
+    await chatPage.waitForChatHistoryCount(expectedCount);
+
+    await chatPage.deleteAllChatHistoryItems();
+    await chatPage.verifyChatHistoryEmpty();
   });
 });
