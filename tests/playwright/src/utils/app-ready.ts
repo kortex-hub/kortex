@@ -50,7 +50,6 @@ export async function waitForAppReady(page: Page, timeout = TIMEOUTS.DEFAULT): P
 }
 
 export async function waitForNavigationReady(page: Page, timeout = TIMEOUTS.DEFAULT): Promise<void> {
-  await waitForAppReady(page, timeout);
   await expect(page.getByRole(SELECTORS.NAVIGATION.role, { name: SELECTORS.NAVIGATION.name })).toBeVisible({
     timeout,
   });

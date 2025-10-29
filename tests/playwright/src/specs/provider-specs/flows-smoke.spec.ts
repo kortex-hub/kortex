@@ -17,7 +17,6 @@
  ***********************************************************************/
 
 import type { FlowsPage } from 'src/model/pages/flows-page';
-import { hasApiKey, PROVIDERS } from 'src/utils/resource-helper';
 
 import { expect, test } from '../../fixtures/provider-fixtures';
 import { waitForNavigationReady } from '../../utils/app-ready';
@@ -27,11 +26,7 @@ let flowsPage: FlowsPage;
 
 test.skip(!!process.env.CI, 'Skipping flow tests on CI');
 
-test.beforeAll(async ({ page, navigationBar, resource }) => {
-  if (!hasApiKey(resource)) {
-    const provider = PROVIDERS[resource];
-    test.skip(true, `${provider.envVarName} environment variable is not set`);
-  }
+test.beforeAll(async ({ page, navigationBar }) => {
   await waitForNavigationReady(page);
   flowsPage = await navigationBar.navigateToFlowsPage();
 });

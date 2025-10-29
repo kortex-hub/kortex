@@ -19,7 +19,6 @@ import { expect, type Page } from '@playwright/test';
 import type { SettingsResourceId } from 'src/model/core/types';
 
 import { NavigationBar } from '../model/navigation/navigation';
-import { SettingsPage } from '../model/pages/settings-page';
 import type { SettingsResourcesPage } from '../model/pages/settings-resources-tab-page';
 import { waitForNavigationReady } from './app-ready';
 
@@ -48,8 +47,7 @@ export type ResourceId = keyof typeof PROVIDERS;
 async function navigateToResourcesPage(page: Page): Promise<SettingsResourcesPage> {
   await waitForNavigationReady(page);
   const navigationBar = new NavigationBar(page);
-  await navigationBar.settingsLink.click();
-  const settingsPage = new SettingsPage(page);
+  const settingsPage = await navigationBar.navigateToSettingsPage();
   return await settingsPage.openResources();
 }
 
@@ -87,7 +85,6 @@ export async function createResource(page: Page, providerId: ResourceId): Promis
 export async function deleteResource(page: Page, providerId: ResourceId): Promise<void> {
   const provider = PROVIDERS[providerId];
   const resourcesPage = await navigateToResourcesPage(page);
-  await resourcesPage.waitForLoad();
   await resourcesPage.deleteCreatedResourceFor(provider.resourceId);
   const resource = resourcesPage.getCreatedResourceFor(provider.resourceId);
   await expect(resource).not.toBeVisible();

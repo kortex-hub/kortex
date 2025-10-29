@@ -16,22 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 import { expect, test } from '../fixtures/electron-app';
-import { NavigationBar } from '../model/navigation/navigation';
-import { waitForAppReady } from '../utils/app-ready';
-
-let navigationBar: NavigationBar;
-
-test.beforeEach(async ({ page }) => {
-  navigationBar = new NavigationBar(page);
-});
 
 test.describe.serial('App start', { tag: '@smoke' }, () => {
-  test('[APP-01] Initial Dashboard page is displayed', async ({ page }) => {
-    await waitForAppReady(page);
-  });
-
-  test('[APP-02] Navigation bar and its items are visible', async ({ page }) => {
-    await waitForAppReady(page);
+  test('[APP-01]  App is started and navigation bar and its items are visible', async ({ navigationBar }) => {
     await expect(navigationBar.navigationLocator).toBeVisible({ timeout: 120_000 });
     for (const link of navigationBar.getAllLinks()) {
       await expect(link).toBeVisible({ timeout: 120_000 });
