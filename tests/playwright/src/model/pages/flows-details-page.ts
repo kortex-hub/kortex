@@ -17,6 +17,7 @@
  ***********************************************************************/
 
 import { expect, type Locator, type Page } from '@playwright/test';
+import { handleDialogIfPresent } from 'src/utils/app-ready';
 
 import { BasePage } from './base-page';
 import { FlowsPage } from './flows-page';
@@ -65,11 +66,7 @@ export class FlowDetailsPage extends BasePage {
   async deleteFlow(): Promise<FlowsPage> {
     await expect(this.deleteFlowButton).toBeEnabled();
     await this.deleteFlowButton.click();
-
-    const confirmDeleteDialog = this.page.getByRole('dialog', { name: 'Confirmation' });
-    const confirmDeleteButton = confirmDeleteDialog.getByRole('button', { name: 'Yes' });
-    await expect(confirmDeleteButton).toBeEnabled();
-    await confirmDeleteButton.click();
+    await handleDialogIfPresent(this.page);
 
     return new FlowsPage(this.page);
   }

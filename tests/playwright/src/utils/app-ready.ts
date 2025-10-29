@@ -76,3 +76,27 @@ async function handleWelcomePageIfPresent(page: Page, timeout = 5_000): Promise<
     await expect(welcomePage).toBeHidden({ timeout: TIMEOUTS.WELCOME_PAGE });
   }
 }
+
+export async function handleDialogIfPresent(
+  page: Page,
+  {
+    dialogName = 'Confirmation',
+    buttonName = 'Yes',
+    timeout = 5_000,
+    throwErrorOnFailOrMissing = false,
+  }: { dialogName?: string; buttonName?: string; timeout?: number; throwErrorOnFailOrMissing?: boolean } = {},
+): Promise<void> {
+  try {
+    const dialog = page.getByRole('dialog', { name: dialogName });
+    await expect(dialog).toBeVisible({ timeout });
+
+    const button = dialog.getByRole('button', { name: buttonName });
+    await expect(button).toBeEnabled({ timeout });
+    await button.click();
+  } catch (error) {
+    console.log(`Dialog "${dialogName}" with button "${buttonName}" not found or failed to interact.`);
+    if (throwErrorOnFailOrMissing) {
+      throw error;
+    }
+  }
+}

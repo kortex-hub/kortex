@@ -23,6 +23,11 @@ import { BadgeType, builtInExtensions, Button, ExtensionStatus, State } from 'sr
 
 import { BasePage } from './base-page';
 
+const stateMap: { [key: string]: ExtensionStatus } = {
+  [State.ACTIVE]: ExtensionStatus.RUNNING,
+  [State.DISABLED]: ExtensionStatus.STOPPED,
+};
+
 export class ExtensionsInstalledPage extends BasePage {
   constructor(page: Page) {
     super(page);
@@ -37,8 +42,7 @@ export class ExtensionsInstalledPage extends BasePage {
   }
 
   public getExtensionBadge(locator: ExtensionLocator): Locator {
-    const extensionElement = this.getExtension(locator);
-    return extensionElement.getByLabel(BadgeType.BUILT_IN);
+    return this.getExtension(locator).getByLabel(BadgeType.BUILT_IN);
   }
 
   public async getExtensionState(locator: ExtensionLocator): Promise<ExtensionStatus> {
@@ -46,16 +50,7 @@ export class ExtensionsInstalledPage extends BasePage {
       const statusLabel = this.extensionStateLocator(locator);
       const status = (await statusLabel.textContent()) ?? '';
 
-      switch (status) {
-        case State.ACTIVE:
-          return ExtensionStatus.RUNNING;
-
-        case State.DISABLED:
-          return ExtensionStatus.STOPPED;
-
-        default:
-          return ExtensionStatus.UNKNOWN;
-      }
+      return stateMap[status] ?? ExtensionStatus.UNKNOWN;
     } catch {
       return ExtensionStatus.UNKNOWN;
     }
@@ -102,8 +97,7 @@ export class ExtensionsInstalledPage extends BasePage {
   }
 
   private extensionStateLocator(locator: ExtensionLocator): Locator {
-    const extensionElement = this.getExtension(locator);
-    return extensionElement.getByLabel('Extension Status Label');
+    return this.getExtension(locator).getByLabel('Extension Status Label');
   }
 
   private async clickExtensionButton(locator: ExtensionLocator, buttonType: Button): Promise<void> {
@@ -113,7 +107,6 @@ export class ExtensionsInstalledPage extends BasePage {
   }
 
   private getExtensionButton(locator: ExtensionLocator, buttonType: Button): Locator {
-    const extensionElement = this.getExtension(locator);
-    return extensionElement.getByLabel(buttonType);
+    return this.getExtension(locator).getByLabel(buttonType);
   }
 }
