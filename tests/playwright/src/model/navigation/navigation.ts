@@ -18,11 +18,11 @@
 
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import { ChatPage } from './pages/chat-page';
-import { ExtensionsPage } from './pages/extensions-page';
-import { FlowsPage } from './pages/flows-page';
-import { McpPage } from './pages/mcp-page';
-import { SettingsPage } from './pages/settings-page';
+import { ChatPage } from '../pages/chat-page';
+import { ExtensionsPage } from '../pages/extensions-page';
+import { FlowsPage } from '../pages/flows-page';
+import { McpPage } from '../pages/mcp-page';
+import { SettingsPage } from '../pages/settings-page';
 
 export class NavigationBar {
   readonly page: Page;

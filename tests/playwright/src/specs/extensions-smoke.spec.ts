@@ -18,7 +18,7 @@
 import { BADGE_TEXT, builtInExtensions } from 'src/model/core/types';
 
 import { expect, test } from '../fixtures/electron-app';
-import type { ExtensionsPage } from '../model/navigation/pages/extensions-page';
+import type { ExtensionsPage } from '../model/pages/extensions-page';
 import { waitForNavigationReady } from '../utils/app-ready';
 
 let extensionsPage: ExtensionsPage;

@@ -16,11 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { FlowsPage } from 'src/model/navigation/pages/flows-page';
+import type { FlowsPage } from 'src/model/pages/flows-page';
 import { hasApiKey, PROVIDERS } from 'src/utils/resource-helper';
 
-import { expect, test } from '../fixtures/provider-fixtures';
-import { waitForNavigationReady } from '../utils/app-ready';
+import { expect, test } from '../../fixtures/provider-fixtures';
+import { waitForNavigationReady } from '../../utils/app-ready';
 
 const flowName = 'custom-flow-smoke-test';
 let flowsPage: FlowsPage;

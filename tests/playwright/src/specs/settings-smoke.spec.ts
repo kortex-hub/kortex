@@ -23,7 +23,7 @@ import {
 } from 'src/model/core/types';
 
 import { expect, test } from '../fixtures/electron-app';
-import type { SettingsPage } from '../model/navigation/pages/settings-page';
+import type { SettingsPage } from '../model/pages/settings-page';
 import { waitForNavigationReady } from '../utils/app-ready';
 
 let settingsPage: SettingsPage;
