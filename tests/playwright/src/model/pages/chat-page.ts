@@ -17,6 +17,7 @@
  ***********************************************************************/
 
 import { expect, type Locator, type Page } from '@playwright/test';
+import { handleDialogIfPresent } from 'src/utils/app-ready';
 
 import { BasePage } from './base-page';
 
@@ -130,22 +131,16 @@ export class ChatPage extends BasePage {
     await this.chatHistoryItems.nth(index).locator(this.chatHistoryItem).click();
   }
 
-  private async confirmDeletion(): Promise<void> {
-    const confirmButton = this.page.getByRole('button', { name: 'Yes' });
-    await expect(confirmButton).toBeVisible();
-    await confirmButton.click();
-  }
-
   async deleteChatHistoryItemByIndex(index: number): Promise<void> {
     const item = this.chatHistoryItems.nth(index);
     await item.locator(this.chatHistoryItemMenuAction).click();
     await this.page.getByRole('menuitem', { name: 'Delete' }).click();
-    await this.confirmDeletion();
+    await handleDialogIfPresent(this.page);
   }
 
   async deleteAllChatHistoryItems(): Promise<void> {
     await this.deleteAllChatsButton.click();
-    await this.confirmDeletion();
+    await handleDialogIfPresent(this.page);
   }
 
   async waitForChatHistoryCount(expectedCount: number, timeout = 10_000): Promise<void> {
