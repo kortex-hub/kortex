@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { McpPage } from 'src/model/navigation/pages/mcp-page';
+import type { McpPage } from 'src/model/pages/mcp-page';
 
 import { test } from '../fixtures/electron-app';
 import { waitForNavigationReady } from '../utils/app-ready';

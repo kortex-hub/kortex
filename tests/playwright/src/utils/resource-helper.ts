@@ -19,8 +19,8 @@ import { expect, type Page } from '@playwright/test';
 import type { SettingsResourceId } from 'src/model/core/types';
 
 import { NavigationBar } from '../model/navigation/navigation';
-import { SettingsPage } from '../model/navigation/pages/settings-page';
-import type { SettingsResourcesPage } from '../model/navigation/pages/settings-resources-tab-page';
+import { SettingsPage } from '../model/pages/settings-page';
+import type { SettingsResourcesPage } from '../model/pages/settings-resources-tab-page';
 import { waitForNavigationReady } from './app-ready';
 
 export interface ResourceConfig {

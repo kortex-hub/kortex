@@ -15,10 +15,10 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { expect, test } from '../fixtures/provider-fixtures';
-import type { ChatPage } from '../model/navigation/pages/chat-page';
-import { waitForNavigationReady } from '../utils/app-ready';
-import { hasApiKey, PROVIDERS } from '../utils/resource-helper';
+import { expect, test } from '../../fixtures/provider-fixtures';
+import type { ChatPage } from '../../model/pages/chat-page';
+import { waitForNavigationReady } from '../../utils/app-ready';
+import { hasApiKey, PROVIDERS } from '../../utils/resource-helper';
 
 let chatPage: ChatPage;
 

@@ -48,29 +48,29 @@ const config: PlaywrightTestConfig & {
 
   projects: [
     {
-      name: 'Electron',
-      testMatch: '**/*.spec.ts',
-      testIgnore: '**/chat-smoke.spec.ts',
+      name: 'Kortex-App-Core',
+      testMatch: ['**/*.spec.ts'],
+      testIgnore: ['**/provider-specs/*.spec.ts'],
     },
     {
-      name: 'Chat-Gemini',
-      testMatch: '**/chat-smoke.spec.ts',
+      name: 'Gemini-Provider',
+      testMatch: ['**/provider-specs/*.spec.ts'],
       use: {
         resource: 'gemini',
       },
-      testIgnore: process.env.GEMINI_API_KEY ? [] : ['**/*'],
+      testIgnore: process.env.GEMINI_API_KEY ? [] : ['**/*'], // Skip if GEMINI_API_KEY is not set
     },
     {
-      name: 'Chat-OpenAI',
-      testMatch: '**/chat-smoke.spec.ts',
+      name: 'OpenAI-Provider',
+      testMatch: ['**/provider-specs/*.spec.ts'],
       use: {
         resource: 'openai',
       },
       testIgnore: ['**/*'], // Disabled until OpenAI resource creation is implemented
     },
     {
-      name: 'Chat-OpenShift-AI',
-      testMatch: '**/chat-smoke.spec.ts',
+      name: 'OpenShift-AI-Provider',
+      testMatch: ['**/provider-specs/*.spec.ts'],
       use: {
         resource: 'openshift-ai',
       },
