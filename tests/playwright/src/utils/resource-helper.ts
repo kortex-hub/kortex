@@ -15,8 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import type { MCPServerId, SettingsResourceId } from 'src/model/core/types';
-import { MCP_SERVERS } from 'src/model/core/types';
+import type { SettingsResourceId } from 'src/model/core/types';
 
 export interface ResourceConfig {
   readonly envVarName: string;
@@ -47,13 +46,4 @@ export function getProviderCredentials(providerId: ResourceId): string | undefin
 
 export function hasApiKey(providerId: ResourceId): boolean {
   return !!getProviderCredentials(providerId);
-}
-
-export function getMCPToken(mcpServerId: MCPServerId): string | undefined {
-  const server = MCP_SERVERS[mcpServerId];
-  return process.env[server.envVarName];
-}
-
-export function hasMCPToken(mcpServerId: MCPServerId): boolean {
-  return !!getMCPToken(mcpServerId);
 }

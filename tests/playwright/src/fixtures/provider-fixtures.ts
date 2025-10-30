@@ -19,7 +19,7 @@ import { type ElectronApplication, type Page } from '@playwright/test';
 
 import { MCP_SERVERS, type MCPServerId } from '../model/core/types';
 import { NavigationBar } from '../model/navigation/navigation';
-import { getMCPToken, hasMCPToken, PROVIDERS, type ResourceId } from '../utils/resource-helper';
+import { PROVIDERS, type ResourceId } from '../utils/resource-helper';
 import { type ElectronFixtures, getFirstPage, launchElectronApp, test as base } from './electron-app';
 
 interface WorkerFixtures {
@@ -108,18 +108,17 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
         const mcpPage = await workerNavigationBar.navigateToMCPPage();
 
         for (const id of mcpServers) {
-          if (hasMCPToken(id)) {
-            try {
-              const server = MCP_SERVERS[id];
-              const token = getMCPToken(id);
-              if (!token) {
-                throw new Error(`${server.envVarName} environment variable is not set`);
-              }
-              await mcpPage.createServer(server.serverName, token);
-              configured.push(id);
-            } catch (error) {
-              console.warn(`MCP setup skipped for ${id}:`, error);
-            }
+          const server = MCP_SERVERS[id];
+          const token = process.env[server.envVarName];
+          if (!token) {
+            throw new Error(`${server.envVarName} environment variable is not set`);
+          }
+
+          try {
+            await mcpPage.createServer(server.serverName, token);
+            configured.push(id);
+          } catch (error) {
+            console.warn(`MCP setup skipped for ${id}:`, error);
           }
         }
 
@@ -148,10 +147,6 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
 
   page: async ({ workerPage }, use): Promise<void> => {
     await use(workerPage);
-  },
-
-  navigationBar: async ({ workerNavigationBar }, use): Promise<void> => {
-    await use(workerNavigationBar);
   },
 });
 
