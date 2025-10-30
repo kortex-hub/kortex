@@ -1,0 +1,71 @@
+/**********************************************************************
+ * Copyright (C) 2025 Red Hat, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ***********************************************************************/
+
+import { expect, type Locator, type Page } from '@playwright/test';
+
+import { BaseTablePage } from './base-table-page';
+
+export class McpReadyTabPage extends BaseTablePage {
+  readonly noMcpServersReadyHeading: Locator;
+
+  constructor(page: Page) {
+    super(page, 'mcp');
+    this.noMcpServersReadyHeading = this.content.getByRole('heading', { name: 'No MCP servers available' });
+  }
+
+  async waitForLoad(): Promise<void> {
+    await expect(this.table.or(this.noMcpServersReadyHeading)).toBeVisible({ timeout: 10_000 });
+  }
+
+  findServer(serverName: string): Locator {
+    return this.table.getByRole('row').filter({ hasText: serverName });
+  }
+
+  async isServerConnected(serverName: string, timeout = 5_000): Promise<boolean> {
+    try {
+      await expect.poll(async () => await this.findServer(serverName).count(), { timeout }).toBeGreaterThan(0);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async deleteServer(serverName: string): Promise<void> {
+    await expect
+      .poll(
+        async () => {
+          const count = await this.findServer(serverName).count();
+          if (count === 0) return true;
+
+          await this.findServer(serverName).first().getByRole('button', { name: 'Remove instance of MCP' }).click();
+          await this.page.waitForTimeout(500);
+          return false;
+        },
+        { timeout: 10_000, intervals: [500] },
+      )
+      .toBeTruthy();
+  }
+
+  async verifyEmpty(): Promise<void> {
+    await expect
+      .poll(async () => (await this.noMcpServersReadyHeading.count()) > 0 || (await this.countRowsFromTable()) === 0, {
+        timeout: 10_000,
+      })
+      .toBeTruthy();
+  }
+}

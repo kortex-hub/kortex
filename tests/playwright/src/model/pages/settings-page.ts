@@ -18,6 +18,8 @@
 
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import type { ResourceId } from '../../utils/resource-helper';
+import { PROVIDERS } from '../../utils/resource-helper';
 import { BasePage } from './base-page';
 import { SettingsCliPage } from './settings-cli-tab-page';
 import { SettingsPreferencesPage } from './settings-preferences-tab-page';
@@ -46,42 +48,61 @@ export class SettingsPage extends BasePage {
   }
 
   async openResources(): Promise<SettingsResourcesPage> {
-    await expect(this.resourcesTab).toBeVisible();
-    await this.resourcesTab.click();
-
-    const resourcesPage = new SettingsResourcesPage(this.page);
-    await resourcesPage.waitForLoad();
-    return resourcesPage;
+    return this.openTab(this.resourcesTab, SettingsResourcesPage);
   }
 
   async openCli(): Promise<SettingsCliPage> {
-    await expect(this.cliTab).toBeVisible();
-    await this.cliTab.click();
-
-    const cliPage = new SettingsCliPage(this.page);
-    await cliPage.waitForLoad();
-    return cliPage;
+    return this.openTab(this.cliTab, SettingsCliPage);
   }
 
   async openProxy(): Promise<SettingsProxyPage> {
-    await expect(this.proxyTab).toBeVisible();
-    await this.proxyTab.click();
-
-    const proxyPage = new SettingsProxyPage(this.page);
-    await proxyPage.waitForLoad();
-    return proxyPage;
+    return this.openTab(this.proxyTab, SettingsProxyPage);
   }
 
   async openPreferences(): Promise<SettingsPreferencesPage> {
-    await expect(this.preferencesTab).toBeVisible();
-    await this.preferencesTab.click();
-
-    const preferencesPage = new SettingsPreferencesPage(this.page);
-    await preferencesPage.waitForLoad();
-    return preferencesPage;
+    return this.openTab(this.preferencesTab, SettingsPreferencesPage);
   }
 
   getAllTabs(): Locator[] {
     return [this.resourcesTab, this.cliTab, this.proxyTab, this.preferencesTab];
+  }
+
+  async createResource(providerId: ResourceId, credentials: string): Promise<void> {
+    const provider = PROVIDERS[providerId];
+    const resourcesPage = await this.openResources();
+
+    if ((await resourcesPage.getCreatedResourceFor(provider.resourceId).count()) > 0) {
+      console.log(`Resource ${providerId} already exists, skipping...`);
+      return;
+    }
+
+    switch (providerId) {
+      case 'gemini': {
+        const createGeminiPage = await resourcesPage.openCreateGeminiPage();
+        await createGeminiPage.createAndGoBack(credentials);
+        break;
+      }
+      case 'openai':
+        throw new Error('OpenAI resource creation not yet implemented');
+      case 'openshift-ai':
+        throw new Error('OpenShift AI resource creation not yet implemented');
+      default:
+        throw new Error(`Unknown provider: ${providerId}`);
+    }
+
+    await resourcesPage.waitForLoad();
+    const resource = resourcesPage.getCreatedResourceFor(provider.resourceId);
+    await expect(resource).toBeVisible();
+  }
+
+  async deleteResource(providerId: ResourceId): Promise<void> {
+    const provider = PROVIDERS[providerId];
+    const resourcesPage = await this.openResources();
+
+    await resourcesPage.waitForLoad();
+    await resourcesPage.deleteCreatedResourceFor(provider.resourceId);
+
+    const resource = resourcesPage.getCreatedResourceFor(provider.resourceId);
+    await expect(resource).not.toBeVisible();
   }
 }

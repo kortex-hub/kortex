@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 export abstract class BasePage {
   readonly page: Page;
@@ -28,4 +28,15 @@ export abstract class BasePage {
   public getPage(): Page {
     return this.page;
   }
+
+  protected async openTab<T extends BasePage>(button: Locator, PageClass: new (page: Page) => T): Promise<T> {
+    await expect(button).toBeEnabled();
+    await button.click();
+
+    const pageInstance = new PageClass(this.page);
+    await pageInstance.waitForLoad();
+    return pageInstance;
+  }
+
+  abstract waitForLoad(): Promise<void>;
 }

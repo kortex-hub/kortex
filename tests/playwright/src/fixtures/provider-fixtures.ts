@@ -17,24 +17,39 @@
  ***********************************************************************/
 import { type ElectronApplication, type Page } from '@playwright/test';
 
-import { createResource, deleteResource, type ResourceId } from '../utils/resource-helper';
-import { getFirstPage, launchElectronApp, test as base } from './electron-app';
+import { NavigationBar } from '../model/navigation/navigation';
+import { SettingsPage } from '../model/pages/settings-page';
+import {
+  getMCPToken,
+  hasMCPToken,
+  MCP_SERVERS,
+  type MCPServerId,
+  PROVIDERS,
+  type ResourceId,
+} from '../utils/resource-helper';
+import { type ElectronFixtures, getFirstPage, launchElectronApp, test as base } from './electron-app';
 
 interface WorkerFixtures {
   workerElectronApp: ElectronApplication;
   workerPage: Page;
+  workerNavigationBar: NavigationBar;
   resource: ResourceId;
   resourceSetup: void;
+  mcpServers: MCPServerId[];
+  mcpSetup: void;
 }
 
-interface TestFixtures {
-  electronApp: ElectronApplication;
-  page: Page;
-}
-
-export const test = base.extend<TestFixtures, WorkerFixtures>({
+export const test = base.extend<ElectronFixtures, WorkerFixtures>({
   resource: [
     'gemini' as ResourceId,
+    {
+      scope: 'worker',
+      option: true,
+    },
+  ],
+
+  mcpServers: [
+    ['github'] as MCPServerId[],
     {
       scope: 'worker',
       option: true,
@@ -59,14 +74,33 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     { scope: 'worker' },
   ],
 
+  workerNavigationBar: [
+    async ({ workerPage }, use): Promise<void> => {
+      const navigationBar = new NavigationBar(workerPage);
+      await use(navigationBar);
+    },
+    { scope: 'worker' },
+  ],
+
   resourceSetup: [
-    async ({ workerPage, resource }, use): Promise<void> => {
+    async ({ workerPage, workerNavigationBar, resource }, use): Promise<void> => {
       try {
-        await createResource(workerPage, resource);
+        const provider = PROVIDERS[resource];
+        const credentials = process.env[provider.envVarName];
+        if (!credentials) {
+          throw new Error(`${provider.envVarName} environment variable is not set`);
+        }
+
+        await workerNavigationBar.settingsLink.click();
+        const settingsPage = new SettingsPage(workerPage);
+        await settingsPage.createResource(resource, credentials);
+
         await use();
       } finally {
         try {
-          await deleteResource(workerPage, resource);
+          await workerNavigationBar.settingsLink.click();
+          const settingsPage = new SettingsPage(workerPage);
+          await settingsPage.deleteResource(resource);
         } catch (error) {
           console.error(`Failed to delete ${resource} resource:`, error);
         }
@@ -75,12 +109,58 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     { scope: 'worker', auto: true },
   ],
 
+  mcpSetup: [
+    async ({ workerNavigationBar, mcpServers }, use): Promise<void> => {
+      const configured: MCPServerId[] = [];
+
+      try {
+        const mcpPage = await workerNavigationBar.navigateToMCPPage();
+
+        for (const id of mcpServers) {
+          if (hasMCPToken(id)) {
+            try {
+              const server = MCP_SERVERS[id];
+              const token = getMCPToken(id);
+              if (!token) {
+                throw new Error(`${server.envVarName} environment variable is not set`);
+              }
+              await mcpPage.createServer(server.serverName, token);
+              configured.push(id);
+            } catch (error) {
+              console.warn(`MCP setup skipped for ${id}:`, error);
+            }
+          }
+        }
+
+        await use();
+      } finally {
+        if (configured.length > 0) {
+          const mcpPage = await workerNavigationBar.navigateToMCPPage();
+
+          for (const id of configured) {
+            try {
+              const server = MCP_SERVERS[id];
+              await mcpPage.deleteServer(server.serverName);
+            } catch (error) {
+              console.error(`Failed to delete ${id} MCP server:`, error);
+            }
+          }
+        }
+      }
+    },
+    { scope: 'worker', auto: false },
+  ],
+
   electronApp: async ({ workerElectronApp }, use): Promise<void> => {
     await use(workerElectronApp);
   },
 
   page: async ({ workerPage }, use): Promise<void> => {
     await use(workerPage);
+  },
+
+  navigationBar: async ({ workerNavigationBar }, use): Promise<void> => {
+    await use(workerNavigationBar);
   },
 });
 

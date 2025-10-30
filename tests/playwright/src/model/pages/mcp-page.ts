@@ -21,6 +21,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
 import { BasePage } from './base-page';
 import { McpEditRegistriesTabPage } from './mcp-edit-registries-tab-page';
 import { McpInstallTabPage } from './mcp-install-tab-page';
+import { McpReadyTabPage } from './mcp-ready-tab-page';
 
 export class McpPage extends BasePage {
   readonly searchMcpServersField: Locator;
@@ -41,20 +42,35 @@ export class McpPage extends BasePage {
   }
 
   async openEditRegistriesTab(): Promise<McpEditRegistriesTabPage> {
-    await expect(this.editRegistriesTabButton).toBeEnabled();
-    await this.editRegistriesTabButton.click();
-
-    const editRegistriesTabPage = new McpEditRegistriesTabPage(this.page);
-    await editRegistriesTabPage.waitForLoad();
-    return editRegistriesTabPage;
+    return this.openTab(this.editRegistriesTabButton, McpEditRegistriesTabPage);
   }
 
   async openInstallTab(): Promise<McpInstallTabPage> {
-    await expect(this.installTabButton).toBeEnabled();
-    await this.installTabButton.click();
+    return this.openTab(this.installTabButton, McpInstallTabPage);
+  }
 
-    const installTabPage = new McpInstallTabPage(this.page);
-    await installTabPage.waitForLoad();
-    return installTabPage;
+  async openReadyTab(): Promise<McpReadyTabPage> {
+    return this.openTab(this.readyTabButton, McpReadyTabPage);
+  }
+
+  async createServer(serverName: string, token: string): Promise<void> {
+    const readyTab = await this.openReadyTab();
+
+    if (await readyTab.isServerConnected(serverName)) {
+      console.log(`MCP server ${serverName} is already connected, skipping...`);
+      return;
+    }
+
+    const installTab = await this.openInstallTab();
+    await installTab.installRemoteServer(serverName, token);
+
+    const readyTabAfterInstall = await this.openReadyTab();
+    expect(await readyTabAfterInstall.isServerConnected(serverName, 15_000)).toBe(true);
+  }
+
+  async deleteServer(serverName: string): Promise<void> {
+    const readyTab = await this.openReadyTab();
+    await readyTab.deleteServer(serverName);
+    await readyTab.verifyEmpty();
   }
 }

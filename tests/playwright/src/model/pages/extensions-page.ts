@@ -46,12 +46,7 @@ export class ExtensionsPage extends BasePage {
   }
 
   async openInstalledTab(): Promise<ExtensionsInstalledPage> {
-    await expect(this.installedTab).toBeVisible();
-    await this.installedTab.click();
-
-    const installedPage = new ExtensionsInstalledPage(this.page);
-    await installedPage.waitForLoad();
-    return installedPage;
+    return this.openTab(this.installedTab, ExtensionsInstalledPage);
   }
 
   getAllTabs(): Locator[] {

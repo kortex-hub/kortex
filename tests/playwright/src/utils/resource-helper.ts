@@ -15,12 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { expect, type Page } from '@playwright/test';
 import type { SettingsResourceId } from 'src/model/core/types';
-
-import { NavigationBar } from '../model/navigation/navigation';
-import type { SettingsResourcesPage } from '../model/pages/settings-resources-tab-page';
-import { waitForNavigationReady } from './app-ready';
 
 export interface ResourceConfig {
   readonly envVarName: string;
@@ -44,51 +39,19 @@ export const PROVIDERS = {
 
 export type ResourceId = keyof typeof PROVIDERS;
 
-async function navigateToResourcesPage(page: Page): Promise<SettingsResourcesPage> {
-  await waitForNavigationReady(page);
-  const navigationBar = new NavigationBar(page);
-  const settingsPage = await navigationBar.navigateToSettingsPage();
-  return await settingsPage.openResources();
+export interface MCPServerConfig {
+  readonly envVarName: string;
+  readonly serverName: string;
 }
 
-export async function createResource(page: Page, providerId: ResourceId): Promise<void> {
-  const provider = PROVIDERS[providerId];
-  const credentials = process.env[provider.envVarName];
-  if (!credentials) {
-    throw new Error(`${provider.envVarName} environment variable is not set`);
-  }
-  const resourcesPage = await navigateToResourcesPage(page);
+export const MCP_SERVERS = {
+  github: {
+    envVarName: 'GITHUB_TOKEN',
+    serverName: 'com.github.mcp',
+  },
+} as const satisfies Record<string, MCPServerConfig>;
 
-  if ((await resourcesPage.getCreatedResourceFor(provider.resourceId).count()) > 0) {
-    // Resource already exists
-    return;
-  }
-
-  switch (providerId) {
-    case 'gemini': {
-      const createGeminiPage = await resourcesPage.openCreateGeminiPage();
-      await createGeminiPage.createAndGoBack(credentials);
-      break;
-    }
-    case 'openai':
-      throw new Error('OpenAI resource creation not yet implemented');
-    case 'openshift-ai':
-      throw new Error('OpenShift AI resource creation not yet implemented');
-    default:
-      throw new Error(`Unknown provider: ${providerId}`);
-  }
-  await resourcesPage.waitForLoad();
-  const resource = resourcesPage.getCreatedResourceFor(provider.resourceId);
-  await expect(resource).toBeVisible();
-}
-
-export async function deleteResource(page: Page, providerId: ResourceId): Promise<void> {
-  const provider = PROVIDERS[providerId];
-  const resourcesPage = await navigateToResourcesPage(page);
-  await resourcesPage.deleteCreatedResourceFor(provider.resourceId);
-  const resource = resourcesPage.getCreatedResourceFor(provider.resourceId);
-  await expect(resource).not.toBeVisible();
-}
+export type MCPServerId = keyof typeof MCP_SERVERS;
 
 export function getProviderCredentials(providerId: ResourceId): string | undefined {
   const provider = PROVIDERS[providerId];
@@ -97,4 +60,13 @@ export function getProviderCredentials(providerId: ResourceId): string | undefin
 
 export function hasApiKey(providerId: ResourceId): boolean {
   return !!getProviderCredentials(providerId);
+}
+
+export function getMCPToken(mcpServerId: MCPServerId): string | undefined {
+  const server = MCP_SERVERS[mcpServerId];
+  return process.env[server.envVarName];
+}
+
+export function hasMCPToken(mcpServerId: MCPServerId): boolean {
+  return !!getMCPToken(mcpServerId);
 }

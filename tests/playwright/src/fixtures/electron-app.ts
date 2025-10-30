@@ -111,7 +111,7 @@ export const test = base.extend<ElectronFixtures>({
     await use(page);
   },
 
-  navigationBar: async ({ page }, use) => {
+  navigationBar: async ({ page }, use): Promise<void> => {
     const navigationBar = new NavigationBar(page);
     await use(navigationBar);
   },
