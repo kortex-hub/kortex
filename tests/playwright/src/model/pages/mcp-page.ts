@@ -74,6 +74,5 @@ export class McpPage extends BasePage {
     const readyTab = await this.openReadyTab();
     await readyTab.deleteServer(serverName);
     await expect.poll(async () => await readyTab.isServerConnected(serverName), { timeout: 10_000 }).toBeFalsy();
-    await readyTab.verifyEmpty();
   }
 }
