@@ -489,17 +489,6 @@ declare module '@kortex-app/api' {
        * @experimental expect change
        */
       execute(flowId: string, logger: Logger): Promise<void>;
-      /**
-       * @experimental expect change
-       * @returns an array of sensitive keys that should be hidden.
-       */
-      getSensitiveKeys?(): string[];
-
-      /**
-       * @experimental expect change
-       * @returns Promise with array of secret values to hide
-       */
-      getSecretValues?(flowId: string): Promise<string[]>;
     };
   }
 

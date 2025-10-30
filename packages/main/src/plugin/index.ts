@@ -55,6 +55,7 @@ import type { KubernetesGeneratorInfo } from '/@/plugin/api/KubernetesGeneratorI
 import { ExtensionLoader } from '/@/plugin/extension/extension-loader.js';
 import { ExtensionWatcher } from '/@/plugin/extension/extension-watcher.js';
 import { FlowManager } from '/@/plugin/flow/flow-manager.js';
+import { FlowSecretCollector } from '/@/plugin/flow/flow-secret-collector.js';
 import type {
   GenerateKubeResult,
   KubernetesGeneratorArgument,
@@ -128,7 +129,6 @@ import type {
 import type { ProxyState } from '/@api/proxy.js';
 import type { PullEvent } from '/@api/pull-event.js';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info.js';
-import { SecretManager } from '/@api/secret-manager.js';
 import type { StatusBarEntryDescriptor } from '/@api/status-bar.js';
 import type { PinOption } from '/@api/status-bar/pin-option.js';
 import type { ViewInfoUI } from '/@api/view-info.js';
@@ -536,6 +536,7 @@ export class PluginSystem {
     container.bind<ProviderRegistry>(ProviderRegistry).toSelf().inSingletonScope();
     container.bind<MCPManager>(MCPManager).toSelf().inSingletonScope();
     container.bind<FlowManager>(FlowManager).toSelf().inSingletonScope();
+    container.bind<FlowSecretCollector>(FlowSecretCollector).toSelf().inSingletonScope();
     container.bind<TrayMenuRegistry>(TrayMenuRegistry).toSelf().inSingletonScope();
     container.bind<InputQuickPickRegistry>(InputQuickPickRegistry).toSelf().inSingletonScope();
     container.bind<FilesystemMonitoring>(FilesystemMonitoring).toSelf().inSingletonScope();
@@ -939,28 +940,14 @@ export class PluginSystem {
       ): Promise<string> => {
         if (!options.dryrun && options.hideSecrets) throw new Error('cannot apply YAML while hidding secrets');
 
-        // Get the flow provider to use
-        const flowProvider = providerRegistry.getProvider(flow.providerId);
-        const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
-          flowProvider.flowConnections.find(({ name }) => name === flow.connectionName);
-        if (!flowConnection) throw new Error(`cannot find flow connection with name ${flow.connectionName}`);
-
-        // Generate the Kubernetes YAML
-        const { resources } = await flowConnection.flow.generateKubernetesYAML({
-          flowId: flow.flowId,
-          namespace: options.namespace,
-          hideSecrets: false,
-        });
-
-        let processedResources = resources;
-        if (options.hideSecrets) {
-          const sensitiveKeys = flowConnection.flow.getSensitiveKeys?.() ?? [];
-
-          const secretValues = (await flowConnection.flow.getSecretValues?.(flow.flowId)) ?? [];
-
-          const secretManager = new SecretManager(sensitiveKeys, secretValues);
-          processedResources = secretManager.hideSecretsInYaml(resources);
-        }
+        // Generate Kubernetes YAML with optional secret hiding
+        const processedResources = await flowManager.generateKubernetesYAML(
+          flow.providerId,
+          flow.connectionName,
+          flow.flowId,
+          options.namespace,
+          options.hideSecrets,
+        );
 
         if (options.dryrun) {
           return processedResources;
@@ -968,7 +955,7 @@ export class PluginSystem {
 
         const currentContext = kubernetesClient.getCurrentContextName();
         if (!currentContext) throw new Error('cannot find current context');
-        const objects = await kubernetesClient.applyResourcesFromYAML(currentContext, resources);
+        const objects = await kubernetesClient.applyResourcesFromYAML(currentContext, processedResources);
         console.log('[FlowGenerate] created', objects);
 
         return processedResources;
