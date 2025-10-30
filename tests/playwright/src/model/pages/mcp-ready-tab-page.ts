@@ -36,29 +36,15 @@ export class McpReadyTabPage extends BaseTablePage {
     return this.table.getByRole('row').filter({ hasText: serverName });
   }
 
-  async isServerConnected(serverName: string, timeout = 5_000): Promise<boolean> {
-    try {
-      await expect.poll(async () => await this.findServer(serverName).count(), { timeout }).toBeGreaterThan(0);
-      return true;
-    } catch {
-      return false;
-    }
+  async isServerConnected(serverName: string): Promise<boolean> {
+    return (await this.findServer(serverName).count()) > 0;
   }
 
   async deleteServer(serverName: string): Promise<void> {
-    await expect
-      .poll(
-        async () => {
-          const count = await this.findServer(serverName).count();
-          if (count === 0) return true;
-
-          await this.findServer(serverName).first().getByRole('button', { name: 'Remove instance of MCP' }).click();
-          await this.page.waitForTimeout(500);
-          return false;
-        },
-        { timeout: 10_000, intervals: [500] },
-      )
-      .toBeTruthy();
+    const server = this.findServer(serverName).first();
+    if ((await server.count()) > 0) {
+      await server.getByRole('button', { name: 'Remove instance of MCP' }).click();
+    }
   }
 
   async verifyEmpty(): Promise<void> {

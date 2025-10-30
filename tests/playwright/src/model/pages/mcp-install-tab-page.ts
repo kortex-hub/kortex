@@ -22,10 +22,12 @@ import { BaseTablePage } from './base-table-page';
 
 export class McpInstallTabPage extends BaseTablePage {
   readonly noMcpServersAvailableHeading: Locator;
+  readonly passwordInput: Locator;
 
   constructor(page: Page) {
     super(page, 'mcpServer');
     this.noMcpServersAvailableHeading = this.table.getByRole('heading', { name: 'No MCP servers available' });
+    this.passwordInput = this.page.getByLabel('password');
   }
 
   async waitForLoad(): Promise<void> {
@@ -55,13 +57,15 @@ export class McpInstallTabPage extends BaseTablePage {
     await expect(serverRow).toBeVisible();
 
     const installButton = serverRow.getByRole('button', { name: 'Install Remote server' });
+    await expect(installButton).toBeEnabled();
     await installButton.click();
 
-    const passwordInput = this.page.locator('input[type="password"]');
-    await expect(passwordInput).toBeVisible({ timeout: 5_000 });
-    await passwordInput.fill(token);
+    await expect(this.passwordInput).toBeVisible({ timeout: 5_000 });
+    await this.passwordInput.fill(token);
+    await expect(this.passwordInput).toHaveValue(token);
 
     const connectButton = this.page.getByRole('button', { name: 'Connect' });
+    await expect(connectButton).toBeEnabled();
     await connectButton.click();
   }
 }

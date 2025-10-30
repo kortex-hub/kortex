@@ -65,12 +65,15 @@ export class McpPage extends BasePage {
     await installTab.installRemoteServer(serverName, token);
 
     const readyTabAfterInstall = await this.openReadyTab();
-    expect(await readyTabAfterInstall.isServerConnected(serverName, 15_000)).toBe(true);
+    await expect
+      .poll(async () => await readyTabAfterInstall.isServerConnected(serverName), { timeout: 15_000 })
+      .toBeTruthy();
   }
 
   async deleteServer(serverName: string): Promise<void> {
     const readyTab = await this.openReadyTab();
     await readyTab.deleteServer(serverName);
+    await expect.poll(async () => await readyTab.isServerConnected(serverName), { timeout: 10_000 }).toBeFalsy();
     await readyTab.verifyEmpty();
   }
 }

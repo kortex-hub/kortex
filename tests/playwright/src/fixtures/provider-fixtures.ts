@@ -18,7 +18,6 @@
 import { type ElectronApplication, type Page } from '@playwright/test';
 
 import { NavigationBar } from '../model/navigation/navigation';
-import { SettingsPage } from '../model/pages/settings-page';
 import {
   getMCPToken,
   hasMCPToken,
@@ -83,7 +82,7 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
   ],
 
   resourceSetup: [
-    async ({ workerPage, workerNavigationBar, resource }, use): Promise<void> => {
+    async ({ workerNavigationBar, resource }, use): Promise<void> => {
       try {
         const provider = PROVIDERS[resource];
         const credentials = process.env[provider.envVarName];
@@ -91,15 +90,13 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
           throw new Error(`${provider.envVarName} environment variable is not set`);
         }
 
-        await workerNavigationBar.settingsLink.click();
-        const settingsPage = new SettingsPage(workerPage);
+        const settingsPage = await workerNavigationBar.navigateToSettingsPage();
         await settingsPage.createResource(resource, credentials);
 
         await use();
       } finally {
         try {
-          await workerNavigationBar.settingsLink.click();
-          const settingsPage = new SettingsPage(workerPage);
+          const settingsPage = await workerNavigationBar.navigateToSettingsPage();
           await settingsPage.deleteResource(resource);
         } catch (error) {
           console.error(`Failed to delete ${resource} resource:`, error);
