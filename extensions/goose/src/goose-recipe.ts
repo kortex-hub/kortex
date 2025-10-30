@@ -285,7 +285,7 @@ export class GooseRecipe implements Disposable {
         credentials: {
           env: Object.entries(env).map(([key, token]) => ({
             key,
-            value: options.hideSecrets ? '*'.repeat(token.length) : token,
+            value: token,
           })),
         },
       },
