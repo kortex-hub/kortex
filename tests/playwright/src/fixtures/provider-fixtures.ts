@@ -17,15 +17,9 @@
  ***********************************************************************/
 import { type ElectronApplication, type Page } from '@playwright/test';
 
+import { MCP_SERVERS, type MCPServerId } from '../model/core/types';
 import { NavigationBar } from '../model/navigation/navigation';
-import {
-  getMCPToken,
-  hasMCPToken,
-  MCP_SERVERS,
-  type MCPServerId,
-  PROVIDERS,
-  type ResourceId,
-} from '../utils/resource-helper';
+import { getMCPToken, hasMCPToken, PROVIDERS, type ResourceId } from '../utils/resource-helper';
 import { type ElectronFixtures, getFirstPage, launchElectronApp, test as base } from './electron-app';
 
 interface WorkerFixtures {

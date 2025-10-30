@@ -15,7 +15,8 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import type { SettingsResourceId } from 'src/model/core/types';
+import type { MCPServerId, SettingsResourceId } from 'src/model/core/types';
+import { MCP_SERVERS } from 'src/model/core/types';
 
 export interface ResourceConfig {
   readonly envVarName: string;
@@ -38,20 +39,6 @@ export const PROVIDERS = {
 } as const satisfies Record<string, ResourceConfig>;
 
 export type ResourceId = keyof typeof PROVIDERS;
-
-export interface MCPServerConfig {
-  readonly envVarName: string;
-  readonly serverName: string;
-}
-
-export const MCP_SERVERS = {
-  github: {
-    envVarName: 'GITHUB_TOKEN',
-    serverName: 'com.github.mcp',
-  },
-} as const satisfies Record<string, MCPServerConfig>;
-
-export type MCPServerId = keyof typeof MCP_SERVERS;
 
 export function getProviderCredentials(providerId: ResourceId): string | undefined {
   const provider = PROVIDERS[providerId];

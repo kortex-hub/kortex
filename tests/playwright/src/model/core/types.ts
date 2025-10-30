@@ -94,3 +94,17 @@ export const featuredResources = Object.keys(resources) as (keyof typeof resourc
 export const resourcesWithCreateButton = Object.values(resources)
   .filter(r => r.hasCreateButton)
   .map(r => r.displayName);
+
+export interface MCPServerConfig {
+  readonly envVarName: string;
+  readonly serverName: string;
+}
+
+export const MCP_SERVERS = {
+  github: {
+    envVarName: 'GITHUB_TOKEN',
+    serverName: 'com.github.mcp',
+  },
+} as const satisfies Record<string, MCPServerConfig>;
+
+export type MCPServerId = keyof typeof MCP_SERVERS;
