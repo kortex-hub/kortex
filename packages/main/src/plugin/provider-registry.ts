@@ -781,7 +781,6 @@ export class ProviderRegistry {
         name: connection.name,
         status: connection.status(),
         connectionType: ProviderConnectionType.RAG,
-        mcpServer: connection.mcpServer,
       };
     } else if (this.isFlowConnection(connection)) {
       providerConnection = {

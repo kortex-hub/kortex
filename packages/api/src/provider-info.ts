@@ -26,7 +26,6 @@ import type {
   ProviderLinks,
   ProviderStatus,
 } from '@kortex-app/api';
-import type { components } from '@kortex-hub/mcp-registry-types';
 
 export type LifecycleMethod = 'start' | 'stop' | 'delete' | 'edit';
 
@@ -85,7 +84,6 @@ export interface ProviderInferenceConnectionInfo extends ProviderConnectionBase 
 
 export interface ProviderRagConnectionInfo extends ProviderConnectionBase {
   connectionType: ProviderConnectionType.RAG;
-  mcpServer: components['schemas']['ServerDetail'];
 }
 
 export type ProviderConnectionInfo =
