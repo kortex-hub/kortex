@@ -37,7 +37,7 @@ function onSelectChange(
 </script>
 
 <Markdown markdown={object.description} />
-<div class="flex flex-row items-center gap-x-2" aria-label="object-value-{id}">
+<div class="flex flex-row items-center gap-x-2">
   {#if object.isSecret}
     <PasswordInput id={id} description={description} oninput={onInput} password={object.value} readonly={readonly} placeholder={placeholder} />
   {:else if choices.length > 0}
