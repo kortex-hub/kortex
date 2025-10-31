@@ -7,7 +7,7 @@ interface Props {
 
 const { object }: Props = $props();
 
-const sourcesCount = object.indexedFiles.length;
+const sourcesCount = object.files.length;
 </script>
 
 <div class="flex items-center justify-center">

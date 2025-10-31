@@ -54,6 +54,7 @@ const chunkProviderRegistry = {
 const providerRegistry = {
   onDidRegisterRagConnection: vi.fn(),
   onDidUnregisterRagConnection: vi.fn(),
+  getRagConnections: vi.fn().mockReturnValue([]),
 } as unknown as ProviderRegistry;
 
 const taskManager = {
@@ -100,8 +101,17 @@ describe('RagEnvironmentRegistry', () => {
         name: 'rag-conn-1',
       },
       chunkerId: 'chunker-1',
-      indexedFiles: ['/path/to/file1.txt', '/path/to/file2.txt'],
-      pendingFiles: ['/path/to/file3.txt'],
+      files: [
+        {
+          path: '/path/to/file1.txt',
+          status: 'indexed',
+        },
+        { path: '/path/to/file2.txt', status: 'indexed' },
+        {
+          path: '/path/to/file3.txt',
+          status: 'pending',
+        },
+      ],
     };
 
     await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
@@ -118,8 +128,7 @@ describe('RagEnvironmentRegistry', () => {
         name: 'rag-conn-1',
       },
       chunkerId: 'chunker-1',
-      indexedFiles: ['/path/to/file1.txt'],
-      pendingFiles: [],
+      files: [{ path: '/path/to/file1.txt', status: 'indexed' }],
     };
 
     vi.mocked(existsSync).mockReturnValue(true);
@@ -163,8 +172,7 @@ describe('RagEnvironmentRegistry', () => {
         name: 'rag-conn-1',
       },
       chunkerId: 'chunker-1',
-      indexedFiles: [],
-      pendingFiles: [],
+      files: [],
     };
 
     const ragEnv2: RagEnvironment = {
@@ -174,8 +182,7 @@ describe('RagEnvironmentRegistry', () => {
         name: 'rag-conn-2',
       },
       chunkerId: 'chunker-2',
-      indexedFiles: [],
-      pendingFiles: [],
+      files: [],
     };
 
     vi.mocked(readdir as unknown as MockInstance<() => Promise<string[]>>).mockResolvedValue([
@@ -283,8 +290,7 @@ describe('RagEnvironmentRegistry', () => {
         name: 'rag-conn-1',
       },
       chunkerId: 'chunker-1',
-      indexedFiles: ['/path/to/file1.txt'],
-      pendingFiles: [],
+      files: [{ path: '/path/to/file1.txt', status: 'indexed' }],
     };
 
     await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
@@ -292,7 +298,10 @@ describe('RagEnvironmentRegistry', () => {
     // Update the environment
     const updatedEnvironment: RagEnvironment = {
       ...ragEnvironment,
-      indexedFiles: ['/path/to/file1.txt', '/path/to/file2.txt'],
+      files: [
+        { path: '/path/to/file1.txt', status: 'indexed' },
+        { path: '/path/to/file2.txt', status: 'indexed' },
+      ],
     };
 
     await ragEnvironmentRegistry.saveOrUpdate(updatedEnvironment);

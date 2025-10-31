@@ -1733,8 +1733,7 @@ export class PluginSystem {
           name,
           ragConnection,
           chunkerId,
-          indexedFiles: [],
-          pendingFiles: [],
+          files: [],
         };
         await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
         this.getWebContentsSender().send('rag-environment-created', ragEnvironment);
