@@ -55,7 +55,6 @@ import type { KubernetesGeneratorInfo } from '/@/plugin/api/KubernetesGeneratorI
 import { ExtensionLoader } from '/@/plugin/extension/extension-loader.js';
 import { ExtensionWatcher } from '/@/plugin/extension/extension-watcher.js';
 import { FlowManager } from '/@/plugin/flow/flow-manager.js';
-import { FlowSecretCollector } from '/@/plugin/flow/flow-secret-collector.js';
 import type {
   GenerateKubeResult,
   KubernetesGeneratorArgument,
@@ -536,7 +535,6 @@ export class PluginSystem {
     container.bind<ProviderRegistry>(ProviderRegistry).toSelf().inSingletonScope();
     container.bind<MCPManager>(MCPManager).toSelf().inSingletonScope();
     container.bind<FlowManager>(FlowManager).toSelf().inSingletonScope();
-    container.bind<FlowSecretCollector>(FlowSecretCollector).toSelf().inSingletonScope();
     container.bind<TrayMenuRegistry>(TrayMenuRegistry).toSelf().inSingletonScope();
     container.bind<InputQuickPickRegistry>(InputQuickPickRegistry).toSelf().inSingletonScope();
     container.bind<FilesystemMonitoring>(FilesystemMonitoring).toSelf().inSingletonScope();

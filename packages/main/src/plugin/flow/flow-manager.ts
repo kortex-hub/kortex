@@ -22,10 +22,9 @@ import { ApiSenderType, IPCHandle } from '/@/plugin/api.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { FlowExecuteInfo } from '/@api/flow-execute-info.js';
 import type { FlowInfo } from '/@api/flow-info.js';
-import { SecretManager } from '/@api/secret-manager.js';
 
+import { SafeStorageRegistry } from '../safe-storage/safe-storage-registry.js';
 import { TaskManager } from '../tasks/task-manager.js';
-import { FlowSecretCollector } from './flow-secret-collector.js';
 
 class BufferLogger implements Logger {
   #buffer = '';
@@ -68,8 +67,8 @@ export class FlowManager implements Disposable {
     private taskManager: TaskManager,
     @inject(IPCHandle)
     private readonly ipcHandle: IPCHandle,
-    @inject(FlowSecretCollector)
-    private secretCollector: FlowSecretCollector,
+    @inject(SafeStorageRegistry)
+    private safeStorageRegistry: SafeStorageRegistry,
   ) {}
 
   /**
@@ -136,9 +135,7 @@ export class FlowManager implements Disposable {
 
     // Hide secrets if requested
     if (hideSecrets) {
-      const secretValues = await this.secretCollector.collectSecretsForFlow(flowId, providerId, connectionName);
-      const secretManager = new SecretManager(secretValues);
-      return secretManager.hideSecretsInYaml(resources);
+      return await this.safeStorageRegistry.hideSecretsInContent(resources);
     }
 
     return resources;
