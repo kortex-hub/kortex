@@ -8331,7 +8331,7 @@ snapshots:
   '@grpc/grpc-js@1.7.3':
     dependencies:
       '@grpc/proto-loader': 0.7.15
-      '@types/node': 22.18.10
+      '@types/node': 22.18.13
 
   '@grpc/proto-loader@0.7.15':
     dependencies:
@@ -9132,7 +9132,7 @@ snapshots:
   '@types/dockerode@3.3.44':
     dependencies:
       '@types/docker-modem': 3.0.6
-      '@types/node': 22.18.10
+      '@types/node': 22.18.13
       '@types/ssh2': 1.15.5
 
   '@types/estree@1.0.8': {}
@@ -9191,7 +9191,7 @@ snapshots:
 
   '@types/node-fetch@2.6.12':
     dependencies:
-      '@types/node': 22.18.10
+      '@types/node': 22.18.13
       form-data: 4.0.4
 
   '@types/node@18.19.122':
@@ -9272,7 +9272,7 @@ snapshots:
 
   '@types/stream-buffers@3.0.7':
     dependencies:
-      '@types/node': 22.18.10
+      '@types/node': 22.18.13
 
   '@types/stream-chain@2.1.0':
     dependencies:
@@ -9470,7 +9470,7 @@ snapshots:
       '@typescript-eslint/types': 8.39.1
       '@typescript-eslint/typescript-estree': 8.39.1(typescript@5.9.2)
       '@typescript-eslint/utils': 8.39.1(eslint@9.33.0(jiti@2.4.2))(typescript@5.9.2)
-      debug: 4.4.3
+      debug: 4.4.1
       eslint: 9.33.0(jiti@2.4.2)
       ts-api-utils: 2.1.0(typescript@5.9.2)
       typescript: 5.9.2
