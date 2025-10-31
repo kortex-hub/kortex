@@ -8,12 +8,14 @@ import PasswordInput from '/@/lib/ui/PasswordInput.svelte';
 
 interface Props {
   object: components['schemas']['Input'];
+  id?: string;
+  description?: string;
   readonly?: boolean;
   placeholder?: string;
   onChange: (value: string) => void;
 }
 
-let { object, readonly, placeholder, onChange }: Props = $props();
+let { object, id, description, readonly, placeholder, onChange }: Props = $props();
 
 let choices = $derived(object.choices ?? []);
 
@@ -35,9 +37,9 @@ function onSelectChange(
 </script>
 
 <Markdown markdown={object.description} />
-<div class="flex flex-row items-center gap-x-2">
+<div class="flex flex-row items-center gap-x-2" aria-label="object-value-{id}">
   {#if object.isSecret}
-    <PasswordInput oninput={onInput} password={object.value} readonly={readonly} placeholder={placeholder} />
+    <PasswordInput id={id} description={description} oninput={onInput} password={object.value} readonly={readonly} placeholder={placeholder} />
   {:else if choices.length > 0}
     <select disabled={readonly} value={object.value} onchange={onSelectChange}>
       {#each choices as choice (choice)}
@@ -55,6 +57,8 @@ function onSelectChange(
       clearable={true} />
   {:else}
     <Input
+      aria-label={description}
+      id={id}
       value={object.value}
       oninput={onInput}
       class="mb-2 w-full"

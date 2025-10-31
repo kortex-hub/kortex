@@ -8,11 +8,13 @@ import Fa from 'svelte-fa';
 type Props = Omit<ComponentProps<Input>, 'value'> & {
   password?: string;
   passwordHidden?: boolean;
+  description?: string;
 };
 
 let {
   id,
   name,
+  description,
   password = $bindable(),
   passwordHidden = $bindable(true),
   readonly = false,
@@ -33,11 +35,11 @@ async function onShowHide(event: MouseEvent): Promise<void> {
 </script>
 
 <Input
-  id="password-{id}"
-  name={name ?? `password-${id}`}
+  id={id}
+  name={name ?? `${id}`}
   placeholder="password"
   bind:value={password}
-  aria-label="password {id}"
+  aria-label={description}
   bind:readonly={readonly}
   type={type}
   {...restProps}

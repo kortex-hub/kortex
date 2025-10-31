@@ -7,20 +7,21 @@ import InputArgument from '/@/lib/mcp/setup/InputArgument.svelte';
 
 interface Props {
   object: components['schemas']['InputWithVariables'];
+  id?: string;
   onChange: (value: string) => void;
   onVariableChange: (variable: string, value: string) => void;
 }
 
-let { object, onChange, onVariableChange }: Props = $props();
+let { object, id, onChange, onVariableChange }: Props = $props();
 
 let variables: Array<[string, components['schemas']['Input']]> = Object.entries(object.variables ?? {});
 </script>
 
 <!-- no variable => let's use InputArgument directly -->
 {#if variables.length === 0}
-  <InputArgument onChange={onChange} object={object} />
+  <InputArgument id={id} description={object.description} onChange={onChange} object={object} />
 {:else if object.value}
-  <InputArgument onChange={onChange} object={object} readonly />
+  <InputArgument id={id} description={object.description} onChange={onChange} object={object} readonly />
 {/if}
 
 {#if variables.length > 0}
@@ -37,7 +38,7 @@ let variables: Array<[string, components['schemas']['Input']]> = Object.entries(
         <!-- variable value input -->
         <div class="flex flex-col">
           <label for="variable-{key}-value"  class="text-base font-bold text-[var(--pd-content-card-header-text)]">Value</label>
-          <InputArgument placeholder={value.default} onChange={onVariableChange.bind(undefined, key)} object={{...value, description: undefined }} />
+          <InputArgument placeholder={value.default} id="variable-{key}-value" description={object.description} onChange={onVariableChange.bind(undefined, key)} object={{...value, description: undefined }} />
         </div>
       </div>
       <Markdown markdown={value.description}/>

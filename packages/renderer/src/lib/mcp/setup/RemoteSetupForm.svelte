@@ -111,6 +111,7 @@ function onHeaderVariableChange(header: string, variable: string, value: string)
 
           <label for="header-{header.name}" class="text-xl font-bold text-[var(--pd-content-card-header-text)]">{header.name} {header.isRequired ? '*' : ''}</label>
           <InputArgumentWithVariables
+            id={`header-${header.name}`}
             onChange={onHeaderChange.bind(undefined, header.name)}
             onVariableChange={onHeaderVariableChange.bind(undefined, header.name)}
             object={header}
