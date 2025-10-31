@@ -1735,7 +1735,7 @@ export class PluginSystem {
           chunkerId,
           files: [],
         };
-        await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
+        await ragEnvironmentRegistry.createEnvironment(name, ragConnection, chunkerId);
         this.getWebContentsSender().send('rag-environment-created', ragEnvironment);
       },
     );
