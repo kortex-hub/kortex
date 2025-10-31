@@ -781,7 +781,7 @@ export class PluginSystem {
     const authentication = container.get<AuthenticationImpl>(AuthenticationImpl);
     const imageRegistry = container.get<ImageRegistry>(ImageRegistry);
     const mcpRegistry = container.get<MCPRegistry>(MCPRegistry);
-    mcpRegistry.init();
+    await mcpRegistry.init();
 
     const mcpIPCHandler = container.get<MCPIPCHandler>(MCPIPCHandler);
     mcpIPCHandler.init();
