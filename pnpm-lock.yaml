@@ -29,8 +29,8 @@ importers:
   .:
     dependencies:
       '@ai-sdk/mcp':
-        specifier: ^0.0.3
-        version: 0.0.3(zod@4.1.11)
+        specifier: ^0.0.4
+        version: 0.0.4(zod@4.1.11)
       '@docker/extension-api-client-types':
         specifier: 0.4.2
         version: 0.4.2
@@ -714,8 +714,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/mcp@0.0.3':
-    resolution: {integrity: sha512-qk/T7Tm6RRVALZOVd1Gdt1kXqBfZ48WmFvh7CXWJ1VdvkVmszCBHIfklWGyPnwVTfaRJRSaHTysDJUOUFBHtOg==}
+  '@ai-sdk/mcp@0.0.4':
+    resolution: {integrity: sha512-R2pQsZ6DkZW4wui9fp6evh5l9WcgnLhVk3PFQbnYTCTmkyT6+cwB0f2WimxB37dNK1Dy9xcT4KiLYZ3Dyadt1g==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -5906,8 +5906,8 @@ packages:
     resolution: {integrity: sha512-DSmt0OEcLoK4i3NuscSbGjOf3bqiDEutejqENSplMSFA/gmB8mkED9G4pKWnPl7MDU4rSHebKPHeitpDfyH0cQ==}
     engines: {node: '>=10'}
 
-  node-abi@3.79.0:
-    resolution: {integrity: sha512-Pr/5KdBQGG8TirdkS0qN3B+f3eo8zTOfZQWAxHoJqopMz2/uvRnG+S4fWu/6AZxKei2CP2p/psdQ5HFC2Ap5BA==}
+  node-abi@3.80.0:
+    resolution: {integrity: sha512-LyPuZJcI9HVwzXK1GPxWNzrr+vr8Hp/3UqlmWxxh8p54U1ZbclOqbSog9lWHaCX+dBaiGi6n/hIX+mKu74GmPA==}
     engines: {node: '>=10'}
 
   node-addon-api@1.7.2:
@@ -7731,10 +7731,10 @@ snapshots:
       '@ai-sdk/provider-utils': 3.0.14(zod@4.1.12)
       zod: 4.1.12
 
-  '@ai-sdk/mcp@0.0.3(zod@4.1.11)':
+  '@ai-sdk/mcp@0.0.4(zod@4.1.11)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
-      '@ai-sdk/provider-utils': 3.0.13(zod@4.1.11)
+      '@ai-sdk/provider-utils': 3.0.14(zod@4.1.11)
       pkce-challenge: 5.0.0
       zod: 4.1.11
 
@@ -7752,6 +7752,13 @@ snapshots:
       zod: 4.1.12
 
   '@ai-sdk/provider-utils@3.0.13(zod@4.1.11)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0
+      '@standard-schema/spec': 1.0.0
+      eventsource-parser: 3.0.6
+      zod: 4.1.11
+
+  '@ai-sdk/provider-utils@3.0.14(zod@4.1.11)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
       '@standard-schema/spec': 1.0.0
@@ -8095,7 +8102,7 @@ snapshots:
       detect-libc: 2.1.2
       fs-extra: 10.1.0
       got: 11.8.6
-      node-abi: 3.79.0
+      node-abi: 3.80.0
       node-api-version: 0.2.1
       node-gyp: 9.4.1
       ora: 5.4.1
@@ -13642,7 +13649,7 @@ snapshots:
     dependencies:
       semver: 7.7.2
 
-  node-abi@3.79.0:
+  node-abi@3.80.0:
     dependencies:
       semver: 7.7.3
 
