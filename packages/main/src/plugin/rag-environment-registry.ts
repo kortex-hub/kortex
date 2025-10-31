@@ -113,6 +113,12 @@ export class RagEnvironmentRegistry {
       filePath,
       JSON.stringify(ragEnvironment, (key, val) => (key !== 'mcpServer' ? val : undefined), 2),
     );
+    const index = this.#environments.findIndex(env => env.name === ragEnvironment.name);
+    if (index !== -1) {
+      this.#environments[index] = ragEnvironment;
+    } else {
+      this.#environments.push(ragEnvironment);
+    }
     this.apiSender.send('rag-environment-updated', { name: ragEnvironment.name });
   }
 
@@ -306,5 +312,21 @@ export class RagEnvironmentRegistry {
     } finally {
       chunkTask.state = 'completed';
     }
+  }
+
+  async createEnvironment(
+    name: string,
+    ragConnection: { name: string; providerId: string },
+    chunkerId: string,
+  ): Promise<void> {
+    const ragEnvironment: RagEnvironment = {
+      name,
+      ragConnection,
+      chunkerId,
+      files: [],
+      mcpServer: undefined,
+    };
+    await this.ensureMCPServer(ragEnvironment);
+    return this.saveOrUpdate(ragEnvironment);
   }
 }
