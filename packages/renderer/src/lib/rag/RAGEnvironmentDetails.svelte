@@ -1,5 +1,4 @@
 <script lang="ts">
-import { TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
 import { getChunkProviderName, getDatabaseName } from '/@/lib/rag/rag-environment-utils.svelte';
@@ -8,18 +7,11 @@ import { providerInfos } from '/@/stores/providers';
 import { ragEnvironments } from '/@/stores/rag-environments';
 
 import RAGIcon from '../images/RAGIcon.svelte';
-import RAGFilePath from './columns/RAGFilePath.svelte';
-import RAGFileStatus from './columns/RAGFileStatus.svelte';
 
 interface Props {
   name: string;
 }
 let { name }: Props = $props();
-
-interface FileWithStatus {
-  path: string;
-  status: 'Indexed' | 'Pending';
-}
 
 type TabType = 'summary' | 'sources' | 'vectorstore' | 'chunker';
 
@@ -30,22 +22,7 @@ const ragEnvironment = $derived($ragEnvironments.find(env => env.name === decode
 const files = $derived.by(() => {
   if (!ragEnvironment) return [];
 
-  const indexedFiles: FileWithStatus[] = ragEnvironment.indexedFiles.map(path => ({
-    path,
-    status: 'Indexed' as const,
-  }));
-
-  const pendingFiles: FileWithStatus[] = ragEnvironment.pendingFiles.map(path => ({
-    path,
-    status: 'Pending' as const,
-  }));
-
-  return [...indexedFiles, ...pendingFiles];
-});
-
-const statusColumn = new TableColumn<FileWithStatus>('Status', {
-  width: '100px',
-  renderer: RAGFileStatus,
+  return ragEnvironment.files;
 });
 
 const databaseName = $derived(getDatabaseName($providerInfos, ragEnvironment));
@@ -231,7 +208,7 @@ async function handleAddFile(): Promise<void> {
           </div>
 
           {#if files.length > 0}
-            {#each files as file}
+            {#each files as file (file.path)}
               <div class="source-item flex items-center justify-between px-5 py-4 border-b border-[var(--pd-content-divider)] last:border-b-0 hover:bg-[var(--pd-content-card-inset-bg)] transition-colors duration-200">
                 <div class="source-info flex items-center gap-3">
                   <div class="file-icon w-8 h-8 bg-[var(--pd-content-card-inset-bg)] rounded-md flex items-center justify-center text-[var(--pd-content-text-secondary)]">

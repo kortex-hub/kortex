@@ -30,7 +30,7 @@ import { INTERNAL_PROVIDER_ID, MCPRegistry } from '/@/plugin/mcp/mcp-registry.js
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import { Uri } from '/@/plugin/types/uri.js';
-import { RagEnvironment } from '/@api/rag/rag-environment.js';
+import { FileInfo, RagEnvironment } from '/@api/rag/rag-environment.js';
 
 import { Directories } from './directories.js';
 
@@ -215,14 +215,14 @@ export class RagEnvironmentRegistry {
    * @returns true if the file was added successfully, false otherwise
    */
   public async addFileToPendingFiles(name: string, filePath: string): Promise<boolean> {
-    const ragEnvironment = await this.getEnvironment(name);
+    const ragEnvironment = this.getEnvironment(name);
     if (!ragEnvironment) {
       console.error(`RAG environment ${name} not found`);
       return false;
     }
 
     // Check if file is already in indexed or pending files
-    if (ragEnvironment.indexedFiles.includes(filePath) || ragEnvironment.pendingFiles.includes(filePath)) {
+    if (ragEnvironment.files.some(file => file.path === filePath)) {
       console.warn(`File ${filePath} is already in RAG environment ${name}`);
       return false;
     }
@@ -239,12 +239,14 @@ export class RagEnvironmentRegistry {
       return false;
     }
 
-    this.indexFile(ragEnvironment, filePath, chunkProvider, ragConnection).catch((err: unknown) =>
+    const fileInfo: FileInfo = { path: filePath, status: 'pending' };
+
+    this.indexFile(ragEnvironment, fileInfo, chunkProvider, ragConnection).catch((err: unknown) =>
       console.error(`Error indexing file: ${filePath}`, err),
     );
 
     // Add file to pending files
-    ragEnvironment.pendingFiles.push(filePath);
+    ragEnvironment.files.push(fileInfo);
 
     try {
       await this.saveOrUpdate(ragEnvironment);
@@ -267,30 +269,29 @@ export class RagEnvironmentRegistry {
 
   private async indexFile(
     ragEnvironment: RagEnvironment,
-    filePath: string,
+    fileInfo: FileInfo,
     chunkProvider: ChunkProvider,
     ragConnection: ProviderRagConnection,
   ): Promise<void> {
     const chunkTask = this.taskManager.createTask({
-      title: `Chunking ${filePath} on ${ragEnvironment.name}`,
+      title: `Chunking ${fileInfo.path} on ${ragEnvironment.name}`,
     });
     chunkTask.state = 'running';
     chunkTask.status = 'in-progress';
     try {
-      const chunks = await chunkProvider.index(Uri.file(filePath));
+      const chunks = await chunkProvider.index(Uri.file(fileInfo.path));
       chunkTask.status = 'success';
       const indexTask = this.taskManager.createTask({
-        title: `Indexing ${filePath} on ${ragEnvironment.name}`,
+        title: `Indexing ${fileInfo.path} on ${ragEnvironment.name}`,
       });
       indexTask.state = 'running';
       indexTask.status = 'in-progress';
       try {
         await ragConnection.connection.index(
-          Uri.file(filePath),
+          Uri.file(fileInfo.path),
           chunks.map(chunk => chunk.text),
         );
-        ragEnvironment.indexedFiles.push(filePath);
-        ragEnvironment.pendingFiles = ragEnvironment.pendingFiles.filter(file => file !== filePath);
+        fileInfo.status = 'indexed';
         await this.saveOrUpdate(ragEnvironment);
         indexTask.status = 'success';
       } catch (err: unknown) {

@@ -42,9 +42,9 @@ let selectedRagEnvironment = $state<RagEnvironment | undefined>(undefined);
 
 function onSelectRagEnvironment(ragEnvironment: RagEnvironment | undefined): void {
   if (selectedRagEnvironment) {
-    selectedMCP = selectedMCP.filter(mcp => mcp.id !== selectedRagEnvironment?.mcpServer.id);
+    selectedMCP = selectedMCP.filter(mcp => mcp.id !== selectedRagEnvironment?.mcpServer?.id);
   }
-  if (ragEnvironment) {
+  if (ragEnvironment?.mcpServer) {
     selectedMCP.push(ragEnvironment.mcpServer);
   }
   selectedRagEnvironment = ragEnvironment;
@@ -62,14 +62,14 @@ function onSelectRagEnvironment(ragEnvironment: RagEnvironment | undefined): voi
 						{...props}
 						variant="outline"
 						class="order-2 ml-auto px-2 md:order-1 md:ml-0 md:h-fit md:px-2"
-						onclick={():void => {
+						onclick={() => {
             	currentChatId.value = undefined;
               if ($router.path === '/') {
                 router.goto('/chat');
               } else {
                 router.goto('/');
               }
-            }}
+            } }
 					>
 						<PenToSquareIcon />
 						<span>New Chat</span>

@@ -107,7 +107,7 @@ function onSelectRagEnvironment(env: RagEnvironment | undefined, event: Event): 
             <div class="flex flex-col items-start gap-1">
               <div class="font-medium">{ragEnv.name}</div>
               <div class="text-xs text-muted-foreground">
-                {ragEnv.ragConnection.providerId} • {ragEnv.indexedFiles.length} sources
+                {ragEnv.ragConnection.providerId} • {ragEnv.files.length} sources
               </div>
             </div>
 
