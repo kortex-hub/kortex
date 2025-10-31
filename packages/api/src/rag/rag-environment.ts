@@ -1,3 +1,5 @@
+import type { MCPRemoteServerInfo } from '../mcp/mcp-server-info.js';
+
 export interface RagEnvironment {
   name: string;
   ragConnection: {
@@ -7,4 +9,5 @@ export interface RagEnvironment {
   chunkerId: string;
   indexedFiles: string[];
   pendingFiles: string[];
+  mcpServer?: MCPRemoteServerInfo;
 }

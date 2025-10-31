@@ -25,6 +25,8 @@ import { inject, injectable } from 'inversify';
 
 import { ApiSenderType } from '/@/plugin/api.js';
 import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
+import { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
+import { INTERNAL_PROVIDER_ID, MCPRegistry } from '/@/plugin/mcp/mcp-registry.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import { Uri } from '/@/plugin/types/uri.js';
@@ -35,6 +37,7 @@ import { Directories } from './directories.js';
 @injectable()
 export class RagEnvironmentRegistry {
   #ragDirectory: string;
+  #environments: RagEnvironment[] = [];
 
   constructor(
     @inject(ApiSenderType)
@@ -47,9 +50,48 @@ export class RagEnvironmentRegistry {
     private providerRegistry: ProviderRegistry,
     @inject(TaskManager)
     private taskManager: TaskManager,
+    @inject(MCPRegistry)
+    private mcpRegistry: MCPRegistry,
+    @inject(MCPManager)
+    private mcpManager: MCPManager,
   ) {
     // Create the rag directory inside the kortex home directory
     this.#ragDirectory = resolve(this.directories.getConfigurationDirectory(), '..', 'rag');
+    this.providerRegistry.onDidRegisterRagConnection(this.refreshEnvironments.bind(this));
+    this.providerRegistry.onDidUnregisterRagConnection(this.refreshEnvironments.bind(this));
+  }
+
+  async init(): Promise<void> {
+    return this.loadEnvironments();
+  }
+
+  private async loadEnvironments(): Promise<void> {
+    this.#environments = [];
+    try {
+      const files = await readdir(this.#ragDirectory);
+
+      for (const file of files) {
+        if (file.endsWith('.json')) {
+          const name = basename(file, '.json');
+          const ragEnvironment = await this.loadEnvironment(name);
+          if (ragEnvironment) {
+            this.#environments.push(ragEnvironment);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to read RAG environments:', error);
+    }
+  }
+
+  private async refreshEnvironments(): Promise<void> {
+    for (const environment of this.#environments) {
+      try {
+        await this.ensureMCPServer(environment);
+      } catch (err: unknown) {
+        console.error(`Failed to ensure MCP server for RAG environment ${environment.name}:`, err);
+      }
+    }
   }
 
   private async ensureRagDirectoryExists(): Promise<void> {
@@ -67,7 +109,10 @@ export class RagEnvironmentRegistry {
   public async saveOrUpdate(ragEnvironment: RagEnvironment): Promise<void> {
     await this.ensureRagDirectoryExists();
     const filePath = this.getRagEnvironmentFilePath(ragEnvironment.name);
-    await writeFile(filePath, JSON.stringify(ragEnvironment, undefined, 2));
+    await writeFile(
+      filePath,
+      JSON.stringify(ragEnvironment, (key, val) => (key !== 'mcpServer' ? val : undefined), 2),
+    );
     this.apiSender.send('rag-environment-updated', { name: ragEnvironment.name });
   }
 
@@ -76,7 +121,7 @@ export class RagEnvironmentRegistry {
    * @param name The name of the RAG environment
    * @returns The RAG environment or undefined if not found
    */
-  public async getRagEnvironment(name: string): Promise<RagEnvironment | undefined> {
+  public async loadEnvironment(name: string): Promise<RagEnvironment | undefined> {
     const filePath = this.getRagEnvironmentFilePath(name);
     if (!existsSync(filePath)) {
       return undefined;
@@ -84,11 +129,45 @@ export class RagEnvironmentRegistry {
 
     try {
       const content = await readFile(filePath, 'utf-8');
-      return JSON.parse(content) as RagEnvironment;
+      const environment = JSON.parse(content) as RagEnvironment;
+      try {
+        await this.ensureMCPServer(environment);
+      } catch (err: unknown) {
+        console.error(`Failed to ensure MCP server for RAG environment ${name}:`, err);
+      }
+      return environment;
     } catch (error) {
       console.error(`Failed to read RAG environment ${name}:`, error);
       return undefined;
     }
+  }
+
+  private async ensureMCPServer(environment: RagEnvironment): Promise<void> {
+    if (!environment.mcpServer) {
+      const ragConnection = this.getRagConnection(environment);
+      if (ragConnection) {
+        const serverId = `${ragConnection.providerId}.${ragConnection.connection.name}`;
+        let mcpServer = this.mcpRegistry.findInternalMCPServer(serverId);
+        if (!mcpServer) {
+          mcpServer = { ...ragConnection.connection.mcpServer.server, serverId };
+          this.mcpRegistry.registerInternalMCPServer(mcpServer);
+        }
+        environment.mcpServer = this.mcpManager.findMcpRemoteServer(
+          INTERNAL_PROVIDER_ID,
+          serverId,
+          ragConnection.connection.mcpServer.config.type,
+          ragConnection.connection.mcpServer.config.index,
+        );
+        environment.mcpServer ??= await this.mcpRegistry.setupMCPServer(
+          serverId,
+          ragConnection.connection.mcpServer.config,
+        );
+      }
+    }
+  }
+
+  public getEnvironment(name: string): RagEnvironment | undefined {
+    return this.#environments.find(environment => environment.name === name);
   }
 
   /**
@@ -96,25 +175,7 @@ export class RagEnvironmentRegistry {
    * @returns Array of all RAG environments
    */
   public async getAllRagEnvironments(): Promise<RagEnvironment[]> {
-    try {
-      const files = await readdir(this.#ragDirectory);
-      const ragEnvironments: RagEnvironment[] = [];
-
-      for (const file of files) {
-        if (file.endsWith('.json')) {
-          const name = basename(file, '.json');
-          const ragEnvironment = await this.getRagEnvironment(name);
-          if (ragEnvironment) {
-            ragEnvironments.push(ragEnvironment);
-          }
-        }
-      }
-
-      return ragEnvironments;
-    } catch (error) {
-      console.error('Failed to read RAG environments:', error);
-      return [];
-    }
+    return this.#environments;
   }
 
   /**
@@ -154,7 +215,7 @@ export class RagEnvironmentRegistry {
    * @returns true if the file was added successfully, false otherwise
    */
   public async addFileToPendingFiles(name: string, filePath: string): Promise<boolean> {
-    const ragEnvironment = await this.getRagEnvironment(name);
+    const ragEnvironment = await this.getEnvironment(name);
     if (!ragEnvironment) {
       console.error(`RAG environment ${name} not found`);
       return false;
@@ -172,13 +233,7 @@ export class RagEnvironmentRegistry {
       return false;
     }
 
-    const ragConnection = this.providerRegistry
-      .getRagConnections()
-      .find(
-        connection =>
-          connection.providerId === ragEnvironment.ragConnection.providerId &&
-          connection.connection.name === ragEnvironment.ragConnection.name,
-      );
+    const ragConnection = this.getRagConnection(ragEnvironment);
     if (!ragConnection) {
       console.error(`Rag connection ${ragEnvironment.ragConnection.name} not found`);
       return false;
@@ -198,6 +253,16 @@ export class RagEnvironmentRegistry {
       console.error(`Failed to add file to RAG environment ${name}:`, error);
       return false;
     }
+  }
+
+  private getRagConnection(ragEnvironment: RagEnvironment): ProviderRagConnection | undefined {
+    return this.providerRegistry
+      .getRagConnections()
+      .find(
+        connection =>
+          connection.providerId === ragEnvironment.ragConnection.providerId &&
+          connection.connection.name === ragEnvironment.ragConnection.name,
+      );
   }
 
   private async indexFile(
@@ -227,7 +292,6 @@ export class RagEnvironmentRegistry {
         ragEnvironment.indexedFiles.push(filePath);
         ragEnvironment.pendingFiles = ragEnvironment.pendingFiles.filter(file => file !== filePath);
         await this.saveOrUpdate(ragEnvironment);
-        this.apiSender.send('rag-environment-updated', { name: ragEnvironment.name });
         indexTask.status = 'success';
       } catch (err: unknown) {
         indexTask.status = 'failure';

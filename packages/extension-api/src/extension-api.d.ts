@@ -651,19 +651,27 @@ declare module '@kortex-app/api' {
     models: Array<InferenceModel>;
   };
 
-  export type MCPRemoteServerConfig = {
-    type: 'remote';
-    remote: components['schemas']['Remote'];
-    headers: Record<string, string>;
-  };
+  export interface InputResponse {
+    value: string;
+  }
 
-  export type MCPPackageServerConfig = {
+  export interface InputWithVariableResponse extends InputResponse {
+    variables: Record<string, InputResponse>;
+  }
+
+  export interface MCPRemoteServerConfig {
+    type: 'remote';
+    index: number;
+    headers: Record<string, InputWithVariableResponse>;
+  }
+
+  export interface MCPPackageServerConfig {
     type: 'package';
-    package: components['schemas']['Package'];
-    runtimeArguments: Record<number, string>;
-    packageArguments: Record<number, string>;
-    environmentVariables: Record<string, string>;
-  };
+    index: number;
+    runtimeArguments: Record<number, InputWithVariableResponse>;
+    packageArguments: Record<number, InputWithVariableResponse>;
+    environmentVariables: Record<string, InputWithVariableResponse>;
+  }
 
   export type MCPServerConfig = MCPRemoteServerConfig | MCPPackageServerConfig;
 
@@ -714,7 +722,6 @@ declare module '@kortex-app/api' {
     | VmProviderConnection
     | InferenceProviderConnection
     | RagProviderConnection
-    | ChunkProvider
     | FlowProviderConnection;
 
   // common set of options for creating a provider
@@ -954,7 +961,6 @@ declare module '@kortex-app/api' {
     registerVmProviderConnection(connection: VmProviderConnection): Disposable;
     registerInferenceProviderConnection(connection: InferenceProviderConnection): Disposable;
     registerRagProviderConnection(connection: RagProviderConnection): Disposable;
-    registerChunkerProviderConnection(connection: ChunkProvider): Disposable;
 
     registerFlowProviderConnection(connection: FlowProviderConnection): Disposable;
 

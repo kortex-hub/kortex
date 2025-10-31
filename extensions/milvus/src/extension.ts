@@ -59,11 +59,7 @@ async function discoverExistingContainers(logger?: api.Logger): Promise<Existing
 
   try {
     // List all containers (running and stopped) with Milvus labels
-    const { stdout } = await api.process.exec('podman', [
-      'ps',
-      '-a',
-      '--format', 'json',
-    ]);
+    const { stdout } = await api.process.exec('podman', ['ps', '-a', '--format', 'json']);
 
     if (!stdout || stdout.trim() === '') {
       logger?.log('No existing Milvus containers found');
@@ -74,8 +70,8 @@ async function discoverExistingContainers(logger?: api.Logger): Promise<Existing
     const containerList = JSON.parse(stdout) as ContainerInfo[];
 
     for (const container of containerList) {
-      const milvusName = container.Labels['io.kortex.milvus.name'];
-      const milvusPort = container.Labels['io.kortex.milvus.port'];
+      const milvusName = container.Labels?.['io.kortex.milvus.name'];
+      const milvusPort = container.Labels?.['io.kortex.milvus.port'];
 
       if (milvusName && milvusPort) {
         containers.push({
@@ -166,25 +162,36 @@ export async function activate(extensionContext: api.ExtensionContext): Promise<
 
       const port = getRandomPort();
 
-
       // Create and start the container using podman CLI
       logger?.log('Creating and starting container with podman...');
       try {
         const { stdout: containerId } = await api.process.exec('podman', [
           'run',
           '-d',
-          '--name', containerName,
-          '-v', `${storagePath}:/var/lib/milvus`,
-          '-v', `${etcdConfigFile}:/milvus/configs/embedEtcd.yaml`,
-          '-v', `${userConfigFile}:/milvus/configs/user.yaml`,
-          '-e', 'ETCD_USE_EMBED=true',
-          '-e', 'ETCD_DATA_DIR=/var/lib/milvus/etcd',
-          '-e', 'ETCD_CONFIG_PATH=/milvus/configs/embedEtcd.yaml',
-          '-e', 'COMMON_STORAGETYPE=local',
-          '-e', 'DEPLOY_MODE=STANDALONE',
-          '-p', `${port}:${MILVUS_PORT}`,
-          '-l', `io.kortex.milvus.name=${name}`,
-          '-l', `io.kortex.milvus.port=${port}`,
+          '--name',
+          containerName,
+          '-v',
+          `${storagePath}:/var/lib/milvus`,
+          '-v',
+          `${etcdConfigFile}:/milvus/configs/embedEtcd.yaml`,
+          '-v',
+          `${userConfigFile}:/milvus/configs/user.yaml`,
+          '-e',
+          'ETCD_USE_EMBED=true',
+          '-e',
+          'ETCD_DATA_DIR=/var/lib/milvus/etcd',
+          '-e',
+          'ETCD_CONFIG_PATH=/milvus/configs/embedEtcd.yaml',
+          '-e',
+          'COMMON_STORAGETYPE=local',
+          '-e',
+          'DEPLOY_MODE=STANDALONE',
+          '-p',
+          `${port}:${MILVUS_PORT}`,
+          '-l',
+          `io.kortex.milvus.name=${name}`,
+          '-l',
+          `io.kortex.milvus.port=${port}`,
           MILVUS_IMAGE,
           'milvus',
           'run',

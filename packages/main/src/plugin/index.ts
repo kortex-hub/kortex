@@ -52,6 +52,7 @@ import { Container } from 'inversify';
 import { lookup } from 'mime-types';
 
 import type { KubernetesGeneratorInfo } from '/@/plugin/api/KubernetesGeneratorInfo.js';
+import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import { ExtensionLoader } from '/@/plugin/extension/extension-loader.js';
 import { ExtensionWatcher } from '/@/plugin/extension/extension-watcher.js';
 import { FlowManager } from '/@/plugin/flow/flow-manager.js';
@@ -221,7 +222,6 @@ import { TaskConnectionUtils } from './util/task-connection-utils.js';
 import { ViewRegistry } from './view-registry.js';
 import { WebviewRegistry } from './webview/webview-registry.js';
 import { WelcomeInit } from './welcome/welcome-init.js';
-import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 
 // workaround for ESM
 const checkDiskSpace: (path: string) => Promise<{ free: number }> = checkDiskSpacePkg as unknown as (
@@ -792,6 +792,7 @@ export class PluginSystem {
     const schedulerRegistry = container.get<SchedulerRegistry>(SchedulerRegistry);
     mcpRegistry.init();
     const ragEnvironmentRegistry = container.get<RagEnvironmentRegistry>(RagEnvironmentRegistry);
+    await ragEnvironmentRegistry.init();
     const chunkProviderRegistry = container.get<ChunkProviderRegistry>(ChunkProviderRegistry);
 
     const mcpIPCHandler = container.get<MCPIPCHandler>(MCPIPCHandler);

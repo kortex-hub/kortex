@@ -40,14 +40,13 @@ export class MilvusConnection implements api.RagProviderConnection {
     };
     const server: MCPServerDetail = {
       name: 'mcp-server-milvus',
-      version: '0.1.1',
+      version: '0.1.1.dev8',
       description: 'Milvus MCP Server for RAG',
-      status: 'active',
       packages: [
         {
           registryType: 'pypi',
           identifier: 'mcp-server-milvus',
-          version: '0.1.1',
+          version: '0.1.1.dev8',
           runtimeHint: 'python',
           packageArguments: [
             {
@@ -70,7 +69,7 @@ export class MilvusConnection implements api.RagProviderConnection {
       server,
       config: {
         type: 'package',
-        package: server.packages![0],
+        index: 0,
         runtimeArguments: {},
         packageArguments: {},
         environmentVariables: {},

@@ -61,8 +61,8 @@ export class Docling {
       const containerList = JSON.parse(stdout) as ContainerInfo[];
 
       for (const container of containerList) {
-        const doclingPort = container.Labels['io.kortex.docling.port'];
-        const doclingFolder = container.Labels['io.kortex.docling.folder'];
+        const doclingPort = container.Labels?.['io.kortex.docling.port'];
+        const doclingFolder = container.Labels?.['io.kortex.docling.folder'];
 
         if (doclingPort) {
           console.log(`Found container: (with port ${doclingPort}, state: ${container.State}`);

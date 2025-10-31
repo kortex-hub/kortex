@@ -48,6 +48,7 @@ eventStore.setup();
 
 export async function fetchRagEnvironments(): Promise<RagEnvironment[]> {
   const result = await window.getRagEnvironments();
+  console.log('fetched rag environments', result);
   ragEnvironments.set(result);
   return result;
 }
