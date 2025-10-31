@@ -110,24 +110,31 @@ export class MCPManager implements IAsyncDisposable {
   ): Promise<void> {
     const key = this.getKey(internalProviderId, serverId, setupType, index);
 
-    const wrapped = this.exchanges.createMiddleware(key, transport);
+    try {
+      const wrapped = this.exchanges.createMiddleware(key, transport);
+      const client = await experimental_createMCPClient({ transport: wrapped });
 
-    const client = await experimental_createMCPClient({ transport: wrapped });
+      console.log('[MCPManager] Registering MCP client for ', internalProviderId, ' with name ', connectionName);
+      this.#client.set(key, client);
 
-    console.log('[MCPManager] Registering MCP client for ', internalProviderId, ' with name ', connectionName);
-    this.#client.set(key, client);
+      const mcpRemoteServerInfo: MCPRemoteServerInfo = {
+        id: key,
+        infos: { internalProviderId, remoteId: index, serverId },
+        name: connectionName,
+        url: url ?? '',
+        description: description ?? '',
+      };
+      this.#mcps.push(mcpRemoteServerInfo);
 
-    const mcpRemoteServerInfo: MCPRemoteServerInfo = {
-      id: key,
-      infos: { internalProviderId, remoteId: index, serverId },
-      name: connectionName,
-      url: url ?? '',
-      description: description ?? '',
-    };
-    this.#mcps.push(mcpRemoteServerInfo);
-
-    // broadcast new items
-    this.apiSender.send('mcp-manager-update');
+      // broadcast new items
+      this.apiSender.send('mcp-manager-update');
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(`[MCPManager] Error message: ${error.message}`);
+        console.error(`[MCPManager] Error stack: ${error.stack}`);
+      }
+      throw error;
+    }
   }
 
   init(): void {}

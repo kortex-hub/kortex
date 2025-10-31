@@ -361,8 +361,14 @@ export class MCPRegistry {
 
     let transport: Transport;
     let config: StorageConfigFormat;
+    let remoteUrl: string | undefined;
     switch (options.type) {
-      case 'remote':
+      case 'remote': {
+        const remote = serverDetail.remotes?.[options.index];
+        if (!remote) {
+          throw new Error(`Remote configuration not found for index ${options.index}`);
+        }
+        remoteUrl = remote.url;
         config = {
           remoteId: options.index,
           serverId: serverDetail.serverId,
@@ -373,8 +379,9 @@ export class MCPRegistry {
             ]),
           ),
         };
-        transport = this.setupRemote(serverDetail.remotes?.[options.index], config.headers);
+        transport = this.setupRemote(remote, config.headers);
         break;
+      }
       case 'package': {
         const pack = serverDetail.packages?.[options.index];
         if (!pack) throw new Error('package not found');
@@ -435,7 +442,8 @@ export class MCPRegistry {
       options.index,
       name,
       transport,
-      description,
+      remoteUrl,
+      description ?? '',
     );
 
     // persist configuration
@@ -495,7 +503,13 @@ export class MCPRegistry {
   async getConfigurations(): Promise<Array<StorageConfigFormat>> {
     const raw = await this.safeStorage?.get(STORAGE_KEY);
     if (!raw) return [];
-    return JSON.parse(raw);
+    try {
+      return JSON.parse(raw);
+    } catch (error) {
+      console.warn(`[MCPRegistry] Failed to parse stored configurations, starting fresh:`, error);
+      await this.safeStorage?.delete(STORAGE_KEY).catch(() => undefined);
+      return [];
+    }
   }
 
   async saveConfiguration(config: StorageConfigFormat): Promise<void> {
