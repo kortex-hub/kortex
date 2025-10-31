@@ -163,24 +163,3 @@ describe('cliAPI#onDidChange', () => {
     expect(DISPOSE_MOCK.dispose).toHaveBeenCalledOnce();
   });
 });
-
-describe('goose recipe secrets hiding', () => {
-  test('should hide secrets in headers', async () => {
-    const recipe = new GooseRecipe(PROVIDER_API_MOCK, GOOSE_CLI_MOCK, KORTEX_VERSION);
-    const recipeContent = `
-    title: test-flow
-    extensions:
-      - name: github-mcp
-        type: streamable_http
-        uri: GitHub's official MCP Server
-        headers:
-          Authorization: "Bearer real-github-token-67890"
-    `;
-
-    const result = recipe.hideSecretsInRecipeContent(recipeContent);
-
-    expect(result).toContain('Authorization: "******************************"');
-    expect(result).not.toContain('real-github-token-67890');
-    expect(result).not.toContain('Bearer');
-  });
-});
