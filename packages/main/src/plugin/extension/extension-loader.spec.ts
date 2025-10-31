@@ -26,6 +26,7 @@ import { app } from 'electron';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { Certificates } from '/@/plugin/certificates.js';
+import type { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import type { ContributionManager } from '/@/plugin/contribution-manager.js';
 import type { KubeGeneratorRegistry } from '/@/plugin/kubernetes/kube-generator-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
@@ -295,6 +296,8 @@ const extensionAnalyzer = {
 
 const mcpRegistry = {} as unknown as MCPRegistry;
 
+const chunkProviderRegistry = {} as ChunkProviderRegistry;
+
 const createApi = (disposables?: { dispose(): unknown }[]): typeof containerDesktopAPI => {
   const analyzedExtension = {
     path: '/path',
@@ -367,6 +370,7 @@ beforeEach(() => {
     extensionDevelopmentFolder,
     extensionAnalyzer,
     mcpRegistry,
+    chunkProviderRegistry,
   );
 });
 

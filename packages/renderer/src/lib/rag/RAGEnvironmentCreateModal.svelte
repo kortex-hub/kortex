@@ -1,0 +1,183 @@
+<script lang="ts">
+/**********************************************************************
+ * Copyright (C) 2024-2025 Red Hat, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ***********************************************************************/
+
+import { Button, CloseButton, Input, Modal } from '@podman-desktop/ui-svelte';
+
+import type { ChunkProviderInfo } from '/@api/rag/chunk-provider-info';
+import type { ProviderInfo } from '/@api/provider-info';
+
+interface Props {
+  providers: ProviderInfo[];
+  chunkProviders: ChunkProviderInfo[];
+  closeCallback: () => void;
+  onCreate: (name: string, ragConnection: { name: string; providerId: string }, chunkerId: string) => void;
+}
+
+let { providers, chunkProviders, closeCallback, onCreate }: Props = $props();
+
+let environmentName = $state('');
+let selectedRagConnectionKey = $state('');
+let selectedChunkerId = $state('');
+
+// Flatten all RAG connections from all providers
+let ragConnectionOptions = $derived(
+  providers.flatMap(provider =>
+    provider.ragConnections.map(connection => ({
+      key: `${provider.id}:${connection.name}`,
+      providerId: provider.id,
+      connection: connection,
+      displayName: connection.name,
+      providerName: provider.name,
+    })),
+  ),
+);
+
+// Check if form is valid
+let isFormValid = $derived(environmentName.trim() !== '' && selectedRagConnectionKey !== '' && selectedChunkerId !== '');
+
+function handleCreate(): void {
+  if (!isFormValid) return;
+
+  // Find the selected RAG connection
+  const selectedOption = ragConnectionOptions.find(option => option.key === selectedRagConnectionKey);
+  if (!selectedOption) return;
+
+  onCreate(
+    environmentName.trim(),
+    {
+      name: selectedOption.connection.name,
+      providerId: selectedOption.providerId,
+    },
+    selectedChunkerId,
+  );
+}
+
+function onNameInput(
+  event: Event & {
+    currentTarget: EventTarget & HTMLInputElement;
+  },
+): void {
+  environmentName = event.currentTarget.value;
+}
+
+function selectRagConnection(key: string): void {
+  selectedRagConnectionKey = key;
+}
+
+function selectChunkProvider(id: string): void {
+  selectedChunkerId = id;
+}
+</script>
+
+<Modal on:close={closeCallback}>
+  <div class="inline-block w-full overflow-hidden text-left transition-all" aria-label="create knowledge environment">
+    <div
+      class="flex items-center justify-between px-6 py-5 mb-0 text-[var(--pd-modal-header-text)] bg-[var(--pd-modal-header-bg)] border-b border-[var(--pd-modal-header-border)]">
+      <h1 class="text-lg font-semibold">New Knowledge Environment</h1>
+      <CloseButton class="px-2 py-1" onclick={closeCallback} />
+    </div>
+    <div class="overflow-y-auto px-6 py-6 text-[var(--pd-modal-text)]">
+      <div class="flex flex-col space-y-8">
+        <!-- Environment Name -->
+        <div class="flex flex-col space-y-2">
+          <label for="environmentName" class="text-sm font-medium text-[var(--pd-modal-text)]">Environment Name</label>
+          <Input
+            id="environmentName"
+            value={environmentName}
+            oninput={onNameInput}
+            placeholder="Enter knowledge environment name"
+            required
+            class="w-full" />
+        </div>
+
+        <!-- Vector Store Selection -->
+        <div class="flex flex-col space-y-3">
+          <label class="text-sm font-medium text-[var(--pd-modal-text)]">Vector Store</label>
+          <div class="grid grid-cols-2 gap-4">
+            {#each ragConnectionOptions as option (option.key)}
+              <button
+                type="button"
+                class="tile border-2 rounded-lg p-4 text-left transition-all cursor-pointer {selectedRagConnectionKey ===
+                option.key
+                  ? 'border-[var(--pd-button-primary-bg)] bg-[var(--pd-button-primary-bg)]/10'
+                  : 'border-[var(--pd-modal-header-border)] bg-[var(--pd-content-card-bg)] hover:border-[var(--pd-content-text)]'}"
+                onclick={() => selectRagConnection(option.key)}>
+                <div class="flex items-center gap-3 mb-2">
+                  <div
+                    class="tile-logo w-8 h-8 rounded-md flex items-center justify-center text-white text-xs font-bold bg-gradient-to-br from-purple-500 to-purple-700">
+                    {option.displayName.charAt(0).toUpperCase()}
+                  </div>
+                  <div class="tile-title text-base font-medium text-[var(--pd-modal-text)]">{option.displayName}</div>
+                </div>
+                <div class="tile-description text-xs text-[var(--pd-content-text)] leading-relaxed">
+                  {option.providerName}
+                </div>
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <!-- Embedding Model Selection -->
+        <div class="flex flex-col space-y-3">
+          <label class="text-sm font-medium text-[var(--pd-modal-text)]">Embedding Model</label>
+          <div class="grid grid-cols-2 gap-4">
+            {#each chunkProviders as provider (provider.id)}
+              <button
+                type="button"
+                class="tile border-2 rounded-lg p-4 text-left transition-all cursor-pointer {selectedChunkerId ===
+                provider.id
+                  ? 'border-[var(--pd-button-primary-bg)] bg-[var(--pd-button-primary-bg)]/10'
+                  : 'border-[var(--pd-modal-header-border)] bg-[var(--pd-content-card-bg)] hover:border-[var(--pd-content-text)]'}"
+                onclick={() => selectChunkProvider(provider.id)}>
+                <div class="flex items-center gap-3 mb-2">
+                  <div
+                    class="tile-logo w-8 h-8 rounded-md flex items-center justify-center text-white text-xs font-bold bg-gradient-to-br from-green-500 to-green-700">
+                    {provider.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div class="tile-title text-base font-medium text-[var(--pd-modal-text)]">{provider.name}</div>
+                </div>
+                <div class="tile-description text-xs text-[var(--pd-content-text)] leading-relaxed">
+                  Advanced document parsing and chunking for RAG applications
+                </div>
+              </button>
+            {/each}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div
+      class="flex flex-row justify-end gap-3 px-6 py-5 border-t border-[var(--pd-modal-header-border)] bg-[var(--pd-modal-header-bg)]">
+      <Button type="secondary" on:click={closeCallback}>Cancel</Button>
+      <Button aria-label="Create Environment" disabled={!isFormValid} on:click={handleCreate}>Create Environment</Button>
+    </div>
+  </div>
+</Modal>
+
+<style>
+.tile {
+  min-height: 100px;
+}
+
+.tile:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--pd-button-primary-bg);
+}
+</style>

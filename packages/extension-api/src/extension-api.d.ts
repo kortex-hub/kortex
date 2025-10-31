@@ -41,6 +41,7 @@
 
 declare module '@kortex-app/api' {
   import type { ProviderV2 as AISDKInferenceProvider } from '@ai-sdk/provider';
+  import type { components } from '@kortex-hub/mcp-registry-types';
 
   /**
    * The version of Kortex.
@@ -635,9 +636,69 @@ declare module '@kortex-app/api' {
     models: Array<InferenceModel>;
   };
 
+  export interface InputResponse {
+    value: string;
+  }
+
+  export interface InputWithVariableResponse extends InputResponse {
+    variables: Record<string, InputResponse>;
+  }
+
+  export interface MCPRemoteServerConfig {
+    type: 'remote';
+    index: number;
+    headers: Record<string, InputWithVariableResponse>;
+  }
+
+  export interface MCPPackageServerConfig {
+    type: 'package';
+    index: number;
+    runtimeArguments: Record<number, InputWithVariableResponse>;
+    packageArguments: Record<number, InputWithVariableResponse>;
+    environmentVariables: Record<string, InputWithVariableResponse>;
+  }
+
+  export type MCPServerConfig = MCPRemoteServerConfig | MCPPackageServerConfig;
+
+  export type MCPServerDetail = components['schemas']['ServerDetail'];
+
+  export type MCPServer = {
+    server: MCPServerDetail;
+    config: MCPServerConfig;
+  };
+
+  export type RagProviderConnection = {
+    name: string;
+    mcpServer: MCPServer;
+    credentials(): Record<string, string>;
+    index(doc: Uri, chunks: Uri[]): Promise<void>;
+    unindex(doc: Uri): Promise<void>;
+    lifecycle?: ProviderConnectionLifecycle;
+    status(): ProviderConnectionStatus;
+  };
+
+  export type Chunk = {
+    text: Uri;
+  };
+
+  export type ChunkProvider = {
+    name: string;
+    index(doc: Uri): Promise<Chunk[]>;
+  };
+
   export interface ProviderInferenceConnection {
     providerId: string;
     connection: InferenceProviderConnection;
+  }
+
+  export interface ProviderRagConnection {
+    providerId: string;
+    connection: RagProviderConnection;
+  }
+
+  export interface ProviderChunkerConnection {
+    providerId: string;
+    connection: ChunkProvider;
   }
 
   export type ProviderConnection =
@@ -645,6 +706,7 @@ declare module '@kortex-app/api' {
     | KubernetesProviderConnection
     | VmProviderConnection
     | InferenceProviderConnection
+    | RagProviderConnection
     | FlowProviderConnection;
 
   // common set of options for creating a provider
@@ -667,6 +729,12 @@ declare module '@kortex-app/api' {
 
   // create programmatically a InferenceProviderConnection
   export interface InferenceProviderConnectionFactory extends ProviderConnectionFactory {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    create(params: { [key: string]: any }, logger?: Logger, token?: CancellationToken): Promise<void>;
+  }
+
+  // create programmatically a RagProviderConnection
+  export interface RagProviderConnectionFactory extends ProviderConnectionFactory {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     create(params: { [key: string]: any }, logger?: Logger, token?: CancellationToken): Promise<void>;
   }
@@ -812,10 +880,16 @@ declare module '@kortex-app/api' {
       connectionAuditor?: Auditor,
     ): Disposable;
 
+    setRagProviderConnectionFactory(
+      ragProviderConnectionFactory: RagProviderConnectionFactory,
+      connectionAuditor?: Auditor,
+    ): Disposable;
+
     registerContainerProviderConnection(connection: ContainerProviderConnection): Disposable;
     registerKubernetesProviderConnection(connection: KubernetesProviderConnection): Disposable;
     registerVmProviderConnection(connection: VmProviderConnection): Disposable;
     registerInferenceProviderConnection(connection: InferenceProviderConnection): Disposable;
+    registerRagProviderConnection(connection: RagProviderConnection): Disposable;
 
     registerFlowProviderConnection(connection: FlowProviderConnection): Disposable;
 
@@ -963,6 +1037,18 @@ declare module '@kortex-app/api' {
     providerId: string;
   }
   export interface UnregisterInferenceConnectionEvent {
+    providerId: string;
+  }
+  export interface RegisterRagConnectionEvent {
+    providerId: string;
+  }
+  export interface UnregisterRagConnectionEvent {
+    providerId: string;
+  }
+  export interface RegisterChunkerConnectionEvent {
+    providerId: string;
+  }
+  export interface UnregisterChunkerConnectionEvent {
     providerId: string;
   }
 
@@ -1166,6 +1252,7 @@ declare module '@kortex-app/api' {
     export const onDidRegisterContainerConnection: Event<RegisterContainerConnectionEvent>;
     export function getContainerConnections(): ProviderContainerConnection[];
     export function getInferenceConnections(): ProviderInferenceConnection[];
+    export function getRagConnections(): ProviderRagConnection[];
     /**
      * It returns the lifecycle context for the provider connection.
      * If no context is found it throws an error
@@ -5169,5 +5256,9 @@ declare module '@kortex-app/api' {
      * @throws {Error} If the repository is not hosted on GitHub.
      */
     constructor(url: string);
+  }
+
+  namespace rag {
+    export function registerChunkProvider(provider: ChunkProvider): Disposable;
   }
 }

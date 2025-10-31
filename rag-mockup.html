@@ -1,0 +1,2489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kortex RAG - Mockup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #1a1b23;
+            color: #e5e7eb;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Left Sidebar */
+        .sidebar {
+            width: 80px;
+            background-color: #2d2e3f;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 0;
+            border-right: 1px solid #3d3e4f;
+            position: relative;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 12px 0;
+            margin: 0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            color: #9ca3af;
+            position: relative;
+            border-left: 4px solid transparent;
+        }
+
+        .nav-item:hover {
+            background-color: #7c3aed;
+            color: #ffffff;
+        }
+
+        .nav-item.active {
+            background-color: #4b5563;
+            color: #ffffff;
+            border-left-color: #8b5cf6;
+        }
+
+        .nav-item.active:hover {
+            background-color: #4b5563;
+        }
+
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+            margin-bottom: 2px;
+        }
+
+        .nav-item span {
+            font-size: 10px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .nav-spacer {
+            flex: 1;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #1a1b23;
+        }
+
+        /* Top Header */
+        .header {
+            height: 32px;
+            border-bottom: 1px solid #3d3e4f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #252631;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e5e7eb;
+            display: none;
+        }
+
+        /* Content Area */
+        .content {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            background-color: #1a1b23;
+        }
+
+        .placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            font-size: 16px;
+            color: #6b7280;
+        }
+
+        /* RAG Environments Styles */
+        .rag-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .rag-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+
+        .create-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background-color: #8b5cf6;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            text-decoration: none;
+        }
+
+        .create-button:hover {
+            background-color: #7c3aed;
+        }
+
+        .create-button svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .search-container {
+            margin-bottom: 24px;
+        }
+
+        .search-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 8px 12px 8px 40px;
+            border: 1px solid #4b5563;
+            border-radius: 6px;
+            font-size: 14px;
+            background-color: #252631;
+            color: #e5e7eb;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            color: #6b7280;
+        }
+
+        .search-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        /* Tab Navigation */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #3d3e4f;
+            margin-bottom: 24px;
+        }
+
+        .tab {
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #9ca3af;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            text-decoration: none;
+        }
+
+        .tab:hover {
+            color: #e5e7eb;
+        }
+
+        .tab.active {
+            color: #ffffff;
+            border-bottom-color: #8b5cf6;
+        }
+
+        /* Table Styles */
+        .rag-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+            background-color: transparent;
+        }
+
+        .rag-table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background-color: transparent;
+            border: none;
+        }
+
+        .rag-table td {
+            padding: 16px;
+            font-size: 14px;
+            color: #e5e7eb;
+            background-color: #252631;
+            border: 1px solid #3d3e4f;
+        }
+
+        .rag-table tbody tr {
+            background-color: #252631;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .rag-table tbody tr:hover {
+            background-color: #2d2e3f;
+        }
+
+        .rag-table tbody tr:hover td {
+            background-color: #2d2e3f;
+        }
+
+        .rag-table tbody tr td:first-child {
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+            border-left: 1px solid #3d3e4f;
+        }
+
+        .rag-table tbody tr td:last-child {
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+            border-right: 1px solid #3d3e4f;
+        }
+
+        .rag-table tbody tr td {
+            border-top: 1px solid #3d3e4f;
+            border-bottom: 1px solid #3d3e4f;
+            border-left: none;
+            border-right: none;
+        }
+
+        .checkbox-cell {
+            width: 40px;
+            text-align: center;
+        }
+
+        .checkbox {
+            width: 16px;
+            height: 16px;
+            accent-color: #8b5cf6;
+        }
+
+        .env-name {
+            font-weight: 500;
+            color: #e5e7eb;
+        }
+
+        .status-cell {
+            width: 60px;
+            text-align: center;
+        }
+
+        .sources-cell {
+            width: 80px;
+            text-align: center;
+        }
+
+        .sources-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 20px;
+            padding: 0 6px;
+            background-color: rgba(139, 92, 246, 0.1);
+            color: #a78bfa;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .env-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-icon {
+            width: 16px;
+            height: 16px;
+            color: #10b981;
+        }
+
+        .status-icon.stopped {
+            color: #6b7280;
+        }
+
+        .database-badge, .chunker-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .database-badge {
+            background-color: rgba(139, 92, 246, 0.1);
+            color: #a78bfa;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .chunker-badge {
+            background-color: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .tech-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+        }
+
+        .milvus-icon {
+            background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600"%3E%3Cpath fill="%2333b5e5" d="M150,200 L150,450 Q150,480 180,480 L270,480 Q280,480 290,470 L450,300 L610,470 Q620,480 630,480 L720,480 Q750,480 750,450 L750,200 Q750,150 700,150 L600,150 Q580,150 565,165 Q535,195 500,230 Q450,280 450,280 Q450,280 400,230 Q365,195 335,165 Q320,150 300,150 L200,150 Q150,150 150,200 Z M450,360 Q480,390 480,390 Q490,380 500,370 L570,300 L500,230 Q490,220 480,210 Q480,210 450,240 L380,300 L450,360 Z M850,300 L780,360 Q770,370 770,380 Q770,390 780,400 L850,460 Q860,470 870,460 Q880,450 870,440 L820,400 L870,360 Q880,350 870,340 Q860,330 850,340 Z M50,300 L120,240 Q130,230 130,220 Q130,210 120,200 L50,140 Q40,130 30,140 Q20,150 30,160 L80,200 L30,240 Q20,250 30,260 Q40,270 50,260 Z"%3E%3C/path%3E%3C/svg%3E');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            border-radius: 0;
+        }
+
+        .chroma-icon {
+            background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"%3E%3Ccircle cx="170" cy="256" r="150" fill="%234285f4"/%3E%3Ccircle cx="342" cy="256" r="150" fill="%23ff6b6b"/%3E%3Ccircle cx="256" cy="170" r="150" fill="%23ffd93d"/%3E%3C/svg%3E');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            border-radius: 0;
+        }
+
+        .actions-cell {
+            width: 120px;
+        }
+
+        .actions-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 4px;
+            background-color: transparent;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-button:hover {
+            background-color: #3d3e4f;
+            color: #e5e7eb;
+        }
+
+        .action-button.delete:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-running {
+            background-color: #10b981;
+        }
+
+        .status-stopped {
+            background-color: #6b7280;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.75);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background-color: #252631;
+            border: 1px solid #3d3e4f;
+            border-radius: 8px;
+            width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid #3d3e4f;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            color: #e5e7eb;
+            background-color: #3d3e4f;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .form-section {
+            margin-bottom: 32px;
+        }
+
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #e5e7eb;
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #4b5563;
+            border-radius: 6px;
+            background-color: #1a1b23;
+            color: #e5e7eb;
+            font-size: 14px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .tiles-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 12px;
+        }
+
+        .tile {
+            border: 2px solid #3d3e4f;
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: #1a1b23;
+        }
+
+        .tile:hover {
+            border-color: #6b7280;
+        }
+
+        .tile.selected {
+            border-color: #8b5cf6;
+            background-color: rgba(139, 92, 246, 0.1);
+        }
+
+        .tile-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .tile-logo {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .milvus-logo {
+            background-color: transparent;
+            font-size: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .milvus-logo::before {
+            content: '';
+            width: 32px;
+            height: 32px;
+            background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600"%3E%3Cpath fill="%2333b5e5" d="M150,200 L150,450 Q150,480 180,480 L270,480 Q280,480 290,470 L450,300 L610,470 Q620,480 630,480 L720,480 Q750,480 750,450 L750,200 Q750,150 700,150 L600,150 Q580,150 565,165 Q535,195 500,230 Q450,280 450,280 Q450,280 400,230 Q365,195 335,165 Q320,150 300,150 L200,150 Q150,150 150,200 Z M450,360 Q480,390 480,390 Q490,380 500,370 L570,300 L500,230 Q490,220 480,210 Q480,210 450,240 L380,300 L450,360 Z M850,300 L780,360 Q770,370 770,380 Q770,390 780,400 L850,460 Q860,470 870,460 Q880,450 870,440 L820,400 L870,360 Q880,350 870,340 Q860,330 850,340 Z M50,300 L120,240 Q130,230 130,220 Q130,210 120,200 L50,140 Q40,130 30,140 Q20,150 30,160 L80,200 L30,240 Q20,250 30,260 Q40,270 50,260 Z"%3E%3C/path%3E%3C/svg%3E');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .chroma-logo {
+            background-color: transparent;
+            font-size: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chroma-logo::before {
+            content: '';
+            width: 28px;
+            height: 28px;
+            background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"%3E%3Ccircle cx="170" cy="256" r="150" fill="%234285f4"/%3E%3Ccircle cx="342" cy="256" r="150" fill="%23ff6b6b"/%3E%3Ccircle cx="256" cy="170" r="150" fill="%23ffd93d"/%3E%3C/svg%3E');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .docling-logo {
+            background: linear-gradient(135deg, #ff9500, #ffb800);
+        }
+
+        .huggingface-logo {
+            background: linear-gradient(135deg, #ffcd00, #ff8800);
+        }
+
+        .tile-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #e5e7eb;
+        }
+
+        .tile-description {
+            font-size: 12px;
+            color: #9ca3af;
+            line-height: 1.4;
+        }
+
+        .modal-footer {
+            padding: 16px 24px 20px;
+            border-top: 1px solid #3d3e4f;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .btn-secondary {
+            background-color: #374151;
+            color: #e5e7eb;
+        }
+
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+
+        .btn-primary {
+            background-color: #8b5cf6;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background-color: #7c3aed;
+        }
+
+        .btn-primary:disabled {
+            background-color: #6b7280;
+            cursor: not-allowed;
+        }
+
+        /* Knowledge Details Styles */
+        .details-view {
+            display: none;
+        }
+
+        .details-view.show {
+            display: block;
+        }
+
+        .details-header {
+            margin-bottom: 0;
+            padding: 16px 24px;
+            border-bottom: 1px solid #3d3e4f;
+            background-color: #252631;
+            position: relative;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 16px;
+            right: 24px;
+            background-color: transparent;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .close-button:hover {
+            color: #e5e7eb;
+            background-color: #374151;
+        }
+
+        .breadcrumb-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .breadcrumb-link {
+            color: #8b5cf6;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .breadcrumb-link:hover {
+            color: #a78bfa;
+        }
+
+        .breadcrumb-separator {
+            color: #6b7280;
+        }
+
+        .breadcrumb-current {
+            color: #e5e7eb;
+        }
+
+        .environment-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .environment-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .environment-icon {
+            width: 32px;
+            height: 32px;
+            background-color: #374151;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+            transition: color 0.2s ease;
+        }
+
+        .environment-icon.running {
+            color: #10b981;
+        }
+
+        .environment-icon.stopped {
+            color: #6b7280;
+        }
+
+        .environment-details h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #e5e7eb;
+            margin: 0 0 4px 0;
+        }
+
+        .environment-subtitle {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .environment-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            background-color: #374151;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .header-action-button:hover {
+            background-color: #4b5563;
+            color: #e5e7eb;
+        }
+
+        .header-action-button.primary {
+            background-color: #8b5cf6;
+            color: #ffffff;
+        }
+
+        .header-action-button.primary:hover {
+            background-color: #7c3aed;
+        }
+
+        .header-action-button.danger:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+
+        .details-tabs {
+            display: flex;
+            border-bottom: 1px solid #3d3e4f;
+            margin-bottom: 32px;
+        }
+
+        .details-tab {
+            padding: 16px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #9ca3af;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .details-tab:hover {
+            color: #e5e7eb;
+        }
+
+        .details-tab.active {
+            color: #ffffff;
+            border-bottom-color: #8b5cf6;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Summary Tab Styles */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .info-card {
+            background-color: #252631;
+            border: 1px solid #3d3e4f;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .info-card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e5e7eb;
+            margin-bottom: 16px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #374151;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-size: 14px;
+            color: #9ca3af;
+        }
+
+        .info-value {
+            font-size: 14px;
+            color: #e5e7eb;
+            font-weight: 500;
+        }
+
+        /* Sources Tab Styles */
+        .upload-area {
+            border: 2px dashed #4b5563;
+            border-radius: 8px;
+            padding: 48px 24px;
+            text-align: center;
+            margin-bottom: 32px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: #8b5cf6;
+            background-color: rgba(139, 92, 246, 0.05);
+        }
+
+        .upload-area.drag-over {
+            border-color: #8b5cf6;
+            background-color: rgba(139, 92, 246, 0.1);
+        }
+
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            color: #6b7280;
+            margin: 0 auto 16px;
+        }
+
+        .upload-text {
+            font-size: 16px;
+            color: #e5e7eb;
+            margin-bottom: 8px;
+        }
+
+        .upload-subtext {
+            font-size: 14px;
+            color: #9ca3af;
+        }
+
+        .sources-list {
+            background-color: #252631;
+            border: 1px solid #3d3e4f;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .sources-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #3d3e4f;
+            background-color: #1e1f29;
+        }
+
+        .sources-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+
+        .source-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid #3d3e4f;
+            transition: background-color 0.2s ease;
+        }
+
+        .source-item:hover {
+            background-color: #2d2e3f;
+        }
+
+        .source-item:last-child {
+            border-bottom: none;
+        }
+
+        .source-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .file-icon {
+            width: 32px;
+            height: 32px;
+            background-color: #374151;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #9ca3af;
+        }
+
+        .source-details h4 {
+            font-size: 14px;
+            font-weight: 500;
+            color: #e5e7eb;
+            margin: 0 0 4px 0;
+        }
+
+        .source-meta {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .source-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .source-action {
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 4px;
+            background-color: transparent;
+            color: #9ca3af;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .source-action:hover {
+            background-color: #374151;
+            color: #e5e7eb;
+        }
+
+        .source-action.delete:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        /* Chat UI Styles */
+        .chat-layout {
+            display: flex;
+            height: calc(100vh - 32px);
+            background-color: #1a1b23;
+        }
+
+        .chat-sidebar {
+            width: 280px;
+            background-color: #1a1b23;
+            border-right: 1px solid #3d3e4f;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-sidebar-header {
+            padding: 16px 16px 12px 16px;
+            border-bottom: 1px solid #3d3e4f;
+        }
+
+        .chat-sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e5e7eb;
+            margin: 0 0 8px 0;
+        }
+
+        .chat-time-filter {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 8px;
+        }
+
+        .chat-sessions-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .chat-session-item {
+            padding: 12px 16px 12px 20px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            position: relative;
+            margin: 0;
+            border-left: 4px solid transparent;
+        }
+
+        .chat-session-item:hover {
+            background-color: #7c3aed;
+        }
+
+        .chat-session-item:hover .chat-session-title {
+            color: #ffffff;
+        }
+
+        .chat-session-item.active {
+            background-color: #4b5563;
+            border-left-color: #8b5cf6;
+        }
+
+        .chat-session-item.active .chat-session-title {
+            color: #ffffff;
+        }
+
+        .chat-session-item.active:hover {
+            background-color: #4b5563;
+        }
+
+        .chat-session-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #e5e7eb;
+            margin: 0 0 4px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-session-preview {
+            font-size: 12px;
+            color: #9ca3af;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid #3d3e4f;
+        }
+
+        .delete-chats-btn {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            font-size: 14px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .delete-chats-btn:hover {
+            color: #e5e7eb;
+        }
+
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #ffffff;
+        }
+
+        .chat-top-header {
+            padding: 12px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            background-color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .chat-title-main {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .chat-tools {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .chat-tool-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background-color: #ffffff;
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .chat-tool-btn:hover {
+            background-color: #f9fafb;
+            border-color: #9ca3af;
+        }
+
+        .model-selector {
+            padding: 6px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background-color: #ffffff;
+            color: #374151;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .chat-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 24px;
+            background-color: #ffffff;
+        }
+
+        .chat-empty-state {
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .chat-icon-large {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 24px;
+            color: #d1d5db;
+        }
+
+        .chat-suggestions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 32px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .chat-suggestion {
+            padding: 16px 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            background-color: #ffffff;
+            color: #374151;
+            font-size: 14px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s ease;
+        }
+
+        .chat-suggestion:hover {
+            border-color: #d1d5db;
+            background-color: #f9fafb;
+        }
+
+        .chat-suggestion-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .chat-suggestion-desc {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .chat-input-area {
+            padding: 16px 24px 24px;
+            background-color: #ffffff;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .chat-input-container {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            align-items: flex-end;
+            background-color: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            padding: 12px;
+            gap: 8px;
+        }
+
+        .chat-input-wrapper:focus-within {
+            border-color: #8b5cf6;
+        }
+
+        .chat-attach-btn {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: none;
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .chat-attach-btn:hover {
+            color: #374151;
+        }
+
+        .chat-input-field {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 14px;
+            color: #374151;
+            background: transparent;
+            resize: none;
+            min-height: 20px;
+            max-height: 120px;
+            line-height: 1.5;
+        }
+
+        .chat-input-field::placeholder {
+            color: #9ca3af;
+        }
+
+        .chat-send-btn {
+            width: 32px;
+            height: 32px;
+            background-color: #374151;
+            border: none;
+            border-radius: 8px;
+            color: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .chat-send-btn:hover {
+            background-color: #1f2937;
+        }
+
+        .chat-send-btn:disabled {
+            background-color: #d1d5db;
+            cursor: not-allowed;
+        }
+
+        .knowledge-selector-area {
+            padding: 12px 16px;
+            border-bottom: 1px solid #3d3e4f;
+            background-color: #1a1b23;
+        }
+
+        .knowledge-selector-label {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .knowledge-selector {
+            width: 100%;
+            padding: 6px 8px;
+            background-color: #374151;
+            border: 1px solid #4b5563;
+            border-radius: 4px;
+            color: #e5e7eb;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .knowledge-selector:focus {
+            outline: none;
+            border-color: #8b5cf6;
+        }
+    </style>
+</head>
+<body>
+    <!-- Left Sidebar -->
+    <nav class="sidebar">
+        <!-- Chat -->
+        <a href="#" class="nav-item active" data-section="chat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span>Chat</span>
+        </a>
+
+        <!-- Knowledges (NEW) -->
+        <a href="#" class="nav-item" data-section="knowledges">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10,9 9,9 8,9"/>
+            </svg>
+            <span>Knowledges</span>
+        </a>
+
+        <!-- MCP -->
+        <a href="#" class="nav-item" data-section="mcp">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"/>
+                <rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            <span>MCP</span>
+        </a>
+
+        <!-- Flows -->
+        <a href="#" class="nav-item" data-section="flows">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+            </svg>
+            <span>Flows</span>
+        </a>
+
+        <!-- Extensions -->
+        <a href="#" class="nav-item" data-section="extensions">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.07a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            <span>Extensions</span>
+        </a>
+
+        <div class="nav-spacer"></div>
+
+        <!-- Settings -->
+        <a href="#" class="nav-item" data-section="settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.07a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            <span>Settings</span>
+        </a>
+    </nav>
+
+    <!-- Chat UI -->
+    <main class="main-content" id="chatView" style="display: flex;">
+        <div class="chat-layout">
+            <!-- Chat Sidebar -->
+            <div class="chat-sidebar">
+                <div class="chat-sidebar-header">
+                    <h2 class="chat-sidebar-title">Chat</h2>
+                    <div class="chat-time-filter">Last 7 days</div>
+                    <div class="chat-time-filter">Here are the last 5 issues for "podm..."</div>
+                </div>
+                
+                <!-- Chat Sessions List -->
+                <div class="chat-sessions-list">
+                    <div class="chat-session-item active">
+                        <div class="chat-session-title">San Francisco Weather</div>
+                    </div>
+                    <div class="chat-session-item">
+                        <div class="chat-session-title">Podman Desktop Overview</div>
+                    </div>
+                    <div class="chat-session-item">
+                        <div class="chat-session-title">The last 5 issues for podman-deskt...</div>
+                    </div>
+                    <div class="chat-session-item">
+                        <div class="chat-session-title">Dan Walsh and Podman information</div>
+                    </div>
+                    <div class="chat-session-item">
+                        <div class="chat-session-title">The last 5 issues for podman-deskt...</div>
+                    </div>
+                    <div class="chat-session-item">
+                        <div class="chat-session-title">Here are the last 5 issues for podma...</div>
+                    </div>
+                    <div class="chat-session-item">
+                        <div class="chat-session-title">About Podman</div>
+                    </div>
+                    <div class="chat-session-item">
+                        <div class="chat-session-title">Here are the last 5 issues for "podm...</div>
+                    </div>
+                    <div class="chat-session-item">
+                        <div class="chat-session-title">Information about Podman</div>
+                    </div>
+                    <div class="chat-session-item">
+                        <div class="chat-session-title">Last 30 days</div>
+                    </div>
+                    <div class="chat-session-item">
+                        <div class="chat-session-title">The last 5 issues for "podman-desk...</div>
+                    </div>
+                    <div class="chat-session-item">
+                        <div class="chat-session-title">About Podman</div>
+                    </div>
+                    <div class="chat-session-item">
+                        <div class="chat-session-title">Test Conversation</div>
+                    </div>
+                    <div class="chat-session-item">
+                        <div class="chat-session-title">Here are the last 5 issues from the "...</div>
+                    </div>
+                    <div class="chat-session-item">
+                        <div class="chat-session-title">Here are the 5 most recent issues fo...</div>
+                    </div>
+                </div>
+                
+                <!-- Sidebar Footer -->
+                <div class="chat-sidebar-footer">
+                    <button class="delete-chats-btn">Delete all chats</button>
+                </div>
+            </div>
+            
+            <!-- Chat Main Area -->
+            <div class="chat-main">
+                <!-- Top Header -->
+                <div class="chat-top-header">
+                    <h1 class="chat-title-main">Chat</h1>
+                    <div class="chat-tools">
+                        <button class="chat-tool-btn" title="Attach">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                            </svg>
+                        </button>
+                        <select class="model-selector">
+                            <option>0 selected</option>
+                        </select>
+                        <select class="model-selector" id="knowledgeSelector" onchange="updateSelectedKnowledge()">
+                            <option value="">No knowledge base</option>
+                            <option value="podman-knowledges">podman-knowledges</option>
+                            <option value="openshift-knowledges">openshift-knowledges</option>
+                            <option value="docker-knowledges">docker-knowledges</option>
+                            <option value="kubernetes-knowledges">kubernetes-knowledges</option>
+                        </select>
+                        <select class="model-selector">
+                            <option>gemini-2.0-flash</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Chat Content -->
+                <div class="chat-content">
+                    <div class="chat-empty-state">
+                        <svg class="chat-icon-large" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        
+                        <div class="chat-suggestions">
+                            <button class="chat-suggestion" onclick="useSuggestion(this)">
+                                <div class="chat-suggestion-title">What are the last 5 issues of Github</div>
+                                <div class="chat-suggestion-desc">repository podman-desktop/podman-desktop?</div>
+                            </button>
+                            <button class="chat-suggestion" onclick="useSuggestion(this)">
+                                <div class="chat-suggestion-title">Write code to</div>
+                                <div class="chat-suggestion-desc">demonstrate dijkstra's algorithm</div>
+                            </button>
+                            <button class="chat-suggestion" onclick="useSuggestion(this)">
+                                <div class="chat-suggestion-title">Help me write an essay</div>
+                                <div class="chat-suggestion-desc">about silicon valley</div>
+                            </button>
+                            <button class="chat-suggestion" onclick="useSuggestion(this)">
+                                <div class="chat-suggestion-title">What is the weather like</div>
+                                <div class="chat-suggestion-desc">in San Francisco?</div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chat Input -->
+                <div class="chat-input-area">
+                    <div class="chat-input-container">
+                        <div class="chat-input-wrapper">
+                            <button class="chat-attach-btn" title="Attach file">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                                </svg>
+                            </button>
+                            <textarea 
+                                class="chat-input-field" 
+                                id="chatInput"
+                                placeholder="Send a message..."
+                                rows="1"
+                                onkeydown="handleInputKeydown(event)"
+                                oninput="adjustTextareaHeight(this)"
+                            ></textarea>
+                            <button class="chat-send-btn" onclick="sendMessage()" id="sendButton">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 2L11 13"/>
+                                    <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Knowledge Bases UI -->
+    <main class="main-content" id="knowledgesList" style="display: none;">
+        <header class="header">
+            <h1>Knowledges</h1>
+        </header>
+        
+        <div class="content">
+            <!-- Knowledges Content -->
+            <div class="rag-header">
+                <h2 class="rag-title">Knowledge Bases</h2>
+                <button class="create-button" onclick="openModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    New Knowledge Base
+                </button>
+            </div>
+
+            <!-- Search -->
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                    </svg>
+                    <input type="text" class="search-input" placeholder="Search RAG environments...">
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <a href="#" class="tab active">All</a>
+                <a href="#" class="tab">Available</a>
+            </div>
+
+            <!-- RAG Environments Table -->
+            <table class="rag-table">
+                <thead>
+                    <tr>
+                        <th class="checkbox-cell">
+                            <input type="checkbox" class="checkbox">
+                        </th>
+                        <th>Status</th>
+                        <th>Environment Name</th>
+                        <th>Database</th>
+                        <th>Chunker</th>
+                        <th>Sources</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr onclick="showEnvironmentDetails('podman-knowledges', 'running', 'Milvus', 'Docling', '23')">
+                        <td class="checkbox-cell">
+                            <input type="checkbox" class="checkbox" onclick="event.stopPropagation()">
+                        </td>
+                        <td class="status-cell">
+                            <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10,9 9,9 8,9"/>
+                            </svg>
+                        </td>
+                        <td>
+                            <span class="env-name">podman-knowledges</span>
+                        </td>
+                        <td>
+                            <span class="database-badge">
+                                <div class="tech-icon milvus-icon"></div>
+                                Milvus
+                            </span>
+                        </td>
+                        <td>
+                            <span class="chunker-badge">
+                                <div class="tech-icon" style="background: linear-gradient(45deg, #ff9500, #ffb800); border-radius: 20%;"></div>
+                                Docling
+                            </span>
+                        </td>
+                        <td class="sources-cell">
+                            <span class="sources-count">23</span>
+                        </td>
+                        <td class="actions-cell">
+                            <div class="actions-row" onclick="event.stopPropagation()">
+                                <button class="action-button" title="Stop">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                        <rect x="6" y="6" width="12" height="12" rx="2"/>
+                                    </svg>
+                                </button>
+                                <button class="action-button delete" title="Delete">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3,6 5,6 21,6"/>
+                                        <path d="M19,6v14a2,2 0,0,1-2,2H7a2,2 0,0,1-2-2V6m3,0V4a2,2 0,0,1,2-2h4a2,2 0,0,1,2,2v2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr onclick="showEnvironmentDetails('openshift-knowledges', 'running', 'ChromaDB', 'HF Sentence Transformers', '47')">
+                        <td class="checkbox-cell">
+                            <input type="checkbox" class="checkbox" onclick="event.stopPropagation()">
+                        </td>
+                        <td class="status-cell">
+                            <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10,9 9,9 8,9"/>
+                            </svg>
+                        </td>
+                        <td>
+                            <span class="env-name">openshift-knowledges</span>
+                        </td>
+                        <td>
+                            <span class="database-badge">
+                                <div class="tech-icon chroma-icon"></div>
+                                ChromaDB
+                            </span>
+                        </td>
+                        <td>
+                            <span class="chunker-badge">
+                                <div class="tech-icon" style="background: linear-gradient(45deg, #ffcd00, #ff8800);"></div>
+                                HF Sentence Transformers
+                            </span>
+                        </td>
+                        <td class="sources-cell">
+                            <span class="sources-count">47</span>
+                        </td>
+                        <td class="actions-cell">
+                            <div class="actions-row" onclick="event.stopPropagation()">
+                                <button class="action-button" title="Stop">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                        <rect x="6" y="6" width="12" height="12" rx="2"/>
+                                    </svg>
+                                </button>
+                                <button class="action-button delete" title="Delete">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3,6 5,6 21,6"/>
+                                        <path d="M19,6v14a2,2 0,0,1-2,2H7a2,2 0,0,1-2-2V6m3,0V4a2,2 0,0,1,2-2h4a2,2 0,0,1,2,2v2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr onclick="showEnvironmentDetails('docker-knowledges', 'stopped', 'Milvus', 'HF Sentence Transformers', '0')">
+                        <td class="checkbox-cell">
+                            <input type="checkbox" class="checkbox" onclick="event.stopPropagation()">
+                        </td>
+                        <td class="status-cell">
+                            <svg class="status-icon stopped" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10,9 9,9 8,9"/>
+                            </svg>
+                        </td>
+                        <td>
+                            <span class="env-name">docker-knowledges</span>
+                        </td>
+                        <td>
+                            <span class="database-badge">
+                                <div class="tech-icon milvus-icon"></div>
+                                Milvus
+                            </span>
+                        </td>
+                        <td>
+                            <span class="chunker-badge">
+                                <div class="tech-icon" style="background: linear-gradient(45deg, #ffcd00, #ff8800);"></div>
+                                HF Sentence Transformers
+                            </span>
+                        </td>
+                        <td class="sources-cell">
+                            <span class="sources-count">0</span>
+                        </td>
+                        <td class="actions-cell">
+                            <div class="actions-row">
+                                <button class="action-button" title="Start">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                        <polygon points="5,3 19,12 5,21"/>
+                                    </svg>
+                                </button>
+                                <button class="action-button delete" title="Delete">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3,6 5,6 21,6"/>
+                                        <path d="M19,6v14a2,2 0,0,1-2,2H7a2,2 0,0,1-2-2V6m3,0V4a2,2 0,0,1,2-2h4a2,2 0,0,1,2,2v2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr onclick="showEnvironmentDetails('kubernetes-knowledges', 'running', 'ChromaDB', 'Docling', '15')">
+                        <td class="checkbox-cell">
+                            <input type="checkbox" class="checkbox" onclick="event.stopPropagation()">
+                        </td>
+                        <td class="status-cell">
+                            <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10,9 9,9 8,9"/>
+                            </svg>
+                        </td>
+                        <td>
+                            <span class="env-name">kubernetes-knowledges</span>
+                        </td>
+                        <td>
+                            <span class="database-badge">
+                                <div class="tech-icon chroma-icon"></div>
+                                ChromaDB
+                            </span>
+                        </td>
+                        <td>
+                            <span class="chunker-badge">
+                                <div class="tech-icon" style="background: linear-gradient(45deg, #ff9500, #ffb800); border-radius: 20%;"></div>
+                                Docling
+                            </span>
+                        </td>
+                        <td class="sources-cell">
+                            <span class="sources-count">15</span>
+                        </td>
+                        <td class="actions-cell">
+                            <div class="actions-row" onclick="event.stopPropagation()">
+                                <button class="action-button" title="Stop">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                        <rect x="6" y="6" width="12" height="12" rx="2"/>
+                                    </svg>
+                                </button>
+                                <button class="action-button delete" title="Delete">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3,6 5,6 21,6"/>
+                                        <path d="M19,6v14a2,2 0,0,1-2,2H7a2,2 0,0,1-2-2V6m3,0V4a2,2 0,0,1,2-2h4a2,2 0,0,1,2,2v2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Knowledge Details View -->
+    <main class="main-content details-view" id="detailsView">
+        <header class="header">
+            <h1>Knowledges</h1>
+        </header>
+        
+        <div class="content">
+            <!-- Details Header -->
+            <div class="details-header">
+                <!-- Close Button -->
+                <button class="close-button" onclick="showListView()" title="Close">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+                
+                <!-- Breadcrumb Navigation -->
+                <div class="breadcrumb-nav">
+                    <a href="#" class="breadcrumb-link" onclick="showListView()">Knowledges</a>
+                    <span class="breadcrumb-separator">></span>
+                    <span class="breadcrumb-current">Knowledge Details</span>
+                </div>
+                
+                <!-- Environment Header -->
+                <div class="environment-header">
+                    <div class="environment-info">
+                        <div class="environment-icon running" id="environmentIcon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10,9 9,9 8,9"/>
+                            </svg>
+                        </div>
+                        <div class="environment-details">
+                            <h2 id="environmentTitle">podman-knowledges</h2>
+                            <div class="environment-subtitle" id="environmentSubtitle">
+                                <span id="environmentStatus">Running</span> • <span id="environmentConfig">Milvus + Docling</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="environment-actions">
+                        <button class="header-action-button primary" id="headerStartStop" title="Stop">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                <rect x="6" y="6" width="12" height="12" rx="2"/>
+                            </svg>
+                        </button>
+                        <button class="header-action-button danger" title="Delete">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3,6 5,6 21,6"/>
+                                <path d="M19,6v14a2,2 0,0,1-2,2H7a2,2 0,0,1-2-2V6m3,0V4a2,2 0,0,1,2-2h4a2,2 0,0,1,2,2v2"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="details-tabs">
+                <a href="#" class="details-tab active" onclick="showTab('summary')">Summary</a>
+                <a href="#" class="details-tab" onclick="showTab('sources')">Sources</a>
+                <a href="#" class="details-tab" onclick="showTab('vectorstore')">VectorStore</a>
+                <a href="#" class="details-tab" onclick="showTab('chunker')">Chunker</a>
+            </div>
+
+            <!-- Summary Tab -->
+            <div class="tab-content active" id="summaryTab">
+                <div class="summary-grid">
+                    <div class="info-card">
+                        <h3 class="info-card-title">Environment Details</h3>
+                        <div class="info-row">
+                            <span class="info-label">Name</span>
+                            <span class="info-value" id="summaryName">podman-knowledges</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Status</span>
+                            <span class="info-value" id="summaryStatus">Running</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Created</span>
+                            <span class="info-value">2 days ago</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Last Updated</span>
+                            <span class="info-value">5 hours ago</span>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <h3 class="info-card-title">Configuration</h3>
+                        <div class="info-row">
+                            <span class="info-label">Vector Store</span>
+                            <span class="info-value" id="summaryVectorStore">Milvus</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Chunker</span>
+                            <span class="info-value" id="summaryChunker">Docling</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Sources</span>
+                            <span class="info-value" id="summarySources">23 files</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Total Vectors</span>
+                            <span class="info-value">1,247</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sources Tab -->
+            <div class="tab-content" id="sourcesTab">
+                <!-- Upload Area -->
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7,10 12,15 17,10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    <div class="upload-text">Drag & Drop files here</div>
+                    <div class="upload-subtext">or click to browse • Supports PDF, TXT, MD, DOCX</div>
+                    <input type="file" id="fileInput" multiple accept=".pdf,.txt,.md,.docx" style="display: none;">
+                </div>
+
+                <!-- Sources List -->
+                <div class="sources-list">
+                    <div class="sources-header">
+                        <h3 class="sources-title">Uploaded Sources (23)</h3>
+                    </div>
+                    
+                    <div class="source-item">
+                        <div class="source-info">
+                            <div class="file-icon">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14,2 14,8 20,8"/>
+                                </svg>
+                            </div>
+                            <div class="source-details">
+                                <h4>podman-documentation.pdf</h4>
+                                <div class="source-meta">2.3 MB • Uploaded 2 hours ago • 45 chunks</div>
+                            </div>
+                        </div>
+                        <div class="source-actions">
+                            <button class="source-action" title="View">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                            <button class="source-action delete" title="Delete">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3,6 5,6 21,6"/>
+                                    <path d="M19,6v14a2,2 0,0,1-2,2H7a2,2 0,0,1-2-2V6m3,0V4a2,2 0,0,1,2-2h4a2,2 0,0,1,2,2v2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="source-item">
+                        <div class="source-info">
+                            <div class="file-icon">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14,2 14,8 20,8"/>
+                                </svg>
+                            </div>
+                            <div class="source-details">
+                                <h4>getting-started-guide.md</h4>
+                                <div class="source-meta">156 KB • Uploaded 1 day ago • 12 chunks</div>
+                            </div>
+                        </div>
+                        <div class="source-actions">
+                            <button class="source-action" title="View">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                            <button class="source-action delete" title="Delete">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3,6 5,6 21,6"/>
+                                    <path d="M19,6v14a2,2 0,0,1-2,2H7a2,2 0,0,1-2-2V6m3,0V4a2,2 0,0,1,2-2h4a2,2 0,0,1,2,2v2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="source-item">
+                        <div class="source-info">
+                            <div class="file-icon">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14,2 14,8 20,8"/>
+                                </svg>
+                            </div>
+                            <div class="source-details">
+                                <h4>api-reference.pdf</h4>
+                                <div class="source-meta">1.8 MB • Uploaded 3 days ago • 32 chunks</div>
+                            </div>
+                        </div>
+                        <div class="source-actions">
+                            <button class="source-action" title="View">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                            <button class="source-action delete" title="Delete">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3,6 5,6 21,6"/>
+                                    <path d="M19,6v14a2,2 0,0,1-2,2H7a2,2 0,0,1-2-2V6m3,0V4a2,2 0,0,1,2-2h4a2,2 0,0,1,2,2v2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VectorStore Tab -->
+            <div class="tab-content" id="vectorstoreTab">
+                <div class="summary-grid">
+                    <div class="info-card">
+                        <h3 class="info-card-title">Database Information</h3>
+                        <div class="info-row">
+                            <span class="info-label">Type</span>
+                            <span class="info-value">Milvus</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Version</span>
+                            <span class="info-value">2.3.2</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Host</span>
+                            <span class="info-value">localhost:19530</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Collection</span>
+                            <span class="info-value">podman_knowledges</span>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <h3 class="info-card-title">Storage Statistics</h3>
+                        <div class="info-row">
+                            <span class="info-label">Total Vectors</span>
+                            <span class="info-value">1,247</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Dimensions</span>
+                            <span class="info-value">768</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Index Type</span>
+                            <span class="info-value">IVF_FLAT</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Disk Usage</span>
+                            <span class="info-value">124 MB</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chunker Tab -->
+            <div class="tab-content" id="chunkerTab">
+                <div class="summary-grid">
+                    <div class="info-card">
+                        <h3 class="info-card-title">Model Information</h3>
+                        <div class="info-row">
+                            <span class="info-label">Type</span>
+                            <span class="info-value">Docling</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Version</span>
+                            <span class="info-value">1.2.0</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Processing</span>
+                            <span class="info-value">Advanced OCR + Layout</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Output Format</span>
+                            <span class="info-value">Structured chunks</span>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <h3 class="info-card-title">Configuration</h3>
+                        <div class="info-row">
+                            <span class="info-label">Chunk Size</span>
+                            <span class="info-value">512 tokens</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Overlap</span>
+                            <span class="info-value">50 tokens</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Language</span>
+                            <span class="info-value">Auto-detect</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">OCR Enabled</span>
+                            <span class="info-value">Yes</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="createModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">New Knowledge Environment</h3>
+                <button class="modal-close" onclick="closeModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Name Section -->
+                <div class="form-section">
+                    <label class="form-label" for="environmentName">Environment Name</label>
+                    <input type="text" id="environmentName" class="form-input" placeholder="Enter knowledge environment name">
+                </div>
+
+                <!-- Vector Store Section -->
+                <div class="form-section">
+                    <label class="form-label">Vector Store</label>
+                    <div class="tiles-grid">
+                        <div class="tile" onclick="selectTile(this, 'vectorstore')">
+                            <div class="tile-header">
+                                <div class="tile-logo milvus-logo">M</div>
+                                <div class="tile-title">Milvus</div>
+                            </div>
+                            <div class="tile-description">Open-source vector database built for scalable similarity search</div>
+                        </div>
+                        <div class="tile" onclick="selectTile(this, 'vectorstore')">
+                            <div class="tile-header">
+                                <div class="tile-logo chroma-logo">C</div>
+                                <div class="tile-title">ChromaDB</div>
+                            </div>
+                            <div class="tile-description">AI-native open-source embedding database</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Embedding Model Section -->
+                <div class="form-section">
+                    <label class="form-label">Embedding Model</label>
+                    <div class="tiles-grid">
+                        <div class="tile" onclick="selectTile(this, 'embedding')">
+                            <div class="tile-header">
+                                <div class="tile-logo docling-logo">D</div>
+                                <div class="tile-title">Docling</div>
+                            </div>
+                            <div class="tile-description">Advanced document parsing and chunking for RAG applications</div>
+                        </div>
+                        <div class="tile" onclick="selectTile(this, 'embedding')">
+                            <div class="tile-header">
+                                <div class="tile-logo huggingface-logo">🤗</div>
+                                <div class="tile-title">HF Sentence Transformers</div>
+                            </div>
+                            <div class="tile-description">State-of-the-art text embeddings from Hugging Face</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" id="createBtn" onclick="createEnvironment()" disabled>Create Environment</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedVectorStore = null;
+        let selectedEmbedding = null;
+        let currentEnvironment = null;
+
+        // Simple navigation handler
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // Remove active class from all items
+                document.querySelectorAll('.nav-item').forEach(nav => {
+                    nav.classList.remove('active');
+                });
+                
+                // Add active class to clicked item
+                item.classList.add('active');
+                
+                // Get section from data attribute
+                const section = item.getAttribute('data-section');
+                
+                // Hide all main content areas
+                document.getElementById('chatView').style.display = 'none';
+                document.getElementById('knowledgesList').style.display = 'none';
+                document.getElementById('detailsView').classList.remove('show');
+                
+                // Show appropriate content
+                if (section === 'chat') {
+                    document.getElementById('chatView').style.display = 'flex';
+                } else if (section === 'knowledges') {
+                    document.getElementById('knowledgesList').style.display = 'flex';
+                }
+                
+                // Update header title
+                const header = document.querySelector('.header h1');
+                header.textContent = section.charAt(0).toUpperCase() + section.slice(1) + 
+                    (section === 'knowledges' ? '' : 
+                     section === 'mcp' ? ' Servers' : 
+                     section === 'extensions' ? '' : '');
+            });
+        });
+
+        // Navigation Functions
+        function showEnvironmentDetails(name, status, vectorStore, chunker, sources) {
+            currentEnvironment = { name, status, vectorStore, chunker, sources };
+            
+            // Update details view with environment data
+            document.getElementById('environmentTitle').textContent = name;
+            document.getElementById('environmentStatus').textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            document.getElementById('environmentConfig').textContent = `${vectorStore} + ${chunker}`;
+            
+            // Update environment icon status color
+            const environmentIcon = document.getElementById('environmentIcon');
+            environmentIcon.className = `environment-icon ${status.toLowerCase()}`;
+            
+            // Update action button based on status
+            const startStopButton = document.getElementById('headerStartStop');
+            if (status.toLowerCase() === 'running') {
+                startStopButton.title = 'Stop';
+                startStopButton.classList.add('primary');
+                startStopButton.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <rect x="6" y="6" width="12" height="12" rx="2"/>
+                    </svg>
+                `;
+            } else {
+                startStopButton.title = 'Start';
+                startStopButton.classList.remove('primary');
+                startStopButton.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <polygon points="5,3 19,12 5,21"/>
+                    </svg>
+                `;
+            }
+            
+            // Update summary tab content
+            document.getElementById('summaryName').textContent = name;
+            document.getElementById('summaryStatus').textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            document.getElementById('summaryVectorStore').textContent = vectorStore;
+            document.getElementById('summaryChunker').textContent = chunker;
+            document.getElementById('summarySources').textContent = sources + ' files';
+            
+            // Hide chat and knowledge list views, show details view
+            document.getElementById('chatView').style.display = 'none';
+            document.getElementById('knowledgesList').style.display = 'none';
+            document.getElementById('detailsView').classList.add('show');
+            
+            // Reset to summary tab (ensure Summary is selected)
+            showTab('summary');
+        }
+
+        function showListView() {
+            // Hide details view
+            document.getElementById('detailsView').classList.remove('show');
+            
+            // Show knowledges list view (not chat)
+            document.getElementById('chatView').style.display = 'none';
+            document.getElementById('knowledgesList').style.display = 'flex';
+            
+            // Make sure knowledges nav item is active
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            document.querySelector('[data-section="knowledges"]').classList.add('active');
+        }
+
+        function showTab(tabName) {
+            // Remove active from all tabs and content
+            document.querySelectorAll('.details-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Add active to selected tab and content
+            const targetTab = document.querySelector(`.details-tab[onclick*="${tabName}"]`);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+            const targetContent = document.getElementById(tabName + 'Tab');
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+        }
+
+        // Chat Functions
+        function updateSelectedKnowledge() {
+            const selector = document.getElementById('knowledgeSelector');
+            // Knowledge base selection updated - could add visual feedback here
+            console.log('Selected knowledge base:', selector.value);
+        }
+
+        function useSuggestion(button) {
+            const title = button.querySelector('.chat-suggestion-title').textContent;
+            const desc = button.querySelector('.chat-suggestion-desc').textContent;
+            const fullPrompt = title + ' ' + desc;
+            
+            document.getElementById('chatInput').value = fullPrompt;
+            document.getElementById('chatInput').focus();
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Clear input
+            input.value = '';
+            adjustTextareaHeight(input);
+            
+            // Here you would typically send the message to your chat backend
+            console.log('Sending message:', message);
+            
+            // For demo purposes, you could add the message to a chat area
+            // This would be where you'd integrate with your actual chat system
+        }
+
+        function handleInputKeydown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function adjustTextareaHeight(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        // Modal functions
+        function openModal() {
+            document.getElementById('createModal').classList.add('show');
+            // Reset form
+            document.getElementById('environmentName').value = '';
+            selectedVectorStore = null;
+            selectedEmbedding = null;
+            document.querySelectorAll('.tile').forEach(tile => {
+                tile.classList.remove('selected');
+            });
+            updateCreateButton();
+        }
+
+        function closeModal() {
+            document.getElementById('createModal').classList.remove('show');
+        }
+
+        function selectTile(tile, type) {
+            // Remove selection from other tiles of the same type
+            const allTiles = document.querySelectorAll('.tile');
+            allTiles.forEach(t => {
+                if (t.getAttribute('onclick').includes(type)) {
+                    t.classList.remove('selected');
+                }
+            });
+            
+            // Select this tile
+            tile.classList.add('selected');
+            
+            // Store selection
+            if (type === 'vectorstore') {
+                selectedVectorStore = tile.querySelector('.tile-title').textContent;
+            } else if (type === 'embedding') {
+                selectedEmbedding = tile.querySelector('.tile-title').textContent;
+            }
+            
+            updateCreateButton();
+        }
+
+        function updateCreateButton() {
+            const name = document.getElementById('environmentName').value.trim();
+            const createBtn = document.getElementById('createBtn');
+            
+            if (name && selectedVectorStore && selectedEmbedding) {
+                createBtn.disabled = false;
+            } else {
+                createBtn.disabled = true;
+            }
+        }
+
+        function createEnvironment() {
+            const name = document.getElementById('environmentName').value.trim();
+            
+            // Here you would normally send the data to your backend
+            console.log('Creating environment:', {
+                name: name,
+                vectorStore: selectedVectorStore,
+                embedding: selectedEmbedding
+            });
+            
+            // Close modal and show success (in real app, you'd refresh the table)
+            closeModal();
+            alert(`Knowledge environment "${name}" created successfully!`);
+        }
+
+        // File upload handling
+        function setupFileUpload() {
+            const uploadArea = document.querySelector('.upload-area');
+            const fileInput = document.getElementById('fileInput');
+
+            if (!uploadArea || !fileInput) return;
+
+            // Drag and drop handlers
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('drag-over');
+            });
+
+            uploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('drag-over');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('drag-over');
+                const files = e.dataTransfer.files;
+                handleFileUpload(files);
+            });
+
+            // File input handler
+            fileInput.addEventListener('change', (e) => {
+                const files = e.target.files;
+                handleFileUpload(files);
+            });
+        }
+
+        function handleFileUpload(files) {
+            Array.from(files).forEach(file => {
+                console.log('Uploading file:', file.name);
+                // Here you would handle the actual file upload
+                alert(`File "${file.name}" uploaded successfully!`);
+            });
+        }
+
+        // Listen for name input changes
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('environmentName').addEventListener('input', updateCreateButton);
+            setupFileUpload();
+        });
+
+        // Close modal when clicking overlay
+        document.getElementById('createModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
