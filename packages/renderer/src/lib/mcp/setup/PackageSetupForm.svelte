@@ -84,8 +84,8 @@ async function spawn(): Promise<void> {
 <div class="flex flex-col gap-y-4">
   <!-- package details -->
   <div class="bg-[var(--pd-content-bg)] rounded-md flex flex-col p-2 space-y-2">
-    <label for="headers" class="text-xl font-bold text-[var(--pd-content-card-header-text)]">Remote MCP Definition</label>
-    <span>Configure the remote Model Context Protocol server connection</span>
+    <label for="headers" class="text-xl font-bold text-[var(--pd-content-card-header-text)]">Package MCP Definition</label>
+    <span>Configure the Model Context Protocol package</span>
 
     <div class="grid grid-flow-col gap-x-4">
       <!-- registry type -->
