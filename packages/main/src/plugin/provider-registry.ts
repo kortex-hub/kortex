@@ -62,6 +62,7 @@ import type {
 } from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
+import { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
 import type { Event } from '/@api/event.js';
 import {
   LifecycleMethod,
@@ -198,6 +199,8 @@ export class ProviderRegistry {
     private containerRegistry: ContainerProviderRegistry,
     @inject(Telemetry)
     private telemetryService: Telemetry,
+    @inject(SchedulerRegistry)
+    private schedulerRegistry: SchedulerRegistry,
   ) {
     this.providers = new Map();
     this.listeners = [];
@@ -247,6 +250,7 @@ export class ProviderRegistry {
       providerOptions,
       this,
       this.containerRegistry,
+      this.schedulerRegistry,
     );
     this.count++;
     this.providers.set(id, providerImpl);
