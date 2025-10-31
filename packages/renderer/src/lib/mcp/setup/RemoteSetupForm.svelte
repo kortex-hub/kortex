@@ -1,12 +1,11 @@
 <script lang="ts">
-import { faKey } from '@fortawesome/free-solid-svg-icons/faKey';
 import { faPlug } from '@fortawesome/free-solid-svg-icons/faPlug';
 import type { components } from '@kortex-hub/mcp-registry-types';
 import { Button } from '@podman-desktop/ui-svelte';
 import { SvelteMap } from 'svelte/reactivity';
-import Fa from 'svelte-fa';
 
-import InputArgumentWithVariables from '/@/lib/mcp/setup/InputArgumentWithVariables.svelte';
+import FormSection from '/@/lib/mcp/setup/FormSection.svelte';
+import { createInputWithVariables } from '/@/lib/mcp/setup/input-with-variable-response-utils';
 import type { InputWithVariableResponse, MCPSetupRemoteOptions } from '/@api/mcp/mcp-setup';
 
 interface Props {
@@ -14,28 +13,16 @@ interface Props {
   loading: boolean;
   remoteIndex: number;
   submit: (options: MCPSetupRemoteOptions) => Promise<void>;
+  cancel: () => void;
 }
 
-let { object, remoteIndex, loading = $bindable(false), submit }: Props = $props();
+let { object, remoteIndex, loading = $bindable(false), submit, cancel }: Props = $props();
 
 /**
  * Let's build a map for all our expected headers with the default value selected
  */
 let responses: Map<string, InputWithVariableResponse> = new SvelteMap(
-  (object.headers ?? []).map(header => [
-    header.name,
-    {
-      value: header.value ?? header.default ?? '',
-      variables: Object.fromEntries(
-        Object.entries(header.variables ?? {}).map(([key, variable]) => [
-          key,
-          {
-            value: variable.value ?? variable.default ?? '',
-          },
-        ]),
-      ),
-    },
-  ]),
+  (object.headers ?? []).map(header => [header.name, createInputWithVariables(header)]),
 );
 
 async function connect(): Promise<void> {
@@ -98,30 +85,20 @@ function onHeaderVariableChange(header: string, variable: string, value: string)
 
   <!-- headers -->
   {#if object.headers?.length}
-    <div class="bg-[var(--pd-content-bg)] rounded-md flex flex-col p-2 space-y-2">
-      <div class="flex flex-row items-center gap-x-2">
-        <Fa icon={faKey} />
-        <label for="headers" class="text-xl font-bold text-[var(--pd-content-card-header-text)]">Headers</label>
-      </div>
-
-      <span>Configure headers for authentication and other purposes</span>
-      <label for="http-headers" class="text-base font-bold text-[var(--pd-content-card-header-text)]">HTTP Headers</label>
-      {#each object.headers as header (header.name)}
-        <div class="border-2 border-dashed rounded-md p-4">
-
-          <label for="header-{header.name}" class="text-xl font-bold text-[var(--pd-content-card-header-text)]">{header.name} {header.isRequired ? '*' : ''}</label>
-          <InputArgumentWithVariables
-            onChange={onHeaderChange.bind(undefined, header.name)}
-            onVariableChange={onHeaderVariableChange.bind(undefined, header.name)}
-            object={header}
-          />
-        </div>
-      {/each}
-    </div>
+    <FormSection
+      title="Headers"
+      description="Configure headers for authentication and other purposes"
+      args={object.headers.map((argument) => ({...argument, key: argument.name }))}
+      updateArgumentValue={onHeaderChange.bind(undefined)}
+      updateArgumentVariableValue={onHeaderVariableChange.bind(undefined)}
+    />
   {/if}
 </div>
 
-<div class="flex w-full justify-end">
+<div class="flex w-full justify-end gap-x-2">
+  <Button type="secondary" onclick={cancel}>
+    Cancel
+  </Button>
   <Button
     class="w-auto"
     icon={faPlug}

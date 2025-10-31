@@ -18,7 +18,7 @@ let variables: Array<[string, components['schemas']['Input']]> = Object.entries(
 
 <!-- no variable => let's use InputArgument directly -->
 {#if variables.length === 0}
-  <InputArgument onChange={onChange} object={object} />
+  <InputArgument onChange={onChange} object={{...object, value: object.value ?? object.default}} />
 {:else if object.value}
   <InputArgument onChange={onChange} object={object} readonly />
 {/if}

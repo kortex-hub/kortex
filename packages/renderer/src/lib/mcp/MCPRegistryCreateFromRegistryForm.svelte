@@ -6,6 +6,7 @@ import { router } from 'tinro';
 import McpIcon from '/@/lib/images/MCPIcon.svelte';
 import type { MCPTarget } from '/@/lib/mcp/setup/mcp-target';
 import MCPSetupDropdown from '/@/lib/mcp/setup/MCPSetupDropdown.svelte';
+import PackageSetupForm from '/@/lib/mcp/setup/PackageSetupForm.svelte';
 import RemoteSetupForm from '/@/lib/mcp/setup/RemoteSetupForm.svelte';
 import { mcpRegistriesServerInfos } from '/@/stores/mcp-registry-servers';
 import type { MCPSetupOptions } from '/@api/mcp/mcp-setup';
@@ -52,6 +53,10 @@ async function submit(options: MCPSetupOptions): Promise<void> {
 async function navigateToMcps(): Promise<void> {
   router.goto('/mcps?tab=READY');
 }
+
+async function close(): Promise<void> {
+  router.goto('/mcps?tab=INSTALL');
+}
 </script>
 
 {#if mcpRegistryServerDetail}
@@ -80,11 +85,13 @@ async function navigateToMcps(): Promise<void> {
 
             <!-- display form -->
             {#if mcpTarget !== undefined}
-              {#if 'url' in mcpTarget}  <!-- remote -->
-                <RemoteSetupForm submit={submit} remoteIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget}/>
-              {:else} <!-- package -->
-                <span>Not yet supported :p</span>
-              {/if}
+              {#key mcpTarget}
+                {#if 'url' in mcpTarget}  <!-- remote -->
+                  <RemoteSetupForm submit={submit} remoteIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget} cancel={close}/>
+                {:else} <!-- package -->
+                  <PackageSetupForm submit={submit} packageIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget} cancel={close}/>
+                {/if}
+              {/key}
             {/if}
           </div>
         </div>
