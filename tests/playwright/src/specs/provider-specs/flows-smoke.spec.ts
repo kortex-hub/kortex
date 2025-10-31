@@ -37,14 +37,25 @@ test.describe.serial('Flow page e2e test suite', { tag: '@smoke' }, () => {
   });
 
   test('[FLOW-02] Check that user can create a new flow', async ({ navigationBar }) => {
-    await flowsPage.createFlow(flowName);
+    await flowsPage.createFlow(flowName, {
+      prompt:
+        'write a typescript recursive method that calculates the fibonacci number for a given index without using memoization',
+    });
     flowsPage = await navigationBar.navigateToFlowsPage();
     await flowsPage.ensureRowExists(flowName, 30_000, false);
   });
 
-  test('[FLOW-03] Check that user can run the created flow', async () => {
-    const flowDetailsPage = await flowsPage.runFlowByName(flowName);
+  test('[FLOW-03] Check that user can run the created flow and validate the results', async () => {
+    const flowDetailsPage = await flowsPage.openFlowDetailsPageByName(flowName);
     await flowDetailsPage.waitForLoad();
+
+    await flowDetailsPage.runFlow();
+    await flowDetailsPage.switchToRunTab();
+
+    await expect(flowDetailsPage.terminalContent).toContainText(
+      /([a-zA-Z_]\w*)\(\s*n\s*-\s*1\s*\)\s*\+\s*\1\(\s*n\s*-\s*2\s*\)/,
+      { timeout: 120_000 },
+    );
   });
 
   test('[FLOW-04] Check that user can delete the created flow', async ({ navigationBar }) => {

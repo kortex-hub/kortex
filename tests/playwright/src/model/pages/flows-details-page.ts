@@ -36,6 +36,9 @@ export class FlowDetailsPage extends BasePage {
   readonly sourceTabLink: Locator;
   readonly kubernetesTabLink: Locator;
   readonly runTabLink: Locator;
+  readonly terminalLocator: Locator;
+  readonly terminalInput: Locator;
+  readonly terminalContent: Locator;
 
   constructor(page: Page, name: string) {
     super(page);
@@ -52,6 +55,10 @@ export class FlowDetailsPage extends BasePage {
     this.kubernetesTabLink = this.pageTabsRegion.getByRole('link', { name: 'Kubernetes' });
     this.runTabLink = this.pageTabsRegion.getByRole('link', { name: 'Run' });
     this.closeDetailsPageButton = this.header.getByRole('button', { name: 'Close' });
+
+    this.terminalLocator = this.tabContentRegion.getByRole('term');
+    this.terminalInput = this.terminalLocator.getByLabel('Terminal input');
+    this.terminalContent = this.terminalLocator.locator('.xterm-rows');
   }
 
   async waitForLoad(): Promise<void> {
@@ -76,5 +83,28 @@ export class FlowDetailsPage extends BasePage {
     await this.closeDetailsPageButton.click();
 
     return new FlowsPage(this.page);
+  }
+
+  async switchToSummaryTab(): Promise<void> {
+    await this.switchTab(this.summaryTabLink);
+  }
+
+  async switchToSourceTab(): Promise<void> {
+    await this.switchTab(this.sourceTabLink);
+  }
+
+  async switchToKubernetesTab(): Promise<void> {
+    await this.switchTab(this.kubernetesTabLink);
+  }
+
+  async switchToRunTab(): Promise<void> {
+    await this.switchTab(this.runTabLink);
+  }
+
+  private async switchTab(tabLink: Locator): Promise<void> {
+    await expect(tabLink).toBeVisible();
+    await tabLink.click();
+
+    await expect(tabLink).toHaveClass(/text-\[var\(--pd-tab-text-highlight\)\]/);
   }
 }

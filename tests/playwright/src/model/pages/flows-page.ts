@@ -26,7 +26,6 @@ import { FlowDetailsPage } from './flows-details-page';
 
 export class FlowsPage extends BaseTablePage {
   readonly header: Locator;
-  readonly pageContentRegion: Locator;
   readonly heading: Locator;
   readonly additionalActionsButtonGroup: Locator;
   readonly createFlowButton: Locator;
@@ -42,9 +41,8 @@ export class FlowsPage extends BaseTablePage {
     this.createFlowButton = this.additionalActionsButtonGroup.getByRole('button', { name: 'Create' });
     this.refreshButton = this.additionalActionsButtonGroup.getByRole('button', { name: 'Refresh' });
 
-    this.pageContentRegion = this.page.getByRole('region', { name: 'content' });
-    this.createFlowButtonFromContentRegion = this.pageContentRegion.getByRole('button', { name: 'Create' });
-    this.noCurrentFlowExistsMessage = this.pageContentRegion.getByText('No flow');
+    this.createFlowButtonFromContentRegion = this.content.getByRole('button', { name: 'Create' });
+    this.noCurrentFlowExistsMessage = this.content.getByText('No flow');
   }
 
   async waitForLoad(): Promise<void> {
