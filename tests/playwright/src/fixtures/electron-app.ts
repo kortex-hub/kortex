@@ -31,65 +31,146 @@ export const TIMEOUTS = {
   PAGE_LOAD: 90_000,
   WINDOW_EVENT: 120_000,
   NON_DEVTOOLS_WINDOW: 60_000,
+  RETRY_DELAY: 1_000,
+  MAX_RETRIES: 3,
 } as const;
 
-export async function getDevModeWindow(electronApp: ElectronApplication): Promise<Page> {
-  await electronApp.waitForEvent('window', { timeout: TIMEOUTS.WINDOW_EVENT });
-  const windows = electronApp.windows();
-  const appWindow = windows.find(w => !w.url().startsWith('devtools://'));
-  return (
-    appWindow ??
-    (await electronApp.waitForEvent('window', {
-      timeout: TIMEOUTS.NON_DEVTOOLS_WINDOW,
-      predicate: page => !page.url().startsWith('devtools://'),
-    }))
-  );
+const DEVTOOLS_URL_PREFIX = 'devtools://';
+
+function isDevToolsWindow(url: string): boolean {
+  return url.startsWith(DEVTOOLS_URL_PREFIX);
 }
 
-export async function launchElectronApp(): Promise<ElectronApplication> {
-  // Filter out undefined values from process.env
-  const electronEnv: Record<string, string> = {};
-  for (const [key, value] of Object.entries(process.env)) {
-    if (value !== undefined) {
-      electronEnv[key] = value;
+function filterNonDevToolsWindows(windows: Page[]): Page[] {
+  return windows.filter(w => !isDevToolsWindow(w.url()));
+}
+
+export async function getDevModeWindow(
+  electronApp: ElectronApplication,
+  retries = TIMEOUTS.MAX_RETRIES,
+): Promise<Page> {
+  let lastError: Error | unknown;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      await electronApp.waitForEvent('window', { timeout: TIMEOUTS.WINDOW_EVENT });
+
+      const existingWindows = filterNonDevToolsWindows(electronApp.windows());
+      if (existingWindows.length > 0) {
+        return existingWindows[0];
+      }
+
+      return await electronApp.waitForEvent('window', {
+        timeout: TIMEOUTS.NON_DEVTOOLS_WINDOW,
+        predicate: page => !isDevToolsWindow(page.url()),
+      });
+    } catch (error) {
+      lastError = error;
+      if (attempt < retries) {
+        const delay = TIMEOUTS.RETRY_DELAY * (attempt + 1);
+        console.warn(
+          `Failed to get dev window (attempt ${attempt + 1}/${retries + 1}), retrying in ${delay}ms:`,
+          error,
+        );
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
     }
   }
 
+  console.error('Failed to get dev window after retries, falling back to firstWindow:', lastError);
+  const allWindows = electronApp.windows();
+  if (allWindows.length > 0) {
+    return allWindows[0];
+  }
+
+  throw new Error(`Failed to get any window from Electron app: ${lastError}`);
+}
+
+function prepareElectronEnv(): Record<string, string> {
+  const electronEnv: Record<string, string> = {};
+
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value !== undefined && typeof value === 'string') {
+      electronEnv[key] = value;
+    }
+  }
+  // Remove Electron-specific variables that shouldn't be passed
   delete electronEnv.ELECTRON_RUN_AS_NODE;
 
-  // Check if KORTEX_BINARY is set (production mode) or use development mode
-  const isProductionMode = !!process.env.KORTEX_BINARY;
-  const launchConfig = isProductionMode
-    ? {
-        // Production mode: use the built binary
-        executablePath: process.env.KORTEX_BINARY!,
-        args: ['--no-sandbox'],
-        env: electronEnv,
-      }
-    : {
-        // Development mode: use the source code
-        args: ['.', '--no-sandbox'],
-        env: {
-          ...electronEnv,
-          ELECTRON_IS_DEV: '1',
-        },
-        cwd: resolve(__dirname, '../../../..'),
-      };
+  return electronEnv;
+}
 
-  return await electron.launch(launchConfig);
+function createLaunchConfig(): Parameters<typeof electron.launch>[0] {
+  const isProductionMode = !!process.env.KORTEX_BINARY;
+  const electronEnv = prepareElectronEnv();
+
+  if (isProductionMode) {
+    const executablePath = process.env.KORTEX_BINARY;
+    if (!executablePath) {
+      throw new Error('KORTEX_BINARY environment variable is set but empty');
+    }
+
+    return {
+      executablePath,
+      args: ['--no-sandbox'],
+      env: electronEnv,
+    };
+  }
+
+  // Development mode
+  return {
+    args: ['.', '--no-sandbox'],
+    env: {
+      ...electronEnv,
+      ELECTRON_IS_DEV: '1',
+    },
+    cwd: resolve(__dirname, '../../../..'),
+  };
+}
+
+export async function launchElectronApp(): Promise<ElectronApplication> {
+  const launchConfig = createLaunchConfig();
+
+  try {
+    const electronApp = await electron.launch(launchConfig);
+
+    return electronApp;
+  } catch (error) {
+    console.error('Failed to launch Electron app:', error);
+    throw new Error(`Failed to launch Electron app: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 export async function getFirstPage(electronApp: ElectronApplication): Promise<Page> {
   const isProductionMode = !!process.env.KORTEX_BINARY;
-  const page = isProductionMode
-    ? await electronApp.firstWindow({ timeout: TIMEOUTS.FIRST_WINDOW })
-    : await getDevModeWindow(electronApp).catch(async (error: unknown) => {
-        console.error('Failed to get dev window, falling back to firstWindow:', error);
-        return electronApp.firstWindow();
-      });
+  let page: Page;
+
+  try {
+    if (isProductionMode) {
+      page = await electronApp.firstWindow({ timeout: TIMEOUTS.FIRST_WINDOW });
+    } else {
+      page = await getDevModeWindow(electronApp);
+    }
+  } catch (error) {
+    const allWindows = electronApp.windows();
+    if (allWindows.length > 0) {
+      const nonDevToolsWindows = filterNonDevToolsWindows(allWindows);
+      page = nonDevToolsWindows.length > 0 ? nonDevToolsWindows[0] : allWindows[0];
+      console.warn('Using fallback window selection after error:', error);
+    } else {
+      throw new Error(`Failed to get first page: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
   await page.waitForLoadState('load', { timeout: TIMEOUTS.PAGE_LOAD });
   await waitForAppReady(page);
+
   return page;
+}
+
+export async function closeAllWindows(electronApp: ElectronApplication): Promise<void> {
+  const windows = electronApp.windows();
+  await Promise.allSettled(windows.map(window => window.close().catch(() => {})));
 }
 
 export interface ElectronFixtures {
@@ -98,12 +179,34 @@ export interface ElectronFixtures {
   navigationBar: NavigationBar;
 }
 
+export interface LaunchOptions {
+  timeout?: number;
+  retries?: number;
+}
+
 export const test = base.extend<ElectronFixtures>({
   // eslint-disable-next-line no-empty-pattern
   electronApp: async ({}, use): Promise<void> => {
-    const electronApp = await launchElectronApp();
-    await use(electronApp);
-    await electronApp.close();
+    let electronApp: ElectronApplication | undefined;
+
+    try {
+      electronApp = await launchElectronApp();
+      await use(electronApp);
+    } finally {
+      if (electronApp) {
+        try {
+          await closeAllWindows(electronApp);
+          await electronApp.close();
+        } catch (error) {
+          console.error('Error closing Electron app:', error);
+          try {
+            await electronApp.close();
+          } catch {
+            // Ignore errors during forced close
+          }
+        }
+      }
+    }
   },
 
   page: async ({ electronApp }, use): Promise<void> => {

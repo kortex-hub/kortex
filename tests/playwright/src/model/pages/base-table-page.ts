@@ -47,4 +47,12 @@ export abstract class BaseTablePage extends BasePage {
   async ensureRowDoesNotExist(name: string, timeout = 30_000, exact = true): Promise<void> {
     await expect.poll(async () => await this.getTableRowByName(name, exact), { timeout: timeout }).toBeFalsy();
   }
+
+  async getRowLocatorByName(name: string, exact = true): Promise<Locator> {
+    const row = await this.getTableRowByName(name, exact);
+    if (row === undefined) {
+      throw new Error(`Row with name '${name}' does not exist`);
+    }
+    return row;
+  }
 }

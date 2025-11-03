@@ -52,9 +52,9 @@ test.describe.serial('Flow page e2e test suite', { tag: '@smoke' }, () => {
     await flowDetailsPage.runFlow();
     await flowDetailsPage.switchToRunTab();
 
-    await expect(flowDetailsPage.terminalContent).toContainText(
+    await flowDetailsPage.waitForTerminalContent(
       /([a-zA-Z_]\w*)\(\s*n\s*-\s*1\s*\)\s*\+\s*\1\(\s*n\s*-\s*2\s*\)/,
-      { timeout: 120_000 },
+      120_000,
     );
   });
 

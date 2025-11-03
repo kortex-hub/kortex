@@ -32,6 +32,22 @@ interface WorkerFixtures {
   mcpSetup: void;
 }
 
+function requireEnvVar(envVarName: string): string {
+  const value = process.env[envVarName];
+  if (!value) {
+    throw new Error(`${envVarName} environment variable is not set`);
+  }
+  return value;
+}
+
+async function safeCleanup(operation: () => Promise<void>, errorMessage: string): Promise<void> {
+  try {
+    await operation();
+  } catch (error) {
+    console.error(`${errorMessage}:`, error);
+  }
+}
+
 export const test = base.extend<ElectronFixtures, WorkerFixtures>({
   resource: [
     'gemini' as ResourceId,
@@ -79,22 +95,15 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
     async ({ workerNavigationBar, resource }, use): Promise<void> => {
       try {
         const provider = PROVIDERS[resource];
-        const credentials = process.env[provider.envVarName];
-        if (!credentials) {
-          throw new Error(`${provider.envVarName} environment variable is not set`);
-        }
-
+        const credentials = requireEnvVar(provider.envVarName);
         const settingsPage = await workerNavigationBar.navigateToSettingsPage();
         await settingsPage.createResource(resource, credentials);
-
         await use();
       } finally {
-        try {
+        await safeCleanup(async () => {
           const settingsPage = await workerNavigationBar.navigateToSettingsPage();
           await settingsPage.deleteResource(resource);
-        } catch (error) {
-          console.error(`Failed to delete ${resource} resource:`, error);
-        }
+        }, `Failed to delete ${resource} resource`);
       }
     },
     { scope: 'worker', auto: true },
@@ -102,21 +111,18 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
 
   mcpSetup: [
     async ({ workerNavigationBar, mcpServers }, use): Promise<void> => {
-      const configured: MCPServerId[] = [];
+      const configuredServers: Array<{ id: MCPServerId; serverName: string }> = [];
 
       try {
         const mcpPage = await workerNavigationBar.navigateToMCPPage();
 
         for (const id of mcpServers) {
           const server = MCP_SERVERS[id];
-          const token = process.env[server.envVarName];
-          if (!token) {
-            throw new Error(`${server.envVarName} environment variable is not set`);
-          }
+          const token = requireEnvVar(server.envVarName);
 
           try {
             await mcpPage.createServer(server.serverName, token);
-            configured.push(id);
+            configuredServers.push({ id, serverName: server.serverName });
           } catch (error) {
             console.warn(`MCP setup skipped for ${id}:`, error);
           }
@@ -124,17 +130,14 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
 
         await use();
       } finally {
-        if (configured.length > 0) {
+        if (configuredServers.length > 0) {
           const mcpPage = await workerNavigationBar.navigateToMCPPage();
 
-          for (const id of configured) {
-            try {
-              const server = MCP_SERVERS[id];
-              await mcpPage.deleteServer(server.serverName);
-            } catch (error) {
-              console.error(`Failed to delete ${id} MCP server:`, error);
-            }
-          }
+          await Promise.allSettled(
+            configuredServers.map(({ id, serverName }) =>
+              safeCleanup(() => mcpPage.deleteServer(serverName), `Failed to delete ${id} MCP server`),
+            ),
+          );
         }
       }
     },
