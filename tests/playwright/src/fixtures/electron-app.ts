@@ -177,11 +177,6 @@ export interface ElectronFixtures {
   navigationBar: NavigationBar;
 }
 
-export interface LaunchOptions {
-  timeout?: number;
-  retries?: number;
-}
-
 export const test = base.extend<ElectronFixtures>({
   // eslint-disable-next-line no-empty-pattern
   electronApp: async ({}, use): Promise<void> => {
