@@ -53,8 +53,6 @@ export async function getDevModeWindow(
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      await electronApp.waitForEvent('window', { timeout: TIMEOUTS.WINDOW_EVENT });
-
       const existingWindows = filterNonDevToolsWindows(electronApp.windows());
       if (existingWindows.length > 0) {
         return existingWindows[0];
