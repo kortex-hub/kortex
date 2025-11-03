@@ -1,21 +1,16 @@
 <script lang="ts">
-import { onMount } from 'svelte';
-
 import { handleNavigation } from '/@/navigation';
 import type { FlowInfo } from '/@api/flow-info';
 import { NavigationPage } from '/@api/navigation-page';
+
+import { getFlowName } from '../flow-utils';
 
 interface Props {
   object: FlowInfo;
 }
 
 let { object }: Props = $props();
-let fileName = $state('');
-
-onMount(() => {
-  const fileNameFromPath = object.path.split(/[/\\]/).pop()?.split('.')[0];
-  fileName = fileNameFromPath ?? object.path;
-});
+let fileName = $derived(getFlowName(object.path));
 
 function openDetails(workflow: FlowInfo): void {
   handleNavigation({

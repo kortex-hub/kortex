@@ -18,12 +18,9 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { render, screen } from '@testing-library/svelte';
 import { expect, test } from 'vitest';
 
-import type { FlowInfo } from '/@api/flow-info';
-
-import FlowName from './FlowName.svelte';
+import { getFlowName } from './flow-utils';
 
 test.each([
   ['/some/path/filename1.yaml', 'filename1'],
@@ -31,14 +28,6 @@ test.each([
   ['\\some\\path\\filename3.yaml', 'filename3'],
   ['/filename4', 'filename4'],
 ])('Get from %s path filename %s', (path: string, fileName: string) => {
-  const flowInfo: FlowInfo = {
-    providerId: 'provider1',
-    connectionName: 'connection1',
-    id: 'flow1',
-    path: path,
-  };
-  render(FlowName, { object: flowInfo });
-
-  expect(screen.getByText(fileName)).toBeInTheDocument();
-  expect(screen.getByText(path)).toBeInTheDocument();
+  const name = getFlowName(path);
+  expect(name).toBe(fileName);
 });

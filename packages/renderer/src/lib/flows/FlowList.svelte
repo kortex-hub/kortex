@@ -12,6 +12,7 @@ import { NavigationPage } from '/@api/navigation-page';
 import FlowIcon from '../images/FlowIcon.svelte';
 import EmptyFlowScreen from './components/EmptyFlowScreen.svelte';
 import NoFlowProviders from './components/NoFlowProviders.svelte';
+import { getFlowName } from './flow-utils';
 import FlowActions from './FlowActions.svelte';
 
 type FlowSelectable = FlowInfo & { selected: boolean };
@@ -28,6 +29,7 @@ const itemColumn = new TableColumn<FlowSelectable>('', {
 let pathColumn = new TableColumn<FlowSelectable>('Flow', {
   width: '2fr',
   renderer: FlowName,
+  comparator: (a, b): number => getFlowName(a.path).localeCompare(getFlowName(b.path)),
 });
 
 const flowActions = new TableColumn<FlowSelectable>('Actions', {

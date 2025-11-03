@@ -16,29 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import '@testing-library/jest-dom/vitest';
-
-import { render, screen } from '@testing-library/svelte';
-import { expect, test } from 'vitest';
-
-import type { FlowInfo } from '/@api/flow-info';
-
-import FlowName from './FlowName.svelte';
-
-test.each([
-  ['/some/path/filename1.yaml', 'filename1'],
-  ['/some/path/filename2', 'filename2'],
-  ['\\some\\path\\filename3.yaml', 'filename3'],
-  ['/filename4', 'filename4'],
-])('Get from %s path filename %s', (path: string, fileName: string) => {
-  const flowInfo: FlowInfo = {
-    providerId: 'provider1',
-    connectionName: 'connection1',
-    id: 'flow1',
-    path: path,
-  };
-  render(FlowName, { object: flowInfo });
-
-  expect(screen.getByText(fileName)).toBeInTheDocument();
-  expect(screen.getByText(path)).toBeInTheDocument();
-});
+export function getFlowName(flowPath: string): string {
+  const fileNameFromPath = flowPath.split(/[/\\]/).pop()?.split('.')[0];
+  return fileNameFromPath ?? flowPath;
+}
