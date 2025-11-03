@@ -506,8 +506,12 @@ export class MCPRegistry {
     try {
       return JSON.parse(raw);
     } catch (error) {
-      console.warn(`[MCPRegistry] Failed to parse stored configurations, starting fresh:`, error);
-      await this.safeStorage?.delete(STORAGE_KEY).catch(() => undefined);
+      // JSON parsing failed - could be corrupted storage or decryption issues
+      // Don't delete immediately - log and return empty to allow recovery
+      console.error(
+        `[MCPRegistry] Failed to parse MCP configurations. MCP servers will need to be reconfigured.`,
+        error,
+      );
       return [];
     }
   }

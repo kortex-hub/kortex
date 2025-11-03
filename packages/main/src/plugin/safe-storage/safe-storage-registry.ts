@@ -140,7 +140,16 @@ export class SafeStorage {
   getDecrypted(key: string): string | undefined {
     const value = this.#data[key];
     if (value) {
-      return this.decrypt(value);
+      try {
+        return this.decrypt(value);
+      } catch (error) {
+        // Decryption can fail when keychain is reset or inaccessible (CI/test environments)
+        // Return undefined to allow graceful recovery - this is expected behavior
+        console.warn(
+          `[SafeStorage] Decryption failed, returning undefined. Reason: ${error instanceof Error ? error.message : 'unknown'}`,
+        );
+        return undefined;
+      }
     }
     return undefined;
   }
