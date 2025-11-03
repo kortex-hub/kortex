@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 export function getFlowName(flowPath: string): string {
-  let extractedName;
+  let extractedName: string | undefined;
   const fileNameFromPath = flowPath.split(/[/\\]/).pop();
   if (fileNameFromPath) {
     const name = fileNameFromPath.split('.');
