@@ -111,16 +111,35 @@ async function onclick(suggestedAction: SuggestedAction): Promise<void> {
   );
 
   if (mcpsToSelect?.length) {
-    mcpSelectorOpen = true;
+    const result = await window.showMessageBox({
+      title: 'Select MCPs',
+      message: `The following MCPs are required to use this suggested action: ${mcpsToSelect.join(', ')}. Do you want to select them?`,
+      buttons: ['No', 'Yes'],
+    });
 
-    const builder = ['You need to select the following MCP:'];
-    for (let [mcpName, tools] of mcpsToSelect) {
-      const quoted = tools.map(tool => `'${tool}'`);
-      builder.push(`- '${mcpName}' with tools ${quoted.join(',')}`);
+    if (result?.response === 0) {
+      // No
+      mcpSelectorOpen = true;
+
+      const builder = ['You need to select the following MCP:'];
+      for (let [mcpName, tools] of mcpsToSelect) {
+        const quoted = tools.map(tool => `'${tool}'`);
+        builder.push(`- '${mcpName}' with tools ${quoted.join(',')}`);
+      }
+
+      toast.error(builder.join(' '));
+      return;
+    } else {
+      // Yes
+      for (let [mcpName, tools] of mcpsToSelect) {
+        console.log('mcpName', mcpName);
+        console.log('tools', tools);
+        for (let tool of tools) {
+          console.log('tool', tool);
+          selectedMCPTools.get(mcpName)?.add(tool);
+        }
+      }
     }
-
-    toast.error(builder.join(' '));
-    return;
   }
 
   await chatClient.sendMessage({
