@@ -17,6 +17,14 @@
  ***********************************************************************/
 
 export function getFlowName(flowPath: string): string {
-  const fileNameFromPath = flowPath.split(/[/\\]/).pop()?.split('.')[0];
-  return fileNameFromPath ?? flowPath;
+  let extractedName;
+  const fileNameFromPath = flowPath.split(/[/\\]/).pop();
+  if (fileNameFromPath) {
+    const name = fileNameFromPath.split('.');
+    extractedName = fileNameFromPath.startsWith('.') ? name[1] : name[0];
+    if (extractedName) {
+      return extractedName;
+    }
+  }
+  return flowPath;
 }

@@ -27,6 +27,8 @@ test.each([
   ['/some/path/filename2', 'filename2'],
   ['\\some\\path\\filename3.yaml', 'filename3'],
   ['/filename4', 'filename4'],
+  ['/.filename5.json', 'filename5'],
+  ['abc/.', 'abc/.'],
 ])('Get from %s path filename %s', (path: string, fileName: string) => {
   const name = getFlowName(path);
   expect(name).toBe(fileName);
