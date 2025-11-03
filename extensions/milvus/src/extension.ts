@@ -24,7 +24,7 @@ import type { ContainerInfo } from 'dockerode';
 
 import { MilvusConnection } from './milvus-connection';
 
-const MILVUS_IMAGE = 'milvusdb/milvus:v2.6.3';
+const MILVUS_IMAGE = 'docker.io/milvusdb/milvus:v2.6.3';
 const MILVUS_PORT = 19530;
 const MILVUS_METRIC_PORT = 9091;
 
