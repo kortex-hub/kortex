@@ -50,11 +50,8 @@ export class FlowsPage extends BaseTablePage {
   }
 
   async runFlowByName(name: string, exact = false): Promise<FlowDetailsPage> {
-    const row = await this.getTableRowByName(name, exact);
-
-    if (row === undefined) {
-      throw new Error(`Flow with name '${name}' does not exist`);
-    }
+    await this.waitForLoad();
+    const row = await this.getRowLocatorByName(name, exact);
 
     const runButton = row.getByRole('button', { name: 'Run this recipe' }).first();
     await expect(runButton).toBeEnabled();
@@ -64,12 +61,8 @@ export class FlowsPage extends BaseTablePage {
   }
 
   async deleteFlowByName(name: string, exact = false): Promise<void> {
-    const row = await this.getTableRowByName(name, exact);
-
-    if (row === undefined) {
-      console.log(`Flow with name '${name}' does not exist, skipping...`);
-      return;
-    }
+    await this.waitForLoad();
+    const row = await this.getRowLocatorByName(name, exact);
 
     const deleteButton = row.getByRole('button', { name: 'Delete' }).first();
     await expect(deleteButton).toBeEnabled();
@@ -91,6 +84,7 @@ export class FlowsPage extends BaseTablePage {
   }
 
   async openFlowDetailsPageByName(name: string, exact = false): Promise<FlowDetailsPage> {
+    await this.waitForLoad();
     const button = await this.createFlowsDetailsPageButton(name, exact);
 
     await expect(button).toBeVisible();
@@ -105,11 +99,7 @@ export class FlowsPage extends BaseTablePage {
   }
 
   private async createFlowsDetailsPageButton(name: string, exact = false): Promise<Locator> {
-    const row = await this.getTableRowByName(name, exact);
-
-    if (row === undefined) {
-      throw new Error(`Flow with name '${name}' does not exist`);
-    }
+    const row = await this.getRowLocatorByName(name, exact);
 
     return row.getByRole('button').first();
   }

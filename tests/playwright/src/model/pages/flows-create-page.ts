@@ -68,6 +68,8 @@ export class FlowsCreatePage extends BasePage {
   }
 
   private async fillFlowForm(name: string, flowParameters?: FlowParameters): Promise<void> {
+    await this.waitForFormReady();
+
     await this.nameInputField.clear();
     await expect(this.nameInputField).toHaveValue('');
     await this.nameInputField.fill(name);
@@ -112,5 +114,15 @@ export class FlowsCreatePage extends BasePage {
       await this.instructionInputField.fill(flowParameters.instruction);
       await expect(this.instructionInputField).toHaveValue(flowParameters.instruction);
     }
+  }
+
+  private async waitForFormReady(): Promise<void> {
+    await expect(this.nameInputField).toBeVisible({ timeout: 15_000 });
+    await expect(this.selectModelDropdown).toBeVisible();
+    await expect(this.descriptionInputField).toBeVisible();
+    await expect(this.mcpServerDropdown).toBeVisible();
+    await expect(this.promptInputField).toBeVisible();
+    await expect(this.instructionInputField).toBeVisible();
+    await expect(this.generateButton).toBeVisible();
   }
 }

@@ -62,7 +62,9 @@ export class FlowDetailsPage extends BasePage {
   }
 
   async waitForLoad(): Promise<void> {
+    await expect(this.header).toBeVisible();
     await expect(this.heading).toContainText(this.flowName);
+    await expect(this.pageTabsRegion).toBeVisible();
   }
 
   async runFlow(): Promise<void> {
@@ -106,5 +108,24 @@ export class FlowDetailsPage extends BasePage {
     await tabLink.click();
 
     await expect(tabLink).toHaveClass(/text-\[var\(--pd-tab-text-highlight\)\]/);
+  }
+
+  async waitForTerminalReady(timeout = 10_000): Promise<void> {
+    await expect(this.terminalLocator).toBeVisible({ timeout });
+    await expect(this.terminalInput).toBeVisible({ timeout });
+  }
+
+  async waitForTerminalContent(textOrRegex: string | RegExp, timeout = 30_000): Promise<void> {
+    await expect(this.terminalContent).toContainText(textOrRegex, { timeout });
+  }
+
+  async sendTerminalInput(input: string, pressEnter = true): Promise<void> {
+    await this.waitForTerminalReady();
+    await expect(this.terminalInput).toBeEnabled();
+    await this.terminalInput.fill(input);
+    await expect(this.terminalInput).toHaveValue(input);
+    if (pressEnter) {
+      await this.terminalInput.press('Enter');
+    }
   }
 }
