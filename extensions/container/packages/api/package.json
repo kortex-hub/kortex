@@ -1,0 +1,25 @@
+{
+  "name": "@kortex-app/container-extension-api",
+  "version": "0.0.1",
+  "description": "API for Kortex Container extension",
+  "repository": "https://github.com/kortex-hub/kortex",
+  "publishConfig": {
+    "provenance": true,
+    "access": "public"
+  },
+  "license": "Apache-2.0",
+  "types": "./src/container-extension-api.d.ts",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "prepare": "",
+    "clean": "rimraf lib *.tsbuildinfo",
+    "build": "",
+    "watch": "",
+    "publish:next": "pnpm publish --registry=https://registry.npmjs.org/ --no-git-tag-version --new-version 0.0.1-\"$(date +%s)\""
+  },
+  "dependencies": {
+    "@kortex-app/api": "workspace:*"
+  }
+}
