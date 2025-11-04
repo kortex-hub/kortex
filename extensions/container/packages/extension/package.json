@@ -1,0 +1,36 @@
+{
+  "name": "container",
+  "displayName": "Container Extension",
+  "description": "Allows to interact with container engines (docker, podman, etc.)",
+  "version": "0.0.1-next",
+  "icon": "icon.png",
+  "publisher": "kortex",
+  "license": "Apache-2.0",
+  "engines": {
+    "kortex": "^0.0.1"
+  },
+  "main": "./dist/extension.js",
+  "source": "./src/extension.ts",
+  "scripts": {
+    "build": "vite build && node ./scripts/build.js",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest watch --coverage",
+    "watch": "vite build --watch"
+  },
+  "dependencies": {
+    "dockerode": "^4.0.7",
+    "inversify": "^7.7.1",
+    "stream-json": "^1.9.1",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@kortex-app/api": "workspace:*",
+    "@kortex-app/container-extension-api": "workspace:*",
+    "@types/dockerode": "^3.3.42",
+    "adm-zip": "^0.5.16",
+    "mkdirp": "^3.0.1",
+    "msw": "^2.10.4",
+    "vite": "^7.1.2",
+    "vitest": "^3.2.4"
+  }
+}
