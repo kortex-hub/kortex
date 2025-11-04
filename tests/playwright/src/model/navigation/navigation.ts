@@ -18,6 +18,7 @@
 
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import type { BasePage } from '../pages/base-page';
 import { ChatPage } from '../pages/chat-page';
 import { ExtensionsPage } from '../pages/extensions-page';
 import { FlowsPage } from '../pages/flows-page';
@@ -39,56 +40,40 @@ export class NavigationBar {
     this.chatLink = this.navigationLocator.getByRole('link', { name: 'Chat' });
     this.mcpLink = this.navigationLocator.getByRole('link', { name: 'MCP' });
     this.flowsLink = this.navigationLocator.getByRole('link', { name: 'Flows', exact: true });
-    this.settingsLink = this.navigationLocator.getByRole('link', { name: 'Settings', exact: true });
     this.extensionsLink = this.navigationLocator.getByRole('link', { name: 'Extensions', exact: true });
+    this.settingsLink = this.navigationLocator.getByRole('link', { name: 'Settings', exact: true });
   }
 
   getAllLinks(): Locator[] {
-    return [this.chatLink, this.flowsLink, this.mcpLink, this.extensionsLink, this.settingsLink];
+    return [this.chatLink, this.mcpLink, this.flowsLink, this.extensionsLink, this.settingsLink];
   }
 
-  async navigateToFlowsPage(): Promise<FlowsPage> {
-    await expect(this.flowsLink).toBeVisible();
-    await this.flowsLink.click();
+  private async navigateTo<T extends BasePage>(link: Locator, PageClass: new (page: Page) => T): Promise<T> {
+    await expect(link).toBeVisible();
+    await link.click();
 
-    const flowsPage = new FlowsPage(this.page);
-    await flowsPage.waitForLoad();
-    return flowsPage;
-  }
-
-  async navigateToSettingsPage(): Promise<SettingsPage> {
-    await expect(this.settingsLink).toBeVisible();
-    await this.settingsLink.click();
-
-    const settingsPage = new SettingsPage(this.page);
-    await settingsPage.waitForLoad();
-    return settingsPage;
-  }
-
-  async navigateToExtensionsPage(): Promise<ExtensionsPage> {
-    await expect(this.extensionsLink).toBeVisible();
-    await this.extensionsLink.click();
-
-    const extensionsPage = new ExtensionsPage(this.page);
-    await extensionsPage.waitForLoad();
-    return extensionsPage;
-  }
-
-  async navigateToMCPPage(): Promise<McpPage> {
-    await expect(this.mcpLink).toBeVisible();
-    await this.mcpLink.click();
-
-    const mcpPage = new McpPage(this.page);
-    await mcpPage.waitForLoad();
-    return mcpPage;
+    const pageInstance = new PageClass(this.page);
+    await pageInstance.waitForLoad();
+    return pageInstance;
   }
 
   async navigateToChatPage(): Promise<ChatPage> {
-    await expect(this.chatLink).toBeVisible();
-    await this.chatLink.click();
+    return this.navigateTo(this.chatLink, ChatPage);
+  }
 
-    const chatPage = new ChatPage(this.page);
-    await chatPage.waitForLoad();
-    return chatPage;
+  async navigateToMCPPage(): Promise<McpPage> {
+    return this.navigateTo(this.mcpLink, McpPage);
+  }
+
+  async navigateToFlowsPage(): Promise<FlowsPage> {
+    return this.navigateTo(this.flowsLink, FlowsPage);
+  }
+
+  async navigateToExtensionsPage(): Promise<ExtensionsPage> {
+    return this.navigateTo(this.extensionsLink, ExtensionsPage);
+  }
+
+  async navigateToSettingsPage(): Promise<SettingsPage> {
+    return this.navigateTo(this.settingsLink, SettingsPage);
   }
 }

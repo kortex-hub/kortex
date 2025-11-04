@@ -17,21 +17,7 @@
  ***********************************************************************/
 
 import { expect, type Locator, type Page } from '@playwright/test';
-
-const TIMEOUTS = {
-  DEFAULT: 120_000,
-  INITIALIZING_SCREEN: 180_000,
-  WELCOME_PAGE: 30_000,
-} as const;
-
-const SELECTORS = {
-  MAIN_ANY: 'main',
-  MAIN_INITIALIZING: 'main.flex.flex-row.w-screen.h-screen.justify-center',
-  MAIN_APP_CONTAINER: 'main.flex.flex-col.w-screen.h-screen.overflow-hidden',
-  TITLE_BAR: 'header#navbar',
-  WELCOME_PAGE: 'div:has-text("Get started with Kortex")',
-  NAVIGATION: { role: 'navigation' as const, name: 'AppNavigation' },
-} as const;
+import { type DialogOptions, SELECTORS, TIMEOUTS } from 'src/model/core/types';
 
 export async function waitForAppReady(page: Page, timeout = TIMEOUTS.DEFAULT): Promise<void> {
   try {
@@ -80,20 +66,42 @@ export async function handleDialogIfPresent(
     buttonName = 'Yes',
     timeout = 5_000,
     throwErrorOnFailOrMissing = false,
-  }: { dialogName?: string; buttonName?: string; timeout?: number; throwErrorOnFailOrMissing?: boolean } = {},
-): Promise<void> {
-  try {
-    const dialog = page.getByRole('dialog', { name: dialogName });
-    await expect(dialog).toBeVisible({ timeout });
+    waitForDialogToDisappear = true,
+  }: DialogOptions = {},
+): Promise<boolean> {
+  const dialog = page.getByRole('dialog', { name: dialogName, exact: true });
 
-    const button = dialog.getByRole('button', { name: buttonName });
+  try {
+    await expect(dialog).toBeVisible({ timeout });
+  } catch (error) {
+    if (throwErrorOnFailOrMissing) {
+      throw new Error(
+        `Dialog "${dialogName}" not found within ${timeout}ms: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    return false;
+  }
+
+  try {
+    const button = dialog.getByRole('button', { name: buttonName, exact: true });
     await expect(button).toBeEnabled({ timeout });
     await button.click();
-  } catch (error) {
-    console.log(`Dialog "${dialogName}" with button "${buttonName}" not found or failed to interact.`);
-    if (throwErrorOnFailOrMissing) {
-      throw error;
+
+    if (waitForDialogToDisappear) {
+      await expect(dialog).toBeHidden({ timeout });
     }
+
+    return true;
+  } catch (error) {
+    const errorMessage = `Failed to interact with dialog "${dialogName}" button "${buttonName}": ${
+      error instanceof Error ? error.message : String(error)
+    }`;
+    console.error(errorMessage);
+
+    if (throwErrorOnFailOrMissing) {
+      throw new Error(errorMessage);
+    }
+    return false;
   }
 }
 

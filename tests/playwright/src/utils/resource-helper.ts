@@ -15,29 +15,11 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import type { SettingsResourceId } from 'src/model/core/types';
+import type { ResourceId } from 'src/model/core/types';
+import { PROVIDERS } from 'src/model/core/types';
 
-export interface ResourceConfig {
-  readonly envVarName: string;
-  readonly resourceId: SettingsResourceId;
-}
-
-export const PROVIDERS = {
-  gemini: {
-    envVarName: 'GEMINI_API_KEY',
-    resourceId: 'gemini',
-  },
-  openai: {
-    envVarName: 'OPENAI_API_KEY',
-    resourceId: 'openai',
-  },
-  'openshift-ai': {
-    envVarName: 'OPENSHIFT_AI_TOKEN',
-    resourceId: 'openshiftai',
-  },
-} as const satisfies Record<string, ResourceConfig>;
-
-export type ResourceId = keyof typeof PROVIDERS;
+export { PROVIDERS };
+export type { ResourceId };
 
 export function getProviderCredentials(providerId: ResourceId): string | undefined {
   const provider = PROVIDERS[providerId];

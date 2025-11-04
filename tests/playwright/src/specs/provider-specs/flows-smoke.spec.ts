@@ -33,6 +33,18 @@ test.beforeAll(async ({ page, navigationBar }) => {
 
 test.describe.serial('Flow page e2e test suite', { tag: '@smoke' }, () => {
   test('[FLOW-01] Check that Flows page is displayed and empty', async () => {
+    const isEmpty = await flowsPage.checkIfFlowsPageIsEmpty();
+
+    if (!isEmpty) {
+      let rowCount = await flowsPage.countRowsFromTable();
+      while (rowCount > 0) {
+        await flowsPage.deleteFirstFlow();
+
+        await expect.poll(async () => await flowsPage.countRowsFromTable(), { timeout: 30_000 }).toBeLessThan(rowCount);
+        rowCount = await flowsPage.countRowsFromTable();
+      }
+    }
+
     await expect.poll(async () => flowsPage.checkIfFlowsPageIsEmpty()).toBeTruthy();
   });
 

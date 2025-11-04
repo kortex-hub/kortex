@@ -108,3 +108,48 @@ export const MCP_SERVERS = {
 } as const satisfies Record<string, MCPServerConfig>;
 
 export type MCPServerId = keyof typeof MCP_SERVERS;
+
+export interface ResourceConfig {
+  readonly envVarName: string;
+  readonly resourceId: SettingsResourceId;
+}
+
+export const PROVIDERS = {
+  gemini: {
+    envVarName: 'GEMINI_API_KEY',
+    resourceId: 'gemini',
+  },
+  openai: {
+    envVarName: 'OPENAI_API_KEY',
+    resourceId: 'openai',
+  },
+  'openshift-ai': {
+    envVarName: 'OPENSHIFT_AI_TOKEN',
+    resourceId: 'openshiftai',
+  },
+} as const satisfies Record<string, ResourceConfig>;
+
+export type ResourceId = keyof typeof PROVIDERS;
+
+export interface DialogOptions {
+  dialogName?: string;
+  buttonName?: string;
+  timeout?: number;
+  throwErrorOnFailOrMissing?: boolean;
+  waitForDialogToDisappear?: boolean;
+}
+
+export const TIMEOUTS = {
+  DEFAULT: 120_000,
+  INITIALIZING_SCREEN: 180_000,
+  WELCOME_PAGE: 30_000,
+} as const;
+
+export const SELECTORS = {
+  MAIN_ANY: 'main',
+  MAIN_INITIALIZING: 'main.flex.flex-row.w-screen.h-screen.justify-center',
+  MAIN_APP_CONTAINER: 'main.flex.flex-col.w-screen.h-screen.overflow-hidden',
+  TITLE_BAR: 'header#navbar',
+  WELCOME_PAGE: 'div:has-text("Get started with Kortex")',
+  NAVIGATION: { role: 'navigation' as const, name: 'AppNavigation' },
+} as const;

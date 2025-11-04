@@ -36,8 +36,8 @@ export abstract class BaseTablePage extends BasePage {
   }
 
   async countRowsFromTable(): Promise<number> {
-    const rows = await this.table.getByRole('row').all();
-    return rows.length - 1;
+    const rowCount = await this.table.getByRole('row').count();
+    return Math.max(0, rowCount - 1);
   }
 
   async ensureRowExists(name: string, timeout = 30_000, exact = true): Promise<void> {
@@ -54,5 +54,13 @@ export abstract class BaseTablePage extends BasePage {
       throw new Error(`Row with name '${name}' does not exist`);
     }
     return row;
+  }
+
+  async getRowLocatorByIndex(index: number): Promise<Locator> {
+    const rows = await this.table.getByRole('row').all();
+    if (index < 0 || index >= rows.length) {
+      throw new Error(`Row index ${index} is out of bounds. Table has ${rows.length} row(s)`);
+    }
+    return rows[index];
   }
 }

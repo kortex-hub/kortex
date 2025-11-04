@@ -53,7 +53,7 @@ export class FlowsPage extends BaseTablePage {
     await this.waitForLoad();
     const row = await this.getRowLocatorByName(name, exact);
 
-    const runButton = row.getByRole('button', { name: 'Run this recipe' }).first();
+    const runButton = await this.getRunButtonForRow(row);
     await expect(runButton).toBeEnabled();
     await runButton.click();
 
@@ -64,7 +64,23 @@ export class FlowsPage extends BaseTablePage {
     await this.waitForLoad();
     const row = await this.getRowLocatorByName(name, exact);
 
-    const deleteButton = row.getByRole('button', { name: 'Delete' }).first();
+    const deleteButton = await this.getDeleteButtonForRow(row);
+    await expect(deleteButton).toBeEnabled();
+    await deleteButton.click();
+    await handleDialogIfPresent(this.page);
+  }
+
+  async deleteFirstFlow(): Promise<void> {
+    await this.waitForLoad();
+    const rowCount = await this.countRowsFromTable();
+    if (rowCount === 0) {
+      return;
+    }
+
+    // Index 0 is the header row, so index 1 is the first data row
+    const row = await this.getRowLocatorByIndex(1);
+
+    const deleteButton = await this.getDeleteButtonForRow(row);
     await expect(deleteButton).toBeEnabled();
     await deleteButton.click();
     await handleDialogIfPresent(this.page);
@@ -102,5 +118,17 @@ export class FlowsPage extends BaseTablePage {
     const row = await this.getRowLocatorByName(name, exact);
 
     return row.getByRole('button').first();
+  }
+
+  private async getRowButtonByLabel(row: Locator, label: string): Promise<Locator> {
+    return row.getByLabel(label, { exact: true }).first();
+  }
+
+  private async getDeleteButtonForRow(row: Locator): Promise<Locator> {
+    return this.getRowButtonByLabel(row, 'Delete');
+  }
+
+  private async getRunButtonForRow(row: Locator): Promise<Locator> {
+    return this.getRowButtonByLabel(row, 'Run this recipe');
   }
 }
