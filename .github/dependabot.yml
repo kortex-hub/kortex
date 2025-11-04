@@ -53,3 +53,9 @@ updates:
           dependency-type: "all"
         - dependency-name: "random-words"
           dependency-type: "all"
+    groups:
+      ai-sdk:
+        applies-to: version-updates
+        patterns:
+          - "@ai-sdk/mcp"
+          - "ai"
