@@ -87,5 +87,24 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
 
     await chatPage.deleteAllChatHistoryItems();
     await chatPage.verifyChatHistoryEmpty();
+
+    await chatPage.ensureNotificationsAreNotVisible();
+  });
+
+  test('[CHAT-05] Switch between all available models and verify each selection', async () => {
+    const modelCount = await chatPage.getAvailableModelsCount();
+
+    test.skip(modelCount < 2, 'Skipping test: Less than 2 models available');
+
+    const modelsToTest = Math.min(modelCount, 3);
+
+    for (let i = 1; i < modelsToTest; i++) {
+      await chatPage.selectModelByIndex(i);
+      const selectedModel = await chatPage.getSelectedModelName();
+      await chatPage.clickNewChat();
+      const testMessage = `Test message for ${selectedModel}`;
+      await chatPage.sendMessage(testMessage);
+      await chatPage.verifyConversationMessage(testMessage);
+    }
   });
 });

@@ -125,6 +125,7 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
             configuredServers.push({ id, serverName: server.serverName });
           } catch (error) {
             console.warn(`MCP setup skipped for ${id}:`, error);
+            throw error;
           }
         }
 

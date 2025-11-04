@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import { expect, type Locator, type Page } from '@playwright/test';
-import { handleDialogIfPresent } from 'src/utils/app-ready';
+import { clearAllToasts, dropdownAction, handleDialogIfPresent } from 'src/utils/app-ready';
 
 import { BasePage } from './base-page';
 
@@ -35,7 +35,11 @@ export class ChatPage extends BasePage {
   readonly conversationMessages: Locator;
   readonly chatHistoryItem: Locator;
   readonly chatHistoryItemMenuAction: Locator;
+  readonly chatHistoryItemDeleteButton: Locator;
   readonly chatHistoryEmptyMessage: Locator;
+  readonly toasts: Locator;
+  readonly modelMenuItems: Locator;
+  readonly activeModelMenuItem: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -52,7 +56,11 @@ export class ChatPage extends BasePage {
     this.conversationMessages = page.locator('div[data-role]');
     this.chatHistoryItem = page.locator('button[data-sidebar="menu-button"]');
     this.chatHistoryItemMenuAction = page.locator('button[data-sidebar="menu-action"]');
+    this.chatHistoryItemDeleteButton = page.getByRole('menuitem', { name: 'Delete' });
     this.chatHistoryEmptyMessage = page.getByText('Your conversations will appear here once you start chatting!');
+    this.toasts = page.locator('[data-sonner-toast]');
+    this.modelMenuItems = page.getByRole('menuitem');
+    this.activeModelMenuItem = page.locator('[role="menuitem"][data-active="true"]');
   }
 
   async waitForLoad(): Promise<void> {
@@ -134,7 +142,7 @@ export class ChatPage extends BasePage {
   async deleteChatHistoryItemByIndex(index: number): Promise<void> {
     const item = this.chatHistoryItems.nth(index);
     await item.locator(this.chatHistoryItemMenuAction).click();
-    await this.page.getByRole('menuitem', { name: 'Delete' }).click();
+    await this.chatHistoryItemDeleteButton.click();
     await handleDialogIfPresent(this.page);
   }
 
@@ -153,5 +161,29 @@ export class ChatPage extends BasePage {
 
   async verifyConversationMessage(message: string): Promise<void> {
     await expect(this.conversationMessages.locator('p').getByText(message, { exact: true })).toBeVisible();
+  }
+
+  async ensureNotificationsAreNotVisible(): Promise<void> {
+    await clearAllToasts(this.page, this.toasts);
+  }
+
+  async getAvailableModelsCount(): Promise<number> {
+    return await dropdownAction(this.page, this.modelDropdownSelector, async () => {
+      return await this.modelMenuItems.count();
+    });
+  }
+
+  async selectModelByIndex(index: number): Promise<void> {
+    await this.modelDropdownSelector.click();
+    const modelItem = this.modelMenuItems.nth(index);
+    await expect(modelItem).toBeVisible();
+    await modelItem.click();
+  }
+
+  async getSelectedModelName(): Promise<string> {
+    return await dropdownAction(this.page, this.modelDropdownSelector, async () => {
+      const text = await this.activeModelMenuItem.textContent();
+      return text?.trim() ?? '';
+    });
   }
 }
