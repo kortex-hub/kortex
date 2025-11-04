@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@kortex-app/api": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.20.2",
+    "@modelcontextprotocol/sdk": "^1.21.0",
     "@octokit/rest": "^21.1.0",
     "mustache": "^4.2.0",
     "random-words": "^2.0.1",
