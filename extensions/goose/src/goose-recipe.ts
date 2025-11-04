@@ -27,6 +27,7 @@ import type {
   FlowGenerateKubernetesOptions,
   FlowGenerateKubernetesResult,
   FlowGenerateOptions,
+  FlowParameter,
   Logger,
   Provider,
   provider as ProviderAPI,
@@ -57,6 +58,14 @@ export interface RecipeExtension {
   headers?: Record<string, string>;
 }
 
+export interface RecipeParameter {
+  key: string;
+  input_type: string;
+  requirement: 'optional' | 'required';
+  description: string;
+  default: string;
+}
+
 export interface RecipeWithExtensions {
   extensions?: Array<RecipeExtension>;
 }
@@ -84,13 +93,20 @@ export class GooseRecipe implements Disposable {
     const recipes = await this.gooseCLI.getRecipes({
       path: basePath,
     });
+
     // map Recipe to Flow
-    return recipes.map(({ path }) => {
-      return {
-        id: Buffer.from(path).toString('base64'),
-        path,
-      };
-    });
+    return Promise.all(
+      recipes.map(async ({ path }) => {
+        const flowId = Buffer.from(path).toString('base64');
+        const { parameters } = await this.getFlowInfos(flowId);
+
+        return {
+          id: flowId,
+          parameters,
+          path,
+        };
+      }),
+    );
   }
 
   protected async getFlowPath(flowId: string): Promise<string> {
@@ -227,6 +243,7 @@ export class GooseRecipe implements Disposable {
     recipeName: string;
     flowPath: string;
     content: string;
+    parameters: Array<FlowParameter>;
   }> {
     const flowPath = await this.getFlowPath(flowId);
 
@@ -235,6 +252,14 @@ export class GooseRecipe implements Disposable {
     const recipeName = basename(flowPath).split('.')[0];
 
     const parsed = parse(content);
+
+    const parameters: Array<FlowParameter> = (parsed['parameters'] ?? []).map((param: RecipeParameter) => ({
+      required: param.requirement === 'required',
+      name: param.key,
+      description: param.description,
+      default: param.default,
+      format: param.input_type,
+    }));
 
     const providerId = parsed['settings']?.['goose_provider']
       ? goose2KortexProvider(parsed['settings']['goose_provider'])
@@ -259,7 +284,8 @@ export class GooseRecipe implements Disposable {
           throw new Error(`Unsupported provider ${providerId}`);
       }
     }
-    return { env: getGooseEnv(), providerId, recipeName, flowPath, content };
+
+    return { env: getGooseEnv(), parameters, providerId, recipeName, flowPath, content };
   }
 
   protected async deployKubernetes(options: FlowGenerateKubernetesOptions): Promise<FlowGenerateKubernetesResult> {

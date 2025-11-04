@@ -403,9 +403,18 @@ declare module '@kortex-app/api' {
     vmTypeDisplayName?: string;
   }
 
+  export interface FlowParameter {
+    required: boolean;
+    name: string;
+    description: string;
+    format: string;
+    default: string;
+  }
+
   export interface Flow {
     id: string;
     path: string;
+    parameters?: Array<FlowParameter>;
   }
 
   export interface FlowGenerateKubernetesResult {

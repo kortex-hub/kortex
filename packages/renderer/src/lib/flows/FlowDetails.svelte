@@ -3,6 +3,9 @@ import { Spinner, Tab } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 import { router } from 'tinro';
 
+import DetailsCell from '/@/lib/details/DetailsCell.svelte';
+import DetailsTable from '/@/lib/details/DetailsTable.svelte';
+import DetailsTitle from '/@/lib/details/DetailsTitle.svelte';
 import MonacoEditor from '/@/lib/editor/MonacoEditor.svelte';
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
@@ -31,6 +34,7 @@ let provider = $derived($providerInfos.find(provider => provider.id === provider
 let connection: ProviderFlowConnectionInfo | undefined = $derived(
   provider?.flowConnections.find(connection => connection.name === connectionName),
 );
+
 let flowInfo: FlowInfo | undefined = $derived($flowsInfos.find(({ id }) => id === flowId));
 
 let flowContent: string | undefined = $state(undefined);
@@ -71,7 +75,7 @@ function setSelectedFlowExecuteId(flowExecuteId: string): void {
 }
 </script>
 
-<DetailsPage  title={flowInfo?.path ?? ''}>
+<DetailsPage title={flowInfo?.path ?? ''}>
   {#snippet tabsSnippet()}
     <Tab title="Summary" selected={isTabSelected($router.path, 'summary')} url={getTabUrl($router.path, 'summary')} />
     <Tab title="Source" selected={isTabSelected($router.path, 'source')} url={getTabUrl($router.path, 'source')} />
@@ -95,11 +99,71 @@ function setSelectedFlowExecuteId(flowExecuteId: string): void {
       </div>
     {:else}
       <Route path="/summary" breadcrumb="Summary" navigationHint="tab">
-        <ul>
-          <li>{providerId} => {provider?.name}</li>
-          <li>{connectionName} => {connection?.name}</li>
-          <li>{flowId} => {flowInfo?.path}</li>
-        </ul>
+        {#if flowInfo}
+          <div class="h-min">
+            <DetailsTable>
+              <tr>
+                <DetailsTitle>Details</DetailsTitle>
+              </tr>
+              <tr>
+                <DetailsCell>Provider</DetailsCell>
+                <DetailsCell>{provider?.name}</DetailsCell>
+              </tr>
+              <tr>
+                <DetailsCell>Connection</DetailsCell>
+                <DetailsCell>{connection?.name}</DetailsCell>
+              </tr>
+              <tr>
+                <DetailsCell>Path</DetailsCell>
+                <DetailsCell>{flowInfo.path}</DetailsCell>
+              </tr>
+            </DetailsTable>
+          </div>
+
+          {#if (flowInfo.parameters ?? []).length > 0}
+            <div class="h-min">
+              <DetailsTable>
+                <tr>
+                  <DetailsTitle>Flow Parameters</DetailsTitle>
+                </tr>
+                <tr>
+                  <DetailsCell>
+                    <tr>
+                      <DetailsCell>
+                        <strong>Name</strong>
+                      </DetailsCell>
+                      <DetailsCell>
+                        <strong>Description</strong>
+                      </DetailsCell>
+                      <DetailsCell>
+                        <strong>Required</strong>
+                      </DetailsCell>
+                      <DetailsCell>
+                        <strong>Default</strong>
+                      </DetailsCell>
+                    </tr>
+                    {#each (flowInfo.parameters ?? []) as param (param.name)}
+                      <tr>
+                        <DetailsCell>
+                          {param.name}
+                        </DetailsCell>
+                        <DetailsCell>
+                          {param.description}
+                        </DetailsCell>
+                        <DetailsCell>
+                          {param.required}
+                        </DetailsCell>
+                        <DetailsCell>
+                          {param.default}
+                        </DetailsCell>
+                      </tr>
+                    {/each}
+                  </DetailsCell>
+                </tr>
+              </DetailsTable>
+            </div>
+          {/if}
+        {/if}
       </Route>
       <Route path="/source" breadcrumb="Source" navigationHint="tab">
         <MonacoEditor content={flowContent} language="yaml" readOnly={true} />

@@ -26,4 +26,11 @@ export interface FlowInfo {
   id: string;
   path: string;
   name: string;
+  parameters?: Array<{
+    required: boolean;
+    name: string;
+    description: string;
+    format: string;
+    default: string;
+  }>;
 }
