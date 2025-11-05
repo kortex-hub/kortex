@@ -61,9 +61,9 @@ export interface RecipeExtension {
 export interface RecipeParameter {
   key: string;
   input_type: string;
-  requirement: 'optional' | 'required';
+  requirement: 'optional' | 'required' | 'user_prompt';
   description: string;
-  default: string;
+  default?: string;
 }
 
 export interface RecipeWithExtensions {
@@ -254,7 +254,7 @@ export class GooseRecipe implements Disposable {
     const parsed = parse(content);
 
     const parameters: Array<FlowParameter> = (parsed['parameters'] ?? []).map((param: RecipeParameter) => ({
-      required: param.requirement === 'required',
+      required: param.requirement !== 'optional',
       name: param.key,
       description: param.description,
       default: param.default,

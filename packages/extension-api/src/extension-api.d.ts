@@ -408,7 +408,7 @@ declare module '@kortex-app/api' {
     name: string;
     description: string;
     format: string;
-    default: string;
+    default?: string;
   }
 
   export interface Flow {
