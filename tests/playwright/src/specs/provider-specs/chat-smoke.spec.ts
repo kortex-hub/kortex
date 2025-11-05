@@ -15,24 +15,15 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { test } from '../../fixtures/provider-fixtures';
+import { expect, test } from '../../fixtures/provider-fixtures';
 import type { ChatPage } from '../../model/pages/chat-page';
 import { waitForNavigationReady } from '../../utils/app-ready';
-import { hasApiKey, PROVIDERS } from '../../utils/resource-helper';
 
 let chatPage: ChatPage;
 
-test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
-  test.beforeAll(async ({ resource }) => {
-    if (process.env.CI) {
-      test.skip(true, 'Skipping chat test on CI');
-    }
-    if (!hasApiKey(resource)) {
-      const provider = PROVIDERS[resource];
-      test.skip(true, `${provider.envVarName} environment variable is not set`);
-    }
-  });
+test.skip(!!process.env.CI, 'Skipping chat tests on CI');
 
+test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
   test.beforeEach(async ({ page, navigationBar }) => {
     await waitForNavigationReady(page);
     chatPage = await navigationBar.navigateToChatPage();
@@ -46,44 +37,41 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
 
   test('[CHAT-02] Create and check new chat history item', async () => {
     await chatPage.ensureSidebarVisible();
-    let expectedCount = await chatPage.getChatHistoryCount();
-    const suggestedMessages = chatPage.getSuggestedMessages();
-    await suggestedMessages.last().click();
-    await chatPage.waitForResponse();
-    expectedCount++;
-    await chatPage.waitForChatHistoryCount(expectedCount);
+    const initialCount = await chatPage.getChatHistoryCount();
+    await chatPage.getSuggestedMessages().last().click();
+    await chatPage.waitForChatHistoryCount(initialCount + 1, 15_000);
   });
 
   test('[CHAT-03] Create and switch between multiple chat sessions without data loss', async () => {
     await chatPage.ensureSidebarVisible();
-    let expectedCount = await chatPage.getChatHistoryCount();
+    let messageCount = await chatPage.getChatHistoryCount();
 
-    await chatPage.clickNewChat();
-    const firstMessage = 'What is Kubernetes?';
-    await chatPage.sendMessage(firstMessage);
-    expectedCount++;
-    await chatPage.waitForChatHistoryCount(expectedCount);
+    const chatSessions = [
+      { message: 'What is Kubernetes?', expectedIndex: 1 },
+      { message: 'Explain Docker containers', expectedIndex: 0 },
+    ];
 
-    await chatPage.clickNewChat();
-    const secondMessage = 'Explain Docker containers';
-    await chatPage.sendMessage(secondMessage);
-    expectedCount++;
-    await chatPage.waitForChatHistoryCount(expectedCount);
+    for (const session of chatSessions) {
+      await chatPage.clickNewChat();
+      await chatPage.sendMessage(session.message);
 
-    await chatPage.clickChatHistoryItemByIndex(1);
-    await chatPage.verifyConversationMessage(firstMessage);
+      messageCount++;
+      await chatPage.waitForChatHistoryCount(messageCount);
+    }
 
-    await chatPage.clickChatHistoryItemByIndex(0);
-    await chatPage.verifyConversationMessage(secondMessage);
+    for (const session of chatSessions) {
+      await chatPage.clickChatHistoryItemByIndex(session.expectedIndex);
+      await chatPage.verifyConversationMessage(session.message);
+    }
   });
 
   test('[CHAT-04] Delete single chat item and then delete all remaining items', async () => {
     await chatPage.ensureSidebarVisible();
-    let expectedCount = await chatPage.getChatHistoryCount();
+    const initialCount = await chatPage.getChatHistoryCount();
 
     await chatPage.deleteChatHistoryItemByIndex(0);
-    expectedCount--;
-    await chatPage.waitForChatHistoryCount(expectedCount);
+    const expectedCountAfterSingleDelete = initialCount - 1;
+    await chatPage.waitForChatHistoryCount(expectedCountAfterSingleDelete);
 
     await chatPage.deleteAllChatHistoryItems();
     await chatPage.verifyChatHistoryEmpty();
@@ -94,15 +82,21 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
   test('[CHAT-05] Switch between all available models and verify each selection', async () => {
     const modelCount = await chatPage.getAvailableModelsCount();
 
-    test.skip(modelCount < 2, 'Skipping test: Less than 2 models available');
+    if (modelCount < 2) {
+      test.skip(true, 'Skipping test: Less than 2 models available');
+      return;
+    }
 
-    const modelsToTest = Math.min(modelCount, 3);
+    const maxModelsToTest = Math.min(modelCount, 3);
 
-    for (let i = 1; i < modelsToTest; i++) {
-      await chatPage.selectModelByIndex(i);
-      const selectedModel = await chatPage.getSelectedModelName();
+    for (let modelIndex = 0; modelIndex < maxModelsToTest; modelIndex++) {
+      await chatPage.selectModelByIndex(modelIndex);
+      const selectedModelName = await chatPage.getSelectedModelName();
+      expect(selectedModelName).toBeTruthy();
+
       await chatPage.clickNewChat();
-      const testMessage = `Test message for ${selectedModel}`;
+
+      const testMessage = `Test message for model: ${selectedModelName}`;
       await chatPage.sendMessage(testMessage);
       await chatPage.verifyConversationMessage(testMessage);
     }

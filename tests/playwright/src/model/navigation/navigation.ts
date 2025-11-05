@@ -33,6 +33,7 @@ export class NavigationBar {
   readonly flowsLink: Locator;
   readonly extensionsLink: Locator;
   readonly settingsLink: Locator;
+  private readonly links: Locator[];
 
   constructor(page: Page) {
     this.page = page;
@@ -42,10 +43,11 @@ export class NavigationBar {
     this.flowsLink = this.navigationLocator.getByRole('link', { name: 'Flows', exact: true });
     this.extensionsLink = this.navigationLocator.getByRole('link', { name: 'Extensions', exact: true });
     this.settingsLink = this.navigationLocator.getByRole('link', { name: 'Settings', exact: true });
+    this.links = [this.chatLink, this.mcpLink, this.flowsLink, this.extensionsLink, this.settingsLink];
   }
 
   getAllLinks(): Locator[] {
-    return [this.chatLink, this.mcpLink, this.flowsLink, this.extensionsLink, this.settingsLink];
+    return this.links;
   }
 
   private async navigateTo<T extends BasePage>(link: Locator, PageClass: new (page: Page) => T): Promise<T> {

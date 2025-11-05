@@ -117,10 +117,6 @@ export class ChatPage extends BasePage {
     await this.page.waitForTimeout(timeout);
   }
 
-  async waitForResponse(timeout = 5_000): Promise<void> {
-    await this.page.waitForTimeout(timeout);
-  }
-
   async clickNewChat(): Promise<void> {
     const isSidebarOpen = await this.sidebarNewChatButton.isVisible();
     if (isSidebarOpen) {
