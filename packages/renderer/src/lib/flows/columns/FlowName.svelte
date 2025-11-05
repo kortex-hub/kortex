@@ -3,14 +3,11 @@ import { handleNavigation } from '/@/navigation';
 import type { FlowInfo } from '/@api/flow-info';
 import { NavigationPage } from '/@api/navigation-page';
 
-import { getFlowName } from '../flow-utils';
-
 interface Props {
   object: FlowInfo;
 }
 
 let { object }: Props = $props();
-let fileName = $derived(getFlowName(object.path));
 
 function openDetails(workflow: FlowInfo): void {
   handleNavigation({
@@ -30,8 +27,8 @@ function openDetails(workflow: FlowInfo): void {
       <div class="flex flex-col flex-nowrap max-w-full items-start">
         <div
           class="text-[var(--pd-table-body-text-highlight)] overflow-hidden text-ellipsis group-hover:text-[var(--pd-link)]"
-          title={fileName}>
-          {fileName}
+          title={object.name}>
+          {object.name}
         </div>
         <div class="text-[var(--pd-table-body-text-sub-secondary)] text-sm">
           {object.path}

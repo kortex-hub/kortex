@@ -12,7 +12,6 @@ import { NavigationPage } from '/@api/navigation-page';
 import FlowIcon from '../images/FlowIcon.svelte';
 import EmptyFlowScreen from './components/EmptyFlowScreen.svelte';
 import NoFlowProviders from './components/NoFlowProviders.svelte';
-import { getFlowName } from './flow-utils';
 import FlowActions from './FlowActions.svelte';
 
 type FlowSelectable = FlowInfo & { selected: boolean };
@@ -29,7 +28,7 @@ const itemColumn = new TableColumn<FlowSelectable>('', {
 let pathColumn = new TableColumn<FlowSelectable>('Flow', {
   width: '2fr',
   renderer: FlowName,
-  comparator: (a, b): number => getFlowName(a.path).localeCompare(getFlowName(b.path)),
+  comparator: (a, b): number => a.name.localeCompare(b.name),
 });
 
 const flowActions = new TableColumn<FlowSelectable>('Actions', {
@@ -71,7 +70,7 @@ function navigateToCreateFlow(): void {
         {:else}
           <Table
             kind="flows"
-            data={$flowsInfos.map((flow) => ({ ...flow, selected: false, name: flow.path }))}
+            data={$flowsInfos.map((flow) => ({ ...flow, selected: false }))}
             columns={columns}
             row={row}
             defaultSortColumn="Flow"

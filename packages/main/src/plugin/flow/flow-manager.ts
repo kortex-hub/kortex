@@ -15,6 +15,8 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+import { basename, extname } from 'node:path';
+
 import type { Disposable, Flow, FlowProviderConnection, Logger } from '@kortex-app/api';
 import { inject, injectable, preDestroy } from 'inversify';
 
@@ -78,6 +80,10 @@ export class FlowManager implements Disposable {
     return `${providerId}:${connectionName}`;
   }
 
+  protected getFlowName(flowPath: string): string {
+    return basename(flowPath, extname(flowPath));
+  }
+
   all(): Array<FlowInfo> {
     return Array.from(this.#flows.entries()).flatMap(([key, flows]) => {
       const [providerId, connectionName] = key.split(':'); // TODO: might do something better?
@@ -88,6 +94,7 @@ export class FlowManager implements Disposable {
       return flows.map(flow => ({
         providerId,
         connectionName,
+        name: this.getFlowName(flow.path),
         ...flow,
       }));
     });
@@ -108,6 +115,7 @@ export class FlowManager implements Disposable {
       providerId,
       id: flowId,
       path: '',
+      name: '',
     };
     const flowExecuteInfo: FlowExecuteInfo = {
       taskId: task.id,

@@ -25,20 +25,16 @@ import type { FlowInfo } from '/@api/flow-info';
 
 import FlowName from './FlowName.svelte';
 
-test.each([
-  ['/some/path/filename1.yaml', 'filename1'],
-  ['/some/path/filename2', 'filename2'],
-  ['\\some\\path\\filename3.yaml', 'filename3'],
-  ['/filename4', 'filename4'],
-])('Get from %s path filename %s', (path: string, fileName: string) => {
+test('Display flow name as main text and flow path as secondary text', () => {
   const flowInfo: FlowInfo = {
     providerId: 'provider1',
     connectionName: 'connection1',
     id: 'flow1',
-    path: path,
+    path: '/some/path',
+    name: 'Flow 1',
   };
   render(FlowName, { object: flowInfo });
 
-  expect(screen.getByText(fileName)).toBeInTheDocument();
-  expect(screen.getByText(path)).toBeInTheDocument();
+  expect(screen.getByText('/some/path')).toBeInTheDocument();
+  expect(screen.getByText('Flow 1')).toBeInTheDocument();
 });
