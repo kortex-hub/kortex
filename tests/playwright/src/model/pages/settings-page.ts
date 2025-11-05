@@ -31,6 +31,7 @@ export class SettingsPage extends BasePage {
   readonly cliTab: Locator;
   readonly proxyTab: Locator;
   readonly preferencesTab: Locator;
+  private readonly tabs: Locator[];
 
   constructor(page: Page) {
     super(page);
@@ -38,6 +39,7 @@ export class SettingsPage extends BasePage {
     this.cliTab = page.getByRole('link', { name: 'CLI' });
     this.proxyTab = page.getByRole('link', { name: 'Proxy' });
     this.preferencesTab = page.getByRole('link', { name: 'Preferences' });
+    this.tabs = [this.resourcesTab, this.cliTab, this.proxyTab, this.preferencesTab];
   }
 
   async waitForLoad(): Promise<void> {
@@ -64,7 +66,7 @@ export class SettingsPage extends BasePage {
   }
 
   getAllTabs(): Locator[] {
-    return [this.resourcesTab, this.cliTab, this.proxyTab, this.preferencesTab];
+    return this.tabs;
   }
 
   async createResource(providerId: ResourceId, credentials: string): Promise<void> {

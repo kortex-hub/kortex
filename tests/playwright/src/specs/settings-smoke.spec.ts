@@ -26,25 +26,32 @@ import { expect, test } from '../fixtures/electron-app';
 import type { SettingsPage } from '../model/pages/settings-page';
 import { waitForNavigationReady } from '../utils/app-ready';
 
-let settingsPage: SettingsPage;
-
-test.beforeEach(async ({ page, navigationBar }) => {
-  await waitForNavigationReady(page);
-  settingsPage = await navigationBar.navigateToSettingsPage();
-});
-
 test.describe('Settings page navigation', { tag: '@smoke' }, () => {
+  let settingsPage: SettingsPage;
+
+  test.beforeEach(async ({ page, navigationBar }) => {
+    await waitForNavigationReady(page);
+    settingsPage = await navigationBar.navigateToSettingsPage();
+  });
+
   test('[SET-01] All settings tabs are visible', async () => {
-    for (const tab of settingsPage.getAllTabs()) {
+    const tabs = settingsPage.getAllTabs();
+    const expectedTabCount = 4; // Resources, CLI, Proxy, Preferences
+
+    expect(tabs).toHaveLength(expectedTabCount);
+
+    for (const tab of tabs) {
       await expect(tab).toBeVisible();
     }
   });
 
   test('[SET-02] Resources tab shows all providers with create buttons', async () => {
     const resourcesPage = await settingsPage.openResources();
+
     for (const resourceId of featuredResources) {
       await expect(resourcesPage.getResourceRegion(resourceId)).toBeVisible();
     }
+
     for (const displayName of resourcesWithCreateButton) {
       const createButton = resourcesPage.getResourceCreateButton(displayName);
       await expect(createButton).toBeVisible();
@@ -54,16 +61,21 @@ test.describe('Settings page navigation', { tag: '@smoke' }, () => {
 
   test('[SET-03] CLI tab shows goose CLI tool', async () => {
     const cliPage = await settingsPage.openCli();
+
     await expect(cliPage.toolName).toBeVisible();
     await expect(cliPage.toolName).toHaveText('goose');
   });
 
-  test('[SET-04] Proxy tab configurations', async () => {
+  test('[SET-04] Proxy tab configurations and fields', async () => {
     const proxyPage = await settingsPage.openProxy();
     await proxyPage.verifyProxyConfigurationOptions();
-    for (const field of proxyPage.getProxyFields()) {
+    const proxyFields = proxyPage.getProxyFields();
+    expect(proxyFields.length).toBeGreaterThan(0);
+
+    for (const field of proxyFields) {
       await expect(field).toBeVisible();
     }
+
     for (const config of proxyConfigurations) {
       await proxyPage.selectProxyConfigurationAndVerifyFields(config.option, config.editable);
     }
@@ -71,14 +83,21 @@ test.describe('Settings page navigation', { tag: '@smoke' }, () => {
 
   test('[SET-05] Preferences submenu items are visible and can be interacted with', async () => {
     const preferencesPage = await settingsPage.openPreferences();
-    for (const option of preferenceOptions()) {
+    const options = preferenceOptions();
+    expect(options.length).toBeGreaterThan(0);
+
+    for (const option of options) {
       await preferencesPage.selectPreference(option);
+      await expect(preferencesPage.getPreferenceContent(option)).toBeVisible();
     }
   });
 
   test('[SET-06] Preferences search filters options correctly', async () => {
     const preferencesPage = await settingsPage.openPreferences();
-    for (const option of preferenceOptions()) {
+    const options = preferenceOptions();
+    expect(options.length).toBeGreaterThan(0);
+
+    for (const option of options) {
       await preferencesPage.searchPreferences(option);
       await expect(preferencesPage.getPreferenceContent(option)).toBeVisible();
       await preferencesPage.clearSearch();

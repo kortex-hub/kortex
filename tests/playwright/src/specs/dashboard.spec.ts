@@ -15,6 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+import { TIMEOUTS } from 'src/model/core/types';
 import { waitForNavigationReady } from 'src/utils/app-ready';
 
 import { expect, test } from '../fixtures/electron-app';
@@ -24,10 +25,15 @@ test.describe.serial('App start', { tag: '@smoke' }, () => {
     await waitForNavigationReady(page);
   });
 
-  test('[APP-01] App is started and navigation bar and its items are visible', async ({ navigationBar }) => {
-    await expect(navigationBar.navigationLocator).toBeVisible({ timeout: 120_000 });
-    for (const link of navigationBar.getAllLinks()) {
-      await expect(link).toBeVisible({ timeout: 120_000 });
+  test('[APP-01] Navigation bar is visible and contains all expected navigation links', async ({ navigationBar }) => {
+    await expect(navigationBar.navigationLocator).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
+    const expectedLinksCount = 5; // Chat, MCP, Flows, Extensions, Settings
+
+    const allLinks = navigationBar.getAllLinks();
+    expect(allLinks).toHaveLength(expectedLinksCount);
+
+    for (const link of allLinks) {
+      await expect(link).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
     }
   });
 });

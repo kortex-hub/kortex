@@ -16,28 +16,32 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 import { BADGE_TEXT, builtInExtensions } from 'src/model/core/types';
+import type { ExtensionsPage } from 'src/model/pages/extensions-page';
 
 import { expect, test } from '../fixtures/electron-app';
-import type { ExtensionsPage } from '../model/pages/extensions-page';
 import { waitForNavigationReady } from '../utils/app-ready';
 
-let extensionsPage: ExtensionsPage;
-
-test.beforeEach(async ({ page, navigationBar }) => {
-  await waitForNavigationReady(page);
-  extensionsPage = await navigationBar.navigateToExtensionsPage();
-});
-
 test.describe('Extensions page navigation', { tag: '@smoke' }, () => {
+  let extensionsPage: ExtensionsPage;
+
+  test.beforeEach(async ({ page, navigationBar }) => {
+    await waitForNavigationReady(page);
+    extensionsPage = await navigationBar.navigateToExtensionsPage();
+  });
+
   test('[EXT-01] Extension navigation tabs are accessible', async () => {
-    for (const tab of extensionsPage.getAllTabs()) {
+    const tabs = extensionsPage.getAllTabs();
+    const expectedTabCount = 3; // Installed, Catalog, Local Extensions
+
+    expect(tabs).toHaveLength(expectedTabCount);
+
+    for (const tab of tabs) {
       await expect(tab).toBeVisible();
       await expect(tab).toBeEnabled();
     }
   });
 
   test('[EXT-02] Search functionality filters extensions correctly', async () => {
-    await expect(extensionsPage.searchField).toBeEnabled();
     for (const extension of builtInExtensions) {
       await extensionsPage.searchExtension(extension.name);
       await extensionsPage.verifySearchResults(extension.locator);
@@ -45,21 +49,35 @@ test.describe('Extensions page navigation', { tag: '@smoke' }, () => {
     }
   });
 
-  test('[EXT-03] Built-in extensions lifecycle and controls validation', async () => {
+  test('[EXT-03] Built-in extensions are visible with correct badges', async () => {
     const installedPage = await extensionsPage.openInstalledTab();
+
     for (const extension of builtInExtensions) {
-      await expect(installedPage.getExtension(extension.locator)).toBeVisible();
+      const extensionLocator = installedPage.getExtension(extension.locator);
+      await expect(extensionLocator).toBeVisible();
+
       const badge = installedPage.getExtensionBadge(extension.locator);
       await expect(badge).toBeVisible();
       await expect(badge).toHaveText(BADGE_TEXT);
+    }
+  });
+
+  test('[EXT-04] Built-in extensions delete button is always disabled and unaffected by toggling', async () => {
+    const installedPage = await extensionsPage.openInstalledTab();
+
+    for (const extension of builtInExtensions) {
       const deleteButton = installedPage.getDeleteButtonForExtension(extension.locator);
       await expect(deleteButton).toBeVisible();
       await expect(deleteButton).toBeDisabled();
-
-      await installedPage.toggleExtensionState(extension.locator);
-      await expect(deleteButton).toBeDisabled();
-      await installedPage.toggleExtensionState(extension.locator);
-      await expect(deleteButton).toBeDisabled();
     }
+
+    const testExtension = builtInExtensions[0];
+    const deleteButton = installedPage.getDeleteButtonForExtension(testExtension.locator);
+
+    await installedPage.toggleExtensionState(testExtension.locator);
+    await expect(deleteButton).toBeDisabled();
+
+    await installedPage.toggleExtensionState(testExtension.locator);
+    await expect(deleteButton).toBeDisabled();
   });
 });

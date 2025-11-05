@@ -34,11 +34,13 @@ export class SettingsPreferencesPage extends BasePage {
   }
 
   async searchPreferences(searchTerm: string): Promise<void> {
+    await expect(this.searchField).toBeVisible();
     await this.searchField.fill(searchTerm);
     await expect(this.searchField).toHaveValue(searchTerm);
   }
 
   async clearSearch(): Promise<void> {
+    await expect(this.searchField).toBeVisible();
     await this.searchField.clear();
     await expect(this.searchField).toHaveValue('');
   }

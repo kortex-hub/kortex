@@ -29,6 +29,7 @@ export class ExtensionsPage extends BasePage {
   readonly installedTab: Locator;
   readonly catalogTab: Locator;
   readonly localExtensionsTab: Locator;
+  private readonly tabs: Locator[];
 
   constructor(page: Page) {
     super(page);
@@ -36,6 +37,7 @@ export class ExtensionsPage extends BasePage {
     this.installedTab = page.getByRole('button', { name: 'Installed', exact: true });
     this.catalogTab = page.getByRole('button', { name: 'Catalog', exact: true });
     this.localExtensionsTab = page.getByRole('button', { name: 'Local Extensions', exact: true });
+    this.tabs = [this.installedTab, this.catalogTab, this.localExtensionsTab];
   }
 
   async waitForLoad(): Promise<void> {
@@ -50,15 +52,17 @@ export class ExtensionsPage extends BasePage {
   }
 
   getAllTabs(): Locator[] {
-    return [this.installedTab, this.catalogTab, this.localExtensionsTab];
+    return this.tabs;
   }
 
   async searchExtension(searchTerm: string): Promise<void> {
+    await expect(this.searchField).toBeVisible();
     await this.searchField.fill(searchTerm);
     await expect(this.searchField).toHaveValue(searchTerm);
   }
 
   async clearSearch(): Promise<void> {
+    await expect(this.searchField).toBeVisible();
     await this.searchField.clear();
     await expect(this.searchField).toHaveValue('');
   }

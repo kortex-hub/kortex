@@ -21,32 +21,37 @@ import type { McpPage } from 'src/model/pages/mcp-page';
 import { test } from '../fixtures/electron-app';
 import { waitForNavigationReady } from '../utils/app-ready';
 
-const DEFAULT_REGISTRY: string = 'MCP Registry example';
-const REGISTRY_URL: string = 'https://registry.modelcontextprotocol.io';
-let mcpServersPage: McpPage;
+const MCP_REGISTRY_EXAMPLE = 'MCP Registry example';
+const MCP_REGISTRY_URL = 'https://registry.modelcontextprotocol.io';
+const SERVER_LIST_UPDATE_TIMEOUT = 60_000;
 
-test.beforeEach(async ({ page, navigationBar }) => {
-  await waitForNavigationReady(page);
-  mcpServersPage = await navigationBar.navigateToMCPPage();
-});
+test.describe('MCP Registry Management', { tag: '@smoke' }, () => {
+  let mcpServersPage: McpPage;
 
-test.describe('MCP page navigation', { tag: '@smoke' }, () => {
+  test.beforeEach(async ({ page, navigationBar }) => {
+    await waitForNavigationReady(page);
+    mcpServersPage = await navigationBar.navigateToMCPPage();
+  });
+
   test('[MCP-01] Add and remove MCP registry: verify server list updates accordingly', async () => {
     const editRegistriesTab = await mcpServersPage.openEditRegistriesTab();
-    await editRegistriesTab.ensureRowExists(DEFAULT_REGISTRY);
+    await editRegistriesTab.ensureRowExists(MCP_REGISTRY_EXAMPLE);
+
     const installTab = await mcpServersPage.openInstallTab();
     await installTab.verifyInstallTabIsNotEmpty();
     const initialServerCount = await installTab.countRowsFromTable();
 
     await mcpServersPage.openEditRegistriesTab();
-    await editRegistriesTab.addNewRegistry(REGISTRY_URL);
-    await editRegistriesTab.ensureRowExists(REGISTRY_URL);
+    await editRegistriesTab.addNewRegistry(MCP_REGISTRY_URL);
+    await editRegistriesTab.ensureRowExists(MCP_REGISTRY_URL);
+
     await mcpServersPage.openInstallTab();
-    await installTab.verifyServerCountIncreased(initialServerCount, 60_000);
+    await installTab.verifyServerCountIncreased(initialServerCount, SERVER_LIST_UPDATE_TIMEOUT);
 
     await mcpServersPage.openEditRegistriesTab();
-    await editRegistriesTab.removeRegistry(REGISTRY_URL);
-    await editRegistriesTab.ensureRowDoesNotExist(REGISTRY_URL);
+    await editRegistriesTab.removeRegistry(MCP_REGISTRY_URL);
+    await editRegistriesTab.ensureRowDoesNotExist(MCP_REGISTRY_URL);
+
     await mcpServersPage.openInstallTab();
     await installTab.verifyServerCountIsRestored(initialServerCount);
   });
