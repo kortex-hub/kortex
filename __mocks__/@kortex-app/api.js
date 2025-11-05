@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2022 Red Hat, Inc.
+ * Copyright (C) 2022-2025 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ const mcpRegistry = {
   suggestRegistry: vi.fn(),
 };
 
-const plugin = { mcpRegistry };
 const provider = {
   createProvider: vi.fn(),
 };
@@ -32,10 +31,32 @@ const provider = {
 const env = {
   createTelemetryLogger: vi.fn(),
 };
-
 const process = {
   exec: vi.fn(),
 };
 
-const plugin = { provider, mcpRegistry, env, process };
+const EventEmitter = vi.fn();
+const Disposable = { dispose: vi.fn() };
+
+const extensions = {
+  getExtension: vi.fn(),
+};
+
+const init = () => {
+  EventEmitter.mockImplementation(() => {
+    const listeners = [];
+    return {
+      event: vi.fn(callback => {
+        listeners.push(callback);
+      }),
+      fire: vi.fn(data => {
+        listeners.forEach(listener => listener(data));
+      }),
+      dispose: vi.fn(),
+    };
+  });
+};
+
+const plugin = { init, env, extensions, process, mcpRegistry, provider, EventEmitter, Disposable };
+init();
 module.exports = plugin;
