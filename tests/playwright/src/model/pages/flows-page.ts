@@ -53,7 +53,7 @@ export class FlowsPage extends BaseTablePage {
     await this.waitForLoad();
     const row = await this.getRowLocatorByName(name, exact);
 
-    const runButton = await this.getRunButtonForRow(row);
+    const runButton = this.getRunButtonForRow(row);
     await expect(runButton).toBeEnabled();
     await runButton.click();
 
@@ -64,7 +64,7 @@ export class FlowsPage extends BaseTablePage {
     await this.waitForLoad();
     const row = await this.getRowLocatorByName(name, exact);
 
-    const deleteButton = await this.getDeleteButtonForRow(row);
+    const deleteButton = this.getDeleteButtonForRow(row);
     await expect(deleteButton).toBeEnabled();
     await deleteButton.click();
     await handleDialogIfPresent(this.page);
@@ -80,7 +80,7 @@ export class FlowsPage extends BaseTablePage {
     // Index 0 is the header row, so index 1 is the first data row
     const row = await this.getRowLocatorByIndex(1);
 
-    const deleteButton = await this.getDeleteButtonForRow(row);
+    const deleteButton = this.getDeleteButtonForRow(row);
     await expect(deleteButton).toBeEnabled();
     await deleteButton.click();
     await handleDialogIfPresent(this.page);
@@ -90,13 +90,26 @@ export class FlowsPage extends BaseTablePage {
     name: string,
     { description, model, mcpServer, prompt, instruction }: FlowParameters = {},
   ): Promise<FlowDetailsPage> {
-    await this.waitForLoad();
+    return this.createFlowWithButton(this.createFlowButton, name, {
+      description,
+      model,
+      mcpServer,
+      prompt,
+      instruction,
+    });
+  }
 
-    await expect(this.createFlowButton).toBeEnabled();
-    await this.createFlowButton.click();
-
-    const flowCreatePage = new FlowsCreatePage(this.page);
-    return flowCreatePage.createNewFlow(name, { description, model, mcpServer, prompt, instruction });
+  async createFlowFromContentRegion(
+    name: string,
+    { description, model, mcpServer, prompt, instruction }: FlowParameters = {},
+  ): Promise<FlowDetailsPage> {
+    return this.createFlowWithButton(this.createFlowButtonFromContentRegion, name, {
+      description,
+      model,
+      mcpServer,
+      prompt,
+      instruction,
+    });
   }
 
   async openFlowDetailsPageByName(name: string, exact = false): Promise<FlowDetailsPage> {
@@ -114,21 +127,50 @@ export class FlowsPage extends BaseTablePage {
     return (await this.noCurrentFlowExistsMessage.count()) > 0;
   }
 
+  async deleteAllFlows(timeout = 30_000): Promise<void> {
+    const isEmpty = await this.checkIfFlowsPageIsEmpty();
+
+    if (!isEmpty) {
+      let rowCount = await this.countRowsFromTable();
+      while (rowCount > 0) {
+        await this.deleteFirstFlow();
+
+        await expect.poll(async () => await this.countRowsFromTable(), { timeout: timeout }).toBeLessThan(rowCount);
+        rowCount = await this.countRowsFromTable();
+      }
+    }
+
+    await expect.poll(async () => await this.checkIfFlowsPageIsEmpty(), { timeout: timeout }).toBeTruthy();
+  }
+
+  private async createFlowWithButton(
+    button: Locator,
+    name: string,
+    { description, model, mcpServer, prompt, instruction }: FlowParameters = {},
+  ): Promise<FlowDetailsPage> {
+    await this.waitForLoad();
+
+    await expect(button).toBeEnabled();
+    await button.click();
+
+    const flowCreatePage = new FlowsCreatePage(this.page);
+    return flowCreatePage.createNewFlow(name, { description, model, mcpServer, prompt, instruction });
+  }
+
   private async createFlowsDetailsPageButton(name: string, exact = false): Promise<Locator> {
     const row = await this.getRowLocatorByName(name, exact);
-
     return row.getByRole('button').first();
   }
 
-  private async getRowButtonByLabel(row: Locator, label: string): Promise<Locator> {
+  private getRowButtonByLabel(row: Locator, label: string): Locator {
     return row.getByLabel(label, { exact: true }).first();
   }
 
-  private async getDeleteButtonForRow(row: Locator): Promise<Locator> {
+  private getDeleteButtonForRow(row: Locator): Locator {
     return this.getRowButtonByLabel(row, 'Delete');
   }
 
-  private async getRunButtonForRow(row: Locator): Promise<Locator> {
+  private getRunButtonForRow(row: Locator): Locator {
     return this.getRowButtonByLabel(row, 'Run this recipe');
   }
 }

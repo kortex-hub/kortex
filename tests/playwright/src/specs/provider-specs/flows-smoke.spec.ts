@@ -22,6 +22,7 @@ import { expect, test } from '../../fixtures/provider-fixtures';
 import { waitForNavigationReady } from '../../utils/app-ready';
 
 const flowName = 'custom-flow-smoke-test';
+const TIMEOUT = 30_000;
 let flowsPage: FlowsPage;
 
 test.skip(!!process.env.CI, 'Skipping flow tests on CI');
@@ -29,22 +30,16 @@ test.skip(!!process.env.CI, 'Skipping flow tests on CI');
 test.beforeAll(async ({ page, navigationBar }) => {
   await waitForNavigationReady(page);
   flowsPage = await navigationBar.navigateToFlowsPage();
+  await flowsPage.deleteAllFlows(TIMEOUT);
+});
+
+test.afterAll(async ({ navigationBar }) => {
+  flowsPage = await navigationBar.navigateToFlowsPage();
+  await flowsPage.deleteAllFlows(TIMEOUT);
 });
 
 test.describe.serial('Flow page e2e test suite', { tag: '@smoke' }, () => {
   test('[FLOW-01] Check that Flows page is displayed and empty', async () => {
-    const isEmpty = await flowsPage.checkIfFlowsPageIsEmpty();
-
-    if (!isEmpty) {
-      let rowCount = await flowsPage.countRowsFromTable();
-      while (rowCount > 0) {
-        await flowsPage.deleteFirstFlow();
-
-        await expect.poll(async () => await flowsPage.countRowsFromTable(), { timeout: 30_000 }).toBeLessThan(rowCount);
-        rowCount = await flowsPage.countRowsFromTable();
-      }
-    }
-
     await expect.poll(async () => flowsPage.checkIfFlowsPageIsEmpty()).toBeTruthy();
   });
 
@@ -54,7 +49,7 @@ test.describe.serial('Flow page e2e test suite', { tag: '@smoke' }, () => {
         'write a typescript recursive method that calculates the fibonacci number for a given index without using memoization',
     });
     flowsPage = await navigationBar.navigateToFlowsPage();
-    await flowsPage.ensureRowExists(flowName, 30_000, false);
+    await flowsPage.ensureRowExists(flowName, TIMEOUT, false);
   });
 
   test('[FLOW-03] Check that user can run the created flow and validate the results', async () => {
@@ -73,6 +68,13 @@ test.describe.serial('Flow page e2e test suite', { tag: '@smoke' }, () => {
   test('[FLOW-04] Check that user can delete the created flow', async ({ navigationBar }) => {
     flowsPage = await navigationBar.navigateToFlowsPage();
     await flowsPage.deleteFlowByName(flowName);
-    await flowsPage.ensureRowDoesNotExist(flowName, 30_000, false);
+    await flowsPage.ensureRowDoesNotExist(flowName, TIMEOUT, false);
+  });
+
+  test('[FLOW-05] Check that user can create a new flow from content region', async ({ navigationBar }) => {
+    await expect.poll(async () => await flowsPage.checkIfFlowsPageIsEmpty()).toBeTruthy();
+    await flowsPage.createFlowFromContentRegion(flowName);
+    flowsPage = await navigationBar.navigateToFlowsPage();
+    await flowsPage.ensureRowExists(flowName, TIMEOUT, false);
   });
 });
