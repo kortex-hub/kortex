@@ -89,7 +89,7 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
 
     const maxModelsToTest = Math.min(modelCount, 3);
 
-    for (let modelIndex = 0; modelIndex < maxModelsToTest; modelIndex++) {
+    for (let modelIndex = maxModelsToTest - 1; modelIndex >= 0; modelIndex--) {
       await chatPage.selectModelByIndex(modelIndex);
       const selectedModelName = await chatPage.getSelectedModelName();
       expect(selectedModelName).toBeTruthy();
