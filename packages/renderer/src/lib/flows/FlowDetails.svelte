@@ -10,6 +10,7 @@ import Route from '/@/Route.svelte';
 import { flowsInfos } from '/@/stores/flows';
 import { executeFlowsInfo } from '/@/stores/flows-execute';
 import { providerInfos } from '/@/stores/providers';
+import type { FlowInfo } from '/@api/flow-info';
 import type { ProviderFlowConnectionInfo } from '/@api/provider-info';
 
 import FlowActions from './FlowActions.svelte';
@@ -30,24 +31,7 @@ let provider = $derived($providerInfos.find(provider => provider.id === provider
 let connection: ProviderFlowConnectionInfo | undefined = $derived(
   provider?.flowConnections.find(connection => connection.name === connectionName),
 );
-let { path, name } = $derived.by(() => {
-  const matchingFlow = $flowsInfos.find(
-    flowInfo =>
-      flowInfo.id === flowId && flowInfo.providerId === providerId && flowInfo.connectionName === connectionName,
-  );
-  if (!matchingFlow) {
-    return { path: atob(flowId), name: atob(flowId) };
-  }
-  return matchingFlow;
-});
-
-let flowInfo = $derived({
-  providerId,
-  id: flowId,
-  path,
-  name,
-  connectionName,
-});
+let flowInfo: FlowInfo | undefined = $derived($flowsInfos.find(({ id }) => id === flowId));
 
 let flowContent: string | undefined = $state(undefined);
 
@@ -87,7 +71,7 @@ function setSelectedFlowExecuteId(flowExecuteId: string): void {
 }
 </script>
 
-<DetailsPage  title={path}>
+<DetailsPage  title={flowInfo?.path ?? ''}>
   {#snippet tabsSnippet()}
     <Tab title="Summary" selected={isTabSelected($router.path, 'summary')} url={getTabUrl($router.path, 'summary')} />
     <Tab title="Source" selected={isTabSelected($router.path, 'source')} url={getTabUrl($router.path, 'source')} />
@@ -98,9 +82,11 @@ function setSelectedFlowExecuteId(flowExecuteId: string): void {
 
   {/snippet}
     {#snippet actionsSnippet()}
-      <FlowActions
-        object={flowInfo}
-        onLocalRun={setSelectedFlowExecuteId} />
+      {#if flowInfo}
+        <FlowActions
+          object={flowInfo}
+          onLocalRun={setSelectedFlowExecuteId} />
+      {/if}
     {/snippet}
   {#snippet contentSnippet()}
     {#if loading}
@@ -112,7 +98,7 @@ function setSelectedFlowExecuteId(flowExecuteId: string): void {
         <ul>
           <li>{providerId} => {provider?.name}</li>
           <li>{connectionName} => {connection?.name}</li>
-          <li>{flowId} => {path}</li>
+          <li>{flowId} => {flowInfo?.path}</li>
         </ul>
       </Route>
       <Route path="/source" breadcrumb="Source" navigationHint="tab">
