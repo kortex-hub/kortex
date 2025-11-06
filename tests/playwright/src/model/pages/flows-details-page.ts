@@ -119,6 +119,10 @@ export class FlowDetailsPage extends BasePage {
     await expect(this.terminalContent).toContainText(textOrRegex, { timeout });
   }
 
+  async waitForTerminalContentNotToContainText(textOrRegex: string | RegExp, timeout = 30_000): Promise<void> {
+    await expect(this.terminalContent).not.toContainText(textOrRegex, { timeout });
+  }
+
   async sendTerminalInput(input: string, pressEnter = true): Promise<void> {
     await this.waitForTerminalReady();
     await expect(this.terminalInput).toBeEnabled();

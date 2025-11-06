@@ -23,6 +23,9 @@ import { waitForNavigationReady } from '../../utils/app-ready';
 
 const flowName = 'custom-flow-smoke-test';
 const flowNameFromContentRegion = 'custom-flow-content-region-test';
+const prompt =
+  'write a typescript recursive method that calculates the fibonacci number for a given index without using memoization';
+const expectedTerminalContent = /([a-zA-Z_]\w*)\(\s*n\s*-\s*1\s*\)\s*\+\s*\1\(\s*n\s*-\s*2\s*\)/;
 
 test.skip(!!process.env.CI, 'Skipping flow tests on CI');
 
@@ -43,37 +46,61 @@ test.describe.serial('Flow page e2e test suite', { tag: '@smoke' }, () => {
   });
 
   test('[FLOW-02] Check that user can create a new flow', async ({ navigationBar, flowsPage }) => {
-    await flowsPage.createFlow(flowName, {
-      prompt:
-        'write a typescript recursive method that calculates the fibonacci number for a given index without using memoization',
-    });
+    await flowsPage.createFlow(flowName, { prompt });
     await navigationBar.navigateToFlowsPage();
     await flowsPage.ensureRowExists(flowName, TIMEOUTS.STANDARD, false);
   });
 
-  test('[FLOW-03] Check that user can run the created flow and validate the results', async ({ flowsPage }) => {
+  test('[FLOW-03] Check that user can run the created flow from details page and validate the results', async ({
+    flowsPage,
+  }) => {
     const flowDetailsPage = await flowsPage.openFlowDetailsPageByName(flowName);
     await flowDetailsPage.waitForLoad();
 
     await flowDetailsPage.runFlow();
     await flowDetailsPage.switchToRunTab();
 
-    await flowDetailsPage.waitForTerminalContent(
-      /([a-zA-Z_]\w*)\(\s*n\s*-\s*1\s*\)\s*\+\s*\1\(\s*n\s*-\s*2\s*\)/,
-      TIMEOUTS.DEFAULT,
-    );
+    await flowDetailsPage.waitForTerminalContent(expectedTerminalContent, TIMEOUTS.DEFAULT);
   });
 
-  test('[FLOW-04] Check that user can delete the created flow', async ({ navigationBar, flowsPage }) => {
+  test('[FLOW-04] Check that user can delete the created flow from details page', async ({
+    navigationBar,
+    flowsPage,
+  }) => {
     await navigationBar.navigateToFlowsPage();
-    await flowsPage.deleteFlowByName(flowName);
+
+    const flowDetailsPage = await flowsPage.openFlowDetailsPageByName(flowName);
+    await flowDetailsPage.waitForLoad();
+    await flowDetailsPage.deleteFlow();
+
+    await flowsPage.waitForLoad();
     await flowsPage.ensureRowDoesNotExist(flowName, TIMEOUTS.STANDARD, false);
   });
 
   test('[FLOW-05] Check that user can create a new flow from content region', async ({ navigationBar, flowsPage }) => {
     await expect.poll(async () => await flowsPage.checkIfFlowsPageIsEmpty()).toBeTruthy();
-    await flowsPage.createFlowFromContentRegion(flowNameFromContentRegion);
+    await flowsPage.createFlowFromContentRegion(flowNameFromContentRegion, { prompt });
     await navigationBar.navigateToFlowsPage();
     await flowsPage.ensureRowExists(flowNameFromContentRegion, TIMEOUTS.STANDARD, false);
+  });
+
+  test('[FLOW-06] Check that user can run the created flow from Flows page using the run button', async ({
+    flowsPage,
+  }) => {
+    const flowDetailsPage = await flowsPage.runFlowByName(flowNameFromContentRegion);
+    await flowDetailsPage.waitForLoad();
+
+    await flowDetailsPage.switchToRunTab();
+    await flowDetailsPage.waitForTerminalContentNotToContainText(expectedTerminalContent, TIMEOUTS.DEFAULT); // Ensure the terminal is empty before checking output
+    await flowDetailsPage.waitForTerminalContent(expectedTerminalContent, TIMEOUTS.DEFAULT);
+  });
+
+  test('[FLOW-07] Check that user can delete the created flow from Flows page using the delete button', async ({
+    navigationBar,
+    flowsPage,
+  }) => {
+    await navigationBar.navigateToFlowsPage();
+    await flowsPage.deleteFlowByName(flowNameFromContentRegion);
+    await flowsPage.ensureRowDoesNotExist(flowNameFromContentRegion, TIMEOUTS.STANDARD, false);
   });
 });
