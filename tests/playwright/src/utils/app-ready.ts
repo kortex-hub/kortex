@@ -55,7 +55,7 @@ async function handleWelcomePageIfPresent(page: Page, timeout = 5_000): Promise<
   } catch {
     const skipButton = page.getByRole('button', { name: 'Skip' });
     await skipButton.click();
-    await expect(welcomePage).toBeHidden({ timeout: TIMEOUTS.WELCOME_PAGE });
+    await expect(welcomePage).toBeHidden({ timeout: TIMEOUTS.STANDARD });
   }
 }
 
