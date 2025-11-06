@@ -16,33 +16,30 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 import { expect, test } from '../../fixtures/provider-fixtures';
-import type { ChatPage } from '../../model/pages/chat-page';
 import { waitForNavigationReady } from '../../utils/app-ready';
-
-let chatPage: ChatPage;
 
 test.skip(!!process.env.CI, 'Skipping chat tests on CI');
 
 test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
   test.beforeEach(async ({ page, navigationBar }) => {
     await waitForNavigationReady(page);
-    chatPage = await navigationBar.navigateToChatPage();
+    await navigationBar.navigateToChatPage();
   });
 
-  test('[CHAT-01] All chat UI elements are visible', async () => {
+  test('[CHAT-01] All chat UI elements are visible', async ({ chatPage }) => {
     await chatPage.verifyHeaderElementsVisible();
     await chatPage.verifyInputAreaVisible();
     await chatPage.verifySuggestedMessagesVisible();
   });
 
-  test('[CHAT-02] Create and check new chat history item', async () => {
+  test('[CHAT-02] Create and check new chat history item', async ({ chatPage }) => {
     await chatPage.ensureSidebarVisible();
     const initialCount = await chatPage.getChatHistoryCount();
     await chatPage.getSuggestedMessages().last().click();
     await chatPage.waitForChatHistoryCount(initialCount + 1, 15_000);
   });
 
-  test('[CHAT-03] Create and switch between multiple chat sessions without data loss', async () => {
+  test('[CHAT-03] Create and switch between multiple chat sessions without data loss', async ({ chatPage }) => {
     await chatPage.ensureSidebarVisible();
     let messageCount = await chatPage.getChatHistoryCount();
 
@@ -65,7 +62,7 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
     }
   });
 
-  test('[CHAT-04] Delete single chat item and then delete all remaining items', async () => {
+  test('[CHAT-04] Delete single chat item and then delete all remaining items', async ({ chatPage }) => {
     await chatPage.ensureSidebarVisible();
     const initialCount = await chatPage.getChatHistoryCount();
 
@@ -79,7 +76,7 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
     await chatPage.ensureNotificationsAreNotVisible();
   });
 
-  test('[CHAT-05] Switch between all available models and verify each selection', async () => {
+  test('[CHAT-05] Switch between all available models and verify each selection', async ({ chatPage }) => {
     const modelCount = await chatPage.getAvailableModelsCount();
 
     if (modelCount < 2) {
@@ -102,7 +99,7 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
     }
   });
 
-  test('[CHAT-06] Change models mid-conversation, verify conversation history is preserved', async () => {
+  test('[CHAT-06] Change models mid-conversation, verify conversation history is preserved', async ({ chatPage }) => {
     const modelCount = await chatPage.getAvailableModelsCount();
 
     if (modelCount < 2) {

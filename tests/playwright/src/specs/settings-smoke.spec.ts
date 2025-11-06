@@ -23,18 +23,15 @@ import {
 } from 'src/model/core/types';
 
 import { expect, test } from '../fixtures/electron-app';
-import type { SettingsPage } from '../model/pages/settings-page';
 import { waitForNavigationReady } from '../utils/app-ready';
 
 test.describe('Settings page navigation', { tag: '@smoke' }, () => {
-  let settingsPage: SettingsPage;
-
   test.beforeEach(async ({ page, navigationBar }) => {
     await waitForNavigationReady(page);
-    settingsPage = await navigationBar.navigateToSettingsPage();
+    await navigationBar.navigateToSettingsPage();
   });
 
-  test('[SET-01] All settings tabs are visible', async () => {
+  test('[SET-01] All settings tabs are visible', async ({ settingsPage }) => {
     const tabs = settingsPage.getAllTabs();
     const expectedTabCount = 4; // Resources, CLI, Proxy, Preferences
 
@@ -45,7 +42,7 @@ test.describe('Settings page navigation', { tag: '@smoke' }, () => {
     }
   });
 
-  test('[SET-02] Resources tab shows all providers with create buttons', async () => {
+  test('[SET-02] Resources tab shows all providers with create buttons', async ({ settingsPage }) => {
     const resourcesPage = await settingsPage.openResources();
 
     for (const resourceId of featuredResources) {
@@ -59,14 +56,14 @@ test.describe('Settings page navigation', { tag: '@smoke' }, () => {
     }
   });
 
-  test('[SET-03] CLI tab shows goose CLI tool', async () => {
+  test('[SET-03] CLI tab shows goose CLI tool', async ({ settingsPage }) => {
     const cliPage = await settingsPage.openCli();
 
     await expect(cliPage.toolName).toBeVisible();
     await expect(cliPage.toolName).toHaveText('goose');
   });
 
-  test('[SET-04] Proxy tab configurations and fields', async () => {
+  test('[SET-04] Proxy tab configurations and fields', async ({ settingsPage }) => {
     const proxyPage = await settingsPage.openProxy();
     await proxyPage.verifyProxyConfigurationOptions();
     const proxyFields = proxyPage.getProxyFields();
@@ -81,7 +78,7 @@ test.describe('Settings page navigation', { tag: '@smoke' }, () => {
     }
   });
 
-  test('[SET-05] Preferences submenu items are visible and can be interacted with', async () => {
+  test('[SET-05] Preferences submenu items are visible and can be interacted with', async ({ settingsPage }) => {
     const preferencesPage = await settingsPage.openPreferences();
     const options = preferenceOptions();
     expect(options.length).toBeGreaterThan(0);
@@ -92,7 +89,7 @@ test.describe('Settings page navigation', { tag: '@smoke' }, () => {
     }
   });
 
-  test('[SET-06] Preferences search filters options correctly', async () => {
+  test('[SET-06] Preferences search filters options correctly', async ({ settingsPage }) => {
     const preferencesPage = await settingsPage.openPreferences();
     const options = preferenceOptions();
     expect(options.length).toBeGreaterThan(0);

@@ -19,23 +19,91 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { _electron as electron, type ElectronApplication, type Page, test as base } from '@playwright/test';
+import { TIMEOUTS } from 'src/model/core/types';
 import { NavigationBar } from 'src/model/navigation/navigation';
+import { ChatPage } from 'src/model/pages/chat-page';
+import { ExtensionsPage } from 'src/model/pages/extensions-page';
+import { FlowsPage } from 'src/model/pages/flows-page';
+import { McpPage } from 'src/model/pages/mcp-page';
+import { SettingsPage } from 'src/model/pages/settings-page';
 
 import { waitForAppReady } from '../utils/app-ready';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-export const TIMEOUTS = {
-  FIRST_WINDOW: 120_000,
-  PAGE_LOAD: 90_000,
-  WINDOW_EVENT: 120_000,
-  NON_DEVTOOLS_WINDOW: 60_000,
-  RETRY_DELAY: 1_000,
-  MAX_RETRIES: 3,
-} as const;
-
 const DEVTOOLS_URL_PREFIX = 'devtools://';
+
+export interface ElectronFixtures {
+  electronApp: ElectronApplication;
+  page: Page;
+  navigationBar: NavigationBar;
+  settingsPage: SettingsPage;
+  flowsPage: FlowsPage;
+  mcpPage: McpPage;
+  extensionsPage: ExtensionsPage;
+  chatPage: ChatPage;
+}
+
+export const test = base.extend<ElectronFixtures>({
+  // eslint-disable-next-line no-empty-pattern
+  electronApp: async ({}, use): Promise<void> => {
+    let electronApp: ElectronApplication | undefined;
+
+    try {
+      electronApp = await launchElectronApp();
+      await use(electronApp);
+    } finally {
+      if (electronApp) {
+        try {
+          await closeAllWindows(electronApp);
+          await electronApp.close();
+        } catch (error) {
+          console.error('Error closing Electron app:', error);
+          try {
+            await electronApp.close();
+          } catch {
+            // Ignore errors during forced close
+          }
+        }
+      }
+    }
+  },
+
+  page: async ({ electronApp }, use): Promise<void> => {
+    const page = await getFirstPage(electronApp);
+    await use(page);
+  },
+
+  navigationBar: async ({ page }, use): Promise<void> => {
+    const navigationBar = new NavigationBar(page);
+    await use(navigationBar);
+  },
+
+  settingsPage: async ({ page }, use): Promise<void> => {
+    const settingsPage = new SettingsPage(page);
+    await use(settingsPage);
+  },
+
+  flowsPage: async ({ page }, use): Promise<void> => {
+    const flowsPage = new FlowsPage(page);
+    await use(flowsPage);
+  },
+
+  mcpPage: async ({ page }, use): Promise<void> => {
+    const mcpPage = new McpPage(page);
+    await use(mcpPage);
+  },
+
+  extensionsPage: async ({ page }, use): Promise<void> => {
+    const extensionsPage = new ExtensionsPage(page);
+    await use(extensionsPage);
+  },
+
+  chatPage: async ({ page }, use): Promise<void> => {
+    const chatPage = new ChatPage(page);
+    await use(chatPage);
+  },
+});
 
 function isDevToolsWindow(url: string): boolean {
   return url.startsWith(DEVTOOLS_URL_PREFIX);
@@ -145,7 +213,7 @@ export async function getFirstPage(electronApp: ElectronApplication): Promise<Pa
 
   try {
     if (isProductionMode) {
-      page = await electronApp.firstWindow({ timeout: TIMEOUTS.FIRST_WINDOW });
+      page = await electronApp.firstWindow({ timeout: TIMEOUTS.DEFAULT });
     } else {
       page = await getDevModeWindow(electronApp);
     }
@@ -170,47 +238,5 @@ export async function closeAllWindows(electronApp: ElectronApplication): Promise
   const windows = electronApp.windows();
   await Promise.allSettled(windows.map(window => window.close().catch(() => {})));
 }
-
-export interface ElectronFixtures {
-  electronApp: ElectronApplication;
-  page: Page;
-  navigationBar: NavigationBar;
-}
-
-export const test = base.extend<ElectronFixtures>({
-  // eslint-disable-next-line no-empty-pattern
-  electronApp: async ({}, use): Promise<void> => {
-    let electronApp: ElectronApplication | undefined;
-
-    try {
-      electronApp = await launchElectronApp();
-      await use(electronApp);
-    } finally {
-      if (electronApp) {
-        try {
-          await closeAllWindows(electronApp);
-          await electronApp.close();
-        } catch (error) {
-          console.error('Error closing Electron app:', error);
-          try {
-            await electronApp.close();
-          } catch {
-            // Ignore errors during forced close
-          }
-        }
-      }
-    }
-  },
-
-  page: async ({ electronApp }, use): Promise<void> => {
-    const page = await getFirstPage(electronApp);
-    await use(page);
-  },
-
-  navigationBar: async ({ page }, use): Promise<void> => {
-    const navigationBar = new NavigationBar(page);
-    await use(navigationBar);
-  },
-});
 
 export { expect } from '@playwright/test';

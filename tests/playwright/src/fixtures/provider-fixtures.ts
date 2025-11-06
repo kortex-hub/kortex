@@ -17,9 +17,8 @@
  ***********************************************************************/
 import { type ElectronApplication, type Page } from '@playwright/test';
 
-import { MCP_SERVERS, type MCPServerId } from '../model/core/types';
+import { MCP_SERVERS, type MCPServerId, PROVIDERS, type ResourceId } from '../model/core/types';
 import { NavigationBar } from '../model/navigation/navigation';
-import { PROVIDERS, type ResourceId } from '../utils/resource-helper';
 import { type ElectronFixtures, getFirstPage, launchElectronApp, test as base } from './electron-app';
 
 interface WorkerFixtures {
@@ -30,22 +29,6 @@ interface WorkerFixtures {
   resourceSetup: void;
   mcpServers: MCPServerId[];
   mcpSetup: void;
-}
-
-function requireEnvVar(envVarName: string): string {
-  const value = process.env[envVarName];
-  if (!value) {
-    throw new Error(`${envVarName} environment variable is not set`);
-  }
-  return value;
-}
-
-async function safeCleanup(operation: () => Promise<void>, errorMessage: string): Promise<void> {
-  try {
-    await operation();
-  } catch (error) {
-    console.error(`${errorMessage}:`, error);
-  }
 }
 
 export const test = base.extend<ElectronFixtures, WorkerFixtures>({
@@ -153,5 +136,21 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
     await use(workerPage);
   },
 });
+
+function requireEnvVar(envVarName: string): string {
+  const value = process.env[envVarName];
+  if (!value) {
+    throw new Error(`${envVarName} environment variable is not set`);
+  }
+  return value;
+}
+
+async function safeCleanup(operation: () => Promise<void>, errorMessage: string): Promise<void> {
+  try {
+    await operation();
+  } catch (error) {
+    console.error(`${errorMessage}:`, error);
+  }
+}
 
 export { expect } from '@playwright/test';

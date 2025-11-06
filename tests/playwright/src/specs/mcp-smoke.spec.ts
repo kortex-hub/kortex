@@ -16,8 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { McpPage } from 'src/model/pages/mcp-page';
-
 import { test } from '../fixtures/electron-app';
 import { waitForNavigationReady } from '../utils/app-ready';
 
@@ -26,33 +24,31 @@ const MCP_REGISTRY_URL = 'https://registry.modelcontextprotocol.io';
 const SERVER_LIST_UPDATE_TIMEOUT = 60_000;
 
 test.describe('MCP Registry Management', { tag: '@smoke' }, () => {
-  let mcpServersPage: McpPage;
-
   test.beforeEach(async ({ page, navigationBar }) => {
     await waitForNavigationReady(page);
-    mcpServersPage = await navigationBar.navigateToMCPPage();
+    await navigationBar.navigateToMCPPage();
   });
 
-  test('[MCP-01] Add and remove MCP registry: verify server list updates accordingly', async () => {
-    const editRegistriesTab = await mcpServersPage.openEditRegistriesTab();
+  test('[MCP-01] Add and remove MCP registry: verify server list updates accordingly', async ({ mcpPage }) => {
+    const editRegistriesTab = await mcpPage.openEditRegistriesTab();
     await editRegistriesTab.ensureRowExists(MCP_REGISTRY_EXAMPLE);
 
-    const installTab = await mcpServersPage.openInstallTab();
+    const installTab = await mcpPage.openInstallTab();
     await installTab.verifyInstallTabIsNotEmpty();
     const initialServerCount = await installTab.countRowsFromTable();
 
-    await mcpServersPage.openEditRegistriesTab();
+    await mcpPage.openEditRegistriesTab();
     await editRegistriesTab.addNewRegistry(MCP_REGISTRY_URL);
     await editRegistriesTab.ensureRowExists(MCP_REGISTRY_URL);
 
-    await mcpServersPage.openInstallTab();
+    await mcpPage.openInstallTab();
     await installTab.verifyServerCountIncreased(initialServerCount, SERVER_LIST_UPDATE_TIMEOUT);
 
-    await mcpServersPage.openEditRegistriesTab();
+    await mcpPage.openEditRegistriesTab();
     await editRegistriesTab.removeRegistry(MCP_REGISTRY_URL);
     await editRegistriesTab.ensureRowDoesNotExist(MCP_REGISTRY_URL);
 
-    await mcpServersPage.openInstallTab();
+    await mcpPage.openInstallTab();
     await installTab.verifyServerCountIsRestored(initialServerCount);
   });
 });

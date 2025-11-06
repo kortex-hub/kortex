@@ -17,7 +17,7 @@
  ***********************************************************************/
 import type { PlaywrightTestConfig } from '@playwright/test';
 
-import type { ResourceId } from './src/utils/resource-helper';
+import type { ResourceId } from './src/model/core/types';
 
 const config: PlaywrightTestConfig & {
   projects?: Array<{

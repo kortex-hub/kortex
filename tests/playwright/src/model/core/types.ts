@@ -139,12 +139,6 @@ export interface DialogOptions {
   waitForDialogToDisappear?: boolean;
 }
 
-export const TIMEOUTS = {
-  DEFAULT: 120_000,
-  INITIALIZING_SCREEN: 180_000,
-  WELCOME_PAGE: 30_000,
-} as const;
-
 export const SELECTORS = {
   MAIN_ANY: 'main',
   MAIN_INITIALIZING: 'main.flex.flex-row.w-screen.h-screen.justify-center',
@@ -152,4 +146,14 @@ export const SELECTORS = {
   TITLE_BAR: 'header#navbar',
   WELCOME_PAGE: 'div:has-text("Get started with Kortex")',
   NAVIGATION: { role: 'navigation' as const, name: 'AppNavigation' },
+} as const;
+
+export const TIMEOUTS = {
+  PAGE_LOAD: 90_000,
+  NON_DEVTOOLS_WINDOW: 60_000,
+  RETRY_DELAY: 1_000,
+  MAX_RETRIES: 3,
+  DEFAULT: 120_000,
+  INITIALIZING_SCREEN: 180_000,
+  STANDARD: 30_000,
 } as const;

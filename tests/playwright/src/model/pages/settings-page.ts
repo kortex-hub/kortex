@@ -18,8 +18,8 @@
 
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import type { ResourceId } from '../../utils/resource-helper';
-import { PROVIDERS } from '../../utils/resource-helper';
+import type { ResourceId } from '../core/types';
+import { PROVIDERS } from '../core/types';
 import { BasePage } from './base-page';
 import { SettingsCliPage } from './settings-cli-tab-page';
 import { SettingsPreferencesPage } from './settings-preferences-tab-page';
