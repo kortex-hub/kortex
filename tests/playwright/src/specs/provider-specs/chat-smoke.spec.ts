@@ -101,4 +101,39 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
       await chatPage.verifyConversationMessage(testMessage);
     }
   });
+
+  test('[CHAT-06] Change models mid-conversation, verify conversation history is preserved', async () => {
+    const modelCount = await chatPage.getAvailableModelsCount();
+
+    if (modelCount < 2) {
+      test.skip(true, 'Skipping test: Less than 2 models available');
+      return;
+    }
+
+    await chatPage.ensureSidebarVisible();
+    await chatPage.clickNewChat();
+
+    const initialCount = await chatPage.getChatHistoryCount();
+
+    await chatPage.selectModelByIndex(0);
+    const firstModelName = await chatPage.getSelectedModelName();
+    const firstMessage = 'Hello, how are you?';
+    await chatPage.sendMessage(firstMessage);
+    await chatPage.verifyConversationMessage(firstMessage);
+
+    const expectedCountAfterFirstMessage = initialCount + 1;
+    await chatPage.waitForChatHistoryCount(expectedCountAfterFirstMessage);
+
+    await chatPage.selectModelByIndex(1);
+    const secondModelName = await chatPage.getSelectedModelName();
+    expect(firstModelName).not.toBe(secondModelName);
+    await chatPage.verifyConversationMessage(firstMessage);
+
+    const secondMessage = 'Tell me about AI models';
+    await chatPage.sendMessage(secondMessage);
+
+    await chatPage.verifyConversationMessage(firstMessage);
+    await chatPage.verifyConversationMessage(secondMessage);
+    await chatPage.waitForChatHistoryCount(expectedCountAfterFirstMessage);
+  });
 });
