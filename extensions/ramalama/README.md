@@ -5,6 +5,7 @@ Integrates RamaLama local AI models with Kortex. Automatically discovers and reg
 ## Requirements
 
 - [RamaLama](https://ramalama.ai/) installed and running locally
+- Container engine running (Podman or Docker)
 
 ## Usage
 
