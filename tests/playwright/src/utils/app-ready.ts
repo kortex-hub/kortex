@@ -105,23 +105,6 @@ export async function handleDialogIfPresent(
   }
 }
 
-export async function dropdownAction<T>(page: Page, dropdownSelector: Locator, action: () => Promise<T>): Promise<T> {
-  try {
-    await dropdownSelector.click();
-    const result = await action();
-    return result;
-  } catch (error) {
-    console.error('Dropdown action failed:', error);
-    throw error;
-  } finally {
-    try {
-      await page.keyboard.press('Escape');
-    } catch (closeError) {
-      console.warn('Failed to close dropdown with Escape key:', closeError);
-    }
-  }
-}
-
 export async function clearAllToasts(page: Page, toastLocator: Locator, timeout = 10_000): Promise<void> {
   await page.keyboard.press('Escape');
   await expect(toastLocator).toHaveCount(0, { timeout });

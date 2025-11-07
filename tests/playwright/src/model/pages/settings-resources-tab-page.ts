@@ -21,6 +21,7 @@ import { featuredResources, resources } from 'src/model/core/types';
 
 import { BasePage } from './base-page';
 import { SettingsCreateGeminiPage } from './settings-create-gemini-page';
+import { SettingsCreateOpenAIPage } from './settings-create-openai-page';
 
 export class SettingsResourcesPage extends BasePage {
   constructor(page: Page) {
@@ -40,10 +41,11 @@ export class SettingsResourcesPage extends BasePage {
   }
 
   async openCreateGeminiPage(): Promise<SettingsCreateGeminiPage> {
-    await this.getResourceCreateButton(resources.gemini.displayName).click();
-    const createGeminiPage = new SettingsCreateGeminiPage(this.page);
-    await createGeminiPage.waitForLoad();
-    return createGeminiPage;
+    return this.openTab(this.getResourceCreateButton(resources.gemini.displayName), SettingsCreateGeminiPage);
+  }
+
+  async openCreateOpenAIPage(): Promise<SettingsCreateOpenAIPage> {
+    return this.openTab(this.getResourceCreateButton(resources.openai.displayName), SettingsCreateOpenAIPage);
   }
 
   getCreatedResourcesFor(resourceId: keyof typeof resources): Locator {

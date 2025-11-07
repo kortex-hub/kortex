@@ -84,8 +84,11 @@ export class SettingsPage extends BasePage {
         await createGeminiPage.createAndGoBack(credentials);
         break;
       }
-      case 'openai':
-        throw new Error('OpenAI resource creation not yet implemented');
+      case 'openai': {
+        const createOpenAIPage = await resourcesPage.openCreateOpenAIPage();
+        await createOpenAIPage.createAndGoBack(PROVIDERS.openai.baseURL, credentials);
+        break;
+      }
       case 'openshift-ai':
         throw new Error('OpenShift AI resource creation not yet implemented');
       default:

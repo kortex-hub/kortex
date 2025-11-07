@@ -66,7 +66,7 @@ const config: PlaywrightTestConfig & {
       use: {
         resource: 'openai',
       },
-      testIgnore: ['**/*'], // Disabled until OpenAI resource creation is implemented
+      testIgnore: process.env.OPENAI_API_KEY ? [] : ['**/*'], // Skip if OPENAI_API_KEY is not set
     },
     {
       name: 'OpenShift-AI-Provider',

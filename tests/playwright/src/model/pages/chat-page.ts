@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import { expect, type Locator, type Page } from '@playwright/test';
-import { clearAllToasts, dropdownAction, handleDialogIfPresent } from 'src/utils/app-ready';
+import { clearAllToasts, handleDialogIfPresent } from 'src/utils/app-ready';
 
 import { TIMEOUTS } from '../core/types';
 import { BasePage } from './base-page';
@@ -168,9 +168,10 @@ export class ChatPage extends BasePage {
   }
 
   async getAvailableModelsCount(): Promise<number> {
-    return await dropdownAction(this.page, this.modelDropdownSelector, async () => {
-      return await this.modelMenuItems.count();
-    });
+    await this.modelDropdownSelector.click();
+    const count = await this.modelMenuItems.count();
+    await this.page.keyboard.press('Escape');
+    return count;
   }
 
   async selectModelByIndex(index: number): Promise<void> {
@@ -181,10 +182,10 @@ export class ChatPage extends BasePage {
   }
 
   async getSelectedModelName(): Promise<string> {
-    return await dropdownAction(this.page, this.modelDropdownSelector, async () => {
-      const text = await this.activeModelMenuItem.textContent();
-      return text?.trim() ?? '';
-    });
+    await this.modelDropdownSelector.click();
+    const text = await this.activeModelMenuItem.textContent();
+    await this.page.keyboard.press('Escape');
+    return text?.trim() ?? '';
   }
 
   async exportAsFlow(): Promise<FlowsCreatePage> {

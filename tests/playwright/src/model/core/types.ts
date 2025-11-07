@@ -112,6 +112,7 @@ export type MCPServerId = keyof typeof MCP_SERVERS;
 export interface ResourceConfig {
   readonly envVarName: string;
   readonly resourceId: SettingsResourceId;
+  readonly baseURL?: string;
 }
 
 export const PROVIDERS = {
@@ -122,6 +123,7 @@ export const PROVIDERS = {
   openai: {
     envVarName: 'OPENAI_API_KEY',
     resourceId: 'openai',
+    baseURL: 'https://api.openai.com/v1',
   },
   'openshift-ai': {
     envVarName: 'OPENSHIFT_AI_TOKEN',
