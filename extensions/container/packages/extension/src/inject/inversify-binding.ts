@@ -37,6 +37,9 @@ export class InversifyBinding {
   }
 
   public async initBindings(): Promise<Container> {
+    if (this.#container) {
+      throw new Error('Container already initialized');
+    }
     this.#container = new Container();
 
     this.#container.bind(ExtensionContextSymbol).toConstantValue(this.#extensionContext);
@@ -54,5 +57,6 @@ export class InversifyBinding {
     if (this.#container) {
       await this.#container.unbindAll();
     }
+    this.#container = undefined;
   }
 }

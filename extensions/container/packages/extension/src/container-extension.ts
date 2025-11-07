@@ -75,5 +75,7 @@ export class ContainerExtension {
     this.#containerEngineManager?.dispose();
     this.#containerEngineManager = undefined;
     await this.#inversifyBinding?.dispose();
+    this.#inversifyBinding = undefined;
+    this.#container = undefined;
   }
 }
