@@ -91,10 +91,30 @@ test.describe.serial('Flow page e2e test suite', { tag: '@smoke' }, () => {
     await flowDetailsPage.waitForLoad();
 
     await flowDetailsPage.switchToRunTab();
+    await expect
+      .poll(async () => await flowDetailsPage.getCurrentNumberOfRuns(), { timeout: TIMEOUTS.STANDARD })
+      .toBe(1);
     await flowDetailsPage.waitForTerminalContent(expectedTerminalContent, TIMEOUTS.DEFAULT);
   });
 
-  test('[FLOW-07] Check that user can delete the created flow from Flows page using the delete button', async ({
+  test('[FLOW-07] Run a flow a second time and check that task can be selected and changed', async ({
+    navigationBar,
+    flowsPage,
+  }) => {
+    await navigationBar.navigateToFlowsPage();
+    const flowDetailsPage = await flowsPage.runFlowByName(flowNameFromContentRegion);
+    await flowDetailsPage.waitForLoad();
+
+    await flowDetailsPage.switchToRunTab();
+    await expect
+      .poll(async () => await flowDetailsPage.getCurrentNumberOfRuns(), { timeout: TIMEOUTS.STANDARD })
+      .toBe(2);
+
+    await flowDetailsPage.selectLastTask();
+    await flowDetailsPage.waitForTerminalContent(expectedTerminalContent, TIMEOUTS.DEFAULT);
+  });
+
+  test('[FLOW-08] Check that user can delete the created flow from Flows page using the delete button', async ({
     navigationBar,
     flowsPage,
   }) => {

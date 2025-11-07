@@ -58,8 +58,8 @@ export class FlowDetailsPage extends BasePage {
     this.kubernetesTabLink = this.pageTabsRegion.getByRole('link', { name: 'Kubernetes' });
     this.runTabLink = this.pageTabsRegion.getByRole('link', { name: 'Run' });
     this.closeDetailsPageButton = this.header.getByRole('button', { name: 'Close' });
-    this.runsDropdownButton = this.pageTabsRegion.getByRole('button', { name: 'task-' }).first();
-    this.hiddenInputField = this.pageTabsRegion.getByLabel('hidden input');
+    this.runsDropdownButton = this.page.getByRole('button', { name: 'task-' }).first();
+    this.hiddenInputField = this.page.getByLabel('hidden input');
 
     this.terminalLocator = this.tabContentRegion.getByRole('term');
     this.terminalInput = this.terminalLocator.getByLabel('Terminal input');
@@ -175,20 +175,20 @@ export class FlowDetailsPage extends BasePage {
     return Number.parseInt(index);
   }
 
-  async selectTaskByIndex(index: number): Promise<void> {
+  async selectTaskByIndex(index: number, checkTerminalContentForText = ''): Promise<void> {
     const optionValue = `task-${index}`;
-    await this.selectTask(optionValue);
+    await this.selectTask(optionValue, checkTerminalContentForText);
   }
 
-  async selectTaskById(id: string): Promise<void> {
-    await this.selectTask(id);
+  async selectTaskById(id: string, checkTerminalContentForText = ''): Promise<void> {
+    await this.selectTask(id, checkTerminalContentForText);
   }
 
-  async selectLastTask(): Promise<void> {
-    await this.selectTaskById('latest');
+  async selectLastTask(checkTerminalContentForText = ''): Promise<void> {
+    await this.selectTaskById('latest', checkTerminalContentForText);
   }
 
-  private async selectTask(optionValue: string): Promise<void> {
+  private async selectTask(optionValue: string, checkTerminalContentForText = ''): Promise<void> {
     let taskLocator: Locator;
     const currentValue = await this.getCurrentSelectedTask();
     if (currentValue === optionValue) {
@@ -196,14 +196,15 @@ export class FlowDetailsPage extends BasePage {
     }
 
     if (optionValue === 'latest') {
-      taskLocator = this.pageTabsRegion.getByText('task-').last();
+      taskLocator = this.page.getByText('task-').last();
     } else {
-      taskLocator = this.pageTabsRegion.getByText(optionValue, { exact: true });
+      taskLocator = this.page.getByText(optionValue, { exact: true });
     }
 
     await this.runsDropdownButton.click();
     await expect(taskLocator).toBeVisible({ timeout: TIMEOUTS.STANDARD });
     await taskLocator.click();
+    await expect(this.terminalContent).toHaveText(checkTerminalContentForText, { timeout: TIMEOUTS.STANDARD });
     await expect(this.hiddenInputField).not.toHaveValue(currentValue, { timeout: TIMEOUTS.STANDARD });
   }
 }
