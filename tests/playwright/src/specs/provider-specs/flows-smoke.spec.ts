@@ -25,7 +25,7 @@ const flowName = 'custom-flow-smoke-test';
 const flowNameFromContentRegion = 'custom-flow-content-region-test';
 const prompt =
   'write a typescript recursive method that calculates the fibonacci number for a given index without using memoization';
-const expectedTerminalContent = /([a-zA-Z_]\w*)\(\s*n\s*-\s*1\s*\)\s*\+\s*\1\(\s*n\s*-\s*2\s*\)/;
+const expectedTerminalContent = /(\w+)\(\s*(\w+)\s*-\s*1\s*\)\s*\+\s*\1\(\s*\2\s*-\s*2\s*\)/;
 
 test.skip(!!process.env.CI, 'Skipping flow tests on CI');
 

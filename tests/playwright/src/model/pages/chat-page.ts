@@ -35,6 +35,7 @@ export class ChatPage extends BasePage {
   readonly suggestedMessagesGrid: Locator;
   readonly chatHistoryItems: Locator;
   readonly conversationMessages: Locator;
+  readonly modelConversationMessages: Locator;
   readonly chatHistoryItem: Locator;
   readonly chatHistoryItemMenuAction: Locator;
   readonly chatHistoryItemDeleteButton: Locator;
@@ -57,6 +58,7 @@ export class ChatPage extends BasePage {
     this.suggestedMessagesGrid = page.getByRole('region', { name: 'Suggested prompts' });
     this.chatHistoryItems = page.locator('li[data-sidebar="menu-item"]');
     this.conversationMessages = page.locator('div[data-role]');
+    this.modelConversationMessages = page.locator('div[data-role="assistant"]');
     this.chatHistoryItem = page.locator('button[data-sidebar="menu-button"]');
     this.chatHistoryItemMenuAction = page.locator('button[data-sidebar="menu-action"]');
     this.chatHistoryItemDeleteButton = page.getByRole('menuitem', { name: 'Delete' });
@@ -160,7 +162,19 @@ export class ChatPage extends BasePage {
   }
 
   async verifyConversationMessage(message: string): Promise<void> {
-    await expect(this.conversationMessages.locator('p').getByText(message, { exact: true })).toBeVisible();
+    await expect(this.conversationMessages.getByRole('paragraph').getByText(message, { exact: true })).toBeVisible();
+  }
+
+  async verifyModelConversationMessage(textOrRegex: string | RegExp): Promise<boolean> {
+    const messagesLocators = await this.modelConversationMessages.all();
+
+    for (const messageLocator of messagesLocators) {
+      const message = await messageLocator.textContent();
+      if (message?.match(textOrRegex)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   async ensureNotificationsAreNotVisible(): Promise<void> {

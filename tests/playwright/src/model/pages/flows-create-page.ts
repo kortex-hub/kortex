@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import { expect, type Locator, type Page } from '@playwright/test';
-import type { FlowParameters } from 'src/model/core/types';
+import { type FlowParameters, TIMEOUTS } from 'src/model/core/types';
 
 import { BasePage } from './base-page';
 import { FlowDetailsPage } from './flows-details-page';
@@ -50,7 +50,7 @@ export class FlowsCreatePage extends BasePage {
   }
 
   async waitForLoad(): Promise<void> {
-    await expect(this.heading).toBeVisible({ timeout: 15_000 });
+    await expect(this.heading).toBeVisible({ timeout: TIMEOUTS.STANDARD });
   }
 
   async createNewFlow(

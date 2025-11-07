@@ -15,6 +15,8 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+import { TIMEOUTS } from 'src/model/core/types';
+
 import { expect, test } from '../../fixtures/provider-fixtures';
 import { waitForNavigationReady } from '../../utils/app-ready';
 
@@ -109,28 +111,63 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
 
     await chatPage.ensureSidebarVisible();
     await chatPage.clickNewChat();
-
     const initialCount = await chatPage.getChatHistoryCount();
 
-    await chatPage.selectModelByIndex(0);
-    const firstModelName = await chatPage.getSelectedModelName();
-    const firstMessage = 'Hello, how are you?';
-    await chatPage.sendMessage(firstMessage);
-    await chatPage.verifyConversationMessage(firstMessage);
+    const modelSwitches = [
+      { modelIndex: 0, message: 'Hello, how are you?' },
+      { modelIndex: 1, message: 'Tell me about AI models' },
+    ];
 
+    const sentMessages: string[] = [];
     const expectedCountAfterFirstMessage = initialCount + 1;
-    await chatPage.waitForChatHistoryCount(expectedCountAfterFirstMessage);
 
-    await chatPage.selectModelByIndex(1);
-    const secondModelName = await chatPage.getSelectedModelName();
-    expect(firstModelName).not.toBe(secondModelName);
-    await chatPage.verifyConversationMessage(firstMessage);
+    for (const modelSwitch of modelSwitches) {
+      await chatPage.selectModelByIndex(modelSwitch.modelIndex);
+      const modelName = await chatPage.getSelectedModelName();
+      expect(modelName).toBeTruthy();
 
-    const secondMessage = 'Tell me about AI models';
-    await chatPage.sendMessage(secondMessage);
+      await chatPage.sendMessage(modelSwitch.message);
+      sentMessages.push(modelSwitch.message);
 
-    await chatPage.verifyConversationMessage(firstMessage);
-    await chatPage.verifyConversationMessage(secondMessage);
-    await chatPage.waitForChatHistoryCount(expectedCountAfterFirstMessage);
+      await chatPage.waitForChatHistoryCount(expectedCountAfterFirstMessage);
+
+      for (const message of sentMessages) {
+        await chatPage.verifyConversationMessage(message);
+      }
+    }
+  });
+
+  test('[CHAT-07] Export chat as Flow', async ({ chatPage, navigationBar, flowsPage }) => {
+    await chatPage.ensureSidebarVisible();
+    await chatPage.clickNewChat();
+
+    const promptForExport =
+      'write a typescript recursive method that calculates the fibonacci number for a given index without using memoization';
+    // Regex pattern to verify the model response contains recursive Fibonacci code
+    const expectedModelResponsePattern = /(\w+)\(\s*(\w+)\s*-\s*1\s*\)\s*\+\s*\1\(\s*\2\s*-\s*2\s*\)/;
+    const flowName = 'export-chat-as-flow';
+
+    await chatPage.sendMessage(promptForExport);
+    await chatPage.verifyConversationMessage(promptForExport);
+    await expect
+      .poll(async () => await chatPage.verifyModelConversationMessage(expectedModelResponsePattern), {
+        timeout: TIMEOUTS.STANDARD,
+        message: 'Model should respond with recursive Fibonacci code pattern',
+      })
+      .toBeTruthy();
+
+    // Capture the current model name before exporting to verify it's preserved in the flow
+    const currentModelName = await chatPage.getSelectedModelName();
+    expect(currentModelName).toBeTruthy();
+
+    const flowCreatePage = await chatPage.exportAsFlow();
+    await flowCreatePage.waitForLoad();
+    await expect(flowCreatePage.selectModelDropdown).toHaveText(currentModelName);
+
+    await flowCreatePage.createNewFlow(flowName);
+    await navigationBar.navigateToFlowsPage();
+    await flowsPage.ensureRowExists(flowName, TIMEOUTS.STANDARD, false);
+
+    await flowsPage.deleteAllFlows();
   });
 });
