@@ -52,7 +52,7 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
             controller.error(error);
           },
           (tokens: number) => {
-            console.log('IPCChatTransport: Stream completed tokens:', tokens);
+            console.log('IPCChatTransport: Stream completed tokens: ', tokens);
             controller.close();
             onEnd(tokens);
           },
