@@ -17,8 +17,10 @@
  ***********************************************************************/
 
 import type { ContainerExtensionAPI } from '@kortex-app/container-extension-api';
+import { injectable } from 'inversify';
 
 // class is responsible to manage the available container engines
+@injectable()
 export class ContainerEngineManager {
   async init(): Promise<void> {}
 
