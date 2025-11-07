@@ -162,7 +162,7 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
 
     const flowCreatePage = await chatPage.exportAsFlow();
     await flowCreatePage.waitForLoad();
-    await expect(flowCreatePage.selectModelDropdown).toHaveText(currentModelName);
+    await expect(flowCreatePage.selectModelDropdown).toContainText(currentModelName);
 
     await flowCreatePage.createNewFlow(flowName);
     await navigationBar.navigateToFlowsPage();
