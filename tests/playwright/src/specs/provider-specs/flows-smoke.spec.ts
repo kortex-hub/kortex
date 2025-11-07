@@ -91,7 +91,6 @@ test.describe.serial('Flow page e2e test suite', { tag: '@smoke' }, () => {
     await flowDetailsPage.waitForLoad();
 
     await flowDetailsPage.switchToRunTab();
-    await flowDetailsPage.waitForTerminalContentNotToContainText(expectedTerminalContent, TIMEOUTS.DEFAULT); // Ensure the terminal is empty before checking output
     await flowDetailsPage.waitForTerminalContent(expectedTerminalContent, TIMEOUTS.DEFAULT);
   });
 

@@ -19,7 +19,9 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { clearAllToasts, dropdownAction, handleDialogIfPresent } from 'src/utils/app-ready';
 
+import { TIMEOUTS } from '../core/types';
 import { BasePage } from './base-page';
+import { FlowsCreatePage } from './flows-create-page';
 
 export class ChatPage extends BasePage {
   readonly toggleSidebarButton: Locator;
@@ -40,6 +42,7 @@ export class ChatPage extends BasePage {
   readonly toasts: Locator;
   readonly modelMenuItems: Locator;
   readonly activeModelMenuItem: Locator;
+  readonly exportAsFlowButton: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -61,6 +64,7 @@ export class ChatPage extends BasePage {
     this.toasts = page.locator('[data-sonner-toast]');
     this.modelMenuItems = page.getByRole('menuitem');
     this.activeModelMenuItem = page.locator('[role="menuitem"][data-active="true"]');
+    this.exportAsFlowButton = page.getByRole('button', { name: 'Export as Flow' });
   }
 
   async waitForLoad(): Promise<void> {
@@ -181,5 +185,13 @@ export class ChatPage extends BasePage {
       const text = await this.activeModelMenuItem.textContent();
       return text?.trim() ?? '';
     });
+  }
+
+  async exportAsFlow(): Promise<FlowsCreatePage> {
+    await expect(this.exportAsFlowButton).toBeEnabled({ timeout: TIMEOUTS.STANDARD });
+    await this.exportAsFlowButton.click();
+    await expect(this.exportAsFlowButton).not.toBeVisible({ timeout: TIMEOUTS.STANDARD });
+
+    return new FlowsCreatePage(this.page);
   }
 }

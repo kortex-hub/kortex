@@ -19,6 +19,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { handleDialogIfPresent } from 'src/utils/app-ready';
 
+import { TIMEOUTS } from '../core/types';
 import { BasePage } from './base-page';
 import { FlowsPage } from './flows-page';
 
@@ -39,6 +40,8 @@ export class FlowDetailsPage extends BasePage {
   readonly terminalLocator: Locator;
   readonly terminalInput: Locator;
   readonly terminalContent: Locator;
+  readonly runsDropdownButton: Locator;
+  readonly hiddenInputField: Locator;
 
   constructor(page: Page, name: string) {
     super(page);
@@ -55,6 +58,8 @@ export class FlowDetailsPage extends BasePage {
     this.kubernetesTabLink = this.pageTabsRegion.getByRole('link', { name: 'Kubernetes' });
     this.runTabLink = this.pageTabsRegion.getByRole('link', { name: 'Run' });
     this.closeDetailsPageButton = this.header.getByRole('button', { name: 'Close' });
+    this.runsDropdownButton = this.pageTabsRegion.getByRole('button', { name: 'task-' }).first();
+    this.hiddenInputField = this.pageTabsRegion.getByLabel('hidden input');
 
     this.terminalLocator = this.tabContentRegion.getByRole('term');
     this.terminalInput = this.terminalLocator.getByLabel('Terminal input');
@@ -131,5 +136,81 @@ export class FlowDetailsPage extends BasePage {
     if (pressEnter) {
       await this.terminalInput.press('Enter');
     }
+  }
+
+  async getCurrentNumberOfRuns(): Promise<number> {
+    const fullText = await this.runTabLink.textContent();
+    if (!fullText) {
+      return 0;
+    }
+
+    const match = RegExp(/\((\d+)\)/).exec(fullText);
+    if (!match) {
+      return 0;
+    }
+
+    return Number.parseInt(match[1]);
+  }
+
+  async getCurrentSelectedTask(): Promise<string> {
+    const value = await this.hiddenInputField.getAttribute('value');
+    if (!value) {
+      return '';
+    }
+
+    return value;
+  }
+
+  async getCurrentSelectedTaskIndex(): Promise<number> {
+    const currentSelectedRun = await this.getCurrentSelectedTask();
+    if (!currentSelectedRun) {
+      return 0;
+    }
+
+    const index = currentSelectedRun.split('-').pop();
+    if (!index) {
+      return 0;
+    }
+
+    return Number.parseInt(index);
+  }
+
+  async selectTaskByIndex(index: number): Promise<void> {
+    const optionValue = `task-${index}`;
+    await this.selectTask(optionValue);
+  }
+
+  async selectTaskById(id: string): Promise<void> {
+    await this.selectTask(id);
+  }
+
+  async selectLastTask(): Promise<void> {
+    const currentValue = await this.getCurrentSelectedTask();
+    if (!currentValue) {
+      return;
+    }
+
+    const lastTaskLocator = this.runsDropdownButton.getByText('task-').last();
+    if (!lastTaskLocator) {
+      return;
+    }
+
+    const lastTaskValue = await lastTaskLocator.textContent();
+    if (!lastTaskValue) {
+      return;
+    }
+
+    await this.selectTaskById(lastTaskValue);
+  }
+
+  private async selectTask(optionValue: string): Promise<void> {
+    const currentValue = await this.getCurrentSelectedTask();
+    if (currentValue === optionValue) {
+      return;
+    }
+
+    await this.runsDropdownButton.click();
+    await this.runsDropdownButton.selectOption(optionValue);
+    await expect(this.hiddenInputField).toHaveAttribute('value', optionValue, { timeout: TIMEOUTS.STANDARD });
   }
 }
