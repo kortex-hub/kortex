@@ -185,32 +185,25 @@ export class FlowDetailsPage extends BasePage {
   }
 
   async selectLastTask(): Promise<void> {
-    const currentValue = await this.getCurrentSelectedTask();
-    if (!currentValue) {
-      return;
-    }
-
-    const lastTaskLocator = this.runsDropdownButton.getByText('task-').last();
-    if (!lastTaskLocator) {
-      return;
-    }
-
-    const lastTaskValue = await lastTaskLocator.textContent();
-    if (!lastTaskValue) {
-      return;
-    }
-
-    await this.selectTaskById(lastTaskValue);
+    await this.selectTaskById('latest');
   }
 
   private async selectTask(optionValue: string): Promise<void> {
+    let taskLocator: Locator;
     const currentValue = await this.getCurrentSelectedTask();
     if (currentValue === optionValue) {
       return;
     }
 
+    if (optionValue === 'latest') {
+      taskLocator = this.pageTabsRegion.getByText('task-').last();
+    } else {
+      taskLocator = this.pageTabsRegion.getByText(optionValue, { exact: true });
+    }
+
     await this.runsDropdownButton.click();
-    await this.runsDropdownButton.selectOption(optionValue);
-    await expect(this.hiddenInputField).toHaveAttribute('value', optionValue, { timeout: TIMEOUTS.STANDARD });
+    await expect(taskLocator).toBeVisible({ timeout: TIMEOUTS.STANDARD });
+    await taskLocator.click();
+    await expect(this.hiddenInputField).not.toHaveValue(currentValue, { timeout: TIMEOUTS.STANDARD });
   }
 }
