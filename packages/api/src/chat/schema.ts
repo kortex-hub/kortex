@@ -44,6 +44,7 @@ export const message = sqliteTable('Message', {
   attachments: text('attachments', { mode: 'json' }).notNull(),
   createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
   config: text('config', { mode: 'json' }).notNull(),
+  tokens: integer('tokens'),
 });
 
 export type Message = InferSelectModel<typeof message>;

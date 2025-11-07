@@ -69,6 +69,14 @@ const selectedMCPToolsCount = $derived(
 
 const chatHistory = ChatHistory.fromContext();
 
+let totalTokens = $state(
+  messages[messages.length - 1] !== undefined &&
+    typeof messages[messages.length - 1] === 'object' &&
+    'tokens' in messages[messages.length - 1]
+    ? messages[messages.length - 1].tokens
+    : 0,
+);
+
 const chatClient = $derived(
   new Chat({
     id: chat?.id,
@@ -86,6 +94,9 @@ const chatClient = $derived(
           },
           {} as Record<string, Array<string>>,
         );
+      },
+      onEnd: (tokens: number): void => {
+        totalTokens = tokens;
       },
     }),
     // This way, the client is only recreated when the ID changes, allowing us to fully manage messages
@@ -152,11 +163,18 @@ function onCheckMCPTool(mcpId: string, toolId: string, checked: boolean): void {
                     loading={chatClient.status === 'streaming' || chatClient.status === 'submitted'}
                     messages={chatClient.messages}
                 />
-                <form class="bg-background mx-auto flex w-full gap-2 px-4 pb-4 md:max-w-3xl md:pb-6">
+                <form class="bg-background mx-auto flex w-full gap-2 px-4 md:max-w-3xl">
                     {#if !readonly}
                         <MultimodalInput {attachments} {chatClient} {selectedModel} {selectedMCPTools} class="flex-1" />
                     {/if}
                 </form>
+                {#if !readonly}
+                    <div class="bg-background mx-auto justify-end flex w-full px-4 pb-2 md:max-w-3xl">
+                        <div class="bg-muted flex gap-4 rounded-lg px-4 py-2 text-sm text-muted-foreground right-0">
+                            <span>Tokens: <strong>{totalTokens}</strong></span>
+                        </div>
+                    </div>
+                {/if}
             </div>
             <McpToolsSidepanel
               bind:mcpSelectorOpen={mcpSelectorOpen}
