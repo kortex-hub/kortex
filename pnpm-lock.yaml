@@ -499,8 +499,8 @@ importers:
   packages/renderer:
     dependencies:
       '@ai-sdk/svelte':
-        specifier: ^3.0.88
-        version: 3.0.88(svelte@5.38.1)(zod@4.1.12)
+        specifier: ^3.0.89
+        version: 3.0.89(svelte@5.38.1)(zod@4.1.12)
       '@ai-sdk/ui-utils':
         specifier: ^1.2.11
         version: 1.2.11(zod@4.1.12)
@@ -740,8 +740,8 @@ packages:
     resolution: {integrity: sha512-6o7Y2SeO9vFKB8lArHXehNuusnpddKPk7xqL7T2/b+OvXMRIXUO1rR4wcv1hAFUAT9avGZshty3Wlua/XA7TvA==}
     engines: {node: '>=18'}
 
-  '@ai-sdk/svelte@3.0.88':
-    resolution: {integrity: sha512-GlvGEnZawn1KqS1oIgixpDO2clABjhJm2oQpYnsyXAWCKWMi80clMEEJ981/wjqAKWo+Bbx8H1f3QwFl4nRG7w==}
+  '@ai-sdk/svelte@3.0.89':
+    resolution: {integrity: sha512-boPFKvoNeDHyRzXu6nErHUVtvu6zr6RTKRvrkbkTgTxldVK9QVS6fl91/T+VKqHsWV5zYbB5DCBrb40U3QGE0g==}
     peerDependencies:
       svelte: ^5.31.0
       zod: ^3.25.76 || ^4.1.8
@@ -2922,6 +2922,12 @@ packages:
 
   ai@5.0.88:
     resolution: {integrity: sha512-72nSwQT6iMgfbblwDo59cmFTtsNzfyMVH9MigeIh5IHiqoDqxRAkv0IBb9XYj6RD52tAJw7Wj/n+LEhezvYqkw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  ai@5.0.89:
+    resolution: {integrity: sha512-8Nq+ZojGacQrupoJEQLrTDzT5VtR3gyp5AaqFSV3tzsAXlYQ9Igb7QE3yeoEdzOk5IRfDwWL7mDCUD+oBg1hDA==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -7767,10 +7773,10 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/svelte@3.0.88(svelte@5.38.1)(zod@4.1.12)':
+  '@ai-sdk/svelte@3.0.89(svelte@5.38.1)(zod@4.1.12)':
     dependencies:
       '@ai-sdk/provider-utils': 3.0.16(zod@4.1.12)
-      ai: 5.0.88(zod@4.1.12)
+      ai: 5.0.89(zod@4.1.12)
       svelte: 5.38.1
     optionalDependencies:
       zod: 4.1.12
@@ -10047,7 +10053,7 @@ snapshots:
       '@opentelemetry/api': 1.9.0
       zod: 4.1.11
 
-  ai@5.0.88(zod@4.1.12):
+  ai@5.0.89(zod@4.1.12):
     dependencies:
       '@ai-sdk/gateway': 2.0.7(zod@4.1.12)
       '@ai-sdk/provider': 2.0.0
