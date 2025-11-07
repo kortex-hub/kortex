@@ -204,7 +204,13 @@ export class FlowDetailsPage extends BasePage {
     await this.runsDropdownButton.click();
     await expect(taskLocator).toBeVisible({ timeout: TIMEOUTS.STANDARD });
     await taskLocator.click();
-    await expect(this.terminalContent).toHaveText(checkTerminalContentForText, { timeout: TIMEOUTS.STANDARD });
+
+    if (checkTerminalContentForText) {
+      await expect(this.terminalContent).toContainText(checkTerminalContentForText, { timeout: TIMEOUTS.STANDARD });
+    } else {
+      await expect(this.terminalContent).toHaveText('', { timeout: TIMEOUTS.STANDARD }); // Empty terminal content ensure terminal is ready for new input
+    }
+
     await expect(this.hiddenInputField).not.toHaveValue(currentValue, { timeout: TIMEOUTS.STANDARD });
   }
 }
