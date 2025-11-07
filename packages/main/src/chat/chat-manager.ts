@@ -253,7 +253,7 @@ export class ChatManager {
               chatId,
               attachments: [],
               config,
-              tokens: totalUsage.totalTokens ?? null,
+              tokens: totalUsage.totalTokens,
             })),
           });
         },
