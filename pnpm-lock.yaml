@@ -509,6 +509,40 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.1.0)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(msw@2.10.4(@types/node@24.1.0)(typescript@5.9.2))(terser@5.36.0)(tsx@4.20.3)(yaml@2.8.1)
 
+  extensions/ramalama:
+    dependencies:
+      '@ai-sdk/openai-compatible':
+        specifier: ^1.0.19
+        version: 1.0.26(zod@4.1.12)
+      inversify:
+        specifier: ^7.7.1
+        version: 7.7.1(reflect-metadata@0.2.2)
+    devDependencies:
+      '@kortex-app/api':
+        specifier: workspace:*
+        version: link:../../packages/extension-api
+      '@kortex-app/container-extension-api':
+        specifier: workspace:*
+        version: link:../container/packages/api
+      '@types/dockerode':
+        specifier: ^3.3.42
+        version: 3.3.42
+      adm-zip:
+        specifier: ^0.5.16
+        version: 0.5.16
+      mkdirp:
+        specifier: ^3.0.1
+        version: 3.0.1
+      msw:
+        specifier: ^2.10.4
+        version: 2.10.4(@types/node@24.1.0)(typescript@5.9.2)
+      vite:
+        specifier: ^7.1.2
+        version: 7.1.2(@types/node@24.1.0)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.36.0)(tsx@4.20.3)(yaml@2.8.1)
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.1.0)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.30.1)(msw@2.10.4(@types/node@24.1.0)(typescript@5.9.2))(terser@5.36.0)(tsx@4.20.3)(yaml@2.8.1)
+
   packages/extension-api:
     devDependencies:
       '@ai-sdk/provider':
@@ -7816,7 +7850,7 @@ snapshots:
       make-fetch-happen: 10.2.1
       nopt: 6.0.0
       proc-log: 2.0.1
-      semver: 7.7.2
+      semver: 7.7.3
       tar: 6.2.1
       which: 2.0.2
     transitivePeerDependencies:
@@ -8184,7 +8218,6 @@ snapshots:
       '@inquirer/type': 3.0.7(@types/node@24.1.0)
     optionalDependencies:
       '@types/node': 24.1.0
-    optional: true
 
   '@inquirer/core@10.1.14(@types/node@22.17.0)':
     dependencies:
@@ -8211,7 +8244,6 @@ snapshots:
       yoctocolors-cjs: 2.1.2
     optionalDependencies:
       '@types/node': 24.1.0
-    optional: true
 
   '@inquirer/figures@1.0.12': {}
 
@@ -8222,7 +8254,6 @@ snapshots:
   '@inquirer/type@3.0.7(@types/node@24.1.0)':
     optionalDependencies:
       '@types/node': 24.1.0
-    optional: true
 
   '@internationalized/date@3.8.2':
     dependencies:
@@ -8424,7 +8455,7 @@ snapshots:
   '@npmcli/fs@2.1.2':
     dependencies:
       '@gar/promisify': 1.1.3
-      semver: 7.7.2
+      semver: 7.7.3
 
   '@npmcli/move-file@2.0.1':
     dependencies:
@@ -8895,7 +8926,7 @@ snapshots:
   '@types/body-parser@1.19.5':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 22.18.6
+      '@types/node': 22.19.0
 
   '@types/cacheable-request@6.0.3':
     dependencies:
@@ -8914,7 +8945,7 @@ snapshots:
 
   '@types/conventional-commits-parser@5.0.1':
     dependencies:
-      '@types/node': 22.18.6
+      '@types/node': 22.19.0
 
   '@types/cookie@0.6.0': {}
 
@@ -8939,7 +8970,7 @@ snapshots:
 
   '@types/express-serve-static-core@4.19.6':
     dependencies:
-      '@types/node': 22.18.6
+      '@types/node': 22.19.0
       '@types/qs': 6.9.18
       '@types/range-parser': 1.2.7
       '@types/send': 0.17.4
@@ -9056,7 +9087,7 @@ snapshots:
   '@types/serve-static@1.15.7':
     dependencies:
       '@types/http-errors': 2.0.4
-      '@types/node': 22.18.6
+      '@types/node': 22.19.0
       '@types/send': 0.17.4
 
   '@types/ssh2@1.15.5':
@@ -9071,7 +9102,7 @@ snapshots:
 
   '@types/stream-chain@2.1.0':
     dependencies:
-      '@types/node': 22.18.6
+      '@types/node': 22.19.0
 
   '@types/stream-json@1.7.8':
     dependencies:
@@ -9085,7 +9116,7 @@ snapshots:
 
   '@types/tar-stream@3.1.3':
     dependencies:
-      '@types/node': 22.18.6
+      '@types/node': 22.19.0
 
   '@types/tar@6.1.13':
     dependencies:
@@ -9121,7 +9152,7 @@ snapshots:
 
   '@types/yauzl@2.10.3':
     dependencies:
-      '@types/node': 22.18.6
+      '@types/node': 22.19.0
     optional: true
 
   '@typescript-eslint/eslint-plugin@8.39.1(@typescript-eslint/parser@8.39.1(eslint@9.33.0(jiti@2.4.2))(typescript@5.9.2))(eslint@9.33.0(jiti@2.4.2))(typescript@5.9.2)':
@@ -13189,7 +13220,6 @@ snapshots:
       typescript: 5.9.2
     transitivePeerDependencies:
       - '@types/node'
-    optional: true
 
   mustache@4.2.0: {}
 
