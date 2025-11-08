@@ -16,7 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-export class InferenceModelManager {
+import type { Disposable } from '@kortex-app/api';
+
+export class InferenceModelManager implements Disposable {
   async init(): Promise<void> {}
 
   dispose(): void {}
