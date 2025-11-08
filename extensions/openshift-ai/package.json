@@ -27,7 +27,7 @@
         "openshiftai.factory.token": {
           "type": "string",
           "scope": "InferenceProviderConnectionFactory",
-          "description": "Enter your OpenSjift AI token",
+          "description": "Enter your OpenShift AI token",
           "format": "password"
         }
       }
