@@ -67,6 +67,10 @@ const selectedMCPToolsCount = $derived(
   }, 0),
 );
 
+let selectedMCPTools = $state<Map<string, Set<string>>>(
+  new Map(Object.entries(config?.tools ?? {}).map(([key, value]) => [key, new Set(value)])),
+);
+
 const chatHistory = ChatHistory.fromContext();
 
 const chatClient = $derived(
@@ -77,6 +81,15 @@ const chatClient = $derived(
         const value = $state.snapshot(selectedModel);
         if (!value) throw new Error('no model selected');
         return value;
+      },
+      getMCPTools: (): Record<string, Array<string>> => {
+        return selectedMCPTools.entries().reduce(
+          (accumulator, [mcpId, tools]) => {
+            accumulator[mcpId] = Array.from(tools.values());
+            return accumulator;
+          },
+          {} as Record<string, Array<string>>,
+        );
       },
       getMCPTools: (): Record<string, Array<string>> => {
         return selectedMCPTools.entries().reduce(
