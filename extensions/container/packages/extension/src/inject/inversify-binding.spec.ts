@@ -20,6 +20,7 @@ import type { ExtensionContext, Provider, TelemetryLogger } from '@kortex-app/ap
 import { Container } from 'inversify';
 import { beforeEach, expect, test, vi } from 'vitest';
 
+import { helpersModule } from '/@/helper/_helper-module';
 import { managersModule } from '/@/manager/_manager-module';
 import { ContainerEngineManager } from '/@/manager/container-engine-manager';
 
@@ -55,6 +56,7 @@ test('should initialize bindings correctly', async () => {
   expect(vi.mocked(Container.prototype.bind)).toHaveBeenCalledWith(ContainersProvider);
 
   // expect load of modules
+  expect(vi.mocked(Container.prototype.load)).toHaveBeenCalledWith(helpersModule);
   expect(vi.mocked(Container.prototype.load)).toHaveBeenCalledWith(managersModule);
 });
 

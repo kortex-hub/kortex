@@ -368,6 +368,9 @@ importers:
       inversify:
         specifier: ^7.7.1
         version: 7.7.1(reflect-metadata@0.2.2)
+      zod:
+        specifier: ^4.1.11
+        version: 4.1.12
     devDependencies:
       '@kortex-app/api':
         specifier: workspace:*
