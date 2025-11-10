@@ -18,6 +18,7 @@
 
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import { TIMEOUTS } from '../core/types';
 import { BasePage } from './base-page';
 import { McpEditRegistriesTabPage } from './mcp-edit-registries-tab-page';
 import { McpInstallTabPage } from './mcp-install-tab-page';
@@ -66,13 +67,15 @@ export class McpPage extends BasePage {
 
     const readyTabAfterInstall = await this.openReadyTab();
     await expect
-      .poll(async () => await readyTabAfterInstall.isServerConnected(serverName), { timeout: 15_000 })
+      .poll(async () => await readyTabAfterInstall.isServerConnected(serverName), { timeout: TIMEOUTS.SHORT })
       .toBeTruthy();
   }
 
   async deleteServer(serverName: string): Promise<void> {
     const readyTab = await this.openReadyTab();
     await readyTab.deleteServer(serverName);
-    await expect.poll(async () => await readyTab.isServerConnected(serverName), { timeout: 10_000 }).toBeFalsy();
+    await expect
+      .poll(async () => await readyTab.isServerConnected(serverName), { timeout: TIMEOUTS.SHORT })
+      .toBeFalsy();
   }
 }

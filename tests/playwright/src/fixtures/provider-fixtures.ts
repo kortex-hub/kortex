@@ -15,7 +15,9 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { type ElectronApplication, type Page } from '@playwright/test';
+
+/** biome-ignore-all lint/correctness/noEmptyPattern: Playwright fixture pattern requires empty object when no dependencies are needed */
+import type { ElectronApplication, Page } from '@playwright/test';
 
 import { MCP_SERVERS, type MCPServerId, PROVIDERS, type ResourceId } from '../model/core/types';
 import { NavigationBar } from '../model/navigation/navigation';
@@ -104,8 +106,8 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
           const token = requireEnvVar(server.envVarName);
 
           try {
-            await mcpPage.createServer(server.serverName, token);
             configuredServers.push({ id, serverName: server.serverName });
+            await mcpPage.createServer(server.serverName, token);
           } catch (error) {
             console.warn(`MCP setup skipped for ${id}:`, error);
             throw error;

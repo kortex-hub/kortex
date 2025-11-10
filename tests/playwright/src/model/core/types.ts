@@ -158,4 +158,5 @@ export const TIMEOUTS = {
   DEFAULT: 120_000,
   INITIALIZING_SCREEN: 180_000,
   STANDARD: 30_000,
+  SHORT: 10_000,
 } as const;

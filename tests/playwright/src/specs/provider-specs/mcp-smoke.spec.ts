@@ -16,12 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { test } from '../fixtures/electron-app';
-import { waitForNavigationReady } from '../utils/app-ready';
+import { expect, test } from '../../fixtures/provider-fixtures';
+import { MCP_SERVERS } from '../../model/core/types';
+import { waitForNavigationReady } from '../../utils/app-ready';
 
 const MCP_REGISTRY_EXAMPLE = 'MCP Registry example';
 const MCP_REGISTRY_URL = 'https://registry.modelcontextprotocol.io';
 const SERVER_LIST_UPDATE_TIMEOUT = 60_000;
+const SERVER_CONNECTION_TIMEOUT = 10_000;
 
 test.describe('MCP Registry Management', { tag: '@smoke' }, () => {
   test.beforeEach(async ({ page, navigationBar }) => {
@@ -51,4 +53,22 @@ test.describe('MCP Registry Management', { tag: '@smoke' }, () => {
     await mcpPage.openInstallTab();
     await installTab.verifyServerCountIsRestored(initialServerCount);
   });
+
+  // Test expected to fail until issue https://github.com/kortex-hub/kortex/issues/651 is fixed
+  test.fail(
+    '[MCP-02] Add and remove MCP server: verify server list updates accordingly',
+    async ({ mcpSetup: _mcpSetup, mcpPage }) => {
+      test.skip(
+        !process.env[MCP_SERVERS.github.envVarName],
+        `${MCP_SERVERS.github.envVarName} environment variable is not set`,
+      );
+
+      const serverName = MCP_SERVERS.github.serverName;
+      const mcpReadyTab = await mcpPage.openReadyTab();
+
+      await expect
+        .poll(async () => await mcpReadyTab.isServerConnected(serverName), { timeout: SERVER_CONNECTION_TIMEOUT })
+        .toBeTruthy();
+    },
+  );
 });

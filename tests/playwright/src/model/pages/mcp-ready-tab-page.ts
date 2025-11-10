@@ -43,7 +43,9 @@ export class McpReadyTabPage extends BaseTablePage {
   async deleteServer(serverName: string): Promise<void> {
     const server = this.findServer(serverName).first();
     if ((await server.count()) > 0) {
-      await server.getByRole('button', { name: 'Remove instance of MCP' }).click();
+      const deleteButton = server.getByRole('button', { name: 'Remove instance of MCP' });
+      await deleteButton.focus();
+      await deleteButton.click();
     }
   }
 
