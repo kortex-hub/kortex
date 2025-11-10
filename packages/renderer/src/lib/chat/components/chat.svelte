@@ -69,7 +69,7 @@ const selectedMCPToolsCount = $derived(
 
 const chatHistory = ChatHistory.fromContext();
 
-let totalTokens = $state(messages[messages.length - 1]?.tokens ? messages[messages.length - 1].tokens : 0);
+let totalTokens = $state(messages[messages.length - 1]?.tokens ?? 0);
 
 const chatClient = $derived(
   new Chat({
@@ -140,18 +140,10 @@ function onCheckMCPTool(mcpId: string, toolId: string, checked: boolean): void {
 </script>
 
 <div class="bg-background flex h-full min-w-0 flex-col">
-  {#if hasModels}
-	  <ChatHeader
-      bind:mcpSelectorOpen={mcpSelectorOpen}
-      {readonly}
-      models={models}
-      selectedMCPToolsCount={selectedMCPToolsCount}
-      bind:selectedModel={selectedModel}
-    />
-  {/if}
   <div class="flex min-h-0 flex-1">
         {#if hasModels}
             <div class="flex flex-col flex-3/4">
+              <ChatHeader bind:mcpSelectorOpen={mcpSelectorOpen} {readonly} models={models} bind:selectedModel={selectedModel} bind:selectedMCP={selectedMCP} tokens={totalTokens}/>
                 <Messages
                     {readonly}
                     loading={chatClient.status === 'streaming' || chatClient.status === 'submitted'}
@@ -162,13 +154,6 @@ function onCheckMCPTool(mcpId: string, toolId: string, checked: boolean): void {
                         <MultimodalInput {attachments} {chatClient} {selectedModel} {selectedMCPTools} class="flex-1" />
                     {/if}
                 </form>
-                {#if !readonly}
-                    <div class="bg-background mx-auto justify-end flex w-full px-4 pb-2 md:max-w-3xl">
-                        <div class="bg-muted flex gap-4 rounded-lg px-4 py-2 text-sm text-muted-foreground right-0">
-                            <span>Tokens: <strong>{totalTokens}</strong></span>
-                        </div>
-                    </div>
-                {/if}
             </div>
             <McpToolsSidepanel
               bind:mcpSelectorOpen={mcpSelectorOpen}

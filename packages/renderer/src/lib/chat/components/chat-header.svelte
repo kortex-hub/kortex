@@ -22,6 +22,7 @@ let {
   selectedModel = $bindable<ModelInfo | undefined>(),
   selectedMCPToolsCount,
   mcpSelectorOpen = $bindable(),
+  tokens,
 }: {
   readonly: boolean;
   selectedModel: ModelInfo | undefined;
@@ -31,6 +32,7 @@ let {
    */
   selectedMCPToolsCount: number;
   mcpSelectorOpen: boolean;
+  tokens: number;
 } = $props();
 
 const sidebar = useSidebar();
@@ -42,7 +44,7 @@ function onToolSelection(): void {
 }
 </script>
 
-<header class="bg-background sticky top-0 flex items-start gap-2 p-2">
+<header class="bg-background sticky top-0 flex items-start gap-2 p-2 w-full">
 	<SidebarToggle />
 
 	{#if !sidebar.open || (innerWidth.current ?? 768) < 768}
@@ -98,6 +100,9 @@ function onToolSelection(): void {
 				)}>Tools Selection ({selectedMCPToolsCount})</Button>
             {/if}
         </div>
+    <div class="order-3 ml-auto bg-muted flex justify-end gap-4 rounded-lg py-2 text-sm text-muted-foreground">
+      <span>Tokens: <strong>{tokens}</strong></span>
+    </div>
     {/if}
 
     <!-- {#if !readonly && chat}
