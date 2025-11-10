@@ -21,16 +21,13 @@
     "watch": "vite build --watch"
   },
   "dependencies": {
-    "@ai-sdk/openai-compatible": "^1.0.19",
     "inversify": "^7.7.1"
   },
   "devDependencies": {
     "@kortex-app/api": "workspace:*",
     "@kortex-app/container-extension-api": "workspace:*",
-    "@types/dockerode": "^3.3.42",
     "adm-zip": "^0.5.16",
     "mkdirp": "^3.0.1",
-    "msw": "^2.10.4",
     "vite": "^7.1.2",
     "vitest": "^3.2.4"
   }
