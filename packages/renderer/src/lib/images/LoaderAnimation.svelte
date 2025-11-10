@@ -51,12 +51,13 @@ onMount(() => {
 });
 </script>
 
-<svg width={size} height={size} viewBox="0 0 {size} {size}"
-    xmlns="http://www.w3.org/2000/svg"
-    xmlns:xlink="http://www.w3.org/1999/xlink" color-interpolation-filters="sRGB"
-    aria-hidden="true"
-    role="img"
-    style="--center: {size / 2}px; --float-x: {size * 40 / 800}px; --float-y: {size * -20 / 800}px;">
+<div role="status">
+  <span class="sr-only">Loading</span>
+  <svg width={size} height={size} viewBox="0 0 {size} {size}"
+      xmlns="http://www.w3.org/2000/svg"
+      xmlns:xlink="http://www.w3.org/1999/xlink" color-interpolation-filters="sRGB"
+      aria-hidden="true"
+      style="--center: {size / 2}px; --float-x: {size * 40 / 800}px; --float-y: {size * -20 / 800}px;">
     <style>
         @keyframes rotateDots {
             to { transform: translate(var(--center), var(--center)) scale(0.7) rotate(360deg); }
@@ -117,4 +118,19 @@ onMount(() => {
         <use xlink:href="#head"/>
         <use id="eyesElement" bind:this={eyesElement} xlink:href="#eyes" style="opacity: 0;"/>
     </g>
-</svg>
+  </svg>
+</div>
+
+<style>
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+</style>
