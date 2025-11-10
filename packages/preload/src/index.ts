@@ -357,7 +357,12 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld(
     'flowExecute',
-    async (flow: { providerId: string; connectionName: string; flowId: string }): Promise<string> => {
+    async (flow: {
+      providerId: string;
+      connectionName: string;
+      flowId: string;
+      params?: Record<string, string>;
+    }): Promise<string> => {
       return ipcInvoke('flows:execute', flow);
     },
   );

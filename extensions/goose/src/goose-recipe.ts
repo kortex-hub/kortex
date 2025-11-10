@@ -136,10 +136,10 @@ export class GooseRecipe implements Disposable {
     return Buffer.from(fullPath).toString('base64');
   }
 
-  protected async execute(flowId: string, logger: Logger): Promise<void> {
+  protected async execute(flowId: string, logger: Logger, params?: Record<string, string>): Promise<void> {
     const { env, flowPath } = await this.getFlowInfos(flowId);
     // execute goose recipe using run
-    await this.gooseCLI.run(flowPath, logger, { path: this.getBasePath(), env });
+    await this.gooseCLI.run(flowPath, logger, { path: this.getBasePath(), env, params });
   }
 
   protected async generateCommandLine(options: FlowGenerateCommandLineOptions): Promise<FlowGenerateCommandLineResult> {

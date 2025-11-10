@@ -100,7 +100,12 @@ export class FlowManager implements Disposable {
     });
   }
 
-  public async execute(providerId: string, connectionName: string, flowId: string): Promise<string> {
+  public async execute(
+    providerId: string,
+    connectionName: string,
+    flowId: string,
+    params?: Record<string, string>,
+  ): Promise<string> {
     // Get the flow provider to use
     const flowProvider = this.provider.getProvider(providerId);
     const flowConnection = flowProvider.flowConnections.find(({ name }) => name === connectionName);
@@ -130,7 +135,7 @@ export class FlowManager implements Disposable {
     task.status = 'in-progress';
 
     flowConnection.flow
-      .execute(flowId, logger)
+      .execute(flowId, logger, params)
       .then(() => {
         task.state = 'completed';
         task.status = 'success';
@@ -235,10 +240,11 @@ export class FlowManager implements Disposable {
           providerId: string;
           connectionName: string;
           flowId: string;
+          params?: Record<string, string>;
         },
       ): Promise<string> => {
         // Get the flow provider to use
-        return this.execute(flow.providerId, flow.connectionName, flow.flowId);
+        return this.execute(flow.providerId, flow.connectionName, flow.flowId, flow.params);
       },
     );
 

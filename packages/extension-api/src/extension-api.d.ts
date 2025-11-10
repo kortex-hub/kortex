@@ -497,7 +497,7 @@ declare module '@kortex-app/api' {
       /**
        * @experimental expect change
        */
-      execute(flowId: string, logger: Logger): Promise<void>;
+      execute(flowId: string, logger: Logger, params?: Record<string, string>): Promise<void>;
     };
   }
 

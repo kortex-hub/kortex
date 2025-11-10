@@ -85,17 +85,27 @@ export class GooseCLI implements Disposable {
 
   generateCommandLine(
     flowPath: string,
-    options: { path: string; env?: Record<string, string> },
+    options: { path: string; env?: Record<string, string>; params?: Record<string, string> },
   ): FlowGenerateCommandLineResult {
     if (!this.cli?.path) throw new Error('goose not installed');
+    const args = ['run', '--recipe', flowPath];
+    if (options.params) {
+      for (const key in options.params) {
+        args.push('--params', `${key}=${options.params[key]}`);
+      }
+    }
     return {
       command: this.cli.path,
-      args: ['run', '--recipe', flowPath],
+      args,
       env: { GOOSE_RECIPE_PATH: options.path, ...options.env },
     };
   }
 
-  async run(flowPath: string, logger: Logger, options: { path: string; env?: Record<string, string> }): Promise<void> {
+  async run(
+    flowPath: string,
+    logger: Logger,
+    options: { path: string; env?: Record<string, string>; params?: Record<string, string> },
+  ): Promise<void> {
     const deferred = Promise.withResolvers<void>();
 
     const commandLine = this.generateCommandLine(flowPath, options);
