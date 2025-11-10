@@ -75,23 +75,45 @@ export class MCPManager implements IAsyncDisposable {
 
   /**
    * Must be under the form `${internalProviderId}:${connectionName}`
-   * @param selected
+   * @param selectedMCP the list of MCP servers to include
+   * @param selectedTools the list of tools per MCP server to include
    */
-  public async getToolSet(selected: Array<string> | undefined = undefined): Promise<ToolSet> {
-    const tools = await Promise.all(
-      (
-        selected?.reduce(
-          (accumulator, current) => {
-            const client = this.#client.get(current);
-            if (client) {
-              accumulator.push(client);
+  public async getToolSet(
+    selectedMCP: Array<string> | undefined = undefined,
+    selectedTools: Record<string, Array<string>> = {},
+  ): Promise<ToolSet> {
+    let tools: Array<ToolSet>;
+    if (!selectedMCP) {
+      // Get all tools without filtering
+      tools = await Promise.all(this.#client.values().map(client => client.tools()));
+    } else {
+      tools = await Promise.all(
+        selectedMCP.map(
+          async mcp => {
+            const client = this.#client.get(mcp);
+            if (!client) {
+              return {};
             }
-            return accumulator;
+            const toolset = await client.tools();
+            // Let's check if user specified filtered on tools to use
+            const filtered = selectedTools[mcp];
+            // If none return all toolset
+            if (!filtered) return toolset;
+
+            const filteredSet = new Set<string>(filtered);
+
+            return Object.entries(toolset).reduce((accumulator, [toolName, content]) => {
+              if (filteredSet.has(toolName)) {
+                accumulator[toolName] = content;
+              }
+
+              return accumulator;
+            }, {} as ToolSet);
           },
-          [] as Array<ExtractedMCPClient>,
-        ) ?? Array.from(this.#client.values())
-      ).map(client => client.tools()),
-    );
+          [] as Array<ToolSet>,
+        ),
+      );
+    }
 
     return tools.reduce((acc, current) => {
       return { ...acc, ...current };
