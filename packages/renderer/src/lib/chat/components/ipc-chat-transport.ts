@@ -6,6 +6,7 @@ import { currentChatId } from '../state/current-chat-id.svelte.js';
 
 interface Dependencies {
   getModel: () => ModelInfo;
+  getMCP: () => Array<string>;
   getMCPTools: () => Record<string, Array<string>>;
 }
 
@@ -25,6 +26,7 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
     const model = this.dependencies.getModel();
     console.log('Selected model', model);
 
+    const mcp = this.dependencies.getMCP();
     const tools = this.dependencies.getMCPTools();
 
     return new ReadableStream<UIMessageChunk>({
@@ -36,6 +38,7 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
             providerId,
             connectionName,
             modelId: label,
+            mcp,
             tools,
             messages: uiMessages,
           },

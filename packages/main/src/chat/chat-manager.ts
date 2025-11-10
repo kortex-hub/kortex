@@ -181,7 +181,7 @@ export class ChatManager {
     const convertedMessages = await this.convertMessages(params.messages);
     const messages = convertToModelMessages(convertedMessages);
 
-    const tools = await this.mcpManager.getToolSet(params.tools);
+    const tools = await this.mcpManager.getToolSet(params.mcp, params.tools);
 
     return {
       model,
@@ -218,6 +218,7 @@ export class ChatManager {
     }
 
     const config: MessageConfig = {
+      mcp: params.mcp,
       tools: params.tools,
       modelId: params.modelId,
       connectionName: params.connectionName,

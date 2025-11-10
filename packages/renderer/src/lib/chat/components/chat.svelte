@@ -2,7 +2,7 @@
 import { Chat } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
 import { untrack } from 'svelte';
-import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+import { SvelteSet } from 'svelte/reactivity';
 import { toast } from 'svelte-sonner';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
@@ -132,6 +132,10 @@ function onCheckMCPTool(mcpId: string, toolId: string, checked: boolean): void {
   }
   selectedMCPTools.set(mcpId, tools);
 }
+
+function onClearMCPTools(mcpId: string): void {
+  selectedMCPTools.delete(mcpId);
+}
 </script>
 
 <div class="bg-background flex h-full min-w-0 flex-col">
@@ -159,9 +163,10 @@ function onCheckMCPTool(mcpId: string, toolId: string, checked: boolean): void {
                 </form>
             </div>
             <McpToolsSidepanel
-              bind:mcpSelectorOpen={mcpSelectorOpen}
+              bind:selectedMCP={selectedMCP}
               selectedMCPTools={selectedMCPTools}
               onCheckMCPTool={onCheckMCPTool}
+              onClearMCPTools={onClearMCPTools}
             />
         {:else}
             <NoModelsAvailable />

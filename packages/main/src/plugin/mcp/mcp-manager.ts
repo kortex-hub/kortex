@@ -74,24 +74,33 @@ export class MCPManager implements IAsyncDisposable {
   }
 
   /**
-   * @param selected
+   * Must be under the form `${internalProviderId}:${connectionName}`
+   * @param selectedMCP the list of MCP servers to include
+   * @param selectedTools the list of tools per MCP server to include
    */
-  public async getToolSet(selected: Record<string, Array<string>> | undefined = undefined): Promise<ToolSet> {
+  public async getToolSet(
+    selectedMCP: Array<string> | undefined = undefined,
+    selectedTools: Record<string, Array<string>> = {},
+  ): Promise<ToolSet> {
     let tools: Array<ToolSet>;
-    if (!selected) {
+    if (!selectedMCP) {
       // Get all tools without filtering
       tools = await Promise.all(this.#client.values().map(client => client.tools()));
     } else {
       tools = await Promise.all(
-        Object.entries(selected).map(
-          async ([mcpId, tools]) => {
-            const client = this.#client.get(mcpId);
+        selectedMCP.map(
+          async mcp => {
+            const client = this.#client.get(mcp);
             if (!client) {
               return {};
             }
             const toolset = await client.tools();
+            // Let's check if user specified filtered on tools to use
+            const filtered = selectedTools[mcp];
+            // If none return all toolset
+            if (!filtered) return toolset;
 
-            const filteredSet = new Set<string>(tools);
+            const filteredSet = new Set<string>(filtered);
 
             return Object.entries(toolset).reduce((accumulator, [toolName, content]) => {
               if (filteredSet.has(toolName)) {
