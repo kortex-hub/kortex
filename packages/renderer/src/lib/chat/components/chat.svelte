@@ -69,13 +69,7 @@ const selectedMCPToolsCount = $derived(
 
 const chatHistory = ChatHistory.fromContext();
 
-let totalTokens = $state(
-  messages[messages.length - 1] !== undefined &&
-    typeof messages[messages.length - 1] === 'object' &&
-    'tokens' in messages[messages.length - 1]
-    ? messages[messages.length - 1].tokens
-    : 0,
-);
+let totalTokens = $state(messages[messages.length - 1]?.tokens ? messages[messages.length - 1].tokens : 0);
 
 const chatClient = $derived(
   new Chat({
