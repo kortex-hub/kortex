@@ -25,28 +25,36 @@ import LoaderAnimation from './LoaderAnimation.svelte';
 
 test('Expect default size', async () => {
   render(LoaderAnimation);
-  const loaderAnimation = screen.getByRole('img', { hidden: true, name: '' });
-  expect(loaderAnimation).toBeInTheDocument();
+  const statusContainer = screen.getByRole('status');
+  expect(statusContainer).toBeInTheDocument();
+  expect(statusContainer).toHaveTextContent('Loading');
+
+  const svg = statusContainer.querySelector('svg');
+  expect(svg).toBeInTheDocument();
   const defaultValue = '400';
 
   // check the width is set to default
-  expect(loaderAnimation).toHaveAttribute('width', defaultValue);
+  expect(svg).toHaveAttribute('width', defaultValue);
 
   // check the height is set to default
-  expect(loaderAnimation).toHaveAttribute('height', defaultValue);
+  expect(svg).toHaveAttribute('height', defaultValue);
 });
 
 test('Expect specified size', async () => {
-  const size = '200';
+  const size = 200;
   render(LoaderAnimation, {
     size,
   });
-  const loaderAnimation = screen.getByRole('img', { hidden: true, name: '' });
-  expect(loaderAnimation).toBeInTheDocument();
+  const statusContainer = screen.getByRole('status');
+  expect(statusContainer).toBeInTheDocument();
+  expect(statusContainer).toHaveTextContent('Loading');
+
+  const svg = statusContainer.querySelector('svg');
+  expect(svg).toBeInTheDocument();
 
   // check the width is set to 200
-  expect(loaderAnimation).toHaveAttribute('width', '200');
+  expect(svg).toHaveAttribute('width', '200');
 
   // check the height is set to 200
-  expect(loaderAnimation).toHaveAttribute('height', '200');
+  expect(svg).toHaveAttribute('height', '200');
 });
