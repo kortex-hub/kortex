@@ -2,6 +2,7 @@
 import { Chat } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
 import { untrack } from 'svelte';
+import { SvelteSet } from 'svelte/reactivity';
 import { toast } from 'svelte-sonner';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
@@ -16,7 +17,7 @@ import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import ChatHeader from './chat-header.svelte';
 import { IPCChatTransport } from './ipc-chat-transport';
-import McpMessages from './mcp-messages.svelte';
+import McpToolsSidepanel from './mcp-tools-sidepanel.svelte';
 import Messages from './messages.svelte';
 import MultimodalInput from './multimodal-input.svelte';
 import NoModelsAvailable from './NoModelsAvailable.svelte';
@@ -49,6 +50,10 @@ let selectedMCP = $state<MCPRemoteServerInfo[]>(
   config?.mcp?.flatMap(mcpId => $mcpRemoteServerInfos.find(r => r.id === mcpId) ?? []) ?? [],
 );
 
+let selectedMCPTools = $state<Map<string, Set<string>>>(
+  new Map(Object.entries(config?.tools ?? {}).map(([key, value]) => [key, new Set(value)])),
+);
+
 const chatHistory = ChatHistory.fromContext();
 
 const chatClient = $derived(
@@ -62,6 +67,15 @@ const chatClient = $derived(
       },
       getMCP: (): Array<string> => {
         return selectedMCP.map(m => m.id);
+      },
+      getMCPTools: (): Record<string, Array<string>> => {
+        return selectedMCPTools.entries().reduce(
+          (accumulator, [mcpId, tools]) => {
+            accumulator[mcpId] = Array.from(tools.values());
+            return accumulator;
+          },
+          {} as Record<string, Array<string>>,
+        );
       },
     }),
     // This way, the client is only recreated when the ID changes, allowing us to fully manage messages
@@ -98,6 +112,20 @@ let attachments = $state<Attachment[]>([]);
 let mcpSelectorOpen = $state(false);
 
 const hasModels = $derived(models && models.length > 0);
+
+function onCheckMCPTool(mcpId: string, toolId: string, checked: boolean): void {
+  const tools = selectedMCPTools.get(mcpId) ?? new SvelteSet();
+  if (checked) {
+    tools.add(toolId);
+  } else {
+    tools.delete(toolId);
+  }
+  selectedMCPTools.set(mcpId, tools);
+}
+
+function onClearMCPTools(mcpId: string): void {
+  selectedMCPTools.delete(mcpId);
+}
 </script>
 
 <div class="bg-background flex h-full min-w-0 flex-col">
@@ -106,7 +134,7 @@ const hasModels = $derived(models && models.length > 0);
   {/if}
   <div class="flex min-h-0 flex-1">
         {#if hasModels}
-            <div class="flex flex-col flex-3/4"> 
+            <div class="flex flex-col flex-3/4">
                 <Messages
                     {readonly}
                     loading={chatClient.status === 'streaming' || chatClient.status === 'submitted'}
@@ -118,7 +146,12 @@ const hasModels = $derived(models && models.length > 0);
                     {/if}
                 </form>
             </div>
-            <McpMessages messages={chatClient.messages} />
+            <McpToolsSidepanel
+              bind:selectedMCP={selectedMCP}
+              selectedMCPTools={selectedMCPTools}
+              onCheckMCPTool={onCheckMCPTool}
+              onClearMCPTools={onClearMCPTools}
+            />
         {:else}
             <NoModelsAvailable />
         {/if}
