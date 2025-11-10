@@ -17,7 +17,9 @@
  ***********************************************************************/
 
 import type { Disposable } from '@kortex-app/api';
+import { injectable } from 'inversify';
 
+@injectable()
 export class InferenceModelManager implements Disposable {
   async init(): Promise<void> {}
 
