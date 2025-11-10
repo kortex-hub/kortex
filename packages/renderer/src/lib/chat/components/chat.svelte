@@ -69,7 +69,7 @@ const selectedMCPToolsCount = $derived(
 
 const chatHistory = ChatHistory.fromContext();
 
-let totalTokens = $state(messages[messages.length - 1]?.tokens ?? 0);
+let totalTokens = $state(messages.reduce((sum, msg) => sum + (msg.tokens ?? 0), 0));
 
 const chatClient = $derived(
   new Chat({
@@ -90,7 +90,7 @@ const chatClient = $derived(
         );
       },
       onEnd: (tokens: number): void => {
-        totalTokens = tokens;
+        totalTokens += tokens;
       },
     }),
     // This way, the client is only recreated when the ID changes, allowing us to fully manage messages
