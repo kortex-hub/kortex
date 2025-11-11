@@ -21,6 +21,7 @@ import type { IAsyncDisposable } from '/@api/async-disposable.js';
 
 import type { MCPSpawner, ResolvedServerPackage } from './mcp-spawner.js';
 import { NPMSpawner } from './npm-spawner.js';
+import { PyPiSpawner } from './pypi-spawner.js';
 
 export class MCPPackage implements IAsyncDisposable {
   readonly #spawner: MCPSpawner;
@@ -33,6 +34,12 @@ export class MCPPackage implements IAsyncDisposable {
     switch (registryType) {
       case 'npm':
         this.#spawner = new NPMSpawner({
+          ...rest,
+          registryType: registryType,
+        });
+        break;
+      case 'pypi':
+        this.#spawner = new PyPiSpawner({
           ...rest,
           registryType: registryType,
         });
