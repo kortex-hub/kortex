@@ -100,7 +100,7 @@ function onToolSelection(): void {
 				)}>Tools Selection ({selectedMCPToolsCount})</Button>
             {/if}
         </div>
-    <div class="order-3 ml-auto bg-muted flex justify-end gap-4 rounded-lg py-2 text-sm text-muted-foreground">
+    <div class="order-3 ml-auto bg-muted flex justify-end gap-4 rounded-lg p-2 text-sm text-muted-foreground">
       <span>Tokens: <strong>{tokens}</strong></span>
     </div>
     {/if}
