@@ -25,6 +25,7 @@ export interface FlowParameters {
 }
 
 export const builtInExtensions = [
+  { name: 'Container Extension', locator: 'kortex.container' },
   { name: 'Default MCP Registries', locator: 'kortex.mcp-registries' },
   { name: 'Gemini', locator: 'kortex.gemini' },
   { name: 'goose', locator: 'kortex.goose' },
@@ -82,6 +83,7 @@ export enum PreferenceOption {
 export const preferenceOptions = (): PreferenceOption[] => Object.values(PreferenceOption);
 
 export const resources = {
+  container: { displayName: 'Container', hasCreateButton: false },
   openshiftai: { displayName: 'OpenShift AI', hasCreateButton: true },
   openai: { displayName: 'OpenAI', hasCreateButton: true },
   goose: { displayName: 'goose', hasCreateButton: false },
