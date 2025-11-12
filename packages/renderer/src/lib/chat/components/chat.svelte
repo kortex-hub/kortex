@@ -2,7 +2,7 @@
 import { Chat } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
 import { untrack } from 'svelte';
-import { SvelteSet } from 'svelte/reactivity';
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { toast } from 'svelte-sonner';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
@@ -50,9 +50,7 @@ let selectedMCP = $state<MCPRemoteServerInfo[]>(
   config?.mcp?.flatMap(mcpId => $mcpRemoteServerInfos.find(r => r.id === mcpId) ?? []) ?? [],
 );
 
-let selectedMCPTools = $state<Map<string, Set<string>>>(
-  new Map(Object.entries(config?.tools ?? {}).map(([key, value]) => [key, new Set(value)])),
-);
+let selectedMCPTools = new SvelteMap(Object.entries(config?.tools ?? {}).map(([key, value]) => [key, new Set(value)]));
 
 const chatHistory = ChatHistory.fromContext();
 
