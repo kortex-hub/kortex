@@ -365,6 +365,9 @@ importers:
 
   extensions/container/packages/extension:
     dependencies:
+      dockerode:
+        specifier: ^4.0.7
+        version: 4.0.7
       inversify:
         specifier: ^7.7.1
         version: 7.7.1(reflect-metadata@0.2.2)
@@ -378,6 +381,9 @@ importers:
       '@kortex-app/container-extension-api':
         specifier: workspace:*
         version: link:../api
+      '@types/dockerode':
+        specifier: ^3.3.42
+        version: 3.3.42
       adm-zip:
         specifier: ^0.5.16
         version: 0.5.16
@@ -784,12 +790,6 @@ packages:
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.23.8
-
-  '@ai-sdk/provider-utils@3.0.16':
-    resolution: {integrity: sha512-lsWQY9aDXHitw7C1QRYIbVGmgwyT98TF3MfM8alNIXKpdJdi+W782Rzd9f1RyOfgRmZ08gJ2EYNDhWNK7RqpEA==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
 
   '@ai-sdk/provider-utils@3.0.17':
     resolution: {integrity: sha512-TR3Gs4I3Tym4Ll+EPdzRdvo/rc8Js6c4nVhFLuvGLX/Y4V9ZcQMa/HTiYsHEgmYrf1zVi6Q145UEZUfleOwOjw==}
@@ -7538,13 +7538,6 @@ snapshots:
       '@ai-sdk/provider': 1.1.3
       nanoid: 3.3.11
       secure-json-parse: 2.7.0
-      zod: 4.1.12
-
-  '@ai-sdk/provider-utils@3.0.16(zod@4.1.12)':
-    dependencies:
-      '@ai-sdk/provider': 2.0.0
-      '@standard-schema/spec': 1.0.0
-      eventsource-parser: 3.0.6
       zod: 4.1.12
 
   '@ai-sdk/provider-utils@3.0.17(zod@4.1.11)':

@@ -16,15 +16,26 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { ContainerModule } from 'inversify';
+import Dockerode from 'dockerode';
+import { injectable } from 'inversify';
 
-import { containerHelperModule } from '/@/helper/container/_container-module';
-import { socketFinderModule } from '/@/helper/socket-finder/_socket-finder-module';
+@injectable()
+export class DockerodeHelper {
+  async getConnection(socketPath: string): Promise<Dockerode> {
+    const connection = new Dockerode({ socketPath });
 
-const helpersModule = new ContainerModule(async options => {
-  // Reuse bindings
-  await socketFinderModule.load(options);
-  await containerHelperModule.load(options);
-});
+    // add a race Promise to timeout after 5 seconds if ping does not respond
+    // test the connection
+    await Promise.race([
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`Connection timeout while pinging container engine socket path ${socketPath}`)),
+          5_000,
+        ),
+      ),
+      connection.ping(),
+    ]);
 
-export { helpersModule };
+    return connection;
+  }
+}

@@ -19,11 +19,13 @@
   },
   "dependencies": {
     "inversify": "^7.7.1",
+    "dockerode": "^4.0.7",
     "zod": "^4.1.11"
   },
   "devDependencies": {
     "@kortex-app/api": "workspace:*",
     "@kortex-app/container-extension-api": "workspace:*",
+    "@types/dockerode": "^3.3.42",
     "adm-zip": "^0.5.16",
     "mkdirp": "^3.0.1",
     "vite": "^7.1.2",

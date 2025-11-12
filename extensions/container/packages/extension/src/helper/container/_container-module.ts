@@ -18,13 +18,10 @@
 
 import { ContainerModule } from 'inversify';
 
-import { containerHelperModule } from '/@/helper/container/_container-module';
-import { socketFinderModule } from '/@/helper/socket-finder/_socket-finder-module';
+import { DockerodeHelper } from './dockerode-helper';
 
-const helpersModule = new ContainerModule(async options => {
-  // Reuse bindings
-  await socketFinderModule.load(options);
-  await containerHelperModule.load(options);
+const containerHelperModule = new ContainerModule(options => {
+  options.bind<DockerodeHelper>(DockerodeHelper).toSelf().inSingletonScope();
 });
 
-export { helpersModule };
+export { containerHelperModule };
