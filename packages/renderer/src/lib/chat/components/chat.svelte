@@ -2,7 +2,7 @@
 import { Chat } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
 import { untrack } from 'svelte';
-import { SvelteSet } from 'svelte/reactivity';
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { toast } from 'svelte-sonner';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
