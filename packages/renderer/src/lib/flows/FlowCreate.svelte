@@ -36,7 +36,14 @@ let name: string = $state(flowCreationData.value?.name ?? `flow-${generateWords(
 let description: string = $state(flowCreationData.value?.description ?? '');
 let instruction: string = $state('You are a helpful assistant.');
 let prompt: string = $state(flowCreationData.value?.prompt ?? '');
+let parameters = $state(flowCreationData.value?.parameters ?? []); // Preserve extracted parameters
 let flowProviderConnectionKey: string | undefined = $state<string>();
+
+// Debug: Log parameters from export
+if (flowCreationData.value?.parameters) {
+  console.log('[FlowCreate] Loaded', flowCreationData.value.parameters.length, 'parameters from export');
+}
+
 flowCreationData.value = undefined;
 
 let showFlowConnectionSelector = $state(true);
@@ -72,6 +79,7 @@ const formValidContent = $derived(
         mcp: $state.snapshot(selectedMCP),
         prompt: validatedInput.data.prompt,
         instruction,
+        parameters: $state.snapshot(parameters), // Snapshot for IPC serialization
       }
     : undefined,
 );
@@ -85,6 +93,8 @@ async function generate(): Promise<void> {
 
   try {
     const [providerId, connectionName] = flowProviderConnectionKey.split(':');
+
+    console.log('[FlowCreate] Generating flow with', formValidContent.parameters?.length ?? 0, 'parameters');
 
     const flowId = await window.generateFlow(providerId, connectionName, formValidContent);
 
