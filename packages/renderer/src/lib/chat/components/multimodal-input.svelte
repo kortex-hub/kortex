@@ -23,6 +23,7 @@ let {
   attachments = $bindable(),
   chatClient,
   class: c,
+  selectedMCP,
   selectedMCPTools,
   selectedModel,
   mcpSelectorOpen = $bindable(),
@@ -30,7 +31,8 @@ let {
   attachments: Attachment[];
   chatClient: Chat;
   class?: string;
-  selectedMCPTools: SvelteMap<string, Set<string>>;
+  selectedMCPTools?: Map<string, Set<string>>;
+  selectedMCP: MCPRemoteServerInfo[];
   selectedModel?: ModelInfo;
   mcpSelectorOpen: boolean;
 } = $props();
@@ -174,7 +176,7 @@ $effect.pre(() => {
 	</div>
 
 	<div class="absolute right-0 bottom-0 flex w-fit flex-row items-center justify-end p-2">
-		<ExportButton {chatClient} {selectedModel} {loading} {selectedMCPTools}/>
+		<ExportButton {chatClient} {selectedModel} {selectedMCP} {loading} {selectedMCPTools}/>
 		{#if loading}
 			<Button
 				aria-label="Stop generation"

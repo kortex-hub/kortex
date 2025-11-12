@@ -158,7 +158,7 @@ function onClearMCPTools(mcpId: string): void {
                 />
                 <form class="bg-background mx-auto flex w-full gap-2 px-4 pb-4 md:max-w-3xl md:pb-6">
                     {#if !readonly}
-                        <MultimodalInput {attachments} {chatClient} {selectedModel} {selectedMCPTools} bind:mcpSelectorOpen={mcpSelectorOpen} class="flex-1" />
+                        <MultimodalInput {attachments} {chatClient} {selectedModel} {selectedMCP} {selectedMCPTools} bind:mcpSelectorOpen={mcpSelectorOpen} class="flex-1" />
                     {/if}
                 </form>
             </div>
