@@ -67,9 +67,7 @@ const selectedMCPToolsCount = $derived(
   }, 0),
 );
 
-let selectedMCPTools = $state<Map<string, Set<string>>>(
-  new Map(Object.entries(config?.tools ?? {}).map(([key, value]) => [key, new Set(value)])),
-);
+let selectedMCPTools = new SvelteMap(Object.entries(config?.tools ?? {}).map(([key, value]) => [key, new Set(value)]));
 
 const chatHistory = ChatHistory.fromContext();
 
