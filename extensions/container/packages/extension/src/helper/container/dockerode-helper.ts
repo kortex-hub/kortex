@@ -26,16 +26,20 @@ export class DockerodeHelper {
 
     // add a race Promise to timeout after 5 seconds if ping does not respond
     // test the connection
-    await Promise.race([
-      new Promise((_, reject) =>
-        setTimeout(
-          () => reject(new Error(`Connection timeout while pinging container engine socket path ${socketPath}`)),
-          5_000,
-        ),
-      ),
-      connection.ping(),
-    ]);
-
+    let timeoutHandle: NodeJS.Timeout | undefined;
+    try {
+      await Promise.race([
+        new Promise((_, reject) => {
+          timeoutHandle = setTimeout(
+            () => reject(new Error(`Connection timeout while pinging container engine socket path ${socketPath}`)),
+            5_000,
+          );
+        }),
+        connection.ping(),
+      ]);
+    } finally {
+      clearTimeout(timeoutHandle);
+    }
     return connection;
   }
 }
