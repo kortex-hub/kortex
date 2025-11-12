@@ -44,13 +44,12 @@ export class PodmanSocketWindowsFinder implements SocketFinder {
 
       // filter the machines to keep only the running ones
       const runningMachines = machines.filter(m => m.Running);
-      if (runningMachines.length > 0) {
-        // return all the socket paths from the running machines
-        // if podman-machine-default the name is podman-machine-default else the pipe is podman-machine-<name>
-        return runningMachines.map(
-          m => `\\\\.\\pipe\\podman-machine-${m.Name === 'podman-machine-default' ? 'default' : m.Name}`,
-        );
-      }
+      // return all the socket paths from the running machines
+      // if podman-machine-default the name is podman-machine-default else the pipe is podman-<machine-name>
+      return runningMachines.map(m => {
+        const pipeName = m.Name === 'podman-machine-default' ? 'podman-machine-default' : `podman-${m.Name}`;
+        return `\\\\.\\pipe\\${pipeName}`;
+      });
     } catch (error: unknown) {
       console.debug('PodmanSocketWindowsFinder: unable to list podman machines', error);
     }
