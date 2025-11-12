@@ -28,20 +28,16 @@ import { DockerodeHelper } from '/@/helper/container/dockerode-helper';
 // monitor the events on the connections and emit when containers are started or stopped
 @injectable()
 export class ConnectionHandler {
+  static readonly RECONNECT_TIMEOUT_MS = 10_000;
+
   @inject(DockerodeHelper)
   private readonly dockerodeHelper: DockerodeHelper;
 
-  #onEvent: EventEmitter<DockerEvent>;
-  public readonly onEvent: Event<DockerEvent>;
+  #onEvent: EventEmitter<DockerEvent> = new EventEmitter<DockerEvent>();
+  public readonly onEvent: Event<DockerEvent> = this.#onEvent.event;
 
   #trackedConnections: Set<string> = new Set();
   #connectionDisposables: Map<string, Disposable[]> = new Map();
-
-  constructor() {
-    this.#onEvent = new EventEmitter<DockerEvent>();
-    this.onEvent = this.#onEvent.event;
-    this.#trackedConnections = new Set();
-  }
 
   @preDestroy()
   dispose(): void {
@@ -50,8 +46,8 @@ export class ConnectionHandler {
     for (const disposables of this.#connectionDisposables.values()) {
       disposables.forEach(d => d.dispose());
     }
-    this.#connectionDisposables.clear();
     this.#trackedConnections.clear();
+    this.#connectionDisposables.clear();
   }
 
   monitorConnection(connection: EndpointConnection): void {
@@ -116,7 +112,7 @@ export class ConnectionHandler {
         this.reconnectConnection(connection).catch((error: unknown) => {
           console.error('Error reconnecting to connection:', error);
         });
-      }, 5000);
+      }, ConnectionHandler.RECONNECT_TIMEOUT_MS);
     }
   }
 
@@ -124,14 +120,15 @@ export class ConnectionHandler {
     try {
       const dockerode = await this.dockerodeHelper.getConnection(connection.path);
       connection.dockerode = dockerode;
+      this.monitorConnection(connection);
     } catch (error) {
       console.error(`Error reconnecting to ${connection.path}:`, error);
-      // try again in 10 seconds
+      // try again
       setTimeout(() => {
         this.reconnectConnection(connection).catch((error: unknown) => {
           console.error('Error reconnecting to connection:', error);
         });
-      }, 10000);
+      }, ConnectionHandler.RECONNECT_TIMEOUT_MS);
     }
   }
 

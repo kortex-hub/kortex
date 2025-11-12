@@ -32,6 +32,14 @@ const dockerodeHelperMock = {
   getConnection: vi.fn(),
 } as unknown as DockerodeHelper;
 
+const mockDockerode = {
+  getEvents: vi.fn(),
+} as unknown as Dockerode;
+
+const connection: EndpointConnection = {
+  path: '/var/run/docker.sock',
+  dockerode: mockDockerode,
+} as EndpointConnection;
 class TestConnectionHandler extends ConnectionHandler {
   public getTrackedConnections(): Set<string> {
     return super.getTrackedConnections();
@@ -55,15 +63,6 @@ test('should initialize with empty tracked connections', () => {
 });
 
 test('should add connection to tracked connections when monitoring', () => {
-  const mockDockerode = {
-    getEvents: vi.fn(),
-  } as unknown as Dockerode;
-
-  const connection: EndpointConnection = {
-    path: '/var/run/docker.sock',
-    dockerode: mockDockerode,
-  } as EndpointConnection;
-
   connectionHandler.monitorConnection(connection);
 
   expect(connectionHandler.getTrackedConnections().has(connection.path)).toBe(true);
@@ -73,14 +72,6 @@ test('should add connection to tracked connections when monitoring', () => {
 test('should handle error when getting events', () => {
   const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   const mockError = new Error('Failed to get events');
-  const mockDockerode = {
-    getEvents: vi.fn(callback => callback(mockError, null)),
-  } as unknown as Dockerode;
-
-  const connection: EndpointConnection = {
-    path: '/var/run/docker.sock',
-    dockerode: mockDockerode,
-  } as EndpointConnection;
 
   connectionHandler.monitorConnection(connection);
 

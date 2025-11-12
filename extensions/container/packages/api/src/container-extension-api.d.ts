@@ -16,5 +16,17 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import type Dockerode from 'dockerode';
+
+export interface ContainerEngineEvent {
+  status?: string;
+  Type?: string;
+}
+
+export interface EndpointConnection {
+  path: string;
+  dockerode: Dockerode;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ContainerExtensionAPI {}
