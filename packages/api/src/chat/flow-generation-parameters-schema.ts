@@ -23,7 +23,24 @@ export type FlowGenerationParameters = {
   name: string;
   description: string;
   prompt: string;
+  parameters?: Array<FlowParameter>;
 };
+
+export interface FlowParameter {
+  required: boolean;
+  name: string;
+  description: string;
+  format: string;
+  default?: string;
+}
+
+export const FlowParameterSchema: ZodType<FlowParameter> = z.object({
+  name: z.string().describe('Parameter name (must be valid identifier)'),
+  format: z.string().describe('Parameter data type'),
+  description: z.string().describe('Human-readable description of the parameter'),
+  default: z.string().optional().describe('Default value for the parameter'),
+  required: z.boolean().default(false).describe('Whether the parameter is required'),
+});
 
 export const FlowGenerationParametersSchema: ZodType<FlowGenerationParameters> = z.object({
   name: z
@@ -44,6 +61,12 @@ export const FlowGenerationParametersSchema: ZodType<FlowGenerationParameters> =
   prompt: z
     .string()
     .describe(
-      'Help me create a reproducible prompt that achieves the same result as in the conversation above. The prompt will be executed by another LLM without any further user input, so it must include all the necessary information to reproduce the same outcome.',
+      'Help me create a reproducible prompt template that achieves the same result as in the conversation above. The prompt will be executed by another LLM without any further user input, so it must include all the necessary information to reproduce the same outcome. Also include parameter placeholders like {{parameterName}}. Example: "Get the last {{count}} issues from {{owner}}/{{repo}}"',
+    ),
+  parameters: z
+    .array(FlowParameterSchema)
+    .optional()
+    .describe(
+      'Extract parameters from the conversation that can be modified when re-executing this flow. Analyze user messages and MCP tool inputs to identify values that should be parameterizable.',
     ),
 });

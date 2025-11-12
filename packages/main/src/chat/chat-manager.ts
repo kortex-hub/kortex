@@ -31,6 +31,7 @@ import { inject } from 'inversify';
 
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { Directories } from '/@/plugin/directories.js';
+import type { FlowParameter } from '/@api/chat/flow-generation-parameters-schema.js';
 import {
   FlowGenerationParameters,
   FlowGenerationParametersSchema,
@@ -43,6 +44,7 @@ import { MCPManager } from '../plugin/mcp/mcp-manager.js';
 import { ProviderRegistry } from '../plugin/provider-registry.js';
 import { runMigrate } from './db/migrate.js';
 import { ChatQueries } from './db/queries.js';
+import { ParameterExtractor } from './parameter-extraction.js';
 
 export class ChatManager {
   private chatQueries!: ChatQueries;
@@ -277,10 +279,59 @@ export class ChatManager {
   }
 
   async generateFlowParams(params: InferenceParameters): Promise<FlowGenerationParameters> {
+    // Get inference components
+    const inferenceComponents = await this.getInferenceComponents(params);
+
+    // Extract parameters from MCP tool calls
+    const extractedParams = new ParameterExtractor().extractFromMCPToolCalls(params.messages);
+
+    // Build enhanced system prompt to guide parameter extraction
+    const parameterGuidance =
+      extractedParams.length > 0
+        ? `\n\nThe following parameters were detected from MCP tool calls and should be referenced in your prompt template:\n${JSON.stringify(extractedParams, null, 2)}`
+        : '';
+
+    // Generate flow parameters with AI
     const result = await generateObject({
-      ...(await this.getInferenceComponents(params)),
+      ...inferenceComponents,
+      system: inferenceComponents.system + parameterGuidance,
       schema: FlowGenerationParametersSchema,
     });
-    return result.object;
+
+    // Merge AI-generated parameters with extracted ones
+    const aiParameters = result.object.parameters ?? [];
+    const mergedParameters = this.mergeParameters(extractedParams, aiParameters);
+
+    console.log('Generated flow with', mergedParameters.length, 'parameters');
+
+    return {
+      ...result.object,
+      parameters: mergedParameters,
+    };
+  }
+
+  private mergeParameters(extracted: FlowParameter[], aiGenerated: FlowParameter[]): FlowParameter[] {
+    // Deduplicate and merge parameters
+    const paramMap = new Map<string, FlowParameter>();
+
+    // Add extracted parameters
+    for (const param of extracted) {
+      paramMap.set(param.name, param);
+    }
+
+    // Merge AI-generated parameters (may have better descriptions)
+    for (const param of aiGenerated) {
+      const existing = paramMap.get(param.name);
+      if (existing) {
+        paramMap.set(param.name, {
+          ...existing,
+          description: param.description ?? existing.description,
+        });
+      } else {
+        paramMap.set(param.name, param);
+      }
+    }
+
+    return Array.from(paramMap.values());
   }
 }
