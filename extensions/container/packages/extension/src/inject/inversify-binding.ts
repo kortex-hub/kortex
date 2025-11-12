@@ -19,6 +19,7 @@
 import type { ExtensionContext, Provider, TelemetryLogger } from '@kortex-app/api';
 import { Container } from 'inversify';
 
+import { handlersModule } from '/@/handler/_handler-module';
 import { helpersModule } from '/@/helper/_helper-module';
 import { ContainersProvider, ExtensionContextSymbol, TelemetryLoggerSymbol } from '/@/inject/symbol';
 import { managersModule } from '/@/manager/_manager-module';
@@ -48,6 +49,7 @@ export class InversifyBinding {
     this.#container.bind(ContainersProvider).toConstantValue(this.#provider);
 
     await this.#container.load(helpersModule);
+    await this.#container.load(handlersModule);
     await this.#container.load(managersModule);
 
     // Resolve container engine manager to ensure initialization
