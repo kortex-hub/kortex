@@ -86,6 +86,7 @@ const formValidContent = $derived(
         mcp: $state.snapshot(selectedMCP),
         prompt: validatedInput.data.prompt,
         instruction,
+        parameters: $state.snapshot(parameters), // Snapshot for IPC serialization
       }
     : undefined,
 );
@@ -99,6 +100,8 @@ async function generate(): Promise<void> {
 
   try {
     const [providerId, connectionName] = flowProviderConnectionKey.split(':');
+
+    console.log('[FlowCreate] Generating flow with', formValidContent.parameters?.length ?? 0, 'parameters');
 
     const flowId = await window.generateFlow(providerId, connectionName, formValidContent);
 
