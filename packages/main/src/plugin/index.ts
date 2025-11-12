@@ -942,29 +942,25 @@ export class PluginSystem {
       ): Promise<string> => {
         if (!options.dryrun && options.hideSecrets) throw new Error('cannot apply YAML while hidding secrets');
 
-        // Get the flow provider to use
-        const flowProvider = providerRegistry.getProvider(flow.providerId);
-        const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
-          flowProvider.flowConnections.find(({ name }) => name === flow.connectionName);
-        if (!flowConnection) throw new Error(`cannot find flow connection with name ${flow.connectionName}`);
-
-        // Generate the Kubernetes YAML
-        const { resources } = await flowConnection.flow.generateKubernetesYAML({
-          flowId: flow.flowId,
-          namespace: options.namespace,
-          hideSecrets: options.hideSecrets,
-        });
+        // Generate Kubernetes YAML with optional secret hiding
+        const processedResources = await flowManager.generateKubernetesYAML(
+          flow.providerId,
+          flow.connectionName,
+          flow.flowId,
+          options.namespace,
+          options.hideSecrets,
+        );
 
         if (options.dryrun) {
-          return resources;
+          return processedResources;
         }
 
         const currentContext = kubernetesClient.getCurrentContextName();
         if (!currentContext) throw new Error('cannot find current context');
-        const objects = await kubernetesClient.applyResourcesFromYAML(currentContext, resources);
+        const objects = await kubernetesClient.applyResourcesFromYAML(currentContext, processedResources);
         console.log('[FlowGenerate] created', objects);
 
-        return resources;
+        return processedResources;
       },
     );
 

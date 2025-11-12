@@ -25,6 +25,7 @@ import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { FlowExecuteInfo } from '/@api/flow-execute-info.js';
 import type { FlowInfo } from '/@api/flow-info.js';
 
+import { SafeStorageRegistry } from '../safe-storage/safe-storage-registry.js';
 import { TaskManager } from '../tasks/task-manager.js';
 
 class BufferLogger implements Logger {
@@ -68,6 +69,8 @@ export class FlowManager implements Disposable {
     private taskManager: TaskManager,
     @inject(IPCHandle)
     private readonly ipcHandle: IPCHandle,
+    @inject(SafeStorageRegistry)
+    private safeStorageRegistry: SafeStorageRegistry,
   ) {}
 
   /**
@@ -98,6 +101,51 @@ export class FlowManager implements Disposable {
         ...flow,
       }));
     });
+  }
+
+  /**
+   * Get flow information by flowId
+   * @param flowId  flow identifier
+   * @returns flow information or undefined if not found
+   */
+  getFlow(flowId: string): FlowInfo | undefined {
+    return this.all().find(f => f.id === flowId);
+  }
+
+  /**
+   * Generate Kubernetes YAML for a flow with optional secret hiding
+   * @param providerId  provider identifier
+   * @param connectionName  connection name
+   * @param flowId  flow identifier
+   * @param namespace  Kubernetes namespace
+   * @param hideSecrets  whether to hide secrets in the YAML
+   * @returns generated Kubernetes YAML
+   */
+  public async generateKubernetesYAML(
+    providerId: string,
+    connectionName: string,
+    flowId: string,
+    namespace: string,
+    hideSecrets: boolean,
+  ): Promise<string> {
+    // Get the flow provider to use
+    const flowProvider = this.provider.getProvider(providerId);
+    const flowConnection = flowProvider.flowConnections.find(({ name }) => name === connectionName);
+    if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
+
+    // Generate the Kubernetes YAML
+    const { resources } = await flowConnection.flow.generateKubernetesYAML({
+      flowId,
+      namespace,
+      hideSecrets: false,
+    });
+
+    // Hide secrets if requested
+    if (hideSecrets) {
+      return await this.safeStorageRegistry.hideSecretsInContent(resources);
+    }
+
+    return resources;
   }
 
   public async execute(providerId: string, connectionName: string, flowId: string): Promise<string> {

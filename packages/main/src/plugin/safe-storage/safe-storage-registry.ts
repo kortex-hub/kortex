@@ -110,6 +110,20 @@ export class SafeStorageRegistry {
     }
     return new SecretStorageWrapper(this.#extensionStorage, CORE_STORAGE_KEY);
   }
+
+  /**
+   * Hides all stored secrets found in the given content.
+   * @param content - The text content to scan for secrets
+   * @returns Promise with content with secrets replaced by a fixed-length mask
+   * @throws Error if safe storage is not initialized
+   */
+  async hideSecretsInContent(content: string): Promise<string> {
+    if (!this.#extensionStorage) {
+      throw new Error('Safe storage not initialized');
+    }
+    // Delegate to SafeStorage implementation
+    return this.#extensionStorage.hideSecretsInContent(content);
+  }
 }
 
 export interface SecretStorageChangeEvent {
@@ -119,6 +133,7 @@ export interface SecretStorageChangeEvent {
 export class SafeStorage {
   readonly #onDidChange = new Emitter<SecretStorageChangeEvent>();
   readonly onDidChange: Event<SecretStorageChangeEvent> = this.#onDidChange.event;
+  private static readonly SECRET_MASK = '********************';
 
   encrypt(value: string): string {
     return safeStorage.encryptString(value).toString('base64');
@@ -153,6 +168,82 @@ export class SafeStorage {
   delete(key: string): void {
     delete this.#data[key];
     this.#onDidChange.fire({ key });
+  }
+  /**
+   * Hides all stored secrets in the given content by replacing them with a mask
+   * @param content - The text content to scan for secrets
+   * @returns The content with secrets replaced
+   */
+  hideSecretsInContent(content: string): string {
+    let processedContent = content;
+
+    // Collect all secret values (including nested values from JSON objects)
+    const secretValues = new Set<string>();
+
+    for (const key of Object.keys(this.#data)) {
+      try {
+        const secretValue = this.getDecrypted(key);
+
+        // Skip empty or undefined values
+        if (!secretValue || secretValue.length === 0) {
+          continue;
+        }
+
+        // Try to parse as JSON to extract nested values
+        try {
+          const parsed = JSON.parse(secretValue);
+          this.extractSecretValuesFromObject(parsed, secretValues);
+        } catch {
+          // Not JSON, treat as plain string secret
+          secretValues.add(secretValue);
+        }
+      } catch (error) {
+        console.warn(`[SafeStorage] Failed to process secret for key ${key}:`, error);
+      }
+    }
+
+    // Replace all collected secret values
+    for (const secret of secretValues) {
+      if (secret && secret.length > 0) {
+        processedContent = processedContent.replaceAll(secret, SafeStorage.SECRET_MASK);
+      }
+    }
+
+    return processedContent;
+  }
+
+  /**
+   * Recursively extracts string values from an object that could be secrets
+   * @param obj - The object to extract from (can be array, object, or primitive)
+   * @param secretValues - Set to collect secret values
+   */
+  private extractSecretValuesFromObject(obj: unknown, secretValues: Set<string>, currentPath: string[] = []): void {
+    // Whitelist of keys that contain secrets
+    const SECRET_KEYS = new Set([
+      'authorization',
+      'bearer',
+      'token',
+      'password',
+      'secret',
+      'api-key',
+      'apikey',
+      'x-api-key',
+    ]);
+    if (typeof obj === 'string' && obj.length > 0) {
+      // Only add if the parent key is in the whitelist
+      const parentKey = currentPath[currentPath.length - 1]?.toLowerCase();
+      if (parentKey && SECRET_KEYS.has(parentKey)) {
+        secretValues.add(obj);
+      }
+    } else if (Array.isArray(obj)) {
+      for (const item of obj) {
+        this.extractSecretValuesFromObject(item, secretValues, currentPath);
+      }
+    } else if (obj !== null && typeof obj === 'object') {
+      for (const [key, value] of Object.entries(obj)) {
+        this.extractSecretValuesFromObject(value, secretValues, [...currentPath, key]);
+      }
+    }
   }
 }
 
