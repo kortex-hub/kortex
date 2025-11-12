@@ -15,11 +15,13 @@ import { Button } from './ui/button';
 let {
   selectedModel,
   selectedMCP,
+  selectedMCPTools,
   loading,
   chatClient,
 }: {
   selectedModel?: ModelInfo;
   selectedMCP: MCPRemoteServerInfo[];
+  selectedMCPTools?: Map<string, Set<string>>;
   loading: boolean;
   chatClient: Chat;
 } = $props();
@@ -42,6 +44,9 @@ const exportAsFlow = async (): Promise<void> => {
       providerId,
       connectionName,
       modelId: label,
+      tools: Object.fromEntries(
+        selectedMCPTools?.entries()?.map(([toolName, value]) => [toolName, Array.from(value.values())]) ?? [],
+      ),
       mcp: selectedMCP.map(m => m.id),
       messages: $state.snapshot(chatClient.messages),
     });
