@@ -21,13 +21,16 @@ import { ContainerModule } from 'inversify';
 
 import { SocketFinder } from '/@/api/socket-finder';
 
+import { DockerSocketMacOSFinder } from './docker/docker-macos-finder';
 import { PodmanSocketMacOSFinder } from './podman/podman-macos-finder';
 import { PodmanSocketWindowsFinder } from './podman/podman-windows-finder';
 
 const socketFinderModule = new ContainerModule(options => {
   if (env.isMac) {
     options.bind<PodmanSocketMacOSFinder>(PodmanSocketMacOSFinder).toSelf().inSingletonScope();
+    options.bind<DockerSocketMacOSFinder>(DockerSocketMacOSFinder).toSelf().inSingletonScope();
     options.bind<SocketFinder>(SocketFinder).toService(PodmanSocketMacOSFinder);
+    options.bind<SocketFinder>(SocketFinder).toService(DockerSocketMacOSFinder);
   } else if (env.isWindows) {
     options.bind<PodmanSocketWindowsFinder>(PodmanSocketWindowsFinder).toSelf().inSingletonScope();
     options.bind<SocketFinder>(SocketFinder).toService(PodmanSocketWindowsFinder);
