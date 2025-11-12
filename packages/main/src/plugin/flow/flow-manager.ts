@@ -135,7 +135,7 @@ export class FlowManager implements Disposable {
     task.status = 'in-progress';
 
     flowConnection.flow
-      .execute(flowId, logger, params)
+      .execute({ flowId, logger, params })
       .then(() => {
         task.state = 'completed';
         task.status = 'success';

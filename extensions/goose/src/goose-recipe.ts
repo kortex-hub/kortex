@@ -22,13 +22,13 @@ import { basename, dirname, join } from 'node:path';
 import type {
   Disposable,
   Flow,
+  FlowExecuteParams,
   FlowGenerateCommandLineOptions,
   FlowGenerateCommandLineResult,
   FlowGenerateKubernetesOptions,
   FlowGenerateKubernetesResult,
   FlowGenerateOptions,
   FlowParameter,
-  Logger,
   Provider,
   provider as ProviderAPI,
   ProviderConnectionStatus,
@@ -136,7 +136,7 @@ export class GooseRecipe implements Disposable {
     return Buffer.from(fullPath).toString('base64');
   }
 
-  protected async execute(flowId: string, logger: Logger, params?: Record<string, string>): Promise<void> {
+  protected async execute({ flowId, logger, params }: FlowExecuteParams): Promise<void> {
     const { env, flowPath } = await this.getFlowInfos(flowId);
     // execute goose recipe using run
     await this.gooseCLI.run(flowPath, logger, { path: this.getBasePath(), env, params });
