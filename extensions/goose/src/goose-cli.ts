@@ -88,12 +88,14 @@ export class GooseCLI implements Disposable {
     options: { path: string; env?: Record<string, string>; params?: Record<string, string> },
   ): FlowGenerateCommandLineResult {
     if (!this.cli?.path) throw new Error('goose not installed');
-    const args = ['run', '--recipe', flowPath];
-    if (options.params) {
-      for (const key in options.params) {
-        args.push('--params', `${key}=${options.params[key]}`);
-      }
-    }
+    const args = [
+      'run',
+      '--recipe',
+      flowPath,
+      ...(options.params
+        ? Object.entries(options.params).flatMap(([key, value]) => ['--params', `${key}=${value}`])
+        : []),
+    ];
     return {
       command: this.cli.path,
       args,
