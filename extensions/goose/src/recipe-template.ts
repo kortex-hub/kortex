@@ -26,6 +26,13 @@ export interface RecipeTemplateOptions {
     description: string;
     prompt: string;
     instructions: string;
+    parameters?: Array<{
+      name: string;
+      description: string;
+      format: string;
+      default?: string;
+      required: boolean;
+    }>;
     extensions: Array<{
       name: string;
       type: string;
@@ -51,6 +58,7 @@ export class RecipeTemplate {
         instructions: this.options.recipe.instructions.split('\n'),
         description: this.options.recipe.description.split('\n'),
         prompt: this.options.recipe.prompt.split('\n'),
+        hasParameters: this.options.recipe.parameters && this.options.recipe.parameters.length > 0,
       },
     };
   }

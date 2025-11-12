@@ -23,7 +23,34 @@ export type FlowGenerationParameters = {
   name: string;
   description: string;
   prompt: string;
+  parameters?: Array<FlowParameter>;
 };
+
+export type FlowParameterAIGenerated = {
+  name: string;
+  description: string;
+  format: string;
+  default?: string;
+};
+
+export type FlowParameter = FlowParameterAIGenerated & {
+  required: boolean;
+};
+
+type FlowAIGeneratedParameters = {
+  name: string;
+  description: string;
+  prompt: string;
+  parameters?: Array<FlowParameterAIGenerated>;
+};
+
+export const FlowParameterSchema = z.object({
+  name: z.string().describe('Parameter name (must be valid identifier)'),
+  format: z.string().default('string').describe('Parameter data type'),
+  description: z.string().describe('Human-readable description of the parameter'),
+  default: z.string().optional().describe('Default value for the parameter'),
+  // Note: 'required' is computed dynamically based on whether 'default' exists
+});
 
 // Reusable schema fields for flow metadata
 const flowNameSchema = z
@@ -48,11 +75,20 @@ const flowDescriptionSchema = z
 const flowPromptSchema = z
   .string()
   .describe(
-    'Help me create a reproducible prompt that achieves the same result as in the conversation above. The prompt will be executed by another LLM without any further user input, so it must include all the necessary information to reproduce the same outcome.',
+    'Help me create a reproducible prompt template that achieves the same result as in the conversation above. The prompt will be executed by another LLM without any further user input, so it must include all the necessary information to reproduce the same outcome. Also include parameter placeholders like {{parameterName}}. Example: "Get the last {{count}} issues from {{owner}}/{{repo}}"',
   );
 
-export const FlowGenerationParametersSchema: ZodType<FlowGenerationParameters> = z.object({
+const flowParametersSchema = z
+  .array(FlowParameterSchema)
+  .optional()
+  .describe(
+    'Extract parameters from the conversation that can be modified when re-executing this flow. Analyze user messages and MCP tool inputs to identify values that should be parameterizable.',
+  );
+
+// Full schema (validates AI-generated parameters without 'required')
+export const FlowGenerationParametersSchema: ZodType<FlowAIGeneratedParameters> = z.object({
   name: flowNameSchema,
   description: flowDescriptionSchema,
   prompt: flowPromptSchema,
+  parameters: flowParametersSchema,
 });
