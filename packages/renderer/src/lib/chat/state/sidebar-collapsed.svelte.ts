@@ -1,1 +1,1 @@
-export const sidebarCollapsed = $state({ value: true });
+export const sidebarCollapsed = $state({ value: false });

@@ -3,7 +3,7 @@ import { router } from 'tinro';
 
 import { currentChatId } from '/@/lib/chat/state/current-chat-id.svelte';
 
-import PenToSquareIcon from './icons/PenToSquareIcon.svelte';
+import Plus from './icons/plus.svelte';
 import { SidebarHistory } from './sidebar-history';
 import { Button } from './ui/button';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarMenu, useSidebar } from './ui/sidebar';
@@ -37,7 +37,7 @@ const context = useSidebar();
 						{#snippet child({ props })}
 							<Button
 								{...props}
-								variant="ghost"
+								variant="default"
 								type="button"
 								class="h-fit p-2"
 								onclick={(): void => {
@@ -50,7 +50,7 @@ const context = useSidebar();
 									}
 								}}
 							>
-								<PenToSquareIcon />
+								<Plus />
 							</Button>
 						{/snippet}
 					</TooltipTrigger>
