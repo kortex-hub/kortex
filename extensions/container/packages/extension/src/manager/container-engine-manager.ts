@@ -17,16 +17,29 @@
  ***********************************************************************/
 
 import type { ContainerExtensionAPI } from '@kortex-app/container-extension-api';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
+
+import { ContainerEndpointHandler } from '/@/handler/container-endpoint-handler';
 
 // class is responsible to manage the available container engines
 @injectable()
 export class ContainerEngineManager {
-  async init(): Promise<void> {}
+  @inject(ContainerEndpointHandler)
+  private containerEndpointHandler: ContainerEndpointHandler;
 
-  exports(): ContainerExtensionAPI {
-    return {};
+  async init(): Promise<void> {
+    await this.containerEndpointHandler.init();
   }
 
-  dispose(): void {}
+  exports(): ContainerExtensionAPI {
+    return {
+      onEndpointsChanged: this.containerEndpointHandler.onEndpointsChanged,
+      onContainersChanged: this.containerEndpointHandler.onContainersChanged,
+      getEndpoints: () => this.containerEndpointHandler.getEndpoints(),
+    };
+  }
+
+  dispose(): void {
+    this.containerEndpointHandler.dispose();
+  }
 }

@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import type { Event } from '@kortex-app/api';
 import type Dockerode from 'dockerode';
 
 export interface ContainerEngineEvent {
@@ -28,5 +29,12 @@ export interface EndpointConnection {
   dockerode: Dockerode;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface ContainerExtensionAPI {}
+export interface ContainerExtensionAPI {
+  // notify when endpoints change
+  readonly onEndpointsChanged: Event<readonly EndpointConnection[]>;
+
+  // notify when containers are started or stopped
+  readonly onContainersChanged: Event<void>;
+
+  getEndpoints(): readonly EndpointConnection[];
+}
