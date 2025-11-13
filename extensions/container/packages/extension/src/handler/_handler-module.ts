@@ -19,8 +19,10 @@
 import { ContainerModule } from 'inversify';
 
 import { ConnectionHandler } from './connection-handler';
+import { ContainerEndpointHandler } from './container-endpoint-handler';
 
 const handlersModule = new ContainerModule(options => {
+  options.bind<ContainerEndpointHandler>(ContainerEndpointHandler).toSelf().inSingletonScope();
   options.bind<ConnectionHandler>(ConnectionHandler).toSelf().inSingletonScope();
 });
 
