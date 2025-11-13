@@ -75,6 +75,14 @@ test('should handle error when getting events', () => {
 
   connectionHandler.monitorConnection(connection);
 
+  // get call to connection.dockerode.getEvents mock
+  const getEventsCall = vi.mocked(connection.dockerode.getEvents).mock.calls[0][0] as unknown as (
+    error?: unknown,
+    result?: NodeJS.ReadableStream,
+  ) => void;
+  // invoke the callback with error
+  getEventsCall(mockError, undefined);
+
   expect(consoleErrorSpy).toHaveBeenCalledWith('unable to get events', mockError);
   consoleErrorSpy.mockRestore();
 });

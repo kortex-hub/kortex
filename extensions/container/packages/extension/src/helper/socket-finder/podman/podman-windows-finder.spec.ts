@@ -70,16 +70,16 @@ test('findPaths returns socket path when multiple machines exist and at least on
   const finder = new PodmanSocketWindowsFinder();
 
   const machineListOutput = JSON.stringify([
-    { Name: 'podman-machine-1', VMType: 'qemu', Running: false },
-    { Name: 'podman-machine-2', VMType: 'qemu', Running: true },
-    { Name: 'podman-machine-3', VMType: 'qemu', Running: false },
+    { Name: 'machine-1', VMType: 'qemu', Running: false },
+    { Name: 'machine-2', VMType: 'qemu', Running: true },
+    { Name: 'machine-3', VMType: 'qemu', Running: false },
   ]);
 
   vi.mocked(process.exec).mockResolvedValue({ stdout: machineListOutput, stderr: '' } as RunResult);
 
   const result = await finder.findPaths();
 
-  expect(result).toEqual(['\\\\.\\pipe\\podman-machine-podman-machine-2']);
+  expect(result).toEqual(['\\\\.\\pipe\\podman-machine-2']);
 });
 
 test('findPaths returns empty array when socket exists but machine list is empty', async () => {
