@@ -71,6 +71,7 @@ import type { ExtensionInfo } from '/@api/extension-info';
 import type { FeedbackProperties, GitHubIssue } from '/@api/feedback';
 import type { FlowExecuteInfo } from '/@api/flow-execute-info';
 import type { FlowInfo } from '/@api/flow-info';
+import type { FlowScheduleInfo } from '/@api/flow-schedule-info';
 import type { HistoryInfo } from '/@api/history-info';
 import type { IconInfo } from '/@api/icon-info';
 import type { ImageCheckerInfo } from '/@api/image-checker-info';
@@ -296,10 +297,40 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld('listFlows', async (): Promise<Array<FlowInfo>> => {
     return ipcInvoke('flows:list');
   });
+  contextBridge.exposeInMainWorld(
+    'scheduleFlow',
+    async (
+      schedulerName: string,
+      flowId: string,
+      providerId: string,
+      connectionName: string,
+      cronExpression: string,
+    ): Promise<void> => {
+      return ipcInvoke('flows:schedule', schedulerName, flowId, providerId, connectionName, cronExpression);
+    },
+  );
 
   contextBridge.exposeInMainWorld('listExecuteFlows', async (): Promise<Array<FlowExecuteInfo>> => {
     return ipcInvoke('flows:listExecute');
   });
+
+  contextBridge.exposeInMainWorld('listScheduledFlows', async (): Promise<Array<FlowScheduleInfo>> => {
+    return ipcInvoke('flows:listSchedules');
+  });
+
+  contextBridge.exposeInMainWorld(
+    'deleteSchedule',
+    async (schedulerName: string, scheduleId: string): Promise<void> => {
+      return ipcInvoke('scheduler:delete-schedule', schedulerName, scheduleId);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'getSchedulerExecution',
+    async (schedulerName: string, id: string): Promise<containerDesktopAPI.ProviderScheduleExecution | undefined> => {
+      return ipcInvoke('scheduler:get-execution', schedulerName, id);
+    },
+  );
 
   contextBridge.exposeInMainWorld(
     'readFlow',
