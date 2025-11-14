@@ -100,16 +100,22 @@ export class FlowManager implements Disposable {
     });
   }
 
+  protected getFlowConnection(providerId: string, connectionName: string): FlowProviderConnection {
+    // Get the flow provider to use
+    const flowProvider = this.provider.getProvider(providerId);
+    const flowConnection = flowProvider.flowConnections.find(({ name }) => name === connectionName);
+    if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
+    return flowConnection;
+  }
+
   public async execute(
     providerId: string,
     connectionName: string,
     flowId: string,
     params?: Record<string, string>,
   ): Promise<string> {
-    // Get the flow provider to use
-    const flowProvider = this.provider.getProvider(providerId);
-    const flowConnection = flowProvider.flowConnections.find(({ name }) => name === connectionName);
-    if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
+    // Get the flow connection
+    const flowConnection = this.getFlowConnection(providerId, connectionName);
 
     const task = this.taskManager.createTask({ title: `Execute flow ${flowId}` });
     const logger = new BufferLogger(this.apiSender);
