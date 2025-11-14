@@ -38,8 +38,8 @@ importers:
         specifier: ^1.3.0
         version: 1.3.0(patch_hash=1c34691b2a4cf5f4fdeb73244fb59dccceee5642ddca2ac6c41fe86d9fde86e5)(encoding@0.1.13)
       '@modelcontextprotocol/sdk':
-        specifier: ^1.21.1
-        version: 1.21.1
+        specifier: ^1.22.0
+        version: 1.22.0
       '@oslojs/crypto':
         specifier: ^1.0.1
         version: 1.0.1
@@ -407,7 +407,7 @@ importers:
         version: 2.0.31(zod@4.1.12)
       '@google/genai':
         specifier: ^1.25.0
-        version: 1.25.0(@modelcontextprotocol/sdk@1.21.1)(encoding@0.1.13)
+        version: 1.25.0(@modelcontextprotocol/sdk@1.22.0)(encoding@0.1.13)
       '@kortex-app/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
@@ -428,8 +428,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/extension-api
       '@modelcontextprotocol/sdk':
-        specifier: ^1.21.1
-        version: 1.21.1
+        specifier: ^1.22.0
+        version: 1.22.0
       '@octokit/rest':
         specifier: ^21.1.0
         version: 21.1.1
@@ -1578,8 +1578,8 @@ packages:
     resolution: {integrity: sha512-9QOtNffcOF/c1seMCDnjckb3R9WHcG34tky+FHpNKKCW0wc/scYLwMtO+ptyGUfMW0/b/n4qRiALlaFHc9Oj7Q==}
     engines: {node: '>= 10.0.0'}
 
-  '@modelcontextprotocol/sdk@1.21.1':
-    resolution: {integrity: sha512-UyLFcJLDvUuZbGnaQqXFT32CpPpGj7VS19roLut6gkQVhb439xUzYWbsUvdI3ZPL+2hnFosuugtYWE0Mcs1rmQ==}
+  '@modelcontextprotocol/sdk@1.22.0':
+    resolution: {integrity: sha512-VUpl106XVTCpDmTBil2ehgJZjhyLY2QZikzF8NvTXtLRF1CvO5iEE2UNZdVIUer35vFOwMKYeUGbjJtvPWan3g==}
     engines: {node: '>=18'}
     peerDependencies:
       '@cfworker/json-schema': ^4.1.1
@@ -5710,8 +5710,8 @@ packages:
     resolution: {integrity: sha512-DSmt0OEcLoK4i3NuscSbGjOf3bqiDEutejqENSplMSFA/gmB8mkED9G4pKWnPl7MDU4rSHebKPHeitpDfyH0cQ==}
     engines: {node: '>=10'}
 
-  node-abi@3.80.0:
-    resolution: {integrity: sha512-LyPuZJcI9HVwzXK1GPxWNzrr+vr8Hp/3UqlmWxxh8p54U1ZbclOqbSog9lWHaCX+dBaiGi6n/hIX+mKu74GmPA==}
+  node-abi@3.85.0:
+    resolution: {integrity: sha512-zsFhmbkAzwhTft6nd3VxcG0cvJsT70rL+BIGHWVq5fi6MwGrHwzqKaxXE+Hl2GmnGItnDKPPkO5/LQqjVkIdFg==}
     engines: {node: '>=10'}
 
   node-addon-api@1.7.2:
@@ -7860,7 +7860,7 @@ snapshots:
       make-fetch-happen: 10.2.1
       nopt: 6.0.0
       proc-log: 2.0.1
-      semver: 7.7.2
+      semver: 7.7.3
       tar: 6.2.1
       which: 2.0.2
     transitivePeerDependencies:
@@ -7894,7 +7894,7 @@ snapshots:
       detect-libc: 2.1.2
       fs-extra: 10.1.0
       got: 11.8.6
-      node-abi: 3.80.0
+      node-abi: 3.85.0
       node-api-version: 0.2.1
       node-gyp: 9.4.1
       ora: 5.4.1
@@ -8173,12 +8173,12 @@ snapshots:
 
   '@gar/promisify@1.1.3': {}
 
-  '@google/genai@1.25.0(@modelcontextprotocol/sdk@1.21.1)(encoding@0.1.13)':
+  '@google/genai@1.25.0(@modelcontextprotocol/sdk@1.22.0)(encoding@0.1.13)':
     dependencies:
       google-auth-library: 9.15.1(encoding@0.1.13)
       ws: 8.18.3
     optionalDependencies:
-      '@modelcontextprotocol/sdk': 1.21.1
+      '@modelcontextprotocol/sdk': 1.22.0
     transitivePeerDependencies:
       - bufferutil
       - encoding
@@ -8419,7 +8419,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@modelcontextprotocol/sdk@1.21.1':
+  '@modelcontextprotocol/sdk@1.22.0':
     dependencies:
       ajv: 8.17.1
       ajv-formats: 3.0.1(ajv@8.17.1)
@@ -8468,7 +8468,7 @@ snapshots:
   '@npmcli/fs@2.1.2':
     dependencies:
       '@gar/promisify': 1.1.3
-      semver: 7.7.2
+      semver: 7.7.3
 
   '@npmcli/move-file@2.0.1':
     dependencies:
@@ -13281,7 +13281,7 @@ snapshots:
     dependencies:
       semver: 7.7.2
 
-  node-abi@3.80.0:
+  node-abi@3.85.0:
     dependencies:
       semver: 7.7.3
 
