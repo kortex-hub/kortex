@@ -32,7 +32,7 @@ import { formatArguments } from '/@/plugin/mcp/utils/arguments.js';
 import { formatKeyValueInputs } from '/@/plugin/mcp/utils/format-key-value-inputs.js';
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { IConfigurationNode, IConfigurationRegistry } from '/@api/configuration/models.js';
-import { MCPServerDetail } from '/@api/mcp/mcp-server-info.js';
+import { MCPRemoteServerInfo, MCPServerDetail } from '/@api/mcp/mcp-server-info.js';
 import { InputWithVariableResponse, MCPSetupOptions } from '/@api/mcp/mcp-setup.js';
 
 import { ApiSenderType } from '../api.js';
@@ -73,6 +73,7 @@ export class MCPRegistry {
   private registries: InternalMCPRegistry[] = [];
   private suggestedRegistries: kortexAPI.RegistrySuggestedProvider[] = [];
   private providers: Map<string, kortexAPI.MCPRegistryProvider> = new Map();
+  private internalMCPServers: MCPServerDetail[] = [];
 
   private readonly _onDidRegisterRegistry = new Emitter<kortexAPI.MCPRegistry>();
   private readonly _onDidUpdateRegistry = new Emitter<kortexAPI.MCPRegistry>();
@@ -351,7 +352,7 @@ export class MCPRegistry {
     }
   }
 
-  async setupMCPServer(serverId: string, options: MCPSetupOptions): Promise<void> {
+  async setupMCPServer(serverId: string, options: MCPSetupOptions): Promise<MCPRemoteServerInfo> {
     // Get back the server
     const serverDetails = await this.listMCPServersFromRegistries();
     const serverDetail = serverDetails.find(server => server.serverId === serverId);
@@ -428,7 +429,7 @@ export class MCPRegistry {
     // get values from the server detail
     const { name, description } = serverDetail;
 
-    await this.mcpManager.registerMCPClient(
+    const info = await this.mcpManager.registerMCPClient(
       INTERNAL_PROVIDER_ID,
       serverId,
       options.type,
@@ -440,6 +441,8 @@ export class MCPRegistry {
 
     // persist configuration
     await this.saveConfiguration(config);
+
+    return info;
   }
 
   protected formatInputWithVariableResponse(input: InputWithVariableResponse): string {
@@ -549,6 +552,22 @@ export class MCPRegistry {
     return data;
   }
 
+  registerInternalMCPServer(server: MCPServerDetail): void {
+    this.internalMCPServers.push(server);
+  }
+
+  unregisterInternalMCPServer(serverId: string): void {
+    this.internalMCPServers = this.internalMCPServers.filter(server => server.serverId !== serverId);
+  }
+
+  findInternalMCPServer(serverId: string): MCPServerDetail | undefined {
+    return this.internalMCPServers.find(server => server.serverId === serverId);
+  }
+
+  async listInternalMCPServers(): Promise<Array<MCPServerDetail>> {
+    return this.internalMCPServers;
+  }
+
   async listMCPServersFromRegistries(): Promise<Array<MCPServerDetail>> {
     // connect to each registry and grab server details
     const serverDetails: Array<MCPServerDetail> = [];
@@ -567,7 +586,7 @@ export class MCPRegistry {
         console.error(`Failed fetch for registry ${registryURL}`, error);
       }
     }
-    return serverDetails;
+    return serverDetails.concat(this.internalMCPServers);
   }
 
   async updateMCPRegistry(registry: kortexAPI.MCPRegistry): Promise<void> {

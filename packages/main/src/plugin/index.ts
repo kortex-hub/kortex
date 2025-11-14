@@ -52,6 +52,7 @@ import { Container } from 'inversify';
 import { lookup } from 'mime-types';
 
 import type { KubernetesGeneratorInfo } from '/@/plugin/api/KubernetesGeneratorInfo.js';
+import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import { ExtensionLoader } from '/@/plugin/extension/extension-loader.js';
 import { ExtensionWatcher } from '/@/plugin/extension/extension-watcher.js';
 import { FlowManager } from '/@/plugin/flow/flow-manager.js';
@@ -128,6 +129,8 @@ import type {
 } from '/@api/provider-info.js';
 import type { ProxyState } from '/@api/proxy.js';
 import type { PullEvent } from '/@api/pull-event.js';
+import type { ChunkProviderInfo } from '/@api/rag/chunk-provider-info.js';
+import type { RagEnvironment } from '/@api/rag/rag-environment.js';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info.js';
 import type { StatusBarEntryDescriptor } from '/@api/status-bar.js';
 import type { PinOption } from '/@api/status-bar/pin-option.js';
@@ -198,6 +201,7 @@ import { OnboardingRegistry } from './onboarding-registry.js';
 import { OpenDevToolsInit } from './open-devtools-init.js';
 import { ProviderRegistry } from './provider-registry.js';
 import { Proxy } from './proxy.js';
+import { RagEnvironmentRegistry } from './rag-environment-registry.js';
 import { RecommendationsRegistry } from './recommendations/recommendations-registry.js';
 import { ReleaseNotesBannerInit } from './release-notes-banner-init.js';
 import { SafeStorageRegistry } from './safe-storage/safe-storage-registry.js';
@@ -527,6 +531,7 @@ export class PluginSystem {
     container.bind<ImageRegistry>(ImageRegistry).toSelf().inSingletonScope();
     container.bind<MCPRegistry>(MCPRegistry).toSelf().inSingletonScope();
     container.bind<MCPIPCHandler>(MCPIPCHandler).toSelf().inSingletonScope();
+    container.bind<ChunkProviderRegistry>(ChunkProviderRegistry).toSelf().inSingletonScope();
     container.bind<ViewRegistry>(ViewRegistry).toSelf().inSingletonScope();
     container.bind<Context>(Context).toSelf().inSingletonScope();
     container.bind<ContainerProviderRegistry>(ContainerProviderRegistry).toSelf().inSingletonScope();
@@ -544,6 +549,7 @@ export class PluginSystem {
     container.bind<KubernetesClient>(KubernetesClient).toSelf().inSingletonScope();
     container.bind<ChatManager>(ChatManager).toSelf().inSingletonScope();
     container.bind<SchedulerRegistry>(SchedulerRegistry).toSelf().inSingletonScope();
+    container.bind<RagEnvironmentRegistry>(RagEnvironmentRegistry).toSelf().inSingletonScope();
 
     // INIT KUBERNETES
     const kubernetesClient = container.get<KubernetesClient>(KubernetesClient);
@@ -785,6 +791,9 @@ export class PluginSystem {
     const mcpRegistry = container.get<MCPRegistry>(MCPRegistry);
     const schedulerRegistry = container.get<SchedulerRegistry>(SchedulerRegistry);
     mcpRegistry.init();
+    const ragEnvironmentRegistry = container.get<RagEnvironmentRegistry>(RagEnvironmentRegistry);
+    await ragEnvironmentRegistry.init();
+    const chunkProviderRegistry = container.get<ChunkProviderRegistry>(ChunkProviderRegistry);
 
     const mcpIPCHandler = container.get<MCPIPCHandler>(MCPIPCHandler);
     mcpIPCHandler.init();
@@ -1710,6 +1719,40 @@ export class PluginSystem {
 
     this.ipcHandle('provider-registry:getProviderInfos', async (): Promise<ProviderInfo[]> => {
       return providerRegistry.getProviderInfos();
+    });
+
+    this.ipcHandle('rag-environment-registry:getRagEnvironments', async (): Promise<RagEnvironment[]> => {
+      return ragEnvironmentRegistry.getAllRagEnvironments();
+    });
+
+    this.ipcHandle(
+      'rag-environment-registry:createRagEnvironment',
+      async (
+        _listener,
+        name: string,
+        ragConnection: { name: string; providerId: string },
+        chunkerId: string,
+      ): Promise<void> => {
+        const ragEnvironment: RagEnvironment = {
+          name,
+          ragConnection,
+          chunkerId,
+          files: [],
+        };
+        await ragEnvironmentRegistry.createEnvironment(name, ragConnection, chunkerId);
+        this.getWebContentsSender().send('rag-environment-created', ragEnvironment);
+      },
+    );
+
+    this.ipcHandle(
+      'rag-environment-registry:addFileToPendingFiles',
+      async (_listener, name: string, filePath: string): Promise<boolean> => {
+        return await ragEnvironmentRegistry.addFileToPendingFiles(name, filePath);
+      },
+    );
+
+    this.ipcHandle('chunk-provider-registry:getChunkProviders', async (): Promise<ChunkProviderInfo[]> => {
+      return chunkProviderRegistry.getChunkProviders();
     });
 
     this.ipcHandle(
@@ -2696,6 +2739,29 @@ export class PluginSystem {
           navigateToTask: () => navigationManager.navigateToProviderTask(internalProviderId, taskId),
           execute: (logger: LoggerWithEnd, token?: containerDesktopAPI.CancellationToken) =>
             providerRegistry.createInferenceProviderConnection(internalProviderId, params, logger, token),
+          executeErrorMsg: (err: unknown) => `Something went wrong while trying to create provider: ${err}`,
+        });
+      },
+    );
+
+    this.ipcHandle(
+      'provider-registry:createRagProviderConnection',
+      async (
+        _listener: Electron.IpcMainInvokeEvent,
+        internalProviderId: string,
+        params: { [key: string]: unknown },
+        loggerId: string,
+        tokenId: number | undefined,
+        taskId: number | undefined,
+      ): Promise<void> => {
+        const providerName = providerRegistry.getProviderInfo(internalProviderId)?.name;
+        return taskConnectionUtils.withTask({
+          loggerId,
+          tokenId,
+          title: `Creating ${providerName ?? 'RAG'} provider`,
+          navigateToTask: () => navigationManager.navigateToProviderTask(internalProviderId, taskId),
+          execute: (logger: LoggerWithEnd, token?: containerDesktopAPI.CancellationToken) =>
+            providerRegistry.createRagProviderConnection(internalProviderId, params, logger, token),
           executeErrorMsg: (err: unknown) => `Something went wrong while trying to create provider: ${err}`,
         });
       },

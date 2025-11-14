@@ -50,9 +50,12 @@ test('Expect provider region', async () => {
     installationSupport: false,
     cleanupSupport: false,
     inferenceConnections: [],
+    ragConnections: [],
     flowConnections: [],
     inferenceProviderConnectionCreation: false,
     inferenceProviderConnectionInitialization: false,
+    ragProviderConnectionCreation: false,
+    ragProviderConnectionInitialization: false,
   };
   render(ProviderCard, { provider });
 
@@ -83,9 +86,12 @@ test('Expect provider name', async () => {
     installationSupport: false,
     cleanupSupport: false,
     inferenceConnections: [],
+    ragConnections: [],
     flowConnections: [],
     inferenceProviderConnectionCreation: false,
     inferenceProviderConnectionInitialization: false,
+    ragProviderConnectionCreation: false,
+    ragProviderConnectionInitialization: false,
   };
   render(ProviderCard, { provider });
 
@@ -117,9 +123,12 @@ test('Expect provider icon', async () => {
     installationSupport: false,
     cleanupSupport: false,
     inferenceConnections: [],
+    ragConnections: [],
     flowConnections: [],
     inferenceProviderConnectionCreation: false,
     inferenceProviderConnectionInitialization: false,
+    ragProviderConnectionCreation: false,
+    ragProviderConnectionInitialization: false,
   };
 
   render(ProviderCard, { provider });
@@ -155,9 +164,12 @@ test('Expect no provider version', async () => {
     installationSupport: false,
     cleanupSupport: false,
     inferenceConnections: [],
+    ragConnections: [],
     flowConnections: [],
     inferenceProviderConnectionCreation: false,
     inferenceProviderConnectionInitialization: false,
+    ragProviderConnectionCreation: false,
+    ragProviderConnectionInitialization: false,
   };
   render(ProviderCard, { provider });
 
@@ -189,9 +201,12 @@ test('Expect provider version', async () => {
     version: '1.2.3',
     cleanupSupport: false,
     inferenceConnections: [],
+    ragConnections: [],
     flowConnections: [],
     inferenceProviderConnectionCreation: false,
     inferenceProviderConnectionInitialization: false,
+    ragProviderConnectionCreation: false,
+    ragProviderConnectionInitialization: false,
   };
   render(ProviderCard, { provider });
 
@@ -223,9 +238,12 @@ test('Expect provider state', async () => {
     installationSupport: false,
     cleanupSupport: false,
     inferenceConnections: [],
+    ragConnections: [],
     flowConnections: [],
     inferenceProviderConnectionCreation: false,
     inferenceProviderConnectionInitialization: false,
+    ragProviderConnectionCreation: false,
+    ragProviderConnectionInitialization: false,
   };
   render(ProviderCard, { provider });
 
