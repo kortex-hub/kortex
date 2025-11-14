@@ -5,6 +5,21 @@ description: |
     {{&.}}
   {{/recipe.description }}
 
+{{#recipe.hasParameters}}
+parameters:
+{{#recipe.parameters}}
+  - key: "{{ name }}"
+    input_type: "{{ format }}"
+    requirement: {{#required}}required{{/required}}{{^required}}optional{{/required}}
+{{#description}}
+    description: "{{ description }}"
+{{/description}}
+{{#default}}
+    default: {{&default}}
+{{/default}}
+{{/recipe.parameters}}
+
+{{/recipe.hasParameters}}
 # Required for headless mode
 prompt: |
   {{#recipe.prompt }}

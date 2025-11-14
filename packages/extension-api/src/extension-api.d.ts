@@ -450,6 +450,7 @@ declare module '@kortex-app/api' {
      * system prompt
      */
     prompt: string;
+    parameters?: Array<FlowParameter>;
     instruction: string;
     model: {
       providerId: string;
