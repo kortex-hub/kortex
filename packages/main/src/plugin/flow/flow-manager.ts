@@ -17,13 +17,15 @@
  ***********************************************************************/
 import { basename, extname } from 'node:path';
 
-import type { Disposable, Flow, FlowProviderConnection, Logger } from '@kortex-app/api';
+import type { Disposable, Flow, FlowProviderConnection, Logger, ProviderSchedulerOptions } from '@kortex-app/api';
 import { inject, injectable, preDestroy } from 'inversify';
 
 import { ApiSenderType, IPCHandle } from '/@/plugin/api.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
+import { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
 import type { FlowExecuteInfo } from '/@api/flow-execute-info.js';
 import type { FlowInfo } from '/@api/flow-info.js';
+import type { FlowScheduleInfo } from '/@api/flow-schedule-info.js';
 
 import { TaskManager } from '../tasks/task-manager.js';
 
@@ -66,6 +68,8 @@ export class FlowManager implements Disposable {
     private apiSender: ApiSenderType,
     @inject(TaskManager)
     private taskManager: TaskManager,
+    @inject(SchedulerRegistry)
+    private schedulerRegistry: SchedulerRegistry,
     @inject(IPCHandle)
     private readonly ipcHandle: IPCHandle,
   ) {}
@@ -158,6 +162,44 @@ export class FlowManager implements Disposable {
       });
 
     return task.id;
+  }
+  public async scheduleFlow(
+    schedulerName: string,
+    flowId: string,
+    providerId: string,
+    connectionName: string,
+    cronExpression: string,
+  ): Promise<void> {
+    // Get the flow connection
+    const flowConnection = this.getFlowConnection(providerId, connectionName);
+    const flowCommandLine = await flowConnection.flow.generateCommandLine({ flowId });
+
+    const options: ProviderSchedulerOptions = {
+      command: flowCommandLine,
+      metadata: {
+        'flow-scheduler': schedulerName,
+        'flow-id': flowId,
+      },
+      cronExpression,
+    };
+
+    await this.schedulerRegistry.schedule(schedulerName, options);
+  }
+
+  async listSchedules(): Promise<FlowScheduleInfo[]> {
+    const items = await this.schedulerRegistry.listItems(['flow-scheduler']);
+    const flowScheduleItems = items.filter(item => item.metadata['flow-id'] !== undefined);
+
+    return flowScheduleItems.map(item => {
+      const flowId = item.metadata['flow-id'] ?? '';
+
+      return {
+        flowId,
+        id: item.id,
+        schedulerName: item.schedulerName,
+        cronExpression: item.cronExpression,
+      };
+    });
   }
 
   public async dispatchLog(
@@ -257,6 +299,24 @@ export class FlowManager implements Disposable {
     this.ipcHandle('flows:refresh', async (): Promise<void> => {
       return this.refresh();
     });
+
+    this.ipcHandle('flows:listSchedules', async (_listener): Promise<Array<FlowScheduleInfo>> => {
+      return this.listSchedules();
+    });
+
+    this.ipcHandle(
+      'flows:schedule',
+      async (
+        _listener,
+        schedulerName: string,
+        flowId: string,
+        providerId: string,
+        connectionName: string,
+        cronExpression: string,
+      ): Promise<void> => {
+        return this.scheduleFlow(schedulerName, flowId, providerId, connectionName, cronExpression);
+      },
+    );
 
     // register listener for new Flow connections
     this.provider.onDidRegisterFlowConnection(({ providerId, connection }) => {
