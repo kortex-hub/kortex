@@ -24,12 +24,14 @@ let {
   chatClient,
   class: c,
   selectedMCP,
+  selectedMCPTools,
   selectedModel,
   mcpSelectorOpen = $bindable(),
 }: {
   attachments: Attachment[];
   chatClient: Chat;
   class?: string;
+  selectedMCPTools?: Map<string, Set<string>>;
   selectedMCP: MCPRemoteServerInfo[];
   selectedModel?: ModelInfo;
   mcpSelectorOpen: boolean;
@@ -174,7 +176,7 @@ $effect.pre(() => {
 	</div>
 
 	<div class="absolute right-0 bottom-0 flex w-fit flex-row items-center justify-end p-2">
-		<ExportButton {chatClient} {selectedModel} {selectedMCP} {loading}/>
+		<ExportButton {chatClient} {selectedModel} {selectedMCP} {loading} {selectedMCPTools}/>
 		{#if loading}
 			<Button
 				class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
