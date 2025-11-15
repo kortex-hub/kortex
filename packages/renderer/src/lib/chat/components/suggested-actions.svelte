@@ -12,7 +12,7 @@ import { Button } from './ui/button';
 
 let {
   chatClient,
-  selectedMCP,
+  selectedMCP = $bindable(),
   mcpSelectorOpen = $bindable(),
 }: {
   chatClient: Chat;
@@ -93,10 +93,27 @@ async function onclick(suggestedAction: SuggestedAction): Promise<void> {
   });
 
   if (mcpsToSelect?.length) {
-    mcpSelectorOpen = true;
+    const result = await window.showMessageBox({
+      title: 'Select MCPs',
+      message: `The following MCPs are required to use this suggested action: ${mcpsToSelect.join(', ')}. Do you want to select them?`,
+      buttons: ['No', 'Yes'],
+    });
 
-    toast.error(`You need to select the following MCP first: ${mcpsToSelect.join(', ')}`);
-    return;
+    if (result?.response === 0) {
+      // No
+      mcpSelectorOpen = true;
+
+      toast.error(`You need to select the following MCP first: ${mcpsToSelect.join(', ')}`);
+      return;
+    } else {
+      // Yes
+      const mcpsToAdd =
+        suggestedAction.requiredMcp
+          ?.map(id => $mcpRemoteServerInfos.find(mcp => mcp.infos.serverId === id))
+          .filter(mcp => mcp !== undefined) ?? [];
+
+      selectedMCP.push(...mcpsToAdd);
+    }
   }
 
   await chatClient.sendMessage({
