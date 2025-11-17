@@ -40,7 +40,7 @@ export class ExecutionParser {
     );
 
     if (!beginMatch || !endMatch?.[1]) {
-      console.error('ExecutionParser, data not being to be parsed from content', output);
+      console.error('ExecutionParser, data cannot be parsed from content', output);
       return undefined;
     }
 
