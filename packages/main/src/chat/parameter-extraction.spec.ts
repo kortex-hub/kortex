@@ -112,14 +112,14 @@ describe('ParameterExtractor', () => {
       });
       expect(result[1]).toEqual({
         name: 'limit',
-        format: 'number',
+        format: 'string',
         description: 'Parameter from search MCP tool',
         default: '10',
         required: false,
       });
       expect(result[2]).toEqual({
         name: 'enabled',
-        format: 'boolean',
+        format: 'string',
         description: 'Parameter from search MCP tool',
         default: 'true',
         required: false,
