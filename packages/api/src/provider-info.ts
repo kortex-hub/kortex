@@ -34,6 +34,7 @@ export enum ProviderConnectionType {
   KUBERNETES = 'kubernetes',
   VM = 'vm',
   INFERENCE = 'inference',
+  RAG = 'rag',
   FLOW = 'flow',
 }
 
@@ -81,11 +82,16 @@ export interface ProviderInferenceConnectionInfo extends ProviderConnectionBase 
   }>;
 }
 
+export interface ProviderRagConnectionInfo extends ProviderConnectionBase {
+  connectionType: ProviderConnectionType.RAG;
+}
+
 export type ProviderConnectionInfo =
   | ProviderContainerConnectionInfo
   | ProviderKubernetesConnectionInfo
   | ProviderVmConnectionInfo
   | ProviderInferenceConnectionInfo
+  | ProviderRagConnectionInfo
   | ProviderFlowConnectionInfo;
 
 export interface ProviderInfo {
@@ -99,6 +105,7 @@ export interface ProviderInfo {
   kubernetesConnections: ProviderKubernetesConnectionInfo[];
   vmConnections: ProviderVmConnectionInfo[];
   inferenceConnections: ProviderInferenceConnectionInfo[];
+  ragConnections: ProviderRagConnectionInfo[];
   flowConnections: ProviderFlowConnectionInfo[];
 
   status: ProviderStatus;
@@ -146,6 +153,18 @@ export interface ProviderInfo {
   inferenceProviderConnectionCreationDisplayName?: string;
   // optional creation button title (if defined)
   inferenceProviderConnectionCreationButtonTitle?: string;
+
+  /**
+   * RAG Provider connection
+   */
+  // can create provider connection from RagProviderConnectionFactory params
+  ragProviderConnectionCreation: boolean;
+  // can initialize provider connection from RagProviderConnectionFactory params
+  ragProviderConnectionInitialization: boolean;
+  // optional creation name (if defined)
+  ragProviderConnectionCreationDisplayName?: string;
+  // optional creation button title (if defined)
+  ragProviderConnectionCreationButtonTitle?: string;
 
   // other
   emptyConnectionMarkdownDescription?: string;
