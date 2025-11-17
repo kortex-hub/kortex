@@ -303,8 +303,6 @@ export class ChatManager {
     const aiParameters = result.object.parameters ?? [];
     const mergedParameters = this.mergeParameters(extractedParams, aiParameters);
 
-    console.log('Generated flow with', mergedParameters.length, 'parameters');
-
     return {
       ...result.object,
       parameters: mergedParameters,
