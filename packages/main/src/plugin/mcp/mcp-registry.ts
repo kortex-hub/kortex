@@ -361,8 +361,11 @@ export class MCPRegistry {
 
     let transport: Transport;
     let config: StorageConfigFormat;
+
+    let url: string | undefined;
+
     switch (options.type) {
-      case 'remote':
+      case 'remote': {
         config = {
           remoteId: options.index,
           serverId: serverDetail.serverId,
@@ -373,8 +376,11 @@ export class MCPRegistry {
             ]),
           ),
         };
-        transport = this.setupRemote(serverDetail.remotes?.[options.index], config.headers);
+        const remote = serverDetail.remotes?.[options.index];
+        transport = this.setupRemote(remote, config.headers);
+        url = remote?.url;
         break;
+      }
       case 'package': {
         const pack = serverDetail.packages?.[options.index];
         if (!pack) throw new Error('package not found');
@@ -435,6 +441,7 @@ export class MCPRegistry {
       options.index,
       name,
       transport,
+      url,
       description,
     );
 
