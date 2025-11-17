@@ -15,13 +15,19 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import type { ProviderScheduler } from '@kortex-app/api';
+import type {
+  ProviderScheduleExecution,
+  ProviderScheduler,
+  ProviderScheduleResult,
+  ProviderSchedulerOptions,
+} from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
-import { ApiSenderType } from '/@/plugin/api.js';
+import { ApiSenderType, IPCHandle } from '/@/plugin/api.js';
 import type { ProviderImpl } from '/@/plugin/provider-impl.js';
 import { Disposable } from '/@/plugin/types/disposable.js';
 import type { IDisposable } from '/@api/disposable.js';
+import type { ProviderScheduleItemInfo } from '/@api/scheduler/scheduler-api-info.js';
 
 // Registry for all schedulers registered there
 @injectable()
@@ -31,9 +37,70 @@ export class SchedulerRegistry implements IDisposable {
   constructor(
     @inject(ApiSenderType)
     private apiSender: ApiSenderType,
+    @inject(IPCHandle)
+    private readonly ipcHandle: IPCHandle,
   ) {}
 
-  async init(): Promise<void> {}
+  async init(): Promise<void> {
+    // handle get all schedulers
+    this.ipcHandle('scheduler:get-all', async (): Promise<string[]> => {
+      return this.getSchedulerNames();
+    });
+
+    this.ipcHandle(
+      'scheduler:delete-schedule',
+      async (_listener, schedulerName: string, scheduleId: string): Promise<void> => {
+        return this.deleteSchedule(schedulerName, scheduleId);
+      },
+    );
+
+    this.ipcHandle(
+      'scheduler:get-execution',
+      async (_listener, schedulerName: string, id: string): Promise<ProviderScheduleExecution | undefined> => {
+        const scheduler = this.#schedulers.get(schedulerName);
+        if (!scheduler) {
+          throw new Error(`Scheduler with name ${schedulerName} not found`);
+        }
+        return scheduler.getExecution(id);
+      },
+    );
+  }
+
+  async deleteSchedule(schedulerName: string, scheduleId: string): Promise<void> {
+    const scheduler = this.#schedulers.get(schedulerName);
+    if (!scheduler) {
+      throw new Error(`Scheduler with name ${schedulerName} not found`);
+    }
+    await scheduler.cancel(scheduleId);
+    this.apiSender.send('scheduler-updated-entry', { schedulerName });
+  }
+
+  async listItems(metadataKeys: string[]): Promise<ProviderScheduleItemInfo[]> {
+    const entries = Array.from(this.#schedulers.entries());
+
+    const allItems = await Promise.all(
+      entries.map(async ([name, scheduler]) => {
+        const items = await scheduler.list({ metadataKeys });
+        return items.map(item => ({ ...item, schedulerName: name }));
+      }),
+    );
+    // Flatten the arrays
+    return allItems.flat();
+  }
+
+  async schedule(schedulerName: string, options: ProviderSchedulerOptions): Promise<ProviderScheduleResult> {
+    const scheduler = this.#schedulers.get(schedulerName);
+    if (!scheduler) {
+      throw new Error(`Scheduler with name ${schedulerName} not found`);
+    }
+    const result = await scheduler.schedule(options);
+    this.apiSender.send('scheduler-updated-entry', { schedulerName });
+    return result;
+  }
+
+  getSchedulerNames(): string[] {
+    return Array.from(this.#schedulers.values()).map(scheduler => scheduler.name);
+  }
 
   // Register a new scheduler
   register(providerImpl: ProviderImpl, scheduler: ProviderScheduler): Disposable {
