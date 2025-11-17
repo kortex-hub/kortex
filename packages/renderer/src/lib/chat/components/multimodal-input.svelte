@@ -177,6 +177,7 @@ $effect.pre(() => {
 		<ExportButton {chatClient} {selectedModel} {selectedMCP} {loading}/>
 		{#if loading}
 			<Button
+				aria-label="Stop generation"
 				class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
 				onclick={(event): void => {
 					event.preventDefault();
