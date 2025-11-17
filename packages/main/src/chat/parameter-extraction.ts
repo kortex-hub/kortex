@@ -50,7 +50,7 @@ export class ParameterExtractor {
     const valueAsString = typeof value === 'string' ? value : JSON.stringify(value);
     return {
       name,
-      format: typeof value,
+      format: 'string',
       description: `Parameter from ${toolName} MCP tool`,
       default: valueAsString,
     };
