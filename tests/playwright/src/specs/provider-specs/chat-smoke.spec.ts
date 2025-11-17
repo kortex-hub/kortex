@@ -170,4 +170,19 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
 
     await flowsPage.deleteAllFlows();
   });
+
+  test('[CHAT-08] Verify send button state changes during message generation', async ({ chatPage }) => {
+    await chatPage.clickNewChat();
+    await chatPage.verifySendButtonVisible();
+
+    const message = 'What is Podman?';
+    // Pass 0 timeout to avoid waiting for generation to complete before checking stop button
+    await chatPage.sendMessage(message, 0);
+
+    await chatPage.verifyStopButtonVisible();
+    await chatPage.verifySendButtonHidden();
+
+    await chatPage.verifySendButtonVisible(TIMEOUTS.STANDARD);
+    await chatPage.verifyStopButtonHidden();
+  });
 });

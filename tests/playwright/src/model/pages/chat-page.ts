@@ -44,6 +44,7 @@ export class ChatPage extends BasePage {
   readonly modelMenuItems: Locator;
   readonly activeModelMenuItem: Locator;
   readonly exportAsFlowButton: Locator;
+  readonly stopButton: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -67,6 +68,7 @@ export class ChatPage extends BasePage {
     this.modelMenuItems = page.getByRole('menuitem');
     this.activeModelMenuItem = page.locator('[role="menuitem"][data-active="true"]');
     this.exportAsFlowButton = page.getByRole('button', { name: 'Export as Flow' });
+    this.stopButton = page.getByRole('button', { name: 'Stop generation' });
   }
 
   async waitForLoad(): Promise<void> {
@@ -200,6 +202,22 @@ export class ChatPage extends BasePage {
     const text = await this.activeModelMenuItem.textContent();
     await this.page.keyboard.press('Escape');
     return text?.trim() ?? '';
+  }
+
+  async verifySendButtonVisible(timeout = 10_000): Promise<void> {
+    await expect(this.sendButton).toBeVisible({ timeout });
+  }
+
+  async verifySendButtonHidden(timeout = 10_000): Promise<void> {
+    await expect(this.sendButton).not.toBeVisible({ timeout });
+  }
+
+  async verifyStopButtonVisible(timeout = 10_000): Promise<void> {
+    await expect(this.stopButton).toBeVisible({ timeout });
+  }
+
+  async verifyStopButtonHidden(timeout = 10_000): Promise<void> {
+    await expect(this.stopButton).not.toBeVisible({ timeout });
   }
 
   async exportAsFlow(): Promise<FlowsCreatePage> {
