@@ -16,12 +16,34 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Disposable } from '@kortex-app/api';
-import { injectable } from 'inversify';
+import type { Disposable, Provider } from '@kortex-app/api';
+import { inject, injectable, optional } from 'inversify';
+
+import { NativeScheduler } from '/@/api/native-scheduler-api';
+import { ProviderSymbol } from '/@/inject/symbol';
 
 @injectable()
 export class SchedulerManager implements Disposable {
-  async init(): Promise<void> {}
+  @inject(ProviderSymbol)
+  private readonly provider: Provider;
 
-  dispose(): void {}
+  @inject(NativeScheduler)
+  @optional()
+  private readonly nativeScheduler: NativeScheduler;
+
+  private schedulerDisposable: Disposable | undefined;
+
+  async init(): Promise<void> {
+    // Register native scheduler only if available
+    if (!this.nativeScheduler) {
+      return;
+    }
+    await this.nativeScheduler.init();
+
+    this.schedulerDisposable = this.provider.registerScheduler(this.nativeScheduler);
+  }
+
+  dispose(): void {
+    this.schedulerDisposable?.dispose();
+  }
 }
