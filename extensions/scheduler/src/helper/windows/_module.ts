@@ -23,7 +23,6 @@ import { SchtasksXmlGenerator } from './schtasks-xml-generator';
 
 const windowsHelpersModule = new ContainerModule(options => {
   options.bind<CronXmlParser>(CronXmlParser).toSelf().inSingletonScope();
-
   options.bind<SchtasksXmlGenerator>(SchtasksXmlGenerator).toSelf().inSingletonScope();
 });
 
