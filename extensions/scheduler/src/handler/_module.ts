@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2025 Red Hat, Inc.
+ * Copyright (C) 2025-2026 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,16 @@ import { ContainerModule } from 'inversify';
 
 import { NativeScheduler } from '/@/api/native-scheduler-api';
 import { LaunchAgentScheduler } from '/@/handler/launch-agent-scheduler';
+import { SchtasksScheduler } from '/@/handler/schtaks-scheduler';
 
 const handlersModule = new ContainerModule(options => {
   if (env.isMac) {
     options.bind<LaunchAgentScheduler>(LaunchAgentScheduler).toSelf().inSingletonScope();
     options.bind<NativeScheduler>(NativeScheduler).toService(LaunchAgentScheduler);
+  }
+  if (env.isWindows) {
+    options.bind<SchtasksScheduler>(SchtasksScheduler).toSelf().inSingletonScope();
+    options.bind<NativeScheduler>(NativeScheduler).toService(SchtasksScheduler);
   }
 });
 

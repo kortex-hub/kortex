@@ -24,3 +24,7 @@ declare module '*.sh?raw' {
   const contents: string;
   export = contents;
 }
+declare module '*.ps1?raw' {
+  const contents: string;
+  export = contents;
+}
