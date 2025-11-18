@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2025-2026 Red Hat, Inc.
+ * Copyright (C) 2025 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,17 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-declare module '*.mustache?raw' {
-  const contents: string;
-  export = contents;
-}
-declare module '*.sh?raw' {
-  const contents: string;
-  export = contents;
-}
+import { env } from '@kortex-app/api';
+import { ContainerModule } from 'inversify';
+
+import { NativeScheduler } from '/@/api/native-scheduler-api';
+import { LaunchAgentScheduler } from '/@/handler/launch-agent-scheduler';
+
+const handlersModule = new ContainerModule(options => {
+  if (env.isMac) {
+    options.bind<LaunchAgentScheduler>(LaunchAgentScheduler).toSelf().inSingletonScope();
+    options.bind<NativeScheduler>(NativeScheduler).toService(LaunchAgentScheduler);
+  }
+});
+
+export { handlersModule };

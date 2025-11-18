@@ -19,6 +19,7 @@
 import type { ExtensionContext as PodmanDesktopExtensionContext, Provider, TelemetryLogger } from '@kortex-app/api';
 import { Container } from 'inversify';
 
+import { handlersModule } from '/@/handler/_module';
 import { helpersModule } from '/@/helper/_module';
 import { ExtensionContextSymbol, ProviderSymbol, TelemetryLoggerSymbol } from '/@/inject/symbol';
 import { managersModule } from '/@/manager/_module';
@@ -44,6 +45,7 @@ export class InversifyBinding {
     this.#container.bind(ExtensionContextSymbol).toConstantValue(this.#extensionContext);
     this.#container.bind(TelemetryLoggerSymbol).toConstantValue(this.#telemetryLogger);
 
+    await this.#container.load(handlersModule);
     await this.#container.load(helpersModule);
     await this.#container.load(managersModule);
 
