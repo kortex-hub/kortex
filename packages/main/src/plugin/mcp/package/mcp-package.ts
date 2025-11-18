@@ -24,7 +24,7 @@ import { NPMSpawner } from './npm-spawner.js';
 import { PyPiSpawner } from './pypi-spawner.js';
 
 export class MCPPackage implements IAsyncDisposable {
-  readonly #spawner: MCPSpawner | PyPiSpawner;
+  readonly #spawner: MCPSpawner;
 
   constructor(pack: ResolvedServerPackage) {
     // By destructuring `registry_type` and reconstructing the object, TypeScript can properly infer the narrowed type in each switch case.
