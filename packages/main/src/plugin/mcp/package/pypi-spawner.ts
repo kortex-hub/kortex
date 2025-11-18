@@ -19,24 +19,19 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
 import type { IAsyncDisposable } from '/@api/async-disposable.js';
 
-import type { ResolvedServerPackage } from './mcp-spawner.js';
+import { MCPSpawner } from './mcp-spawner.js';
 
 const UVX_COMMAND = 'uvx';
 
 /**
- * PyPiSpawner is a standalone Python-based MCP server spawner.
+ * PyPiSpawner handles spawning Python-based MCP servers from PyPI packages.
  */
-export class PyPiSpawner implements IAsyncDisposable {
+export class PyPiSpawner extends MCPSpawner<'pypi'> {
   #disposables: Array<IAsyncDisposable> = [];
-  readonly #pack: ResolvedServerPackage & { registryType: 'pypi' };
-
-  constructor(pack: ResolvedServerPackage & { registryType: 'pypi' }) {
-    this.#pack = pack;
-  }
 
   async spawn(): Promise<Transport> {
-    if (!this.#pack.identifier) throw new Error('missing identifier in MCP Local Server configuration');
-    if (this.#pack.fileSha256) {
+    if (!this.pack.identifier) throw new Error('missing identifier in MCP Local Server configuration');
+    if (this.pack.fileSha256) {
       console.warn('specified file sha256 is not supported with pypi spawner');
     }
 
@@ -50,17 +45,17 @@ export class PyPiSpawner implements IAsyncDisposable {
 
     // Use uvx for automatic package installation and execution
     // Use package==version syntax if version is specified (Python convention)
-    const packageSpec = this.#pack.version ? `${this.#pack.identifier}==${this.#pack.version}` : this.#pack.identifier;
+    const packageSpec = this.pack.version ? `${this.pack.identifier}==${this.pack.version}` : this.pack.identifier;
 
     const command = UVX_COMMAND;
-    const args = [...(this.#pack.runtimeArguments ?? []), packageSpec, ...(this.#pack.packageArguments ?? [])];
+    const args = [...(this.pack.runtimeArguments ?? []), packageSpec, ...(this.pack.packageArguments ?? [])];
 
     console.log(`[PyPiSpawner] Spawning Python MCP server: ${command} ${args.join(' ')}`);
 
     const transport = new StdioClientTransport({
       command,
       args,
-      env: this.#pack.environmentVariables,
+      env: this.pack.environmentVariables,
     });
     this.#disposables.push({
       asyncDispose: (): Promise<void> => {
