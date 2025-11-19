@@ -685,7 +685,6 @@ declare module '@kortex-app/api' {
   export type RagProviderConnection = {
     name: string;
     mcpServer: MCPServer;
-    credentials(): Record<string, string>;
     index(doc: Uri, chunks: Uri[]): Promise<void>;
     unindex(doc: Uri): Promise<void>;
     lifecycle?: ProviderConnectionLifecycle;
