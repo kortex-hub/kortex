@@ -129,7 +129,6 @@ import type {
 } from '/@api/provider-info.js';
 import type { ProxyState } from '/@api/proxy.js';
 import type { PullEvent } from '/@api/pull-event.js';
-import type { ChunkProviderInfo } from '/@api/rag/chunk-provider-info.js';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info.js';
 import type { StatusBarEntryDescriptor } from '/@api/status-bar.js';
 import type { PinOption } from '/@api/status-bar/pin-option.js';
@@ -789,6 +788,7 @@ export class PluginSystem {
     const schedulerRegistry = container.get<SchedulerRegistry>(SchedulerRegistry);
     mcpRegistry.init();
     const chunkProviderRegistry = container.get<ChunkProviderRegistry>(ChunkProviderRegistry);
+    chunkProviderRegistry.init();
 
     const mcpIPCHandler = container.get<MCPIPCHandler>(MCPIPCHandler);
     mcpIPCHandler.init();
@@ -1714,10 +1714,6 @@ export class PluginSystem {
 
     this.ipcHandle('provider-registry:getProviderInfos', async (): Promise<ProviderInfo[]> => {
       return providerRegistry.getProviderInfos();
-    });
-
-    this.ipcHandle('chunk-provider-registry:getChunkProviders', async (): Promise<ChunkProviderInfo[]> => {
-      return chunkProviderRegistry.getChunkProviders();
     });
 
     this.ipcHandle(

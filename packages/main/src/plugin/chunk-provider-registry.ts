@@ -21,13 +21,23 @@ import { inject, injectable } from 'inversify';
 
 import { ChunkProviderInfo } from '/@api/rag/chunk-provider-info.js';
 
-import { ApiSenderType } from './api.js';
+import { ApiSenderType, IPCHandle } from './api.js';
+import { IDisposable } from '/@api/disposable.js';
 
 @injectable()
-export class ChunkProviderRegistry {
+export class ChunkProviderRegistry implements IDisposable {
   private _chunkProviders: Map<string, ChunkProvider> = new Map<string, ChunkProvider>();
 
-  constructor(@inject(ApiSenderType) private apiSender: ApiSenderType) {}
+  constructor(
+    @inject(ApiSenderType) private apiSender: ApiSenderType,
+    @inject(IPCHandle)
+    private readonly ipcHandle: IPCHandle,
+  ) {}
+  init(): void {
+    this.ipcHandle('chunk-provider-registry:getChunkProviders', async (): Promise<ChunkProviderInfo[]> => {
+      return this.getChunkProviders();
+    });
+  }
 
   registerChunkProvider(extensionId: string, provider: ChunkProvider): Disposable {
     const id = `${extensionId}.${provider.name}`;
@@ -50,7 +60,7 @@ export class ChunkProviderRegistry {
     );
   }
 
-  findProviderById(chunkerId: string): ChunkProvider | undefined {
-    return this._chunkProviders.get(chunkerId);
+  dispose(): void {
+    this._chunkProviders.clear();
   }
 }
