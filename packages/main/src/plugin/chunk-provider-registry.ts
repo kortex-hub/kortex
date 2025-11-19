@@ -53,9 +53,9 @@ export class ChunkProviderRegistry implements IDisposable {
 
   getChunkProviders(): ChunkProviderInfo[] {
     return Array.from(
-      this._chunkProviders.entries().map(entry => ({
-        id: entry[0],
-        name: entry[1].name,
+      this._chunkProviders.entries().map(([id, { name }]) => ({
+        id,
+        name,
       })),
     );
   }
