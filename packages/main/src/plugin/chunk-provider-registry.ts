@@ -19,10 +19,10 @@
 import type { ChunkProvider, Disposable } from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
+import { IDisposable } from '/@api/disposable.js';
 import { ChunkProviderInfo } from '/@api/rag/chunk-provider-info.js';
 
 import { ApiSenderType, IPCHandle } from './api.js';
-import { IDisposable } from '/@api/disposable.js';
 
 @injectable()
 export class ChunkProviderRegistry implements IDisposable {
