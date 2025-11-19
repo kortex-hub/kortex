@@ -10,7 +10,7 @@ import { currentChatId } from '/@/lib/chat/state/current-chat-id.svelte';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
-import PenToSquareIcon from './icons/PenToSquareIcon.svelte';
+import Plus from './icons/plus.svelte';
 import MCPSelector from './mcp-selector.svelte';
 import SidebarToggle from './sidebar-toggle.svelte';
 import { Button } from './ui/button';
@@ -44,11 +44,11 @@ const noMcps = $derived($mcpRemoteServerInfos.length === 0);
 		<Tooltip>
 			<TooltipTrigger>
 				{#snippet child({ props })}
-					<Button
-						{...props}
-						variant="outline"
-						class="order-2 ml-auto px-2 md:order-1 md:ml-0 md:h-fit md:px-2"
-						onclick={():void => {
+				<Button
+					{...props}
+					variant="default"
+					class="order-0 ml-auto px-2 md:ml-0 md:h-fit md:px-2"
+					onclick={():void => {
             	currentChatId.value = undefined;
               if ($router.path === '/') {
                 router.goto('/chat');
@@ -57,7 +57,7 @@ const noMcps = $derived($mcpRemoteServerInfos.length === 0);
               }
             }}
 					>
-						<PenToSquareIcon />
+						<Plus />
 						<span>New Chat</span>
 					</Button>
 				{/snippet}
