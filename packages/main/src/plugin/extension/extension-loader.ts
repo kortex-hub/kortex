@@ -21,6 +21,7 @@ import * as path from 'node:path';
 
 import type * as containerDesktopAPI from '@kortex-app/api';
 import { ChunkProvider } from '@kortex-app/api';
+import { components } from '@kortex-hub/mcp-registry-types';
 import AdmZip from 'adm-zip';
 import { app, clipboard as electronClipboard } from 'electron';
 import { inject, injectable, preDestroy } from 'inversify';
@@ -1033,6 +1034,19 @@ export class ExtensionLoader implements IAsyncDisposable {
         const registration = mcpRegistryInstance.registerMCPRegistryProvider(registryProvider);
         disposables.push(registration);
         return registration;
+      },
+      registerServer: (server: components['schemas']['ServerDetail']): Disposable & { serverId: string } => {
+        const serverId = analyzedExtension.id + '.' + server.name;
+        mcpRegistryInstance.registerInternalMCPServer({ ...server, serverId });
+        const disposable = Disposable.create(() => {
+          mcpRegistryInstance.unregisterInternalMCPServer(serverId);
+        });
+        const extendedDisposable = disposable as Disposable & { serverId: string };
+        extendedDisposable.serverId = serverId;
+        return extendedDisposable;
+      },
+      unregisterServer(serverId: string): void {
+        mcpRegistryInstance.unregisterInternalMCPServer(serverId);
       },
     };
 

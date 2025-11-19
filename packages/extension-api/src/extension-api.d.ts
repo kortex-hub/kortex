@@ -678,7 +678,7 @@ declare module '@kortex-app/api' {
   export type MCPServerDetail = components['schemas']['ServerDetail'];
 
   export type MCPServer = {
-    server: MCPServerDetail;
+    serverId: string;
     config: MCPServerConfig;
   };
 
@@ -1530,6 +1530,9 @@ declare module '@kortex-app/api' {
     export const onDidRegisterRegistry: Event<MCPRegistry>;
     export const onDidUpdateRegistry: Event<MCPRegistry>;
     export const onDidUnregisterRegistry: Event<MCPRegistry>;
+
+    export function registerServer(server: MCPServerDetail): Disposable & { serverId: string };
+    export function unregisterServer(serverId: string): void;
   }
 
   export namespace tray {
