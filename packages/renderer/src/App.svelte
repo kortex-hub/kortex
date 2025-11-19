@@ -71,6 +71,8 @@ import PodsList from './lib/pod/PodsList.svelte';
 import PreferencesPage from './lib/preferences/PreferencesPage.svelte';
 import PVCDetails from './lib/pvc/PVCDetails.svelte';
 import PVCList from './lib/pvc/PVCList.svelte';
+import RAGEnvironmentDetails from './lib/rag/RAGEnvironmentDetails.svelte';
+import RAGEnvironmentList from './lib/rag/RAGEnvironmentList.svelte';
 import ServiceDetails from './lib/service/ServiceDetails.svelte';
 import ServicesList from './lib/service/ServicesList.svelte';
 import StatusBar from './lib/statusbar/StatusBar.svelte';
@@ -192,6 +194,14 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
         </Route>
         <Route path="/mcp-install-from-registry/:serverId/*" breadcrumb="Install MCP Server from Registry" let:meta>
           <McpRegistryCreateFromRegistryForm serverId={decodeURIComponent(meta.params.serverId)} />
+        </Route>
+
+        <!-- RAG Environments -->
+        <Route path="/rag-environments" breadcrumb="RAG Environments" navigationHint="root">
+          <RAGEnvironmentList />
+        </Route>
+        <Route path="/rag-environments/:name/*" let:meta breadcrumb="RAG Environment Details" navigationHint="details">
+          <RAGEnvironmentDetails name={meta.params.name} />
         </Route>
 
         <Route path="/containers" breadcrumb="Containers" navigationHint="root">

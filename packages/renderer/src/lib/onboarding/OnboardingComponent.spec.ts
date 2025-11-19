@@ -64,9 +64,12 @@ const providerInfo: ProviderInfo = {
   extensionId: 'id',
   cleanupSupport: false,
   inferenceConnections: [],
+  ragConnections: [],
   flowConnections: [],
   inferenceProviderConnectionCreation: false,
   inferenceProviderConnectionInitialization: false,
+  ragProviderConnectionCreation: false,
+  ragProviderConnectionInitialization: false,
 };
 
 async function waitRender(customProperties: object): Promise<void> {

@@ -13,6 +13,7 @@ import type {
   ProviderInferenceConnectionInfo,
   ProviderInfo,
   ProviderKubernetesConnectionInfo,
+  ProviderRagConnectionInfo,
   ProviderVmConnectionInfo,
 } from '/@api/provider-info';
 
@@ -97,7 +98,8 @@ function updateConnectionStatus(
     | ProviderVmConnectionInfo
     | ProviderContainerConnectionInfo
     | ProviderKubernetesConnectionInfo
-    | ProviderInferenceConnectionInfo,
+    | ProviderInferenceConnectionInfo
+    | ProviderRagConnectionInfo,
   action?: string,
   error?: string,
 ): void {

@@ -107,7 +107,7 @@ export class MCPManager implements IAsyncDisposable {
     transport: Transport,
     url?: string,
     description?: string,
-  ): Promise<void> {
+  ): Promise<MCPRemoteServerInfo> {
     const key = this.getKey(internalProviderId, serverId, setupType, index);
 
     const wrapped = this.exchanges.createMiddleware(key, transport);
@@ -128,6 +128,7 @@ export class MCPManager implements IAsyncDisposable {
 
     // broadcast new items
     this.apiSender.send('mcp-manager-update');
+    return mcpRemoteServerInfo;
   }
 
   init(): void {}
@@ -152,5 +153,15 @@ export class MCPManager implements IAsyncDisposable {
 
     // broadcast new items
     this.apiSender.send('mcp-manager-update');
+  }
+
+  findMcpRemoteServer(
+    INTERNAL_PROVIDER_ID: string,
+    serverId: string,
+    type: 'remote' | 'package',
+    index: number,
+  ): MCPRemoteServerInfo | undefined {
+    const key = this.getKey(INTERNAL_PROVIDER_ID, serverId, type, index);
+    return this.#mcps.find(mcp => mcp.id === key);
   }
 }

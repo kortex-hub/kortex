@@ -20,6 +20,7 @@
     "publish:next": "pnpm publish  --registry=https://registry.npmjs.org/ --no-git-tag-version --new-version 0.0.1-\"$(date +%s)\""
   },
   "devDependencies": {
-    "@ai-sdk/provider": "^2.0.0"
+    "@ai-sdk/provider": "^2.0.0",
+    "@kortex-hub/mcp-registry-types": "^1.1.0"
   }
 }

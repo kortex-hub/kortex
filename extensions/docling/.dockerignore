@@ -1,0 +1,9 @@
+node_modules
+dist
+.git
+.gitignore
+*.md
+tsconfig.json
+vite.config.js
+package.json
+pnpm-lock.yaml
