@@ -686,7 +686,7 @@ declare module '@kortex-app/api' {
     name: string;
     mcpServer: MCPServer;
     index(doc: Uri, chunks: Uri[]): Promise<void>;
-    unindex(doc: Uri): Promise<void>;
+    deindex(doc: Uri): Promise<void>;
     lifecycle?: ProviderConnectionLifecycle;
     status(): ProviderConnectionStatus;
   };
