@@ -33,9 +33,8 @@ import type { NativeScheduler } from '/@/api/native-scheduler-api';
 import { CronParser } from '/@/helper/cron-parser.js';
 import { ExecutionParser } from '/@/helper/execution-parser.js';
 import { CronPListParser } from '/@/helper/macos/cron-plist-parser.js';
+import { PlistGenerator } from '/@/helper/macos/plist-generator';
 import schedulerExecutorScript from '/@/resources/kortex-scheduler-executor.sh?raw';
-
-import { PlistGenerator } from '../helper/macos/plist-generator.js';
 
 @injectable()
 export class LaunchAgentScheduler implements NativeScheduler {
