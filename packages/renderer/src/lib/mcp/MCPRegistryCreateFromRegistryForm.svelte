@@ -86,7 +86,7 @@ async function close(): Promise<void> {
             <!-- display form -->
             {#if mcpTarget !== undefined}
               {#key mcpTarget}
-                {#if 'url' in mcpTarget}  <!-- remote -->
+                {#if 'type' in mcpTarget}  <!-- remote -->
                   <RemoteSetupForm submit={submit} remoteIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget} cancel={close}/>
                 {:else} <!-- package -->
                   <PackageSetupForm submit={submit} packageIndex={mcpTarget.index} bind:loading={loading} object={mcpTarget} cancel={close}/>
