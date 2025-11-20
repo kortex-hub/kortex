@@ -7,11 +7,13 @@ import DetailsCell from '/@/lib/details/DetailsCell.svelte';
 import DetailsTable from '/@/lib/details/DetailsTable.svelte';
 import DetailsTitle from '/@/lib/details/DetailsTitle.svelte';
 import MonacoEditor from '/@/lib/editor/MonacoEditor.svelte';
+import FlowDetailsSchedule from '/@/lib/flows/FlowDetailsSchedule.svelte';
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
 import { flowsInfos } from '/@/stores/flows';
 import { executeFlowsInfo } from '/@/stores/flows-execute';
+import { scheduledFlowsInfo } from '/@/stores/flows-schedule';
 import { providerInfos } from '/@/stores/providers';
 import type { FlowInfo } from '/@api/flow-info';
 import type { ProviderFlowConnectionInfo } from '/@api/provider-info';
@@ -50,6 +52,8 @@ const flowExecutions = $derived(
   ),
 );
 
+const flowSchedules = $derived($scheduledFlowsInfo.filter(flow => flow.flowId === flowId));
+
 $effect(() => {
   if (!selectedFlowExecuteId && flowExecutions.length > 0) {
     selectedFlowExecuteId = flowExecutions[flowExecutions.length - 1].taskId;
@@ -79,6 +83,7 @@ function setSelectedFlowExecuteId(flowExecuteId: string): void {
   {#snippet tabsSnippet()}
     <Tab title="Summary" selected={isTabSelected($router.path, 'summary')} url={getTabUrl($router.path, 'summary')} />
     <Tab title="Source" selected={isTabSelected($router.path, 'source')} url={getTabUrl($router.path, 'source')} />
+    <Tab title="Schedule ({flowSchedules.length})" selected={isTabSelected($router.path, 'schedule')} url={getTabUrl($router.path, 'schedule')} />
     <Tab title="Kubernetes" selected={isTabSelected($router.path, 'kubernetes')} url={getTabUrl($router.path, 'kubernetes')} />
     {#if flowExecutions.length > 0 || isTabSelected($router.path, 'run') }
       <Tab title="Run ({flowExecutions.length})" selected={isTabSelected($router.path, 'run')} url={getTabUrl($router.path, 'run')} />
@@ -175,6 +180,9 @@ function setSelectedFlowExecuteId(flowExecuteId: string): void {
       </Route>
       <Route path="/run" breadcrumb="Run ({flowExecutions.length})" navigationHint="tab">
         <FlowDetailsRun {providerId} {connectionName} {flowId} {flowExecutions} selectedFlowExecuteId={selectedFlowExecuteId}/>
+      </Route>
+      <Route path="/schedule" breadcrumb="Schedule ({flowSchedules.length})" navigationHint="tab">
+        <FlowDetailsSchedule {providerId} {connectionName} {flowId} {flowSchedules}/>
       </Route>
     {/if}
   {/snippet}
