@@ -21,6 +21,7 @@ import type { ContainerExtensionAPI } from '@kortex-app/container-extension-api'
 import { Container } from 'inversify';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
+import { handlersModule } from '/@/handler/_module';
 import { helpersModule } from '/@/helper/_module';
 import { managersModule } from '/@/manager/_manager-module';
 import { InferenceModelManager } from '/@/manager/inference-model-manager';
@@ -65,6 +66,7 @@ describe('InversifyBinding', () => {
     expect(vi.mocked(Container.prototype.bind)).toHaveBeenCalledWith(RamalamaProvider);
 
     // expect load of modules
+    expect(vi.mocked(Container.prototype.load)).toHaveBeenCalledWith(handlersModule);
     expect(vi.mocked(Container.prototype.load)).toHaveBeenCalledWith(helpersModule);
     expect(vi.mocked(Container.prototype.load)).toHaveBeenCalledWith(managersModule);
   });
