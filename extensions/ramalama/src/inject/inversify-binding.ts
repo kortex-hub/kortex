@@ -20,6 +20,7 @@ import type { ExtensionContext as PodmanDesktopExtensionContext, Provider, Telem
 import type { ContainerExtensionAPI } from '@kortex-app/container-extension-api';
 import { Container } from 'inversify';
 
+import { helpersModule } from '/@/helper/_module';
 import {
   ContainerExtensionAPISymbol,
   ExtensionContextSymbol,
@@ -57,6 +58,7 @@ export class InversifyBinding {
     this.#container.bind(TelemetryLoggerSymbol).toConstantValue(this.#telemetryLogger);
     this.#container.bind(RamalamaProvider).toConstantValue(this.#provider);
 
+    await this.#container.load(helpersModule);
     await this.#container.load(managersModule);
 
     // Get inference model manager
