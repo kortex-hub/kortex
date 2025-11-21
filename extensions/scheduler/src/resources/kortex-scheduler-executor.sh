@@ -70,9 +70,12 @@ begin_json="{\"id\":\"$scheduler_id\",\"timestamp\":$start_time,\"metadata\":{$m
 echo "$begin_json" >> "$log_file"
 echo "<<<KORTEX_SCHEDULE_TASK_BEGIN_DATA>>>" >> "$log_file"
 
+# Disable exit-on-error temporarily to capture the exit code
+set +e
 "$@" >>"$log_file" 2>&1
-
 exit_code=${PIPESTATUS[0]}
+set -e
+
 end_time=$(date +%s)
 duration=$((end_time - start_time))
 echo "<<<KORTEX_SCHEDULE_TASK_END_DATA>>>" >> "$log_file"
