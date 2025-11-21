@@ -1751,6 +1751,10 @@ export function initExposure(): void {
     return ipcInvoke('mcp-registry:setup', serverId, options);
   });
 
+  contextBridge.exposeInMainWorld('clearMCPConfigurations', async (): Promise<void> => {
+    return ipcInvoke('mcp-registry:clearConfigurations');
+  });
+
   contextBridge.exposeInMainWorld('fetchMcpRemoteServers', async (): Promise<MCPRemoteServerInfo[]> => {
     return ipcInvoke('mcp-manager:fetchMcpRemoteServers');
   });

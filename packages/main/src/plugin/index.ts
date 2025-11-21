@@ -2132,6 +2132,10 @@ export class PluginSystem {
       },
     );
 
+    this.ipcHandle('mcp-registry:clearConfigurations', async (): Promise<void> => {
+      await mcpRegistry.clearConfigurations();
+    });
+
     this.ipcHandle('mcp-registry:getMcpRegistries', async (): Promise<readonly containerDesktopAPI.MCPRegistry[]> => {
       return mcpRegistry.getRegistries();
     });
