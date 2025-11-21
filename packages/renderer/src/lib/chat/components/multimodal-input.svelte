@@ -23,7 +23,7 @@ let {
   attachments = $bindable(),
   chatClient,
   class: c,
-  selectedMCP,
+  selectedMCP = $bindable(),
   selectedModel,
   mcpSelectorOpen = $bindable(),
 }: {
@@ -123,7 +123,7 @@ $effect.pre(() => {
 
 <div class="relative flex w-full flex-col gap-4">
 	{#if mounted && chatClient.messages.length === 0 && attachments.length === 0}
-		<SuggestedActions {chatClient} {selectedMCP} bind:mcpSelectorOpen={mcpSelectorOpen} />
+		<SuggestedActions {chatClient} bind:selectedMCP={selectedMCP} bind:mcpSelectorOpen={mcpSelectorOpen} />
 	{/if}
 
 	{#if attachments.length > 0}
