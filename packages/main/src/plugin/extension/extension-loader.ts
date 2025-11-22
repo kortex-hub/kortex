@@ -20,10 +20,13 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import type * as containerDesktopAPI from '@kortex-app/api';
+import { ChunkProvider } from '@kortex-app/api';
+import { components } from '@kortex-hub/mcp-registry-types';
 import AdmZip from 'adm-zip';
 import { app, clipboard as electronClipboard } from 'electron';
 import { inject, injectable, preDestroy } from 'inversify';
 
+import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import { ColorRegistry } from '/@/plugin/color-registry.js';
 import {
   KubeGeneratorRegistry,
@@ -218,6 +221,8 @@ export class ExtensionLoader implements IAsyncDisposable {
     private extensionAnalyzer: ExtensionAnalyzer,
     @inject(MCPRegistry)
     private mcpRegistry: MCPRegistry,
+    @inject(ChunkProviderRegistry)
+    private chunkProviderRegistry: ChunkProviderRegistry,
   ) {
     this.pluginsDirectory = directories.getPluginsDirectory();
     this.pluginsScanDirectory = directories.getPluginsScanDirectory();
@@ -904,6 +909,9 @@ export class ExtensionLoader implements IAsyncDisposable {
       getInferenceConnections: () => {
         return providerRegistry.getInferenceConnections();
       },
+      getRagConnections: () => {
+        return providerRegistry.getRagConnections();
+      },
       getProviderLifecycleContext(
         providerId: string,
         providerConnectionInfo: containerDesktopAPI.ContainerProviderConnection,
@@ -1026,6 +1034,19 @@ export class ExtensionLoader implements IAsyncDisposable {
         const registration = mcpRegistryInstance.registerMCPRegistryProvider(registryProvider);
         disposables.push(registration);
         return registration;
+      },
+      registerServer: (server: components['schemas']['ServerDetail']): Disposable & { serverId: string } => {
+        const serverId = analyzedExtension.id + '.' + server.name;
+        mcpRegistryInstance.registerInternalMCPServer({ ...server, serverId });
+        const disposable = Disposable.create(() => {
+          mcpRegistryInstance.unregisterInternalMCPServer(serverId);
+        });
+        const extendedDisposable = disposable as Disposable & { serverId: string };
+        extendedDisposable.serverId = serverId;
+        return extendedDisposable;
+      },
+      unregisterServer(serverId: string): void {
+        mcpRegistryInstance.unregisterInternalMCPServer(serverId);
       },
     };
 
@@ -1585,6 +1606,14 @@ export class ExtensionLoader implements IAsyncDisposable {
 
     const version = app.getVersion();
 
+    const rag: typeof containerDesktopAPI.rag = {
+      registerChunkProvider: (provider: ChunkProvider): containerDesktopAPI.Disposable => {
+        const disposable = this.chunkProviderRegistry.registerChunkProvider(extensionInfo.id, provider);
+        disposables.push(disposable);
+        return disposable;
+      },
+    };
+
     return <typeof containerDesktopAPI>{
       // Types
       Disposable: Disposable,
@@ -1619,6 +1648,7 @@ export class ExtensionLoader implements IAsyncDisposable {
       navigation,
       RepositoryInfoParser,
       mcpRegistry,
+      rag,
     };
   }
 
