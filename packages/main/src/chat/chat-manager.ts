@@ -31,9 +31,10 @@ import { inject } from 'inversify';
 
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { Directories } from '/@/plugin/directories.js';
+import type { FlowGenerationParameters, FlowParameter } from '/@api/chat/flow-generation-parameters-schema.js';
 import {
-  FlowGenerationParameters,
-  FlowGenerationParametersSchema,
+  FlowGenerationMetadataSchema,
+  FlowParametersExtractionSchema,
 } from '/@api/chat/flow-generation-parameters-schema.js';
 import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
 import type { MessageConfig } from '/@api/chat/message-config.js';
@@ -43,6 +44,7 @@ import { MCPManager } from '../plugin/mcp/mcp-manager.js';
 import { ProviderRegistry } from '../plugin/provider-registry.js';
 import { runMigrate } from './db/migrate.js';
 import { ChatQueries } from './db/queries.js';
+import { ParameterExtractor } from './parameter-extraction.js';
 
 export class ChatManager {
   private chatQueries!: ChatQueries;
@@ -277,10 +279,88 @@ export class ChatManager {
   }
 
   async generateFlowParams(params: InferenceParameters): Promise<FlowGenerationParameters> {
-    const result = await generateObject({
-      ...(await this.getInferenceComponents(params)),
-      schema: FlowGenerationParametersSchema,
+    // Get inference components
+    const inferenceComponents = await this.getInferenceComponents(params);
+
+    // Extract parameters from MCP tool calls
+    const extractedParams = new ParameterExtractor().extractFromMCPToolCalls(params.messages);
+
+    console.log('Generating flow metadata...');
+    const metadataResult = await generateObject({
+      ...inferenceComponents,
+      schema: FlowGenerationMetadataSchema,
     });
-    return result.object;
+
+    const { name, description, prompt } = metadataResult.object;
+
+    // Extract parameters based on the generated prompt
+    console.log('Extracting parameters from prompt...');
+
+    // Build context with extracted params and the generated prompt
+    const parameterExtractionPrompt = `
+Based on the conversation above, a prompt template was generated:
+
+"${prompt}"
+
+${
+  extractedParams.length > 0
+    ? `The following parameters were detected from MCP tool calls:
+${JSON.stringify(extractedParams, null, 2)}
+
+`
+    : ''
+}Your task: Extract ONLY the parameters that appear in the prompt template above using {{parameterName}} syntax.
+
+For each parameter found in the prompt:
+1. Use the parameter name exactly as it appears in {{parameterName}}
+2. Provide a clear description
+3. Set the appropriate data type (format)
+4. Include default value if available from the detected parameters
+5. Mark as required if it's essential (no reasonable default exists)
+
+Example:
+- Prompt has: "Get the last {{count}} issues from {{owner}}/{{repo}}"
+- Extract ONLY: count, owner, repo
+- Do NOT extract any other values that aren't in the prompt template
+`;
+
+    const parametersResult = await generateObject({
+      model: inferenceComponents.model,
+      messages: [{ role: 'user', content: parameterExtractionPrompt }],
+      schema: FlowParametersExtractionSchema,
+    });
+
+    const aiParameters = parametersResult.object.parameters;
+
+    const mergedParameters = this.mergeParameters(extractedParams, aiParameters);
+
+    return {
+      name,
+      description,
+      prompt,
+      parameters: mergedParameters,
+    };
+  }
+
+  private mergeParameters(extracted: FlowParameter[], aiGenerated: FlowParameter[]): FlowParameter[] {
+    const paramMap = new Map<string, FlowParameter>();
+
+    // Add AI-generated parameters
+    for (const param of aiGenerated) {
+      paramMap.set(param.name, param);
+    }
+
+    // Add default values from extracted parameters
+    for (const param of extracted) {
+      const existing = paramMap.get(param.name);
+      if (existing) {
+        paramMap.set(param.name, {
+          ...existing,
+          default: param.default ?? existing.default,
+        });
+      }
+    }
+
+    return Array.from(paramMap.values());
   }
 }

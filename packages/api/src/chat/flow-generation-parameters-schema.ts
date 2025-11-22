@@ -23,27 +23,80 @@ export type FlowGenerationParameters = {
   name: string;
   description: string;
   prompt: string;
+  parameters?: Array<FlowParameter>;
 };
 
+export type FlowParametersExtraction = {
+  parameters: Array<FlowParameter>;
+};
+
+export type FlowParameter = {
+  required: boolean;
+  name: string;
+  description: string;
+  format: string;
+  default?: string;
+};
+
+export const FlowParameterSchema: ZodType<FlowParameter> = z.object({
+  name: z.string().describe('Parameter name (must be valid identifier)'),
+  format: z.string().default('string').describe('Parameter data type'),
+  description: z.string().describe('Human-readable description of the parameter'),
+  default: z.string().optional().describe('Default value for the parameter'),
+  required: z.boolean().default(false).describe('Whether the parameter is required'),
+});
+
+// Reusable schema fields for flow metadata
+const flowNameSchema = z
+  .string()
+  .describe(
+    `A unique name for the flow, formatted as a DNS subdomain (e.g., "my-new-flow"). It must be lowercase and contain only letters, numbers, and hyphens. It cannot start or end with a hyphen.`,
+  )
+  .transform(val =>
+    val
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/[^a-z0-9-]/g, '') // Remove all other invalid characters
+      .slice(0, 63),
+  )
+  .pipe(z.string().regex(/^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$/, 'Invalid DNS subdomain name after transformation.'));
+
+const flowDescriptionSchema = z
+  .string()
+  .describe('Description of the flow, give a short description of what the flow does.');
+
+const flowPromptSchema = z
+  .string()
+  .describe(
+    'Help me create a reproducible prompt template that achieves the same result as in the conversation above. The prompt will be executed by another LLM without any further user input, so it must include all the necessary information to reproduce the same outcome. Also include parameter placeholders like {{parameterName}}. Example: "Get the last {{count}} issues from {{owner}}/{{repo}}"',
+  );
+
+// Generate flow name, description and prompt without parameters
+export const FlowGenerationMetadataSchema: ZodType<FlowGenerationParameters> = z.object({
+  name: flowNameSchema,
+  description: flowDescriptionSchema,
+  prompt: flowPromptSchema,
+});
+
+// Extract parameters based on the generated prompt
+export const FlowParametersExtractionSchema: ZodType<FlowParametersExtraction> = z.object({
+  parameters: z
+    .array(FlowParameterSchema)
+    .describe(
+      'Extract parameters that appear in the prompt template. ONLY include parameters that are referenced using {{parameterName}} syntax in the provided prompt.',
+    ),
+});
+
+// Full schema (kept for compatibility)
 export const FlowGenerationParametersSchema: ZodType<FlowGenerationParameters> = z.object({
-  name: z
-    .string()
+  name: flowNameSchema,
+  description: flowDescriptionSchema,
+  prompt: flowPromptSchema,
+  parameters: z
+    .array(FlowParameterSchema)
+    .optional()
     .describe(
-      `A unique name for the flow, formatted as a DNS subdomain (e.g., "my-new-flow"). It must be lowercase and contain only letters, numbers, and hyphens. It cannot start or end with a hyphen.`,
-    )
-    .transform(val =>
-      val
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, '-') // Replace spaces with hyphens
-        .replace(/[^a-z0-9-]/g, '') // Remove all other invalid characters
-        .slice(0, 63),
-    )
-    .pipe(z.string().regex(/^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$/, 'Invalid DNS subdomain name after transformation.')),
-  description: z.string().describe('Description of the flow, give a short description of what the flow does.'),
-  prompt: z
-    .string()
-    .describe(
-      'Help me create a reproducible prompt that achieves the same result as in the conversation above. The prompt will be executed by another LLM without any further user input, so it must include all the necessary information to reproduce the same outcome.',
+      'Extract parameters from the conversation that can be modified when re-executing this flow. Analyze user messages and MCP tool inputs to identify values that should be parameterizable.',
     ),
 });
