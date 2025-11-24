@@ -133,7 +133,7 @@ export class MCPManager implements IAsyncDisposable {
       name: connectionName,
       url: url ?? '',
       description: description ?? '',
-      tools: tools,
+      tools,
     };
     this.#mcps.push(mcpRemoteServerInfo);
 
