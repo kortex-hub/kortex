@@ -9,4 +9,5 @@ export interface MCPRemoteServerInfo {
   name: string;
   description: string;
   url: string;
+  tools: Record<string, { description?: string }>;
 }

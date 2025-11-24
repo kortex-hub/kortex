@@ -117,12 +117,23 @@ export class MCPManager implements IAsyncDisposable {
     console.log('[MCPManager] Registering MCP client for ', internalProviderId, ' with name ', connectionName);
     this.#client.set(key, client);
 
+    const toolSet = await client.tools();
+    const tools = Object.fromEntries(
+      Object.entries(toolSet).map(([key, value]) => [
+        key,
+        {
+          description: value.description ?? '',
+        },
+      ]),
+    );
+
     const mcpRemoteServerInfo: MCPRemoteServerInfo = {
       id: key,
       infos: { internalProviderId, remoteId: index, serverId },
       name: connectionName,
       url: url ?? '',
       description: description ?? '',
+      tools: tools,
     };
     this.#mcps.push(mcpRemoteServerInfo);
 

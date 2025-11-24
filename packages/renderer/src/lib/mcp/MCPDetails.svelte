@@ -10,6 +10,7 @@ import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import McpIcon from '../images/MCPIcon.svelte';
 
@@ -18,7 +19,6 @@ interface Props {
 }
 let { id }: Props = $props();
 
-let toolSet: string | undefined = $state(undefined);
 let messages: Array<DynamicToolUIPart> = $state([]);
 
 async function refreshMessages(): Promise<void> {
@@ -29,18 +29,12 @@ async function refreshMessages(): Promise<void> {
   }
 }
 
-const mcpServer = $derived($mcpRemoteServerInfos.find(server => server.id === id));
+const mcpServer: MCPRemoteServerInfo | undefined = $derived($mcpRemoteServerInfos.find(server => server.id === id));
 const mcpServerName = $derived(mcpServer?.name ?? id);
 const mcpServerUrl = $derived(mcpServer?.url ?? '');
+const toolSet: string | undefined = $derived(mcpServer?.tools ? JSON.stringify(mcpServer.tools, null, 2) : undefined);
 
 onMount(() => {
-  window
-    .getMcpToolSet(id)
-    .then(content => {
-      toolSet = JSON.stringify(content, undefined, 2);
-    })
-    .catch(console.error);
-
   // Initial load of messages
   refreshMessages().catch(console.error);
 
