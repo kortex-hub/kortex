@@ -46,11 +46,26 @@ let selectedModel = $derived<ModelInfo | undefined>(
     : models[0],
 );
 
-let selectedMCP = $state<MCPRemoteServerInfo[]>(
-  config?.mcp?.flatMap(mcpId => $mcpRemoteServerInfos.find(r => r.id === mcpId) ?? []) ?? [],
+const selectedMCPTools = new SvelteMap(
+  config?.mcp?.reduce((acc, mcpId) => {
+    const server = $mcpRemoteServerInfos.find(r => r.id === mcpId);
+    if (server) {
+      const tools: Array<string> = config?.tools?.[mcpId] ?? Object.keys(server.tools) ?? [];
+      acc.set(mcpId, new Set(tools));
+    }
+    return acc;
+  }, new Map<string, Set<string>>()),
 );
 
-let selectedMCPTools = new SvelteMap(Object.entries(config?.tools ?? {}).map(([key, value]) => [key, new Set(value)]));
+let selectedMCP: MCPRemoteServerInfo[] = $derived(
+  selectedMCPTools.keys().reduce((acc, mcpId) => {
+    const server = $mcpRemoteServerInfos.find(r => r.id === mcpId);
+    if (server) {
+      acc.push(server);
+    }
+    return acc;
+  }, [] as MCPRemoteServerInfo[]),
+);
 
 const chatHistory = ChatHistory.fromContext();
 
@@ -120,15 +135,11 @@ function onCheckMCPTool(mcpId: string, toolId: string, checked: boolean): void {
   }
   selectedMCPTools.set(mcpId, tools);
 }
-
-function onClearMCPTools(mcpId: string): void {
-  selectedMCPTools.delete(mcpId);
-}
 </script>
 
 <div class="bg-background flex h-full min-w-0 flex-col">
   {#if hasModels}
-	  <ChatHeader bind:mcpSelectorOpen={mcpSelectorOpen} {readonly} models={models} bind:selectedModel={selectedModel} bind:selectedMCP={selectedMCP} />
+	  <ChatHeader bind:mcpSelectorOpen={mcpSelectorOpen} {readonly} models={models} {selectedMCP} bind:selectedModel={selectedModel} />
   {/if}
   <div class="flex min-h-0 flex-1">
         {#if hasModels}
@@ -145,10 +156,9 @@ function onClearMCPTools(mcpId: string): void {
                 </form>
             </div>
             <McpToolsSidepanel
-              bind:selectedMCP={selectedMCP}
+              bind:mcpSelectorOpen={mcpSelectorOpen}
               selectedMCPTools={selectedMCPTools}
               onCheckMCPTool={onCheckMCPTool}
-              onClearMCPTools={onClearMCPTools}
             />
         {:else}
             <NoModelsAvailable />

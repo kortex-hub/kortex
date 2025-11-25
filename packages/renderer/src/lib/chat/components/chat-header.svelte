@@ -7,11 +7,11 @@ import { router } from 'tinro';
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
 import { currentChatId } from '/@/lib/chat/state/current-chat-id.svelte';
+import { cn } from '/@/lib/chat/utils/shadcn';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import Plus from './icons/plus.svelte';
-import MCPSelector from './mcp-selector.svelte';
 import SidebarToggle from './sidebar-toggle.svelte';
 import { Button } from './ui/button';
 import { useSidebar } from './ui/sidebar';
@@ -21,8 +21,7 @@ let {
   readonly,
   models,
   selectedModel = $bindable<ModelInfo | undefined>(),
-  // selected under the form `${internalProviderId}:${connectionName}``
-  selectedMCP = $bindable(),
+  selectedMCP,
   mcpSelectorOpen = $bindable(),
 }: {
   readonly: boolean;
@@ -35,6 +34,10 @@ let {
 const sidebar = useSidebar();
 
 const noMcps = $derived($mcpRemoteServerInfos.length === 0);
+
+function onToolSelection(): void {
+  mcpSelectorOpen = true;
+}
 </script>
 
 <header class="bg-background sticky top-0 flex items-start gap-2 p-2">
@@ -68,26 +71,33 @@ const noMcps = $derived($mcpRemoteServerInfos.length === 0);
 
 	{#if !readonly}
         <ModelSelector
-            class="order-1 md:order-2" 
-            models={models} 
+            class="order-1 md:order-2"
+            models={models}
             bind:value={selectedModel}
         />
         <div class="flex flex-col gap-1">
-            <MCPSelector disabled={noMcps} bind:open={mcpSelectorOpen} bind:selected={selectedMCP}/>
             {#if noMcps}
                 <div class="flex items-center gap-1 px-1 text-xs text-muted-foreground">
-                    <Button 
-                        variant="link" 
+                    <Button
+                        variant="link"
                         class="h-auto p-0 text-xs hover:underline"
                         onclick={():void => router.goto('/mcps')}
                     >
                         Configure MCP servers
                     </Button>
                 </div>
+            {:else}
+              <Button
+                aria-label="Tools Selection"
+                variant="outline"
+                onclick={onToolSelection}
+                class={cn(
+					'data-[state=open]:bg-accent data-[state=open]:text-accent-foreground w-fit md:h-[34px] md:px-2',
+				)}>Tools Selection ({selectedMCP?.length})</Button>
             {/if}
         </div>
     {/if}
-    
+
     <!-- {#if !readonly && chat}
 		<VisibilitySelector {chat} class="order-1 md:order-3" />
 	{/if} -->
