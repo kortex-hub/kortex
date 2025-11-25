@@ -16,8 +16,8 @@ const DOT_COLOR = '#cb5839';
 
 export let size = 400;
 
-let dotsGroup: SVGGElement | undefined = undefined;
-let eyesElement: SVGUseElement | undefined = undefined;
+let dotsGroup: SVGGElement | undefined;
+let eyesElement: SVGUseElement | undefined;
 
 onMount(() => {
   const timeoutIds: ReturnType<typeof setTimeout>[] = [];
