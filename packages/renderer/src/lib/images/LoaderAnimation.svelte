@@ -12,6 +12,8 @@ let dotsGroup: SVGGElement | undefined = undefined;
 let eyesElement: SVGUseElement | undefined = undefined;
 
 onMount(() => {
+  const timeoutIds: ReturnType<typeof setTimeout>[] = [];
+
   // Configuration - scale from 800pt design
   const scale = size / 800;
   const numDots = 110;
@@ -39,20 +41,27 @@ onMount(() => {
       eyesElement.style.transition = 'opacity 0.05s ease-in';
       eyesElement.style.opacity = '1';
 
-      setTimeout(() => {
-        if (eyesElement) {
-          eyesElement.style.transition = 'opacity 0.15s ease-out';
-          eyesElement.style.opacity = '0';
-        }
-      }, 80);
+      timeoutIds.push(
+        setTimeout(() => {
+          if (eyesElement) {
+            eyesElement.style.transition = 'opacity 0.15s ease-out';
+            eyesElement.style.opacity = '0';
+          }
+        }, 80),
+      );
 
       // eslint-disable-next-line sonarjs/pseudo-random
-      setTimeout(blink, 500 + Math.random() * 2000);
+      timeoutIds.push(setTimeout(blink, 500 + Math.random() * 2000));
     }
   }
 
   // eslint-disable-next-line sonarjs/pseudo-random
-  setTimeout(blink, 1500 + Math.random() * 1000);
+  timeoutIds.push(setTimeout(blink, 1500 + Math.random() * 1000));
+
+  // Cleanup function - clear all timeouts when component is destroyed
+  return (): void => {
+    timeoutIds.forEach(id => clearTimeout(id));
+  };
 });
 </script>
 
