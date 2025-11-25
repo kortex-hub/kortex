@@ -67,7 +67,15 @@ const selectedMCPToolsCount = $derived(
   }, 0),
 );
 
-let selectedMCPTools = new SvelteMap(Object.entries(config?.tools ?? {}).map(([key, value]) => [key, new Set(value)]));
+let selectedMCP: MCPRemoteServerInfo[] = $derived(
+  selectedMCPTools.keys().reduce((acc, mcpId) => {
+    const server = $mcpRemoteServerInfos.find(r => r.id === mcpId);
+    if (server) {
+      acc.push(server);
+    }
+    return acc;
+  }, [] as MCPRemoteServerInfo[]),
+);
 
 const chatHistory = ChatHistory.fromContext();
 
