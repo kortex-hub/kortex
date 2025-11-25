@@ -67,14 +67,10 @@ const selectedMCPToolsCount = $derived(
   }, 0),
 );
 
-let selectedMCP: MCPRemoteServerInfo[] = $derived(
-  selectedMCPTools.keys().reduce((acc, mcpId) => {
-    const server = $mcpRemoteServerInfos.find(r => r.id === mcpId);
-    if (server) {
-      acc.push(server);
-    }
-    return acc;
-  }, [] as MCPRemoteServerInfo[]),
+const selectedMCPCount = $derived(
+  selectedMCPTools.entries().reduce((acc, [, tools]) => {
+    return acc + tools.size;
+  }, 0),
 );
 
 const chatHistory = ChatHistory.fromContext();
