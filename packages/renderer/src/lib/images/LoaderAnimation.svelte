@@ -6,6 +6,14 @@ import loaderHead from './loader-head.png';
 import loaderShadow1 from './loader-shadow1.png';
 import loaderShadow2 from './loader-shadow2.png';
 
+// Design constants (based on 800pt original design)
+const BASE_DESIGN_SIZE = 800;
+const NUM_DOTS = 110;
+const BASE_RADIUS = 394;
+const BASE_DOT_RADIUS = 5;
+const BASE_CLIP_RADIUS = 295;
+const DOT_COLOR = '#cb5839';
+
 export let size = 400;
 
 let dotsGroup: SVGGElement | undefined = undefined;
@@ -14,22 +22,20 @@ let eyesElement: SVGUseElement | undefined = undefined;
 onMount(() => {
   const timeoutIds: ReturnType<typeof setTimeout>[] = [];
 
-  // Configuration - scale from 800pt design
-  const scale = size / 800;
-  const numDots = 110;
-  const radius = 394 * scale;
-  const dotRadius = 5 * scale;
-  const dotColor = '#cb5839';
+  // Scale from 800pt design
+  const scale = size / BASE_DESIGN_SIZE;
+  const radius = BASE_RADIUS * scale;
+  const dotRadius = BASE_DOT_RADIUS * scale;
 
   if (dotsGroup) {
-    for (let i = 0; i < numDots; i++) {
-      const angle = (i * 2 * Math.PI) / numDots;
+    for (let i = 0; i < NUM_DOTS; i++) {
+      const angle = (i * 2 * Math.PI) / NUM_DOTS;
       const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
 
       circle.setAttribute('cx', (radius * Math.cos(angle)).toFixed(2));
       circle.setAttribute('cy', (radius * Math.sin(angle)).toFixed(2));
       circle.setAttribute('r', dotRadius.toString());
-      circle.setAttribute('fill', dotColor);
+      circle.setAttribute('fill', DOT_COLOR);
 
       // eslint-disable-next-line svelte/no-dom-manipulating
       dotsGroup.appendChild(circle);
@@ -71,7 +77,7 @@ onMount(() => {
       xmlns="http://www.w3.org/2000/svg"
       xmlns:xlink="http://www.w3.org/1999/xlink" color-interpolation-filters="sRGB"
       aria-hidden="true"
-      style="--center: {size / 2}px; --float-x: {size * 40 / 800}px; --float-y: {size * -20 / 800}px;">
+      style="--center: {size / 2}px; --float-x: {size * 40 / BASE_DESIGN_SIZE}px; --float-y: {size * -20 / BASE_DESIGN_SIZE}px;">
     <style>
         @keyframes rotateDots {
             to { transform: translate(var(--center), var(--center)) scale(0.7) rotate(360deg); }
@@ -110,7 +116,7 @@ onMount(() => {
     </style>
     <defs>
         <clipPath id="backgroundClip">
-            <circle cx={size / 2} cy={size / 2} r={size * 295 / 800}/>
+            <circle cx={size / 2} cy={size / 2} r={size * BASE_CLIP_RADIUS / BASE_DESIGN_SIZE}/>
         </clipPath>
 
         <image id="shadow1" xlink:href={loaderShadow1} width={size} height={size}/>
@@ -119,7 +125,7 @@ onMount(() => {
         <image id="eyes" xlink:href={loaderEyes} width={size} height={size}/>
     </defs>
 
-    <circle cx={size / 2} cy={size / 2} r={size * 295 / 800} fill="#962f2f" stroke="none"/>
+    <circle cx={size / 2} cy={size / 2} r={size * BASE_CLIP_RADIUS / BASE_DESIGN_SIZE} fill="#962f2f" stroke="none"/>
 
     <g id="dots" bind:this={dotsGroup} transform="translate({size / 2}, {size / 2}) scale(0.7)"></g>
 
