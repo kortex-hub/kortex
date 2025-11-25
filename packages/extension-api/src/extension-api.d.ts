@@ -5337,7 +5337,7 @@ declare module '@kortex-app/api' {
     constructor(url: string);
   }
 
-  namespace rag {
+  export namespace rag {
     export function registerChunkProvider(provider: ChunkProvider): Disposable;
   }
 }
