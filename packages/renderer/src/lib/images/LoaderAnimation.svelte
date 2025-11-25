@@ -36,28 +36,33 @@ export let size = 400;
 let dotsGroup: SVGGElement | undefined;
 let eyesElement: SVGUseElement | undefined;
 
-onMount(() => {
-  const timeoutIds: ReturnType<typeof setTimeout>[] = [];
+// Reactive dot creation - regenerates when size or dotsGroup changes
+$: if (dotsGroup) {
+  // Clear existing dots
+  // eslint-disable-next-line svelte/no-dom-manipulating
+  dotsGroup.innerHTML = '';
 
   // Scale from 800pt design
   const scale = size / BASE_DESIGN_SIZE;
   const radius = BASE_RADIUS * scale;
   const dotRadius = BASE_DOT_RADIUS * scale;
 
-  if (dotsGroup) {
-    for (let i = 0; i < NUM_DOTS; i++) {
-      const angle = (i * 2 * Math.PI) / NUM_DOTS;
-      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  for (let i = 0; i < NUM_DOTS; i++) {
+    const angle = (i * 2 * Math.PI) / NUM_DOTS;
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
 
-      circle.setAttribute('cx', (radius * Math.cos(angle)).toFixed(2));
-      circle.setAttribute('cy', (radius * Math.sin(angle)).toFixed(2));
-      circle.setAttribute('r', dotRadius.toString());
-      circle.setAttribute('fill', DOT_COLOR);
+    circle.setAttribute('cx', (radius * Math.cos(angle)).toFixed(2));
+    circle.setAttribute('cy', (radius * Math.sin(angle)).toFixed(2));
+    circle.setAttribute('r', dotRadius.toString());
+    circle.setAttribute('fill', DOT_COLOR);
 
-      // eslint-disable-next-line svelte/no-dom-manipulating
-      dotsGroup.appendChild(circle);
-    }
+    // eslint-disable-next-line svelte/no-dom-manipulating
+    dotsGroup.appendChild(circle);
   }
+}
+
+onMount(() => {
+  const timeoutIds: ReturnType<typeof setTimeout>[] = [];
 
   function blink(): void {
     if (eyesElement) {
