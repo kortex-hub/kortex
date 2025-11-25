@@ -51,12 +51,12 @@ onMount(() => {
       );
 
       // eslint-disable-next-line sonarjs/pseudo-random
-      timeoutIds.push(setTimeout(blink, 500 + Math.random() * 2000));
+      timeoutIds.push(setTimeout(blink, 500 + Math.random() * 2_000));
     }
   }
 
   // eslint-disable-next-line sonarjs/pseudo-random
-  timeoutIds.push(setTimeout(blink, 1500 + Math.random() * 1000));
+  timeoutIds.push(setTimeout(blink, 1_500 + Math.random() * 1_000));
 
   // Cleanup function - clear all timeouts when component is destroyed
   return (): void => {
