@@ -8,8 +8,8 @@ import loaderShadow2 from './loader-shadow2.png';
 
 export let size = 400;
 
-let dotsGroup: SVGGElement | null = null;
-let eyesElement: SVGUseElement | null = null;
+let dotsGroup: SVGGElement | undefined = undefined;
+let eyesElement: SVGUseElement | undefined = undefined;
 
 onMount(() => {
   // Configuration - scale from 800pt design
