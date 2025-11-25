@@ -1,8 +1,11 @@
 <script lang="ts">
 import { faChevronRight } from '@fortawesome/free-solid-svg-icons/faChevronRight';
 import { faToolbox } from '@fortawesome/free-solid-svg-icons/faToolbox';
+import type { SvelteMap } from 'svelte/reactivity';
+import { SvelteSet } from 'svelte/reactivity';
 import Fa from 'svelte-fa';
 
+import { Input } from '/@/lib/chat/components/ui/input';
 import MCPIcon from '/@/lib/images/MCPIcon.svelte';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
@@ -10,36 +13,34 @@ import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import McpFilterCard from './mcp-filter-card.svelte';
 
 interface Props {
-  selectedMCP: MCPRemoteServerInfo[];
-  selectedMCPTools?: Map<string, Set<string>>;
+  mcpSelectorOpen: boolean;
+  searchTerm: string;
+  selectedMCPTools: SvelteMap<string, Set<string>>;
   onCheckMCPTool: (mcpId: string, toolId: string, checked: boolean) => void;
-  onClearMCPTools: (mcpId: string) => void;
 }
 
-let { selectedMCP = $bindable(), selectedMCPTools, onCheckMCPTool, onClearMCPTools }: Props = $props();
+let { mcpSelectorOpen = $bindable(), searchTerm = $bindable(''), selectedMCPTools, onCheckMCPTool }: Props = $props();
 
-let open = $state(true);
-
-function onCheck(mcp: MCPRemoteServerInfo): void {
-  const index = selectedMCP.findIndex(s => s.id === mcp.id);
-  if (index > -1) {
-    selectedMCP.splice(index, 1);
+function onCheck(mcp: MCPRemoteServerInfo, checked: boolean): void {
+  // eslint-disable-next-line sonarjs/no-selector-parameter
+  if (!checked && selectedMCPTools.has(mcp.id)) {
+    selectedMCPTools.delete(mcp.id);
   } else {
-    selectedMCP.push(mcp);
+    selectedMCPTools.set(mcp.id, new SvelteSet(Object.keys(mcp.tools)));
   }
 }
 
 function hideMcp(): void {
-  open = false;
+  mcpSelectorOpen = false;
 }
 
 function showMcp(): void {
-  open = true;
+  mcpSelectorOpen = true;
 }
 </script>
 
-{#if open}
-  <div class="hidden lg:flex lg:flex-col lg:w-64 lg:min-w-64 border-l bg-background/50 h-full">
+{#if mcpSelectorOpen}
+  <div class="hidden lg:flex lg:flex-col lg:w-64 lg:min-w-64 border-l bg-background/50 h-full overflow-y-scroll">
     <div class="flex items-center justify-between gap-2 px-3 py-2 border-b">
       <div class="flex items-center gap-2">
         <MCPIcon size={16} />
@@ -69,11 +70,10 @@ function showMcp(): void {
       {#each $mcpRemoteServerInfos as mcp (mcp.id)}
         <McpFilterCard
           mcp={mcp}
-          selected={!!selectedMCP.find(s => s.id === mcp.id)}
+          searchTerm={searchTerm}
           selectedTools={selectedMCPTools?.get(mcp.id)}
           onCheckMCP={onCheck.bind(undefined, mcp)}
           onCheckTool={onCheckMCPTool.bind(undefined, mcp.id)}
-          onClearTools={onClearMCPTools.bind(undefined, mcp.id)}
         />
       {/each}
     </div>

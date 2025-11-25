@@ -1,33 +1,28 @@
 <script lang="ts">
 import { Checkbox } from '@podman-desktop/ui-svelte';
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '/@/lib/chat/components/ui/tooltip';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 interface Props {
   mcp: MCPRemoteServerInfo;
-  selected: boolean;
   selectedTools?: Set<string>;
   onCheckMCP: (checked: boolean) => void;
   onCheckTool: (toolId: string, checked: boolean) => void;
-  onClearTools: () => void;
+  searchTerm: string;
 }
 
-let { mcp, selected, onCheckMCP, selectedTools, onCheckTool, onClearTools }: Props = $props();
+let { mcp, onCheckMCP, selectedTools, searchTerm, onCheckTool }: Props = $props();
 
-let loading: boolean = $state(false);
-let filtering: boolean = $state(false);
-let tools: Record<string, { description: string }> | undefined = $state(undefined);
-let expanded: boolean = $derived(selected && filtering && !!tools);
+let tools = $derived(Object.entries(mcp.tools));
+let filtered = $derived(
+  searchTerm.length > 0
+    ? tools.filter(([toolId, { description }]) => toolId.includes(searchTerm) || description?.includes(searchTerm))
+    : tools,
+);
 
-function onFilter(): void {
-  if (filtering) {
-    filtering = false;
-    onClearTools();
-  } else {
-    fetchTools().catch(console.error);
-    filtering = true;
-  }
-}
+let selection: 'all' | 'none' | 'partial' = $derived.by(() => {
+  if (!selectedTools) return 'none';
 
   if (selectedTools.size === 0) return 'none';
   else if (selectedTools.size === tools.length) return 'all';
@@ -43,7 +38,10 @@ function onFilter(): void {
   >
     <div
       class="flex gap-x-2">
-      <Checkbox checked={selected} onclick={onCheckMCP.bind(undefined)}/>
+      <Checkbox
+        checked={selection === 'all'}
+        indeterminate={selection === 'partial'}
+        onclick={onCheckMCP.bind(undefined)}/>
       <span>{mcp.name}</span>
     </div>
   </div>
@@ -52,9 +50,20 @@ function onFilter(): void {
       {@const checked = selectedTools?.has(tool)}
       <div class="flex flex-col">
         <div
-          class="flex gap-x-2">
-          <Checkbox checked={selectedTools?.has(tool)} onclick={onCheckTool.bind(undefined, tool)}/>
-          <span>{tool}</span>
+          class:bg-[var(--pd-content-card-hover-bg)]={checked}
+          class="flex gap-x-2 items-center rounded-md p-2">
+          <Checkbox checked={checked} onclick={onCheckTool.bind(undefined, tool)}/>
+          <Tooltip>
+            <TooltipTrigger>
+              {#snippet child({ props })}
+                <div {...props} class="flex flex-col w-full overflow-hidden">
+                  <span class="font-bold">{tool}</span>
+                  <code class="text-ellipsis overflow-hidden line-clamp-1">{description}</code>
+                </div>
+              {/snippet}
+            </TooltipTrigger>
+            <TooltipContent>{description}</TooltipContent>
+          </Tooltip>
         </div>
       </div>
     {/each}
