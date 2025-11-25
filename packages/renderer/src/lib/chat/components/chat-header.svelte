@@ -20,16 +20,13 @@ let {
   readonly,
   models,
   selectedModel = $bindable<ModelInfo | undefined>(),
-  selectedMCP,
+  selectedMCPCount,
   mcpSelectorOpen = $bindable(),
 }: {
   readonly: boolean;
   selectedModel: ModelInfo | undefined;
   models: Array<ModelInfo>;
-  /**
-   * Represent the number of tools selected
-   */
-  selectedMCPToolsCount: number;
+  selectedMCPCount: number;
   mcpSelectorOpen: boolean;
 } = $props();
 
@@ -95,7 +92,7 @@ function onToolSelection(): void {
                 onclick={onToolSelection}
                 class={cn(
 					'data-[state=open]:bg-accent data-[state=open]:text-accent-foreground w-fit md:h-[34px] md:px-2',
-				)}>Tools Selection ({selectedMCP?.length})</Button>
+				)}>Tools Selection ({selectedMCPCount})</Button>
             {/if}
         </div>
     {/if}

@@ -22,10 +22,6 @@ export interface InferenceParameters {
   providerId: string;
   connectionName: string;
   modelId: string;
-  mcp: Array<string>;
-  /**
-   * The key is the MCP ID, and the value is an array of tool to use for that MCP.
-   */
   tools: Record<string, Array<string>>;
   messages: UIMessage[];
 }

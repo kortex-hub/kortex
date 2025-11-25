@@ -45,25 +45,26 @@ let selectedModel = $derived<ModelInfo | undefined>(
     : models[0],
 );
 
-const selectedMCPTools = new SvelteMap(
-  config?.mcp?.reduce((acc, mcpId) => {
+/**
+ * Here we store the list of tools selected
+ * key => the MCP Server ID
+ * values => the selected tools
+ */
+const selectedMCPTools = new SvelteMap<string, SvelteSet<string>>(
+  Object.entries(config?.tools ?? {}).reduce((acc, [mcpId, tools]) => {
     const server = $mcpRemoteServerInfos.find(r => r.id === mcpId);
     if (server) {
-      const tools: Array<string> = config?.tools?.[mcpId] ?? Object.keys(server.tools) ?? [];
-      acc.set(mcpId, new Set(tools));
+      const selectedTools: Array<string> = tools ?? Object.keys(server.tools) ?? [];
+      acc.set(mcpId, new SvelteSet(selectedTools));
     }
     return acc;
-  }, new Map<string, Set<string>>()),
+  }, new Map<string, SvelteSet<string>>()),
 );
 
-let selectedMCP: MCPRemoteServerInfo[] = $derived(
-  selectedMCPTools.keys().reduce((acc, mcpId) => {
-    const server = $mcpRemoteServerInfos.find(r => r.id === mcpId);
-    if (server) {
-      acc.push(server);
-    }
-    return acc;
-  }, [] as MCPRemoteServerInfo[]),
+const selectedMCPCount = $derived(
+  selectedMCPTools.entries().reduce((acc, [, tools]) => {
+    return acc + tools.size;
+  }, 0),
 );
 
 const chatHistory = ChatHistory.fromContext();
@@ -135,7 +136,13 @@ function onCheckMCPTool(mcpId: string, toolId: string, checked: boolean): void {
 
 <div class="bg-background flex h-full min-w-0 flex-col">
   {#if hasModels}
-	  <ChatHeader bind:mcpSelectorOpen={mcpSelectorOpen} {readonly} models={models} {selectedMCP} bind:selectedModel={selectedModel} />
+	  <ChatHeader
+      bind:mcpSelectorOpen={mcpSelectorOpen}
+      {readonly}
+      models={models}
+      selectedMCPCount={selectedMCPCount}
+      bind:selectedModel={selectedModel}
+    />
   {/if}
   <div class="flex min-h-0 flex-1">
         {#if hasModels}
@@ -147,7 +154,7 @@ function onCheckMCPTool(mcpId: string, toolId: string, checked: boolean): void {
                 />
                 <form class="bg-background mx-auto flex w-full gap-2 px-4 pb-4 md:max-w-3xl md:pb-6">
                     {#if !readonly}
-                        <MultimodalInput {attachments} {chatClient} {selectedModel} {selectedMCP} {selectedMCPTools} bind:mcpSelectorOpen={mcpSelectorOpen} class="flex-1" />
+                        <MultimodalInput {attachments} {chatClient} {selectedModel} {selectedMCPTools} bind:mcpSelectorOpen={mcpSelectorOpen} class="flex-1" />
                     {/if}
                 </form>
             </div>
