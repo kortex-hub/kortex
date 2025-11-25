@@ -5,7 +5,6 @@ import { toast } from 'svelte-sonner';
 import { flowCreationData } from '/@/lib/chat/state/flow-creation-data.svelte';
 import { handleNavigation } from '/@/navigation';
 import { isFlowConnectionAvailable } from '/@/stores/flow-provider';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import { NavigationPage } from '/@api/navigation-page';
 
 import FlowIcon from '../../images/FlowIcon.svelte';
@@ -14,14 +13,12 @@ import { Button } from './ui/button';
 
 let {
   selectedModel,
-  selectedMCP,
   selectedMCPTools,
   loading,
   chatClient,
 }: {
   selectedModel?: ModelInfo;
-  selectedMCP: MCPRemoteServerInfo[];
-  selectedMCPTools?: Map<string, Set<string>>;
+  selectedMCPTools: Map<string, Set<string>>;
   loading: boolean;
   chatClient: Chat;
 } = $props();
@@ -40,21 +37,31 @@ const exportAsFlow = async (): Promise<void> => {
 
   try {
     const { providerId, connectionName, label } = selectedModel;
+
+    const tools: Record<string, string[]> = Object.fromEntries(
+      selectedMCPTools.entries().reduce(
+        (accumulator, [mcpId, tools]) => {
+          if (tools.size > 0) {
+            accumulator.push([mcpId, Array.from(tools.values())]);
+          }
+          return accumulator;
+        },
+        [] as Array<[string, string[]]>,
+      ),
+    );
+
     const generatedFlowParams = await window.inferenceGenerateFlowParams({
       providerId,
       connectionName,
       modelId: label,
-      tools: Object.fromEntries(
-        selectedMCPTools?.entries()?.map(([toolName, value]) => [toolName, Array.from(value.values())]) ?? [],
-      ),
-      mcp: selectedMCP.map(m => m.id),
+      tools: tools,
       messages: $state.snapshot(chatClient.messages),
     });
 
     flowCreationData.value = {
       ...generatedFlowParams,
       model: selectedModel,
-      mcp: selectedMCP,
+      tools: tools,
     };
 
     handleNavigation({ page: NavigationPage.FLOW_CREATE });

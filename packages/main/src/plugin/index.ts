@@ -2170,22 +2170,6 @@ export class PluginSystem {
     );
 
     this.ipcHandle(
-      'mcp-manager:getTools',
-      async (_listener, mcpId: string): Promise<Record<string, { description: string }>> => {
-        const tools = await mcpManager.getToolSet([mcpId]);
-
-        return Object.fromEntries(
-          Object.entries(tools).map(([key, value]) => [
-            key,
-            {
-              description: value.description ?? '',
-            },
-          ]),
-        );
-      },
-    );
-
-    this.ipcHandle(
       'image-registry:updateRegistry',
       async (_listener, registry: containerDesktopAPI.Registry): Promise<void> => {
         await imageRegistry.updateRegistry(registry);

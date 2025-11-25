@@ -1736,13 +1736,6 @@ export function initExposure(): void {
     return ipcInvoke('mcp-registry:getMcpRegistryServers');
   });
 
-  contextBridge.exposeInMainWorld(
-    'getMcpToolSet',
-    async (mcpId: string): Promise<Record<string, { description: string }>> => {
-      return ipcInvoke('mcp-manager:getTools', mcpId);
-    },
-  );
-
   contextBridge.exposeInMainWorld('getMcpExchanges', async (mcpId: string): Promise<DynamicToolUIPart[]> => {
     return ipcInvoke('mcp-manager:getExchanges', mcpId);
   });

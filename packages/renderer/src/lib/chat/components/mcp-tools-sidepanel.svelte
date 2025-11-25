@@ -14,7 +14,7 @@ import McpFilterCard from './mcp-filter-card.svelte';
 
 interface Props {
   mcpSelectorOpen: boolean;
-  searchTerm: string;
+  searchTerm?: string;
   selectedMCPTools: SvelteMap<string, Set<string>>;
   onCheckMCPTool: (mcpId: string, toolId: string, checked: boolean) => void;
 }
