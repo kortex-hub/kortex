@@ -6,13 +6,30 @@ import loaderHead from './loader-head.png';
 import loaderShadow1 from './loader-shadow1.png';
 import loaderShadow2 from './loader-shadow2.png';
 
+// Animation timing constants (in seconds for CSS, milliseconds for JS)
+const ROTATION_DURATION_S = 40;
+const FLOAT_DURATION_S = 4;
+const BLINK_FADE_IN_S = 0.05;
+const BLINK_FADE_OUT_S = 0.15;
+const BLINK_CLOSE_DELAY_MS = 80;
+const BLINK_MIN_INTERVAL_MS = 500;
+const BLINK_RANDOM_INTERVAL_MS = 2_000;
+const BLINK_INITIAL_MIN_DELAY_MS = 1_500;
+const BLINK_INITIAL_RANDOM_DELAY_MS = 1_000;
+
 // Design constants (based on 800pt original design)
 const BASE_DESIGN_SIZE = 800;
 const NUM_DOTS = 110;
 const BASE_RADIUS = 394;
 const BASE_DOT_RADIUS = 5;
 const BASE_CLIP_RADIUS = 295;
+const BASE_FLOAT_X = 40;
+const BASE_FLOAT_Y = -20;
+const DOTS_SCALE = 0.7;
+
+// Color constants
 const DOT_COLOR = '#cb5839';
+const BACKGROUND_COLOR = '#962f2f';
 
 export let size = 400;
 
@@ -44,25 +61,25 @@ onMount(() => {
 
   function blink(): void {
     if (eyesElement) {
-      eyesElement.style.transition = 'opacity 0.05s ease-in';
+      eyesElement.style.transition = `opacity ${BLINK_FADE_IN_S}s ease-in`;
       eyesElement.style.opacity = '1';
 
       timeoutIds.push(
         setTimeout(() => {
           if (eyesElement) {
-            eyesElement.style.transition = 'opacity 0.15s ease-out';
+            eyesElement.style.transition = `opacity ${BLINK_FADE_OUT_S}s ease-out`;
             eyesElement.style.opacity = '0';
           }
-        }, 80),
+        }, BLINK_CLOSE_DELAY_MS),
       );
 
       // eslint-disable-next-line sonarjs/pseudo-random
-      timeoutIds.push(setTimeout(blink, 500 + Math.random() * 2_000));
+      timeoutIds.push(setTimeout(blink, BLINK_MIN_INTERVAL_MS + Math.random() * BLINK_RANDOM_INTERVAL_MS));
     }
   }
 
   // eslint-disable-next-line sonarjs/pseudo-random
-  timeoutIds.push(setTimeout(blink, 1_500 + Math.random() * 1_000));
+  timeoutIds.push(setTimeout(blink, BLINK_INITIAL_MIN_DELAY_MS + Math.random() * BLINK_INITIAL_RANDOM_DELAY_MS));
 
   // Cleanup function - clear all timeouts when component is destroyed
   return (): void => {
@@ -77,10 +94,10 @@ onMount(() => {
       xmlns="http://www.w3.org/2000/svg"
       xmlns:xlink="http://www.w3.org/1999/xlink" color-interpolation-filters="sRGB"
       aria-hidden="true"
-      style="--center: {size / 2}px; --float-x: {size * 40 / BASE_DESIGN_SIZE}px; --float-y: {size * -20 / BASE_DESIGN_SIZE}px;">
+      style="--center: {size / 2}px; --float-x: {size * BASE_FLOAT_X / BASE_DESIGN_SIZE}px; --float-y: {size * BASE_FLOAT_Y / BASE_DESIGN_SIZE}px; --rotation-duration: {ROTATION_DURATION_S}s; --float-duration: {FLOAT_DURATION_S}s; --dots-scale: {DOTS_SCALE};">
     <style>
         @keyframes rotateDots {
-            to { transform: translate(var(--center), var(--center)) scale(0.7) rotate(360deg); }
+            to { transform: translate(var(--center), var(--center)) scale(var(--dots-scale)) rotate(360deg); }
         }
 
         @keyframes floatHead {
@@ -96,21 +113,21 @@ onMount(() => {
         }
 
         #dots {
-            animation: rotateDots 40s linear infinite;
+            animation: rotateDots var(--rotation-duration) linear infinite;
             transform-origin: 0 0;
         }
 
         #headGroup {
-            animation: floatHead 4s ease-in-out infinite;
+            animation: floatHead var(--float-duration) ease-in-out infinite;
         }
 
         #shadow1Element {
-            animation: fadeShadow1 4s ease-in-out infinite reverse;
+            animation: fadeShadow1 var(--float-duration) ease-in-out infinite reverse;
             opacity: 0.5;
         }
 
         #shadow2Element {
-            animation: fadeShadow2 4s ease-in-out infinite;
+            animation: fadeShadow2 var(--float-duration) ease-in-out infinite;
             opacity: 0;
         }
     </style>
@@ -125,9 +142,9 @@ onMount(() => {
         <image id="eyes" xlink:href={loaderEyes} width={size} height={size}/>
     </defs>
 
-    <circle cx={size / 2} cy={size / 2} r={size * BASE_CLIP_RADIUS / BASE_DESIGN_SIZE} fill="#962f2f" stroke="none"/>
+    <circle cx={size / 2} cy={size / 2} r={size * BASE_CLIP_RADIUS / BASE_DESIGN_SIZE} fill={BACKGROUND_COLOR} stroke="none"/>
 
-    <g id="dots" bind:this={dotsGroup} transform="translate({size / 2}, {size / 2}) scale(0.7)"></g>
+    <g id="dots" bind:this={dotsGroup} transform="translate({size / 2}, {size / 2}) scale({DOTS_SCALE})"></g>
 
     <g clip-path="url(#backgroundClip)">
         <use id="shadow1Element" xlink:href="#shadow1" style="mix-blend-mode: soft-light;"/>
