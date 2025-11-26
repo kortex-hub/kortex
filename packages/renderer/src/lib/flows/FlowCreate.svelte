@@ -39,11 +39,6 @@ let prompt: string = $state(flowCreationData.value?.prompt ?? '');
 let parameters = $state(flowCreationData.value?.parameters ?? []); // Preserve extracted parameters
 let flowProviderConnectionKey: string | undefined = $state<string>();
 
-// Debug: Log parameters from export
-if (flowCreationData.value?.parameters) {
-  console.log('[FlowCreate] Loaded', flowCreationData.value.parameters.length, 'parameters from export');
-}
-
 flowCreationData.value = undefined;
 
 let showFlowConnectionSelector = $state(true);
