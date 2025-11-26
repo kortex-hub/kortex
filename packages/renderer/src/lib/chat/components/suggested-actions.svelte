@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Chat } from '@ai-sdk/svelte';
-import type { SvelteMap } from 'svelte/reactivity';
+import { type SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { fly } from 'svelte/transition';
 import { toast } from 'svelte-sonner';
 
@@ -104,40 +104,47 @@ async function onclick(suggestedAction: SuggestedAction): Promise<void> {
         throw Error(`Suggested action ${suggestedAction.action} requires MCP with id ${mcpId} but it was not found.`);
       }
 
-      acc.push([mcpInfo.name, tools]);
+      acc.push([mcpInfo.name, tools, server?.id]);
       return acc;
     },
-    [] as Array<[string, string[]]>,
+    [] as Array<[string, string[], string | undefined]>,
   );
 
   if (mcpsToSelect?.length) {
+    let quotedMCPs = [];
+    for (let [mcpName, tools] of mcpsToSelect) {
+      const quoted = tools.map(tool => `'${tool}'`);
+      quotedMCPs.push(`- '${mcpName}' with tools ${quoted.join(',')}`);
+    }
+
     const result = await window.showMessageBox({
       title: 'Select MCPs',
-      message: `The following MCPs are required to use this suggested action: ${mcpsToSelect.join(', ')}. Do you want to select them?`,
+      message: `The following MCPs are required to use this suggested action: ${quotedMCPs.join(', ')}. Do you want to select them?`,
       buttons: ['Yes', 'No'],
     });
 
     if (result?.response === 1) {
-      // Yes
-      mcpSelectorOpen = true;
-
-      const builder = ['You need to select the following MCP:'];
-      for (let [mcpName, tools] of mcpsToSelect) {
-        const quoted = tools.map(tool => `'${tool}'`);
-        builder.push(`- '${mcpName}' with tools ${quoted.join(',')}`);
-      }
-
-      toast.error(builder.join(' '));
+      // No
+      toast.error(`You need to select the following MCP: ${quotedMCPs.join(', ')}`);
       return;
     } else {
       // Yes
-      for (let [mcpName, tools] of mcpsToSelect) {
-        console.log('mcpName', mcpName);
-        console.log('tools', tools);
-        for (let tool of tools) {
-          console.log('tool', tool);
-          selectedMCPTools.get(mcpName)?.add(tool);
+      for (let [mcpName, tools, serverId] of mcpsToSelect) {
+        if (!serverId) {
+          console.error(`Server ID not found for MCP ${mcpName}`);
+          continue;
         }
+
+        // Get existing tools or create a new Set
+        const existingTools = selectedMCPTools.get(serverId) ?? new SvelteSet<string>();
+
+        // Add each required tool
+        for (let tool of tools) {
+          existingTools.add(tool);
+        }
+
+        // Update the map
+        selectedMCPTools.set(serverId, existingTools);
       }
     }
   }
