@@ -114,11 +114,11 @@ async function onclick(suggestedAction: SuggestedAction): Promise<void> {
     const result = await window.showMessageBox({
       title: 'Select MCPs',
       message: `The following MCPs are required to use this suggested action: ${mcpsToSelect.join(', ')}. Do you want to select them?`,
-      buttons: ['No', 'Yes'],
+      buttons: ['Yes', 'No'],
     });
 
-    if (result?.response === 0) {
-      // No
+    if (result?.response === 1) {
+      // Yes
       mcpSelectorOpen = true;
 
       const builder = ['You need to select the following MCP:'];
