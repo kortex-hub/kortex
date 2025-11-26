@@ -292,21 +292,38 @@ export class ChatManager {
         ? `\n\nThe following parameters were detected from MCP tool calls and should be referenced in your prompt template:\n${JSON.stringify(extractedParams, null, 2)}`
         : '';
 
-    // Generate flow parameters with AI
     const result = await generateObject({
       ...inferenceComponents,
       system: inferenceComponents.system + parameterGuidance,
       schema: FlowGenerationParametersSchema,
     });
 
-    // Merge AI-generated parameters with extracted ones
-    const aiParameters = result.object.parameters ?? [];
-    const mergedParameters = this.mergeParameters(extractedParams, aiParameters);
+    const { name, description, prompt, parameters: aiParameters } = result.object;
+
+    // Extract parameter names from the prompt using regex
+    const parameterNamesInPrompt = this.extractParameterNamesFromPrompt(prompt);
+
+    // Filter AI-generated parameters to only include those that appear in the prompt
+    const filteredAiParameters = (aiParameters ?? []).filter(param => parameterNamesInPrompt.includes(param.name));
+
+    // Merge with extracted parameters (to get default values)
+    const mergedParameters = this.mergeParameters(extractedParams, filteredAiParameters);
 
     return {
-      ...result.object,
+      name,
+      description,
+      prompt,
       parameters: mergedParameters,
     };
+  }
+  /**
+   * Extract parameter names from a prompt template that uses {{parameterName}} syntax
+   */
+  private extractParameterNamesFromPrompt(prompt: string): string[] {
+    const regex = /\{\{(\w+)\}\}/g;
+    const matches = [...prompt.matchAll(regex)];
+    const paramNames = matches.map(match => match[1]).filter((name): name is string => name !== undefined);
+    return [...new Set(paramNames)];
   }
 
   private mergeParameters(extracted: FlowParameterAIGenerated[], aiGenerated: FlowParameterAIGenerated[]): FlowParameter[] {
