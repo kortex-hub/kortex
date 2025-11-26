@@ -326,7 +326,10 @@ export class ChatManager {
     return [...new Set(paramNames)];
   }
 
-  private mergeParameters(extracted: FlowParameterAIGenerated[], aiGenerated: FlowParameterAIGenerated[]): FlowParameter[] {
+  private mergeParameters(
+    extracted: FlowParameterAIGenerated[],
+    aiGenerated: FlowParameterAIGenerated[],
+  ): FlowParameter[] {
     // Deduplicate and merge parameters
     const paramMap = new Map<string, FlowParameterAIGenerated>();
 
