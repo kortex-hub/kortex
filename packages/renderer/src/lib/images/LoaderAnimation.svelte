@@ -67,7 +67,7 @@ $effect(() => {
   }
 });
 
-function blink(timeoutIds: ReturnType<typeof setTimeout>[]): void {
+function blink(timeoutIds: NodeJS.Timeout[]): void {
   if (eyesElement) {
     eyesElement.style.transition = `opacity ${BLINK_FADE_IN_S}s ease-in`;
     eyesElement.style.opacity = '1';
@@ -81,18 +81,18 @@ function blink(timeoutIds: ReturnType<typeof setTimeout>[]): void {
       }, BLINK_CLOSE_DELAY_MS),
     );
 
-    // eslint-disable-next-line sonarjs/pseudo-random
     timeoutIds.push(
+      // eslint-disable-next-line sonarjs/pseudo-random
       setTimeout(() => blink(timeoutIds), BLINK_MIN_INTERVAL_MS + Math.random() * BLINK_RANDOM_INTERVAL_MS),
     );
   }
 }
 
 onMount(() => {
-  const timeoutIds: ReturnType<typeof setTimeout>[] = [];
+  const timeoutIds: NodeJS.Timeout[] = [];
 
-  // eslint-disable-next-line sonarjs/pseudo-random
   timeoutIds.push(
+    // eslint-disable-next-line sonarjs/pseudo-random
     setTimeout(() => blink(timeoutIds), BLINK_INITIAL_MIN_DELAY_MS + Math.random() * BLINK_INITIAL_RANDOM_DELAY_MS),
   );
 
