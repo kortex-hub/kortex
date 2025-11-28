@@ -40,17 +40,18 @@ let { size = 400 }: Props = $props();
 let dotsGroup: SVGGElement | undefined = $state();
 let eyesElement: SVGUseElement | undefined = $state();
 
+// Derived values - only recompute when size changes
+// Scale from 800pt design
+const scale = $derived(size / BASE_DESIGN_SIZE);
+const radius = $derived(BASE_RADIUS * scale);
+const dotRadius = $derived(BASE_DOT_RADIUS * scale);
+
 // Reactive dot creation - regenerates when size or dotsGroup changes
 $effect(() => {
   if (dotsGroup) {
     // Clear existing dots
     // eslint-disable-next-line svelte/no-dom-manipulating
     dotsGroup.innerHTML = '';
-
-    // Scale from 800pt design
-    const scale = size / BASE_DESIGN_SIZE;
-    const radius = BASE_RADIUS * scale;
-    const dotRadius = BASE_DOT_RADIUS * scale;
 
     for (let i = 0; i < NUM_DOTS; i++) {
       const angle = (i * 2 * Math.PI) / NUM_DOTS;
