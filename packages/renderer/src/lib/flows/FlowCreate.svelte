@@ -230,7 +230,7 @@ async function generate(): Promise<void> {
                     <Fa size="1.1x" class="text-[var(--pd-state-info)]" icon={faCircleInfo} />
                   </div>
                   <p class="text-sm">
-                    Use <code class="px-1 py-0.5 bg-[var(--pd-content-bg)] rounded">{'{{field_name}}'} {`{{field_name}}`}</code> in your prompt to reference input fields.
+                    Use <code class="px-1 py-0.5 bg-[var(--pd-content-bg)] rounded">{'{{field_name}}'}</code> in your prompt to reference input fields.
                     Example: "Take the last 5 issues from <code class="px-1 py-0.5 bg-[var(--pd-content-bg)] rounded">{'{{repository_url}}'}</code>"
                   </p>
                 </div>

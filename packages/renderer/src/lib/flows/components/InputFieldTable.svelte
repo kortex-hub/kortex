@@ -50,7 +50,7 @@ const RequiredColumn = new TableColumn<ParameterWithCallbacks, string>('Required
   width: '2fr',
   renderer: TableSimpleColumn,
   renderMapping: (param): string => (param.required ? 'Required' : 'Not Required'),
-  comparator: (a, b): number => (a.default ?? '').localeCompare(b.default ?? ''),
+  comparator: (a, b): number => (a.required === b.required ? 0 : a.required ? -1 : 1),
 });
 
 // Column 4: Type (always "Text" for now)
