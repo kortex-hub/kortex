@@ -350,11 +350,9 @@ export class ChatManager {
     }
 
     // Set required based on whether a default value exists
-    return Array.from(paramMap.values()).map(
-      (param): FlowParameter => ({
-        ...param,
-        required: param.default === undefined || param.default === null || param.default === '',
-      }),
-    );
+    return Array.from(paramMap.values()).map(param => ({
+      ...param,
+      required: param.default === undefined || param.default === '',
+    }));
   }
 }
