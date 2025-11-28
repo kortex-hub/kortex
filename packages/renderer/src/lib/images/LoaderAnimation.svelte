@@ -67,30 +67,34 @@ $effect(() => {
   }
 });
 
+function blink(timeoutIds: ReturnType<typeof setTimeout>[]): void {
+  if (eyesElement) {
+    eyesElement.style.transition = `opacity ${BLINK_FADE_IN_S}s ease-in`;
+    eyesElement.style.opacity = '1';
+
+    timeoutIds.push(
+      setTimeout(() => {
+        if (eyesElement) {
+          eyesElement.style.transition = `opacity ${BLINK_FADE_OUT_S}s ease-out`;
+          eyesElement.style.opacity = '0';
+        }
+      }, BLINK_CLOSE_DELAY_MS),
+    );
+
+    // eslint-disable-next-line sonarjs/pseudo-random
+    timeoutIds.push(
+      setTimeout(() => blink(timeoutIds), BLINK_MIN_INTERVAL_MS + Math.random() * BLINK_RANDOM_INTERVAL_MS),
+    );
+  }
+}
+
 onMount(() => {
   const timeoutIds: ReturnType<typeof setTimeout>[] = [];
 
-  function blink(): void {
-    if (eyesElement) {
-      eyesElement.style.transition = `opacity ${BLINK_FADE_IN_S}s ease-in`;
-      eyesElement.style.opacity = '1';
-
-      timeoutIds.push(
-        setTimeout(() => {
-          if (eyesElement) {
-            eyesElement.style.transition = `opacity ${BLINK_FADE_OUT_S}s ease-out`;
-            eyesElement.style.opacity = '0';
-          }
-        }, BLINK_CLOSE_DELAY_MS),
-      );
-
-      // eslint-disable-next-line sonarjs/pseudo-random
-      timeoutIds.push(setTimeout(blink, BLINK_MIN_INTERVAL_MS + Math.random() * BLINK_RANDOM_INTERVAL_MS));
-    }
-  }
-
   // eslint-disable-next-line sonarjs/pseudo-random
-  timeoutIds.push(setTimeout(blink, BLINK_INITIAL_MIN_DELAY_MS + Math.random() * BLINK_INITIAL_RANDOM_DELAY_MS));
+  timeoutIds.push(
+    setTimeout(() => blink(timeoutIds), BLINK_INITIAL_MIN_DELAY_MS + Math.random() * BLINK_INITIAL_RANDOM_DELAY_MS),
+  );
 
   // Cleanup function - clear all timeouts when component is destroyed
   return (): void => {
