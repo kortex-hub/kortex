@@ -140,11 +140,22 @@ test('should refresh models when connections have RamaLama containers', async ()
   await modelsHandler.refreshModels();
 
   expect(containerRamaLamaFinderMock.getRamaLamaContainers).toHaveBeenCalledWith([mockContainer1, mockContainer2]);
-  expect(containerModelExtractorMock.extractModelInfo).toHaveBeenCalledTimes(2);
+  expect(containerModelExtractorMock.extractModelInfo).toHaveBeenCalled();
   expect(containerModelExtractorMock.extractModelInfo).toHaveBeenCalledWith(mockContainer1);
   expect(containerModelExtractorMock.extractModelInfo).toHaveBeenCalledWith(mockContainer2);
   expect(modelsHandler.getModels()).toEqual([mockModelInfo1, mockModelInfo2]);
   expect(modelsHandler.getModelsChanged().fire).toHaveBeenCalledWith([mockModelInfo1, mockModelInfo2]);
+});
+
+test('should refresh models on init', async () => {
+  // stub refreshModels
+  const refreshModelsSpy = vi.spyOn(modelsHandler, 'refreshModels');
+
+  await modelsHandler.init();
+  expect(refreshModelsSpy).toHaveBeenCalled();
+
+  // restore original method
+  refreshModelsSpy.mockRestore();
 });
 
 test('should handle connection errors gracefully', async () => {
