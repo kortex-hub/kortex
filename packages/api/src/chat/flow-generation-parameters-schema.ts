@@ -43,6 +43,7 @@ type FlowAIGeneratedParameters = {
   prompt: string;
   parameters?: Array<FlowParameterAIGenerated>;
 };
+
 export const FlowParameterSchema = z.object({
   name: z.string().describe('Parameter name (must be valid identifier)'),
   format: z.string().default('string').describe('Parameter data type'),
