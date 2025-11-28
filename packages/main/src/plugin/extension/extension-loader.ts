@@ -20,7 +20,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import type * as containerDesktopAPI from '@kortex-app/api';
-import { ChunkProvider } from '@kortex-app/api';
+import { ChunkProvider, RegisterServerResult } from '@kortex-app/api';
 import { components } from '@kortex-hub/mcp-registry-types';
 import AdmZip from 'adm-zip';
 import { app, clipboard as electronClipboard } from 'electron';
@@ -32,6 +32,7 @@ import {
   KubeGeneratorRegistry,
   type KubernetesGeneratorProvider,
 } from '/@/plugin/kubernetes/kube-generator-registry.js';
+import { RegisterServerResultImpl } from '/@/plugin/mcp/register-server-result-impl.js';
 import { MenuRegistry } from '/@/plugin/menu-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
 import { WebviewRegistry } from '/@/plugin/webview/webview-registry.js';
@@ -1035,15 +1036,12 @@ export class ExtensionLoader implements IAsyncDisposable {
         disposables.push(registration);
         return registration;
       },
-      registerServer: (server: components['schemas']['ServerDetail']): Disposable & { serverId: string } => {
+      registerServer: (server: components['schemas']['ServerDetail']): RegisterServerResult => {
         const serverId = analyzedExtension.id + '.' + server.name;
         mcpRegistryInstance.registerInternalMCPServer({ ...server, serverId });
-        const disposable = Disposable.create(() => {
+        return new RegisterServerResultImpl(() => {
           mcpRegistryInstance.unregisterInternalMCPServer(serverId);
-        });
-        const extendedDisposable = disposable as Disposable & { serverId: string };
-        extendedDisposable.serverId = serverId;
-        return extendedDisposable;
+        }, serverId);
       },
       unregisterServer(serverId: string): void {
         mcpRegistryInstance.unregisterInternalMCPServer(serverId);

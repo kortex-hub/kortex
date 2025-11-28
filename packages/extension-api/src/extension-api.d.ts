@@ -682,6 +682,8 @@ declare module '@kortex-app/api' {
     config: MCPServerConfig;
   };
 
+  export type RegisterServerResult = Disposable & { serverId: string };
+
   export type RagProviderConnection = {
     name: string;
     mcpServer: MCPServer;
@@ -1531,7 +1533,7 @@ declare module '@kortex-app/api' {
     export const onDidUpdateRegistry: Event<MCPRegistry>;
     export const onDidUnregisterRegistry: Event<MCPRegistry>;
 
-    export function registerServer(server: MCPServerDetail): Disposable & { serverId: string };
+    export function registerServer(server: MCPServerDetail): RegisterServerResult;
     export function unregisterServer(serverId: string): void;
   }
 
