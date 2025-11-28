@@ -24,10 +24,48 @@ import { tick } from 'svelte';
 import { get } from 'svelte/store';
 /* eslint-enable import/no-duplicates */
 import { router } from 'tinro';
-import { beforeAll, expect, test, vi } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
 
 import Loader from './Loader.svelte';
 import { lastPage } from './stores/breadcrumb';
+
+// Setup mocks before any imports - required for Svelte 5 compatibility
+// matchMedia must return a MediaQueryList-like object for Svelte 5's DevicePixelRatio
+vi.hoisted(() => {
+  const matchMediaMock = (query: string): MediaQueryList =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList;
+
+  // localStorage mock for mode-watcher
+  const localStorageData = new Map<string, string>();
+  const localStorageMock = {
+    getItem: (key: string): string | null => localStorageData.get(key) ?? null,
+    setItem: (key: string, value: string): void => {
+      localStorageData.set(key, String(value));
+    },
+    removeItem: (key: string): void => {
+      localStorageData.delete(key);
+    },
+    clear: (): void => {
+      localStorageData.clear();
+    },
+    get length(): number {
+      return localStorageData.size;
+    },
+    key: (index: number): string | null => [...localStorageData.keys()][index] ?? null,
+  };
+
+  Object.defineProperty(globalThis, 'matchMedia', { value: matchMediaMock, writable: true });
+  Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true });
+});
 
 // first, patch window object
 const callbacks = new Map<string, any>();
@@ -49,22 +87,28 @@ vi.mock('tinro', () => {
   };
 });
 
-Object.defineProperty(global, 'window', {
-  value: {
-    events: {
-      receive: eventEmitter.receive,
-    },
-    dispatchEvent: dispatchEventMock,
-    extensionSystemIsReady: vi.fn(),
-    extensionSystemIsExtensionsStarted: extensionSystemIsExtensionsStartedMock,
-    addEventListener: eventEmitter.receive,
+// Extend the existing jsdom window instead of replacing it
+// This preserves DOM APIs needed by Svelte 5
+Object.assign(window, {
+  events: {
+    receive: eventEmitter.receive,
   },
-  writable: true,
+  dispatchEvent: dispatchEventMock,
+  extensionSystemIsReady: vi.fn(),
+  extensionSystemIsExtensionsStarted: extensionSystemIsExtensionsStartedMock,
 });
 
-beforeAll(() => {
+// Override addEventListener to capture custom events
+const originalAddEventListener = window.addEventListener.bind(window);
+window.addEventListener = (type: string, listener: any, options?: any): void => {
+  callbacks.set(type, listener);
+  originalAddEventListener(type, listener, options);
+};
+
+beforeEach(() => {
   vi.resetAllMocks();
   vi.clearAllMocks();
+  callbacks.clear();
 });
 
 test('Loader should redirect to the installation page when receiving the event', async () => {

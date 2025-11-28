@@ -7,9 +7,9 @@ import LoaderAnimation from './lib/images/LoaderAnimation.svelte';
 import ColorsStyle from './lib/style/ColorsStyle.svelte';
 import { lastPage } from './stores/breadcrumb';
 
-let systemReady = false;
+let systemReady = $state(false);
 
-let toggle = false;
+let toggle = $state(false);
 
 let loadingSequence: NodeJS.Timeout;
 
