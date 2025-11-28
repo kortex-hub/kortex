@@ -25,25 +25,34 @@ export type FlowGenerationParameters = {
   prompt: string;
 };
 
+// Reusable schema fields for flow metadata
+const flowNameSchema = z
+  .string()
+  .describe(
+    `A unique name for the flow, formatted as a DNS subdomain (e.g., "my-new-flow"). It must be lowercase and contain only letters, numbers, and hyphens. It cannot start or end with a hyphen.`,
+  )
+  .transform(val =>
+    val
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/[^a-z0-9-]/g, '') // Remove all other invalid characters
+      .slice(0, 63),
+  )
+  .pipe(z.string().regex(/^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$/, 'Invalid DNS subdomain name after transformation.'));
+
+const flowDescriptionSchema = z
+  .string()
+  .describe('Description of the flow, give a short description of what the flow does.');
+
+const flowPromptSchema = z
+  .string()
+  .describe(
+    'Help me create a reproducible prompt that achieves the same result as in the conversation above. The prompt will be executed by another LLM without any further user input, so it must include all the necessary information to reproduce the same outcome.',
+  );
+
 export const FlowGenerationParametersSchema: ZodType<FlowGenerationParameters> = z.object({
-  name: z
-    .string()
-    .describe(
-      `A unique name for the flow, formatted as a DNS subdomain (e.g., "my-new-flow"). It must be lowercase and contain only letters, numbers, and hyphens. It cannot start or end with a hyphen.`,
-    )
-    .transform(val =>
-      val
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, '-') // Replace spaces with hyphens
-        .replace(/[^a-z0-9-]/g, '') // Remove all other invalid characters
-        .slice(0, 63),
-    )
-    .pipe(z.string().regex(/^[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?$/, 'Invalid DNS subdomain name after transformation.')),
-  description: z.string().describe('Description of the flow, give a short description of what the flow does.'),
-  prompt: z
-    .string()
-    .describe(
-      'Help me create a reproducible prompt that achieves the same result as in the conversation above. The prompt will be executed by another LLM without any further user input, so it must include all the necessary information to reproduce the same outcome.',
-    ),
+  name: flowNameSchema,
+  description: flowDescriptionSchema,
+  prompt: flowPromptSchema,
 });
