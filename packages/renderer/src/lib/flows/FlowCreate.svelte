@@ -1,13 +1,16 @@
 <script lang="ts">
+import { faCircleInfo } from '@fortawesome/free-solid-svg-icons';
 import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { generate as generateWords } from 'random-words';
 import { onMount } from 'svelte';
+import Fa from 'svelte-fa';
 
 import MCPSelector from '/@/lib/chat/components/mcp-selector.svelte';
 import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
 import { Textarea } from '/@/lib/chat/components/ui/textarea';
 import { flowCreationData } from '/@/lib/chat/state/flow-creation-data.svelte';
+import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
 import { getModels } from '/@/lib/models/models-utils';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 import { handleNavigation } from '/@/navigation';
@@ -20,7 +23,10 @@ import { NavigationPage } from '/@api/navigation-page';
 import type { ModelInfo } from '../chat/components/model-info';
 import FlowIcon from '../images/FlowIcon.svelte';
 import FlowConnectionSelector from './components/flow-connection-selector.svelte';
+import InputFieldModal from './components/InputFieldModal.svelte';
+import InputFieldTable from './components/InputFieldTable.svelte';
 import NoFlowProviders from './components/NoFlowProviders.svelte';
+import type { InputField } from './types/input-field';
 
 let selectedMCP = $state<MCPRemoteServerInfo[]>(flowCreationData.value?.mcp ?? []);
 let models: Array<ModelInfo> = $derived(getModels($providerInfos));
@@ -36,8 +42,15 @@ let name: string = $state(flowCreationData.value?.name ?? `flow-${generateWords(
 let description: string = $state(flowCreationData.value?.description ?? '');
 let instruction: string = $state('You are a helpful assistant.');
 let prompt: string = $state(flowCreationData.value?.prompt ?? '');
+let parameters = $state<InputField[]>([]); // Input fields managed manually in UI
 let flowProviderConnectionKey: string | undefined = $state<string>();
+
 flowCreationData.value = undefined;
+
+// Modal state
+let showInputFieldModal = $state(false);
+let editingFieldIndex = $state<number | undefined>(undefined);
+let editingField = $state<InputField | undefined>(undefined);
 
 let showFlowConnectionSelector = $state(true);
 
@@ -56,6 +69,40 @@ onMount(() => {
     console.error('Flow auto-select skipped:', e);
   }
 });
+
+// Parameter management handlers
+function handleAddInputField(): void {
+  editingFieldIndex = undefined;
+  editingField = undefined;
+  showInputFieldModal = true;
+}
+
+function handleEditInputField(index: number, field: InputField): void {
+  editingFieldIndex = index;
+  editingField = field;
+  showInputFieldModal = true;
+}
+
+function handleDeleteInputField(index: number, field: InputField): void {
+  withConfirmation(() => {
+    parameters = parameters.filter((_, i) => i !== index);
+  }, `delete parameter "${field.name}"`);
+}
+
+function handleSaveInputField(field: InputField): void {
+  if (editingFieldIndex !== undefined) {
+    // Edit existing
+    parameters = parameters.map((p, i) => (i === editingFieldIndex ? field : p));
+  } else {
+    // Add new
+    parameters = [...parameters, field];
+  }
+  showInputFieldModal = false;
+}
+
+function handleCancelInputField(): void {
+  showInputFieldModal = false;
+}
 
 const validatedInput = $derived(FlowGenerationParametersSchema.safeParse({ name, description, prompt }));
 
@@ -108,28 +155,31 @@ async function generate(): Promise<void> {
   {#snippet content()}
     <div class="px-5 pb-5 min-w-full">
     {#if $isFlowConnectionAvailable}
-        <div class="bg-[var(--pd-content-card-bg)] px-6 py-4">
-          <div class="flex flex-col">
+        <div class="bg-[var(--pd-content-card-bg)] py-4">
+          <div class="flex flex-col px-6">
             <div>You can create a flow using this form by selecting a model, one or several tools (from MCP servers)
               and specifying instructions.</div>
             <div>A flow can also be created by exporting a chat session. All information's on this page will then automatically be filled.</div>
             <div class="flex flex-row gap-1 items-center">The export feature in the chat window is available through the <FlowIcon /> icon</div>
           </div>
           {#if error}
-            <ErrorMessage {error}/>
+            <div class="px-6">
+              <ErrorMessage {error}/>
+            </div>
           {/if}
 
           <form
             novalidate
             class="p-2 space-y-7 h-fit"
+            onsubmit={(e): void => e.preventDefault()}
           >
-            <div>
+            <div class="px-6">
               <span>Flow Name</span>
               <Input bind:value={name} placeholder="name" class="grow" required />
             </div>
 
             <!-- description -->
-            <div>
+            <div class="px-6">
               <span>Description</span>
               <Textarea
                 placeholder="Description..."
@@ -139,7 +189,7 @@ async function generate(): Promise<void> {
                 autofocus
               />
             </div>
-            <div class="flex flex-col">
+            <div class="flex flex-col px-6">
               <span>Model</span>
                   <ModelSelector
                       class="order-1 md:order-2"
@@ -149,13 +199,13 @@ async function generate(): Promise<void> {
             </div>
 
             <!-- tools -->
-            <div class="flex flex-col">
+            <div class="flex flex-col px-6">
               <span>Tools</span>
               <MCPSelector bind:selected={selectedMCP}/>
             </div>
 
             <!-- prompt -->
-            <div>
+            <div class="px-6">
               <span>Prompt</span>
               <Textarea
                 placeholder="Prompt"
@@ -166,8 +216,38 @@ async function generate(): Promise<void> {
               />
             </div>
 
+            <!-- Input Fields Section -->
+            <div class="px-6">
+              <div class="flex justify-between items-center mb-2">
+                <span>Input Fields</span>
+                <Button onclick={handleAddInputField}>Add Field</Button>
+              </div>
+              
+              <!-- Warning about using field name syntax -->
+              <div class="mb-3 p-3 bg-[var(--pd-content-card-bg)] border border-[var(--pd-input-field-stroke)] rounded">
+                <div class="flex flex-row gap-3">
+                  <div class="shrink-0 mt-0.5">
+                    <Fa size="1.1x" class="text-[var(--pd-state-info)]" icon={faCircleInfo} />
+                  </div>
+                  <p class="text-sm">
+                    Use <code class="px-1 py-0.5 bg-[var(--pd-content-bg)] rounded">{'{{field_name}}'} {`{{field_name}}`}</code> in your prompt to reference input fields.
+                    Example: "Take the last 5 issues from <code class="px-1 py-0.5 bg-[var(--pd-content-bg)] rounded">{'{{repository_url}}'}</code>"
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Table wrapper with proper flex layout -->
+            <div class="flex min-w-full h-full">
+              <InputFieldTable
+                {parameters}
+                onEdit={handleEditInputField}
+                onDelete={handleDeleteInputField}
+              />
+            </div>
+
             <!-- instruction -->
-            <div>
+            <div class="px-6">
               <span>Instruction</span>
               <Textarea
                 placeholder="Instruction"
@@ -177,7 +257,7 @@ async function generate(): Promise<void> {
                 autofocus
               />
             </div>
-            <div class="flex w-full">
+            <div class="flex w-full px-6">
               {#if showFlowConnectionSelector}
               <FlowConnectionSelector class="" bind:value={flowProviderConnectionKey}/>
               {/if}
@@ -191,3 +271,11 @@ async function generate(): Promise<void> {
     </div>
   {/snippet}
 </FormPage>
+
+{#if showInputFieldModal}
+  <InputFieldModal
+    field={editingField}
+    onSave={handleSaveInputField}
+    onCancel={handleCancelInputField}
+  />
+{/if}
