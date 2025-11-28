@@ -12,6 +12,7 @@ import { getModels } from '/@/lib/models/models-utils';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 import { handleNavigation } from '/@/navigation';
 import { isFlowConnectionAvailable } from '/@/stores/flow-provider';
+import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import { providerInfos } from '/@/stores/providers';
 import { FlowGenerationParametersSchema } from '/@api/chat/flow-generation-parameters-schema';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
@@ -22,7 +23,16 @@ import FlowIcon from '../images/FlowIcon.svelte';
 import FlowConnectionSelector from './components/flow-connection-selector.svelte';
 import NoFlowProviders from './components/NoFlowProviders.svelte';
 
-let selectedMCP = $state<MCPRemoteServerInfo[]>(flowCreationData.value?.mcp ?? []);
+let selectedMCP = $state<MCPRemoteServerInfo[]>(
+  Object.entries(flowCreationData?.value?.tools ?? {}).reduce((accumulator, [mcpId, _]) => {
+    // for now we cannot specify tools in Flows, so let's select the full MCP
+    const server = $mcpRemoteServerInfos.find(r => r.id === mcpId);
+    if (server) {
+      accumulator.push(server);
+    }
+    return accumulator;
+  }, [] as MCPRemoteServerInfo[]),
+);
 let models: Array<ModelInfo> = $derived(getModels($providerInfos));
 let flowCreationDataModel = $state<ModelInfo | undefined>(flowCreationData.value?.model);
 let selectedModel = $derived<ModelInfo | undefined>(flowCreationDataModel ?? models[0]);
