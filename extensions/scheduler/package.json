@@ -18,11 +18,13 @@
   },
   "dependencies": {
     "@kortex-app/api": "workspace:*",
+    "mustache": "^4.2.0",
     "inversify": "^7.10.3",
     "unzipper": "^0.11.6"
   },
   "devDependencies": {
     "@types/unzipper": "^0.10.11",
+    "@types/mustache": "^4.2.6",
     "mkdirp": "^3.0.1",
     "vite": "^7.0.6",
     "vitest": "^3.2.4"

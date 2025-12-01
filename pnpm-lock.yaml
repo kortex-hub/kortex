@@ -579,10 +579,16 @@ importers:
       inversify:
         specifier: ^7.10.3
         version: 7.10.4(reflect-metadata@0.2.2)
+      mustache:
+        specifier: ^4.2.0
+        version: 4.2.0
       unzipper:
         specifier: ^0.11.6
         version: 0.11.6
     devDependencies:
+      '@types/mustache':
+        specifier: ^4.2.6
+        version: 4.2.6
       '@types/unzipper':
         specifier: ^0.10.11
         version: 0.10.11

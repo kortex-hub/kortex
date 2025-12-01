@@ -18,8 +18,15 @@
 
 import type { ProviderSchedulerCommand } from '@kortex-app/api';
 import { injectable } from 'inversify';
+import mustache from 'mustache';
 
 import type { CronComponents } from '/@/helper/cron-parser';
+
+import actionsTemplate from './templates/actions.mustache?raw';
+import calendarTriggerTemplate from './templates/calendar-trigger.mustache?raw';
+import registrationInfoTemplate from './templates/registration-info.mustache?raw';
+import taskTemplate from './templates/task.mustache?raw';
+import timeTriggerTemplate from './templates/time-trigger.mustache?raw';
 
 export interface SchtasksXmlOptions {
   id: string;
@@ -49,44 +56,7 @@ export class SchtasksXmlGenerator {
     const triggers = this.buildTriggers(cronComponents);
     const actions = this.buildActions(executorScript, allArgs, command.env);
     const registrationInfo = this.buildRegistrationInfo(id, metadata);
-
-    const xml = `<?xml version="1.0"?>
-<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
-${registrationInfo}
-  <Triggers>
-${triggers}
-  </Triggers>
-  <Principals>
-    <Principal id="Author">
-      <LogonType>InteractiveToken</LogonType>
-      <RunLevel>LeastPrivilege</RunLevel>
-    </Principal>
-  </Principals>
-  <Settings>
-    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
-    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
-    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
-    <AllowHardTerminate>true</AllowHardTerminate>
-    <StartWhenAvailable>true</StartWhenAvailable>
-    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
-    <IdleSettings>
-      <StopOnIdleEnd>false</StopOnIdleEnd>
-      <RestartOnIdle>false</RestartOnIdle>
-    </IdleSettings>
-    <AllowStartOnDemand>true</AllowStartOnDemand>
-    <Enabled>true</Enabled>
-    <Hidden>false</Hidden>
-    <RunOnlyIfIdle>false</RunOnlyIfIdle>
-    <WakeToRun>false</WakeToRun>
-    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
-    <Priority>7</Priority>
-  </Settings>
-  <Actions Context="Author">
-${actions}
-  </Actions>
-</Task>
-`;
-
+    const xml = mustache.render(taskTemplate, { triggers, actions, registrationInfo });
     // Convert LF to CRLF for Windows compatibility
     return xml.replace(/\n/g, '\r\n');
   }
@@ -136,14 +106,7 @@ ${actions}
       components.weekday === '*'
     ) {
       const intervalMinutes = Number.parseInt(components.minute.slice(2), 10);
-      return `    <TimeTrigger>
-      <Repetition>
-        <Interval>PT${intervalMinutes}M</Interval>
-        <StopAtDurationEnd>false</StopAtDurationEnd>
-      </Repetition>
-      <StartBoundary>2025-01-01T00:00:00</StartBoundary>
-      <Enabled>true</Enabled>
-    </TimeTrigger>`;
+      return mustache.render(timeTriggerTemplate, { intervalMinutes });
     }
 
     // For complex schedules, create CalendarTrigger with ScheduleByDay/Week/Month
@@ -165,41 +128,18 @@ ${actions}
         if (weekdays.length > 0) {
           // Weekly trigger
           const daysOfWeek = weekdays.map(w => this.getDayOfWeekName(w)).join('');
-          triggers.push(`    <CalendarTrigger>
-      <StartBoundary>2025-01-01T${time}</StartBoundary>
-      <Enabled>true</Enabled>
-      <ScheduleByWeek>
-        <DaysOfWeek>
-          ${daysOfWeek}
-        </DaysOfWeek>
-        <WeeksInterval>1</WeeksInterval>
-      </ScheduleByWeek>
-    </CalendarTrigger>`);
+          triggers.push(mustache.render(calendarTriggerTemplate, { startBoundary: `2025-01-01T${time}`, daysOfWeek }));
         } else if (days.length > 0) {
           // Monthly trigger with specific days
           const daysXml = days.map(d => `<Day>${d}</Day>`).join('\n          ');
-          triggers.push(`    <CalendarTrigger>
-      <StartBoundary>2025-01-01T${time}</StartBoundary>
-      <Enabled>true</Enabled>
-      <ScheduleByMonth>
-        <DaysOfMonth>
-          ${daysXml}
-        </DaysOfMonth>
-        <Months>
-          <January /><February /><March /><April /><May /><June />
-          <July /><August /><September /><October /><November /><December />
-        </Months>
-      </ScheduleByMonth>
-    </CalendarTrigger>`);
+          triggers.push(
+            mustache.render(calendarTriggerTemplate, { startBoundary: `2025-01-01T${time}`, daysOfMonth: daysXml }),
+          );
         } else {
           // Daily trigger
-          triggers.push(`    <CalendarTrigger>
-      <StartBoundary>2025-01-01T${time}</StartBoundary>
-      <Enabled>true</Enabled>
-      <ScheduleByDay>
-        <DaysInterval>1</DaysInterval>
-      </ScheduleByDay>
-    </CalendarTrigger>`);
+          triggers.push(
+            mustache.render(calendarTriggerTemplate, { startBoundary: `2025-01-01T${time}`, everyDay: true }),
+          );
         }
       }
     }
@@ -228,10 +168,7 @@ ${actions}
       envArgs = ` -envJson "${envJson}"`;
     }
 
-    return `    <Exec>
-      <Command>powershell.exe</Command>
-      <Arguments>-NoProfile -NoLogo -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -file ${executorScript} ${args}${envArgs}</Arguments>
-    </Exec>`;
+    return mustache.render(actionsTemplate, { executorScript, args, envArgs });
   }
 
   private buildRegistrationInfo(id: string, metadata: Record<string, string>): string {
@@ -239,15 +176,8 @@ ${actions}
       .map(([key, value]) => `      <${this.escapeXml(key)}>${this.escapeXml(value)}</${this.escapeXml(key)}>`)
       .join('\n');
 
-    return `  <RegistrationInfo>
-    <Description><![CDATA[
-  <Metadata>
-    <Name>Kortex scheduled task: ${id}</Name>
-${metadataXml}
-  </Metadata>
-]]></Description>
-    <URI>\\Kortex\\${this.escapeXml(id)}</URI>
-  </RegistrationInfo>`;
+    const escapedId = this.escapeXml(id);
+    return mustache.render(registrationInfoTemplate, { id, metadataXml, escapedId });
   }
 
   private escapePowerShellArg(text: string): string {
