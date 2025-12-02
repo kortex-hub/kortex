@@ -48,7 +48,7 @@ type ConnectionEntry = {
 };
 
 function getRandomPort(): number {
-  return randomInt(1024, 65636);
+  return randomInt(1024, 65536);
 }
 
 @injectable()
@@ -151,7 +151,10 @@ export class ConnectionManager implements Disposable {
               port: parseInt(milvusPort, 10),
               running: container.State === 'running',
             });
-            existingContainers.splice(existingContainers.indexOf(`${endpoint.path}::${container.Id}`), 1);
+            const idx = existingContainers.indexOf(`${endpoint.path}::${container.Id}`);
+            if (idx >= 0) {
+              existingContainers.splice(idx, 1);
+            }
           }
         }
       }
@@ -199,6 +202,7 @@ export class ConnectionManager implements Disposable {
       const onFinished = (err: Error | null): void => {
         if (err) {
           promise.reject(err);
+          return;
         }
         promise.resolve();
       };
