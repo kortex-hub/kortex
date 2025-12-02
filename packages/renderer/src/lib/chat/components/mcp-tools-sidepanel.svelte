@@ -58,11 +58,11 @@ function showMcp(): void {
 
     <div class="px-3 pt-3">
       <Input
-        id="search-tools"
-        name="search-tools"
-        placeholder="Search tools..."
+        id="filter-tools"
+        name="filter-tools"
+        placeholder="Filter tools..."
         bind:value={searchTerm}
-        aria-label="search Tools">
+        aria-label="filter Tools">
       </Input>
     </div>
 
