@@ -202,3 +202,18 @@ jobs:
           echo "Using version ${{ needs.tag.outputs.kortexVersion }}"
           sed -i  "s#version\":\ \"\(.*\)\",#version\":\ \"${{ needs.tag.outputs.kortexVersion }}\",#g" packages/extension-api/package.json
           cd packages/extension-api && pnpm publish --provenance --tag next --no-git-checks --access public
+
+      - name: Publish Docling images to ghcr.io
+        run: |
+          podman login --username ${{ github.repository_owner }} --password ${{ secrets.GITHUB_TOKEN }} ghcr.io
+          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/${{ github.repository }}-docling
+          IMAGE_NIGHTLY=${IMAGE_NAME}:${{ needs.tag.outputs.kortexVersion }}
+          IMAGE_SHA=${IMAGE_NAME}:${GITHUB_SHA}
+          podman build -t $IMAGE_NIGHTLY extensions/docling
+          podman push $IMAGE_NIGHTLY $IMAGE_SHA
+          podman tag $IMAGE_NIGHTLY $IMAGE_SHA
+          podman push $IMAGE_SHA
+
+
+
+
