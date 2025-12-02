@@ -1,8 +1,51 @@
 <?xml version="1.0"?>
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
-{{{registrationInfo}}}
+  <RegistrationInfo>
+    <Description><![CDATA[
+  <Metadata>
+    <Name>Kortex scheduled task: {{{id}}}</Name>
+{{{metadataXml}}}
+  </Metadata>
+]]></Description>
+    <URI>\\Kortex\\{{{escapedId}}}</URI>
+  </RegistrationInfo>
   <Triggers>
-{{{triggers}}}
+{{#timeTriggers}}
+  <TimeTrigger>
+    <Repetition>
+    <Interval>PT{{intervalMinutes}}M</Interval>
+    <StopAtDurationEnd>false</StopAtDurationEnd>
+    </Repetition>
+    <StartBoundary>2025-01-01T00:00:00</StartBoundary>
+    <Enabled>true</Enabled>
+  </TimeTrigger>
+{{/timeTriggers}}
+{{#calendarTriggers}}
+  <CalendarTrigger>
+    <StartBoundary>{{startBoundary}}</StartBoundary>
+    <Enabled>true</Enabled>
+    {{#daysOfWeek}}
+    <ScheduleByWeek>
+        <DaysOfWeek>{{{daysOfWeek}}}</DaysOfWeek>
+        <WeeksInterval>1</WeeksInterval>
+    </ScheduleByWeek>
+    {{/daysOfWeek}}
+    {{#daysOfMonth}}
+    <ScheduleByMonth>
+        <DaysOfMonth>{{{daysOfMonth}}}</DaysOfMonth>
+        <Months>
+            <January /><February /><March /><April /><May /><June />
+            <July /><August /><September /><October /><November /><December />
+        </Months>
+    </ScheduleByMonth>
+    {{/daysOfMonth}}
+    {{#everyDay}}
+    <ScheduleByDay>
+        <DaysInterval>1</DaysInterval>
+    </ScheduleByDay>
+    {{/everyDay}}
+  </CalendarTrigger>
+{{/calendarTriggers}}
   </Triggers>
   <Principals>
     <Principal id="Author">
@@ -30,6 +73,9 @@
     <Priority>7</Priority>
   </Settings>
   <Actions Context="Author">
-{{{actions}}}
+  <Exec>
+    <Command>powershell.exe</Command>
+    <Arguments>-NoProfile -NoLogo -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -file {{executorScript}} {{{args}}}{{{envArgs}}}</Arguments>
+  </Exec>
   </Actions>
 </Task>

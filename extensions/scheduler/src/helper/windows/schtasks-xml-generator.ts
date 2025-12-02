@@ -21,12 +21,7 @@ import { injectable } from 'inversify';
 import mustache from 'mustache';
 
 import type { CronComponents } from '/@/helper/cron-parser';
-
-import actionsTemplate from './templates/actions.mustache?raw';
-import calendarTriggerTemplate from './templates/calendar-trigger.mustache?raw';
-import registrationInfoTemplate from './templates/registration-info.mustache?raw';
-import taskTemplate from './templates/task.mustache?raw';
-import timeTriggerTemplate from './templates/time-trigger.mustache?raw';
+import taskTemplate from '/@/helper/windows/templates/task.mustache?raw';
 
 export interface SchtasksXmlOptions {
   id: string;
@@ -36,6 +31,28 @@ export interface SchtasksXmlOptions {
   command: ProviderSchedulerCommand;
   outputFile: string;
   cronComponents: CronComponents;
+}
+
+interface TimeTrigger {
+  intervalMinutes: number;
+}
+
+interface CalendarTrigger {
+  startBoundary: string;
+  daysOfWeek?: string;
+  daysOfMonth?: string;
+  everyDay?: boolean;
+}
+
+interface TaskTemplateData {
+  id: string;
+  escapedId: string;
+  metadataXml: string;
+  timeTriggers: TimeTrigger[];
+  calendarTriggers: CalendarTrigger[];
+  executorScript: string;
+  args: string;
+  envArgs: string;
 }
 
 @injectable()
@@ -53,10 +70,29 @@ export class SchtasksXmlGenerator {
     // Complete arguments string for the executor
     const allArgs = `"${this.escapePowerShellArg(storageDir)}" "${this.escapePowerShellArg(id)}" -Metadata ${escapedMetadataJson} ${commandArgs}`;
 
-    const triggers = this.buildTriggers(cronComponents);
-    const actions = this.buildActions(executorScript, allArgs, command.env);
-    const registrationInfo = this.buildRegistrationInfo(id, metadata);
-    const xml = mustache.render(taskTemplate, { triggers, actions, registrationInfo });
+    // Build triggers
+    const { timeTriggers, calendarTriggers } = this.buildTriggers(cronComponents);
+
+    // Build env args
+    const envArgs = this.buildEnvArgs(command.env);
+
+    // Build metadata XML
+    const metadataXml = Object.entries(metadata)
+      .map(([key, value]) => `      <${this.escapeXml(key)}>${this.escapeXml(value)}</${this.escapeXml(key)}>`)
+      .join('\n');
+
+    const templateData: TaskTemplateData = {
+      id,
+      escapedId: this.escapeXml(id),
+      metadataXml,
+      timeTriggers,
+      calendarTriggers,
+      executorScript,
+      args: allArgs,
+      envArgs,
+    };
+
+    const xml = mustache.render(taskTemplate, templateData);
     // Convert LF to CRLF for Windows compatibility
     return xml.replace(/\n/g, '\r\n');
   }
@@ -70,7 +106,10 @@ export class SchtasksXmlGenerator {
       .replace(/'/g, '&apos;');
   }
 
-  private buildTriggers(components: CronComponents): string {
+  private buildTriggers(components: CronComponents): {
+    timeTriggers: TimeTrigger[];
+    calendarTriggers: CalendarTrigger[];
+  } {
     // Helper: expand cron expressions into numbers
     const expandField = (field: string, max: number): number[] => {
       if (field === '*') return [];
@@ -106,7 +145,10 @@ export class SchtasksXmlGenerator {
       components.weekday === '*'
     ) {
       const intervalMinutes = Number.parseInt(components.minute.slice(2), 10);
-      return mustache.render(timeTriggerTemplate, { intervalMinutes });
+      return {
+        timeTriggers: [{ intervalMinutes }],
+        calendarTriggers: [],
+      };
     }
 
     // For complex schedules, create CalendarTrigger with ScheduleByDay/Week/Month
@@ -116,7 +158,7 @@ export class SchtasksXmlGenerator {
     const weekdays = expandField(components.weekday, 7);
 
     // Generate triggers for each time combination
-    const triggers: string[] = [];
+    const calendarTriggers: CalendarTrigger[] = [];
 
     const hoursList = hours.length ? hours : [0];
     const minutesList = minutes.length ? minutes : [0];
@@ -124,27 +166,27 @@ export class SchtasksXmlGenerator {
     for (const h of hoursList) {
       for (const m of minutesList) {
         const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
+        const startBoundary = `2025-01-01T${time}`;
 
         if (weekdays.length > 0) {
           // Weekly trigger
           const daysOfWeek = weekdays.map(w => this.getDayOfWeekName(w)).join('');
-          triggers.push(mustache.render(calendarTriggerTemplate, { startBoundary: `2025-01-01T${time}`, daysOfWeek }));
+          calendarTriggers.push({ startBoundary, daysOfWeek });
         } else if (days.length > 0) {
           // Monthly trigger with specific days
-          const daysXml = days.map(d => `<Day>${d}</Day>`).join('\n          ');
-          triggers.push(
-            mustache.render(calendarTriggerTemplate, { startBoundary: `2025-01-01T${time}`, daysOfMonth: daysXml }),
-          );
+          const daysOfMonth = days.map(d => `<Day>${d}</Day>`).join('\n          ');
+          calendarTriggers.push({ startBoundary, daysOfMonth });
         } else {
           // Daily trigger
-          triggers.push(
-            mustache.render(calendarTriggerTemplate, { startBoundary: `2025-01-01T${time}`, everyDay: true }),
-          );
+          calendarTriggers.push({ startBoundary, everyDay: true });
         }
       }
     }
 
-    return triggers.join('\n');
+    return {
+      timeTriggers: [],
+      calendarTriggers,
+    };
   }
 
   private getDayOfWeekName(day: number): string {
@@ -160,24 +202,13 @@ export class SchtasksXmlGenerator {
     return days[day % 7];
   }
 
-  private buildActions(executorScript: string, args: string, env?: Record<string, string>): string {
-    // Convert env to JSON string and escape quotes
-    let envArgs = '';
-    if (env && Object.keys(env).length > 0) {
-      const envJson = JSON.stringify(env).replace(/"/g, '\\"'); // Escape quotes for command line
-      envArgs = ` -envJson "${envJson}"`;
+  private buildEnvArgs(env?: Record<string, string>): string {
+    if (!env || Object.keys(env).length === 0) {
+      return '';
     }
-
-    return mustache.render(actionsTemplate, { executorScript, args, envArgs });
-  }
-
-  private buildRegistrationInfo(id: string, metadata: Record<string, string>): string {
-    const metadataXml = Object.entries(metadata)
-      .map(([key, value]) => `      <${this.escapeXml(key)}>${this.escapeXml(value)}</${this.escapeXml(key)}>`)
-      .join('\n');
-
-    const escapedId = this.escapeXml(id);
-    return mustache.render(registrationInfoTemplate, { id, metadataXml, escapedId });
+    // Escape quotes for command line
+    const envJson = JSON.stringify(env).replace(/"/g, '\\"');
+    return ` -envJson "${envJson}"`;
   }
 
   private escapePowerShellArg(text: string): string {
