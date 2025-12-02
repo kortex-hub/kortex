@@ -215,9 +215,10 @@ export class MilvusConnection implements api.RagProviderConnection {
 
       if (hasCollection.value) {
         // Delete all chunks for this document
+        const escapedUri = doc.toString().replace(/\\/g, '\\\\').replace(/"/g, '\\"');
         await client.delete({
           collection_name: collectionName,
-          filter: `doc_uri == "${doc.toString()}"`,
+          filter: `doc_uri == "${escapedUri}"`,
         });
 
         // Flush to ensure deletion is persisted

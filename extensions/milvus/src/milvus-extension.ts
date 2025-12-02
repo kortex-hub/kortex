@@ -38,7 +38,7 @@ export class MilvusExtension {
     const KORTEX_CONTAINER_EXTENSION_ID = 'kortex.container';
     const containerExtension = api.extensions.getExtension<ContainerExtensionAPI>(KORTEX_CONTAINER_EXTENSION_ID);
     if (!containerExtension) {
-      throw new Error('Mandatory extension ${KORTEX_CONTAINER_EXTENSION_ID} is not installed');
+      throw new Error(`Mandatory extension ${KORTEX_CONTAINER_EXTENSION_ID} is not installed`);
     }
     const containerExtensionAPI = containerExtension?.exports;
     if (!containerExtensionAPI) {

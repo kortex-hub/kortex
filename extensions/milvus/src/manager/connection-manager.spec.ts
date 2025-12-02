@@ -346,7 +346,9 @@ describe('ConnectionManager', () => {
       'milvus.name': 'my-milvus',
     };
 
-    vi.mocked(Dockerode.prototype.getImage).mockRejectedValue(new Error('Image not found'));
+    vi.mocked(Dockerode.prototype.getImage).mockImplementation(() => {
+      throw new Error('Image not found');
+    });
     endpointMock.dockerode.modem = new DockerModem();
     vi.mocked(endpointMock.dockerode.modem.followProgress).mockImplementation((_, onFinished) => onFinished(null, []));
 
