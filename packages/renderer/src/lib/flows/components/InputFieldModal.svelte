@@ -1,9 +1,10 @@
 <script lang="ts">
 import { Button, Input } from '@podman-desktop/ui-svelte';
+import { z } from 'zod';
 
 import { Textarea } from '/@/lib/chat/components/ui/textarea';
 import Dialog from '/@/lib/dialogs/Dialog.svelte';
-import type { InputField } from '/@/lib/flows/types/input-field';
+import { type InputField, InputFieldSchema } from '/@/lib/flows/types/input-field';
 
 interface Props {
   field?: InputField;
@@ -15,42 +16,28 @@ let { field, onSave, onCancel }: Props = $props();
 
 let name = $state(field?.name ?? '');
 let description = $state(field?.description ?? '');
-let type = $state<'string' | 'number' | 'boolean' | 'enum'>(
-  (field?.format as 'string' | 'number' | 'boolean' | 'enum') ?? 'string',
-);
+
+let type = $state(field?.format ?? 'string');
 let defaultValue = $state(field?.default ?? '');
 
-// Validation
-const nameValid = $derived(name.trim().length > 0 && /^[a-z][a-z0-9_]*$/.test(name));
-const descriptionValid = $derived(description.trim().length > 0);
-const formValid = $derived(nameValid && descriptionValid);
+let computedRequired = $derived(!defaultValue.trim());
 
-let nameError = $state('');
-let descriptionError = $state('');
+const parseResult = $derived(
+  InputFieldSchema.safeParse({
+    name,
+    description,
+    format: type,
+    default: defaultValue.trim() || undefined,
+    required: computedRequired,
+  }),
+);
 
-function validateName(): void {
-  if (name.trim().length === 0) {
-    nameError = 'Field name is required';
-  } else if (!/^[a-z][a-z0-9_]*$/.test(name)) {
-    nameError = 'Name must start with lowercase letter and contain only lowercase letters, numbers, and underscores';
-  } else {
-    nameError = '';
-  }
-}
-
-function validateDescription(): void {
-  if (description.trim().length === 0) {
-    descriptionError = 'Description is required';
-  } else {
-    descriptionError = '';
-  }
-}
+const errors = $derived(!parseResult.success ? z.treeifyError(parseResult.error).properties : undefined);
 
 function handleSave(): void {
-  validateName();
-  validateDescription();
-
-  if (!formValid) return;
+  if (!parseResult.success) {
+    return;
+  }
 
   const trimmedDefaultValue = defaultValue.trim();
 
@@ -77,15 +64,14 @@ function handleSave(): void {
           bind:value={name}
           placeholder="repository_url"
           required
-          aria-invalid={nameError !== ''}
-          oninput={validateName}
+          aria-invalid={!!errors?.name?.errors.length}
         />
         <p class="text-xs opacity-70 mt-1">
           Use lowercase with underscores. This will be used as {`{{${name}}}`} in your prompt.
         </p>
-        {#if nameError}
-          <p class="text-xs text-[var(--pd-state-error)] mt-1">{nameError}</p>
-        {/if}
+        {#each errors?.name?.errors as error (error)}
+           <p class="text-xs text-[var(--pd-state-error)] mt-1">{error}</p>
+        {/each}
       </div>
 
       <!-- Description -->
@@ -99,12 +85,11 @@ function handleSave(): void {
           placeholder="GitHub repository URL (e.g., owner/repo)"
           class="bg-muted resize-none rounded-md"
           rows={2}
-          aria-invalid={descriptionError !== ''}
-          onblur={validateDescription}
+          aria-invalid={!!errors?.description?.errors.length}
         />
-        {#if descriptionError}
-          <p class="text-xs text-[var(--pd-state-error)] mt-1">{descriptionError}</p>
-        {/if}
+        {#each errors?.description?.errors as error (error)}
+           <p class="text-xs text-[var(--pd-state-error)] mt-1">{error}</p>
+        {/each}
       </div>
 
       <!-- Type -->
@@ -141,7 +126,6 @@ function handleSave(): void {
 
   {#snippet buttons()}
     <Button type="link" onclick={onCancel}>Cancel</Button>
-    <Button disabled={!formValid} onclick={handleSave}>Save</Button>
+    <Button disabled={!parseResult.success} onclick={handleSave}>Save</Button>
   {/snippet}
 </Dialog>
-

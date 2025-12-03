@@ -16,10 +16,21 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-export interface InputField {
-  name: string;
-  description: string;
-  format: string;
-  default?: string;
-  required: boolean;
-}
+import z from 'zod';
+
+export const InputFieldSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Field name is required')
+    .regex(
+      /^[a-z][a-z0-9_]*$/,
+      'Name must start with lowercase letter and contain only lowercase letters, numbers, and underscores',
+    ),
+  description: z.string().trim().min(1, 'Description is required'),
+  format: z.enum(['string']),
+  default: z.string().optional(),
+  required: z.boolean(),
+});
+
+export type InputField = z.output<typeof InputFieldSchema>;
