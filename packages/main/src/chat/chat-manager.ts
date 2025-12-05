@@ -31,10 +31,12 @@ import { inject } from 'inversify';
 
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { Directories } from '/@/plugin/directories.js';
-import {
+import type {
   FlowGenerationParameters,
-  FlowGenerationParametersSchema,
+  FlowParameter,
+  FlowParameterAIGenerated,
 } from '/@api/chat/flow-generation-parameters-schema.js';
+import { FlowGenerationParametersSchema } from '/@api/chat/flow-generation-parameters-schema.js';
 import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
 import type { MessageConfig } from '/@api/chat/message-config.js';
 import type { Chat, Message } from '/@api/chat/schema.js';
@@ -43,6 +45,7 @@ import { MCPManager } from '../plugin/mcp/mcp-manager.js';
 import { ProviderRegistry } from '../plugin/provider-registry.js';
 import { runMigrate } from './db/migrate.js';
 import { ChatQueries } from './db/queries.js';
+import { ParameterExtractor } from './parameter-extraction.js';
 
 export class ChatManager {
   private chatQueries!: ChatQueries;
@@ -277,10 +280,79 @@ export class ChatManager {
   }
 
   async generateFlowParams(params: InferenceParameters): Promise<FlowGenerationParameters> {
+    // Get inference components
+    const inferenceComponents = await this.getInferenceComponents(params);
+
+    // Extract parameters from MCP tool calls
+    const extractedParams = new ParameterExtractor().extractFromMCPToolCalls(params.messages);
+
+    // Build enhanced system prompt to guide parameter extraction
+    const parameterGuidance =
+      extractedParams.length > 0
+        ? `\n\nThe following parameters were detected from MCP tool calls and should be referenced in your prompt template:\n${JSON.stringify(extractedParams, null, 2)}`
+        : '';
+
     const result = await generateObject({
-      ...(await this.getInferenceComponents(params)),
+      ...inferenceComponents,
+      system: inferenceComponents.system + parameterGuidance,
       schema: FlowGenerationParametersSchema,
     });
-    return result.object;
+
+    const { name, description, prompt, parameters: aiParameters } = result.object;
+
+    // Extract parameter names from the prompt using regex
+    const parameterNamesInPrompt = this.extractParameterNamesFromPrompt(prompt);
+
+    // Filter AI-generated parameters to only include those that appear in the prompt
+    const filteredAiParameters = (aiParameters ?? []).filter(param => parameterNamesInPrompt.includes(param.name));
+
+    // Merge with extracted parameters (to get default values)
+    const mergedParameters = this.mergeParameters(extractedParams, filteredAiParameters);
+
+    return {
+      name,
+      description,
+      prompt,
+      parameters: mergedParameters,
+    };
+  }
+  /**
+   * Extract parameter names from a prompt template that uses {{parameterName}} syntax
+   */
+  private extractParameterNamesFromPrompt(prompt: string): string[] {
+    const regex = /\{\{(\w+)\}\}/g;
+    const matches = [...prompt.matchAll(regex)];
+    const paramNames = matches.map(match => match[1]).filter((name): name is string => name !== undefined);
+    return [...new Set(paramNames)];
+  }
+
+  private mergeParameters(
+    extracted: FlowParameterAIGenerated[],
+    aiGenerated: FlowParameterAIGenerated[],
+  ): FlowParameter[] {
+    // Deduplicate and merge parameters
+    const paramMap = new Map<string, FlowParameterAIGenerated>();
+
+    // Add AI-generated parameters (without 'required' field)
+    for (const param of aiGenerated) {
+      paramMap.set(param.name, param);
+    }
+
+    // Add default values from extracted parameters
+    for (const param of extracted) {
+      const existing = paramMap.get(param.name);
+      if (existing) {
+        paramMap.set(param.name, {
+          ...existing,
+          default: param.default ?? existing.default,
+        });
+      }
+    }
+
+    // Set required based on whether a default value exists
+    return Array.from(paramMap.values()).map(param => ({
+      ...param,
+      required: param.default === undefined || param.default === '',
+    }));
   }
 }
