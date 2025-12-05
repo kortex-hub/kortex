@@ -26,6 +26,8 @@ import { KubeTemplate } from './kube-template';
 test.each<KubeTemplateOptions & { testName: string }>([
   {
     testName: 'gemini',
+    job: { name: 'job-1' },
+    namespace: 'ns1',
     recipe: {
       flowId: 'demo-flow-id',
       name: 'echo',
@@ -44,7 +46,6 @@ instructions: |
     },
     provider: {
       name: 'google',
-      model: 'gemini-2.5-pro',
       credentials: {
         env: [{ key: 'GOOGLE_API_KEY', value: 'dummy' }],
       },

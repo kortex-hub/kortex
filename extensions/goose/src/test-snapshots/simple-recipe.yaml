@@ -1,11 +1,19 @@
 title: Echo
 name: echo
-description: 
+description: |
+    
 
 # Required for headless mode
-prompt: echo the user prompt
+prompt: |
+    echo the user prompt
 
 instructions: |
     echo the user prompt
 
 extensions:
+  []
+
+
+settings:
+  goose_provider: 
+  goose_model: 
