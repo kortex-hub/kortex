@@ -22,6 +22,6 @@ export interface InferenceParameters {
   providerId: string;
   connectionName: string;
   modelId: string;
-  mcp: string[];
+  tools: Record<string, Array<string>>;
   messages: UIMessage[];
 }
