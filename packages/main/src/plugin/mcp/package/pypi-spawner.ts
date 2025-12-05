@@ -35,14 +35,6 @@ export class PyPiSpawner extends MCPSpawner<'pypi'> {
       console.warn('specified file sha256 is not supported with pypi spawner');
     }
 
-    // Check if uvx is available
-    const hasUvx = await this.checkCommandExists(UVX_COMMAND);
-    if (!hasUvx) {
-      throw new Error(
-        'uvx is required to run PyPI MCP servers but was not found. Please install uv: https://docs.astral.sh/uv/getting-started/installation/',
-      );
-    }
-
     // Use uvx for automatic package installation and execution
     // Use package==version syntax if version is specified (Python convention)
     const packageSpec = this.pack.version ? `${this.pack.identifier}==${this.pack.version}` : this.pack.identifier;
@@ -63,26 +55,6 @@ export class PyPiSpawner extends MCPSpawner<'pypi'> {
       },
     });
     return transport;
-  }
-
-  private async checkCommandExists(command: string): Promise<boolean> {
-    const { spawn } = await import('node:child_process');
-    try {
-      await new Promise<void>((resolve, reject) => {
-        const child = spawn(command, ['--version'], { stdio: 'ignore' });
-        child.on('close', (code: number | null) => {
-          if (code === 0) {
-            resolve();
-          } else {
-            reject(new Error(`Command ${command} exited with code ${code}`));
-          }
-        });
-        child.on('error', reject);
-      });
-      return true;
-    } catch {
-      return false;
-    }
   }
 
   async asyncDispose(): Promise<void> {
