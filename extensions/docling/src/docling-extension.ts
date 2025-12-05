@@ -34,6 +34,7 @@ const DOCLING_PORT = 8000;
 const CONTAINER_NAME = 'docling-chunker';
 
 type DoclingContainerInfo = {
+  dockerode: Dockerode;
   containerId: string;
   port: number;
   workspaceFolder: string;
@@ -65,12 +66,13 @@ export class DoclingExtension {
             const doclingFolder = container.Labels?.['io.kortex.docling.folder'];
 
             if (doclingPort) {
-              console.log(`Found container: (with port ${doclingPort}, state: ${container.State}`);
-              if (container.Status !== 'running') {
+              console.log(`Found container: (with port ${doclingPort}, state: ${container.State})`);
+              if (container.State !== 'running') {
                 console.log('Container is not running, restarting...');
                 await endpoint.dockerode.getContainer(container.Id).start();
               }
               return {
+                dockerode: endpoint.dockerode,
                 containerId: container.Id,
                 port: parseInt(doclingPort, 10),
                 workspaceFolder: doclingFolder,
@@ -96,7 +98,7 @@ export class DoclingExtension {
 
     const dockerode = containerExtensionAPI.getEndpoints()[0]?.dockerode;
     if (dockerode === undefined) {
-      throw new Error('No container enigine endpoint found');
+      throw new Error('No container engine endpoint found');
     }
 
     // Get a random port for the container
@@ -119,6 +121,7 @@ export class DoclingExtension {
         },
         Image: DOCLING_IMAGE,
         HostConfig: {
+          AutoRemove: true,
           PortBindings: {
             [`${DOCLING_PORT}/tcp`]: [{ HostPort: `${containerPort}` }],
           },
@@ -130,13 +133,15 @@ export class DoclingExtension {
 
       // Wait for the service to be healthy
       let started = false;
-      while (!started) {
+      let retries = 0;
+      while (!started && retries++ < 10) {
         try {
           const response = await fetch(`http://localhost:${containerPort}/health`);
           if (response.ok) {
             console.log('Docling service is healthy');
             started = true;
             return {
+              dockerode,
               containerId: container.id,
               port: containerPort,
               workspaceFolder: workspaceDir,
@@ -222,22 +227,18 @@ export class DoclingExtension {
 
     try {
       // Stop the container
-      await api.process.exec('podman', ['stop', this.containerInfo.containerId]);
-      console.log('Container stopped');
-
-      // Remove the container
-      await api.process.exec('podman', ['rm', this.containerInfo.containerId]);
       console.log('Container removed');
-    } catch (err) {
-      console.error(`Failed to stop container: ${err}`);
+      await this.containerInfo.dockerode.getContainer(this.containerInfo.containerId).stop();
+    } catch (err: unknown) {
+      console.error(`Failed to stop container: ${err}`, err);
     }
 
     // Clean up temporary workspace
     try {
       await rm(this.containerInfo.workspaceFolder, { recursive: true, force: true });
       console.log('Temporary workspace cleaned up');
-    } catch (err) {
-      console.error(`Failed to clean up workspace: ${err}`);
+    } catch (err: unknown) {
+      console.error(`Failed to clean up workspace: ${err}`, err);
     }
 
     this.containerInfo = undefined;

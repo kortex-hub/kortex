@@ -54,6 +54,14 @@ async def convert_document(folder_name: str):
 
     folder_path = BASE_DIR / folder_name
 
+    # Prevent path traversal attacks
+    try:
+        folder_path = folder_path.resolve()
+        folder_path.relative_to(BASE_DIR.resolve())
+    except ValueError:
+        logger.error(f"Path traversal attempt detected: {folder_name}")
+        raise HTTPException(status_code=400, detail="Invalid folder name")
+
     if not folder_path.exists():
         logger.error(f"Folder not found: {folder_path}")
         raise HTTPException(status_code=404, detail=f"Folder not found: {folder_name}")

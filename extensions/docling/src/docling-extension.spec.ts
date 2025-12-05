@@ -470,7 +470,7 @@ describe('DoclingExtension', () => {
       vi.mocked(containerExtensionAPI.getEndpoints).mockReturnValue([]);
 
       await expect(doclingExtension.launchContainer(containerExtensionAPI)).rejects.toThrow(
-        'No container enigine endpoint found',
+        'No container engine endpoint found',
       );
     });
 

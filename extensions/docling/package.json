@@ -8,6 +8,9 @@
   "engines": {
     "kortex": "^0.0.1"
   },
+  "extensionDependencies": [
+    "kortex.container"
+  ],
   "main": "./dist/extension.js",
   "source": "./src/extension.ts",
   "scripts": {
