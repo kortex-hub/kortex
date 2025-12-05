@@ -210,7 +210,7 @@ jobs:
           IMAGE_NIGHTLY=${IMAGE_NAME}:${{ needs.tag.outputs.kortexVersion }}
           IMAGE_SHA=${IMAGE_NAME}:${GITHUB_SHA}
           podman build -t $IMAGE_NIGHTLY extensions/docling
-          podman push $IMAGE_NIGHTLY $IMAGE_SHA
+          podman push $IMAGE_NIGHTLY
           podman tag $IMAGE_NIGHTLY $IMAGE_SHA
           podman push $IMAGE_SHA
 
