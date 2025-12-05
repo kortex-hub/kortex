@@ -27,6 +27,7 @@ import type { SafeStorageRegistry } from '../safe-storage/safe-storage-registry.
 import type { Telemetry } from '../telemetry/telemetry.js';
 import type { MCPManager } from './mcp-manager.js';
 import { MCPRegistry } from './mcp-registry.js';
+import type { MCPSchemaValidator } from './mcp-schema-validator.js';
 
 const proxy: Proxy = {
   onDidStateChange: vi.fn(),
@@ -44,6 +45,10 @@ const apiSender: ApiSenderType = {
   receive: vi.fn(),
 };
 
+const schemaValidator: MCPSchemaValidator = {
+  validateSchemaData: vi.fn().mockReturnValue(true),
+};
+
 test('listMCPServersFromRegistries', async () => {
   const mcpRegistry = new MCPRegistry(
     apiSender,
@@ -53,6 +58,7 @@ test('listMCPServersFromRegistries', async () => {
     {} as MCPManager,
     {} as SafeStorageRegistry,
     configurationRegistry,
+    schemaValidator,
   );
 
   // add suggested registries that will be used to list MCP servers from
