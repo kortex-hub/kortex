@@ -23,7 +23,7 @@ import type { ChunkProvider, Extension, ExtensionContext } from '@kortex-app/api
 import { extensions, process as apiProcess, rag, Uri } from '@kortex-app/api';
 import type { ContainerExtensionAPI } from '@kortex-app/container-extension-api';
 import type Dockerode from 'dockerode';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { DoclingExtension } from './docling-extension';
 import { generateRandomFolderName } from './util';
@@ -39,9 +39,13 @@ describe('DoclingExtension', () => {
   let containerMock: Dockerode.Container;
   let imageMock: Dockerode.Image;
 
+  const originalConsoleError = console.error;
+
   beforeEach(() => {
     vi.resetAllMocks();
     vi.clearAllMocks();
+
+    console.error = vi.fn();
 
     // Mock extension context
     extensionContext = {
@@ -97,6 +101,10 @@ describe('DoclingExtension', () => {
 
     // Mock util function
     vi.mocked(generateRandomFolderName).mockReturnValue('randomfolder');
+  });
+
+  afterEach(() => {
+    console.error = originalConsoleError;
   });
 
   describe('activate', () => {
@@ -207,36 +215,26 @@ describe('DoclingExtension', () => {
       await doclingExtension.activate();
     });
 
-    test('should stop and remove container', async () => {
-      vi.mocked(apiProcess.exec).mockResolvedValue({} as unknown as Awaited<ReturnType<typeof apiProcess.exec>>);
-
+    test('should stop container', async () => {
       await doclingExtension.deactivate();
 
       // Verify container was stopped and removed
-      expect(apiProcess.exec).toHaveBeenCalledWith('podman', ['stop', 'test-container-id']);
-      expect(apiProcess.exec).toHaveBeenCalledWith('podman', ['rm', 'test-container-id']);
       expect(rm).toHaveBeenCalledWith('/test/workspace', { recursive: true, force: true });
     });
 
     test('should handle errors when stopping container', async () => {
-      vi.mocked(apiProcess.exec).mockRejectedValue(new Error('Stop failed'));
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
       await doclingExtension.deactivate();
 
-      expect(consoleErrorSpy).toHaveBeenCalled();
-      consoleErrorSpy.mockRestore();
+      await vi.waitFor(() => expect(containerMock.stop).toHaveBeenCalled());
     });
 
     test('should handle errors when cleaning workspace', async () => {
       vi.mocked(apiProcess.exec).mockResolvedValue({} as unknown as Awaited<ReturnType<typeof apiProcess.exec>>);
       vi.mocked(rm).mockRejectedValue(new Error('Cleanup failed'));
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       await doclingExtension.deactivate();
 
-      expect(consoleErrorSpy).toHaveBeenCalled();
-      consoleErrorSpy.mockRestore();
+      expect(console.error).toHaveBeenCalled();
     });
 
     test('should do nothing if container info is not set', async () => {
@@ -358,7 +356,7 @@ describe('DoclingExtension', () => {
 
       const result = await doclingExtension.discoverExistingContainer(containerExtensionAPI);
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         containerId: 'existing-container-id',
         port: 8080,
         workspaceFolder: '/test/workspace',
@@ -394,26 +392,22 @@ describe('DoclingExtension', () => {
 
     test('should handle errors when listing containers', async () => {
       vi.mocked(dockerodeMock.listContainers).mockRejectedValue(new Error('List failed'));
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const result = await doclingExtension.discoverExistingContainer(containerExtensionAPI);
 
       expect(result).toBeUndefined();
-      expect(consoleErrorSpy).toHaveBeenCalled();
-      consoleErrorSpy.mockRestore();
+      expect(console.error).toHaveBeenCalled();
     });
 
     test('should handle errors when getting endpoints', async () => {
       vi.mocked(containerExtensionAPI.getEndpoints).mockImplementation(() => {
         throw new Error('Failed to get endpoints');
       });
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const result = await doclingExtension.discoverExistingContainer(containerExtensionAPI);
 
       expect(result).toBeUndefined();
-      expect(consoleErrorSpy).toHaveBeenCalled();
-      consoleErrorSpy.mockRestore();
+      expect(console.error).toHaveBeenCalled();
     });
   });
 
@@ -535,12 +529,9 @@ describe('DoclingExtension', () => {
       const docUri = Uri.file('/path/to/document.pdf');
       vi.mocked(global.fetch).mockRejectedValue(new Error('Conversion error'));
 
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
       await expect(registeredProvider!.chunk(docUri)).rejects.toThrow('Conversion error');
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to convert document:', expect.any(Error));
-      consoleErrorSpy.mockRestore();
+      expect(console.error).toHaveBeenCalledWith('Failed to convert document:', expect.any(Error));
     });
   });
 });

@@ -84,7 +84,7 @@ export class DoclingExtension {
         }
       }
     } catch (err: unknown) {
-      console.error(`Failed to get endpoints: ${err}`);
+      console.error('Failed to get endpoints:', err);
       return undefined;
     }
   }
@@ -104,62 +104,58 @@ export class DoclingExtension {
     // Get a random port for the container
     const containerPort = this.getRandomPort();
 
-    try {
-      // Start the container
-      const isImageAvailable = await this.checkDoclingImage(dockerode);
-      if (!isImageAvailable) {
-        await this.pullDoclingImage(dockerode);
-      }
-      console.log(
-        `Starting Docling container with image ${DOCLING_IMAGE} on port ${containerPort} and workspace ${workspaceDir}`,
-      );
-      const container = await dockerode.createContainer({
-        name: CONTAINER_NAME,
-        Labels: {
-          'io.kortex.docling.port': `${containerPort}`,
-          'io.kortex.docling.folder': workspaceDir,
+    // Start the container
+    const isImageAvailable = await this.checkDoclingImage(dockerode);
+    if (!isImageAvailable) {
+      await this.pullDoclingImage(dockerode);
+    }
+    console.log(
+      `Starting Docling container with image ${DOCLING_IMAGE} on port ${containerPort} and workspace ${workspaceDir}`,
+    );
+    const container = await dockerode.createContainer({
+      name: CONTAINER_NAME,
+      Labels: {
+        'io.kortex.docling.port': `${containerPort}`,
+        'io.kortex.docling.folder': workspaceDir,
+      },
+      Image: DOCLING_IMAGE,
+      HostConfig: {
+        AutoRemove: true,
+        PortBindings: {
+          [`${DOCLING_PORT}/tcp`]: [{ HostPort: `${containerPort}` }],
         },
-        Image: DOCLING_IMAGE,
-        HostConfig: {
-          AutoRemove: true,
-          PortBindings: {
-            [`${DOCLING_PORT}/tcp`]: [{ HostPort: `${containerPort}` }],
-          },
-          Binds: [`${workspaceDir}:/workspace:Z`],
-        },
-      });
-      await container.start();
-      console.log(`Container started with ID: ${container.id}`);
+        Binds: [`${workspaceDir}:/workspace:Z`],
+      },
+    });
+    await container.start();
+    console.log(`Container started with ID: ${container.id}`);
 
-      // Wait for the service to be healthy
-      let started = false;
-      let retries = 0;
-      while (!started && retries++ < 10) {
-        try {
-          const response = await fetch(`http://localhost:${containerPort}/health`);
-          if (response.ok) {
-            console.log('Docling service is healthy');
-            started = true;
-            return {
-              dockerode,
-              containerId: container.id,
-              port: containerPort,
-              workspaceFolder: workspaceDir,
-            };
-          } else {
-            console.warn('Docling service health check returned non-OK status');
-          }
-        } catch (err) {
-          console.warn(`Health check failed: ${err}`, err);
-        } finally {
-          if (!started) {
-            // Wait a bit before retrying
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
+    // Wait for the service to be healthy
+    let started = false;
+    let retries = 0;
+    while (!started && retries++ < 10) {
+      try {
+        const response = await fetch(`http://localhost:${containerPort}/health`);
+        if (response.ok) {
+          console.log('Docling service is healthy');
+          started = true;
+          return {
+            dockerode,
+            containerId: container.id,
+            port: containerPort,
+            workspaceFolder: workspaceDir,
+          };
+        } else {
+          console.warn('Docling service health check returned non-OK status');
+        }
+      } catch (err) {
+        console.warn(`Health check failed: ${err}`);
+      } finally {
+        if (!started) {
+          // Wait a bit before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
-    } catch (err: unknown) {
-      throw new Error('Failed to start Docling container');
     }
     throw new Error('Failed to start Docling container');
   }
@@ -188,8 +184,8 @@ export class DoclingExtension {
       try {
         this.containerInfo = await this.launchContainer(containerExtensionAPI);
       } catch (err: unknown) {
-        console.error(`Failed to start container: ${err}`);
-        throw new Error(`Failed to start Docling container: ${err}`);
+        console.error('Failed to start container:', err);
+        throw err;
       }
     }
 
@@ -230,7 +226,7 @@ export class DoclingExtension {
       console.log('Container removed');
       await this.containerInfo.dockerode.getContainer(this.containerInfo.containerId).stop();
     } catch (err: unknown) {
-      console.error(`Failed to stop container: ${err}`, err);
+      console.error('Failed to stop container:', err);
     }
 
     // Clean up temporary workspace
@@ -238,7 +234,7 @@ export class DoclingExtension {
       await rm(this.containerInfo.workspaceFolder, { recursive: true, force: true });
       console.log('Temporary workspace cleaned up');
     } catch (err: unknown) {
-      console.error(`Failed to clean up workspace: ${err}`, err);
+      console.error('Failed to clean up workspace:', err);
     }
 
     this.containerInfo = undefined;
