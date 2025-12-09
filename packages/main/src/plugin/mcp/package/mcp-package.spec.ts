@@ -16,11 +16,32 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { MCPPackage } from './mcp-package.js';
+import { NPMSpawner } from './npm-spawner.js';
+import { PyPiSpawner } from './pypi-spawner.js';
+
+// Mock the spawner classes
+vi.mock('./npm-spawner.js', () => ({
+  NPMSpawner: vi.fn().mockImplementation(() => ({
+    spawn: vi.fn(),
+    asyncDispose: vi.fn(),
+  })),
+}));
+
+vi.mock('./pypi-spawner.js', () => ({
+  PyPiSpawner: vi.fn().mockImplementation(() => ({
+    spawn: vi.fn(),
+    asyncDispose: vi.fn(),
+  })),
+}));
 
 describe('MCPPackage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   test('should create NPMSpawner for npm registry type', () => {
     const pack = {
       identifier: 'test-package',
@@ -29,7 +50,10 @@ describe('MCPPackage', () => {
     };
 
     const mcpPackage = new MCPPackage(pack);
+
     expect(mcpPackage).toBeDefined();
+    expect(NPMSpawner).toHaveBeenCalledWith(pack);
+    expect(PyPiSpawner).not.toHaveBeenCalled();
   });
 
   test('should create PyPiSpawner for pypi registry type', () => {
@@ -40,7 +64,10 @@ describe('MCPPackage', () => {
     };
 
     const mcpPackage = new MCPPackage(pack);
+
     expect(mcpPackage).toBeDefined();
+    expect(PyPiSpawner).toHaveBeenCalledWith(pack);
+    expect(NPMSpawner).not.toHaveBeenCalled();
   });
 
   test('should throw error for unsupported registry type', () => {
