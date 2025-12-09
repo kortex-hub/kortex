@@ -17,7 +17,8 @@
  ***********************************************************************/
 
 import { randomInt } from 'node:crypto';
-import { copyFile, mkdir, rm } from 'node:fs/promises';
+import { openAsBlob } from 'node:fs';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 
 import * as api from '@kortex-app/api';
@@ -26,22 +27,19 @@ import type { ContainerExtensionAPI } from '@kortex-app/container-extension-api'
 // eslint-disable-next-line import/no-extraneous-dependencies
 import type Dockerode from 'dockerode';
 
-import rootPackage from '../package.json' with { type: 'json' };
-import { generateRandomFolderName } from './util';
-
-const DOCLING_IMAGE = `ghcr.io/kortex-hub/kortex-docling:${rootPackage.version}`;
-const DOCLING_PORT = 8000;
+const DOCLING_IMAGE = `quay.io/docling-project/docling-serve:v1.9.0`;
+const DOCLING_PORT = 5001;
 const CONTAINER_NAME = 'docling-chunker';
 
 type DoclingContainerInfo = {
   dockerode: Dockerode;
   containerId: string;
   port: number;
-  workspaceFolder: string;
 };
 
 export class DoclingExtension {
   private containerInfo: DoclingContainerInfo | undefined = undefined;
+  private processedDocuments: number = 0;
 
   constructor(private extensionContext: api.ExtensionContext) {}
 
@@ -63,9 +61,8 @@ export class DoclingExtension {
           const containers = await endpoint.dockerode.listContainers({ all: true });
           for (const container of containers) {
             const doclingPort = container.Labels?.['io.kortex.docling.port'];
-            const doclingFolder = container.Labels?.['io.kortex.docling.folder'];
 
-            if (doclingPort) {
+            if (doclingPort !== undefined) {
               console.log(`Found container: (with port ${doclingPort}, state: ${container.State})`);
               if (container.State !== 'running') {
                 console.log('Container is not running, restarting...');
@@ -75,7 +72,6 @@ export class DoclingExtension {
                 dockerode: endpoint.dockerode,
                 containerId: container.Id,
                 port: parseInt(doclingPort, 10),
-                workspaceFolder: doclingFolder,
               };
             }
           }
@@ -91,10 +87,6 @@ export class DoclingExtension {
 
   async launchContainer(containerExtensionAPI: ContainerExtensionAPI): Promise<DoclingContainerInfo> {
     console.log('Launching Docling container...');
-    // Ensure the workspace directory exists
-    const workspaceDir = join(this.extensionContext.storagePath, 'docling-workspace');
-    await mkdir(workspaceDir, { recursive: true });
-    console.log(`Created workspace: ${workspaceDir}`);
 
     const dockerode = containerExtensionAPI.getEndpoints()[0]?.dockerode;
     if (dockerode === undefined) {
@@ -109,14 +101,11 @@ export class DoclingExtension {
     if (!isImageAvailable) {
       await this.pullDoclingImage(dockerode);
     }
-    console.log(
-      `Starting Docling container with image ${DOCLING_IMAGE} on port ${containerPort} and workspace ${workspaceDir}`,
-    );
+    console.log(`Starting Docling container with image ${DOCLING_IMAGE} on port ${containerPort}`);
     const container = await dockerode.createContainer({
       name: CONTAINER_NAME,
       Labels: {
         'io.kortex.docling.port': `${containerPort}`,
-        'io.kortex.docling.folder': workspaceDir,
       },
       Image: DOCLING_IMAGE,
       HostConfig: {
@@ -124,7 +113,6 @@ export class DoclingExtension {
         PortBindings: {
           [`${DOCLING_PORT}/tcp`]: [{ HostPort: `${containerPort}` }],
         },
-        Binds: [`${workspaceDir}:/workspace:Z`],
       },
     });
     await container.start();
@@ -133,7 +121,7 @@ export class DoclingExtension {
     // Wait for the service to be healthy
     let started = false;
     let retries = 0;
-    while (!started && retries++ < 10) {
+    while (!started && retries++ < 20) {
       try {
         const response = await fetch(`http://localhost:${containerPort}/health`);
         if (response.ok) {
@@ -143,7 +131,6 @@ export class DoclingExtension {
             dockerode,
             containerId: container.id,
             port: containerPort,
-            workspaceFolder: workspaceDir,
           };
         } else {
           console.warn('Docling service health check returned non-OK status');
@@ -165,6 +152,9 @@ export class DoclingExtension {
    */
   async activate(): Promise<void> {
     console.log('Starting Docling container...');
+
+    const workspaceFolder = join(this.extensionContext.storagePath, 'docling-workspace');
+    await mkdir(workspaceFolder, { recursive: true });
 
     const KORTEX_CONTAINER_EXTENSION_ID = 'kortex.container';
     const containerExtension = api.extensions.getExtension<ContainerExtensionAPI>(KORTEX_CONTAINER_EXTENSION_ID);
@@ -229,12 +219,10 @@ export class DoclingExtension {
       console.error('Failed to stop container:', err);
     }
 
-    // Clean up temporary workspace
     try {
-      await rm(this.containerInfo.workspaceFolder, { recursive: true, force: true });
-      console.log('Temporary workspace cleaned up');
+      await rm(join(this.extensionContext.storagePath, 'docling-workspace'), { recursive: true, force: true });
     } catch (err: unknown) {
-      console.error('Failed to clean up workspace:', err);
+      console.error('Failed to remove workspace folder:', err);
     }
 
     this.containerInfo = undefined;
@@ -248,56 +236,43 @@ export class DoclingExtension {
       throw new Error('Docling container is not running');
     }
 
-    // Create a unique folder for this document
-    const folderName = `doc-${Date.now()}-${generateRandomFolderName(10)}`;
-    const folderPath = join(this.containerInfo.workspaceFolder, folderName);
-    await mkdir(folderPath, { recursive: true });
+    // Copy the document to the folder
+    const docPath = docUri.fsPath;
+    const docFileName = basename(docPath);
 
-    try {
-      // Copy the document to the folder
-      const docPath = docUri.fsPath;
-      const docFileName = basename(docPath);
-      const destPath = join(folderPath, docFileName);
-      await copyFile(docPath, destPath);
+    const data = new FormData();
+    const blob = await openAsBlob(docPath);
+    data.set('files', blob, docFileName);
+    // Send conversion request to the service
+    const response = await fetch(`http://localhost:${this.containerInfo.port}/v1/chunk/hierarchical/file`, {
+      method: 'POST',
+      body: data,
+    });
 
-      // Send conversion request to the service
-      const response = await fetch(
-        `http://localhost:${this.containerInfo.port}/convert?folder_name=${encodeURIComponent(folderName)}`,
-        {
-          method: 'GET',
-        },
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Conversion failed: ${response.status} ${errorText}`);
-      }
-
-      const result = (await response.json()) as {
-        success: boolean;
-        chunk_count: number;
-        error: string | null;
-      };
-
-      if (!result.success) {
-        throw new Error(`Conversion failed: ${result.error}`);
-      }
-
-      // Read the chunk files
-      const chunks: api.Chunk[] = [];
-      for (let i = 0; i < result.chunk_count; i++) {
-        const chunkPath = join(folderPath, `chunk${i}.txt`);
-        chunks.push({
-          text: Uri.file(chunkPath),
-        });
-      }
-
-      return chunks;
-    } catch (err: unknown) {
-      // Clean up the document folder
-      await rm(folderPath, { recursive: true, force: true }).catch(() => {});
-      throw err;
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`Conversion failed: ${response.status} ${error}`);
     }
+
+    const res = await response.json();
+    console.log(res);
+
+    // Read the chunk files
+    const chunks: api.Chunk[] = [];
+    const documentNumber = this.processedDocuments++;
+    for (let i = 0; i < res.chunks.length; i++) {
+      const chunkPath = join(
+        this.extensionContext.storagePath,
+        'docling-workspace',
+        `doc${documentNumber}-chunk${i}.txt`,
+      );
+      await writeFile(chunkPath, res.chunks[i].text, 'utf-8');
+      chunks.push({
+        text: Uri.file(chunkPath),
+      });
+    }
+
+    return chunks;
   }
 
   private async checkDoclingImage(dockerode: Dockerode): Promise<boolean> {
