@@ -461,7 +461,7 @@ export class MCPRegistry {
   }
 
   protected setupRemote(
-    remote: components['schemas']['Remote'] | undefined,
+    remote: components['schemas']['StreamableHttpTransport'] | components['schemas']['SseTransport'] | undefined,
     headers: Record<string, string>,
   ): Transport {
     if (!remote) throw new Error('remote not found');

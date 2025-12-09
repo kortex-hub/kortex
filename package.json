@@ -79,7 +79,7 @@
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.33.0",
     "@kortex-app/api": "workspace:",
-    "@kortex-hub/mcp-registry-types": "^1.2.3",
+    "@kortex-hub/mcp-registry-types": "^1.4.0-next.20251210140818.04eeb13",
     "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.1",
