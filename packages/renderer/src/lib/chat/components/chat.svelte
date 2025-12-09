@@ -51,6 +51,8 @@ let selectedMCP = $state<MCPRemoteServerInfo[]>(
 
 const chatHistory = ChatHistory.fromContext();
 
+let totalTokens = $state(messages.reduce((sum, msg) => sum + (msg.tokens ?? 0), 0));
+
 const chatClient = $derived(
   new Chat({
     id: chat?.id,
@@ -62,6 +64,9 @@ const chatClient = $derived(
       },
       getMCP: (): Array<string> => {
         return selectedMCP.map(m => m.id);
+      },
+      onEnd: (tokens: number): void => {
+        totalTokens += tokens;
       },
     }),
     // This way, the client is only recreated when the ID changes, allowing us to fully manage messages
@@ -101,12 +106,10 @@ const hasModels = $derived(models && models.length > 0);
 </script>
 
 <div class="bg-background flex h-full min-w-0 flex-col">
-  {#if hasModels}
-	  <ChatHeader bind:mcpSelectorOpen={mcpSelectorOpen} {readonly} models={models} bind:selectedModel={selectedModel} bind:selectedMCP={selectedMCP} />
-  {/if}
   <div class="flex min-h-0 flex-1">
         {#if hasModels}
-            <div class="flex flex-col flex-3/4"> 
+            <div class="flex flex-col flex-3/4">
+              <ChatHeader bind:mcpSelectorOpen={mcpSelectorOpen} {readonly} models={models} bind:selectedModel={selectedModel} bind:selectedMCP={selectedMCP} tokens={totalTokens}/>
                 <Messages
                     {readonly}
                     loading={chatClient.status === 'streaming' || chatClient.status === 'submitted'}

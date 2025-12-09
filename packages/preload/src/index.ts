@@ -1237,7 +1237,7 @@ export function initExposure(): void {
   let onDataCallbacksStreamTextId = 0;
   const onDataCallbacksStreamText = new Map<
     number,
-    { onChunk: (chunk: UIMessageChunk) => void; onError: (error: string) => void; onEnd: () => void }
+    { onChunk: (chunk: UIMessageChunk) => void; onError: (error: string) => void; onEnd: (tokens: number) => void }
   >();
   contextBridge.exposeInMainWorld(
     'inferenceStreamText',
@@ -1245,7 +1245,7 @@ export function initExposure(): void {
       params: InferenceParameters & { chatId: string },
       onChunk: (data: UIMessageChunk) => void,
       onError: (error: string) => void,
-      onEnd: () => void,
+      onEnd: (tokens: number) => void,
     ): Promise<number> => {
       onDataCallbacksStreamTextId++;
       onDataCallbacksStreamText.set(onDataCallbacksStreamTextId, { onChunk, onError, onEnd });
@@ -1268,11 +1268,11 @@ export function initExposure(): void {
     }
   });
 
-  ipcRenderer.on('inference:streamText-onEnd', (_, callbackId: number) => {
+  ipcRenderer.on('inference:streamText-onEnd', (_, callbackId: number, tokens: number) => {
     // grab callback from the map
     const callback = onDataCallbacksStreamText.get(callbackId);
     if (callback) {
-      callback.onEnd();
+      callback.onEnd(tokens);
       // remove callback from the map
       onDataCallbacksStreamText.delete(callbackId);
     }
