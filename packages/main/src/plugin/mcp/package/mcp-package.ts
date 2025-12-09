@@ -41,7 +41,7 @@ export class MCPPackage implements IAsyncDisposable {
       case 'pypi':
         this.#spawner = new PyPiSpawner({
           ...rest,
-          registryType: registryType,
+          registryType,
         });
         break;
       default:
