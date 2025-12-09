@@ -15,18 +15,26 @@ interface Props {
 }
 
 let { object }: Props = $props();
+
+function handleEdit(): void {
+  object.onEdit(object.index, object);
+}
+
+function handleDelete(): void {
+  object.onDelete(object.index, object);
+}
 </script>
 
 <div class="flex justify-end gap-1">
   <ListItemButtonIcon
     title="Edit parameter"
     icon={faEdit}
-    onClick={(): void => object.onEdit(object.index, object)}
+    onClick={handleEdit}
   />
   <ListItemButtonIcon
     title="Delete parameter"
     icon={faTrash}
-    onClick={(): void => object.onDelete(object.index, object)}
+    onClick={handleDelete}
   />
 </div>
 

@@ -84,6 +84,6 @@ const row = new TableRow<ParameterWithCallbacks>({});
   />
 {:else}
   <div class="w-full text-center py-8">
-    No input fields defined yet. Click "Add Input Field" to create one.
+    No input fields defined yet. Click "Add Field" to create one.
   </div>
 {/if}

@@ -20,6 +20,17 @@ let description = $state(field?.description ?? '');
 let type = $state(field?.format ?? 'string');
 let defaultValue = $state(field?.default ?? '');
 
+let nameFieldTouched = $state(false);
+let descriptionFieldTouched = $state(false);
+
+function handleTouchedNameInput(): void {
+  nameFieldTouched = true;
+}
+
+function handleTouchedDescriptionInput(): void {
+  descriptionFieldTouched = true;
+}
+
 let computedRequired = $derived(!defaultValue.trim());
 
 const parseResult = $derived(
@@ -62,16 +73,19 @@ function handleSave(): void {
         <Input
           id="field-name"
           bind:value={name}
-          placeholder="repository_url"
+          placeholder="parameter name (e.g., repository_url)"
           required
-          aria-invalid={!!errors?.name?.errors.length}
+          aria-invalid={nameFieldTouched && !!errors?.name?.errors.length}
+          oninput={handleTouchedNameInput}
         />
         <p class="text-xs opacity-70 mt-1">
           Use lowercase with underscores. This will be used as {`{{${name}}}`} in your prompt.
         </p>
-        {#each errors?.name?.errors as error (error)}
-           <p class="text-xs text-[var(--pd-state-error)] mt-1">{error}</p>
-        {/each}
+        {#if nameFieldTouched}
+            {#each errors?.name?.errors ?? [] as error (error)}
+               <p class="text-xs text-[var(--pd-state-error)] mt-1">{error}</p>
+            {/each}
+        {/if}
       </div>
 
       <!-- Description -->
@@ -82,14 +96,17 @@ function handleSave(): void {
         <Textarea
           id="field-description"
           bind:value={description}
-          placeholder="GitHub repository URL (e.g., owner/repo)"
+          placeholder="parameter description (e.g., GitHub repository URL)"
           class="bg-muted resize-none rounded-md"
           rows={2}
-          aria-invalid={!!errors?.description?.errors.length}
+          aria-invalid={descriptionFieldTouched && !!errors?.description?.errors.length}
+          oninput={handleTouchedDescriptionInput}
         />
-        {#each errors?.description?.errors as error (error)}
-           <p class="text-xs text-[var(--pd-state-error)] mt-1">{error}</p>
-        {/each}
+        {#if descriptionFieldTouched}
+          {#each errors?.description?.errors ?? [] as error (error)}
+             <p class="text-xs text-[var(--pd-state-error)] mt-1">{error}</p>
+          {/each}
+        {/if}
       </div>
 
       <!-- Type -->
@@ -106,8 +123,6 @@ function handleSave(): void {
             <span class="text-xl">T</span>
             <span class="text-xs">Text</span>
           </button>
-          
-          <!-- Future types: Number, Boolean, Enum - uncomment when ready -->
         </div>
       </div>
 
