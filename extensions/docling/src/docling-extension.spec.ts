@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { openAsBlob } from 'node:fs';
 import { copyFile, mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -28,6 +29,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { DoclingExtension } from './docling-extension';
 import { generateRandomFolderName } from './util';
 
+vi.mock(import('node:fs'));
 vi.mock(import('node:fs/promises'));
 vi.mock(import('./util'));
 
@@ -115,7 +117,6 @@ describe('DoclingExtension', () => {
           Id: 'existing-container-id',
           Labels: {
             'io.kortex.docling.port': '8080',
-            'io.kortex.docling.folder': '/test/workspace',
           },
           Status: 'running',
           State: 'running',
@@ -172,7 +173,7 @@ describe('DoclingExtension', () => {
       // Mock container creation failure
       vi.mocked(dockerodeMock.createContainer).mockRejectedValue(new Error('Container creation failed'));
 
-      await expect(doclingExtension.activate()).rejects.toThrow('Failed to start Docling container');
+      await expect(doclingExtension.activate()).rejects.toThrow('Container creation failed');
     });
 
     test('should restart stopped container', async () => {
@@ -219,7 +220,7 @@ describe('DoclingExtension', () => {
       await doclingExtension.deactivate();
 
       // Verify container was stopped and removed
-      expect(rm).toHaveBeenCalledWith('/test/workspace', { recursive: true, force: true });
+      expect(containerMock.stop).toHaveBeenCalled();
     });
 
     test('should handle errors when stopping container', async () => {
@@ -229,7 +230,6 @@ describe('DoclingExtension', () => {
     });
 
     test('should handle errors when cleaning workspace', async () => {
-      vi.mocked(apiProcess.exec).mockResolvedValue({} as unknown as Awaited<ReturnType<typeof apiProcess.exec>>);
       vi.mocked(rm).mockRejectedValue(new Error('Cleanup failed'));
 
       await doclingExtension.deactivate();
@@ -260,6 +260,7 @@ describe('DoclingExtension', () => {
           State: 'running',
         },
       ] as unknown as Dockerode.ContainerInfo[]);
+      vi.mocked(openAsBlob).mockResolvedValue(new Blob(['data']));
 
       await doclingExtension.activate();
     });
@@ -272,17 +273,13 @@ describe('DoclingExtension', () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: vi.fn().mockResolvedValue({
-          success: true,
-          chunk_count: 3,
-          error: null,
+          chunks: [{ text: 'first chunk' }, { text: 'second chunk' }, { text: 'third chunk' }],
         }),
       } as unknown as Response);
 
       const chunks = await doclingExtension.convertDocument(docUri);
 
       expect(chunks).toHaveLength(3);
-      expect(mkdir).toHaveBeenCalled();
-      expect(copyFile).toHaveBeenCalled();
       expect(global.fetch).toHaveBeenCalled();
     });
 
@@ -301,42 +298,10 @@ describe('DoclingExtension', () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: false,
         status: 500,
-        text: vi.fn().mockResolvedValue('Internal server error'),
+        json: vi.fn().mockResolvedValue('Internal server error'),
       } as unknown as Response);
 
       await expect(doclingExtension.convertDocument(docUri)).rejects.toThrow('Conversion failed');
-    });
-
-    test('should throw error if conversion result indicates failure', async () => {
-      vi.mocked(Uri.file).mockReturnValue({ fsPath: '/path/to/document.pdf' } as unknown as Uri);
-      const docUri = Uri.file('/path/to/document.pdf');
-
-      // Mock fetch response with failure result
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: vi.fn().mockResolvedValue({
-          success: false,
-          chunk_count: 0,
-          error: 'Document parsing failed',
-        }),
-      } as unknown as Response);
-
-      await expect(doclingExtension.convertDocument(docUri)).rejects.toThrow(
-        'Conversion failed: Document parsing failed',
-      );
-    });
-
-    test('should clean up folder on error', async () => {
-      vi.mocked(Uri.file).mockReturnValue({ fsPath: '/path/to/document.pdf' } as unknown as Uri);
-      const docUri = Uri.file('/path/to/document.pdf');
-
-      // Mock fetch to throw error
-      vi.mocked(global.fetch).mockRejectedValue(new Error('Network error'));
-
-      await expect(doclingExtension.convertDocument(docUri)).rejects.toThrow('Network error');
-
-      // Verify cleanup was attempted (rm was called)
-      expect(rm).toHaveBeenCalled();
     });
   });
 
@@ -347,7 +312,6 @@ describe('DoclingExtension', () => {
           Id: 'existing-container-id',
           Labels: {
             'io.kortex.docling.port': '8080',
-            'io.kortex.docling.folder': '/test/workspace',
           },
           Status: 'running',
           State: 'running',
@@ -359,7 +323,6 @@ describe('DoclingExtension', () => {
       expect(result).toMatchObject({
         containerId: 'existing-container-id',
         port: 8080,
-        workspaceFolder: '/test/workspace',
       });
     });
 
@@ -420,7 +383,6 @@ describe('DoclingExtension', () => {
 
       const result = await doclingExtension.launchContainer(containerExtensionAPI);
 
-      expect(mkdir).toHaveBeenCalledWith(join('/test', 'storage', 'docling-workspace'), { recursive: true });
       expect(imageMock.inspect).toHaveBeenCalled();
       expect(dockerodeMock.createContainer).toHaveBeenCalled();
       expect(containerMock.start).toHaveBeenCalled();
@@ -471,9 +433,7 @@ describe('DoclingExtension', () => {
     test('should throw error when container creation fails', async () => {
       vi.mocked(dockerodeMock.createContainer).mockRejectedValue(new Error('Creation failed'));
 
-      await expect(doclingExtension.launchContainer(containerExtensionAPI)).rejects.toThrow(
-        'Failed to start Docling container',
-      );
+      await expect(doclingExtension.launchContainer(containerExtensionAPI)).rejects.toThrow('Creation failed');
     });
   });
 
@@ -490,7 +450,6 @@ describe('DoclingExtension', () => {
           Id: 'test-container-id',
           Labels: {
             'io.kortex.docling.port': '8080',
-            'io.kortex.docling.folder': '/test/workspace',
           },
           Status: 'running',
           State: 'running',
@@ -517,12 +476,12 @@ describe('DoclingExtension', () => {
           Id: 'test-container-id',
           Labels: {
             'io.kortex.docling.port': '8080',
-            'io.kortex.docling.folder': '/test/workspace',
           },
           Status: 'running',
           State: 'running',
         },
       ] as unknown as Dockerode.ContainerInfo[]);
+      vi.mocked(openAsBlob).mockResolvedValue(new Blob(['data']));
 
       await doclingExtension.activate();
 
