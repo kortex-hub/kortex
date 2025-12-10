@@ -38,7 +38,7 @@ const parseResult = $derived(
     name,
     description,
     format: type,
-    default: defaultValue.trim() || undefined,
+    default: defaultValue || undefined,
     required: computedRequired,
   }),
 );
@@ -49,16 +49,7 @@ function handleSave(): void {
   if (!parseResult.success) {
     return;
   }
-
-  const trimmedDefaultValue = defaultValue.trim();
-
-  onSave({
-    name: name.trim(),
-    description: description.trim(),
-    format: type,
-    default: trimmedDefaultValue || undefined,
-    required: !trimmedDefaultValue, // Required if no default value
-  });
+  onSave(parseResult.data);
 }
 </script>
 

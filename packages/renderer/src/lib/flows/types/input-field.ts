@@ -29,7 +29,7 @@ export const InputFieldSchema = z.object({
     ),
   description: z.string().trim().min(1, 'Description is required'),
   format: z.enum(['string']),
-  default: z.string().optional(),
+  default: z.string().trim().optional(),
   required: z.boolean(),
 });
 
