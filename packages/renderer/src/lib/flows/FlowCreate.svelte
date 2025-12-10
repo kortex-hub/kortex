@@ -46,7 +46,9 @@ let name: string = $state(flowCreationData.value?.name ?? `flow-${generateWords(
 let description: string = $state(flowCreationData.value?.description ?? '');
 let instruction: string = $state('You are a helpful assistant.');
 let prompt: string = $state(flowCreationData.value?.prompt ?? '');
+let parameters = $state(flowCreationData.value?.parameters ?? []); // Preserve extracted parameters
 let flowProviderConnectionKey: string | undefined = $state<string>();
+
 flowCreationData.value = undefined;
 
 let showFlowConnectionSelector = $state(true);
@@ -82,6 +84,7 @@ const formValidContent = $derived(
         mcp: $state.snapshot(selectedMCP),
         prompt: validatedInput.data.prompt,
         instruction,
+        parameters: $state.snapshot(parameters), // Snapshot for IPC serialization
       }
     : undefined,
 );
