@@ -14,19 +14,16 @@ interface Props {
 let { parameters, onEdit, onDelete }: Props = $props();
 
 // Create data type that includes callbacks
-interface ParameterWithCallbacks extends InputField {
-  index: number;
-  onEdit: (index: number, field: InputField) => void;
-  onDelete: (index: number, field: InputField) => void;
+export interface ParameterWithCallbacks extends InputField {
+  onEdit: () => void;
+  onDelete: () => void;
 }
 
-// Add index and callbacks to each parameter for the table
 const parametersWithCallbacks = $derived<ParameterWithCallbacks[]>(
   parameters.map((param, index) => ({
     ...param,
-    index,
-    onEdit,
-    onDelete,
+    onEdit: (): void => onEdit(index, param),
+    onDelete: (): void => onDelete(index, param),
   })),
 );
 
