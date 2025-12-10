@@ -1,6 +1,6 @@
 {
   "name": "ramalama",
-  "displayName": "RamaLama Extension",
+  "displayName": "RamaLama",
   "description": "Register RamaLama models to Kortex.",
   "version": "0.0.1-next",
   "icon": "icon.png",
