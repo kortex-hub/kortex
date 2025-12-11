@@ -18,6 +18,8 @@
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
+import { injectable } from 'inversify';
+
 const ETCD_CONTENT = `
 listen-client-urls: http://0.0.0.0:2379
 advertise-client-urls: http://0.0.0.0:2379
@@ -25,12 +27,13 @@ quota-backend-bytes: 4294967296
 auto-compaction-mode: revision
 auto-compaction-retention: '1000'`;
 
-export async function createConfigFile(
-  storagePath: string,
-): Promise<{ etcdConfigFile: string; userConfigFile: string }> {
-  const etcdConfigFile = join(storagePath, 'embedEtcd.yaml');
-  const userConfigFile = join(storagePath, 'user.yaml');
-  await writeFile(etcdConfigFile, ETCD_CONTENT);
-  await writeFile(userConfigFile, '');
-  return { etcdConfigFile, userConfigFile };
+@injectable()
+export class ConfigHelper {
+  async createConfigFile(storagePath: string): Promise<{ etcdConfigFile: string; userConfigFile: string }> {
+    const etcdConfigFile = join(storagePath, 'embedEtcd.yaml');
+    const userConfigFile = join(storagePath, 'user.yaml');
+    await writeFile(etcdConfigFile, ETCD_CONTENT);
+    await writeFile(userConfigFile, '');
+    return { etcdConfigFile, userConfigFile };
+  }
 }

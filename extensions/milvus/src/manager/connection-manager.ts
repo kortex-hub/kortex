@@ -33,7 +33,7 @@ import { ContainerExtensionAPI } from '@kortex-app/container-extension-api';
 import Dockerode from 'dockerode';
 import { inject, injectable } from 'inversify';
 
-import { createConfigFile } from '/@/util/config';
+import { ConfigHelper } from '/@/util/config';
 
 import { MilvusConnection } from '../api/milvus-connection';
 import { MilvusContainer } from '../api/milvus-container';
@@ -61,6 +61,9 @@ export class ConnectionManager implements Disposable {
 
   @inject(MilvusProvider)
   private milvusProvider!: Provider;
+
+  @inject(ConfigHelper)
+  private configHelper!: ConfigHelper;
 
   #connections: Map<string, ConnectionEntry> = new Map();
 
@@ -209,6 +212,7 @@ export class ConnectionManager implements Disposable {
       dockerode.modem.followProgress(stream, onFinished, (): void => {});
     } catch (err: unknown) {
       console.error(`Failed to pull Milvus image ${MILVUS_IMAGE}: ${err}`);
+      promise.reject(err);
     }
     return promise.promise;
   }
@@ -229,7 +233,7 @@ export class ConnectionManager implements Disposable {
 
     // Ensure storage directory exists
     await mkdir(storagePath, { recursive: true });
-    const { etcdConfigFile, userConfigFile } = await createConfigFile(storagePath);
+    const { etcdConfigFile, userConfigFile } = await this.configHelper.createConfigFile(storagePath);
     const containerName = `milvus-${name}`;
 
     logger?.log('Using podman CLI to create container...');
