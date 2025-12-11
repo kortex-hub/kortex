@@ -202,6 +202,7 @@ export class MilvusConnection implements api.RagProviderConnection {
       }
     } catch (err: unknown) {
       console.error('Error indexing document:', err);
+      throw err;
     }
   }
 

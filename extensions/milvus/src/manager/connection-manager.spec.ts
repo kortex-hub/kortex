@@ -29,7 +29,7 @@ import Dockerode from 'dockerode';
 import { Container } from 'inversify';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { createConfigFile } from '/@/util/config';
+import { ConfigHelper } from '/@/util/config';
 
 import { MilvusConnection } from '../api/milvus-connection';
 import { ContainerExtensionAPISymbol, ExtensionContextSymbol, MilvusProvider } from '../inject/symbol';
@@ -65,12 +65,11 @@ const extensionContextMock = {
 
 beforeEach(async () => {
   vi.resetAllMocks();
-  vi.clearAllMocks();
 
   vi.mocked(mkdir).mockResolvedValue(undefined);
   vi.mocked(rm).mockResolvedValue(undefined);
 
-  vi.mocked(createConfigFile).mockResolvedValue({
+  vi.mocked(ConfigHelper.prototype.createConfigFile).mockResolvedValue({
     etcdConfigFile: '/path/to/etcd.yaml',
     userConfigFile: '/path/to/user.yaml',
   });
@@ -114,6 +113,7 @@ beforeEach(async () => {
   container.bind(ExtensionContextSymbol).toConstantValue(extensionContextMock);
   container.bind(ContainerExtensionAPISymbol).toConstantValue(containerExtensionAPIMock);
   container.bind(MilvusProvider).toConstantValue(milvusProviderMock);
+  container.bind(ConfigHelper).toSelf();
 
   connectionManager = await container.getAsync<ConnectionManager>(ConnectionManager);
 });
@@ -228,7 +228,6 @@ describe('ConnectionManager', () => {
     expect(containerMock.remove).toHaveBeenCalled();
     expect(disposableMock.dispose).toHaveBeenCalled();
 
-    const { rm } = await import('node:fs/promises');
     expect(rm).toHaveBeenCalledWith(join('/test', 'storage', 'test-milvus'), { recursive: true, force: true });
   });
 

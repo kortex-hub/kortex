@@ -22,6 +22,7 @@ import { Container } from 'inversify';
 
 import { ContainerExtensionAPISymbol, ExtensionContextSymbol, MilvusProvider } from '/@/inject/symbol';
 import { managersModule } from '/@/manager/_manager-module';
+import { ConfigHelper } from '/@/util/config';
 
 export class InversifyBinding {
   #container: Container | undefined;
@@ -46,6 +47,7 @@ export class InversifyBinding {
     this.#container.bind(ExtensionContextSymbol).toConstantValue(this.#extensionContext);
     this.#container.bind(ContainerExtensionAPISymbol).toConstantValue(this.#containerExtensionAPI);
     this.#container.bind(MilvusProvider).toConstantValue(this.#provider);
+    this.#container?.bind(ConfigHelper).toSelf().inSingletonScope();
 
     await this.#container.load(managersModule);
 
