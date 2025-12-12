@@ -61,7 +61,7 @@ const selectedMCPTools = new SvelteMap<string, SvelteSet<string>>(
   }, new Map<string, SvelteSet<string>>()),
 );
 
-const selectedMCPCount = $derived(
+const selectedMCPToolsCount = $derived(
   selectedMCPTools.entries().reduce((acc, [, tools]) => {
     return acc + tools.size;
   }, 0),
@@ -140,7 +140,7 @@ function onCheckMCPTool(mcpId: string, toolId: string, checked: boolean): void {
       bind:mcpSelectorOpen={mcpSelectorOpen}
       {readonly}
       models={models}
-      selectedMCPCount={selectedMCPCount}
+      selectedMCPToolsCount={selectedMCPToolsCount}
       bind:selectedModel={selectedModel}
     />
   {/if}

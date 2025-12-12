@@ -123,7 +123,7 @@ async function onclick(suggestedAction: SuggestedAction): Promise<void> {
       buttons: ['Yes', 'No'],
     });
 
-    if (result?.response === 1) {
+    if (result?.response === 1 || result?.response === undefined) {
       // No
       toast.error(`You need to select the following MCP: ${quotedMCPs.join(', ')}`);
       return;
