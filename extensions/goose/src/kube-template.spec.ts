@@ -43,6 +43,36 @@ instructions: |
   1. List the important monuments
   2. Plan each day of the trip
       `,
+      params: [],
+    },
+    provider: {
+      name: 'google',
+      credentials: {
+        env: [{ key: 'GOOGLE_API_KEY', value: 'dummy' }],
+      },
+    },
+    kortex: {
+      version: '1.0.0',
+    },
+  },
+  {
+    testName: 'parameterized-recipe',
+    job: { name: 'job-1' },
+    namespace: 'ns1',
+    recipe: {
+      flowId: 'demo-flow-id',
+      name: 'echo',
+      content: `dummy`,
+      params: [
+        {
+          key: 'foo',
+          value: 'bar',
+        },
+        {
+          key: 'hello',
+          value: 'world',
+        },
+      ],
     },
     provider: {
       name: 'google',

@@ -3,11 +3,14 @@ import { Button, Checkbox, ErrorMessage } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 
 import MonacoEditor from '/@/lib/editor/MonacoEditor.svelte';
+import RunFlowModal from '/@/lib/flows/RunFlowModal.svelte';
 import KubernetesIcon from '/@/lib/kube/KubernetesIcon.svelte';
 import KubernetesCurrentContextConnectionBadge from '/@/lib/ui/KubernetesCurrentContextConnectionBadge.svelte';
+import { flowsInfos } from '/@/stores/flows';
 import { kubernetesContextsHealths } from '/@/stores/kubernetes-context-health';
 import { kubernetesContexts } from '/@/stores/kubernetes-contexts';
 import { kubernetesCurrentContextState } from '/@/stores/kubernetes-contexts-state';
+import type { FlowInfo } from '/@api/flow-info';
 import type { KubeContext } from '/@api/kubernetes-context';
 import type { ProviderFlowConnectionInfo, ProviderInfo } from '/@api/provider-info';
 
@@ -31,12 +34,17 @@ const currentContext: KubeContext | undefined = $derived($kubernetesContexts?.fi
 
 let selectedTab = $state<'Yaml' | 'Jobs' | 'Pods'>('Yaml');
 
+let flowInfo: FlowInfo | undefined = $derived($flowsInfos.find(({ id }) => id === flowId));
+let showModal: boolean = $state(false);
+
 const clusterReachable: boolean = $derived(
   $kubernetesContextsHealths.find(({ contextName }) => contextName === currentContext?.name)?.reachable ??
     $kubernetesCurrentContextState?.reachable,
 );
 
-async function applyKubernetes(): Promise<void> {
+async function applyKubernetes(params: Record<string, string>): Promise<void> {
+  showModal = false;
+
   try {
     await window.flowDeployKubernetes(
       {
@@ -48,6 +56,7 @@ async function applyKubernetes(): Promise<void> {
         hideSecrets: false,
         namespace: 'default',
         dryrun: false,
+        params: $state.snapshot(params),
       },
     );
     selectedTab = 'Jobs';
@@ -67,6 +76,9 @@ async function refreshKubernetes(checked: boolean): Promise<void> {
       hideSecrets: checked,
       namespace: 'default',
       dryrun: true,
+      params: Object.fromEntries(
+        flowInfo?.parameters?.map(parameter => [parameter.name, parameter.default ?? 'todo']) ?? [],
+      ),
     },
   );
   kubernetes = result;
@@ -74,6 +86,20 @@ async function refreshKubernetes(checked: boolean): Promise<void> {
 onMount(async () => {
   await refreshKubernetes(true);
 });
+
+async function handleApplyClick(): Promise<void> {
+  if (!flowInfo) return;
+
+  if (flowInfo.parameters && flowInfo.parameters.length > 0) {
+    showModal = true;
+  } else {
+    await applyKubernetes({});
+  }
+}
+
+function handleModalCancel(): void {
+  showModal = false;
+}
 </script>
 
 <Button type="tab" on:click={(): string => (selectedTab = 'Yaml')} selected={selectedTab === 'Yaml'}>Yaml</Button>
@@ -91,7 +117,7 @@ onMount(async () => {
       >Hide Secret</Checkbox>
     <div class="flex flex-row gap-x-2">
       <KubernetesCurrentContextConnectionBadge />
-      <Button disabled={!clusterReachable} icon={KubernetesIcon} onclick={applyKubernetes}>Apply</Button>
+      <Button disabled={!clusterReachable} icon={KubernetesIcon} onclick={handleApplyClick}>Apply</Button>
     </div>
   </div>
   {#if kubernetes}
@@ -105,4 +131,12 @@ onMount(async () => {
   <div class="flex w-full h-full overflow-auto" role="region" aria-label="content">
     <FlowDetailsKubernetesPods {flowId} />
   </div>
+{/if}
+
+{#if showModal && flowInfo}
+  <RunFlowModal
+    flow={flowInfo}
+    onRun={applyKubernetes}
+    onCancel={handleModalCancel}
+  />
 {/if}

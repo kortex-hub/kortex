@@ -30,6 +30,7 @@ export interface KubeTemplateOptions {
     flowId: string;
     name: string;
     content: string;
+    params: Array<{ key: string; value: string }>;
   };
   provider: {
     name: string;

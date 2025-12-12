@@ -32,7 +32,15 @@ spec:
         - name: goose
           image: {{& container }}
           command: ['/usr/local/bin/goose']
-          args: ['run', '--recipe', '/home/goose/recipe.yaml']
+          args: [
+            'run',
+            '--recipe',
+            '/home/goose/recipe.yaml',
+            {{#recipe.params}}
+            '--params',
+            '{{ key }}={{& value }}',
+            {{/recipe.params}}
+          ]
           envFrom:
             - secretRef:
                 name: goose-{{ provider.name }}-credentials
