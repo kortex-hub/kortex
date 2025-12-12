@@ -104,15 +104,15 @@ async function onclick(suggestedAction: SuggestedAction): Promise<void> {
         throw Error(`Suggested action ${suggestedAction.action} requires MCP with id ${mcpId} but it was not found.`);
       }
 
-      acc.push([mcpInfo.name, tools, server?.id]);
+      acc.push({ mcpName: mcpInfo.name, tools, serverId: server?.id });
       return acc;
     },
-    [] as Array<[string, string[], string | undefined]>,
+    [] as Array<{ mcpName: string; tools: string[]; serverId?: string }>,
   );
 
   if (mcpsToSelect?.length) {
     let quotedMCPs = [];
-    for (let [mcpName, tools] of mcpsToSelect) {
+    for (let { mcpName, tools } of mcpsToSelect) {
       const quoted = tools.map(tool => `'${tool}'`);
       quotedMCPs.push(`- '${mcpName}' with tools ${quoted.join(',')}`);
     }
@@ -129,7 +129,7 @@ async function onclick(suggestedAction: SuggestedAction): Promise<void> {
       return;
     } else {
       // Yes
-      for (let [mcpName, tools, serverId] of mcpsToSelect) {
+      for (let { mcpName, tools, serverId } of mcpsToSelect) {
         if (!serverId) {
           console.error(`Server ID not found for MCP ${mcpName}`);
           continue;
