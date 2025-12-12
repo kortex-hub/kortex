@@ -3,13 +3,13 @@ import { onDestroy, onMount, tick } from 'svelte';
 import { router } from 'tinro';
 
 import App from './App.svelte';
-import SealRocket from './lib/images/SealRocket.svelte';
+import LoaderAnimation from './lib/images/LoaderAnimation.svelte';
 import ColorsStyle from './lib/style/ColorsStyle.svelte';
 import { lastPage } from './stores/breadcrumb';
 
-let systemReady = false;
+let systemReady = $state(false);
 
-let toggle = false;
+let toggle = $state(false);
 
 let loadingSequence: NodeJS.Timeout;
 
@@ -91,7 +91,7 @@ window.events.receive('starting-extensions', (value: unknown) => {
 {#if !systemReady}
   <main class="flex flex-row w-screen h-screen justify-center" style="-webkit-app-region: drag;">
     <div class="flex flex-col justify-center">
-      <SealRocket />
+      <LoaderAnimation />
       <h1 class="text-center text-xl">Initializing...</h1>
     </div>
   </main>
