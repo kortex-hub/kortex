@@ -25,14 +25,12 @@ let {
   class: c,
   selectedMCPTools,
   selectedModel,
-  mcpSelectorOpen = $bindable(),
 }: {
   attachments: Attachment[];
   chatClient: Chat;
   class?: string;
   selectedMCPTools: SvelteMap<string, Set<string>>;
   selectedModel?: ModelInfo;
-  mcpSelectorOpen: boolean;
 } = $props();
 
 let input = $state('');
@@ -123,7 +121,7 @@ $effect.pre(() => {
 
 <div class="relative flex w-full flex-col gap-4">
 	{#if mounted && chatClient.messages.length === 0 && attachments.length === 0}
-		<SuggestedActions {chatClient} {selectedMCPTools} bind:mcpSelectorOpen={mcpSelectorOpen} />
+		<SuggestedActions {chatClient} {selectedMCPTools} />
 	{/if}
 
 	{#if attachments.length > 0}

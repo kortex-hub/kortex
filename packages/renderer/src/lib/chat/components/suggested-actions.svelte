@@ -13,11 +13,9 @@ import { Button } from './ui/button';
 let {
   chatClient,
   selectedMCPTools,
-  mcpSelectorOpen = $bindable(),
 }: {
   chatClient: Chat;
   selectedMCPTools: SvelteMap<string, Set<string>>;
-  mcpSelectorOpen: boolean;
 } = $props();
 
 type SuggestedAction = {
