@@ -37,9 +37,14 @@ const process = {
 
 const EventEmitter = vi.fn();
 const Disposable = { dispose: vi.fn() };
+const Uri = { parse: vi.fn(), file: vi.fn() };
 
 const extensions = {
   getExtension: vi.fn(),
+};
+
+const rag = {
+  registerChunkProvider: vi.fn(),
 };
 
 const init = () => {
@@ -57,6 +62,6 @@ const init = () => {
   });
 };
 
-const plugin = { init, env, extensions, process, mcpRegistry, provider, EventEmitter, Disposable };
+const plugin = { init, env, extensions, process, mcpRegistry, provider, rag, EventEmitter, Disposable, Uri };
 init();
 module.exports = plugin;
