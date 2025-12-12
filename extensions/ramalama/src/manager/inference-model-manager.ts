@@ -16,12 +16,64 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Disposable } from '@kortex-app/api';
-import { injectable } from 'inversify';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import type { Disposable, Provider } from '@kortex-app/api';
+import { inject, injectable } from 'inversify';
 
+import type { ModelInfo } from '/@/api/model-info';
+import { ModelsHandler } from '/@/handler/models-handler';
+import { RamalamaProvider } from '/@/inject/symbol';
+
+// class is responsible to manage the inference models available
 @injectable()
-export class InferenceModelManager implements Disposable {
-  async init(): Promise<void> {}
+export class InferenceModelManager {
+  @inject(ModelsHandler)
+  private modelsHandler: ModelsHandler;
 
-  dispose(): void {}
+  @inject(RamalamaProvider)
+  private ramaLamaProvider: Provider;
+
+  #modelsDisposable: Disposable[] = [];
+
+  async init(): Promise<void> {
+    this.modelsHandler.onModelsChanged(async models => {
+      await this.refreshRegistrationOfModels(models);
+    });
+
+    await this.modelsHandler.init();
+  }
+
+  async refreshRegistrationOfModels(models: readonly ModelInfo[]): Promise<void> {
+    // dispose previous registrations
+    for (const disposable of this.#modelsDisposable) {
+      disposable.dispose();
+    }
+    this.#modelsDisposable = [];
+
+    for (const modelinfo of models) {
+      const sdk = createOpenAICompatible({
+        baseURL: `http://localhost:${modelinfo.port}`,
+        name: `RamaLama/${modelinfo.port}`,
+      });
+      const disposable = this.ramaLamaProvider.registerInferenceProviderConnection({
+        name: `port/${modelinfo.port}`,
+        sdk,
+        status() {
+          return 'started';
+        },
+        models: [{ label: modelinfo.name }],
+        credentials() {
+          return {};
+        },
+      });
+      this.#modelsDisposable.push(disposable);
+    }
+  }
+
+  dispose(): void {
+    for (const disposable of this.#modelsDisposable) {
+      disposable.dispose();
+    }
+    this.#modelsDisposable = [];
+  }
 }
