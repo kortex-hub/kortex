@@ -17,7 +17,7 @@
  ***********************************************************************/
 import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { basename, dirname, join } from 'node:path';
+import { basename, dirname, join, normalize } from 'node:path';
 
 import type {
   Disposable,
@@ -111,9 +111,18 @@ export class GooseRecipe implements Disposable {
 
   protected async getFlowPath(flowId: string): Promise<string> {
     const decoded = Buffer.from(flowId, 'base64').toString('utf-8');
-    if (dirname(decoded) !== this.getBasePath()) throw new Error(`only support recipes in ${this.getBasePath()}`);
+    const normalised = this.normalizePath(decoded);
+    if (dirname(normalised) !== this.getBasePath()) throw new Error(`only support recipes in ${this.getBasePath()}`);
 
     return decoded;
+  }
+
+  protected normalizePath(p: string): string {
+    // Remove extended-length prefix \\?\ on Windows
+    if (p.startsWith('\\\\?\\')) {
+      p = p.slice(4);
+    }
+    return normalize(p);
   }
 
   protected async read(flowId: string): Promise<string> {

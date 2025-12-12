@@ -15,6 +15,10 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+import { readFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+
 import type { Disposable, Provider, provider as ProviderAPI } from '@kortex-app/api';
 import { EventEmitter } from '@kortex-app/api';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
@@ -22,6 +26,7 @@ import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 import type { GooseCLI } from './goose-cli';
 import { GooseRecipe } from './goose-recipe';
 
+vi.mock(import('node:fs/promises'));
 vi.mock('@kortex-app/api', () => ({
   EventEmitter: vi.fn(),
 }));
@@ -123,11 +128,29 @@ describe('cliAPI#onDidChange', () => {
         delete: expect.any(Function),
         execute: expect.any(Function),
         generate: expect.any(Function),
+        generateCommandLine: expect.any(Function),
         generateKubernetesYAML: expect.any(Function),
       },
       lifecycle: {},
       status: expect.any(Function),
     });
+  });
+
+  test('expect read to support the extended windows path', async () => {
+    vi.mocked(GOOSE_CLI_MOCK.isInstalled).mockReturnValue(true);
+
+    listener('update');
+
+    expect(GOOSE_PROVIDER_MOCK.registerFlowProviderConnection).toHaveBeenCalledOnce();
+    const readListener = vi.mocked(GOOSE_PROVIDER_MOCK.registerFlowProviderConnection).mock.calls[0]?.[0]?.flow?.read;
+    assert(readListener);
+
+    const dummyRecipePath = join(homedir(), '.config', 'goose', 'recipes', 'foo.yaml');
+    const extendedPath = `\\\\?\\${dummyRecipePath}`;
+    const encoded = Buffer.from(extendedPath).toString('base64');
+    await readListener(encoded);
+
+    expect(readFile).toHaveBeenCalledExactlyOnceWith(extendedPath, 'utf-8');
   });
 
   test('expect flow connection not to be registered if goose cli is not isInstalled', () => {
