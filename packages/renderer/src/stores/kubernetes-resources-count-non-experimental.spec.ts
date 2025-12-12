@@ -67,9 +67,10 @@ test('kubernetesResourcesCount in non experimental states mode', async () => {
   expect(callbackExtensionsStarted).toBeDefined();
   await callbackExtensionsStarted!();
 
-  // values are never fetched
-  await new Promise(resolve => setTimeout(resolve, 500));
-  const currentValue = get(kubernetesResourcesCount);
-  expect(currentValue).toEqual([]);
-  expect(vi.mocked(window.kubernetesGetResourcesCount)).not.toHaveBeenCalled();
+  await vi.waitFor(() => {
+    // check received data is updated
+    const currentValue = get(kubernetesResourcesCount);
+    expect(currentValue).toEqual(initialValues);
+  }, 500);
+  expect(vi.mocked(window.kubernetesGetResourcesCount)).toHaveBeenCalled();
 });

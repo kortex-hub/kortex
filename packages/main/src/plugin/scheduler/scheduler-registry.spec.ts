@@ -20,7 +20,7 @@ import type { ProviderScheduler } from '@kortex-app/api';
 import { Container } from 'inversify';
 import { beforeEach, expect, test, vi } from 'vitest';
 
-import { ApiSenderType } from '/@/plugin/api.js';
+import { ApiSenderType, IPCHandle } from '/@/plugin/api.js';
 import type { ProviderImpl } from '/@/plugin/provider-impl.js';
 import { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
 
@@ -56,6 +56,8 @@ const apiSenderMock = {
   send: vi.fn(),
 } as unknown as ApiSenderType;
 
+const ipcHandleMock = vi.fn();
+
 let schedulerRegistry: SchedulerRegistry;
 
 beforeEach(() => {
@@ -63,6 +65,7 @@ beforeEach(() => {
   const container = new Container();
   container.bind(SchedulerRegistry).toSelf().inSingletonScope();
   container.bind(ApiSenderType).toConstantValue(apiSenderMock);
+  container.bind(IPCHandle).toConstantValue(ipcHandleMock);
   schedulerRegistry = container.get(SchedulerRegistry);
 });
 

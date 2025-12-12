@@ -8,6 +8,7 @@ export let size = '104';
    width="{size}"
    height="{size}"
    viewBox="0 0 512 512"
+   role="img"
    xmlns="http://www.w3.org/2000/svg">
   <defs
      id="defs1" />

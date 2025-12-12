@@ -29,6 +29,10 @@ import { beforeAll, expect, test, vi } from 'vitest';
 import Loader from './Loader.svelte';
 import { lastPage } from './stores/breadcrumb';
 
+vi.mock('./lib/chat/route/CustomChat.svelte', () => ({
+  default: vi.fn(),
+}));
+
 // first, patch window object
 const callbacks = new Map<string, any>();
 const eventEmitter = {

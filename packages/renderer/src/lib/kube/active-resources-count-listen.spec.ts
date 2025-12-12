@@ -41,16 +41,10 @@ beforeAll(() => {
   });
 });
 
-test('listenActiveResourcesCount is undefined in non experimental mode (setting is set to false)', async () => {
-  vi.mocked(window.getConfigurationValue<boolean>).mockResolvedValue(false);
+test('listenActiveResourcesCount is not undefined in experimental mode (enabed by default)', async () => {
+  vi.mocked(window.kubernetesGetActiveResourcesCount).mockResolvedValue([]);
   const result = await listenActiveResourcesCount((): void => {});
-  expect(result).toBeUndefined();
-});
-
-test('listenActiveResourcesCount is undefined in non experimental mode (setting is undefined)', async () => {
-  vi.mocked(window.getConfigurationValue<boolean>).mockResolvedValue(undefined);
-  const result = await listenActiveResourcesCount((): void => {});
-  expect(result).toBeUndefined();
+  expect(result).toHaveProperty('dispose');
 });
 
 describe('experimental mode is set', () => {

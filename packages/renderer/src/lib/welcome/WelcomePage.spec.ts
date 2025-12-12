@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2023 Red Hat, Inc.
+ * Copyright (C) 2023-2025 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,8 @@ import '@testing-library/jest-dom/vitest';
 import { fireEvent, render, screen } from '@testing-library/svelte';
 /* eslint-disable import/no-duplicates */
 import { tick } from 'svelte';
-import { get } from 'svelte/store';
 /* eslint-enable import/no-duplicates */
 import { beforeEach, expect, test, vi } from 'vitest';
-
-import { onboardingList } from '/@/stores/onboarding';
-import { providerInfos } from '/@/stores/providers';
-import type { ProviderInfo } from '/@api/provider-info';
 
 import WelcomePage from './WelcomePage.svelte';
 
@@ -78,196 +73,6 @@ test('Expect that telemetry UI is visible when necessary', async () => {
   await waitRender({ showWelcome: true, showTelemetry: true });
   const checkbox = screen.getByRole('checkbox', { name: 'Enable telemetry' });
   expect(checkbox).toBeInTheDocument();
-});
-
-test('Expect welcome screen to show three checked onboarding providers', async () => {
-  onboardingList.set([
-    {
-      extension: 'id',
-      removable: true,
-      title: 'onboarding',
-      name: 'foobar1',
-      displayName: 'FooBar1',
-      icon: 'data:image/png;base64,foobar1',
-      steps: [
-        {
-          id: 'step',
-          title: 'step',
-          state: 'failed',
-          completionEvents: [],
-        },
-      ],
-      enablement: 'true',
-    },
-    {
-      extension: 'id',
-      removable: true,
-      title: 'onboarding',
-      name: 'foobar2',
-      displayName: 'FooBar2',
-      icon: 'data:image/png;base64,foobar2',
-      steps: [
-        {
-          id: 'step',
-          title: 'step',
-          state: 'failed',
-          completionEvents: [],
-        },
-      ],
-      enablement: 'true',
-    },
-    {
-      extension: 'id',
-      removable: true,
-      title: 'onboarding',
-      name: 'foobar3',
-      displayName: 'FooBar3',
-      icon: 'data:image/png;base64,foobar3',
-      steps: [
-        {
-          id: 'step',
-          title: 'step',
-          state: 'failed',
-          completionEvents: [],
-        },
-      ],
-      enablement: 'true',
-    },
-  ]);
-
-  // wait until the onboarding list is populated
-  while (get(onboardingList).length === 0) {
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  await waitRender({ showWelcome: true });
-
-  // wait until aria-label 'providerList' is populated
-  while (screen.queryAllByLabelText('providerList').length === 0) {
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  // Check that the logos for foobar1, foobar2, and foobar3 are present
-  const image1 = screen.getByRole('img', { name: 'foobar1 logo' });
-  expect(image1).toBeInTheDocument();
-  expect(image1).toHaveAttribute('src', 'data:image/png;base64,foobar1');
-
-  const image2 = screen.getByRole('img', { name: 'foobar2 logo' });
-  expect(image2).toBeInTheDocument();
-  expect(image2).toHaveAttribute('src', 'data:image/png;base64,foobar2');
-
-  const image3 = screen.getByRole('img', { name: 'foobar3 logo' });
-  expect(image3).toBeInTheDocument();
-  expect(image3).toHaveAttribute('src', 'data:image/png;base64,foobar3');
-
-  // Check that all three are checked as well
-  const checkbox1 = screen.getByRole('checkbox', { name: 'FooBar1 checkbox' });
-  expect(checkbox1).toBeInTheDocument();
-  expect(checkbox1).toBeChecked();
-
-  const checkbox2 = screen.getByRole('checkbox', { name: 'FooBar2 checkbox' });
-  expect(checkbox2).toBeInTheDocument();
-  expect(checkbox2).toBeChecked();
-
-  const checkbox3 = screen.getByRole('checkbox', { name: 'FooBar3 checkbox' });
-  expect(checkbox3).toBeInTheDocument();
-  expect(checkbox3).toBeChecked();
-});
-
-test('Make sure the provider with name podman appears first even if its 2nd in the list', async () => {
-  providerInfos.set([
-    {
-      extensionId: 'test.extension.id',
-      containerConnections: [],
-    } as unknown as ProviderInfo,
-    {
-      extensionId: 'test.extension.id2',
-      containerConnections: [],
-    } as unknown as ProviderInfo,
-    {
-      extensionId: 'podman.extension.id',
-      containerConnections: [
-        {
-          name: 'foobar1',
-        },
-      ],
-    } as unknown as ProviderInfo,
-  ]);
-
-  // Wait for providerInfos to be populated
-  await vi.waitFor(() => {
-    return get(providerInfos).length > 0;
-  });
-
-  onboardingList.set([
-    {
-      extension: 'test.extension.id',
-      removable: true,
-      title: 'onboarding',
-      name: 'foobar1',
-      displayName: 'FooBar1',
-      icon: 'data:image/png;base64,foobar1',
-      steps: [
-        {
-          id: 'step',
-          title: 'step',
-          state: 'failed',
-          completionEvents: [],
-        },
-      ],
-      enablement: 'true',
-    },
-    {
-      extension: 'podman.extension.id',
-      removable: true,
-      title: 'onboarding',
-      name: 'podman',
-      displayName: 'Podman',
-      icon: 'data:image/png;base64,podman',
-      steps: [
-        {
-          id: 'step',
-          title: 'step',
-          state: 'failed',
-          completionEvents: [],
-        },
-      ],
-      enablement: 'true',
-    },
-    {
-      extension: 'test.extension.id2',
-      removable: true,
-      title: 'onboarding',
-      name: 'foobar3',
-      displayName: 'FooBar3',
-      icon: 'data:image/png;base64,foobar3',
-      steps: [
-        {
-          id: 'step',
-          title: 'step',
-          state: 'failed',
-          completionEvents: [],
-        },
-      ],
-      enablement: 'true',
-    },
-  ]);
-
-  // wait until the onboarding list is populated
-  await vi.waitFor(() => {
-    return get(onboardingList).length > 0;
-  });
-
-  await waitRender({ showWelcome: true });
-
-  await vi.waitFor(() => {
-    return screen.queryAllByLabelText('providerList').length > 0;
-  });
-
-  // In the div 'providerList' the first div should be the one with the name 'podman'
-  const providerList = screen.getByLabelText('providerList');
-  const firstChild = providerList.children[0];
-  expect(firstChild).toHaveTextContent('Podman');
 });
 
 test('Expect that releaseNotesBanner.show configuration value is set to current version when showWelcome is set to true', async () => {

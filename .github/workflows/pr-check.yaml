@@ -233,7 +233,7 @@ jobs:
         run: pnpm svelte:check
 
   unit-tests:
-    if: false #${{ contains(github.event.pull_request.labels.*.name, 'area/ci') || !github.event.pull_request.draft }}
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'area/ci') || !github.event.pull_request.draft }}
     name: unit tests / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40

@@ -48,18 +48,6 @@ beforeAll(() => {
   });
 });
 
-test('listenResources is undefined in non experimental mode', async () => {
-  vi.mocked(window.isExperimentalConfigurationEnabled).mockResolvedValue(false);
-  const result = await listenResources('resource1', {}, (): void => {});
-  expect(result).toBeUndefined();
-});
-
-test('listenResources is undefined in non experimental mode (getConfigurationValue fails)', async () => {
-  vi.mocked(window.isExperimentalConfigurationEnabled).mockRejectedValue(undefined);
-  const result = await listenResources('resource1', {}, (): void => {});
-  expect(result).toBeUndefined();
-});
-
 test('non filtered resources', async () => {
   vi.mocked(window.isExperimentalConfigurationEnabled).mockResolvedValue(true);
   vi.mocked(contexts).kubernetesContexts = writable([

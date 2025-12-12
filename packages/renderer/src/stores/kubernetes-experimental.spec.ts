@@ -33,22 +33,10 @@ test('experimental mode is set', async () => {
   });
 });
 
-test('experimental mode is not set', async () => {
-  vi.mocked(window.isExperimentalConfigurationEnabled).mockImplementation(async () => {
-    return false;
-  });
+test('experimental mode is set to true by default', async () => {
   configurationProperties.set([]);
   await vi.waitFor(() => {
     const result = get(isKubernetesExperimentalModeStore);
-    expect(result).toEqual(false);
-  });
-});
-
-test('experimental mode is not defined', async () => {
-  vi.mocked(window.getConfigurationValue).mockRejectedValue(new Error('an error'));
-  configurationProperties.set([]);
-  await vi.waitFor(() => {
-    const result = get(isKubernetesExperimentalModeStore);
-    expect(result).toEqual(false);
+    expect(result).toEqual(true);
   });
 });

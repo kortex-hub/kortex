@@ -23,15 +23,16 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { writable } from 'svelte/store';
 import { beforeAll, beforeEach, expect, test, vi } from 'vitest';
 
-import * as kubernetesContextsStateStore from '/@/stores/kubernetes-contexts-state';
-import type { ContextGeneralState } from '/@api/kubernetes-contexts-states';
+import * as kubernetesContextHealthStore from '/@/stores/kubernetes-context-health';
+import type { ContextHealth } from '/@api/kubernetes-contexts-healths';
 
 import NamespaceDropdown from './NamespaceDropdown.svelte';
 
 const firstNS = 'ns1';
 const secondNS = 'ns2';
+const contextName = 'test-context';
 
-vi.mock('/@/stores/kubernetes-contexts-state');
+vi.mock('/@/stores/kubernetes-context-health');
 
 beforeAll(() => {
   vi.mocked(window.kubernetesListNamespaces).mockResolvedValue({
@@ -49,11 +50,16 @@ beforeAll(() => {
     ],
   } as V1NamespaceList);
   vi.mocked(window.kubernetesGetCurrentNamespace).mockResolvedValue(firstNS);
+  vi.mocked(window.kubernetesGetCurrentContextName).mockResolvedValue(contextName);
   vi.mocked(window.kubernetesSetCurrentNamespace).mockResolvedValue();
-  vi.mocked(kubernetesContextsStateStore).kubernetesCurrentContextState = writable<ContextGeneralState>({
-    reachable: true,
-    resources: { pods: 0, deployments: 0 },
-  });
+  vi.mocked(kubernetesContextHealthStore).kubernetesContextsHealths = writable<ContextHealth[]>([
+    {
+      contextName,
+      checking: false,
+      reachable: true,
+      offline: false,
+    },
+  ]);
 });
 
 beforeEach(() => {

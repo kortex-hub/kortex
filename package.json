@@ -2,7 +2,7 @@
   "name": "kortex",
   "productName": "Kortex",
   "repository": "https://github.com/kortex-hub/kortex",
-  "homepage": "hhttps://github.com/kortex-hub/kortex",
+  "homepage": "https://github.com/kortex-hub/kortex",
   "version": "0.0.1-next",
   "license": "apache-2.0",
   "type": "module",

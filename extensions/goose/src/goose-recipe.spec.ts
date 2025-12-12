@@ -123,6 +123,7 @@ describe('cliAPI#onDidChange', () => {
         delete: expect.any(Function),
         execute: expect.any(Function),
         generate: expect.any(Function),
+        generateCommandLine: expect.any(Function),
         generateKubernetesYAML: expect.any(Function),
       },
       lifecycle: {},
