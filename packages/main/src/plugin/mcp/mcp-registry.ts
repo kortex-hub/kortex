@@ -42,6 +42,7 @@ import { Proxy } from '../proxy.js';
 import { Telemetry } from '../telemetry/telemetry.js';
 import { Disposable } from '../types/disposable.js';
 import { MCPManager } from './mcp-manager.js';
+import { MCPSchemaValidator } from './mcp-schema-validator.js';
 
 interface RemoteStorageConfigFormat {
   serverId: string;
@@ -105,6 +106,8 @@ export class MCPRegistry {
     private safeStorageRegistry: SafeStorageRegistry,
     @inject(IConfigurationRegistry)
     private configurationRegistry: IConfigurationRegistry,
+    @inject(MCPSchemaValidator)
+    private schemaValidator: MCPSchemaValidator,
   ) {
     this.proxy.onDidUpdateProxy(settings => {
       this.proxySettings = settings;
@@ -542,6 +545,9 @@ export class MCPRegistry {
     }
 
     const data: components['schemas']['ServerList'] = await content.json();
+
+    // Validate the ServerList data but continue even if invalid
+    this.schemaValidator.validateSchemaData(data, 'ServerList', registryURL);
 
     // If pagination info exists, fetch the next page recursively
     if (data.metadata?.nextCursor) {
