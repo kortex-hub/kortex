@@ -381,6 +381,7 @@ export function initExposure(): void {
         namespace: string;
         hideSecrets: boolean;
         dryrun: boolean;
+        params: Record<string, string>;
       },
     ): Promise<string> => {
       return ipcInvoke('flows:deploy:kubernetes', flow, options);

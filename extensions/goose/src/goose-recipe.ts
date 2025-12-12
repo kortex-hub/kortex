@@ -311,6 +311,10 @@ export class GooseRecipe implements Disposable {
         flowId: options.flowId,
         name: recipeName,
         content: processedContent,
+        params: Object.entries(options.params).map(([key, value]) => ({
+          key,
+          value,
+        })),
       },
       provider: {
         name: providerId,

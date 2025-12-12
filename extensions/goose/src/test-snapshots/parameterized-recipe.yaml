@@ -34,6 +34,10 @@ spec:
             'run',
             '--recipe',
             '/home/goose/recipe.yaml',
+            '--params',
+            'foo=bar',
+            '--params',
+            'hello=world',
           ]
           envFrom:
             - secretRef:
@@ -60,15 +64,4 @@ metadata:
     kortex-hub/flow-id: demo-flow-id
 data:
   recipe.yaml: |
-    title: "Paris Explorer"
-    name: "Paris Explorer"
-    description: "Paris Explorer"
-    
-    # Required for headless mode
-    prompt: "Plan a 7 days trip in Paris, mention per day the planning, starting on monday."
-    
-    instructions: |
-      Your task is to:
-      1. List the important monuments
-      2. Plan each day of the trip
-          
+    dummy
