@@ -23,23 +23,12 @@ import { NPMSpawner } from './npm-spawner.js';
 import { PyPiSpawner } from './pypi-spawner.js';
 
 // Mock the spawner classes
-vi.mock('./npm-spawner.js', () => ({
-  NPMSpawner: vi.fn().mockImplementation(() => ({
-    spawn: vi.fn(),
-    asyncDispose: vi.fn(),
-  })),
-}));
-
-vi.mock('./pypi-spawner.js', () => ({
-  PyPiSpawner: vi.fn().mockImplementation(() => ({
-    spawn: vi.fn(),
-    asyncDispose: vi.fn(),
-  })),
-}));
+vi.mock(import('./npm-spawner.js'));
+vi.mock(import('./pypi-spawner.js'));
 
 describe('MCPPackage', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   test('should create NPMSpawner for npm registry type', () => {
@@ -52,8 +41,8 @@ describe('MCPPackage', () => {
     const mcpPackage = new MCPPackage(pack);
 
     expect(mcpPackage).toBeDefined();
-    expect(NPMSpawner).toHaveBeenCalledWith(pack);
-    expect(PyPiSpawner).not.toHaveBeenCalled();
+    expect(vi.mocked(NPMSpawner)).toHaveBeenCalledWith(pack);
+    expect(vi.mocked(PyPiSpawner)).not.toHaveBeenCalled();
   });
 
   test('should create PyPiSpawner for pypi registry type', () => {
@@ -66,8 +55,8 @@ describe('MCPPackage', () => {
     const mcpPackage = new MCPPackage(pack);
 
     expect(mcpPackage).toBeDefined();
-    expect(PyPiSpawner).toHaveBeenCalledWith(pack);
-    expect(NPMSpawner).not.toHaveBeenCalled();
+    expect(vi.mocked(PyPiSpawner)).toHaveBeenCalledWith(pack);
+    expect(vi.mocked(NPMSpawner)).not.toHaveBeenCalled();
   });
 
   test('should throw error for unsupported registry type', () => {
