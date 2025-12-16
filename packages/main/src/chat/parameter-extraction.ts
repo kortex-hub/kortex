@@ -18,7 +18,7 @@
 
 import type { DynamicToolUIPart, UIMessage } from 'ai';
 
-import type { FlowParameterAIGenerated } from '/@api/chat/flow-generation-parameters-schema.js';
+import type { FlowParameterAIGenerated } from '/@api/chat/detect-flow-fields-schema.ts';
 
 export class ParameterExtractor {
   /**
