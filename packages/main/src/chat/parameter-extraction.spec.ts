@@ -71,14 +71,12 @@ describe('ParameterExtractor', () => {
         format: 'string',
         description: 'Parameter from github_list_issues MCP tool',
         default: 'podman-desktop',
-        required: false,
       });
       expect(result[1]).toEqual({
         name: 'repo',
         format: 'string',
         description: 'Parameter from github_list_issues MCP tool',
         default: 'podman-desktop',
-        required: false,
       });
     });
 
@@ -108,21 +106,18 @@ describe('ParameterExtractor', () => {
         format: 'string',
         description: 'Parameter from search MCP tool',
         default: 'test query',
-        required: false,
       });
       expect(result[1]).toEqual({
         name: 'limit',
         format: 'string',
         description: 'Parameter from search MCP tool',
         default: '10',
-        required: false,
       });
       expect(result[2]).toEqual({
         name: 'enabled',
         format: 'string',
         description: 'Parameter from search MCP tool',
         default: 'true',
-        required: false,
       });
     });
 
