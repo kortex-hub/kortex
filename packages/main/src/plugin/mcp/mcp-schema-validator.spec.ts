@@ -261,4 +261,19 @@ describe('validateSchemaData', () => {
     expect(result).toBe(false);
     expect(console.warn).toHaveBeenCalled();
   });
+
+  test('should not warn when suppressWarnings is true', () => {
+    const invalidRepository = {
+      url: 'https://github.com/example/repo',
+      // Missing 'source' field
+    };
+
+    const result = validator.validateSchemaData(invalidRepository, 'Repository', undefined, true);
+
+    expect(result).toBe(false);
+    expect(console.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('[MCPSchemaValidator] Failed to validate data against schema'),
+      expect.anything(),
+    );
+  });
 });

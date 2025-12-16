@@ -31,13 +31,19 @@ export class MCPSchemaValidator {
    * @param jsonData - The data to validate
    * @param schemaName - The schema component name (e.g., 'ServerList', 'ServerResponse')
    * @param contextName - Optional context name for error messages (e.g., registry URL)
+   * @param suppressWarnings - Optional flag to suppress warnings (default: false)
    * @returns true if valid, false if invalid
    */
-  validateSchemaData(jsonData: unknown, schemaName: keyof components['schemas'], contextName?: string): boolean {
+  validateSchemaData(
+    jsonData: unknown,
+    schemaName: keyof components['schemas'],
+    contextName?: string,
+    suppressWarnings: boolean = false,
+  ): boolean {
     const validator = createValidator(schemaName);
     const isValid = validator(jsonData);
 
-    if (!isValid) {
+    if (!isValid && !suppressWarnings) {
       const context = contextName ? ` from '${contextName}'` : '';
       console.warn(
         `[MCPSchemaValidator] Failed to validate data against schema '${schemaName}'${context}.`,
