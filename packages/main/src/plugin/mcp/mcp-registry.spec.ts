@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import type { IConfigurationRegistry } from '/@api/configuration/models.js';
 
@@ -45,12 +45,23 @@ const apiSender: ApiSenderType = {
   receive: vi.fn(),
 };
 
+const validateSchemaDataMock = vi.fn().mockReturnValue(true);
+
 const schemaValidator: MCPSchemaValidator = {
-  validateSchemaData: vi.fn().mockReturnValue(true),
+  validateSchemaData: validateSchemaDataMock,
 };
 
-test('listMCPServersFromRegistries', async () => {
-  const mcpRegistry = new MCPRegistry(
+let mcpRegistry: MCPRegistry;
+
+const globalFetch = vi.fn();
+global.fetch = globalFetch;
+
+const originalConsoleError = console.error;
+
+beforeEach(() => {
+  console.error = vi.fn();
+
+  mcpRegistry = new MCPRegistry(
     apiSender,
     {} as Telemetry,
     {} as Certificates,
@@ -60,7 +71,13 @@ test('listMCPServersFromRegistries', async () => {
     configurationRegistry,
     schemaValidator,
   );
+});
 
+afterEach(() => {
+  console.error = originalConsoleError;
+});
+
+test('listMCPServersFromRegistries', async () => {
   // add suggested registries that will be used to list MCP servers from
   mcpRegistry.suggestMCPRegistry({
     name: 'Registry 1',
@@ -75,14 +92,12 @@ test('listMCPServersFromRegistries', async () => {
     url: 'https://registry3.io',
   });
 
-  const consoleErrorSpy = vi.spyOn(console, 'error');
-  const fetchSpy = vi.spyOn(global, 'fetch');
-  fetchSpy.mockResolvedValueOnce({
+  globalFetch.mockResolvedValueOnce({
     ok: true,
     json: async () => ({ servers: [{ server: { name: 'Registry 1 server 1' } }] }),
   } as unknown as Response);
-  fetchSpy.mockResolvedValueOnce({ ok: false, json: async () => ({}) } as unknown as Response);
-  fetchSpy.mockResolvedValueOnce({
+  globalFetch.mockResolvedValueOnce({ ok: false, json: async () => ({}) } as unknown as Response);
+  globalFetch.mockResolvedValueOnce({
     ok: true,
     json: async () => ({
       servers: [{ server: { name: 'Registry 3 server 1' } }, { server: { name: 'Registry 3 server 2' } }],
@@ -92,7 +107,7 @@ test('listMCPServersFromRegistries', async () => {
   const mcpServersFromRegistries = await mcpRegistry.listMCPServersFromRegistries();
   const serverNames = mcpServersFromRegistries.map(server => server.name);
 
-  expect(consoleErrorSpy).toHaveBeenCalledWith(
+  expect(console.error).toHaveBeenCalledWith(
     'Failed fetch for registry https://registry2.io',
     new Error('Failed to fetch MCP servers from https://registry2.io: undefined'),
   );
@@ -100,4 +115,41 @@ test('listMCPServersFromRegistries', async () => {
   expect(serverNames).toEqual(
     expect.arrayContaining(['Registry 1 server 1', 'Registry 3 server 1', 'Registry 3 server 2']),
   );
+});
+
+test('listMCPServersFromRegistries marks servers with invalid schemas', async () => {
+  validateSchemaDataMock.mockImplementation((data, schemaName) => {
+    // Fail validation for ServerResponse with name 'Invalid server'
+    if (schemaName === 'ServerResponse' && data && typeof data === 'object' && 'server' in data) {
+      const serverResponse = data as { server: { name: string } };
+      return serverResponse.server.name !== 'Invalid server';
+    }
+    // Pass validation for ServerList
+    return true;
+  });
+
+  mcpRegistry.suggestMCPRegistry({
+    name: 'Test Registry',
+    url: 'https://test-registry.io',
+  });
+
+  globalFetch.mockResolvedValueOnce({
+    ok: true,
+    json: async () => ({
+      servers: [
+        { server: { name: 'Valid server', description: 'A valid server', version: '1.0.0' }, _meta: {} },
+        { server: { name: 'Invalid server', description: 'An invalid server', version: '1.0.0' }, _meta: {} },
+      ],
+    }),
+  } as unknown as Response);
+
+  const mcpServersFromRegistries = await mcpRegistry.listMCPServersFromRegistries();
+
+  expect(mcpServersFromRegistries).toHaveLength(2);
+
+  const validServer = mcpServersFromRegistries.find(s => s.name === 'Valid server');
+  const invalidServer = mcpServersFromRegistries.find(s => s.name === 'Invalid server');
+
+  expect(validServer?.hasInvalidSchema).toBe(false);
+  expect(invalidServer?.hasInvalidSchema).toBe(true);
 });
