@@ -18,6 +18,7 @@
 
 import { expect, test, vi } from 'vitest';
 
+import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { IConfigurationRegistry } from '/@api/configuration/models.js';
 
 import type { ApiSenderType } from '../api.js';
@@ -44,6 +45,11 @@ const apiSender: ApiSenderType = {
   receive: vi.fn(),
 };
 
+const providerRegistry = {
+  onDidRegisterRagConnection: vi.fn(),
+  onDidUnregisterRagConnection: vi.fn(),
+} as unknown as ProviderRegistry;
+
 test('listMCPServersFromRegistries', async () => {
   const mcpRegistry = new MCPRegistry(
     apiSender,
@@ -53,6 +59,7 @@ test('listMCPServersFromRegistries', async () => {
     {} as MCPManager,
     {} as SafeStorageRegistry,
     configurationRegistry,
+    providerRegistry,
   );
 
   // add suggested registries that will be used to list MCP servers from

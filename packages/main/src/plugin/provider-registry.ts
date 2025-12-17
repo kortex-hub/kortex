@@ -1564,7 +1564,7 @@ export class ProviderRegistry {
   onDidRegisterRagConnectionCallback(provider: ProviderImpl, ragProviderConnection: RagProviderConnection): void {
     this.connectionLifecycleContexts.set(ragProviderConnection, new LifecycleContextImpl());
     this.apiSender.send('provider-register-rag-connection', { name: ragProviderConnection.name });
-    this._onDidRegisterRagConnection.fire({ providerId: provider.id });
+    this._onDidRegisterRagConnection.fire({ providerId: provider.id, connection: ragProviderConnection });
   }
 
   onDidRegisterFlowConnectionCallback(provider: ProviderImpl, connection: FlowProviderConnection): void {
@@ -1625,7 +1625,7 @@ export class ProviderRegistry {
 
   onDidUnregisterRagConnectionCallback(provider: ProviderImpl, ragProviderConnection: RagProviderConnection): void {
     this.apiSender.send('provider-unregister-rag-connection', { name: ragProviderConnection.name });
-    this._onDidUnregisterRagConnection.fire({ providerId: provider.id });
+    this._onDidUnregisterRagConnection.fire({ providerId: provider.id, connection: ragProviderConnection });
   }
 
   onDidUnregisterFlowConnectionCallback(provider: ProviderImpl, connection: FlowProviderConnection): void {

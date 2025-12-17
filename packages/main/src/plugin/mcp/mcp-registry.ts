@@ -30,6 +30,7 @@ import { inject, injectable } from 'inversify';
 import { MCPPackage } from '/@/plugin/mcp/package/mcp-package.js';
 import { formatArguments } from '/@/plugin/mcp/utils/arguments.js';
 import { formatKeyValueInputs } from '/@/plugin/mcp/utils/format-key-value-inputs.js';
+import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { IConfigurationNode, IConfigurationRegistry } from '/@api/configuration/models.js';
 import { MCPServerDetail } from '/@api/mcp/mcp-server-info.js';
@@ -105,6 +106,8 @@ export class MCPRegistry {
     private safeStorageRegistry: SafeStorageRegistry,
     @inject(IConfigurationRegistry)
     private configurationRegistry: IConfigurationRegistry,
+    @inject(ProviderRegistry)
+    private providerRegistry: ProviderRegistry,
   ) {
     this.proxy.onDidUpdateProxy(settings => {
       this.proxySettings = settings;
@@ -118,6 +121,17 @@ export class MCPRegistry {
     if (this.proxyEnabled) {
       this.proxySettings = this.proxy.proxy;
     }
+
+    this.providerRegistry.onDidRegisterRagConnection(e =>
+      this.setupMCPServer(e.connection.mcpServer.serverId, e.connection.mcpServer.config),
+    );
+    this.providerRegistry.onDidUnregisterRagConnection(e =>
+      this.resetMCPServer(
+        e.connection.mcpServer.serverId,
+        e.connection.mcpServer.config.type,
+        e.connection.mcpServer.config.index,
+      ),
+    );
 
     const mcpRegistriesConfiguration: IConfigurationNode = {
       id: 'preferences.mcp',
@@ -448,6 +462,11 @@ export class MCPRegistry {
 
     // persist configuration
     await this.saveConfiguration(config);
+  }
+
+  async resetMCPServer(serverId: string, setupType: 'remote' | 'package', remoteId: number): Promise<void> {
+    await this.deleteRemoteMcpFromConfiguration(serverId, remoteId);
+    return this.mcpManager.unregisterMCPClient(INTERNAL_PROVIDER_ID, serverId, setupType, remoteId);
   }
 
   protected formatInputWithVariableResponse(input: InputWithVariableResponse): string {
