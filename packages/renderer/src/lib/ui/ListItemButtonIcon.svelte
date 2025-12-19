@@ -1,7 +1,8 @@
 <script lang="ts">
 import type { IconDefinition } from '@fortawesome/fontawesome-common-types';
-import { DropdownMenu, isFontAwesomeIcon } from '@podman-desktop/ui-svelte';
-import { onDestroy, onMount } from 'svelte';
+import { DropdownMenu } from '@podman-desktop/ui-svelte';
+import { Icon } from '@podman-desktop/ui-svelte/icons';
+import { onDestroy } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';
 
 import { context as storeContext } from '/@/stores/context';
@@ -67,12 +68,6 @@ function computeEnabled(): void {
   const disabled = whenDeserialized?.evaluate(globalContext) ?? false;
   enabled = !disabled;
 }
-
-onMount(() => {
-  if (isFontAwesomeIcon(icon)) {
-    fontAwesomeIcon = icon;
-  }
-});
 
 onDestroy(() => {
   // unsubscribe from the store
