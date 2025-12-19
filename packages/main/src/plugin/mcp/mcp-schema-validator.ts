@@ -19,6 +19,12 @@
 import { type components, createValidator } from '@kortex-hub/mcp-registry-types';
 import { injectable } from 'inversify';
 
+export interface SchemaValidationResult {
+  isValid: boolean;
+  /** Names of servers with invalid schemas (only populated when validating ServerList) */
+  invalidServerNames: Set<string>;
+}
+
 /**
  * Service for validating MCP registry data against OpenAPI schemas.
  * Uses AJV validators created from the mcp-registry-types schemas.
@@ -32,16 +38,17 @@ export class MCPSchemaValidator {
    * @param schemaName - The schema component name (e.g., 'ServerList', 'ServerResponse')
    * @param contextName - Optional context name for error messages (e.g., registry URL)
    * @param suppressWarnings - Optional flag to suppress warnings (default: false)
-   * @returns true if valid, false if invalid
+   * @returns Validation result with isValid flag and invalidServerNames (for ServerList)
    */
   validateSchemaData(
     jsonData: unknown,
     schemaName: keyof components['schemas'],
     contextName?: string,
     suppressWarnings: boolean = false,
-  ): boolean {
+  ): SchemaValidationResult {
     const validator = createValidator(schemaName);
     const isValid = validator(jsonData);
+    const invalidServerNames = new Set<string>();
 
     if (!isValid && !suppressWarnings) {
       const context = contextName ? ` from '${contextName}'` : '';
@@ -51,6 +58,26 @@ export class MCPSchemaValidator {
       );
     }
 
-    return isValid;
+    // For ServerList, extract the names of invalid servers from validation errors
+    if (schemaName === 'ServerList' && validator.errors) {
+      const serverList = jsonData as components['schemas']['ServerList'];
+      const serverIndexRegex = /^\/servers\/(\d+)/;
+      for (const error of validator.errors) {
+        // Error paths look like "/servers/0/server/name" or "/servers/2/_meta"
+        const match = serverIndexRegex.exec(error.instancePath);
+        if (match?.[1]) {
+          const serverIndex = parseInt(match[1], 10);
+          const server = serverList.servers[serverIndex];
+          if (server?.server?.name) {
+            invalidServerNames.add(server.server.name);
+          }
+        }
+      }
+    }
+
+    return {
+      isValid,
+      invalidServerNames,
+    };
   }
 }

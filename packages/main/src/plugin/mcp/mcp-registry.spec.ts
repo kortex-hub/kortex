@@ -45,7 +45,7 @@ const apiSender: ApiSenderType = {
   receive: vi.fn(),
 };
 
-const validateSchemaDataMock = vi.fn().mockReturnValue(true);
+const validateSchemaDataMock = vi.fn().mockReturnValue({ isValid: true, invalidServerNames: new Set<string>() });
 
 const schemaValidator: MCPSchemaValidator = {
   validateSchemaData: validateSchemaDataMock,
@@ -118,14 +118,10 @@ test('listMCPServersFromRegistries', async () => {
 });
 
 test('listMCPServersFromRegistries marks servers with invalid schemas', async () => {
-  validateSchemaDataMock.mockImplementation((data, schemaName) => {
-    // Fail validation for ServerResponse with name 'Invalid server'
-    if (schemaName === 'ServerResponse' && data && typeof data === 'object' && 'server' in data) {
-      const serverResponse = data as { server: { name: string } };
-      return serverResponse.server.name !== 'Invalid server';
-    }
-    // Pass validation for ServerList
-    return true;
+  // Mock validateSchemaData to return the invalid server name for ServerList validation
+  validateSchemaDataMock.mockReturnValue({
+    isValid: false,
+    invalidServerNames: new Set(['Invalid server']),
   });
 
   mcpRegistry.suggestMCPRegistry({
