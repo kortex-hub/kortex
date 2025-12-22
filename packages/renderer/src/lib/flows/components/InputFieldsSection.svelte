@@ -11,9 +11,12 @@ import InputFieldTable from './InputFieldTable.svelte';
 
 interface Props {
   parameters: InputField[];
+  onDetectFields: () => Promise<void>;
+  detectingFields: boolean;
+  hasPrompt: boolean;
 }
 
-let { parameters = $bindable() }: Props = $props();
+let { parameters = $bindable(), onDetectFields, detectingFields, hasPrompt }: Props = $props();
 
 // Modal state
 let showInputFieldModal = $state(false);
@@ -57,7 +60,19 @@ function handleCancelInputField(): void {
 <div class="px-6">
   <div class="flex justify-between items-center mb-2">
     <span>Input Fields</span>
-    <Button onclick={handleAddInputField}>Add Field</Button>
+    <div class="flex gap-2">
+      <Button
+        onclick={onDetectFields}
+        disabled={detectingFields || !hasPrompt}
+        inProgress={detectingFields}
+        title={hasPrompt 
+          ? 'Analyze prompt to detect parameters' 
+          : 'Enter a prompt first to enable field detection'}
+      >
+        {detectingFields ? 'Detecting...' : 'Detect Fields'}
+      </Button>
+      <Button onclick={handleAddInputField}>Add Field</Button>
+    </div>
   </div>
 
   <div class="mb-3 p-3 bg-[var(--pd-content-card-bg)] border border-[var(--pd-input-field-stroke)] rounded">
