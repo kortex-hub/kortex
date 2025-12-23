@@ -35,7 +35,7 @@
     "watch": "vite build --watch"
   },
   "dependencies": {
-    "@ai-sdk/google": "^2.0.51",
+    "@ai-sdk/google": "^3.0.0",
     "@google/genai": "^1.25.0",
     "@kortex-app/api": "workspace:*"
   },
