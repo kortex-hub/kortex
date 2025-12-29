@@ -179,7 +179,7 @@ export class ChatManager {
 
     // ai sdk/fetch does not support file:URLs
     const convertedMessages = await this.convertMessages(params.messages);
-    const messages = convertToModelMessages(convertedMessages);
+    const messages = await convertToModelMessages(convertedMessages);
 
     const tools = await this.mcpManager.getToolSet(params.tools);
 
