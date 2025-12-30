@@ -1,20 +1,18 @@
 <script lang="ts">
 import type { IconDefinition } from '@fortawesome/fontawesome-common-types';
 import { DropdownMenu } from '@podman-desktop/ui-svelte';
-import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { onDestroy } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';
 
+import LoadingIcon from '/@/lib/ui/LoadingIcon.svelte';
 import { context as storeContext } from '/@/stores/context';
 
 import type { ContextUI } from '../context/context';
 import { ContextKeyExpr } from '../context/contextKey';
-import LoadingIcon from './LoadingIcon.svelte';
 
 interface Props {
   title: string;
   icon: IconDefinition | string;
-  fontAwesomeIcon?: IconDefinition;
   hidden?: boolean;
   disabledWhen?: string;
   enabled?: boolean;
@@ -29,7 +27,6 @@ interface Props {
 let {
   title,
   icon,
-  fontAwesomeIcon,
   hidden = false,
   disabledWhen = '',
   enabled = true,
@@ -123,11 +120,9 @@ const styleClass = $derived(
     class:hidden={hidden}
     class:inline-flex={!hidden}
     disabled={!enabled}>
-    {#if fontAwesomeIcon}
-      <LoadingIcon
-        icon={fontAwesomeIcon}
-        loading={inProgress}
-      />
-    {/if}
+    <LoadingIcon
+      icon={icon}
+      loading={inProgress}
+    />
   </button>
 {/if}
