@@ -1,9 +1,9 @@
 <script lang="ts">
 import type { IconDefinition } from '@fortawesome/fontawesome-common-types';
-import { DropdownMenu, isFontAwesomeIcon } from '@podman-desktop/ui-svelte';
-import { onDestroy, onMount } from 'svelte';
+import { DropdownMenu } from '@podman-desktop/ui-svelte';
+import { Icon } from '@podman-desktop/ui-svelte/icons';
+import { onDestroy } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';
-import Fa from 'svelte-fa';
 
 import { context as storeContext } from '/@/stores/context';
 
@@ -75,12 +75,6 @@ function computeEnabled(): void {
   enabled = !disabled;
 }
 
-onMount(() => {
-  if (isFontAwesomeIcon(icon)) {
-    fontAwesomeIcon = icon;
-  }
-});
-
 onDestroy(() => {
   // unsubscribe from the store
   if (contextsUnsubscribe) {
@@ -135,9 +129,7 @@ const styleClass = $derived(
     class:hidden={hidden}
     class:inline-flex={!hidden}
     disabled={!enabled}>
-    {#if fontAwesomeIcon}
-      <Fa class="h-4 w-4 {iconOffset}" icon={fontAwesomeIcon} />
-    {/if}
+    <Icon class="h-4 w-4 {iconOffset}" icon={icon ?? fontAwesomeIcon} />
 
     <div
       aria-label="spinner"

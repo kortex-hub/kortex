@@ -139,8 +139,8 @@ export class MCPRegistry {
     this.configuration = this.configurationRegistry.getConfiguration(MCP_SECTION_NAME);
   }
 
-  enhanceServerDetail(server: components['schemas']['ServerDetail']): MCPServerDetail {
-    return { ...server, serverId: encodeURI(server.name) };
+  enhanceServerDetail(server: components['schemas']['ServerDetail'], hasInvalidSchema?: boolean): MCPServerDetail {
+    return { ...server, serverId: encodeURI(server.name), hasInvalidSchema };
   }
 
   init(): void {
@@ -159,7 +159,11 @@ export class MCPRegistry {
 
       const { servers } = await this.listMCPServersFromRegistry(registry.serverUrl);
       for (const rawServer of servers) {
-        const server = this.enhanceServerDetail(rawServer.server);
+        const hasInvalidSchema =
+          'hasInvalidSchema' in rawServer && typeof rawServer.hasInvalidSchema === 'boolean'
+            ? rawServer.hasInvalidSchema
+            : false;
+        const server = this.enhanceServerDetail(rawServer.server, hasInvalidSchema);
         if (!server.serverId) {
           continue;
         }
@@ -546,21 +550,32 @@ export class MCPRegistry {
 
     const data: components['schemas']['ServerList'] = await content.json();
 
-    // Validate the ServerList data but continue even if invalid
-    this.schemaValidator.validateSchemaData(data, 'ServerList', registryURL);
+    const validationResult = this.schemaValidator.validateSchemaData(data, 'ServerList', registryURL);
+
+    // Mark servers with invalid schemas based on the validation result
+    const validatedServers = data.servers.map(serverResponse => {
+      const hasInvalidSchema = validationResult.invalidServerNames.has(serverResponse.server.name);
+      return {
+        ...serverResponse,
+        hasInvalidSchema,
+      };
+    });
 
     // If pagination info exists, fetch the next page recursively
     if (data.metadata?.nextCursor) {
       const nextPage = await this.listMCPServersFromRegistry(registryURL, data.metadata.nextCursor);
       return {
         ...data,
-        servers: [...data.servers, ...nextPage.servers],
-        // merge metadata — keep the last page’s metadata
+        servers: [...validatedServers, ...nextPage.servers],
+        // merge metadata — keep the last page's metadata
         metadata: nextPage.metadata,
       };
     }
 
-    return data;
+    return {
+      ...data,
+      servers: validatedServers,
+    };
   }
 
   registerInternalMCPServer(server: MCPServerDetail): void {
@@ -592,7 +607,15 @@ export class MCPRegistry {
       try {
         const serverList: components['schemas']['ServerList'] = await this.listMCPServersFromRegistry(registryURL);
         // now, aggregate the servers from the list ensuring each server has an id
-        serverDetails.push(...serverList.servers.map(({ server }) => this.enhanceServerDetail(server)));
+        serverDetails.push(
+          ...serverList.servers.map(rawServer => {
+            const hasInvalidSchema =
+              'hasInvalidSchema' in rawServer && typeof rawServer.hasInvalidSchema === 'boolean'
+                ? rawServer.hasInvalidSchema
+                : false;
+            return this.enhanceServerDetail(rawServer.server, hasInvalidSchema);
+          }),
+        );
       } catch (error: unknown) {
         console.error(`Failed fetch for registry ${registryURL}`, error);
       }
