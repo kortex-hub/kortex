@@ -63,6 +63,7 @@
     "@zerodevx/svelte-toast": "^0.9.6",
     "bits-ui": "^2.9.2",
     "clsx": "^2.1.1",
+    "cronstrue": "^3.3.0",
     "date-fns": "^4.1.0",
     "electron-context-menu": "4.1.0",
     "js-yaml": "^4.1.0",
