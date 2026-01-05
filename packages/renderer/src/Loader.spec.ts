@@ -63,8 +63,9 @@ vi.hoisted(() => {
     key: (index: number): string | null => [...localStorageData.keys()][index] ?? null,
   };
 
-  Object.defineProperty(globalThis, 'matchMedia', { value: matchMediaMock, writable: true });
-  Object.defineProperty(globalThis, 'localStorage', { value: localStorageMock, writable: true });
+  // Use Vitest's stubGlobal for mocking global objects
+  vi.stubGlobal('matchMedia', vi.fn().mockImplementation(matchMediaMock));
+  vi.stubGlobal('localStorage', localStorageMock);
 });
 
 // first, patch window object
@@ -89,6 +90,7 @@ vi.mock('tinro', () => {
 
 // Extend the existing jsdom window instead of replacing it
 // This preserves DOM APIs needed by Svelte 5
+// Note: Using Object.assign here because the component accesses window.events.receive() directly
 Object.assign(window, {
   events: {
     receive: eventEmitter.receive,
@@ -99,6 +101,7 @@ Object.assign(window, {
 });
 
 // Override addEventListener to capture custom events
+// Note: Using manual override instead of vi.spyOn() because vi.resetAllMocks() in beforeEach would clear the spy
 const originalAddEventListener = window.addEventListener.bind(window);
 window.addEventListener = (type: string, listener: any, options?: any): void => {
   callbacks.set(type, listener);
