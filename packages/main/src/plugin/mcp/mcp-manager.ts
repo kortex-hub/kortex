@@ -74,24 +74,37 @@ export class MCPManager implements IAsyncDisposable {
   }
 
   /**
-   * Must be under the form `${internalProviderId}:${connectionName}`
    * @param selected
    */
-  public async getToolSet(selected: Array<string> | undefined = undefined): Promise<ToolSet> {
-    const tools = await Promise.all(
-      (
-        selected?.reduce(
-          (accumulator, current) => {
-            const client = this.#client.get(current);
-            if (client) {
-              accumulator.push(client);
+  public async getToolSet(selected: Record<string, Array<string>> | undefined = undefined): Promise<ToolSet> {
+    let tools: Array<ToolSet>;
+    if (!selected) {
+      // Get all tools without filtering
+      tools = await Promise.all(this.#client.values().map(client => client.tools()));
+    } else {
+      tools = await Promise.all(
+        Object.entries(selected).map(
+          async ([mcpId, tools]) => {
+            const client = this.#client.get(mcpId);
+            if (!client) {
+              return {};
             }
-            return accumulator;
+            const toolset = await client.tools();
+
+            const filteredSet = new Set<string>(tools);
+
+            return Object.entries(toolset).reduce((accumulator, [toolName, content]) => {
+              if (filteredSet.has(toolName)) {
+                accumulator[toolName] = content;
+              }
+
+              return accumulator;
+            }, {} as ToolSet);
           },
-          [] as Array<ExtractedMCPClient>,
-        ) ?? Array.from(this.#client.values())
-      ).map(client => client.tools()),
-    );
+          [] as Array<ToolSet>,
+        ),
+      );
+    }
 
     return tools.reduce((acc, current) => {
       return { ...acc, ...current };

@@ -42,6 +42,7 @@ import { Proxy } from '../proxy.js';
 import { Telemetry } from '../telemetry/telemetry.js';
 import { Disposable } from '../types/disposable.js';
 import { MCPManager } from './mcp-manager.js';
+import { MCPSchemaValidator } from './mcp-schema-validator.js';
 
 interface RemoteStorageConfigFormat {
   serverId: string;
@@ -73,6 +74,7 @@ export class MCPRegistry {
   private registries: InternalMCPRegistry[] = [];
   private suggestedRegistries: kortexAPI.RegistrySuggestedProvider[] = [];
   private providers: Map<string, kortexAPI.MCPRegistryProvider> = new Map();
+  private internalMCPServers: MCPServerDetail[] = [];
 
   private readonly _onDidRegisterRegistry = new Emitter<kortexAPI.MCPRegistry>();
   private readonly _onDidUpdateRegistry = new Emitter<kortexAPI.MCPRegistry>();
@@ -104,6 +106,8 @@ export class MCPRegistry {
     private safeStorageRegistry: SafeStorageRegistry,
     @inject(IConfigurationRegistry)
     private configurationRegistry: IConfigurationRegistry,
+    @inject(MCPSchemaValidator)
+    private schemaValidator: MCPSchemaValidator,
   ) {
     this.proxy.onDidUpdateProxy(settings => {
       this.proxySettings = settings;
@@ -460,7 +464,7 @@ export class MCPRegistry {
   }
 
   protected setupRemote(
-    remote: components['schemas']['Remote'] | undefined,
+    remote: components['schemas']['StreamableHttpTransport'] | components['schemas']['SseTransport'] | undefined,
     headers: Record<string, string>,
   ): Transport {
     if (!remote) throw new Error('remote not found');
@@ -542,6 +546,9 @@ export class MCPRegistry {
 
     const data: components['schemas']['ServerList'] = await content.json();
 
+    // Validate the ServerList data but continue even if invalid
+    this.schemaValidator.validateSchemaData(data, 'ServerList', registryURL);
+
     // If pagination info exists, fetch the next page recursively
     if (data.metadata?.nextCursor) {
       const nextPage = await this.listMCPServersFromRegistry(registryURL, data.metadata.nextCursor);
@@ -554,6 +561,22 @@ export class MCPRegistry {
     }
 
     return data;
+  }
+
+  registerInternalMCPServer(server: MCPServerDetail): void {
+    this.internalMCPServers.push(server);
+  }
+
+  unregisterInternalMCPServer(serverId: string): void {
+    this.internalMCPServers = this.internalMCPServers.filter(srv => srv.serverId !== serverId);
+  }
+
+  getInternalMCPServer(serverId: string): MCPServerDetail | undefined {
+    return this.internalMCPServers.find(srv => srv.serverId === serverId);
+  }
+
+  listInternalMCPServers(): MCPServerDetail[] {
+    return this.internalMCPServers;
   }
 
   async listMCPServersFromRegistries(): Promise<Array<MCPServerDetail>> {
@@ -574,7 +597,7 @@ export class MCPRegistry {
         console.error(`Failed fetch for registry ${registryURL}`, error);
       }
     }
-    return serverDetails;
+    return serverDetails.concat(this.internalMCPServers);
   }
 
   async updateMCPRegistry(registry: kortexAPI.MCPRegistry): Promise<void> {

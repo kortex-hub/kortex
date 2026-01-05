@@ -18,7 +18,7 @@
 import '@testing-library/jest-dom/vitest';
 
 import type { UIMessage } from '@ai-sdk/svelte';
-import { render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
 import type { DynamicToolUIPart } from 'ai';
 import { describe, expect, test } from 'vitest';
 
@@ -36,7 +36,7 @@ function dynamicTool(toolName: string, id: string): DynamicToolUIPart {
 }
 
 describe('mcp-messages.svelte', () => {
-  test('shows empty state when no assistant dynamic-tool parts are present', () => {
+  test('shows empty state when no assistant dynamic-tool parts are present', async () => {
     const messages: UIMessage[] = [
       { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Hello' }] },
       { id: 'a1', role: 'assistant', parts: [{ type: 'text', text: 'Hi!' }] },
@@ -48,6 +48,10 @@ describe('mcp-messages.svelte', () => {
 
     // Header should always be present
     expect(screen.getByText('MCP')).toBeInTheDocument();
+
+    // Click to open the MCP panel
+    const showMcpButton = screen.getByRole('button', { name: 'Show MCP panel' });
+    await fireEvent.click(showMcpButton);
 
     // Empty state should be visible
     expect(screen.getByText('No MCP activity yet.')).toBeInTheDocument();
@@ -90,6 +94,9 @@ describe('mcp-messages.svelte', () => {
 
     // Empty state should not be present
     expect(screen.queryByText('No MCP activity yet.')).not.toBeInTheDocument();
+
+    const showMcpButton = screen.getByRole('button', { name: 'Show MCP panel' });
+    await fireEvent.click(showMcpButton);
 
     // The component wraps each ToolParts in a specific container div; count them
     //const entryContainers = container.querySelectorAll('.rounded-md.bg-background.p-2.ring-1.ring-border');

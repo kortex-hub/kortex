@@ -72,7 +72,7 @@ function onDidChangeConfigurationCallback(e: Event): void {
           <NewContentOnDashboardBadge />
         </div>
         {#if iconWithTitle}
-          <div class="text-xs text-center ml-[2px]" aria-label="Chat">
+          <div class="text-xs text-center ml-[2px]" aria-label="Chat title">
             Chat
           </div>
         {/if}

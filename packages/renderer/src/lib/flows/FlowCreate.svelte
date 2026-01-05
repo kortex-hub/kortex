@@ -12,6 +12,7 @@ import { getModels } from '/@/lib/models/models-utils';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 import { handleNavigation } from '/@/navigation';
 import { isFlowConnectionAvailable } from '/@/stores/flow-provider';
+import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import { providerInfos } from '/@/stores/providers';
 import { FlowGenerationParametersSchema } from '/@api/chat/flow-generation-parameters-schema';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
@@ -20,9 +21,20 @@ import { NavigationPage } from '/@api/navigation-page';
 import type { ModelInfo } from '../chat/components/model-info';
 import FlowIcon from '../images/FlowIcon.svelte';
 import FlowConnectionSelector from './components/flow-connection-selector.svelte';
+import InputFieldsSection from './components/InputFieldsSection.svelte';
 import NoFlowProviders from './components/NoFlowProviders.svelte';
+import type { InputField } from './types/input-field';
 
-let selectedMCP = $state<MCPRemoteServerInfo[]>(flowCreationData.value?.mcp ?? []);
+let selectedMCP = $state<MCPRemoteServerInfo[]>(
+  Object.entries(flowCreationData?.value?.tools ?? {}).reduce((accumulator, [mcpId, _]) => {
+    // for now we cannot specify tools in Flows, so let's select the full MCP
+    const server = $mcpRemoteServerInfos.find(r => r.id === mcpId);
+    if (server) {
+      accumulator.push(server);
+    }
+    return accumulator;
+  }, [] as MCPRemoteServerInfo[]),
+);
 let models: Array<ModelInfo> = $derived(getModels($providerInfos));
 let flowCreationDataModel = $state<ModelInfo | undefined>(flowCreationData.value?.model);
 let selectedModel = $derived<ModelInfo | undefined>(flowCreationDataModel ?? models[0]);
@@ -36,7 +48,9 @@ let name: string = $state(flowCreationData.value?.name ?? `flow-${generateWords(
 let description: string = $state(flowCreationData.value?.description ?? '');
 let instruction: string = $state('You are a helpful assistant.');
 let prompt: string = $state(flowCreationData.value?.prompt ?? '');
+let parameters = $state<InputField[]>([]); // Input fields managed manually in UI
 let flowProviderConnectionKey: string | undefined = $state<string>();
+
 flowCreationData.value = undefined;
 
 let showFlowConnectionSelector = $state(true);
@@ -108,28 +122,31 @@ async function generate(): Promise<void> {
   {#snippet content()}
     <div class="px-5 pb-5 min-w-full">
     {#if $isFlowConnectionAvailable}
-        <div class="bg-[var(--pd-content-card-bg)] px-6 py-4">
-          <div class="flex flex-col">
+        <div class="bg-[var(--pd-content-card-bg)] py-4">
+          <div class="flex flex-col px-6">
             <div>You can create a flow using this form by selecting a model, one or several tools (from MCP servers)
               and specifying instructions.</div>
             <div>A flow can also be created by exporting a chat session. All information's on this page will then automatically be filled.</div>
             <div class="flex flex-row gap-1 items-center">The export feature in the chat window is available through the <FlowIcon /> icon</div>
           </div>
           {#if error}
-            <ErrorMessage {error}/>
+            <div class="px-6">
+              <ErrorMessage {error}/>
+            </div>
           {/if}
 
           <form
             novalidate
             class="p-2 space-y-7 h-fit"
+            onsubmit={(e): void => e.preventDefault()}
           >
-            <div>
+            <div class="px-6">
               <span>Flow Name</span>
               <Input bind:value={name} placeholder="name" class="grow" required />
             </div>
 
             <!-- description -->
-            <div>
+            <div class="px-6">
               <span>Description</span>
               <Textarea
                 placeholder="Description..."
@@ -139,7 +156,7 @@ async function generate(): Promise<void> {
                 autofocus
               />
             </div>
-            <div class="flex flex-col">
+            <div class="flex flex-col px-6">
               <span>Model</span>
                   <ModelSelector
                       class="order-1 md:order-2"
@@ -149,13 +166,13 @@ async function generate(): Promise<void> {
             </div>
 
             <!-- tools -->
-            <div class="flex flex-col">
+            <div class="flex flex-col px-6">
               <span>Tools</span>
               <MCPSelector bind:selected={selectedMCP}/>
             </div>
 
             <!-- prompt -->
-            <div>
+            <div class="px-6">
               <span>Prompt</span>
               <Textarea
                 placeholder="Prompt"
@@ -166,8 +183,10 @@ async function generate(): Promise<void> {
               />
             </div>
 
+            <InputFieldsSection bind:parameters />
+
             <!-- instruction -->
-            <div>
+            <div class="px-6">
               <span>Instruction</span>
               <Textarea
                 placeholder="Instruction"
@@ -177,7 +196,7 @@ async function generate(): Promise<void> {
                 autofocus
               />
             </div>
-            <div class="flex w-full">
+            <div class="flex w-full px-6">
               {#if showFlowConnectionSelector}
               <FlowConnectionSelector class="" bind:value={flowProviderConnectionKey}/>
               {/if}

@@ -2,6 +2,7 @@
 import { Chat } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
 import { untrack } from 'svelte';
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { toast } from 'svelte-sonner';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
@@ -12,11 +13,10 @@ import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import { providerInfos } from '/@/stores/providers';
 import { MessageConfigSchema } from '/@api/chat/message-config';
 import type { Chat as DbChat, Message as DbMessage } from '/@api/chat/schema.js';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import ChatHeader from './chat-header.svelte';
 import { IPCChatTransport } from './ipc-chat-transport';
-import McpMessages from './mcp-messages.svelte';
+import McpToolsSidepanel from './mcp-tools-sidepanel.svelte';
 import Messages from './messages.svelte';
 import MultimodalInput from './multimodal-input.svelte';
 import NoModelsAvailable from './NoModelsAvailable.svelte';
@@ -45,8 +45,26 @@ let selectedModel = $derived<ModelInfo | undefined>(
     : models[0],
 );
 
-let selectedMCP = $state<MCPRemoteServerInfo[]>(
-  config?.mcp?.flatMap(mcpId => $mcpRemoteServerInfos.find(r => r.id === mcpId) ?? []) ?? [],
+/**
+ * Here we store the list of tools selected
+ * key => the MCP Server ID
+ * values => the selected tools
+ */
+const selectedMCPTools = new SvelteMap<string, SvelteSet<string>>(
+  Object.entries(config?.tools ?? {}).reduce((acc, [mcpId, tools]) => {
+    const server = $mcpRemoteServerInfos.find(r => r.id === mcpId);
+    if (server) {
+      const selectedTools: Array<string> = tools ?? Object.keys(server.tools) ?? [];
+      acc.set(mcpId, new SvelteSet(selectedTools));
+    }
+    return acc;
+  }, new Map<string, SvelteSet<string>>()),
+);
+
+const selectedMCPToolsCount = $derived(
+  selectedMCPTools.entries().reduce((acc, [, tools]) => {
+    return acc + tools.size;
+  }, 0),
 );
 
 const chatHistory = ChatHistory.fromContext();
@@ -60,8 +78,14 @@ const chatClient = $derived(
         if (!value) throw new Error('no model selected');
         return value;
       },
-      getMCP: (): Array<string> => {
-        return selectedMCP.map(m => m.id);
+      getMCPTools: (): Record<string, Array<string>> => {
+        return selectedMCPTools.entries().reduce(
+          (accumulator, [mcpId, tools]) => {
+            accumulator[mcpId] = Array.from(tools.values());
+            return accumulator;
+          },
+          {} as Record<string, Array<string>>,
+        );
       },
     }),
     // This way, the client is only recreated when the ID changes, allowing us to fully manage messages
@@ -98,15 +122,31 @@ let attachments = $state<Attachment[]>([]);
 let mcpSelectorOpen = $state(false);
 
 const hasModels = $derived(models && models.length > 0);
+
+function onCheckMCPTool(mcpId: string, toolId: string, checked: boolean): void {
+  const tools = selectedMCPTools.get(mcpId) ?? new SvelteSet();
+  if (checked) {
+    tools.add(toolId);
+  } else {
+    tools.delete(toolId);
+  }
+  selectedMCPTools.set(mcpId, tools);
+}
 </script>
 
 <div class="bg-background flex h-full min-w-0 flex-col">
   {#if hasModels}
-	  <ChatHeader bind:mcpSelectorOpen={mcpSelectorOpen} {readonly} models={models} bind:selectedModel={selectedModel} bind:selectedMCP={selectedMCP} />
+	  <ChatHeader
+      bind:mcpSelectorOpen={mcpSelectorOpen}
+      {readonly}
+      models={models}
+      selectedMCPToolsCount={selectedMCPToolsCount}
+      bind:selectedModel={selectedModel}
+    />
   {/if}
   <div class="flex min-h-0 flex-1">
         {#if hasModels}
-            <div class="flex flex-col flex-3/4"> 
+            <div class="flex flex-col flex-3/4">
                 <Messages
                     {readonly}
                     loading={chatClient.status === 'streaming' || chatClient.status === 'submitted'}
@@ -114,11 +154,15 @@ const hasModels = $derived(models && models.length > 0);
                 />
                 <form class="bg-background mx-auto flex w-full gap-2 px-4 pb-4 md:max-w-3xl md:pb-6">
                     {#if !readonly}
-                        <MultimodalInput {attachments} {chatClient} {selectedModel} {selectedMCP} bind:mcpSelectorOpen={mcpSelectorOpen} class="flex-1" />
+                        <MultimodalInput {attachments} {chatClient} {selectedModel} {selectedMCPTools} class="flex-1" />
                     {/if}
                 </form>
             </div>
-            <McpMessages messages={chatClient.messages} />
+            <McpToolsSidepanel
+              bind:mcpSelectorOpen={mcpSelectorOpen}
+              selectedMCPTools={selectedMCPTools}
+              onCheckMCPTool={onCheckMCPTool}
+            />
         {:else}
             <NoModelsAvailable />
         {/if}

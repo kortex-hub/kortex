@@ -28,9 +28,14 @@ test.each<RecipeTemplateOptions & { testName: string }>([
     recipe: {
       name: 'echo',
       prompt: 'echo the user prompt',
+      description: '',
       title: 'Echo',
       instructions: 'echo the user prompt',
       extensions: [],
+      settings: {
+        goose_provider: '',
+        goose_model: '',
+      },
     },
   },
   {
@@ -38,6 +43,7 @@ test.each<RecipeTemplateOptions & { testName: string }>([
     recipe: {
       name: 'paris-trip',
       prompt: 'make a trip to paris',
+      description: '',
       title: 'Echo',
       instructions: 'echo the user prompt',
       extensions: [
@@ -53,6 +59,10 @@ test.each<RecipeTemplateOptions & { testName: string }>([
           ],
         },
       ],
+      settings: {
+        goose_provider: '',
+        goose_model: '',
+      },
     },
   },
 ])('$testName', async options => {

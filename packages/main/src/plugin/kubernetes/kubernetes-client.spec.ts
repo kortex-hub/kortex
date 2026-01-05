@@ -1120,7 +1120,7 @@ test('Expect applyResourcesFromYAML to correctly call applyResources after loadi
   const applyResourcesSpy = vi.spyOn(client, 'applyResources').mockResolvedValue(expectedObjects);
   const objects = await client.applyResourcesFromYAML('default', podAndDeploymentTestYAML);
   expect(objects).toEqual(expectedObjects);
-  expect(applyResourcesSpy).toHaveBeenCalledWith('default', expectedObjects);
+  expect(applyResourcesSpy).toHaveBeenCalledWith('default', expectedObjects, undefined);
 });
 
 test('setupWatcher sends kubernetes-context-update when kubeconfig file changes', async () => {

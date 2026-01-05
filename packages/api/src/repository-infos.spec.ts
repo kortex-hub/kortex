@@ -22,7 +22,7 @@ import { GITHUB_OWNER, GITHUB_REPOSITORY, REPOSITORY_HOMEPAGE, REPOSITORY_URL } 
 
 test('check constants correctly extracted from package.json', async () => {
   expect(REPOSITORY_URL).toBe('https://github.com/kortex-hub/kortex');
-  expect(REPOSITORY_HOMEPAGE).toBe('https://www.TODO');
+  expect(REPOSITORY_HOMEPAGE).toBe('https://github.com/kortex-hub/kortex');
   expect(GITHUB_OWNER).toBe('kortex-hub');
   expect(GITHUB_REPOSITORY).toBe('kortex');
 });

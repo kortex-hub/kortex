@@ -9,7 +9,7 @@ import { createInputWithVariables } from '/@/lib/mcp/setup/input-with-variable-r
 import type { InputWithVariableResponse, MCPSetupRemoteOptions } from '/@api/mcp/mcp-setup';
 
 interface Props {
-  object: components['schemas']['Remote'];
+  object: components['schemas']['SseTransport'] | components['schemas']['StreamableHttpTransport'];
   loading: boolean;
   remoteIndex: number;
   submit: (options: MCPSetupRemoteOptions) => Promise<void>;

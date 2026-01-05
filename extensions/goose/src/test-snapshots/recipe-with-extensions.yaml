@@ -1,9 +1,11 @@
 title: Echo
 name: paris-trip
-description: 
+description: |
+    
 
 # Required for headless mode
-prompt: make a trip to paris
+prompt: |
+    make a trip to paris
 
 instructions: |
     echo the user prompt
@@ -14,3 +16,8 @@ extensions:
     uri: "https://api.githubcopilot.com/mcp/"
     headers:
       Authorization: "Dummy"
+
+
+settings:
+  goose_provider: 
+  goose_model: 

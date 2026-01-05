@@ -52,6 +52,7 @@ import { Container } from 'inversify';
 import { lookup } from 'mime-types';
 
 import type { KubernetesGeneratorInfo } from '/@/plugin/api/KubernetesGeneratorInfo.js';
+import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import { ExtensionLoader } from '/@/plugin/extension/extension-loader.js';
 import { ExtensionWatcher } from '/@/plugin/extension/extension-watcher.js';
 import { FlowManager } from '/@/plugin/flow/flow-manager.js';
@@ -192,6 +193,7 @@ import { downloadGuideList } from './learning-center/learning-center.js';
 import { LearningCenterInit } from './learning-center-init.js';
 import { LibpodApiInit } from './libpod-api-enable/libpod-api-init.js';
 import { INTERNAL_PROVIDER_ID, MCPRegistry } from './mcp/mcp-registry.js';
+import { MCPSchemaValidator } from './mcp/mcp-schema-validator.js';
 import { MessageBox } from './message-box.js';
 import { NavigationItemsInit } from './navigation-items-init.js';
 import { OnboardingRegistry } from './onboarding-registry.js';
@@ -525,8 +527,10 @@ export class PluginSystem {
     container.bind<MenuRegistry>(MenuRegistry).toSelf().inSingletonScope();
     container.bind<KubeGeneratorRegistry>(KubeGeneratorRegistry).toSelf().inSingletonScope();
     container.bind<ImageRegistry>(ImageRegistry).toSelf().inSingletonScope();
+    container.bind<MCPSchemaValidator>(MCPSchemaValidator).toSelf().inSingletonScope();
     container.bind<MCPRegistry>(MCPRegistry).toSelf().inSingletonScope();
     container.bind<MCPIPCHandler>(MCPIPCHandler).toSelf().inSingletonScope();
+    container.bind<ChunkProviderRegistry>(ChunkProviderRegistry).toSelf().inSingletonScope();
     container.bind<ViewRegistry>(ViewRegistry).toSelf().inSingletonScope();
     container.bind<Context>(Context).toSelf().inSingletonScope();
     container.bind<ContainerProviderRegistry>(ContainerProviderRegistry).toSelf().inSingletonScope();
@@ -785,6 +789,8 @@ export class PluginSystem {
     const mcpRegistry = container.get<MCPRegistry>(MCPRegistry);
     const schedulerRegistry = container.get<SchedulerRegistry>(SchedulerRegistry);
     mcpRegistry.init();
+    const chunkProviderRegistry = container.get<ChunkProviderRegistry>(ChunkProviderRegistry);
+    chunkProviderRegistry.init();
 
     const mcpIPCHandler = container.get<MCPIPCHandler>(MCPIPCHandler);
     mcpIPCHandler.init();
@@ -938,6 +944,7 @@ export class PluginSystem {
           namespace: string;
           hideSecrets: boolean;
           dryrun: boolean;
+          params: Record<string, string>;
         },
       ): Promise<string> => {
         if (!options.dryrun && options.hideSecrets) throw new Error('cannot apply YAML while hidding secrets');
@@ -953,6 +960,7 @@ export class PluginSystem {
           flowId: flow.flowId,
           namespace: options.namespace,
           hideSecrets: options.hideSecrets,
+          params: options.params,
         });
 
         if (options.dryrun) {
@@ -2170,22 +2178,6 @@ export class PluginSystem {
     );
 
     this.ipcHandle(
-      'mcp-manager:getTools',
-      async (_listener, mcpId: string): Promise<Record<string, { description: string }>> => {
-        const tools = await mcpManager.getToolSet([mcpId]);
-
-        return Object.fromEntries(
-          Object.entries(tools).map(([key, value]) => [
-            key,
-            {
-              description: value.description ?? '',
-            },
-          ]),
-        );
-      },
-    );
-
-    this.ipcHandle(
       'image-registry:updateRegistry',
       async (_listener, registry: containerDesktopAPI.Registry): Promise<void> => {
         await imageRegistry.updateRegistry(registry);
@@ -2696,6 +2688,29 @@ export class PluginSystem {
           navigateToTask: () => navigationManager.navigateToProviderTask(internalProviderId, taskId),
           execute: (logger: LoggerWithEnd, token?: containerDesktopAPI.CancellationToken) =>
             providerRegistry.createInferenceProviderConnection(internalProviderId, params, logger, token),
+          executeErrorMsg: (err: unknown) => `Something went wrong while trying to create provider: ${err}`,
+        });
+      },
+    );
+
+    this.ipcHandle(
+      'provider-registry:createRagProviderConnection',
+      async (
+        _listener: Electron.IpcMainInvokeEvent,
+        internalProviderId: string,
+        params: { [key: string]: unknown },
+        loggerId: string,
+        tokenId: number | undefined,
+        taskId: number | undefined,
+      ): Promise<void> => {
+        const providerName = providerRegistry.getProviderInfo(internalProviderId)?.name;
+        return taskConnectionUtils.withTask({
+          loggerId,
+          tokenId,
+          title: `Creating ${providerName ?? 'RAG'} provider`,
+          navigateToTask: () => navigationManager.navigateToProviderTask(internalProviderId, taskId),
+          execute: (logger: LoggerWithEnd, token?: containerDesktopAPI.CancellationToken) =>
+            providerRegistry.createRagProviderConnection(internalProviderId, params, logger, token),
           executeErrorMsg: (err: unknown) => `Something went wrong while trying to create provider: ${err}`,
         });
       },

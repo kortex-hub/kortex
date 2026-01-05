@@ -18,8 +18,10 @@
 
 import type { ProviderSchedulerCommand } from '@kortex-app/api';
 import { injectable } from 'inversify';
+import mustache from 'mustache';
 
 import type { CronComponents } from '/@/helper/cron-parser';
+import taskTemplate from '/@/helper/windows/templates/task.mustache?raw';
 
 export interface SchtasksXmlOptions {
   id: string;
@@ -29,6 +31,28 @@ export interface SchtasksXmlOptions {
   command: ProviderSchedulerCommand;
   outputFile: string;
   cronComponents: CronComponents;
+}
+
+interface TimeTrigger {
+  intervalMinutes: number;
+}
+
+interface CalendarTrigger {
+  startBoundary: string;
+  daysOfWeek?: string;
+  daysOfMonth?: string;
+  everyDay?: boolean;
+}
+
+interface TaskTemplateData {
+  id: string;
+  escapedId: string;
+  metadataXml: string;
+  timeTriggers: TimeTrigger[];
+  calendarTriggers: CalendarTrigger[];
+  executorScript: string;
+  args: string;
+  envArgs: string;
 }
 
 @injectable()
@@ -46,47 +70,29 @@ export class SchtasksXmlGenerator {
     // Complete arguments string for the executor
     const allArgs = `"${this.escapePowerShellArg(storageDir)}" "${this.escapePowerShellArg(id)}" -Metadata ${escapedMetadataJson} ${commandArgs}`;
 
-    const triggers = this.buildTriggers(cronComponents);
-    const actions = this.buildActions(executorScript, allArgs, command.env);
-    const registrationInfo = this.buildRegistrationInfo(id, metadata);
+    // Build triggers
+    const { timeTriggers, calendarTriggers } = this.buildTriggers(cronComponents);
 
-    const xml = `<?xml version="1.0"?>
-<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
-${registrationInfo}
-  <Triggers>
-${triggers}
-  </Triggers>
-  <Principals>
-    <Principal id="Author">
-      <LogonType>InteractiveToken</LogonType>
-      <RunLevel>LeastPrivilege</RunLevel>
-    </Principal>
-  </Principals>
-  <Settings>
-    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
-    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
-    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
-    <AllowHardTerminate>true</AllowHardTerminate>
-    <StartWhenAvailable>true</StartWhenAvailable>
-    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
-    <IdleSettings>
-      <StopOnIdleEnd>false</StopOnIdleEnd>
-      <RestartOnIdle>false</RestartOnIdle>
-    </IdleSettings>
-    <AllowStartOnDemand>true</AllowStartOnDemand>
-    <Enabled>true</Enabled>
-    <Hidden>false</Hidden>
-    <RunOnlyIfIdle>false</RunOnlyIfIdle>
-    <WakeToRun>false</WakeToRun>
-    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
-    <Priority>7</Priority>
-  </Settings>
-  <Actions Context="Author">
-${actions}
-  </Actions>
-</Task>
-`;
+    // Build env args
+    const envArgs = this.buildEnvArgs(command.env);
 
+    // Build metadata XML
+    const metadataXml = Object.entries(metadata)
+      .map(([key, value]) => `      <${this.escapeXml(key)}>${this.escapeXml(value)}</${this.escapeXml(key)}>`)
+      .join('\n');
+
+    const templateData: TaskTemplateData = {
+      id,
+      escapedId: this.escapeXml(id),
+      metadataXml,
+      timeTriggers,
+      calendarTriggers,
+      executorScript,
+      args: allArgs,
+      envArgs,
+    };
+
+    const xml = mustache.render(taskTemplate, templateData);
     // Convert LF to CRLF for Windows compatibility
     return xml.replace(/\n/g, '\r\n');
   }
@@ -100,7 +106,10 @@ ${actions}
       .replace(/'/g, '&apos;');
   }
 
-  private buildTriggers(components: CronComponents): string {
+  private buildTriggers(components: CronComponents): {
+    timeTriggers: TimeTrigger[];
+    calendarTriggers: CalendarTrigger[];
+  } {
     // Helper: expand cron expressions into numbers
     const expandField = (field: string, max: number): number[] => {
       if (field === '*') return [];
@@ -136,14 +145,10 @@ ${actions}
       components.weekday === '*'
     ) {
       const intervalMinutes = Number.parseInt(components.minute.slice(2), 10);
-      return `    <TimeTrigger>
-      <Repetition>
-        <Interval>PT${intervalMinutes}M</Interval>
-        <StopAtDurationEnd>false</StopAtDurationEnd>
-      </Repetition>
-      <StartBoundary>2025-01-01T00:00:00</StartBoundary>
-      <Enabled>true</Enabled>
-    </TimeTrigger>`;
+      return {
+        timeTriggers: [{ intervalMinutes }],
+        calendarTriggers: [],
+      };
     }
 
     // For complex schedules, create CalendarTrigger with ScheduleByDay/Week/Month
@@ -153,7 +158,7 @@ ${actions}
     const weekdays = expandField(components.weekday, 7);
 
     // Generate triggers for each time combination
-    const triggers: string[] = [];
+    const calendarTriggers: CalendarTrigger[] = [];
 
     const hoursList = hours.length ? hours : [0];
     const minutesList = minutes.length ? minutes : [0];
@@ -161,50 +166,27 @@ ${actions}
     for (const h of hoursList) {
       for (const m of minutesList) {
         const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
+        const startBoundary = `2025-01-01T${time}`;
 
         if (weekdays.length > 0) {
           // Weekly trigger
           const daysOfWeek = weekdays.map(w => this.getDayOfWeekName(w)).join('');
-          triggers.push(`    <CalendarTrigger>
-      <StartBoundary>2025-01-01T${time}</StartBoundary>
-      <Enabled>true</Enabled>
-      <ScheduleByWeek>
-        <DaysOfWeek>
-          ${daysOfWeek}
-        </DaysOfWeek>
-        <WeeksInterval>1</WeeksInterval>
-      </ScheduleByWeek>
-    </CalendarTrigger>`);
+          calendarTriggers.push({ startBoundary, daysOfWeek });
         } else if (days.length > 0) {
           // Monthly trigger with specific days
-          const daysXml = days.map(d => `<Day>${d}</Day>`).join('\n          ');
-          triggers.push(`    <CalendarTrigger>
-      <StartBoundary>2025-01-01T${time}</StartBoundary>
-      <Enabled>true</Enabled>
-      <ScheduleByMonth>
-        <DaysOfMonth>
-          ${daysXml}
-        </DaysOfMonth>
-        <Months>
-          <January /><February /><March /><April /><May /><June />
-          <July /><August /><September /><October /><November /><December />
-        </Months>
-      </ScheduleByMonth>
-    </CalendarTrigger>`);
+          const daysOfMonth = days.map(d => `<Day>${d}</Day>`).join('\n          ');
+          calendarTriggers.push({ startBoundary, daysOfMonth });
         } else {
           // Daily trigger
-          triggers.push(`    <CalendarTrigger>
-      <StartBoundary>2025-01-01T${time}</StartBoundary>
-      <Enabled>true</Enabled>
-      <ScheduleByDay>
-        <DaysInterval>1</DaysInterval>
-      </ScheduleByDay>
-    </CalendarTrigger>`);
+          calendarTriggers.push({ startBoundary, everyDay: true });
         }
       }
     }
 
-    return triggers.join('\n');
+    return {
+      timeTriggers: [],
+      calendarTriggers,
+    };
   }
 
   private getDayOfWeekName(day: number): string {
@@ -220,34 +202,13 @@ ${actions}
     return days[day % 7];
   }
 
-  private buildActions(executorScript: string, args: string, env?: Record<string, string>): string {
-    // Convert env to JSON string and escape quotes
-    let envArgs = '';
-    if (env && Object.keys(env).length > 0) {
-      const envJson = JSON.stringify(env).replace(/"/g, '\\"'); // Escape quotes for command line
-      envArgs = ` -envJson "${envJson}"`;
+  private buildEnvArgs(env?: Record<string, string>): string {
+    if (!env || Object.keys(env).length === 0) {
+      return '';
     }
-
-    return `    <Exec>
-      <Command>powershell.exe</Command>
-      <Arguments>-NoProfile -NoLogo -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -file ${executorScript} ${args}${envArgs}</Arguments>
-    </Exec>`;
-  }
-
-  private buildRegistrationInfo(id: string, metadata: Record<string, string>): string {
-    const metadataXml = Object.entries(metadata)
-      .map(([key, value]) => `      <${this.escapeXml(key)}>${this.escapeXml(value)}</${this.escapeXml(key)}>`)
-      .join('\n');
-
-    return `  <RegistrationInfo>
-    <Description><![CDATA[
-  <Metadata>
-    <Name>Kortex scheduled task: ${id}</Name>
-${metadataXml}
-  </Metadata>
-]]></Description>
-    <URI>\\Kortex\\${this.escapeXml(id)}</URI>
-  </RegistrationInfo>`;
+    // Escape quotes for command line
+    const envJson = JSON.stringify(env).replace(/"/g, '\\"');
+    return ` -envJson "${envJson}"`;
   }
 
   private escapePowerShellArg(text: string): string {

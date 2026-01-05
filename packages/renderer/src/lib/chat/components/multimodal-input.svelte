@@ -2,12 +2,12 @@
 import { type Chat } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
 import { onMount } from 'svelte';
+import type { SvelteMap } from 'svelte/reactivity';
 import { innerWidth } from 'svelte/reactivity/window';
 import { toast } from 'svelte-sonner';
 
 import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
 import { cn } from '/@/lib/chat/utils/shadcn';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import ExportButton from './ExportButton.svelte';
 import ArrowUpIcon from './icons/arrow-up.svelte';
@@ -23,16 +23,14 @@ let {
   attachments = $bindable(),
   chatClient,
   class: c,
-  selectedMCP,
+  selectedMCPTools,
   selectedModel,
-  mcpSelectorOpen = $bindable(),
 }: {
   attachments: Attachment[];
   chatClient: Chat;
   class?: string;
-  selectedMCP: MCPRemoteServerInfo[];
+  selectedMCPTools: SvelteMap<string, Set<string>>;
   selectedModel?: ModelInfo;
-  mcpSelectorOpen: boolean;
 } = $props();
 
 let input = $state('');
@@ -123,7 +121,7 @@ $effect.pre(() => {
 
 <div class="relative flex w-full flex-col gap-4">
 	{#if mounted && chatClient.messages.length === 0 && attachments.length === 0}
-		<SuggestedActions {chatClient} {selectedMCP} bind:mcpSelectorOpen={mcpSelectorOpen} />
+		<SuggestedActions {chatClient} {selectedMCPTools} />
 	{/if}
 
 	{#if attachments.length > 0}
@@ -174,7 +172,7 @@ $effect.pre(() => {
 	</div>
 
 	<div class="absolute right-0 bottom-0 flex w-fit flex-row items-center justify-end p-2">
-		<ExportButton {chatClient} {selectedModel} {selectedMCP} {loading}/>
+		<ExportButton {chatClient} {selectedModel} {loading} {selectedMCPTools}/>
 		{#if loading}
 			<Button
 				aria-label="Stop generation"

@@ -1,6 +1,6 @@
 {
   "name": "ollama",
-  "displayName": "Ollama Extension",
+  "displayName": "Ollama",
   "description": "Register Ollama models to Kortex.",
   "version": "0.0.1-next",
   "icon": "icon.png",

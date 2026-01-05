@@ -55,7 +55,7 @@
     "yaml": "^2.8.1"
   },
   "dependencies": {
-    "@ai-sdk/svelte": "^3.0.104",
+    "@ai-sdk/svelte": "^4.0.7",
     "@ai-sdk/ui-utils": "^1.2.11",
     "@lucide/svelte": "^0.539.0",
     "@podman-desktop/ui-svelte": "^1.22.0-202509181129-3b9dd05d418",
@@ -71,6 +71,7 @@
     "svelte-sonner": "^1.0.1",
     "tailwind-variants": "^1.0.0",
     "tinro": "^0.6.12",
-    "validator": "^13.15.15"
+    "validator": "^13.15.15",
+    "zod": "^4.1.13"
   }
 }

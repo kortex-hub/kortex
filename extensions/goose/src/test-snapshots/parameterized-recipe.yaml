@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: goose-google-credentials
+  labels:
+    app: goose
+  annotations:
+    kortex-hub/version: 1.0.0
+    kortex-hub/flow-id: demo-flow-id
+stringData:
+    GOOGLE_API_KEY: dummy
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-1
+  labels:
+    app: goose
+  annotations:
+    kortex-hub/version: 1.0.0
+    kortex-hub/flow-id: demo-flow-id
+spec:
+  template:
+    metadata:
+      annotations:
+        kortex-hub/version: 1.0.0
+        kortex-hub/flow-id: demo-flow-id
+    spec:
+      containers:
+        - name: goose
+          image: quay.io/kortex/goose:2025-09-03
+          command: ['/usr/local/bin/goose']
+          args: [
+            'run',
+            '--recipe',
+            '/home/goose/recipe.yaml',
+            '--params',
+            'foo=bar',
+            '--params',
+            'hello=world',
+          ]
+          envFrom:
+            - secretRef:
+                name: goose-google-credentials
+          volumeMounts:
+            - name: goose-recipe-volume
+              mountPath: /home/goose/recipe.yaml
+              subPath: recipe.yaml
+      volumes:
+        # Goose recipe
+        - name: goose-recipe-volume
+          configMap:
+            name: goose-recipe-echo
+      restartPolicy: Never
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: goose-recipe-echo
+  labels:
+    app: goose
+  annotations:
+    kortex-hub/version: 1.0.0
+    kortex-hub/flow-id: demo-flow-id
+data:
+  recipe.yaml: |
+    dummy

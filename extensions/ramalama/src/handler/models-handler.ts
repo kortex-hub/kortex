@@ -72,6 +72,11 @@ export class ModelsHandler {
 
     // get the initial connections
     this.#connections = this.containerExtensionAPI.getEndpoints();
+
+    // refresh the models at startup
+    this.refreshModels().catch((error: unknown) => {
+      console.error('Error refreshing models:', error);
+    });
   }
 
   async refreshModels(): Promise<void> {

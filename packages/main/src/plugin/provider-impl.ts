@@ -40,6 +40,8 @@ import type {
   ProviderScheduler,
   ProviderStatus,
   ProviderUpdate,
+  RagProviderConnection,
+  RagProviderConnectionFactory,
   VmProviderConnection,
   VmProviderConnectionFactory,
 } from '@kortex-app/api';
@@ -58,6 +60,7 @@ export class ProviderImpl implements Provider, IDisposable {
   private kubernetesProviderConnections: Set<KubernetesProviderConnection>;
   private vmProviderConnections: Set<VmProviderConnection>;
   private inferenceProviderConnections: Set<InferenceProviderConnection>;
+  private ragProviderConnections: Set<RagProviderConnection>;
   private flowProviderConnections: Set<FlowProviderConnection>;
 
   // optional factory
@@ -65,6 +68,7 @@ export class ProviderImpl implements Provider, IDisposable {
   private _kubernetesProviderConnectionFactory: KubernetesProviderConnectionFactory | undefined = undefined;
   private _vmProviderConnectionFactory: VmProviderConnectionFactory | undefined = undefined;
   private _inferenceProviderConnectionFactory: InferenceProviderConnectionFactory | undefined = undefined;
+  private _ragProviderConnectionFactory: RagProviderConnectionFactory | undefined = undefined;
 
   private _connectionAuditor: Auditor | undefined = undefined;
 
@@ -102,6 +106,7 @@ export class ProviderImpl implements Provider, IDisposable {
     this.kubernetesProviderConnections = new Set();
     this.vmProviderConnections = new Set();
     this.inferenceProviderConnections = new Set();
+    this.ragProviderConnections = new Set();
     this.flowProviderConnections = new Set();
     this._status = providerOptions.status;
     this._version = providerOptions.version;
@@ -139,6 +144,10 @@ export class ProviderImpl implements Provider, IDisposable {
 
   get inferenceProviderConnectionFactory(): InferenceProviderConnectionFactory | undefined {
     return this._inferenceProviderConnectionFactory;
+  }
+
+  get ragProviderConnectionFactory(): RagProviderConnectionFactory | undefined {
+    return this._ragProviderConnectionFactory;
   }
 
   get connectionAuditor(): Auditor | undefined {
@@ -224,6 +233,10 @@ export class ProviderImpl implements Provider, IDisposable {
     return Array.from(this.inferenceProviderConnections.values());
   }
 
+  get ragConnections(): RagProviderConnection[] {
+    return Array.from(this.ragProviderConnections.values());
+  }
+
   get flowConnections(): FlowProviderConnection[] {
     return Array.from(this.flowProviderConnections.values());
   }
@@ -278,6 +291,17 @@ export class ProviderImpl implements Provider, IDisposable {
     });
   }
 
+  registerRagProviderConnection(connection: RagProviderConnection): Disposable {
+    this.ragProviderConnections.add(connection);
+    const disposable = this.providerRegistry.registerRagConnection(this, connection);
+    this.providerRegistry.onDidRegisterRagConnectionCallback(this, connection);
+    return Disposable.create(() => {
+      this.ragProviderConnections.delete(connection);
+      disposable.dispose();
+      this.providerRegistry.onDidUnregisterRagConnectionCallback(this, connection);
+    });
+  }
+
   setInferenceProviderConnectionFactory(
     inferenceProviderConnectionFactory: InferenceProviderConnectionFactory,
     connectionAuditor?: Auditor,
@@ -286,6 +310,18 @@ export class ProviderImpl implements Provider, IDisposable {
     this._connectionAuditor = connectionAuditor;
     return Disposable.create(() => {
       this._inferenceProviderConnectionFactory = undefined;
+      this._connectionAuditor = undefined;
+    });
+  }
+
+  setRagProviderConnectionFactory(
+    ragProviderConnectionFactory: RagProviderConnectionFactory,
+    connectionAuditor?: Auditor,
+  ): Disposable {
+    this._ragProviderConnectionFactory = ragProviderConnectionFactory;
+    this._connectionAuditor = connectionAuditor;
+    return Disposable.create(() => {
+      this._ragProviderConnectionFactory = undefined;
       this._connectionAuditor = undefined;
     });
   }

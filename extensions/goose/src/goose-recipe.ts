@@ -33,7 +33,7 @@ import type {
   provider as ProviderAPI,
   ProviderConnectionStatus,
 } from '@kortex-app/api';
-import { EventEmitter } from '@kortex-app/api';
+import { env, EventEmitter } from '@kortex-app/api';
 import { generate } from 'random-words';
 import { parse, stringify } from 'yaml';
 
@@ -97,6 +97,10 @@ export class GooseRecipe implements Disposable {
     // map Recipe to Flow
     return Promise.all(
       recipes.map(async ({ path }) => {
+        //Goose uses canonicalize (starting vx.y.z ?) which return path including host
+        if (env.isWindows && path.startsWith('\\\\?\\')) {
+          path = path.substring(4);
+        }
         const flowId = Buffer.from(path).toString('base64');
         const { parameters } = await this.getFlowInfos(flowId);
 
@@ -307,6 +311,10 @@ export class GooseRecipe implements Disposable {
         flowId: options.flowId,
         name: recipeName,
         content: processedContent,
+        params: Object.entries(options.params).map(([key, value]) => ({
+          key,
+          value,
+        })),
       },
       provider: {
         name: providerId,

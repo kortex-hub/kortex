@@ -85,8 +85,8 @@ test('Test rendering of the navigation bar with empty items', async (_arg: unkno
   const navigationBar = screen.getByRole('navigation', { name: 'AppNavigation' });
   expect(navigationBar).toBeInTheDocument();
 
-  const dasboard = screen.getByRole('link', { name: 'Dashboard' });
-  expect(dasboard).toBeInTheDocument();
+  const chat = screen.getByRole('link', { name: 'Chat' });
+  expect(chat).toBeInTheDocument();
   const settings = screen.getByRole('link', { name: 'Settings' });
   expect(settings).toBeInTheDocument();
 });
@@ -132,11 +132,11 @@ test('NAV_BAR_LAYOUT updates on configuration change', async () => {
 
   callbacks.get(NAV_BAR_LAYOUT)?.({ detail: { key: NAV_BAR_LAYOUT, value: AppearanceSettings.IconAndTitle } });
   await tick();
-  expect(screen.getByLabelText('Dashboard title')).toBeInTheDocument();
+  expect(screen.getByLabelText('Chat title')).toBeInTheDocument();
   expect(screen.getByRole('navigation')).toHaveClass('min-w-fit');
 
   callbacks.get(NAV_BAR_LAYOUT)?.({ detail: { key: NAV_BAR_LAYOUT, value: AppearanceSettings.Icon } });
   await tick();
-  expect(screen.queryByLabelText('Dashboard title')).not.toBeInTheDocument();
+  expect(screen.queryByLabelText('Chat title')).not.toBeInTheDocument();
   expect(screen.getByRole('navigation')).toHaveClass('min-w-leftnavbar');
 });

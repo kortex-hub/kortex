@@ -108,7 +108,7 @@ beforeEach(() => {
   } as unknown as Pager<Model>;
 
   const mockList = vi.fn().mockResolvedValue(mockPager);
-  vi.mocked(GoogleGenAI).prototype.models = { list: mockList };
+  vi.mocked(GoogleGenAI).mockReturnValue({ models: { list: mockList } } as unknown as GoogleGenAI);
 });
 
 test('constructor should not do anything', async () => {

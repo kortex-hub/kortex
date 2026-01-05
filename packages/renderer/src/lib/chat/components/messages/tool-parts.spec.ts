@@ -140,7 +140,7 @@ describe('tool-parts.svelte', () => {
     // Expand Tool Image and assert image rendering
     await toggle('Tool Image');
     expect(screen.getByText(content => matches(content, { b: 2 }))).toBeInTheDocument();
-    const img = screen.getByAltText('MCP image') as HTMLImageElement;
+    const img = screen.getByRole('img', { name: 'MCP image/png content' }) as HTMLImageElement;
     expect(img).toBeInTheDocument();
     expect(img.src).toContain('data:image/png;base64,AAA');
 

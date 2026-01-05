@@ -13,7 +13,7 @@ stringData:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: goose-recipe-echo
+  name: job-1
   labels:
     app: goose
   annotations:
@@ -21,12 +21,20 @@ metadata:
     kortex-hub/flow-id: demo-flow-id
 spec:
   template:
+    metadata:
+      annotations:
+        kortex-hub/version: 1.0.0
+        kortex-hub/flow-id: demo-flow-id
     spec:
       containers:
         - name: goose
-          image: quay.io/jotnar/goose:latest
+          image: quay.io/kortex/goose:2025-09-03
           command: ['/usr/local/bin/goose']
-          args: ['run', '--recipe', '/home/goose/recipe.yaml']
+          args: [
+            'run',
+            '--recipe',
+            '/home/goose/recipe.yaml',
+          ]
           envFrom:
             - secretRef:
                 name: goose-google-credentials
@@ -55,12 +63,12 @@ data:
     title: "Paris Explorer"
     name: "Paris Explorer"
     description: "Paris Explorer"
-
+    
     # Required for headless mode
     prompt: "Plan a 7 days trip in Paris, mention per day the planning, starting on monday."
-
+    
     instructions: |
       Your task is to:
       1. List the important monuments
       2. Plan each day of the trip
-
+          

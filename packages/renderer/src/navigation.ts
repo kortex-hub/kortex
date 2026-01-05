@@ -50,12 +50,12 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
       break;
     case NavigationPage.FLOW_DETAILS:
       router.goto(
-        `/flows/${request.parameters.providerId}/${request.parameters.connectionName}/${request.parameters.flowId}/summary`,
+        `/flows/${encodeURIComponent(request.parameters.providerId)}/${encodeURIComponent(request.parameters.connectionName)}/${encodeURIComponent(request.parameters.flowId)}/summary`,
       );
       break;
     case NavigationPage.FLOW_RUN:
       router.goto(
-        `/flows/${request.parameters.providerId}/${request.parameters.connectionName}/${request.parameters.flowId}/run`,
+        `/flows/${encodeURIComponent(request.parameters.providerId)}/${encodeURIComponent(request.parameters.connectionName)}/${encodeURIComponent(request.parameters.flowId)}/run`,
       );
       break;
     case NavigationPage.MCP_INSTALL_FROM_REGISTRY:

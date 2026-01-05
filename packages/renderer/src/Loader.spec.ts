@@ -68,6 +68,9 @@ vi.hoisted(() => {
   vi.stubGlobal('localStorage', localStorageMock);
 });
 
+vi.mock('./lib/chat/route/CustomChat.svelte', () => ({
+  default: vi.fn(),
+}));
 // first, patch window object
 const callbacks = new Map<string, any>();
 const eventEmitter = {

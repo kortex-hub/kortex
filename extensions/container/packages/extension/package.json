@@ -1,6 +1,6 @@
 {
   "name": "container",
-  "displayName": "Container Extension",
+  "displayName": "Container",
   "description": "Allows to interact with container engines (docker, podman, etc.)",
   "version": "0.0.1-next",
   "icon": "icon.png",

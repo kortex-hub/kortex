@@ -15,6 +15,10 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+import { readFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+
 import type { Disposable, Provider, provider as ProviderAPI } from '@kortex-app/api';
 import { EventEmitter } from '@kortex-app/api';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
@@ -24,14 +28,21 @@ import { GooseRecipe } from './goose-recipe';
 
 vi.mock('@kortex-app/api', () => ({
   EventEmitter: vi.fn(),
+  env: {
+    isWindows: false,
+  },
 }));
+
+vi.mock(import('node:fs/promises'));
 
 const PROVIDER_API_MOCK = {
   createProvider: vi.fn(),
+  getInferenceConnections: vi.fn(),
 } as unknown as typeof ProviderAPI;
 const GOOSE_CLI_MOCK = {
   isInstalled: vi.fn(),
   event: vi.fn(),
+  getRecipes: vi.fn(),
 } as unknown as GooseCLI;
 
 const GOOSE_PROVIDER_MOCK = {
@@ -47,6 +58,7 @@ const KORTEX_VERSION = '0.1.0';
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(PROVIDER_API_MOCK.createProvider).mockReturnValue(GOOSE_PROVIDER_MOCK);
+  vi.mocked(PROVIDER_API_MOCK.getInferenceConnections).mockReturnValue([]);
   vi.mocked(EventEmitter).mockReturnValue(EVENT_EMITTER_MOCK);
 });
 
@@ -123,6 +135,7 @@ describe('cliAPI#onDidChange', () => {
         delete: expect.any(Function),
         execute: expect.any(Function),
         generate: expect.any(Function),
+        generateCommandLine: expect.any(Function),
         generateKubernetesYAML: expect.any(Function),
       },
       lifecycle: {},
@@ -182,5 +195,27 @@ describe('goose recipe secrets hiding', () => {
     expect(result).toContain('Authorization: "******************************"');
     expect(result).not.toContain('real-github-token-67890');
     expect(result).not.toContain('Bearer');
+  });
+});
+
+describe('GooseRecipe#all', () => {
+  let recipe: GooseRecipe;
+  beforeEach(() => {
+    recipe = new GooseRecipe(PROVIDER_API_MOCK, GOOSE_CLI_MOCK, KORTEX_VERSION);
+  });
+
+  test('no recipes are mapped to no flows', async () => {
+    vi.mocked(GOOSE_CLI_MOCK.getRecipes).mockResolvedValue([]);
+    const flows = await recipe['all']();
+    expect(flows.length).toBe(0);
+  });
+
+  test('A single recipe is mapped to a flow', async () => {
+    const path = join(homedir(), '.config', 'goose', 'recipes', 'recipe.yaml');
+    vi.mocked(GOOSE_CLI_MOCK.getRecipes).mockResolvedValue([{ path }]);
+    vi.mocked(readFile).mockResolvedValue('title: Recipe\nname: Recipe\n');
+    const flows = await recipe['all']();
+    expect(flows.length).toBe(1);
+    expect(flows[0]).toStrictEqual({ id: expect.any(String), path, parameters: [] });
   });
 });

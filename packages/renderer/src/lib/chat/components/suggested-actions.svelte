@@ -1,30 +1,31 @@
 <script lang="ts">
 import type { Chat } from '@ai-sdk/svelte';
+import { type SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { fly } from 'svelte/transition';
 import { toast } from 'svelte-sonner';
 
 import { mcpRegistriesServerInfos } from '/@/stores/mcp-registry-servers';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
-import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import McpsToInstallToast from './McpsToInstallToast.svelte';
 import { Button } from './ui/button';
 
 let {
   chatClient,
-  selectedMCP,
-  mcpSelectorOpen = $bindable(),
+  selectedMCPTools,
 }: {
   chatClient: Chat;
-  selectedMCP: MCPRemoteServerInfo[];
-  mcpSelectorOpen: boolean;
+  selectedMCPTools: SvelteMap<string, Set<string>>;
 } = $props();
 
 type SuggestedAction = {
   title: string;
   label: string;
   action: string;
-  requiredMcp?: string[];
+  requiredMcp?: {
+    mcpId: string;
+    tools: Array<string>;
+  }[];
 };
 
 const suggestedActions: SuggestedAction[] = [
@@ -32,7 +33,12 @@ const suggestedActions: SuggestedAction[] = [
     title: 'What are the last 5 issues of GitHub',
     label: 'repository podman-desktop/podman-desktop?',
     action: 'What are the last 5 issues of GitHub repository podman-desktop/podman-desktop?',
-    requiredMcp: ['com.github.mcp'],
+    requiredMcp: [
+      {
+        mcpId: 'com.github.mcp',
+        tools: ['list_issues'],
+      },
+    ],
   },
   {
     title: 'Write code to',
@@ -52,17 +58,17 @@ const suggestedActions: SuggestedAction[] = [
 ];
 
 async function onclick(suggestedAction: SuggestedAction): Promise<void> {
-  const mcpsToInstall = suggestedAction.requiredMcp?.flatMap(id => {
-    const mcpInstalledInfo = $mcpRemoteServerInfos.find(mcp => mcp.infos.serverId === id);
+  const mcpsToInstall = suggestedAction.requiredMcp?.flatMap(({ mcpId }) => {
+    const mcpInstalledInfo = $mcpRemoteServerInfos.find(mcp => mcp.infos.serverId === mcpId);
 
     if (mcpInstalledInfo) {
       return [];
     }
 
-    const mcpInfo = $mcpRegistriesServerInfos.find(mcp => mcp.serverId === id);
+    const mcpInfo = $mcpRegistriesServerInfos.find(mcp => mcp.serverId === mcpId);
 
     if (!mcpInfo) {
-      throw Error(`Suggested action ${suggestedAction.action} requires MCP with id ${id} but it was not found.`);
+      throw Error(`Suggested action ${suggestedAction.action} requires MCP with id ${mcpId} but it was not found.`);
     }
 
     return [mcpInfo];
@@ -77,26 +83,68 @@ async function onclick(suggestedAction: SuggestedAction): Promise<void> {
     return;
   }
 
-  const mcpsToSelect = suggestedAction.requiredMcp?.flatMap(id => {
-    const selected = selectedMCP.find(mcp => mcp.infos.serverId === id);
+  const mcpsToSelect = (suggestedAction.requiredMcp ?? []).reduce(
+    (acc, { mcpId, tools }) => {
+      const server = $mcpRemoteServerInfos.find(mcp => mcp.infos.serverId === mcpId);
 
-    if (selected) {
-      return [];
-    }
-    const mcpInfo = $mcpRegistriesServerInfos.find(mcp => mcp.serverId === id);
+      if (server) {
+        const selectedTools: Set<string> = selectedMCPTools.get(server.id) ?? new Set();
+        const requiredTools: Set<string> = new Set(tools);
 
-    if (!mcpInfo) {
-      throw Error(`Suggested action ${suggestedAction.action} requires MCP with id ${id} but it was not found.`);
-    }
+        if (requiredTools.isSubsetOf(selectedTools)) {
+          return acc;
+        }
+      }
 
-    return [mcpInfo.name];
-  });
+      const mcpInfo = $mcpRegistriesServerInfos.find(mcp => mcp.serverId === mcpId);
+
+      if (!mcpInfo) {
+        throw Error(`Suggested action ${suggestedAction.action} requires MCP with id ${mcpId} but it was not found.`);
+      }
+
+      acc.push({ mcpName: mcpInfo.name, tools, serverId: server?.id });
+      return acc;
+    },
+    [] as Array<{ mcpName: string; tools: string[]; serverId?: string }>,
+  );
 
   if (mcpsToSelect?.length) {
-    mcpSelectorOpen = true;
+    let quotedMCPs = [];
+    for (let { mcpName, tools } of mcpsToSelect) {
+      const quoted = tools.map(tool => `'${tool}'`);
+      quotedMCPs.push(`- '${mcpName}' with tools ${quoted.join(',')}`);
+    }
 
-    toast.error(`You need to select the following MCP first: ${mcpsToSelect.join(', ')}`);
-    return;
+    const result = await window.showMessageBox({
+      title: 'Select MCPs',
+      message: `The following MCPs are required to use this suggested action: ${quotedMCPs.join(', ')}. Do you want to select them?`,
+      buttons: ['Yes', 'No'],
+    });
+
+    if (result?.response === 1 || result?.response === undefined) {
+      // No
+      toast.error(`You need to select the following MCP: ${quotedMCPs.join(', ')}`);
+      return;
+    } else {
+      // Yes
+      for (let { mcpName, tools, serverId } of mcpsToSelect) {
+        if (!serverId) {
+          console.error(`Server ID not found for MCP ${mcpName}`);
+          continue;
+        }
+
+        // Get existing tools or create a new Set
+        const existingTools = selectedMCPTools.get(serverId) ?? new SvelteSet<string>();
+
+        // Add each required tool
+        for (let tool of tools) {
+          existingTools.add(tool);
+        }
+
+        // Update the map
+        selectedMCPTools.set(serverId, existingTools);
+      }
+    }
   }
 
   await chatClient.sendMessage({

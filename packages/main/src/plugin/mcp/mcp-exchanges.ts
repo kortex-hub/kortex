@@ -17,8 +17,9 @@
  ***********************************************************************/
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import {
+  isJSONRPCErrorResponse,
   isJSONRPCRequest,
-  isJSONRPCResponse,
+  isJSONRPCResultResponse,
   JSONRPCRequest,
   JSONRPCResponse,
 } from '@modelcontextprotocol/sdk/types.js';
@@ -110,7 +111,7 @@ export class MCPExchanges {
         }
       },
       onReceive: (message, _extra): void => {
-        if (isJSONRPCResponse(message)) {
+        if (isJSONRPCResultResponse(message) || isJSONRPCErrorResponse(message)) {
           this.recordOutput(key, message);
         }
       },

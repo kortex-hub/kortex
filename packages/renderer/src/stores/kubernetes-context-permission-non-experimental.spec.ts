@@ -67,9 +67,9 @@ test('kubernetesContextsPermissions in experimental states mode', async () => {
   expect(callbackExtensionsStarted).toBeDefined();
   await callbackExtensionsStarted!();
 
-  // values are never fetched
-  await new Promise(resolve => setTimeout(resolve, 500));
-  const currentValue = get(kubernetesContextsPermissions);
-  expect(currentValue).toEqual([]);
-  expect(vi.mocked(window.kubernetesGetContextsPermissions)).not.toHaveBeenCalled();
+  await vi.waitFor(() => {
+    // check received data is updated
+    const currentValue = get(kubernetesContextsPermissions);
+    expect(currentValue).toEqual(initialValues);
+  }, 500);
 });

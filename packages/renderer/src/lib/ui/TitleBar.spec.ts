@@ -62,7 +62,7 @@ describe('macOS', () => {
   test('Expect no title', async () => {
     await waitRender({});
 
-    const title = screen.queryByText('Podman Desktop');
+    const title = screen.queryByText('Kortex');
     expect(title).not.toBeInTheDocument();
   });
 });
@@ -88,7 +88,7 @@ describe('linux', () => {
   test('Expect title', async () => {
     await waitRender({});
 
-    const title = screen.queryByText('Podman Desktop');
+    const title = screen.queryByText('Kortex');
     expect(title).toBeInTheDocument();
   });
 });
@@ -114,7 +114,7 @@ describe('Windows', () => {
   test('Expect title', async () => {
     await waitRender({});
 
-    const title = screen.queryByText('Podman Desktop');
+    const title = screen.queryByText('Kortex');
     expect(title).toBeInTheDocument();
   });
 });

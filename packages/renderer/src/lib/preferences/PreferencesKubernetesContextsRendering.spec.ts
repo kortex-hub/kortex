@@ -452,6 +452,14 @@ test('Connect button is displayed on contexts for which state is not known', () 
       deployments: 0,
     },
   });
+  // Set up kubernetesContextsHealths for experimental mode
+  kubernetesContextsHealths.set([
+    { contextName: 'context-name', checking: false, reachable: true, offline: false },
+    { contextName: 'context-name2', checking: false, reachable: false, offline: false },
+    // context-name3 is intentionally missing to trigger UNKNOWN state
+  ]);
+  kubernetesContextsPermissions.set([]);
+  kubernetesResourcesCount.set([]);
   vi.mocked(kubernetesContextsState).kubernetesContextsState = readable<Map<string, ContextGeneralState>>(state);
   vi.mocked(kubernetesContextsState).kubernetesContextsCheckingStateDelayed = readable<Map<string, boolean>>(new Map());
   render(PreferencesKubernetesContextsRendering, {});
@@ -470,6 +478,10 @@ test('Connect button is displayed on contexts for which state is not known', () 
 
 test('Connecting for a context calls window.kubernetesRefreshContextState with context name', async () => {
   const state: Map<string, ContextGeneralState> = new Map();
+  // Set empty stores so all contexts show Connect button
+  kubernetesContextsHealths.set([]);
+  kubernetesContextsPermissions.set([]);
+  kubernetesResourcesCount.set([]);
   vi.mocked(kubernetesContextsState).kubernetesContextsState = readable<Map<string, ContextGeneralState>>(state);
   vi.mocked(kubernetesContextsState).kubernetesContextsCheckingStateDelayed = readable<Map<string, boolean>>(new Map());
   render(PreferencesKubernetesContextsRendering, {});
