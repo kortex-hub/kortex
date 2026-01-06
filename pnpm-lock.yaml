@@ -627,8 +627,8 @@ importers:
   packages/extension-api:
     devDependencies:
       '@ai-sdk/provider':
-        specifier: ^3.0.1
-        version: 3.0.1
+        specifier: ^3.0.2
+        version: 3.0.2
 
   packages/preload-webview:
     devDependencies:
@@ -7883,13 +7883,6 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.0.6
       zod: 4.1.13
-
-  '@ai-sdk/provider-utils@4.0.2(zod@4.3.5)':
-    dependencies:
-      '@ai-sdk/provider': 3.0.1
-      '@standard-schema/spec': 1.1.0
-      eventsource-parser: 3.0.6
-      zod: 4.3.5
 
   '@ai-sdk/provider-utils@4.0.4(zod@4.3.5)':
     dependencies:
