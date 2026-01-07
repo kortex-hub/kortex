@@ -550,14 +550,17 @@ export class MCPRegistry {
 
     const data: components['schemas']['ServerList'] = await content.json();
 
-    const validationResult = this.schemaValidator.validateSchemaData(data, 'ServerList', registryURL);
-
-    // Mark servers with invalid schemas based on the validation result
+    // Validate each server individually to catch all invalid servers
     const validatedServers = data.servers.map(serverResponse => {
-      const hasInvalidSchema = validationResult.invalidServerNames.has(serverResponse.server.name);
+      const validationResult = this.schemaValidator.validateSchemaData(
+        serverResponse,
+        'ServerResponse',
+        registryURL,
+        false,
+      );
       return {
         ...serverResponse,
-        hasInvalidSchema,
+        hasInvalidSchema: !validationResult.isValid,
       };
     });
 
