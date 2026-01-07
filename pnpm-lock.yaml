@@ -29,8 +29,8 @@ importers:
   .:
     dependencies:
       '@ai-sdk/mcp':
-        specifier: ^1.0.4
-        version: 1.0.4(zod@4.1.11)
+        specifier: ^1.0.5
+        version: 1.0.5(zod@4.1.11)
       '@docker/extension-api-client-types':
         specifier: 0.4.2
         version: 0.4.2
@@ -62,8 +62,8 @@ importers:
         specifier: ^0.5.16
         version: 0.5.16
       ai:
-        specifier: ^6.0.12
-        version: 6.0.12(zod@4.1.11)
+        specifier: ^6.0.16
+        version: 6.0.16(zod@4.1.11)
       bcrypt-ts:
         specifier: ^8.0.0
         version: 8.0.0
@@ -403,8 +403,8 @@ importers:
   extensions/gemini:
     dependencies:
       '@ai-sdk/google':
-        specifier: ^3.0.4
-        version: 3.0.4(zod@4.3.5)
+        specifier: ^3.0.5
+        version: 3.0.5(zod@4.3.5)
       '@google/genai':
         specifier: ^1.25.0
         version: 1.25.0(@modelcontextprotocol/sdk@1.25.1(hono@4.11.1)(zod@4.3.5))(encoding@0.1.13)
@@ -851,14 +851,14 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/google@3.0.4':
-    resolution: {integrity: sha512-2TlnBY0QAL4aYaV7fLdUvs+akTwE6B2l8CKSLpKrJlB0LVqmhXK6uP2CrOuCi/8d0H0q1JTr+avLgd23VNgcLQ==}
+  '@ai-sdk/google@3.0.5':
+    resolution: {integrity: sha512-+aaq8HEdEqJdXt/7ULHlc4oRL9RGdSNfJ8ptF/q1lWvuvH+Rz0c8zVk9DELCjQYxreuFgEMdtLtMD6cejNKjJg==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/mcp@1.0.4':
-    resolution: {integrity: sha512-npA0YFQuIlZlCp9ZO0+VX4BhEurmzn1DqTvab0DTamZokGQQEVpVQqyskpYUA9JKxL/vRzmlOFx6U4w2bzIa7g==}
+  '@ai-sdk/mcp@1.0.5':
+    resolution: {integrity: sha512-ViLrt9ybjtwSubMBhnV3Wjaq+ZITx1UlFU5mnLAgWj2HAxoEIwpZGRAqdD/ojJlV950wEM/OCha/1rtGdUy/bw==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -2883,6 +2883,12 @@ packages:
 
   ai@6.0.12:
     resolution: {integrity: sha512-EpF7hPSxu2FCb6BOBiPgCJmLBzdGuKk6EaqmdgvuEMQeVuQAte46pfJAsqRI9tSvMpn+1i2pD5owoYvxdtoGCw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  ai@6.0.16:
+    resolution: {integrity: sha512-pJDNvgKZJ/rFH3UtNOatJQnR7ajo8I5tSKWpObKmM6TlYADdKL90ustJf36YoaOGSYdP+Wg5GsNL9KJJ5Lm2ng==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -7827,13 +7833,13 @@ snapshots:
       '@vercel/oidc': 3.1.0
       zod: 4.1.13
 
-  '@ai-sdk/google@3.0.4(zod@4.3.5)':
+  '@ai-sdk/google@3.0.5(zod@4.3.5)':
     dependencies:
       '@ai-sdk/provider': 3.0.2
       '@ai-sdk/provider-utils': 4.0.4(zod@4.3.5)
       zod: 4.3.5
 
-  '@ai-sdk/mcp@1.0.4(zod@4.1.11)':
+  '@ai-sdk/mcp@1.0.5(zod@4.1.11)':
     dependencies:
       '@ai-sdk/provider': 3.0.2
       '@ai-sdk/provider-utils': 4.0.4(zod@4.1.11)
@@ -10142,14 +10148,6 @@ snapshots:
       clean-stack: 2.2.0
       indent-string: 4.0.0
 
-  ai@6.0.12(zod@4.1.11):
-    dependencies:
-      '@ai-sdk/gateway': 3.0.9(zod@4.1.11)
-      '@ai-sdk/provider': 3.0.2
-      '@ai-sdk/provider-utils': 4.0.4(zod@4.1.11)
-      '@opentelemetry/api': 1.9.0
-      zod: 4.1.11
-
   ai@6.0.12(zod@4.1.13):
     dependencies:
       '@ai-sdk/gateway': 3.0.9(zod@4.1.13)
@@ -10157,6 +10155,14 @@ snapshots:
       '@ai-sdk/provider-utils': 4.0.4(zod@4.1.13)
       '@opentelemetry/api': 1.9.0
       zod: 4.1.13
+
+  ai@6.0.16(zod@4.1.11):
+    dependencies:
+      '@ai-sdk/gateway': 3.0.9(zod@4.1.11)
+      '@ai-sdk/provider': 3.0.2
+      '@ai-sdk/provider-utils': 4.0.4(zod@4.1.11)
+      '@opentelemetry/api': 1.9.0
+      zod: 4.1.11
 
   ajv-formats@3.0.1(ajv@8.17.1):
     optionalDependencies:
