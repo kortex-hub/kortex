@@ -645,8 +645,8 @@ importers:
   packages/renderer:
     dependencies:
       '@ai-sdk/svelte':
-        specifier: ^4.0.12
-        version: 4.0.12(svelte@5.38.1)(zod@4.1.13)
+        specifier: ^4.0.16
+        version: 4.0.16(svelte@5.38.1)(zod@4.1.13)
       '@ai-sdk/ui-utils':
         specifier: ^1.2.11
         version: 1.2.11(zod@4.1.13)
@@ -899,8 +899,8 @@ packages:
     resolution: {integrity: sha512-HrEmNt/BH/hkQ7zpi2o6N3k1ZR1QTb7z85WYhYygiTxOQuaml4CMtHCWRbric5WPU+RNsYI7r1EpyVQMKO1pYw==}
     engines: {node: '>=18'}
 
-  '@ai-sdk/svelte@4.0.12':
-    resolution: {integrity: sha512-63gc7PObqK9SGpmkhARLyY+CjSlyV9cbZ7/7uaCWexRnmgBmavIPc71DeG08Bb4/6x5pZrBVKDrflb4R78HR/w==}
+  '@ai-sdk/svelte@4.0.16':
+    resolution: {integrity: sha512-tqgnGD7G0kJSijuzQ4X6WGOrCVm+zcMaEJ5yVSGqwM7uV9OkiLBbAehhBtG6YTkIfJJs50jCI2Eh/wElfh8gFQ==}
     peerDependencies:
       svelte: ^5.31.0
 
@@ -2880,12 +2880,6 @@ packages:
   aggregate-error@3.1.0:
     resolution: {integrity: sha512-4I7Td01quW/RpocfNayFdFVk1qSuoh0E7JrbRJ16nH01HhKFQ88INq9Sd+nd72zqRySlr9BmDA8xlEJ6vJMrYA==}
     engines: {node: '>=8'}
-
-  ai@6.0.12:
-    resolution: {integrity: sha512-EpF7hPSxu2FCb6BOBiPgCJmLBzdGuKk6EaqmdgvuEMQeVuQAte46pfJAsqRI9tSvMpn+1i2pD5owoYvxdtoGCw==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
 
   ai@6.0.16:
     resolution: {integrity: sha512-pJDNvgKZJ/rFH3UtNOatJQnR7ajo8I5tSKWpObKmM6TlYADdKL90ustJf36YoaOGSYdP+Wg5GsNL9KJJ5Lm2ng==}
@@ -7899,10 +7893,10 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/svelte@4.0.12(svelte@5.38.1)(zod@4.1.13)':
+  '@ai-sdk/svelte@4.0.16(svelte@5.38.1)(zod@4.1.13)':
     dependencies:
       '@ai-sdk/provider-utils': 4.0.4(zod@4.1.13)
-      ai: 6.0.12(zod@4.1.13)
+      ai: 6.0.16(zod@4.1.13)
       svelte: 5.38.1
     transitivePeerDependencies:
       - zod
@@ -8195,7 +8189,7 @@ snapshots:
       make-fetch-happen: 10.2.1
       nopt: 6.0.0
       proc-log: 2.0.1
-      semver: 7.7.2
+      semver: 7.7.3
       tar: 6.2.1
       which: 2.0.2
     transitivePeerDependencies:
@@ -8884,7 +8878,7 @@ snapshots:
   '@npmcli/fs@2.1.2':
     dependencies:
       '@gar/promisify': 1.1.3
-      semver: 7.7.2
+      semver: 7.7.3
 
   '@npmcli/move-file@2.0.1':
     dependencies:
@@ -10148,14 +10142,6 @@ snapshots:
       clean-stack: 2.2.0
       indent-string: 4.0.0
 
-  ai@6.0.12(zod@4.1.13):
-    dependencies:
-      '@ai-sdk/gateway': 3.0.9(zod@4.1.13)
-      '@ai-sdk/provider': 3.0.2
-      '@ai-sdk/provider-utils': 4.0.4(zod@4.1.13)
-      '@opentelemetry/api': 1.9.0
-      zod: 4.1.13
-
   ai@6.0.16(zod@4.1.11):
     dependencies:
       '@ai-sdk/gateway': 3.0.9(zod@4.1.11)
@@ -10163,6 +10149,14 @@ snapshots:
       '@ai-sdk/provider-utils': 4.0.4(zod@4.1.11)
       '@opentelemetry/api': 1.9.0
       zod: 4.1.11
+
+  ai@6.0.16(zod@4.1.13):
+    dependencies:
+      '@ai-sdk/gateway': 3.0.9(zod@4.1.13)
+      '@ai-sdk/provider': 3.0.2
+      '@ai-sdk/provider-utils': 4.0.4(zod@4.1.13)
+      '@opentelemetry/api': 1.9.0
+      zod: 4.1.13
 
   ajv-formats@3.0.1(ajv@8.17.1):
     optionalDependencies:
