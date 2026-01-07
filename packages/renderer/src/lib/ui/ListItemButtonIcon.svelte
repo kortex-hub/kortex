@@ -4,11 +4,11 @@ import { DropdownMenu } from '@podman-desktop/ui-svelte';
 import { onDestroy } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';
 
-import LoadingIcon from '/@/lib/ui/LoadingIcon.svelte';
+import type { ContextUI } from '/@/lib/context/context';
+import { ContextKeyExpr } from '/@/lib/context/contextKey';
 import { context as storeContext } from '/@/stores/context';
 
-import type { ContextUI } from '../context/context';
-import { ContextKeyExpr } from '../context/contextKey';
+import LoadingIcon from './LoadingIcon.svelte';
 
 interface Props {
   title: string;
