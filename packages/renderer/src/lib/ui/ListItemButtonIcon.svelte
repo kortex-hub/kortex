@@ -1,7 +1,6 @@
 <script lang="ts">
 import type { IconDefinition } from '@fortawesome/fontawesome-common-types';
 import { DropdownMenu } from '@podman-desktop/ui-svelte';
-import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { onDestroy } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';
 
