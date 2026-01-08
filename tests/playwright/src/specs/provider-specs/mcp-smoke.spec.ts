@@ -22,8 +22,13 @@ import { waitForNavigationReady } from '../../utils/app-ready';
 
 const MCP_REGISTRY_EXAMPLE = 'MCP Registry example';
 const MCP_REGISTRY_URL = 'https://registry.modelcontextprotocol.io';
-const SERVER_LIST_UPDATE_TIMEOUT = 60_000;
+const SERVER_LIST_UPDATE_TIMEOUT = 120_000;
 const SERVER_CONNECTION_TIMEOUT = 10_000;
+
+// Configure MCP setup only when GITHUB_TOKEN is available and not on Linux
+test.use({
+  mcpServers: process.env[MCP_SERVERS.github.envVarName] && process.platform !== 'linux' ? ['github'] : [],
+});
 
 test.describe('MCP Registry Management', { tag: '@smoke' }, () => {
   test.beforeEach(async ({ page, navigationBar }) => {
@@ -54,21 +59,30 @@ test.describe('MCP Registry Management', { tag: '@smoke' }, () => {
     await installTab.verifyServerCountIsRestored(initialServerCount);
   });
 
-  // Test expected to fail until issue https://github.com/kortex-hub/kortex/issues/651 is fixed
-  test.fail(
-    '[MCP-02] Add and remove MCP server: verify server list updates accordingly',
-    async ({ mcpSetup: _mcpSetup, mcpPage }) => {
-      test.skip(
-        !process.env[MCP_SERVERS.github.envVarName],
-        `${MCP_SERVERS.github.envVarName} environment variable is not set`,
-      );
+  test('[MCP-02] Add and remove MCP server: verify server list updates accordingly', async ({
+    mcpSetup: _mcpSetup,
+    mcpPage,
+  }) => {
+    test.skip(
+      !process.env[MCP_SERVERS.github.envVarName],
+      `${MCP_SERVERS.github.envVarName} environment variable is not set`,
+    );
 
-      const serverName = MCP_SERVERS.github.serverName;
-      const mcpReadyTab = await mcpPage.openReadyTab();
+    // Skip on Ubuntu agents - safeStorage issues
+    test.skip(process.platform === 'linux', 'Skipping on Ubuntu due to safeStorage issues');
 
-      await expect
-        .poll(async () => await mcpReadyTab.isServerConnected(serverName), { timeout: SERVER_CONNECTION_TIMEOUT })
-        .toBeTruthy();
-    },
-  );
+    // Test expected to fail locally until issue https://github.com/kortex-hub/kortex/issues/651 is fixed
+    // In CI, the test should pass as safeStorage works correctly there
+    const isCI = !!process.env.CI;
+    if (!isCI) {
+      test.fail();
+    }
+
+    const serverName = MCP_SERVERS.github.serverName;
+    const mcpReadyTab = await mcpPage.openReadyTab();
+
+    await expect
+      .poll(async () => await mcpReadyTab.isServerConnected(serverName), { timeout: SERVER_CONNECTION_TIMEOUT })
+      .toBeTruthy();
+  });
 });

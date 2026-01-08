@@ -40,6 +40,7 @@ jobs:
     if: ${{ github.event_name == 'schedule' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
     strategy:
       fail-fast: false
       matrix:
@@ -109,6 +110,7 @@ jobs:
     if: ${{ github.event_name == 'schedule' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'macos' }}
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
     strategy:
       fail-fast: false
       matrix:
