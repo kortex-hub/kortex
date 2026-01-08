@@ -6,7 +6,7 @@ import { router } from 'tinro';
 
 import ToolParts from '/@/lib/chat/components/messages/tool-parts.svelte';
 import MonacoEditor from '/@/lib/editor/MonacoEditor.svelte';
-import MCPValidServerIndicatorIcon from '/@/lib/images/MCPValidServerIndicatorIcon.svelte';
+import MCPIcon from '/@/lib/images/MCPIcon.svelte';
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
@@ -46,7 +46,7 @@ onMount(() => {
 
 <DetailsPage title={mcpServerName} subtitle={id}>
   {#snippet iconSnippet()}
-    <MCPValidServerIndicatorIcon size={24} object={mcpServer} />
+    <MCPIcon size={24} />
   {/snippet}
   {#snippet tabsSnippet()}
     <Tab title="Summary" selected={isTabSelected($router.path, 'summary')} url={getTabUrl($router.path, 'summary')} />

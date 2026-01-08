@@ -1,7 +1,6 @@
 <script lang="ts">
 import { FilteredEmptyScreen, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 
-import MCPValidServerIndicatorIcon from '/@/lib/images/MCPValidServerIndicatorIcon.svelte';
 import MCPNameColumn from '/@/lib/mcp/column/MCPNameColumn.svelte';
 import { filteredMcpRemoteServerInfos, mcpRemoteServerInfoSearchPattern } from '/@/stores/mcp-remote-servers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
@@ -34,7 +33,7 @@ const servers: SelectableMCPRemoteServerInfo[] = $derived(
 
 const statusColumn = new TableColumn<MCPRemoteServerInfo>('Status', {
   width: '60px',
-  renderer: MCPValidServerIndicatorIcon,
+  renderer: McpIcon,
 });
 
 const nameColumn = new TableColumn<MCPRemoteServerInfo>('Name', {

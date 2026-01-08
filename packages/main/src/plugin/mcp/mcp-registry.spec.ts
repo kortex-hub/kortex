@@ -147,6 +147,6 @@ test('listMCPServersFromRegistries marks servers with invalid schemas', async ()
   const validServer = mcpServersFromRegistries.find(s => s.name === 'Valid server');
   const invalidServer = mcpServersFromRegistries.find(s => s.name === 'Invalid server');
 
-  expect(validServer?.hasInvalidSchema).toBe(false);
-  expect(invalidServer?.hasInvalidSchema).toBe(true);
+  expect(validServer?.isValidSchema).toBe(true);
+  expect(invalidServer?.isValidSchema).toBe(false);
 });
