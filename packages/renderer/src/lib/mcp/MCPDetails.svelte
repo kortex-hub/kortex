@@ -6,13 +6,12 @@ import { router } from 'tinro';
 
 import ToolParts from '/@/lib/chat/components/messages/tool-parts.svelte';
 import MonacoEditor from '/@/lib/editor/MonacoEditor.svelte';
+import MCPValidServerIndicatorIcon from '/@/lib/images/MCPValidServerIndicatorIcon.svelte';
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
-
-import McpIcon from '../images/MCPIcon.svelte';
 
 interface Props {
   id: string;
@@ -47,7 +46,7 @@ onMount(() => {
 
 <DetailsPage title={mcpServerName} subtitle={id}>
   {#snippet iconSnippet()}
-      <McpIcon size={24} />
+    <MCPValidServerIndicatorIcon size={24} object={mcpServer} />
   {/snippet}
   {#snippet tabsSnippet()}
     <Tab title="Summary" selected={isTabSelected($router.path, 'summary')} url={getTabUrl($router.path, 'summary')} />

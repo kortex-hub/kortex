@@ -32,6 +32,7 @@ import { formatArguments } from '/@/plugin/mcp/utils/arguments.js';
 import { formatKeyValueInputs } from '/@/plugin/mcp/utils/format-key-value-inputs.js';
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { IConfigurationNode, IConfigurationRegistry } from '/@api/configuration/models.js';
+import type { ValidatedServerList, ValidatedServerResponse } from '/@api/mcp/mcp-server-info.js';
 import { MCPServerDetail } from '/@api/mcp/mcp-server-info.js';
 import { InputWithVariableResponse, MCPSetupOptions } from '/@api/mcp/mcp-setup.js';
 
@@ -139,8 +140,8 @@ export class MCPRegistry {
     this.configuration = this.configurationRegistry.getConfiguration(MCP_SECTION_NAME);
   }
 
-  enhanceServerDetail(server: components['schemas']['ServerDetail'], hasInvalidSchema?: boolean): MCPServerDetail {
-    return { ...server, serverId: encodeURI(server.name), hasInvalidSchema };
+  enhanceServerDetail(server: components['schemas']['ServerDetail'], isValidSchema?: boolean): MCPServerDetail {
+    return { ...server, serverId: encodeURI(server.name), isValidSchema };
   }
 
   init(): void {
@@ -159,11 +160,7 @@ export class MCPRegistry {
 
       const { servers } = await this.listMCPServersFromRegistry(registry.serverUrl);
       for (const rawServer of servers) {
-        const hasInvalidSchema =
-          'hasInvalidSchema' in rawServer && typeof rawServer.hasInvalidSchema === 'boolean'
-            ? rawServer.hasInvalidSchema
-            : false;
-        const server = this.enhanceServerDetail(rawServer.server, hasInvalidSchema);
+        const server = this.enhanceServerDetail(rawServer.server, rawServer.isValidSchema);
         if (!server.serverId) {
           continue;
         }
@@ -203,6 +200,7 @@ export class MCPRegistry {
             transport,
             remote.url,
             server.description,
+            server.isValidSchema,
           );
         } else {
           const pack = server.packages?.[config.packageId];
@@ -234,6 +232,7 @@ export class MCPRegistry {
             transport,
             undefined,
             server.description,
+            server.isValidSchema,
           );
         }
       }
@@ -440,7 +439,7 @@ export class MCPRegistry {
     }
 
     // get values from the server detail
-    const { name, description } = serverDetail;
+    const { name, description, isValidSchema } = serverDetail;
 
     await this.mcpManager.registerMCPClient(
       INTERNAL_PROVIDER_ID,
@@ -451,6 +450,7 @@ export class MCPRegistry {
       transport,
       url,
       description,
+      isValidSchema,
     );
 
     // persist configuration
@@ -529,7 +529,7 @@ export class MCPRegistry {
   protected async listMCPServersFromRegistry(
     registryURL: string,
     cursor?: string, // optional param for recursion
-  ): Promise<components['schemas']['ServerList']> {
+  ): Promise<ValidatedServerList> {
     const url = new URL(`${registryURL}/v0/servers`);
     if (cursor) {
       url.searchParams.set('cursor', cursor);
@@ -551,7 +551,7 @@ export class MCPRegistry {
     const data: components['schemas']['ServerList'] = await content.json();
 
     // Validate each server individually to catch all invalid servers
-    const validatedServers = data.servers.map(serverResponse => {
+    const validatedServers: ValidatedServerResponse[] = data.servers.map(serverResponse => {
       const validationResult = this.schemaValidator.validateSchemaData(
         serverResponse,
         'ServerResponse',
@@ -560,7 +560,7 @@ export class MCPRegistry {
       );
       return {
         ...serverResponse,
-        hasInvalidSchema: !validationResult.isValid,
+        isValidSchema: validationResult.isValid,
       };
     });
 
@@ -608,16 +608,10 @@ export class MCPRegistry {
 
     for (const registryURL of serverUrls) {
       try {
-        const serverList: components['schemas']['ServerList'] = await this.listMCPServersFromRegistry(registryURL);
+        const serverList = await this.listMCPServersFromRegistry(registryURL);
         // now, aggregate the servers from the list ensuring each server has an id
         serverDetails.push(
-          ...serverList.servers.map(rawServer => {
-            const hasInvalidSchema =
-              'hasInvalidSchema' in rawServer && typeof rawServer.hasInvalidSchema === 'boolean'
-                ? rawServer.hasInvalidSchema
-                : false;
-            return this.enhanceServerDetail(rawServer.server, hasInvalidSchema);
-          }),
+          ...serverList.servers.map(rawServer => this.enhanceServerDetail(rawServer.server, rawServer.isValidSchema)),
         );
       } catch (error: unknown) {
         console.error(`Failed fetch for registry ${registryURL}`, error);
