@@ -33,7 +33,7 @@ export class SettingsResourcesPage extends BasePage {
   }
 
   getResourceRegion(resourceId: string): Locator {
-    return this.page.getByRole('region', { name: resourceId });
+    return this.page.getByRole('region', { name: 'Featured Provider Resources' }).locator(`[id="${resourceId}"]`);
   }
 
   getResourceCreateButton(displayName: string): Locator {

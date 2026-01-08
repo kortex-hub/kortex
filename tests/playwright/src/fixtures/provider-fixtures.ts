@@ -78,8 +78,15 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
 
   resourceSetup: [
     async ({ workerNavigationBar, resource }, use): Promise<void> => {
+      const provider = PROVIDERS[resource];
+
+      // Auto-detected providers (like Ollama) don't need UI-based resource creation
+      if ('autoDetected' in provider && provider.autoDetected) {
+        await use();
+        return;
+      }
+
       try {
-        const provider = PROVIDERS[resource];
         const credentials = requireEnvVar(provider.envVarName);
         const settingsPage = await workerNavigationBar.navigateToSettingsPage();
         await settingsPage.createResource(resource, credentials);

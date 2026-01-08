@@ -19,6 +19,13 @@ import type { PlaywrightTestConfig } from '@playwright/test';
 
 import type { ResourceId } from './src/model/core/types';
 
+// Locally: Assumes Ollama is not available unless OLLAMA_ENABLED is explicitly set
+const ollamaAvailable = !!process.env.OLLAMA_ENABLED;
+
+if (ollamaAvailable) {
+  console.log('Ollama enabled - running Ollama-Provider tests');
+}
+
 const config: PlaywrightTestConfig & {
   projects?: Array<{
     use?: { resource?: ResourceId };
@@ -75,6 +82,16 @@ const config: PlaywrightTestConfig & {
         resource: 'openshift-ai',
       },
       testIgnore: ['**/*'], // Disabled until OpenShift AI resource creation is implemented
+    },
+    {
+      name: 'Ollama-Provider',
+      testMatch: ['**/provider-specs/*.spec.ts'],
+      use: {
+        resource: 'ollama',
+      },
+      testIgnore: ollamaAvailable
+        ? ['**/provider-specs/flows-smoke.spec.ts'] // Flows not yet supported for Ollama
+        : ['**/*'], // Skip all if Ollama is not running
     },
   ],
 

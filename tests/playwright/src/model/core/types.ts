@@ -28,6 +28,7 @@ export const builtInExtensions = [
   { name: 'Default MCP Registries', locator: 'kortex.mcp-registries' },
   { name: 'Gemini', locator: 'kortex.gemini' },
   { name: 'goose', locator: 'kortex.goose' },
+  { name: 'Ollama', locator: 'kortex.ollama' },
   { name: 'OpenAI Compatible', locator: 'kortex.openai-compatible' },
   { name: 'OpenShift AI', locator: 'kortex.openshift-ai' },
 ] as const;
@@ -86,6 +87,7 @@ export const resources = {
   openai: { displayName: 'OpenAI', hasCreateButton: true },
   goose: { displayName: 'goose', hasCreateButton: false },
   gemini: { displayName: 'Gemini', hasCreateButton: true },
+  ollama: { displayName: 'Ollama', hasCreateButton: false },
 } as const;
 
 export type SettingsResourceId = keyof typeof resources;
@@ -111,8 +113,9 @@ export type MCPServerId = keyof typeof MCP_SERVERS;
 
 export interface ResourceConfig {
   readonly envVarName: string;
-  readonly resourceId: SettingsResourceId;
+  readonly resourceId?: SettingsResourceId;
   readonly baseURL?: string;
+  readonly autoDetected?: boolean;
 }
 
 export const PROVIDERS = {
@@ -124,6 +127,11 @@ export const PROVIDERS = {
     envVarName: 'OPENAI_API_KEY',
     resourceId: 'openai',
     baseURL: 'https://api.openai.com/v1',
+  },
+  ollama: {
+    envVarName: 'OLLAMA_ENABLED',
+    resourceId: 'ollama',
+    autoDetected: true,
   },
   'openshift-ai': {
     envVarName: 'OPENSHIFT_AI_TOKEN',
@@ -159,4 +167,5 @@ export const TIMEOUTS = {
   INITIALIZING_SCREEN: 180_000,
   STANDARD: 30_000,
   SHORT: 10_000,
+  MODEL_RESPONSE: 90_000, // Longer timeout for LLM responses (especially local models like Ollama on slower runners)
 } as const;
