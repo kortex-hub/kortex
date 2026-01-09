@@ -645,8 +645,8 @@ importers:
   packages/renderer:
     dependencies:
       '@ai-sdk/svelte':
-        specifier: ^4.0.21
-        version: 4.0.21(svelte@5.38.1)(zod@4.1.13)
+        specifier: ^4.0.23
+        version: 4.0.23(svelte@5.38.1)(zod@4.1.13)
       '@ai-sdk/ui-utils':
         specifier: ^1.2.11
         version: 1.2.11(zod@4.1.13)
@@ -899,8 +899,8 @@ packages:
     resolution: {integrity: sha512-HrEmNt/BH/hkQ7zpi2o6N3k1ZR1QTb7z85WYhYygiTxOQuaml4CMtHCWRbric5WPU+RNsYI7r1EpyVQMKO1pYw==}
     engines: {node: '>=18'}
 
-  '@ai-sdk/svelte@4.0.21':
-    resolution: {integrity: sha512-3Jz0pxl7TetTKw7CCpZeB32EFfvVzv/RteKxZm02gNDeJB9eLW3yFY3mObDHl5xl9ZlGmVlp3TZKyBzrdnAaNw==}
+  '@ai-sdk/svelte@4.0.23':
+    resolution: {integrity: sha512-W0jbE+041Qo3wgSBvXsYAbXEkDsy6eYsA4h9xqlbgxyskcR6IqDgA4m/HC6bX/cSlDImXVtItishqfnXSuOXSg==}
     peerDependencies:
       svelte: ^5.31.0
 
@@ -2883,6 +2883,12 @@ packages:
 
   ai@6.0.21:
     resolution: {integrity: sha512-OUjgowbvEY2DsXJwq3guQ95gXuTg9B84DO7QpGcXVjd6C+9f08CXxHh4UuYjBnYDtuv27rQuegjKJuWILxT0GA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  ai@6.0.23:
+    resolution: {integrity: sha512-IV8hqp6sQvZ0XVlu8bCnFlwG7+2d40ff26RZ1k4yw/zVuk2F6SXlONURtTo9vwPOPYeF7auXvyPA+dMDoepWxg==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -6640,8 +6646,9 @@ packages:
   sax@1.4.1:
     resolution: {integrity: sha512-+aWOz7yVScEGoKNd4PA10LZ8sk0A/z5+nXQG5giUO5rprX9jgYsTdov9qCchZiPIZezbZH+jRut8nPodFAX4Jg==}
 
-  sax@1.4.3:
-    resolution: {integrity: sha512-yqYn1JhPczigF94DMS+shiDMjDowYO6y9+wB/4WgO0Y19jWYk0lQ4tuG5KI7kj4FTp1wxPj5IFfcrz/s1c3jjQ==}
+  sax@1.4.4:
+    resolution: {integrity: sha512-1n3r/tGXO6b6VXMdFT54SHzT9ytu9yr7TaELowdYpMqY/Ao7EnlQGmAQ1+RatX7Tkkdm6hONI2owqNx2aZj5Sw==}
+    engines: {node: '>=11.0.0'}
 
   saxes@6.0.0:
     resolution: {integrity: sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==}
@@ -7893,10 +7900,10 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/svelte@4.0.21(svelte@5.38.1)(zod@4.1.13)':
+  '@ai-sdk/svelte@4.0.23(svelte@5.38.1)(zod@4.1.13)':
     dependencies:
       '@ai-sdk/provider-utils': 4.0.4(zod@4.1.13)
-      ai: 6.0.21(zod@4.1.13)
+      ai: 6.0.23(zod@4.1.13)
       svelte: 5.38.1
     transitivePeerDependencies:
       - zod
@@ -10150,7 +10157,7 @@ snapshots:
       '@opentelemetry/api': 1.9.0
       zod: 4.1.11
 
-  ai@6.0.21(zod@4.1.13):
+  ai@6.0.23(zod@4.1.13):
     dependencies:
       '@ai-sdk/gateway': 3.0.10(zod@4.1.13)
       '@ai-sdk/provider': 3.0.2
@@ -10613,7 +10620,7 @@ snapshots:
   builder-util-runtime@9.2.10:
     dependencies:
       debug: 4.4.3
-      sax: 1.4.3
+      sax: 1.4.4
     transitivePeerDependencies:
       - supports-color
 
@@ -14551,7 +14558,7 @@ snapshots:
 
   sax@1.4.1: {}
 
-  sax@1.4.3: {}
+  sax@1.4.4: {}
 
   saxes@6.0.0:
     dependencies:
