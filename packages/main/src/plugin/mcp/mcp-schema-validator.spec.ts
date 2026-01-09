@@ -277,3 +277,90 @@ describe('validateSchemaData', () => {
     );
   });
 });
+
+describe('validateSchemaData with individual ServerResponse validation', () => {
+  test('should identify all invalid servers when validating each ServerResponse individually', () => {
+    // This test validates each server individually (as done in mcp-registry.ts)
+    // to properly detect all invalid servers
+    const servers = [
+      {
+        server: {
+          name: 'io.github.example/invalid-server-1',
+          description: 'Invalid server 1',
+          version: '1.0.0',
+        },
+        // Missing _meta
+      },
+      {
+        server: {
+          name: 'io.github.example/valid-server',
+          description: 'Valid server',
+          version: '1.0.0',
+        },
+        _meta: {},
+      },
+      {
+        server: {
+          name: 'io.github.example/invalid-server-2',
+          description: 'Invalid server 2',
+          version: '1.0.0',
+        },
+        // Missing _meta
+      },
+    ];
+
+    const invalidServerNames = new Set<string>();
+    for (const serverResponse of servers) {
+      const result = validator.validateSchemaData(serverResponse, 'ServerResponse', 'test-registry', true);
+      if (!result) {
+        invalidServerNames.add(serverResponse.server.name);
+      }
+    }
+
+    expect(invalidServerNames.size).toBe(2);
+    expect(invalidServerNames.has('io.github.example/invalid-server-1')).toBe(true);
+    expect(invalidServerNames.has('io.github.example/invalid-server-2')).toBe(true);
+    expect(invalidServerNames.has('io.github.example/valid-server')).toBe(false);
+  });
+
+  test('should identify invalid server with bad name pattern', () => {
+    const serverResponse = {
+      server: {
+        name: 'invalid-name-no-slash', // Invalid pattern
+        description: 'Invalid server',
+        version: '1.0.0',
+      },
+      _meta: {},
+    };
+
+    const result = validator.validateSchemaData(serverResponse, 'ServerResponse', 'test-registry', true);
+
+    expect(result).toBe(false);
+  });
+
+  test('should return valid for all valid servers', () => {
+    const servers = [
+      {
+        server: {
+          name: 'io.github.example/server-1',
+          description: 'Server 1',
+          version: '1.0.0',
+        },
+        _meta: {},
+      },
+      {
+        server: {
+          name: 'io.github.example/server-2',
+          description: 'Server 2',
+          version: '2.0.0',
+        },
+        _meta: {},
+      },
+    ];
+
+    for (const serverResponse of servers) {
+      const result = validator.validateSchemaData(serverResponse, 'ServerResponse', 'test-registry', true);
+      expect(result).toBe(true);
+    }
+  });
+});
