@@ -63,11 +63,11 @@ jobs:
 
       - name: Setup Ollama
         if: runner.os == 'Linux'
-        uses: ai-action/setup-ollama@v1
+        uses: ai-action/setup-ollama@7c1d2c2a6e6c4f1909bf1d099acda773ca36401d # v1
 
       - name: Cache Ollama models
         if: runner.os == 'Linux'
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         id: ollama-cache
         with:
           path: ~/.ollama/models
