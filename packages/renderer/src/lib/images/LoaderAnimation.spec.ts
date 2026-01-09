@@ -23,7 +23,7 @@ import LoaderAnimation from './LoaderAnimation.svelte';
 
 beforeEach(() => {
   vi.clearAllTimers();
-  vi.useRealTimers();
+  vi.useFakeTimers({ shouldAdvanceTime: true });
 });
 
 describe('LoaderAnimation', () => {
@@ -115,7 +115,6 @@ describe('LoaderAnimation', () => {
   });
 
   test('should initialize blinking animation with timeouts', async () => {
-    vi.useFakeTimers();
     const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
 
     render(LoaderAnimation);
@@ -130,12 +129,9 @@ describe('LoaderAnimation', () => {
 
     // Should have more timeout calls after blink starts
     expect(setTimeoutSpy.mock.calls.length).toBeGreaterThan(initialCalls);
-
-    vi.useRealTimers();
   });
 
   test('should handle blink animation on eyes element', async () => {
-    vi.useFakeTimers();
     const { container } = render(LoaderAnimation);
 
     const eyesElement = container.querySelector('#eyesElement') as HTMLElement;
@@ -159,12 +155,9 @@ describe('LoaderAnimation', () => {
       // After blink close, opacity should return to 0
       expect(eyesElement.style.opacity).toBe('0');
     });
-
-    vi.useRealTimers();
   });
 
   test('should cleanup timeouts on unmount', () => {
-    vi.useFakeTimers();
     const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
 
     const { unmount } = render(LoaderAnimation);
@@ -176,8 +169,6 @@ describe('LoaderAnimation', () => {
 
     // Should have cleared all timeouts
     expect(clearTimeoutSpy).toHaveBeenCalled();
-
-    vi.useRealTimers();
   });
 
   test('should render SVG defs for images', () => {
@@ -223,7 +214,6 @@ describe('LoaderAnimation', () => {
   });
 
   test('should handle multiple blink cycles', async () => {
-    vi.useFakeTimers();
     const { container } = render(LoaderAnimation);
 
     const eyesElement = container.querySelector('#eyesElement') as HTMLElement;
@@ -241,7 +231,5 @@ describe('LoaderAnimation', () => {
 
     vi.advanceTimersByTime(100);
     await waitFor(() => expect(eyesElement.style.opacity).toBe('0'));
-
-    vi.useRealTimers();
   });
 });
