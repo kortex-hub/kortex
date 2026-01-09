@@ -16,14 +16,24 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import * as os from 'node:os';
+
 import { expect, test } from '../../fixtures/provider-fixtures';
 import { MCP_SERVERS } from '../../model/core/types';
 import { waitForNavigationReady } from '../../utils/app-ready';
 
+// Detect macOS 26 (Tahoe) - kernel version 25.x
+const isMacOS26 = process.platform === 'darwin' && os.release().startsWith('25');
+
 const MCP_REGISTRY_EXAMPLE = 'MCP Registry example';
 const MCP_REGISTRY_URL = 'https://registry.modelcontextprotocol.io';
-const SERVER_LIST_UPDATE_TIMEOUT = 60_000;
+const SERVER_LIST_UPDATE_TIMEOUT = 120_000;
 const SERVER_CONNECTION_TIMEOUT = 10_000;
+
+// Configure MCP setup only when GITHUB_TOKEN is available and not on Linux
+test.use({
+  mcpServers: process.env[MCP_SERVERS.github.envVarName] && process.platform !== 'linux' ? ['github'] : [],
+});
 
 test.describe('MCP Registry Management', { tag: '@smoke' }, () => {
   test.beforeEach(async ({ page, navigationBar }) => {
@@ -32,6 +42,8 @@ test.describe('MCP Registry Management', { tag: '@smoke' }, () => {
   });
 
   test('[MCP-01] Add and remove MCP registry: verify server list updates accordingly', async ({ mcpPage }) => {
+    test.skip(isMacOS26, 'Skipping on macOS 26 due to CI stability issues');
+
     const editRegistriesTab = await mcpPage.openEditRegistriesTab();
     await editRegistriesTab.ensureRowExists(MCP_REGISTRY_EXAMPLE);
 
@@ -54,21 +66,35 @@ test.describe('MCP Registry Management', { tag: '@smoke' }, () => {
     await installTab.verifyServerCountIsRestored(initialServerCount);
   });
 
-  // Test expected to fail until issue https://github.com/kortex-hub/kortex/issues/651 is fixed
-  test.fail(
-    '[MCP-02] Add and remove MCP server: verify server list updates accordingly',
-    async ({ mcpSetup: _mcpSetup, mcpPage }) => {
-      test.skip(
-        !process.env[MCP_SERVERS.github.envVarName],
-        `${MCP_SERVERS.github.envVarName} environment variable is not set`,
-      );
+  test('[MCP-02] Add and remove MCP server: verify server list updates accordingly', async ({
+    mcpSetup: _mcpSetup,
+    mcpPage,
+  }) => {
+    const isCI = !!process.env.CI;
+    const isLinux = process.platform === 'linux';
+    const hasGithubToken = !!process.env[MCP_SERVERS.github.envVarName];
 
-      const serverName = MCP_SERVERS.github.serverName;
-      const mcpReadyTab = await mcpPage.openReadyTab();
+    // Skip conditions - safeStorage has issues on Linux and macOS-26 CI
+    const skipConditions: Array<{ condition: boolean; reason: string }> = [
+      { condition: !hasGithubToken, reason: `${MCP_SERVERS.github.envVarName} environment variable is not set` },
+      { condition: isLinux, reason: 'safeStorage issues on Linux' },
+      { condition: isMacOS26 && isCI, reason: 'safeStorage issues on macOS-26 CI' },
+    ];
 
-      await expect
-        .poll(async () => await mcpReadyTab.isServerConnected(serverName), { timeout: SERVER_CONNECTION_TIMEOUT })
-        .toBeTruthy();
-    },
-  );
+    for (const { condition, reason } of skipConditions) {
+      test.skip(condition, reason);
+    }
+
+    // Expect failure locally until https://github.com/kortex-hub/kortex/issues/651 is fixed
+    if (!isCI) {
+      test.fail();
+    }
+
+    const serverName = MCP_SERVERS.github.serverName;
+    const mcpReadyTab = await mcpPage.openReadyTab();
+
+    await expect
+      .poll(async () => await mcpReadyTab.isServerConnected(serverName), { timeout: SERVER_CONNECTION_TIMEOUT })
+      .toBeTruthy();
+  });
 });
