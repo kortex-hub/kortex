@@ -19,10 +19,6 @@
 import { type components, createValidator } from '@kortex-hub/mcp-registry-types';
 import { injectable } from 'inversify';
 
-export interface SchemaValidationResult {
-  isValid: boolean;
-}
-
 /**
  * Service for validating MCP registry data against OpenAPI schemas.
  * Uses AJV validators created from the mcp-registry-types schemas.
@@ -36,14 +32,14 @@ export class MCPSchemaValidator {
    * @param schemaName - The schema component name (e.g., 'ServerList', 'ServerResponse')
    * @param contextName - Optional context name for error messages (e.g., registry URL)
    * @param suppressWarnings - Optional flag to suppress warnings (default: false)
-   * @returns Validation result with isValid flag and invalidServerNames (for ServerList)
+   * @returns true if the data is valid, false otherwise
    */
   validateSchemaData(
     jsonData: unknown,
     schemaName: keyof components['schemas'],
     contextName?: string,
     suppressWarnings: boolean = false,
-  ): SchemaValidationResult {
+  ): boolean {
     const validator = createValidator(schemaName);
     const isValid = validator(jsonData);
 
@@ -55,8 +51,6 @@ export class MCPSchemaValidator {
       );
     }
 
-    return {
-      isValid,
-    };
+    return isValid;
   }
 }

@@ -50,7 +50,7 @@ describe('validateSchemaData', () => {
 
     const result = validator.validateSchemaData(validServerList, 'ServerList', 'test-registry');
 
-    expect(result.isValid).toBe(true);
+    expect(result).toBe(true);
     expect(console.warn).not.toHaveBeenCalled();
   });
 
@@ -70,7 +70,7 @@ describe('validateSchemaData', () => {
 
     const result = validator.validateSchemaData(invalidServerList, 'ServerList', 'test-registry');
 
-    expect(result.isValid).toBe(false);
+    expect(result).toBe(false);
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('[MCPSchemaValidator] Failed to validate data against schema'),
       expect.anything(),
@@ -89,7 +89,7 @@ describe('validateSchemaData', () => {
 
     const result = validator.validateSchemaData(invalidServerResponse, 'ServerResponse', 'test-registry');
 
-    expect(result.isValid).toBe(false);
+    expect(result).toBe(false);
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('[MCPSchemaValidator] Failed to validate data against schema'),
       expect.anything(),
@@ -108,7 +108,7 @@ describe('validateSchemaData', () => {
 
     const result = validator.validateSchemaData(invalidServerResponse, 'ServerResponse', 'test-registry');
 
-    expect(result.isValid).toBe(false);
+    expect(result).toBe(false);
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('[MCPSchemaValidator] Failed to validate data against schema'),
       expect.arrayContaining([
@@ -137,7 +137,7 @@ describe('validateSchemaData', () => {
 
     const result = validator.validateSchemaData(invalidServerResponse, 'ServerResponse', 'test-registry');
 
-    expect(result.isValid).toBe(false);
+    expect(result).toBe(false);
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('[MCPSchemaValidator] Failed to validate data against schema'),
       expect.anything(),
@@ -162,7 +162,7 @@ describe('validateSchemaData', () => {
 
     const result = validator.validateSchemaData(validServerResponse, 'ServerResponse', 'test-registry');
 
-    expect(result.isValid).toBe(true);
+    expect(result).toBe(true);
     expect(console.warn).not.toHaveBeenCalled();
   });
 
@@ -175,7 +175,7 @@ describe('validateSchemaData', () => {
 
     const result = validator.validateSchemaData(validServerDetail, 'ServerDetail');
 
-    expect(result.isValid).toBe(true);
+    expect(result).toBe(true);
     expect(console.warn).not.toHaveBeenCalled();
   });
 
@@ -187,7 +187,7 @@ describe('validateSchemaData', () => {
 
     const result = validator.validateSchemaData(invalidServerDetail, 'ServerDetail');
 
-    expect(result.isValid).toBe(false);
+    expect(result).toBe(false);
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('[MCPSchemaValidator] Failed to validate data against schema'),
       expect.anything(),
@@ -246,7 +246,7 @@ describe('validateSchemaData', () => {
 
     const result = validator.validateSchemaData(validRepository, 'Repository');
 
-    expect(result.isValid).toBe(true);
+    expect(result).toBe(true);
     // Note: AJV may warn about unknown formats like "uri", but validation still passes
   });
 
@@ -258,7 +258,7 @@ describe('validateSchemaData', () => {
 
     const result = validator.validateSchemaData(invalidRepository, 'Repository');
 
-    expect(result.isValid).toBe(false);
+    expect(result).toBe(false);
     expect(console.warn).toHaveBeenCalled();
   });
 
@@ -270,7 +270,7 @@ describe('validateSchemaData', () => {
 
     const result = validator.validateSchemaData(invalidRepository, 'Repository', undefined, true);
 
-    expect(result.isValid).toBe(false);
+    expect(result).toBe(false);
     expect(console.warn).not.toHaveBeenCalledWith(
       expect.stringContaining('[MCPSchemaValidator] Failed to validate data against schema'),
       expect.anything(),
@@ -312,7 +312,7 @@ describe('validateSchemaData with individual ServerResponse validation', () => {
     const invalidServerNames = new Set<string>();
     for (const serverResponse of servers) {
       const result = validator.validateSchemaData(serverResponse, 'ServerResponse', 'test-registry', true);
-      if (!result.isValid) {
+      if (!result) {
         invalidServerNames.add(serverResponse.server.name);
       }
     }
@@ -335,7 +335,7 @@ describe('validateSchemaData with individual ServerResponse validation', () => {
 
     const result = validator.validateSchemaData(serverResponse, 'ServerResponse', 'test-registry', true);
 
-    expect(result.isValid).toBe(false);
+    expect(result).toBe(false);
   });
 
   test('should return valid for all valid servers', () => {
@@ -360,7 +360,7 @@ describe('validateSchemaData with individual ServerResponse validation', () => {
 
     for (const serverResponse of servers) {
       const result = validator.validateSchemaData(serverResponse, 'ServerResponse', 'test-registry', true);
-      expect(result.isValid).toBe(true);
+      expect(result).toBe(true);
     }
   });
 });

@@ -4,13 +4,13 @@ import type { MCPServerDetail } from '/@api/mcp/mcp-server-info';
 import MCPIcon from './MCPIcon.svelte';
 
 interface Props {
-  object: MCPServerDetail;
+  server: MCPServerDetail;
   size?: number;
 }
 
-const { object, size = 20 }: Props = $props();
+const { server, size = 20 }: Props = $props();
 
-const showInvalidIndicator = $derived(object.isValidSchema === false);
+const showInvalidIndicator = $derived(server.isValidSchema === false);
 </script>
 
 <div class="relative">

@@ -560,7 +560,7 @@ export class MCPRegistry {
       );
       return {
         ...serverResponse,
-        isValidSchema: validationResult.isValid,
+        isValidSchema: validationResult,
       };
     });
 
