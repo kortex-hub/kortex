@@ -25,7 +25,6 @@ import { FlowsCreatePage } from './flows-create-page';
 
 export class ChatPage extends BasePage {
   readonly toggleSidebarButton: Locator;
-  readonly mcpDropdown: Locator;
   readonly newChatButton: Locator;
   readonly sidebarNewChatButton: Locator;
   readonly deleteAllChatsButton: Locator;
@@ -49,7 +48,6 @@ export class ChatPage extends BasePage {
   constructor(page: Page) {
     super(page);
     this.toggleSidebarButton = page.getByRole('button', { name: 'Toggle sidebar' });
-    this.mcpDropdown = page.getByRole('button', { name: 'Select MCP servers' });
     this.newChatButton = page.getByRole('button', { name: 'New Chat' });
     this.sidebarNewChatButton = page.locator('[data-sidebar="header"] button[data-tooltip-trigger]').first();
     this.deleteAllChatsButton = page.getByRole('button', { name: 'Delete all chats' });
@@ -82,7 +80,6 @@ export class ChatPage extends BasePage {
 
   async verifyHeaderElementsVisible(): Promise<void> {
     await expect(this.toggleSidebarButton).toBeVisible();
-    await expect(this.mcpDropdown).toBeVisible();
     await expect(this.newChatButton).toBeVisible();
     await expect(this.modelDropdownSelector).toBeVisible();
   }

@@ -1,22 +1,32 @@
 <script lang="ts">
 import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
-import { Fa, type IconSize } from 'svelte-fa';
+import { Icon } from '@podman-desktop/ui-svelte/icons';
+import type { Component } from 'svelte';
+import type { IconSize } from 'svelte-fa';
 
-export let icon: IconDefinition;
-export let loadingWidthClass: string;
-export let loadingHeightClass: string;
-export let positionTopClass: string;
-export let positionLeftClass: string;
-export let loading = false;
-export let iconSize: IconSize | undefined = undefined;
+interface Props {
+  icon: IconDefinition | Component | string;
+  loadingWidthClass?: string;
+  loadingHeightClass?: string;
+  loading?: boolean;
+  iconSize?: IconSize;
+}
+
+let {
+  icon,
+  loadingWidthClass = 'w-6',
+  loadingHeightClass = 'h-6',
+  loading = false,
+  iconSize = undefined,
+}: Props = $props();
 </script>
 
 <div>
-  <Fa size={iconSize} icon={icon} />
+  <Icon size={iconSize} icon={icon} />
   <div
     aria-label="spinner"
     class="{loading
       ? ''
-      : 'hidden'} {loadingWidthClass} {loadingHeightClass} rounded-full animate-spin border border-solid border-[var(--pd-action-button-spinner)] border-t-transparent absolute {positionTopClass} {positionLeftClass}">
+      : 'hidden'} {loadingWidthClass} {loadingHeightClass} rounded-full animate-spin -translate-1/2 border border-solid border-[var(--pd-action-button-spinner)] border-t-transparent absolute left-1/2 top-1/2">
   </div>
 </div>
