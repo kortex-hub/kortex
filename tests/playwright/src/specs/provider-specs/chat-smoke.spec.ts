@@ -137,7 +137,7 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
     }
   });
 
-  test('[CHAT-07] Export chat as Flow', async ({ chatPage, navigationBar, flowsPage }) => {
+  test('[CHAT-07] Export chat as Flow', async ({ chatPage, navigationBar, flowsPage, gooseSetup: _gooseSetup }) => {
     await chatPage.ensureSidebarVisible();
     await chatPage.clickNewChat();
 
