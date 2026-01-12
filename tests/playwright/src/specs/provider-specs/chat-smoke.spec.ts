@@ -146,9 +146,6 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
     resource,
     gooseSetup: _gooseSetup,
   }, testInfo) => {
-    // Skip on CI
-    test.skip(!!process.env.CI, 'Skipping on CI');
-
     // Skip for Ollama - flows not yet supported
     if (resource === 'ollama' || testInfo.project.name === 'Ollama-Provider') {
       test.skip(true, 'Flows not supported for Ollama');
