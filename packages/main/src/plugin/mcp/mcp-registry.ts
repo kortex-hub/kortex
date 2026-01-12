@@ -32,7 +32,7 @@ import { formatArguments } from '/@/plugin/mcp/utils/arguments.js';
 import { formatKeyValueInputs } from '/@/plugin/mcp/utils/format-key-value-inputs.js';
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { IConfigurationNode, IConfigurationRegistry } from '/@api/configuration/models.js';
-import type { ValidatedServerList, ValidatedServerResponse } from '/@api/mcp/mcp-server-info.js';
+import type { ValidatedServerDetail, ValidatedServerList, ValidatedServerResponse } from '/@api/mcp/mcp-server-info.js';
 import { MCPServerDetail } from '/@api/mcp/mcp-server-info.js';
 import { InputWithVariableResponse, MCPSetupOptions } from '/@api/mcp/mcp-setup.js';
 
@@ -140,8 +140,8 @@ export class MCPRegistry {
     this.configuration = this.configurationRegistry.getConfiguration(MCP_SECTION_NAME);
   }
 
-  enhanceServerDetail(server: components['schemas']['ServerDetail'], isValidSchema?: boolean): MCPServerDetail {
-    return { ...server, serverId: encodeURI(server.name), isValidSchema };
+  enhanceServerDetail(server: ValidatedServerDetail): MCPServerDetail {
+    return { ...server, serverId: encodeURI(server.name) };
   }
 
   init(): void {
@@ -160,7 +160,7 @@ export class MCPRegistry {
 
       const { servers } = await this.listMCPServersFromRegistry(registry.serverUrl);
       for (const rawServer of servers) {
-        const server = this.enhanceServerDetail(rawServer.server, rawServer.isValidSchema);
+        const server = this.enhanceServerDetail(rawServer.server);
         if (!server.serverId) {
           continue;
         }
@@ -560,7 +560,10 @@ export class MCPRegistry {
       );
       return {
         ...serverResponse,
-        isValidSchema: validationResult,
+        server: {
+          ...serverResponse.server,
+          isValidSchema: validationResult,
+        },
       };
     });
 
@@ -610,9 +613,7 @@ export class MCPRegistry {
       try {
         const serverList = await this.listMCPServersFromRegistry(registryURL);
         // now, aggregate the servers from the list ensuring each server has an id
-        serverDetails.push(
-          ...serverList.servers.map(rawServer => this.enhanceServerDetail(rawServer.server, rawServer.isValidSchema)),
-        );
+        serverDetails.push(...serverList.servers.map(rawServer => this.enhanceServerDetail(rawServer.server)));
       } catch (error: unknown) {
         console.error(`Failed fetch for registry ${registryURL}`, error);
       }

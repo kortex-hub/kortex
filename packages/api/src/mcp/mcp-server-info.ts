@@ -1,8 +1,11 @@
 import type { components } from '@kortex-hub/mcp-registry-types';
 
-// Augmented server response with validation status
+export type ValidatedServerDetail = components['schemas']['ServerDetail'] & {
+  isValidSchema?: boolean;
+};
+
 export type ValidatedServerResponse = components['schemas']['ServerResponse'] & {
-  isValidSchema: boolean;
+  server: ValidatedServerDetail;
 };
 
 // Augmented server list with validated servers
@@ -11,9 +14,8 @@ export type ValidatedServerList = Omit<components['schemas']['ServerList'], 'ser
 };
 
 // our MCP server detail extends the MCP registry server detail with an id being URL of registry + server name encoded
-export type MCPServerDetail = components['schemas']['ServerDetail'] & {
+export type MCPServerDetail = ValidatedServerDetail & {
   serverId: string;
-  isValidSchema?: boolean;
 };
 
 export interface MCPRemoteServerInfo {
