@@ -43,6 +43,7 @@ let table: Table<SelectableMCPRegistryServerDetailUI>;
 
 const statusColumn = new TableColumn<MCPServerDetail>('Status', {
   width: '60px',
+  overflow: true,
   renderer: MCPValidServerIndicatorIcon,
 });
 
