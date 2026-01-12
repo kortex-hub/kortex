@@ -58,7 +58,7 @@ async function close(): Promise<void> {
 
 {#if mcpRegistryServerDetail}
   <FormPage title="Adding {mcpRegistryServerDetail.name}" inProgress={loading} onclose={navigateToMcps}>
-    {#snippet icon()}<MCPValidServerIndicatorIcon size={24} server={mcpRegistryServerDetail} />{/snippet}
+    {#snippet icon()}<MCPValidServerIndicatorIcon size={24} object={mcpRegistryServerDetail} />{/snippet}
     {#snippet content()}
 
       <div class="p-5 min-w-full h-full">
