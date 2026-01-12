@@ -139,7 +139,13 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
     }
   });
 
-  test('[CHAT-07] Export chat as Flow', async ({ chatPage, navigationBar, flowsPage, resource }, testInfo) => {
+  test('[CHAT-07] Export chat as Flow', async ({
+    chatPage,
+    navigationBar,
+    flowsPage,
+    resource,
+    gooseSetup: _gooseSetup,
+  }, testInfo) => {
     // Skip on CI
     test.skip(!!process.env.CI, 'Skipping on CI');
 
@@ -148,7 +154,6 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
       test.skip(true, 'Flows not supported for Ollama');
       return;
     }
-
     await chatPage.ensureSidebarVisible();
     await chatPage.clickNewChat();
 

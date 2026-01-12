@@ -1,9 +1,8 @@
 <script lang="ts">
-import type { components } from '@kortex-hub/mcp-registry-types';
 import { ErrorMessage, FormPage } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
-import McpIcon from '/@/lib/images/MCPIcon.svelte';
+import MCPValidServerIndicatorIcon from '/@/lib/images/MCPValidServerIndicatorIcon.svelte';
 import type { MCPTarget } from '/@/lib/mcp/setup/mcp-target';
 import MCPSetupDropdown from '/@/lib/mcp/setup/MCPSetupDropdown.svelte';
 import PackageSetupForm from '/@/lib/mcp/setup/PackageSetupForm.svelte';
@@ -20,9 +19,7 @@ const { serverId }: Props = $props();
 let loading: boolean = $state(false);
 let error: string | undefined = $state(undefined);
 
-const mcpRegistryServerDetail: components['schemas']['ServerDetail'] | undefined = $derived(
-  $mcpRegistriesServerInfos.find(server => server.serverId === serverId),
-);
+const mcpRegistryServerDetail = $derived($mcpRegistriesServerInfos.find(server => server.serverId === serverId));
 
 let targets: Array<MCPTarget> = $derived([
   ...(mcpRegistryServerDetail?.remotes ?? []).map((remote, index) => ({ ...remote, index })),
@@ -61,7 +58,7 @@ async function close(): Promise<void> {
 
 {#if mcpRegistryServerDetail}
   <FormPage title="Adding {mcpRegistryServerDetail.name}" inProgress={loading} onclose={navigateToMcps}>
-    {#snippet icon()}<McpIcon size={24} />{/snippet}
+    {#snippet icon()}<MCPValidServerIndicatorIcon size={24} object={mcpRegistryServerDetail} />{/snippet}
     {#snippet content()}
 
       <div class="p-5 min-w-full h-full">

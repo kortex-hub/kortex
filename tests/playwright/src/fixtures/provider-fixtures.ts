@@ -31,6 +31,7 @@ interface WorkerFixtures {
   resourceSetup: void;
   mcpServers: MCPServerId[];
   mcpSetup: void;
+  gooseSetup: void;
 }
 
 export const test = base.extend<ElectronFixtures, WorkerFixtures>({
@@ -132,6 +133,25 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
             ),
           );
         }
+      }
+    },
+    { scope: 'worker', auto: false },
+  ],
+
+  gooseSetup: [
+    async ({ workerPage, workerNavigationBar }, use): Promise<void> => {
+      try {
+        const previousPage = workerPage.url();
+
+        const settingsPage = await workerNavigationBar.navigateToSettingsPage();
+        await settingsPage.installGoose();
+
+        await workerPage.goto(previousPage);
+
+        await use();
+      } catch (error) {
+        console.warn('Goose setup failed:', error);
+        throw error;
       }
     },
     { scope: 'worker', auto: false },
