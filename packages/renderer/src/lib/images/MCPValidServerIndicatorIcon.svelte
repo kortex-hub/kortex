@@ -30,4 +30,4 @@ const showInvalidIndicator = $derived(object?.isValidSchema === false);
       </svg>
     </div>
   {/if}
-  </div>
+</div>
