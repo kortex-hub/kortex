@@ -20,8 +20,8 @@ name: E2E Test Job
 on:
   workflow_call:
     inputs:
-      os:
-        description: 'Operating system to run on'
+      instance:
+        description: 'GitHub Actions runner instance (e.g., macos-latest, windows-2025, ubuntu-24.04)'
         required: true
         type: string
       mode:
@@ -39,12 +39,12 @@ on:
 
 jobs:
   e2e-test:
-    name: ${{ inputs.os }}
-    runs-on: ${{ inputs.os }}
+    name: ${{ inputs.instance }}
+    runs-on: ${{ inputs.instance }}
     timeout-minutes: 60
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      GEMINI_API_KEY: ${{ !startsWith(inputs.os, 'ubuntu') && secrets.GEMINI_API_KEY || '' }}
+      GEMINI_API_KEY: ${{ !startsWith(inputs.instance, 'ubuntu') && secrets.GEMINI_API_KEY || '' }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
 
@@ -144,6 +144,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: results-e2e-${{ inputs.os }}-${{ inputs.mode }}
+          name: results-e2e-${{ inputs.instance }}-${{ inputs.mode }}
           path: tests/playwright/output/**
           retention-days: 7

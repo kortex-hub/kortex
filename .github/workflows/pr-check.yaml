@@ -279,7 +279,7 @@ jobs:
         mode: [prod, dev]
     uses: ./.github/workflows/e2e-test-job.yaml
     with:
-      os: ubuntu-24.04
+      instance: ubuntu-24.04
       mode: ${{ matrix.mode }}
       compile_args: '--linux dir'
       binary_path: ./dist/linux-unpacked/kortex

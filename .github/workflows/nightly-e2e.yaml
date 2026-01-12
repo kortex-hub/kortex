@@ -48,7 +48,7 @@ jobs:
             binary_path: ./dist/win-arm64-unpacked/Kortex.exe
     uses: ./.github/workflows/e2e-test-job.yaml
     with:
-      os: ${{ matrix.os }}
+      instance: ${{ matrix.os }}
       mode: ${{ matrix.mode }}
       compile_args: '--win dir'
       binary_path: ${{ matrix.binary_path }}
@@ -63,7 +63,7 @@ jobs:
         mode: [prod, dev]
     uses: ./.github/workflows/e2e-test-job.yaml
     with:
-      os: ${{ matrix.os }}
+      instance: ${{ matrix.os }}
       mode: ${{ matrix.mode }}
       compile_args: '--linux dir'
       binary_path: ./dist/linux-unpacked/kortex
@@ -83,7 +83,7 @@ jobs:
             binary_path: ./dist/mac-arm64/Kortex.app/Contents/MacOS/Kortex
     uses: ./.github/workflows/e2e-test-job.yaml
     with:
-      os: ${{ matrix.os }}
+      instance: ${{ matrix.os }}
       mode: ${{ matrix.mode }}
       compile_args: '--mac dir'
       binary_path: ${{ matrix.binary_path }}
