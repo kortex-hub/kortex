@@ -21,9 +21,6 @@ import { TIMEOUTS } from 'src/model/core/types';
 import { expect, test } from '../../fixtures/provider-fixtures';
 import { waitForNavigationReady } from '../../utils/app-ready';
 
-// Skip entire file on CI
-test.skip(!!process.env.CI, 'Skipping flows tests on CI');
-
 const flowName = 'custom-flow-smoke-test';
 const flowNameFromContentRegion = 'custom-flow-content-region-test';
 const prompt =
