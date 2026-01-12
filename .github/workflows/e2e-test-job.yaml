@@ -32,10 +32,6 @@ on:
         description: 'Arguments for pnpm compile:current (e.g., --win dir, --linux dir, --mac dir)'
         required: true
         type: string
-      binary_path:
-        description: 'Path to the compiled binary (for prod mode)'
-        required: true
-        type: string
 
 jobs:
   e2e-test:
@@ -119,11 +115,33 @@ jobs:
       - name: Run Smoke E2E tests in ${{ inputs.mode == 'prod' && 'Production' || 'Development' }} Mode
         shell: bash
         run: |
+          # Derive binary path from instance (OS and architecture)
+          INSTANCE="${{ inputs.instance }}"
+          if [[ "$INSTANCE" == *"windows"* ]]; then
+            if [[ "$INSTANCE" == *"arm"* ]]; then
+              BINARY_PATH="./dist/win-arm64-unpacked/Kortex.exe"
+            else
+              BINARY_PATH="./dist/win-unpacked/Kortex.exe"
+            fi
+          elif [[ "$INSTANCE" == *"ubuntu"* ]] || [[ "$INSTANCE" == *"linux"* ]]; then
+            BINARY_PATH="./dist/linux-unpacked/kortex"
+          elif [[ "$INSTANCE" == *"macos"* ]]; then
+            if [[ "$INSTANCE" == *"intel"* ]]; then
+              BINARY_PATH="./dist/mac/Kortex.app/Contents/MacOS/Kortex"
+            else
+              BINARY_PATH="./dist/mac-arm64/Kortex.app/Contents/MacOS/Kortex"
+            fi
+          else
+            echo "::error::Unknown instance: $INSTANCE. Cannot determine binary path."
+            exit 1
+          fi
+          
           if [ "${{ inputs.mode }}" == "prod" ]; then
             echo "Compiling Kortex in production mode"
             export ELECTRON_ENABLE_INSPECT=true
             pnpm compile:current ${{ inputs.compile_args }}
-            path=$(realpath "${{ inputs.binary_path }}")
+            
+            path=$(realpath "$BINARY_PATH")
             echo "Kortex built binary: $path"
             export KORTEX_BINARY="$path"
           fi

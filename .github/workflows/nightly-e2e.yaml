@@ -41,17 +41,11 @@ jobs:
       matrix:
         os: [windows-2025, windows-11-arm]
         mode: [prod, dev]
-        include:
-          - os: windows-2025
-            binary_path: ./dist/win-unpacked/Kortex.exe
-          - os: windows-11-arm
-            binary_path: ./dist/win-arm64-unpacked/Kortex.exe
     uses: ./.github/workflows/e2e-test-job.yaml
     with:
       instance: ${{ matrix.os }}
       mode: ${{ matrix.mode }}
       compile_args: '--win dir'
-      binary_path: ${{ matrix.binary_path }}
     secrets: inherit
 
   linux-e2e-tests:
@@ -66,7 +60,6 @@ jobs:
       instance: ${{ matrix.os }}
       mode: ${{ matrix.mode }}
       compile_args: '--linux dir'
-      binary_path: ./dist/linux-unpacked/kortex
     secrets: inherit
 
   macos-e2e-tests:
@@ -76,15 +69,9 @@ jobs:
       matrix:
         os: [macos-15-intel, macos-26]
         mode: [prod, dev]
-        include:
-          - os: macos-15-intel
-            binary_path: ./dist/mac/Kortex.app/Contents/MacOS/Kortex
-          - os: macos-26
-            binary_path: ./dist/mac-arm64/Kortex.app/Contents/MacOS/Kortex
     uses: ./.github/workflows/e2e-test-job.yaml
     with:
       instance: ${{ matrix.os }}
       mode: ${{ matrix.mode }}
       compile_args: '--mac dir'
-      binary_path: ${{ matrix.binary_path }}
     secrets: inherit
