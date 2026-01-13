@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2023-2024 Red Hat, Inc.
+ * Copyright (C) 2023-2025 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,15 +24,53 @@ import { tick } from 'svelte';
 import { get } from 'svelte/store';
 /* eslint-enable import/no-duplicates */
 import { router } from 'tinro';
-import { beforeAll, expect, test, vi } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
 
 import Loader from './Loader.svelte';
 import { lastPage } from './stores/breadcrumb';
 
+// Setup mocks before any imports - required for Svelte 5 compatibility
+// matchMedia must return a MediaQueryList-like object for Svelte 5's DevicePixelRatio
+vi.hoisted(() => {
+  const matchMediaMock = (query: string): MediaQueryList =>
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList;
+
+  // localStorage mock for mode-watcher
+  const localStorageData = new Map<string, string>();
+  const localStorageMock = {
+    getItem: (key: string): string | null => localStorageData.get(key) ?? null,
+    setItem: (key: string, value: string): void => {
+      localStorageData.set(key, String(value));
+    },
+    removeItem: (key: string): void => {
+      localStorageData.delete(key);
+    },
+    clear: (): void => {
+      localStorageData.clear();
+    },
+    get length(): number {
+      return localStorageData.size;
+    },
+    key: (index: number): string | null => [...localStorageData.keys()][index] ?? null,
+  };
+
+  // Use Vitest's stubGlobal for mocking global objects
+  vi.stubGlobal('matchMedia', vi.fn().mockImplementation(matchMediaMock));
+  vi.stubGlobal('localStorage', localStorageMock);
+});
+
 vi.mock('./lib/chat/route/CustomChat.svelte', () => ({
   default: vi.fn(),
 }));
-
 // first, patch window object
 const callbacks = new Map<string, any>();
 const eventEmitter = {
@@ -53,22 +91,30 @@ vi.mock('tinro', () => {
   };
 });
 
-Object.defineProperty(global, 'window', {
-  value: {
-    events: {
-      receive: eventEmitter.receive,
-    },
-    dispatchEvent: dispatchEventMock,
-    extensionSystemIsReady: vi.fn(),
-    extensionSystemIsExtensionsStarted: extensionSystemIsExtensionsStartedMock,
-    addEventListener: eventEmitter.receive,
+// Extend the existing jsdom window instead of replacing it
+// This preserves DOM APIs needed by Svelte 5
+// Note: Using Object.assign here because the component accesses window.events.receive() directly
+Object.assign(window, {
+  events: {
+    receive: eventEmitter.receive,
   },
-  writable: true,
+  dispatchEvent: dispatchEventMock,
+  extensionSystemIsReady: vi.fn(),
+  extensionSystemIsExtensionsStarted: extensionSystemIsExtensionsStartedMock,
 });
 
-beforeAll(() => {
+// Override addEventListener to capture custom events
+// Note: Using manual override instead of vi.spyOn() because vi.resetAllMocks() in beforeEach would clear the spy
+const originalAddEventListener = window.addEventListener.bind(window);
+window.addEventListener = (type: string, listener: any, options?: any): void => {
+  callbacks.set(type, listener);
+  originalAddEventListener(type, listener, options);
+};
+
+beforeEach(() => {
   vi.resetAllMocks();
   vi.clearAllMocks();
+  callbacks.clear();
 });
 
 test('Loader should redirect to the installation page when receiving the event', async () => {
@@ -114,7 +160,7 @@ test('Loader should send the event if extensions take time to start', async () =
   expect(dispatchEventMock.mock.calls.length).toBe(0);
 
   // wait one second (to simulate a long initialization of extensions)
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await new Promise(resolve => setTimeout(resolve, 1_000));
 
   // now, flag remote extensions being ready
   extensionSystemIsExtensionsStartedMock.mockResolvedValue(true);
