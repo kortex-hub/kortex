@@ -32,7 +32,7 @@ export class MCPSchemaValidator {
    * @param schemaName - The schema component name (e.g., 'ServerList', 'ServerResponse')
    * @param contextName - Optional context name for error messages (e.g., registry URL)
    * @param suppressWarnings - Optional flag to suppress warnings (default: false)
-   * @returns true if valid, false if invalid
+   * @returns true if the data is valid, false otherwise
    */
   validateSchemaData(
     jsonData: unknown,

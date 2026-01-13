@@ -2,6 +2,7 @@
 import { FilteredEmptyScreen, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 import SimpleColumn from '@podman-desktop/ui-svelte/TableSimpleColumn';
 
+import MCPValidServerIndicatorIcon from '/@/lib/images/MCPValidServerIndicatorIcon.svelte';
 import {
   filteredMcpRegistriesServerInfos,
   mcpRegistriesServerInfosSearchPattern,
@@ -42,7 +43,8 @@ let table: Table<SelectableMCPRegistryServerDetailUI>;
 
 const statusColumn = new TableColumn<MCPServerDetail>('Status', {
   width: '60px',
-  renderer: McpIcon,
+  overflow: true,
+  renderer: MCPValidServerIndicatorIcon,
 });
 
 const nameColumn = new TableColumn<MCPServerDetail, string>('Name', {

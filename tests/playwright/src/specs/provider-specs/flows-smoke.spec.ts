@@ -29,7 +29,7 @@ const expectedTerminalContent = /(\w+)\(\s*(\w+)\s*-\s*1\s*\)\s*\+\s*\1\(\s*\2\s
 
 test.skip(!!process.env.CI, 'Skipping flow tests on CI');
 
-test.beforeAll(async ({ page, navigationBar, flowsPage }) => {
+test.beforeAll(async ({ page, navigationBar, flowsPage, gooseSetup: _gooseSetup }) => {
   await waitForNavigationReady(page);
   await navigationBar.navigateToFlowsPage();
   await flowsPage.deleteAllFlows(TIMEOUTS.STANDARD);

@@ -32,6 +32,7 @@ import { formatArguments } from '/@/plugin/mcp/utils/arguments.js';
 import { formatKeyValueInputs } from '/@/plugin/mcp/utils/format-key-value-inputs.js';
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { IConfigurationNode, IConfigurationRegistry } from '/@api/configuration/models.js';
+import type { ValidatedServerDetail, ValidatedServerList, ValidatedServerResponse } from '/@api/mcp/mcp-server-info.js';
 import { MCPServerDetail } from '/@api/mcp/mcp-server-info.js';
 import { InputWithVariableResponse, MCPSetupOptions } from '/@api/mcp/mcp-setup.js';
 
@@ -139,7 +140,7 @@ export class MCPRegistry {
     this.configuration = this.configurationRegistry.getConfiguration(MCP_SECTION_NAME);
   }
 
-  enhanceServerDetail(server: components['schemas']['ServerDetail']): MCPServerDetail {
+  enhanceServerDetail(server: ValidatedServerDetail): MCPServerDetail {
     return { ...server, serverId: encodeURI(server.name) };
   }
 
@@ -199,6 +200,7 @@ export class MCPRegistry {
             transport,
             remote.url,
             server.description,
+            server.isValidSchema,
           );
         } else {
           const pack = server.packages?.[config.packageId];
@@ -230,6 +232,7 @@ export class MCPRegistry {
             transport,
             undefined,
             server.description,
+            server.isValidSchema,
           );
         }
       }
@@ -436,7 +439,7 @@ export class MCPRegistry {
     }
 
     // get values from the server detail
-    const { name, description } = serverDetail;
+    const { name, description, isValidSchema } = serverDetail;
 
     await this.mcpManager.registerMCPClient(
       INTERNAL_PROVIDER_ID,
@@ -447,6 +450,7 @@ export class MCPRegistry {
       transport,
       url,
       description,
+      isValidSchema,
     );
 
     // persist configuration
@@ -525,7 +529,7 @@ export class MCPRegistry {
   protected async listMCPServersFromRegistry(
     registryURL: string,
     cursor?: string, // optional param for recursion
-  ): Promise<components['schemas']['ServerList']> {
+  ): Promise<ValidatedServerList> {
     const url = new URL(`${registryURL}/v0/servers`);
     if (cursor) {
       url.searchParams.set('cursor', cursor);
@@ -546,21 +550,38 @@ export class MCPRegistry {
 
     const data: components['schemas']['ServerList'] = await content.json();
 
-    // Validate the ServerList data but continue even if invalid
-    this.schemaValidator.validateSchemaData(data, 'ServerList', registryURL);
+    // Validate each server individually to catch all invalid servers
+    const validatedServers: ValidatedServerResponse[] = data.servers.map(serverResponse => {
+      const validationResult = this.schemaValidator.validateSchemaData(
+        serverResponse,
+        'ServerResponse',
+        registryURL,
+        false,
+      );
+      return {
+        ...serverResponse,
+        server: {
+          ...serverResponse.server,
+          isValidSchema: validationResult,
+        },
+      };
+    });
 
     // If pagination info exists, fetch the next page recursively
     if (data.metadata?.nextCursor) {
       const nextPage = await this.listMCPServersFromRegistry(registryURL, data.metadata.nextCursor);
       return {
         ...data,
-        servers: [...data.servers, ...nextPage.servers],
-        // merge metadata — keep the last page’s metadata
+        servers: [...validatedServers, ...nextPage.servers],
+        // merge metadata — keep the last page's metadata
         metadata: nextPage.metadata,
       };
     }
 
-    return data;
+    return {
+      ...data,
+      servers: validatedServers,
+    };
   }
 
   registerInternalMCPServer(server: MCPServerDetail): void {
@@ -590,9 +611,9 @@ export class MCPRegistry {
 
     for (const registryURL of serverUrls) {
       try {
-        const serverList: components['schemas']['ServerList'] = await this.listMCPServersFromRegistry(registryURL);
+        const serverList = await this.listMCPServersFromRegistry(registryURL);
         // now, aggregate the servers from the list ensuring each server has an id
-        serverDetails.push(...serverList.servers.map(({ server }) => this.enhanceServerDetail(server)));
+        serverDetails.push(...serverList.servers.map(rawServer => this.enhanceServerDetail(rawServer.server)));
       } catch (error: unknown) {
         console.error(`Failed fetch for registry ${registryURL}`, error);
       }

@@ -110,4 +110,15 @@ export class SettingsPage extends BasePage {
     const resource = resourcesPage.getCreatedResourceFor(provider.resourceId);
     await expect(resource).not.toBeVisible();
   }
+
+  async installGoose(): Promise<void> {
+    const cliPage = await this.openCli();
+
+    if (await cliPage.isGooseVersionDetected()) {
+      console.log('Goose is already installed, skipping...');
+      return;
+    }
+
+    await cliPage.installGoose();
+  }
 }
