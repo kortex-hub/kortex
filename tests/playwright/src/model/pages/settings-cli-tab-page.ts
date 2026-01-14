@@ -49,7 +49,7 @@ export class SettingsCliPage extends BasePage {
     await expect(this.gooseInstallButton).toBeVisible();
     await this.gooseInstallButton.click();
 
-    await expect(this.versionDropdownDialog).toBeVisible();
+    await expect(this.versionDropdownDialog).toBeVisible({ timeout: TIMEOUTS.SHORT });
     await this.latestVersion.click();
 
     await expect.poll(async () => await this.isGooseVersionDetected(), { timeout: TIMEOUTS.DEFAULT }).toBeTruthy();
