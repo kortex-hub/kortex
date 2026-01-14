@@ -44,8 +44,6 @@ test.describe('MCP Registry Management', { tag: '@smoke' }, () => {
   });
 
   test('[MCP-01] Add and remove MCP registry: verify server list updates accordingly', async ({ mcpPage }) => {
-    test.skip(isMacOS26, 'Skipping on macOS 26 due to CI stability issues');
-
     const editRegistriesTab = await mcpPage.openEditRegistriesTab();
     await editRegistriesTab.ensureRowExists(MCP_REGISTRY_EXAMPLE);
 
