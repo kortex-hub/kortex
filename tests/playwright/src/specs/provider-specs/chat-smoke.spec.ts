@@ -145,12 +145,13 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
     flowsPage,
     resource,
     gooseSetup: _gooseSetup,
-  }, testInfo) => {
-    // Skip for Ollama - flows not yet supported
-    if (resource === 'ollama' || testInfo.project.name === 'Ollama-Provider') {
-      test.skip(true, 'Flows not supported for Ollama');
-      return;
-    }
+  }) => {
+    test.skip(resource === 'ollama', 'Flows not supported for Ollama');
+    test.skip(
+      !!process.env.CI && process.platform === 'win32' && process.arch === 'arm64',
+      'Goose not supported on Windows ARM gha runners',
+    );
+
     await chatPage.ensureSidebarVisible();
     await chatPage.clickNewChat();
 

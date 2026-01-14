@@ -140,6 +140,12 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
 
   gooseSetup: [
     async ({ workerPage, workerNavigationBar }, use): Promise<void> => {
+      if (!!process.env.CI && process.platform === 'win32' && process.arch === 'arm64') {
+        console.warn('Goose setup skipped: Windows ARM gha runners not supported');
+        await use();
+        return;
+      }
+
       try {
         const previousPage = workerPage.url();
 
