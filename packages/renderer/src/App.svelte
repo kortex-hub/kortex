@@ -167,28 +167,30 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
           <CustomChat chatId={meta.params.chatId} />
         </Route>
 
-        <Route path="/flows" breadcrumb="Flows"  navigationHint="root">
-          <FlowList/>
-        </Route>
-
-        <Route path="/flows/create" breadcrumb="Create">
-          <FlowCreate/>
-        </Route>
-
-        <Route path="/flows/:providerId/:connectionName/:flowId/*" let:meta breadcrumb="Flow Details">
-          <FlowDetails
-            providerId={decodeURIComponent(meta.params.providerId)}
-            connectionName={decodeURIComponent(meta.params.connectionName)}
-            flowId={decodeURIComponent(meta.params.flowId)}
-          />
+        <Route path="/flows/*" breadcrumb="Flows" navigationHint="root" firstmatch>
+          <Route path="/" breadcrumb="Flows" navigationHint="root">
+            <FlowList/>
+          </Route>
+          <Route path="/create" breadcrumb="Create">
+            <FlowCreate/>
+          </Route>
+          <Route path="/:providerId/:connectionName/:flowId/*" let:meta breadcrumb="Flow Details">
+            <FlowDetails
+              providerId={decodeURIComponent(meta.params.providerId)}
+              connectionName={decodeURIComponent(meta.params.connectionName)}
+              flowId={decodeURIComponent(meta.params.flowId)}
+            />
+          </Route>
         </Route>
 
         <!-- MCP -->
-        <Route path="/mcps" breadcrumb="MCPs" navigationHint="root" let:meta>
-          <McpServerList tab="{meta.query.tab}"/>
-        </Route>
-        <Route path="/mcps/:id/*" let:meta>
-          <MCPDetails id={decodeURIComponent(meta.params.id)} />
+        <Route path="/mcps/*" breadcrumb="MCPs" navigationHint="root" firstmatch>
+          <Route path="/" breadcrumb="MCPs" navigationHint="root" let:meta>
+            <McpServerList tab="{meta.query.tab}"/>
+          </Route>
+          <Route path="/:id/*" breadcrumb="MCP Details" let:meta>
+            <MCPDetails id={decodeURIComponent(meta.params.id)} />
+          </Route>
         </Route>
         <Route path="/mcp-install-from-registry/:serverId/*" breadcrumb="Install MCP Server from Registry" let:meta>
           <McpRegistryCreateFromRegistryForm serverId={decodeURIComponent(meta.params.serverId)} />
