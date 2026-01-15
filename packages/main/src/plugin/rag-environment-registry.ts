@@ -186,6 +186,8 @@ export class RagEnvironmentRegistry {
 
     try {
       await unlink(filePath);
+      this.#environments = this.#environments.filter(environment => environment.name !== name);
+      this.apiSender.send('rag-environment-deleted', { name });
       return true;
     } catch (error) {
       console.error(`Failed to delete RAG environment ${name}:`, error);
