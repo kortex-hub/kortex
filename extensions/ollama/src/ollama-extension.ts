@@ -60,7 +60,12 @@ export class OllamaExtension {
         throw new Error(`HTTP error, status: ${res.status}`);
       }
       const data = await res.json();
-      models = Array.isArray(data.models) ? data.models : [];
+      models =
+        data !== null && typeof data === 'object' && 'models' in data
+          ? Array.isArray(data.models)
+            ? data.models
+            : []
+          : [];
     } catch (_err: unknown) {
       running = false;
       models = [];
