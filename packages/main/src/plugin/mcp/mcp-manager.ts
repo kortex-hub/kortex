@@ -156,6 +156,16 @@ export class MCPManager implements IAsyncDisposable {
     this.apiSender.send('mcp-manager-update');
   }
 
+  public async unregisterMCPClient(
+    internalProviderId: string,
+    serverId: string,
+    setupType: 'remote' | 'package',
+    index: number,
+  ): Promise<void> {
+    const key = this.getKey(internalProviderId, serverId, setupType, index);
+    return this.removeMcpRemoteServer(key);
+  }
+
   init(): void {}
 
   public async listMCPRemoteServers(): Promise<MCPRemoteServerInfo[]> {
@@ -178,5 +188,15 @@ export class MCPManager implements IAsyncDisposable {
 
     // broadcast new items
     this.apiSender.send('mcp-manager-update');
+  }
+
+  findMcpRemoteServer(
+    INTERNAL_PROVIDER_ID: string,
+    serverId: string,
+    type: 'remote' | 'package',
+    index: number,
+  ): MCPRemoteServerInfo | undefined {
+    const key = this.getKey(INTERNAL_PROVIDER_ID, serverId, type, index);
+    return this.#mcps.find(mcp => mcp.id === key);
   }
 }

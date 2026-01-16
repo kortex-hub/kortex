@@ -60,6 +60,10 @@ export class ChunkProviderRegistry implements IDisposable {
     );
   }
 
+  findProviderById(chunkerId: string): ChunkProvider | undefined {
+    return this._chunkProviders.get(chunkerId);
+  }
+
   dispose(): void {
     this._chunkProviders.clear();
   }
