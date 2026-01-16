@@ -44,6 +44,7 @@ import type {
 import type { DynamicToolUIPart, UIMessageChunk } from 'ai';
 import { contextBridge, ipcRenderer } from 'electron';
 
+import type { DetectFlowFieldsParams, DetectFlowFieldsResult } from '/@api/chat/detect-flow-fields-schema.ts';
 import type { FlowGenerationParameters } from '/@api/chat/flow-generation-parameters-schema';
 import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
 import type { Chat, Message } from '/@api/chat/schema.js';
@@ -1183,6 +1184,13 @@ export function initExposure(): void {
     'inferenceGenerateFlowParams',
     async (params: InferenceParameters): Promise<FlowGenerationParameters> => {
       return ipcInvoke('inference:generateFlowParams', params);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'inferenceDetectFlowFields',
+    async (params: DetectFlowFieldsParams): Promise<DetectFlowFieldsResult> => {
+      return ipcInvoke('inference:detectFlowFields', params);
     },
   );
 

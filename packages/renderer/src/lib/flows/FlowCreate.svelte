@@ -51,7 +51,56 @@ let prompt: string = $state(flowCreationData.value?.prompt ?? '');
 let parameters = $state<InputField[]>([]); // Input fields managed manually in UI
 let flowProviderConnectionKey: string | undefined = $state<string>();
 
+// Store chatId before clearing flowCreationData (for detect fields feature)
+let chatId: string | undefined = $state(flowCreationData.value?.chatId);
+
 flowCreationData.value = undefined;
+
+// Detect fields state
+let detectingFields: boolean = $state(false);
+
+// Can detect fields if we have a non-empty prompt
+const hasPrompt = $derived(prompt.trim().length > 0);
+
+/**
+ * Detect flow fields from the prompt (and chat conversation if available).
+ * Uses AI to analyze the prompt and extract parameters.
+ */
+async function handleDetectFields(): Promise<void> {
+  if (!selectedModel || detectingFields || !hasPrompt) return;
+
+  detectingFields = true;
+  error = undefined;
+
+  try {
+    const result = await window.inferenceDetectFlowFields({
+      chatId, // Optional - provides additional context if available
+      prompt,
+      providerId: selectedModel.providerId,
+      connectionName: selectedModel.connectionName,
+      modelId: selectedModel.label,
+    });
+
+    // Update prompt with placeholders
+    prompt = result.prompt;
+
+    // Update parameters from AI detection
+    parameters = result.parameters.map(
+      (p: { name: string; description: string; format: string; default?: string; required: boolean }) => ({
+        name: p.name,
+        description: p.description,
+        format: p.format as 'string',
+        default: p.default,
+        required: p.required,
+      }),
+    );
+  } catch (err: unknown) {
+    console.error('Failed to detect flow fields:', err);
+    error = `Failed to detect fields: ${String(err)}`;
+  } finally {
+    detectingFields = false;
+  }
+}
 
 let showFlowConnectionSelector = $state(true);
 
@@ -86,6 +135,7 @@ const formValidContent = $derived(
         mcp: $state.snapshot(selectedMCP),
         prompt: validatedInput.data.prompt,
         instruction,
+        parameters: $state.snapshot(parameters), // Snapshot for IPC serialization
       }
     : undefined,
 );
@@ -183,7 +233,12 @@ async function generate(): Promise<void> {
               />
             </div>
 
-            <InputFieldsSection bind:parameters />
+            <InputFieldsSection
+              bind:parameters
+              onDetectFields={handleDetectFields}
+              {detectingFields}
+              {hasPrompt}
+            />
 
             <!-- instruction -->
             <div class="px-6">

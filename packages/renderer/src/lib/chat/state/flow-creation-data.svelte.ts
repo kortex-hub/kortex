@@ -4,6 +4,7 @@ import type { FlowGenerationParameters } from '/@api/chat/flow-generation-parame
 export interface FlowCreationData extends FlowGenerationParameters {
   model: ModelInfo;
   tools: Record<string, string[]>;
+  chatId: string;
 }
 
 /**
