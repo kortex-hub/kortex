@@ -8,6 +8,7 @@ import FlowCreate from '/@/lib/flows/FlowCreate.svelte';
 import FlowDetails from '/@/lib/flows/FlowDetails.svelte';
 import FlowList from '/@/lib/flows/FlowList.svelte';
 import MCPDetails from '/@/lib/mcp/MCPDetails.svelte';
+import ScheduleExecutionDetails from '/@/lib/schedule/ScheduleExecutionDetails.svelte';
 import PinActions from '/@/lib/statusbar/PinActions.svelte';
 import { handleNavigation } from '/@/navigation';
 import { kubernetesNoCurrentContext } from '/@/stores/kubernetes-no-current-context';
@@ -181,6 +182,10 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
             connectionName={decodeURIComponent(meta.params.connectionName)}
             flowId={decodeURIComponent(meta.params.flowId)}
           />
+        </Route>
+
+        <Route path="/schedules/:schedulerName/:id" let:meta breadcrumb="Schedule" navigationHint="root">
+          <ScheduleExecutionDetails id={decodeURIComponent(meta.params.id)} schedulerName={decodeURIComponent(meta.params.schedulerName)} />
         </Route>
 
         <!-- MCP -->
