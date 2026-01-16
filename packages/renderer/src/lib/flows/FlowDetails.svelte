@@ -93,90 +93,88 @@ function setSelectedFlowExecuteId(flowExecuteId: string): void {
       {/if}
     {/snippet}
   {#snippet contentSnippet()}
-    {#if loading}
-      <div>
-        <Spinner/>
-      </div>
-    {:else}
-      <Route path="/summary" breadcrumb="Summary" navigationHint="tab">
-        {#if flowInfo}
+    <Route path="/summary" breadcrumb="Summary" navigationHint="tab">
+      {#if loading}
+        <div>
+          <Spinner/>
+        </div>
+      {:else if flowInfo}
+        <div class="h-min">
+          <DetailsTable>
+            <tr>
+              <DetailsTitle>Details</DetailsTitle>
+            </tr>
+            <tr>
+              <DetailsCell>Provider</DetailsCell>
+              <DetailsCell>{provider?.name}</DetailsCell>
+            </tr>
+            <tr>
+              <DetailsCell>Connection</DetailsCell>
+              <DetailsCell>{connection?.name}</DetailsCell>
+            </tr>
+            <tr>
+              <DetailsCell>Path</DetailsCell>
+              <DetailsCell>{flowInfo.path}</DetailsCell>
+            </tr>
+          </DetailsTable>
+        </div>
+
+        {#if (flowInfo.parameters ?? []).length > 0}
           <div class="h-min">
             <DetailsTable>
               <tr>
-                <DetailsTitle>Details</DetailsTitle>
+                <DetailsTitle>Flow Parameters</DetailsTitle>
               </tr>
               <tr>
-                <DetailsCell>Provider</DetailsCell>
-                <DetailsCell>{provider?.name}</DetailsCell>
-              </tr>
-              <tr>
-                <DetailsCell>Connection</DetailsCell>
-                <DetailsCell>{connection?.name}</DetailsCell>
-              </tr>
-              <tr>
-                <DetailsCell>Path</DetailsCell>
-                <DetailsCell>{flowInfo.path}</DetailsCell>
+                <DetailsCell>
+                  <tr>
+                    <DetailsCell>
+                      <strong>Name</strong>
+                    </DetailsCell>
+                    <DetailsCell>
+                      <strong>Description</strong>
+                    </DetailsCell>
+                    <DetailsCell>
+                      <strong>Required</strong>
+                    </DetailsCell>
+                    <DetailsCell>
+                      <strong>Default</strong>
+                    </DetailsCell>
+                  </tr>
+                  {#each (flowInfo.parameters ?? []) as param (param.name)}
+                    <tr>
+                      <DetailsCell>
+                        {param.name}
+                      </DetailsCell>
+                      <DetailsCell>
+                        {param.description}
+                      </DetailsCell>
+                      <DetailsCell>
+                        {param.required}
+                      </DetailsCell>
+                      <DetailsCell>
+                        {param.default}
+                      </DetailsCell>
+                    </tr>
+                  {/each}
+                </DetailsCell>
               </tr>
             </DetailsTable>
           </div>
-
-          {#if (flowInfo.parameters ?? []).length > 0}
-            <div class="h-min">
-              <DetailsTable>
-                <tr>
-                  <DetailsTitle>Flow Parameters</DetailsTitle>
-                </tr>
-                <tr>
-                  <DetailsCell>
-                    <tr>
-                      <DetailsCell>
-                        <strong>Name</strong>
-                      </DetailsCell>
-                      <DetailsCell>
-                        <strong>Description</strong>
-                      </DetailsCell>
-                      <DetailsCell>
-                        <strong>Required</strong>
-                      </DetailsCell>
-                      <DetailsCell>
-                        <strong>Default</strong>
-                      </DetailsCell>
-                    </tr>
-                    {#each (flowInfo.parameters ?? []) as param (param.name)}
-                      <tr>
-                        <DetailsCell>
-                          {param.name}
-                        </DetailsCell>
-                        <DetailsCell>
-                          {param.description}
-                        </DetailsCell>
-                        <DetailsCell>
-                          {param.required}
-                        </DetailsCell>
-                        <DetailsCell>
-                          {param.default}
-                        </DetailsCell>
-                      </tr>
-                    {/each}
-                  </DetailsCell>
-                </tr>
-              </DetailsTable>
-            </div>
-          {/if}
         {/if}
-      </Route>
-      <Route path="/source" breadcrumb="Source" navigationHint="tab">
-        <MonacoEditor content={flowContent} language="yaml" readOnly={true} />
-      </Route>
-      <Route path="/kubernetes" breadcrumb="Kube" navigationHint="tab">
-        {#if provider && connection}
-        <FlowDetailsKubernetes {connection} {flowId} {provider}/>
-        {/if}
-      </Route>
-      <Route path="/run" breadcrumb="Run ({flowExecutions.length})" navigationHint="tab">
-        <FlowDetailsRun {providerId} {connectionName} {flowId} {flowExecutions} selectedFlowExecuteId={selectedFlowExecuteId}/>
-      </Route>
-    {/if}
+      {/if}
+    </Route>
+    <Route path="/source" breadcrumb="Source" navigationHint="tab">
+      <MonacoEditor content={flowContent} language="yaml" readOnly={true} />
+    </Route>
+    <Route path="/kubernetes" breadcrumb="Kube" navigationHint="tab">
+      {#if provider && connection}
+      <FlowDetailsKubernetes {connection} {flowId} {provider}/>
+      {/if}
+    </Route>
+    <Route path="/run" breadcrumb="Run ({flowExecutions.length})" navigationHint="tab">
+      <FlowDetailsRun {providerId} {connectionName} {flowId} {flowExecutions} selectedFlowExecuteId={selectedFlowExecuteId}/>
+    </Route>
   {/snippet}
 </DetailsPage>
 
