@@ -73,6 +73,8 @@ describe('validateSchemaData', () => {
     expect(result).toBe(false);
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('[MCPSchemaValidator] Failed to validate data against schema'),
+      invalidServerList,
+      'errors:',
       expect.anything(),
     );
   });
@@ -92,6 +94,8 @@ describe('validateSchemaData', () => {
     expect(result).toBe(false);
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('[MCPSchemaValidator] Failed to validate data against schema'),
+      invalidServerResponse,
+      'errors:',
       expect.anything(),
     );
   });
@@ -111,6 +115,8 @@ describe('validateSchemaData', () => {
     expect(result).toBe(false);
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('[MCPSchemaValidator] Failed to validate data against schema'),
+      invalidServerResponse,
+      'errors:',
       expect.arrayContaining([
         expect.objectContaining({
           message: expect.stringContaining('pattern'),
@@ -140,6 +146,8 @@ describe('validateSchemaData', () => {
     expect(result).toBe(false);
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('[MCPSchemaValidator] Failed to validate data against schema'),
+      invalidServerResponse,
+      'errors:',
       expect.anything(),
     );
   });
@@ -190,6 +198,8 @@ describe('validateSchemaData', () => {
     expect(result).toBe(false);
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('[MCPSchemaValidator] Failed to validate data against schema'),
+      invalidServerDetail,
+      'errors:',
       expect.anything(),
     );
   });
@@ -212,6 +222,8 @@ describe('validateSchemaData', () => {
 
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining(`from 'https://example-registry.com'`),
+      invalidData,
+      'errors:',
       expect.anything(),
     );
   });
@@ -233,6 +245,8 @@ describe('validateSchemaData', () => {
 
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('[MCPSchemaValidator] Failed to validate data against schema'),
+      invalidData,
+      'errors:',
       expect.anything(),
     );
     expect(console.warn).not.toHaveBeenCalledWith(expect.stringContaining(' from '), expect.anything());

@@ -46,7 +46,9 @@ export class MCPSchemaValidator {
     if (!isValid && !suppressWarnings) {
       const context = contextName ? ` from '${contextName}'` : '';
       console.warn(
-        `[MCPSchemaValidator] Failed to validate data against schema '${schemaName}'${context}.`,
+        `[MCPSchemaValidator] Failed to validate data against schema '${schemaName}'${context}. Payload:`,
+        jsonData,
+        'errors:',
         validator.errors,
       );
     }
