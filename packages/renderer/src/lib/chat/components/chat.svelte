@@ -143,7 +143,7 @@ function onCheckMCPTool(mcpId: string, toolId: string, checked: boolean): void {
   <div class="flex min-h-0 flex-1">
         {#if hasModels}
             <div class="flex flex-col flex-3/4">
-              <ChatHeader bind:mcpSelectorOpen={mcpSelectorOpen} {readonly} models={models} bind:selectedModel={selectedModel} bind:selectedMCP={selectedMCP} tokens={totalTokens}/>
+              <ChatHeader bind:mcpSelectorOpen={mcpSelectorOpen} {readonly} models={models} bind:selectedModel={selectedModel} selectedMCPToolsCount={selectedMCPToolsCount} tokens={totalTokens}/>
                 <Messages
                     {readonly}
                     loading={chatClient.status === 'streaming' || chatClient.status === 'submitted'}
