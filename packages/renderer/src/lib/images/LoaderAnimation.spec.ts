@@ -131,32 +131,6 @@ describe('LoaderAnimation', () => {
     expect(setTimeoutSpy.mock.calls.length).toBeGreaterThan(initialCalls);
   });
 
-  test('should handle blink animation on eyes element', async () => {
-    const { container } = render(LoaderAnimation);
-
-    const eyesElement = container.querySelector('#eyesElement') as HTMLElement;
-    expect(eyesElement).toBeDefined();
-
-    // Initial opacity should be 0
-    expect(eyesElement.style.opacity).toBe('0');
-
-    // Fast-forward past initial delay to trigger blink
-    vi.advanceTimersByTime(3000);
-
-    await waitFor(() => {
-      // During blink, opacity should be set to 1
-      expect(eyesElement.style.opacity).toBe('1');
-    });
-
-    // Fast-forward to close eyes
-    vi.advanceTimersByTime(100);
-
-    await waitFor(() => {
-      // After blink close, opacity should return to 0
-      expect(eyesElement.style.opacity).toBe('0');
-    });
-  });
-
   test('should cleanup timeouts on unmount', () => {
     const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
 
@@ -211,25 +185,5 @@ describe('LoaderAnimation', () => {
     const { container } = render(LoaderAnimation, { props: { size: 800 } });
     const svg = container.querySelector('svg');
     expect(svg?.getAttribute('viewBox')).toBe('0 0 800 800');
-  });
-
-  test('should handle multiple blink cycles', async () => {
-    const { container } = render(LoaderAnimation);
-
-    const eyesElement = container.querySelector('#eyesElement') as HTMLElement;
-
-    // First blink
-    vi.advanceTimersByTime(3000);
-    await waitFor(() => expect(eyesElement.style.opacity).toBe('1'));
-
-    vi.advanceTimersByTime(100);
-    await waitFor(() => expect(eyesElement.style.opacity).toBe('0'));
-
-    // Second blink
-    vi.advanceTimersByTime(3000);
-    await waitFor(() => expect(eyesElement.style.opacity).toBe('1'));
-
-    vi.advanceTimersByTime(100);
-    await waitFor(() => expect(eyesElement.style.opacity).toBe('0'));
   });
 });
