@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2025 Red Hat, Inc.
+ * Copyright (C) 2025-2026 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ import { MCPManager } from '../plugin/mcp/mcp-manager.js';
 import { ProviderRegistry } from '../plugin/provider-registry.js';
 import { runMigrate } from './db/migrate.js';
 import { ChatQueries } from './db/queries.js';
+import { buildChatSystemPrompt, buildPromptOnlySystemPrompt } from './flow-detect-prompts.js';
 import { ParameterExtractor } from './parameter-extraction.js';
 
 export class ChatManager {
@@ -327,7 +328,7 @@ export class ChatManager {
     // Set required based on whether a default value exists
     return Array.from(paramMap.values()).map(param => ({
       ...param,
-      required: param.default === undefined || param.default === '',
+      required: param.default === undefined,
     }));
   }
 
@@ -374,7 +375,7 @@ export class ChatManager {
 
         // Convert messages for the AI model
         const convertedMessages = await this.convertMessages(uiMessages);
-        modelMessages = convertToModelMessages(convertedMessages);
+        modelMessages = await convertToModelMessages(convertedMessages);
       }
     }
 
@@ -386,36 +387,10 @@ export class ChatManager {
 
     // Build system prompt based on whether we have chat context
     if (modelMessages.length > 0) {
-      systemPrompt = `You are analyzing a conversation to extract reusable parameters from a prompt.
-
-Current prompt: "${params.prompt}"
-
-Your task:
-1. Analyze the conversation above and the current prompt
-2. Identify values in the prompt that could be parameterized (e.g., repository names, counts, dates, usernames, etc.)
-3. Replace those values with {{parameterName}} placeholders using snake_case naming
-4. For each parameter, provide a description and default value based on what was used in the conversation
-
-Example:
-- Original prompt: "Get the last 5 issues from podman-desktop/podman-desktop"
-- Updated prompt: "Get the last {{count}} issues from {{owner}}/{{repo}}"
-- Parameters: count (default: "5"), owner (default: "podman-desktop"), repo (default: "podman-desktop")
-${extractedParamsContext}`;
+      systemPrompt = buildChatSystemPrompt(params.prompt, extractedParamsContext);
     } else {
       // Prompt-only mode (no chat context)
-      systemPrompt = `You are analyzing a prompt to extract reusable parameters.
-
-Current prompt: "${params.prompt}"
-
-Your task:
-1. Analyze the prompt and identify values that could be parameterized (e.g., repository names, counts, dates, usernames, URLs, etc.)
-2. Replace those values with {{parameterName}} placeholders using snake_case naming
-3. For each parameter, provide a description and extract the default value from the original prompt
-
-Example:
-- Original prompt: "Get the last 5 issues from podman-desktop/podman-desktop"
-- Updated prompt: "Get the last {{count}} issues from {{owner}}/{{repo}}"
-- Parameters: count (default: "5"), owner (default: "podman-desktop"), repo (default: "podman-desktop")`;
+      systemPrompt = buildPromptOnlySystemPrompt(params.prompt);
     }
 
     // Use AI to analyze the prompt (and conversation if available) to detect parameters
