@@ -17,7 +17,8 @@
  ***********************************************************************/
 
 import type { ExtensionContext } from '@kortex-app/api';
-import { cli, env, process, provider, version, window } from '@kortex-app/api';
+import { cli, env, process as processAPI, provider, version, window } from '@kortex-app/api';
+import type { OctokitOptions } from '@octokit/core';
 import { Octokit } from '@octokit/rest';
 
 import { GooseCLI } from './goose-cli';
@@ -25,12 +26,16 @@ import { GooseDownloader } from './goose-downloader';
 import { GooseRecipe } from './goose-recipe';
 
 export async function activate(extensionContext: ExtensionContext): Promise<void> {
-  const octokit = new Octokit();
+  const octokitOptions: OctokitOptions = {};
+  if (process.env.GITHUB_TOKEN) {
+    octokitOptions.auth = process.env.GITHUB_TOKEN;
+  }
+  const octokit = new Octokit(octokitOptions);
   const gooseDownloader = new GooseDownloader(extensionContext, octokit, env, window);
   await gooseDownloader.init();
   extensionContext.subscriptions.push(gooseDownloader);
 
-  const gooseCLI = new GooseCLI(cli, process, gooseDownloader, env);
+  const gooseCLI = new GooseCLI(cli, processAPI, gooseDownloader, env);
   extensionContext.subscriptions.push(gooseCLI);
   await gooseCLI.init();
 
