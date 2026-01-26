@@ -65,6 +65,7 @@ const providerRegistry = {
 } as unknown as ProviderRegistry;
 
 beforeEach(() => {
+  vi.resetAllMocks();
   console.error = vi.fn();
 
   mcpRegistry = new MCPRegistry(
@@ -156,4 +157,28 @@ test('listMCPServersFromRegistries marks servers with invalid schemas', async ()
 
   expect(validServer?.isValidSchema).toBe(true);
   expect(invalidServer?.isValidSchema).toBe(false);
+});
+
+test('listMCPServersFromRegistries uses cache', async () => {
+  mcpRegistry.suggestMCPRegistry({
+    name: 'Test Registry',
+    url: 'https://test-registry.io',
+  });
+
+  globalFetch.mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      servers: [{ server: { name: 'Valid server', description: 'A valid server', version: '1.0.0' }, _meta: {} }],
+    }),
+  } as unknown as Response);
+
+  const mcpServersFromRegistries = await mcpRegistry.listMCPServersFromRegistries();
+
+  expect(mcpServersFromRegistries).toHaveLength(1);
+
+  expect(globalFetch).toBeCalledTimes(1);
+
+  await mcpRegistry.listMCPServersFromRegistries();
+
+  expect(globalFetch).toBeCalledTimes(1);
 });

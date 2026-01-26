@@ -77,6 +77,7 @@ export class MCPRegistry {
   private suggestedRegistries: kortexAPI.RegistrySuggestedProvider[] = [];
   private providers: Map<string, kortexAPI.MCPRegistryProvider> = new Map();
   private internalMCPServers: MCPServerDetail[] = [];
+  #remoteMCPServers: MCPServerDetail[] | undefined = undefined;
 
   private readonly _onDidRegisterRegistry = new Emitter<kortexAPI.MCPRegistry>();
   private readonly _onDidUpdateRegistry = new Emitter<kortexAPI.MCPRegistry>();
@@ -275,6 +276,7 @@ export class MCPRegistry {
     });
     this.apiSender.send('mcp-registry-register', registry);
     this._onDidRegisterRegistry.fire(Object.freeze({ ...registry }));
+    this.#remoteMCPServers = undefined;
     return Disposable.create(() => {
       this.unregisterMCPRegistry(registry, save);
     });
@@ -298,6 +300,7 @@ export class MCPRegistry {
       icon: registry.icon,
       alias: undefined,
     });
+    this.#remoteMCPServers = undefined;
 
     // Create a disposable to remove the registry from the list
     return Disposable.create(() => {
@@ -310,6 +313,7 @@ export class MCPRegistry {
     const index = this.suggestedRegistries.findIndex(reg => reg.url === registry.url && reg.name === registry.name);
     if (index > -1) {
       this.suggestedRegistries.splice(index, 1);
+      this.#remoteMCPServers = undefined;
     }
 
     // Fire an update to the UI to remove the suggested registry
@@ -321,6 +325,7 @@ export class MCPRegistry {
     if (filtered.length !== this.registries.length) {
       this._onDidUnregisterRegistry.fire(Object.freeze({ ...registry }));
       this.registries = filtered;
+      this.#remoteMCPServers = undefined;
       if (save) {
         this.saveRegistriesToConfig();
       }
@@ -620,24 +625,27 @@ export class MCPRegistry {
   }
 
   async listMCPServersFromRegistries(): Promise<Array<MCPServerDetail>> {
-    // connect to each registry and grab server details
-    const serverDetails: Array<MCPServerDetail> = [];
+    if (this.#remoteMCPServers === undefined) {
+      // connect to each registry and grab server details
+      const serverDetails: Array<MCPServerDetail> = [];
 
-    // merge all urls to inspect
-    const serverUrls: string[] = this.registries
-      .map(registry => registry.serverUrl)
-      .concat(this.suggestedRegistries.map(registry => registry.url));
+      // merge all urls to inspect
+      const serverUrls: string[] = this.registries
+        .map(registry => registry.serverUrl)
+        .concat(this.suggestedRegistries.map(registry => registry.url));
 
-    for (const registryURL of serverUrls) {
-      try {
-        const serverList = await this.listMCPServersFromRegistry(registryURL);
-        // now, aggregate the servers from the list ensuring each server has an id
-        serverDetails.push(...serverList.servers.map(rawServer => this.enhanceServerDetail(rawServer.server)));
-      } catch (error: unknown) {
-        console.error(`Failed fetch for registry ${registryURL}`, error);
+      for (const registryURL of serverUrls) {
+        try {
+          const serverList = await this.listMCPServersFromRegistry(registryURL);
+          // now, aggregate the servers from the list ensuring each server has an id
+          serverDetails.push(...serverList.servers.map(rawServer => this.enhanceServerDetail(rawServer.server)));
+        } catch (error: unknown) {
+          console.error(`Failed fetch for registry ${registryURL}`, error);
+        }
       }
+      this.#remoteMCPServers = serverDetails.concat(this.internalMCPServers);
     }
-    return serverDetails.concat(this.internalMCPServers);
+    return this.#remoteMCPServers;
   }
 
   async updateMCPRegistry(registry: kortexAPI.MCPRegistry): Promise<void> {
@@ -653,6 +661,7 @@ export class MCPRegistry {
     });
     this.apiSender.send('mcp-registry-update', registry);
     this._onDidUpdateRegistry.fire(Object.freeze(registry));
+    this.#remoteMCPServers = undefined;
   }
 
   getOptions(insecure?: boolean): OptionsOfTextResponseBody {
