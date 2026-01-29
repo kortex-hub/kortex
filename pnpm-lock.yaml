@@ -545,8 +545,8 @@ importers:
   extensions/openai-compatible:
     dependencies:
       '@ai-sdk/openai-compatible':
-        specifier: ^2.0.21
-        version: 2.0.21(zod@4.3.6)
+        specifier: ^2.0.22
+        version: 2.0.22(zod@4.3.6)
       '@kortex-app/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
@@ -564,8 +564,8 @@ importers:
   extensions/openshift-ai:
     dependencies:
       '@ai-sdk/openai-compatible':
-        specifier: ^2.0.21
-        version: 2.0.21(zod@4.3.6)
+        specifier: ^2.0.22
+        version: 2.0.22(zod@4.3.6)
       '@kortex-app/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
@@ -586,8 +586,8 @@ importers:
   extensions/ramalama:
     dependencies:
       '@ai-sdk/openai-compatible':
-        specifier: ^2.0.21
-        version: 2.0.21(zod@4.3.6)
+        specifier: ^2.0.22
+        version: 2.0.22(zod@4.3.6)
       inversify:
         specifier: ^7.7.1
         version: 7.7.1(reflect-metadata@0.2.2)
@@ -881,8 +881,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/openai-compatible@2.0.21':
-    resolution: {integrity: sha512-p8h1BgJl5r8sGqO26Ri61sy9/Ov8pzdwVkbOw8rrSBneXdKktH4aTlTMJ/1UPcn5fCv9TFH+OkG2M6uazjxzwg==}
+  '@ai-sdk/openai-compatible@2.0.22':
+    resolution: {integrity: sha512-u85Ip5RtrVmlHc93d04lI1n8o7mqtGzhdwEAlpIfqMZrvhd0Xks6zi1qy5YtZVxrqnjxuj506HHJJEbbkmqu/Q==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -7868,7 +7868,7 @@ snapshots:
       pkce-challenge: 5.0.1
       zod: 4.1.11
 
-  '@ai-sdk/openai-compatible@2.0.21(zod@4.3.6)':
+  '@ai-sdk/openai-compatible@2.0.22(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.5
       '@ai-sdk/provider-utils': 4.0.10(zod@4.3.6)
