@@ -70,6 +70,11 @@ export const INTERNAL_PROVIDER_ID = 'internal';
 const MCP_SECTION_NAME = 'mcp';
 const MCP_REGISTRIES = 'registries';
 
+interface MCPRegistryEntry {
+  lastAccess: Date;
+  servers: ValidatedServerList;
+}
+
 // Definition of all MCP registries (MCP registry is an URL serving MCP providers it implements the MCP registry protocol)
 @injectable()
 export class MCPRegistry {
@@ -77,6 +82,7 @@ export class MCPRegistry {
   private suggestedRegistries: kortexAPI.RegistrySuggestedProvider[] = [];
   private providers: Map<string, kortexAPI.MCPRegistryProvider> = new Map();
   private internalMCPServers: MCPServerDetail[] = [];
+  #remoteMCPServers: Map<string, MCPRegistryEntry> = new Map();
 
   private readonly _onDidRegisterRegistry = new Emitter<kortexAPI.MCPRegistry>();
   private readonly _onDidUpdateRegistry = new Emitter<kortexAPI.MCPRegistry>();
@@ -545,13 +551,43 @@ export class MCPRegistry {
     await this.safeStorage?.store(STORAGE_KEY, JSON.stringify(filtered));
   }
 
-  protected async listMCPServersFromRegistry(
+  protected async listMCPServersFromRegistry(registryURL: string): Promise<ValidatedServerList> {
+    const entry = this.#remoteMCPServers.get(registryURL);
+    const servers = await this.fetchMCPServersFromRegistry(registryURL, entry);
+    if (!entry) {
+      this.#remoteMCPServers.set(registryURL, {
+        lastAccess: new Date(),
+        servers,
+      });
+      return servers;
+    } else {
+      entry.servers.servers = entry.servers.servers.map(item => {
+        const match = servers.servers.find(server => server.server.name === item.server.name);
+        return match ?? item;
+      });
+      //handle created items
+      servers.servers.forEach(server => {
+        const match = entry.servers.servers.find(item => item.server.name === server.server.name);
+        if (!match) {
+          entry.servers.servers.push(server);
+        }
+      });
+      entry.lastAccess = new Date();
+      return entry.servers;
+    }
+  }
+
+  private async fetchMCPServersFromRegistry(
     registryURL: string,
+    registryEntry?: MCPRegistryEntry,
     cursor?: string, // optional param for recursion
   ): Promise<ValidatedServerList> {
     const url = new URL(`${registryURL}/v0/servers`);
     if (cursor) {
       url.searchParams.set('cursor', cursor);
+    }
+    if (registryEntry) {
+      url.searchParams.set('updated_since', registryEntry.lastAccess.toISOString());
     }
     // ask for latest versions
     url.searchParams.set('version', 'latest');
@@ -588,7 +624,7 @@ export class MCPRegistry {
 
     // If pagination info exists, fetch the next page recursively
     if (data.metadata?.nextCursor) {
-      const nextPage = await this.listMCPServersFromRegistry(registryURL, data.metadata.nextCursor);
+      const nextPage = await this.fetchMCPServersFromRegistry(registryURL, registryEntry, data.metadata.nextCursor);
       return {
         ...data,
         servers: [...validatedServers, ...nextPage.servers],
