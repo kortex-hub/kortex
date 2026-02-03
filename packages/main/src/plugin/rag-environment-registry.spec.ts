@@ -23,7 +23,7 @@ import { resolve } from 'node:path';
 import type { MockInstance } from 'vitest';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import type { ApiSenderType } from '/@/plugin/api.js';
+import type { ApiSenderType, IPCHandle } from '/@/plugin/api.js';
 import type { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import type { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
@@ -45,6 +45,8 @@ const apiSender: ApiSenderType = {
   send: vi.fn(),
   receive: vi.fn(),
 };
+
+const ipcHandle: IPCHandle = vi.fn();
 
 const chunkProviderRegistry = {
   getChunkProvider: vi.fn(),
@@ -80,6 +82,7 @@ beforeEach(() => {
 
   ragEnvironmentRegistry = new RagEnvironmentRegistry(
     apiSender,
+    ipcHandle,
     directories,
     chunkProviderRegistry,
     providerRegistry,
@@ -228,31 +231,28 @@ describe('RagEnvironmentRegistry', () => {
   test('should delete a RAG environment', async () => {
     vi.mocked(existsSync).mockReturnValue(true);
 
-    const result = await ragEnvironmentRegistry.deleteRagEnvironment('test-env');
+    await ragEnvironmentRegistry.deleteRagEnvironment('test-env');
 
-    expect(result).toBe(true);
     expect(unlink).toHaveBeenCalledWith(resolve(mockRagDirectory, 'test-env.json'));
   });
 
-  test('should return false when deleting a non-existent RAG environment', async () => {
+  test('should throw error when deleting a non-existent RAG environment', async () => {
     vi.mocked(existsSync).mockReturnValue(false);
 
-    const result = await ragEnvironmentRegistry.deleteRagEnvironment('non-existent');
+    await expect(ragEnvironmentRegistry.deleteRagEnvironment('non-existent')).rejects.toThrowError();
 
-    expect(result).toBe(false);
     expect(unlink).not.toHaveBeenCalled();
   });
 
-  test('should return false and log error when deletion fails', async () => {
+  test('should throw error and log error when deletion fails', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(existsSync).mockReturnValue(true);
     vi.mocked(unlink).mockImplementation(() => {
       throw new Error('Failed to delete file');
     });
 
-    const result = await ragEnvironmentRegistry.deleteRagEnvironment('test-env');
+    await expect(ragEnvironmentRegistry.deleteRagEnvironment('test-env')).rejects.toThrowError();
 
-    expect(result).toBe(false);
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.stringContaining('Failed to delete RAG environment test-env'),
       expect.anything(),

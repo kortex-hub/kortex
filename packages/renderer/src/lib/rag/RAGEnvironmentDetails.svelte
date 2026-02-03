@@ -1,0 +1,150 @@
+<script lang="ts">
+import { Tab } from '@podman-desktop/ui-svelte';
+import { router } from 'tinro';
+
+import { getChunkProviderName, getDatabaseName } from '/@/lib/rag/rag-environment-utils.svelte';
+import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
+import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
+import Route from '/@/Route.svelte';
+import { chunkProviders } from '/@/stores/chunk-providers';
+import { providerInfos } from '/@/stores/providers';
+import { ragEnvironments } from '/@/stores/rag-environments';
+
+import RAGEnvironmentActions from './columns/RAGEnvironmentActions.svelte';
+
+interface Props {
+  name: string;
+}
+let { name }: Props = $props();
+
+const ragEnvironment = $derived($ragEnvironments.find(env => env.name === decodeURIComponent(name)));
+
+const files = $derived.by(() => {
+  if (!ragEnvironment) return [];
+
+  return ragEnvironment.files;
+});
+
+const databaseName = $derived(getDatabaseName($providerInfos, ragEnvironment));
+const chunkProviderName = $derived(getChunkProviderName($chunkProviders, ragEnvironment));
+</script>
+
+<DetailsPage title={ragEnvironment?.name ?? ''}>
+  {#snippet tabsSnippet()}
+    <Tab title="Summary" selected={isTabSelected($router.path, 'summary')} url={getTabUrl($router.path, 'summary')} />
+    <Tab title="Sources" selected={isTabSelected($router.path, 'sources')} url={getTabUrl($router.path, 'sources')} />
+    <Tab title="VectorStore" selected={isTabSelected($router.path, 'vectorstore')} url={getTabUrl($router.path, 'vectorstore')} />
+    <Tab title="Chunker" selected={isTabSelected($router.path, 'chunker')} url={getTabUrl($router.path, 'chunker')} />
+  {/snippet}
+  {#snippet actionsSnippet()}
+    {#if ragEnvironment}
+      <RAGEnvironmentActions object={ragEnvironment} />
+    {/if}
+  {/snippet}
+  {#snippet contentSnippet()}
+    <Route path="/summary" breadcrumb="Summary" navigationHint="tab">
+      {#if ragEnvironment}
+        <!-- Summary Tab -->
+        <div class="summary-grid grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-6 mb-8">
+          <div class="info-card bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-divider)] rounded-lg p-5">
+            <h3 class="info-card-title text-sm font-semibold text-[var(--pd-content-text-secondary)] mb-4 uppercase tracking-wider">General Information</h3>
+            <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]">
+              <span class="info-label text-sm text-[var(--pd-content-text-secondary)]">Name</span>
+              <span class="info-value text-sm text-[var(--pd-content-text)] font-medium">{ragEnvironment.name}</span>
+            </div>
+          </div>
+
+          <div class="info-card bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-divider)] rounded-lg p-5">
+            <h3 class="info-card-title text-sm font-semibold text-[var(--pd-content-text-secondary)] mb-4 uppercase tracking-wider">Configuration</h3>
+            <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]">
+              <span class="info-label text-sm text-[var(--pd-content-text-secondary)]">Vector Store</span>
+              <span class="info-value text-sm text-[var(--pd-content-text)] font-medium">{databaseName}</span>
+            </div>
+            <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]">
+              <span class="info-label text-sm text-[var(--pd-content-text-secondary)]">Embedding Model</span>
+              <span class="info-value text-sm text-[var(--pd-content-text)] font-medium">{chunkProviderName}</span>
+            </div>
+            <div class="info-row flex justify-between py-3 border-b-0">
+              <span class="info-label text-sm text-[var(--pd-content-text-secondary)]">Source Files</span>
+              <span class="info-value text-sm text-[var(--pd-content-text)] font-medium">{files.length} files</span>
+            </div>
+          </div>
+        </div>
+      {:else}
+        <div class="flex items-center justify-center h-full">
+          <div class="text-sm text-[var(--pd-content-text-secondary)]">RAG environment not found.</div>
+        </div>
+      {/if}
+    </Route>
+    <Route path="/sources" breadcrumb="Sources" navigationHint="tab">
+      {#if ragEnvironment}
+        <!-- Sources Tab -->
+        <div class="sources-list bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-divider)] rounded-lg overflow-hidden">
+          <div class="sources-header px-5 py-4 border-b border-[var(--pd-content-divider)] bg-[var(--pd-content-card-inset-bg)]">
+            <h3 class="sources-title text-base font-semibold text-[var(--pd-content-text)]">Uploaded Files ({files.length})</h3>
+          </div>
+
+          {#if files.length > 0}
+            {#each files as file (file.path)}
+              <div class="source-item flex items-center justify-between px-5 py-4 border-b border-[var(--pd-content-divider)] last:border-b-0 hover:bg-[var(--pd-content-card-inset-bg)] transition-colors duration-200">
+                <div class="source-info flex items-center gap-3">
+                  <div class="w-8 h-8 bg-[var(--pd-content-card-inset-bg)] rounded-md flex items-center justify-center text-[var(--pd-content-text-secondary)]">
+                    <i class="fa fa-file fa-2x"></i>
+                  </div>
+                  <div class="source-details">
+                    <h4 class="text-sm font-medium text-[var(--pd-content-text)] m-0 mb-1">{file.path.split('/').pop() ?? file.path}</h4>
+                    <div class="source-meta text-xs text-[var(--pd-content-text-secondary)]">{file.status}</div>
+                  </div>
+                </div>
+              </div>
+            {/each}
+          {:else}
+            <div class="flex items-center justify-center py-12">
+              <div class="text-sm text-[var(--pd-content-text-secondary)]">No files in this RAG environment.</div>
+            </div>
+          {/if}
+        </div>
+      {:else}
+        <div class="flex items-center justify-center h-full">
+          <div class="text-sm text-[var(--pd-content-text-secondary)]">RAG environment not found.</div>
+        </div>
+      {/if}
+    </Route>
+    <Route path="/vectorstore" breadcrumb="VectorStore" navigationHint="tab">
+      {#if ragEnvironment}
+        <!-- VectorStore Tab -->
+        <div class="info-card bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-divider)] rounded-lg p-5 max-w-2xl">
+          <h3 class="info-card-title text-sm font-semibold text-[var(--pd-content-text-secondary)] mb-4 uppercase tracking-wider">{databaseName} Configuration</h3>
+          <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]">
+            <span class="info-label text-sm text-[var(--pd-content-text-secondary)]">Database Type</span>
+            <span class="info-value text-sm text-[var(--pd-content-text)] font-medium">{databaseName}</span>
+          </div>
+          <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]">
+            <span class="info-label text-sm text-[var(--pd-content-text-secondary)]">Collection Name</span>
+            <span class="info-value text-sm text-[var(--pd-content-text)] font-medium">{ragEnvironment.name.replace(/\W/g, '_')}</span>
+          </div>
+        </div>
+      {:else}
+        <div class="flex items-center justify-center h-full">
+          <div class="text-sm text-[var(--pd-content-text-secondary)]">RAG environment not found.</div>
+        </div>
+      {/if}
+    </Route>
+    <Route path="/chunker" breadcrumb="Chunker" navigationHint="tab">
+      {#if ragEnvironment}
+        <!-- Chunker Tab -->
+        <div class="info-card bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-divider)] rounded-lg p-5 max-w-2xl">
+          <h3 class="info-card-title text-sm font-semibold text-[var(--pd-content-text-secondary)] mb-4 uppercase tracking-wider">{chunkProviderName} Configuration</h3>
+          <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]">
+            <span class="info-label text-sm text-[var(--pd-content-text-secondary)]">Model</span>
+            <span class="info-value text-sm text-[var(--pd-content-text)] font-medium">{chunkProviderName}</span>
+          </div>
+        </div>
+      {:else}
+        <div class="flex items-center justify-center h-full">
+          <div class="text-sm text-[var(--pd-content-text-secondary)]">RAG environment not found.</div>
+        </div>
+      {/if}
+    </Route>
+  {/snippet}
+</DetailsPage>

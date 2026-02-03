@@ -23,7 +23,7 @@ import { basename, resolve } from 'node:path';
 import { type ChunkProvider, ProviderRagConnection } from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
-import { ApiSenderType } from '/@/plugin/api.js';
+import { ApiSenderType, IPCHandle } from '/@/plugin/api.js';
 import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
 import { INTERNAL_PROVIDER_ID } from '/@/plugin/mcp/mcp-registry.js';
@@ -42,6 +42,8 @@ export class RagEnvironmentRegistry {
   constructor(
     @inject(ApiSenderType)
     private apiSender: ApiSenderType,
+    @inject(IPCHandle)
+    private ipcHandle: IPCHandle,
     @inject(Directories)
     private directories: Directories,
     @inject(ChunkProviderRegistry)
@@ -60,6 +62,13 @@ export class RagEnvironmentRegistry {
   }
 
   async init(): Promise<void> {
+    this.ipcHandle('rag-environment-registry:getRagEnvironments', async (): Promise<RagEnvironment[]> => {
+      return this.getAllRagEnvironments();
+    });
+    this.ipcHandle('rag-environment-registry:deleteRagEnvironment', async (_, name: string): Promise<void> => {
+      return this.deleteRagEnvironment(name);
+    });
+
     return this.loadEnvironments();
   }
 
@@ -178,20 +187,19 @@ export class RagEnvironmentRegistry {
    * @param name The name of the RAG environment to delete
    * @returns true if the environment was deleted, false otherwise
    */
-  public async deleteRagEnvironment(name: string): Promise<boolean> {
+  public async deleteRagEnvironment(name: string): Promise<void> {
     const filePath = this.getRagEnvironmentFilePath(name);
     if (!existsSync(filePath)) {
-      return false;
+      throw new Error(`RAG environment ${name} not found`);
     }
 
     try {
       await unlink(filePath);
       this.#environments = this.#environments.filter(environment => environment.name !== name);
       this.apiSender.send('rag-environment-deleted', { name });
-      return true;
     } catch (error) {
       console.error(`Failed to delete RAG environment ${name}:`, error);
-      return false;
+      throw error;
     }
   }
 
