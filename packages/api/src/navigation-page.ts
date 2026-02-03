@@ -62,4 +62,5 @@ export enum NavigationPage {
   MCP_DETAILS = 'mcp-details',
   AGENT_WORKSPACES = 'agent-workspaces',
   SKILLS = 'skills',
+  RAG_ENVIRONMENT_DETAILS = 'rag-environment-details',
 }

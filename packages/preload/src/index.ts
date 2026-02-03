@@ -133,6 +133,7 @@ import type {
 import type { ProxyState } from '/@api/proxy';
 import type { PullEvent } from '/@api/pull-event';
 import type { ChunkProviderInfo } from '/@api/rag/chunk-provider-info';
+import type { RagEnvironment } from '/@api/rag/rag-environment';
 import type { ExtensionBanner, RecommendedRegistry } from '/@api/recommendations/recommendations';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info';
 import type { SkillCreateOptions, SkillInfo } from '/@api/skill/skill-info';
@@ -1667,6 +1668,14 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld('getProviderInfos', async (): Promise<ProviderInfo[]> => {
     return ipcInvoke('provider-registry:getProviderInfos');
+  });
+
+  contextBridge.exposeInMainWorld('getRagEnvironments', async (): Promise<RagEnvironment[]> => {
+    return ipcInvoke('rag-environment-registry:getRagEnvironments');
+  });
+
+  contextBridge.exposeInMainWorld('deleteRagEnvironment', async (name: string): Promise<void> => {
+    return ipcInvoke('rag-environment-registry:deleteRagEnvironment', name);
   });
 
   contextBridge.exposeInMainWorld('getChunkProviders', async (): Promise<ChunkProviderInfo[]> => {

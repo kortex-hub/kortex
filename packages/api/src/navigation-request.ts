@@ -78,6 +78,9 @@ export interface NavigationParameters {
   };
   [NavigationPage.AGENT_WORKSPACES]: never;
   [NavigationPage.SKILLS]: never;
+  [NavigationPage.RAG_ENVIRONMENT_DETAILS]: {
+    name: string;
+  };
 }
 
 // the parameters property is optional when the NavigationParameters say it is

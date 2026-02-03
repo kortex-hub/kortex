@@ -178,6 +178,8 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
       break;
     case NavigationPage.AGENT_WORKSPACES:
       router.goto('/agent-workspaces');
+    case NavigationPage.RAG_ENVIRONMENT_DETAILS:
+      router.goto(`/rag-environments/${encodeURIComponent(request.parameters.name)}/summary`);
       break;
   }
 };
