@@ -152,5 +152,8 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
     case NavigationPage.MCP_DETAILS:
       router.goto(`/mcps/${encodeURIComponent(request.parameters.id)}/summary`);
       break;
+    case NavigationPage.RAG_ENVIRONMENT_DETAILS:
+      router.goto(`/rag-environments/${encodeURIComponent(request.parameters.name)}/summary`);
+      break;
   }
 };
