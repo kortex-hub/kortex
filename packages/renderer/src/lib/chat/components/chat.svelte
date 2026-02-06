@@ -69,6 +69,8 @@ const selectedMCPToolsCount = $derived(
 
 const chatHistory = ChatHistory.fromContext();
 
+let totalTokens = $state(messages.reduce((sum, msg) => sum + (msg.tokens ?? 0), 0));
+
 const chatClient = $derived(
   new Chat({
     id: chat?.id,
@@ -86,6 +88,9 @@ const chatClient = $derived(
           },
           {} as Record<string, Array<string>>,
         );
+      },
+      onEnd: (tokens: number): void => {
+        totalTokens += tokens;
       },
     }),
     // This way, the client is only recreated when the ID changes, allowing us to fully manage messages
@@ -135,18 +140,10 @@ function onCheckMCPTool(mcpId: string, toolId: string, checked: boolean): void {
 </script>
 
 <div class="bg-background flex h-full min-w-0 flex-col">
-  {#if hasModels}
-	  <ChatHeader
-      bind:mcpSelectorOpen={mcpSelectorOpen}
-      {readonly}
-      models={models}
-      selectedMCPToolsCount={selectedMCPToolsCount}
-      bind:selectedModel={selectedModel}
-    />
-  {/if}
   <div class="flex min-h-0 flex-1">
         {#if hasModels}
             <div class="flex flex-col flex-3/4">
+              <ChatHeader bind:mcpSelectorOpen={mcpSelectorOpen} {readonly} models={models} bind:selectedModel={selectedModel} selectedMCPToolsCount={selectedMCPToolsCount} tokens={totalTokens}/>
                 <Messages
                     {readonly}
                     loading={chatClient.status === 'streaming' || chatClient.status === 'submitted'}
