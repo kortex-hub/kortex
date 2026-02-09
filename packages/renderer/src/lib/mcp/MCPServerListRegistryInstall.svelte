@@ -1,10 +1,9 @@
 <script lang="ts">
-import { faBackward, faForward } from '@fortawesome/free-solid-svg-icons';
 import { FilteredEmptyScreen, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 import SimpleColumn from '@podman-desktop/ui-svelte/TableSimpleColumn';
-import Fa from 'svelte-fa';
 
 import MCPValidServerIndicatorIcon from '/@/lib/images/MCPValidServerIndicatorIcon.svelte';
+import PreviousNext from '/@/lib/ui/PreviousNext.svelte';
 import {
   filteredMcpRegistriesServerInfos,
   mcpRegistriesServerInfosSearchPattern,
@@ -106,25 +105,7 @@ const row = new TableRow<MCPServerDetail>({});
 {:else}
   <div class="flex flex-col h-full w-full">
     {#if totalPages > 1}
-    <div class="flex items-center justify-center gap-4 py-2">
-      <button
-        class="px-3 py-1 rounded hover:bg-[var(--pd-button-hover-bg)] disabled:opacity-50 disabled:cursor-not-allowed"
-        onclick={previousPage}
-        disabled={currentPage === 0}
-        aria-label="Previous page">
-        <Fa icon={faBackward} />
-      </button>
-      <span class="text-sm">
-        Page {currentPage + 1} of {totalPages}
-      </span>
-      <button
-        class="px-3 py-1 rounded hover:bg-[var(--pd-button-hover-bg)] disabled:opacity-50 disabled:cursor-not-allowed"
-        onclick={nextPage}
-        disabled={currentPage >= totalPages - 1}
-        aria-label="Next page">
-        <Fa icon={faForward} />
-      </button>
-    </div>
+      <PreviousNext onPrevious={previousPage} onNext={nextPage} previousDisabled={currentPage === 0} nextDisabled={currentPage >= totalPages - 1} title="Page {currentPage + 1} of {totalPages}"></PreviousNext>
     {/if}
 
     <Table
@@ -137,25 +118,7 @@ const row = new TableRow<MCPServerDetail>({});
     </Table>
 
     {#if totalPages > 1}
-    <div class="flex items-center justify-center gap-4 py-2">
-      <button
-        class="px-3 py-1 rounded hover:bg-[var(--pd-button-hover-bg)] disabled:opacity-50 disabled:cursor-not-allowed"
-        onclick={previousPage}
-        disabled={currentPage === 0}
-        aria-label="Previous page">
-        <Fa icon={faBackward} />
-      </button>
-      <span class="text-sm">
-        Page {currentPage + 1} of {totalPages}
-      </span>
-      <button
-        class="px-3 py-1 rounded hover:bg-[var(--pd-button-hover-bg)] disabled:opacity-50 disabled:cursor-not-allowed"
-        onclick={nextPage}
-        disabled={currentPage >= totalPages - 1}
-        aria-label="Next page">
-        <Fa icon={faForward} />
-      </button>
-    </div>
+      <PreviousNext onPrevious={previousPage} onNext={nextPage} previousDisabled={currentPage === 0} nextDisabled={currentPage >= totalPages - 1} title="Page {currentPage + 1} of {totalPages}"></PreviousNext>
     {/if}
   </div>
 {/if}
