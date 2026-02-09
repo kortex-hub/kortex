@@ -1,7 +1,7 @@
 <script lang="ts">
 import { faBackward, faForward } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '@podman-desktop/ui-svelte';
-import Fa from 'svelte-fa';
+import { Icon } from '@podman-desktop/ui-svelte/icons';
 
 interface Props {
   onPrevious: () => void;
@@ -26,7 +26,7 @@ const {
     onclick={onPrevious}
     disabled={previousDisabled}
     aria-label="Previous page">
-    <Fa icon={faBackward} />
+    <Icon icon={faBackward} />
   </Button>
   <span class="text-sm">
         {title}
@@ -36,6 +36,6 @@ const {
     onclick={onNext}
     disabled={nextDisabled}
     aria-label="Next page">
-    <Fa icon={faForward} />
+    <Icon icon={faForward} />
   </Button>
 </div>
