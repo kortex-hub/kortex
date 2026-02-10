@@ -233,6 +233,12 @@ export async function getFirstPage(electronApp: ElectronApplication): Promise<Pa
   await page.waitForLoadState('load', { timeout: TIMEOUTS.PAGE_LOAD });
   await waitForAppReady(page);
 
+  page.on('console', console.log);
+
+  electronApp.process().stderr?.on('data', data => {
+    console.log(`STDERR: ${data}`);
+  });
+
   return page;
 }
 
