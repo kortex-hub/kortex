@@ -105,7 +105,7 @@ const row = new TableRow<MCPServerDetail>({});
 {:else}
   <div class="flex flex-col h-full w-full">
     {#if totalPages > 1}
-      <PreviousNext onPrevious={previousPage} onNext={nextPage} previousDisabled={currentPage === 0} nextDisabled={currentPage >= totalPages - 1} title="Page {currentPage + 1} of {totalPages}"></PreviousNext>
+      <PreviousNext onPrevious={previousPage} onNext={nextPage} currentPage={currentPage} totalPages={totalPages}></PreviousNext>
     {/if}
 
     <Table
@@ -118,7 +118,7 @@ const row = new TableRow<MCPServerDetail>({});
     </Table>
 
     {#if totalPages > 1}
-      <PreviousNext onPrevious={previousPage} onNext={nextPage} previousDisabled={currentPage === 0} nextDisabled={currentPage >= totalPages - 1} title="Page {currentPage + 1} of {totalPages}"></PreviousNext>
+      <PreviousNext onPrevious={previousPage} onNext={nextPage} currentPage={currentPage} totalPages={totalPages}></PreviousNext>
     {/if}
   </div>
 {/if}
