@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2025 Red Hat, Inc.
+ * Copyright (C) 2025-2026 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,10 +31,15 @@ import { inject } from 'inversify';
 
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { Directories } from '/@/plugin/directories.js';
-import {
-  FlowGenerationParameters,
-  FlowGenerationParametersSchema,
-} from '/@api/chat/flow-generation-parameters-schema.js';
+import type {
+  DetectFlowFieldsParams,
+  DetectFlowFieldsResult,
+  FlowParameter,
+  FlowParameterAIGenerated,
+} from '/@api/chat/detect-flow-fields-schema.js';
+import { DetectFlowFieldsResultSchema } from '/@api/chat/detect-flow-fields-schema.js';
+import type { FlowGenerationParameters } from '/@api/chat/flow-generation-parameters-schema.js';
+import { FlowGenerationParametersSchema } from '/@api/chat/flow-generation-parameters-schema.js';
 import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
 import type { MessageConfig } from '/@api/chat/message-config.js';
 import type { Chat, Message } from '/@api/chat/schema.js';
@@ -43,6 +48,8 @@ import { MCPManager } from '../plugin/mcp/mcp-manager.js';
 import { ProviderRegistry } from '../plugin/provider-registry.js';
 import { runMigrate } from './db/migrate.js';
 import { ChatQueries } from './db/queries.js';
+import { buildChatSystemPrompt, buildPromptOnlySystemPrompt } from './flow-detect-prompts.js';
+import { ParameterExtractor } from './parameter-extraction.js';
 
 export class ChatManager {
   private chatQueries!: ChatQueries;
@@ -96,6 +103,7 @@ export class ChatManager {
     this.ipcHandle('inference:streamText', (_, params) => this.streamText(params));
     this.ipcHandle('inference:generate', (_, params) => this.generate(params));
     this.ipcHandle('inference:generateFlowParams', (_, params) => this.generateFlowParams(params));
+    this.ipcHandle('inference:detectFlowFields', (_, params) => this.detectFlowFields(params));
     this.ipcHandle('mcp-manager:getExchanges', (_, mcpId: string) => this.getExchanges(mcpId));
     this.ipcHandle('inference:getChats', () => this.getChats());
     this.ipcHandle('inference:getChatMessagesById', (_, id: string) => this.getChatMessagesById(id));
@@ -282,5 +290,139 @@ export class ChatManager {
       schema: FlowGenerationParametersSchema,
     });
     return result.object;
+  }
+
+  /**
+   * Extract parameter names from a prompt template that uses {{parameterName}} syntax
+   */
+  private extractParameterNamesFromPrompt(prompt: string): string[] {
+    const regex = /\{\{(\w+)\}\}/g;
+    const matches = [...prompt.matchAll(regex)];
+    const paramNames = matches.map(match => match[1]).filter((name): name is string => name !== undefined);
+    return [...new Set(paramNames)];
+  }
+
+  private mergeParameters(
+    extracted: FlowParameterAIGenerated[],
+    aiGenerated: FlowParameterAIGenerated[],
+  ): FlowParameter[] {
+    // Deduplicate and merge parameters
+    const paramMap = new Map<string, FlowParameterAIGenerated>();
+
+    // Add AI-generated parameters (without 'required' field)
+    for (const param of aiGenerated) {
+      paramMap.set(param.name, param);
+    }
+
+    // Add default values from extracted parameters
+    for (const param of extracted) {
+      const existing = paramMap.get(param.name);
+      if (existing) {
+        paramMap.set(param.name, {
+          ...existing,
+          default: param.default ?? existing.default,
+        });
+      }
+    }
+
+    // Set required based on whether a default value exists
+    return Array.from(paramMap.values()).map(param => ({
+      ...param,
+      required: param.default === undefined,
+    }));
+  }
+
+  /**
+   * Convert database Message[] to UIMessage[] format for AI SDK
+   */
+  private convertDbMessagesToUIMessages(messages: Message[]): UIMessage[] {
+    return messages.map(message => ({
+      id: message.id,
+      parts: message.parts as UIMessage['parts'],
+      role: message.role as UIMessage['role'],
+      content: '',
+      createdAt: message.createdAt,
+      experimental_attachments:
+        (message.attachments as Array<{ name?: string; contentType?: string; url: string }>) ?? [],
+    }));
+  }
+
+  /**
+   * Detect flow fields from a prompt (and optionally chat conversation).
+   * This analyzes the prompt (and chat messages if chatId provided) to extract parameters
+   * and update the prompt with {{placeholder}} syntax.
+   */
+  async detectFlowFields(params: DetectFlowFieldsParams): Promise<DetectFlowFieldsResult> {
+    // Get model SDK
+    const internalProviderId = this.providerRegistry.getMatchingProviderInternalId(params.providerId);
+    const sdk = this.providerRegistry.getInferenceSDK(internalProviderId, params.connectionName);
+    const model = sdk.languageModel(params.modelId);
+
+    let extractedParams: FlowParameterAIGenerated[] = [];
+    let modelMessages: ModelMessage[] = [];
+    let systemPrompt: string;
+
+    // If chatId is provided, analyze chat messages for additional context
+    if (params.chatId) {
+      const { messages } = await this.getChatMessagesById(params.chatId);
+
+      if (messages.length > 0) {
+        // Convert DB messages to UIMessage format
+        const uiMessages = this.convertDbMessagesToUIMessages(messages);
+
+        // Extract parameters from MCP tool calls in the conversation
+        extractedParams = new ParameterExtractor().extractFromMCPToolCalls(uiMessages);
+
+        // Convert messages for the AI model
+        const convertedMessages = await this.convertMessages(uiMessages);
+        modelMessages = await convertToModelMessages(convertedMessages);
+      }
+    }
+
+    // Build context for AI based on extracted params
+    const extractedParamsContext =
+      extractedParams.length > 0
+        ? `\n\nThe following values were extracted from MCP tool calls in the conversation. Use these as default values for parameters:\n${JSON.stringify(extractedParams, null, 2)}`
+        : '';
+
+    // Build system prompt based on whether we have chat context
+    if (modelMessages.length > 0) {
+      systemPrompt = buildChatSystemPrompt(params.prompt, extractedParamsContext);
+    } else {
+      // Prompt-only mode (no chat context)
+      systemPrompt = buildPromptOnlySystemPrompt(params.prompt);
+    }
+
+    // Use AI to analyze the prompt (and conversation if available) to detect parameters
+    const result =
+      modelMessages.length > 0
+        ? await generateObject({
+            model,
+            messages: modelMessages,
+            system: systemPrompt,
+            schema: DetectFlowFieldsResultSchema,
+          })
+        : await generateObject({
+            model,
+            prompt: params.prompt,
+            system: systemPrompt,
+            schema: DetectFlowFieldsResultSchema,
+          });
+
+    const { prompt: updatedPrompt, parameters: aiParameters } = result.object;
+
+    // Extract parameter names from the updated prompt
+    const parameterNamesInPrompt = this.extractParameterNamesFromPrompt(updatedPrompt);
+
+    // Filter parameters to only include those that appear in the prompt
+    const filteredParameters = aiParameters.filter(param => parameterNamesInPrompt.includes(param.name));
+
+    // Merge with extracted parameters to get default values (if any)
+    const mergedParameters = this.mergeParameters(extractedParams, filteredParameters);
+
+    return {
+      prompt: updatedPrompt,
+      parameters: mergedParameters,
+    };
   }
 }

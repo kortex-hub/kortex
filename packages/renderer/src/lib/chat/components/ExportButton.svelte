@@ -62,6 +62,7 @@ const exportAsFlow = async (): Promise<void> => {
       ...generatedFlowParams,
       model: selectedModel,
       tools: tools,
+      chatId: chatClient.id,
     };
 
     handleNavigation({ page: NavigationPage.FLOW_CREATE });
