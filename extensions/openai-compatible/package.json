@@ -34,7 +34,7 @@
     "watch": "vite build --watch"
   },
   "dependencies": {
-    "@ai-sdk/openai-compatible": "^2.0.28",
+    "@ai-sdk/openai-compatible": "^2.0.29",
     "@kortex-app/api": "workspace:*"
   },
   "devDependencies": {
