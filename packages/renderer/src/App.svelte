@@ -8,6 +8,8 @@ import FlowCreate from '/@/lib/flows/FlowCreate.svelte';
 import FlowDetails from '/@/lib/flows/FlowDetails.svelte';
 import FlowList from '/@/lib/flows/FlowList.svelte';
 import MCPDetails from '/@/lib/mcp/MCPDetails.svelte';
+import RAGEnvironmentDetails from '/@/lib/rag/RAGEnvironmentDetails.svelte';
+import RAGEnvironmentList from '/@/lib/rag/RAGEnvironmentList.svelte';
 import PinActions from '/@/lib/statusbar/PinActions.svelte';
 import { handleNavigation } from '/@/navigation';
 import { kubernetesNoCurrentContext } from '/@/stores/kubernetes-no-current-context';
@@ -194,6 +196,16 @@ window.events?.receive('kubernetes-navigation', (args: unknown) => {
         </Route>
         <Route path="/mcp-install-from-registry/:serverId/*" breadcrumb="Install MCP Server from Registry" let:meta>
           <McpRegistryCreateFromRegistryForm serverId={decodeURIComponent(meta.params.serverId)} />
+        </Route>
+
+        <!-- RAG Environments -->
+        <Route path="/rag-environments/*" breadcrumb="RAG Environments" navigationHint="root" firstmatch>
+          <Route path="/" breadcrumb="RAG Environments" navigationHint="root">
+            <RAGEnvironmentList />
+          </Route>
+        <Route path="/:name/*" let:meta breadcrumb="RAG Environment Details" navigationHint="details">
+          <RAGEnvironmentDetails name={decodeURIComponent(meta.params.name)} />
+        </Route>
         </Route>
 
         <Route path="/containers" breadcrumb="Containers" navigationHint="root">
