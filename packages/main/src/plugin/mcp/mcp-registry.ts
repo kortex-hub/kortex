@@ -21,6 +21,7 @@ import * as crypto from 'node:crypto';
 import type * as kortexAPI from '@kortex-app/api';
 import { SecretStorage } from '@kortex-app/api';
 import type { components } from '@kortex-hub/mcp-registry-types';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { HttpsOptions, OptionsOfTextResponseBody } from 'got';
@@ -204,12 +205,8 @@ export class MCPRegistry {
             continue;
           }
 
-          // create transport
-          const transport = new StreamableHTTPClientTransport(new URL(remote.url), {
-            requestInit: {
-              headers: config.headers,
-            },
-          });
+          // create transport using setupRemote method
+          const transport = this.setupRemote(remote, config.headers);
 
           await this.mcpManager.registerMCPClient(
             INTERNAL_PROVIDER_ID,
@@ -218,7 +215,7 @@ export class MCPRegistry {
             config.remoteId,
             server.name,
             transport,
-            remote.url,
+            remote.type === 'stdio' ? undefined : remote.url,
             server.description,
             server.isValidSchema,
           );
@@ -498,19 +495,44 @@ export class MCPRegistry {
   ): Transport {
     if (!remote) throw new Error('remote not found');
 
-    /**
-     * HARDCODED BAD BAD BAD
-     */
-    if ('Bearer' in headers) {
-      headers['Authorization'] = headers['Bearer'];
+    // Handle stdio transport type
+    if (remote.type === 'stdio') {
+      if (!remote.command) throw new Error('stdio remote requires command');
+
+      // WORKAROUND: Add PATH for podman-mcp-server since env data is lost in registry parsing
+      let env = remote.env ?? {};
+      if (remote.command.includes('podman-mcp-server')) {
+        env = {
+          ...env,
+          PATH: '/opt/homebrew/bin:/opt/podman/bin:/usr/local/bin:/usr/bin:/bin',
+        };
+      }
+
+      return new StdioClientTransport({
+        command: remote.command,
+        args: remote.args ?? [],
+        env: env,
+      });
     }
 
-    // create transport
-    return new StreamableHTTPClientTransport(new URL(remote.url), {
-      requestInit: {
-        headers: headers,
-      },
-    });
+    // Handle streamable-http transport type (existing logic)
+    if (remote.type === 'streamable-http') {
+      /**
+       * HARDCODED BAD BAD BAD
+       */
+      if ('Bearer' in headers) {
+        headers['Authorization'] = headers['Bearer'];
+      }
+
+      // create transport
+      return new StreamableHTTPClientTransport(new URL(remote.url), {
+        requestInit: {
+          headers: headers,
+        },
+      });
+    }
+
+    throw new Error(`Unsupported remote type: ${remote.type}`);
   }
 
   public async getCredentials(
@@ -541,6 +563,10 @@ export class MCPRegistry {
   async saveConfiguration(config: StorageConfigFormat): Promise<void> {
     const existing = await this.getConfigurations();
     await this.safeStorage?.store(STORAGE_KEY, JSON.stringify([...existing, config]));
+  }
+
+  async clearConfigurations(): Promise<void> {
+    await this.safeStorage?.store(STORAGE_KEY, JSON.stringify([]));
   }
 
   async deleteRemoteMcpFromConfiguration(serverId: string, remoteId: number): Promise<void> {
