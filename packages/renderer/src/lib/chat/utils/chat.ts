@@ -12,6 +12,7 @@ export function convertToUIMessages(messages: Array<Message>): Array<UIMessage> 
     content: '',
     createdAt: message.createdAt,
     experimental_attachments: (message.attachments as Array<Attachment>) ?? [],
+    tokens: message.tokens,
   }));
 }
 

@@ -7,6 +7,7 @@ import { currentChatId } from '../state/current-chat-id.svelte.js';
 interface Dependencies {
   getModel: () => ModelInfo;
   getMCPTools: () => Record<string, Array<string>>;
+  onEnd: (tokens: number) => void;
 }
 
 export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
@@ -24,6 +25,9 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
     const uiMessages = JSON.parse(JSON.stringify(options.messages));
     const model = this.dependencies.getModel();
     console.log('Selected model', model);
+    const {
+      dependencies: { onEnd },
+    } = this;
 
     const tools = this.dependencies.getMCPTools();
 
@@ -47,9 +51,10 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
             console.error('Error during inferenceStreamText:', error);
             controller.error(error);
           },
-          () => {
-            console.log('IPCChatTransport: Stream completed');
+          (tokens: number) => {
+            console.log('IPCChatTransport: Stream completed tokens: ', tokens);
             controller.close();
+            onEnd(tokens);
           },
         );
         currentChatId.value = options.chatId;
