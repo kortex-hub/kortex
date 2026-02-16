@@ -108,7 +108,16 @@ const row = new TableRow<MCPServerDetail>({});
       <PreviousNext onPrevious={previousPage} onNext={nextPage} currentPage={currentPage} totalPages={totalPages}></PreviousNext>
     {/if}
 
-    <Table
+    <div class="flex">
+      <Table
+        kind="mcpServer"
+        bind:this={table}
+        data={paginatedServers}
+        columns={columns}
+        row={row}
+        defaultSortColumn="Name">
+      </Table>
+     </div>
       kind="mcpServer"
       bind:this={table}
       data={paginatedServers}
