@@ -118,13 +118,6 @@ const row = new TableRow<MCPServerDetail>({});
         defaultSortColumn="Name">
       </Table>
      </div>
-      kind="mcpServer"
-      bind:this={table}
-      data={paginatedServers}
-      columns={columns}
-      row={row}
-      defaultSortColumn="Name">
-    </Table>
 
     {#if totalPages > 1}
       <PreviousNext onPrevious={previousPage} onNext={nextPage} currentPage={currentPage} totalPages={totalPages}></PreviousNext>
