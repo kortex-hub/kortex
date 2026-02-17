@@ -144,13 +144,15 @@ export class GooseDownloader implements Disposable {
   }
 
   async getReleaseAssetId(releaseId: number): Promise<OctokitComponents['schemas']['release-asset']> {
-    let assetName: string | undefined = undefined;
+    let assetMatcher: (name: string) => boolean;
 
     const architecture = arch();
     if (this.envAPI.isWindows) {
       switch (architecture) {
         case 'x64':
-          assetName = 'goose-x86_64-pc-windows-gnu.zip';
+          // Accept either MSVC (v1.24.0+) or GNU (older versions)
+          assetMatcher = (name: string): boolean =>
+            name === 'goose-x86_64-pc-windows-msvc.zip' || name === 'goose-x86_64-pc-windows-gnu.zip';
           break;
         default:
           throw new Error(`Unsupported architecture for windows: ${architecture}`);
@@ -158,10 +160,10 @@ export class GooseDownloader implements Disposable {
     } else if (this.envAPI.isMac) {
       switch (architecture) {
         case 'arm64':
-          assetName = 'goose-aarch64-apple-darwin.tar.bz2';
+          assetMatcher = (name: string): boolean => name === 'goose-aarch64-apple-darwin.tar.bz2';
           break;
         case 'x64':
-          assetName = 'goose-x86_64-apple-darwin.tar.bz2';
+          assetMatcher = (name: string): boolean => name === 'goose-x86_64-apple-darwin.tar.bz2';
           break;
         default:
           throw new Error(`Unsupported architecture for mac: ${architecture}`);
@@ -169,10 +171,10 @@ export class GooseDownloader implements Disposable {
     } else if (this.envAPI.isLinux) {
       switch (architecture) {
         case 'arm64':
-          assetName = 'goose-aarch64-unknown-linux-gnu.tar.bz2';
+          assetMatcher = (name: string): boolean => name === 'goose-aarch64-unknown-linux-gnu.tar.bz2';
           break;
         case 'x64':
-          assetName = 'goose-x86_64-unknown-linux-gnu.tar.bz2';
+          assetMatcher = (name: string): boolean => name === 'goose-x86_64-unknown-linux-gnu.tar.bz2';
           break;
         default:
           throw new Error(`Unsupported architecture for linux: ${architecture}`);
@@ -186,10 +188,12 @@ export class GooseDownloader implements Disposable {
       per_page: 60,
     });
 
-    // search for the right asset
-    const asset = listOfAssets.data.find(asset => assetName === asset.name);
+    // search for the right asset using the matcher
+    const asset = listOfAssets.data.find(asset => assetMatcher(asset.name));
     if (!asset) {
-      throw new Error(`No asset found for ${arch}`);
+      throw new Error(
+        `No asset found for ${architecture} on ${this.envAPI.isWindows ? 'Windows' : this.envAPI.isMac ? 'macOS' : 'Linux'}`,
+      );
     }
 
     return asset;
