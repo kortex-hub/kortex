@@ -32,6 +32,16 @@ on:
           - windows
           - macos
           - linux
+      repo:
+        description: 'Repository to checkout (e.g., owner/repo for forks)'
+        required: false
+        default: ''
+        type: string
+      ref:
+        description: 'Branch, tag, or SHA to checkout'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   windows-e2e-tests:
@@ -46,6 +56,8 @@ jobs:
       instance: ${{ matrix.os }}
       mode: ${{ matrix.mode }}
       compile_args: '--win dir'
+      repo: ${{ inputs.repo }}
+      ref: ${{ inputs.ref }}
     secrets: inherit
 
   linux-e2e-tests:
@@ -60,6 +72,8 @@ jobs:
       instance: ${{ matrix.os }}
       mode: ${{ matrix.mode }}
       compile_args: '--linux dir'
+      repo: ${{ inputs.repo }}
+      ref: ${{ inputs.ref }}
     secrets: inherit
 
   macos-e2e-tests:
@@ -74,4 +88,6 @@ jobs:
       instance: ${{ matrix.os }}
       mode: ${{ matrix.mode }}
       compile_args: '--mac dir'
+      repo: ${{ inputs.repo }}
+      ref: ${{ inputs.ref }}
     secrets: inherit

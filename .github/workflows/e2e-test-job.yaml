@@ -32,6 +32,16 @@ on:
         description: 'Arguments for pnpm compile:current (e.g., --win dir, --linux dir, --mac dir)'
         required: true
         type: string
+      repo:
+        description: 'Repository to checkout (e.g., owner/repo for forks). Defaults to the current repository.'
+        required: false
+        type: string
+        default: ''
+      ref:
+        description: 'Branch, tag, or SHA to checkout. Defaults to the default branch.'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   e2e-test:
@@ -43,6 +53,9 @@ jobs:
       GEMINI_API_KEY: ${{ !startsWith(inputs.instance, 'ubuntu') && secrets.GEMINI_API_KEY || '' }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+        with:
+          repository: ${{ inputs.repo || github.repository }}
+          ref: ${{ inputs.ref || github.ref }}
 
       - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda
         name: Install pnpm
