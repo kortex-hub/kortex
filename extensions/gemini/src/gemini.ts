@@ -143,13 +143,20 @@ export class Gemini implements Disposable {
       await this.removeToken(token);
     };
 
-    const models = await this.getGeminiModels(token);
+    let status: ProviderConnectionStatus = 'unknown'; // if status is not unknown we cannot delete the connection
+    let models: InferenceModel[] = [];
+
+    try {
+      models = await this.getGeminiModels(token);
+    } catch (err: unknown) {
+      status = 'stopped';
+    }
 
     const connectionDisposable = this.provider.registerInferenceProviderConnection({
       name: this.maskKey(token),
       sdk: google,
       status(): ProviderConnectionStatus {
-        return 'unknown'; // if status is not unknown we cannot delete the connection
+        return status;
       },
       lifecycle: {
         delete: clean.bind(this),
