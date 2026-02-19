@@ -40,6 +40,7 @@ export class ChatPage extends BasePage {
   readonly chatHistoryItemDeleteButton: Locator;
   readonly chatHistoryEmptyMessage: Locator;
   readonly toasts: Locator;
+  readonly modelDropdownContent: Locator;
   readonly modelMenuItems: Locator;
   readonly activeModelMenuItem: Locator;
   readonly exportAsFlowButton: Locator;
@@ -63,8 +64,9 @@ export class ChatPage extends BasePage {
     this.chatHistoryItemDeleteButton = page.getByRole('menuitem', { name: 'Delete' });
     this.chatHistoryEmptyMessage = page.getByText('Your conversations will appear here once you start chatting!');
     this.toasts = page.locator('[data-sonner-toast]');
-    this.modelMenuItems = page.getByRole('menuitem');
-    this.activeModelMenuItem = page.locator('[role="menuitem"][data-active="true"]');
+    this.modelDropdownContent = page.locator('[data-slot="dropdown-menu-content"]');
+    this.modelMenuItems = this.modelDropdownContent.getByRole('menuitem');
+    this.activeModelMenuItem = this.modelDropdownContent.locator('[role="menuitem"][data-active="true"]');
     this.exportAsFlowButton = page.getByRole('button', { name: 'Export as Flow' });
     this.stopButton = page.getByRole('button', { name: 'Stop generation' });
   }
@@ -182,6 +184,7 @@ export class ChatPage extends BasePage {
 
   async getAvailableModelsCount(): Promise<number> {
     await this.modelDropdownSelector.click();
+    await expect(this.modelDropdownContent).toBeVisible();
     const count = await this.modelMenuItems.count();
     await this.page.keyboard.press('Escape');
     return count;
@@ -189,6 +192,7 @@ export class ChatPage extends BasePage {
 
   async selectModelByIndex(index: number): Promise<void> {
     await this.modelDropdownSelector.click();
+    await expect(this.modelDropdownContent).toBeVisible();
     const modelItem = this.modelMenuItems.nth(index);
     await expect(modelItem).toBeVisible();
     await modelItem.click();
@@ -196,6 +200,7 @@ export class ChatPage extends BasePage {
 
   async getSelectedModelName(): Promise<string> {
     await this.modelDropdownSelector.click();
+    await expect(this.modelDropdownContent).toBeVisible();
     const text = await this.activeModelMenuItem.textContent();
     await this.page.keyboard.press('Escape');
     return text?.trim() ?? '';
