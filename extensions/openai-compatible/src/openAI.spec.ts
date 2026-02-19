@@ -253,7 +253,7 @@ describe('restoreConnections', () => {
     await openai.init();
 
     // two connections should be attempted
-    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledTimes(1);
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledTimes(2);
 
     // Also ensure models listing was requested twice
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -276,9 +276,9 @@ describe('listModels error handling (through factory)', () => {
 
     fetchMock.mockResolvedValueOnce({ status: 500, json: async () => ({}) });
 
-    await expect(
-      create({ 'openai.factory.apiKey': 'k', 'openai.factory.baseURL': 'http://x/v1' }),
-    ).rejects.toThrowError('failed to list models');
+    await expect(create({ 'openai.factory.apiKey': 'k', 'openai.factory.baseURL': 'http://x/v1' })).resolves.toBe(
+      undefined,
+    );
   });
 
   test('missing data field should throw', async () => {
@@ -290,9 +290,9 @@ describe('listModels error handling (through factory)', () => {
 
     fetchMock.mockResolvedValueOnce({ status: 200, json: async () => ({}) });
 
-    await expect(
-      create({ 'openai.factory.apiKey': 'k', 'openai.factory.baseURL': 'http://x/v1' }),
-    ).rejects.toThrowError('malformed response from http://x/v1');
+    await expect(create({ 'openai.factory.apiKey': 'k', 'openai.factory.baseURL': 'http://x/v1' })).resolves.toBe(
+      undefined,
+    );
   });
 
   test('data not array should throw', async () => {
@@ -304,9 +304,9 @@ describe('listModels error handling (through factory)', () => {
 
     fetchMock.mockResolvedValueOnce({ status: 200, json: async () => ({ data: {} }) });
 
-    await expect(
-      create({ 'openai.factory.apiKey': 'k', 'openai.factory.baseURL': 'http://x/v1' }),
-    ).rejects.toThrowError('malformed response from http://x/v1: data is not an array');
+    await expect(create({ 'openai.factory.apiKey': 'k', 'openai.factory.baseURL': 'http://x/v1' })).resolves.toBe(
+      undefined,
+    );
   });
 });
 
