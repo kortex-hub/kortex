@@ -27,6 +27,7 @@ import { createNavigationFlowsEntry } from '/@/stores/navigation/navigation-regi
 import { configurationProperties } from '../configurationProperties';
 import { createNavigationExtensionEntry, createNavigationExtensionGroup } from './navigation-registry-extension.svelte';
 import { createNavigationMcpEntry } from './navigation-registry-mcp.svelte';
+import { createNavigationRagEntry } from './navigation-registry-rag.svelte';
 
 export interface NavigationRegistryEntry {
   name: string;
@@ -61,6 +62,7 @@ let initialized = false;
 const init = (): void => {
   values.push(createNavigationMcpEntry());
   values.push(createNavigationFlowsEntry());
+  values.push(createNavigationRagEntry());
   values.push(createNavigationExtensionEntry());
   values.push(createNavigationExtensionGroup());
   hideItems().catch((err: unknown) => console.error('Error hiding navigation items', err));
