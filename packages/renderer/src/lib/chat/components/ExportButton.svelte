@@ -1,5 +1,6 @@
 <script lang="ts">
 import { type Chat } from '@ai-sdk/svelte';
+import type { UIMessage } from 'ai';
 import { toast } from 'svelte-sonner';
 
 import { flowCreationData } from '/@/lib/chat/state/flow-creation-data.svelte';
@@ -55,7 +56,7 @@ const exportAsFlow = async (): Promise<void> => {
       connectionName,
       modelId: label,
       tools: tools,
-      messages: $state.snapshot(chatClient.messages),
+      messages: $state.snapshot(chatClient.messages) as UIMessage[],
     });
 
     flowCreationData.value = {
@@ -71,14 +72,16 @@ const exportAsFlow = async (): Promise<void> => {
     loadingExportAsFlow = false;
   }
 };
+
+async function onClick(event: MouseEvent): Promise<void> {
+  event.preventDefault();
+  await exportAsFlow();
+}
 </script>
 
 <Button
 	class="h-fit rounded-2xl p-[5px] mr-1 border"
-	onclick={async(event): Promise<void> => {
-		event.preventDefault();
-		await exportAsFlow();
-	}}
+	onclick={onClick}
 	disabled={loading || !chatClient.messages.length || loadingExportAsFlow}
 	variant="outline"
 	{title}
