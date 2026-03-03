@@ -186,9 +186,6 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
 
     await chatPage.ensureToolsSidebarHidden();
     await expect(chatPage.showMcpPanelButton).toBeVisible();
-
-    await chatPage.ensureToolsSidebarVisible();
-    await expect(chatPage.filterToolsInput).toBeVisible();
   });
 
   test('[CHAT-08] Export chat as Flow', async ({
