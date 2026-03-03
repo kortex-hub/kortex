@@ -45,6 +45,12 @@ export class ChatPage extends BasePage {
   readonly activeModelMenuItem: Locator;
   readonly exportAsFlowButton: Locator;
   readonly stopButton: Locator;
+  readonly toolsSelectionButton: Locator;
+  readonly configureMcpServersButton: Locator;
+  readonly hideMcpPanelButton: Locator;
+  readonly showMcpPanelButton: Locator;
+  readonly filterToolsInput: Locator;
+  readonly toolCheckboxes: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -69,6 +75,12 @@ export class ChatPage extends BasePage {
     this.activeModelMenuItem = this.modelDropdownContent.locator('[role="menuitem"][data-active="true"]');
     this.exportAsFlowButton = page.getByRole('button', { name: 'Export as Flow' });
     this.stopButton = page.getByRole('button', { name: 'Stop generation' });
+    this.toolsSelectionButton = page.getByRole('button', { name: 'Tools Selection' });
+    this.configureMcpServersButton = page.getByRole('button', { name: 'Configure MCP servers' });
+    this.hideMcpPanelButton = page.getByRole('button', { name: 'Hide MCP panel' });
+    this.showMcpPanelButton = page.getByRole('button', { name: 'Show MCP panel' });
+    this.filterToolsInput = page.getByLabel('filter Tools');
+    this.toolCheckboxes = page.getByRole('checkbox');
   }
 
   async waitForLoad(): Promise<void> {
@@ -100,7 +112,7 @@ export class ChatPage extends BasePage {
     }
   }
 
-  async ensureSidebarVisible(): Promise<void> {
+  async ensureChatSidebarVisible(): Promise<void> {
     const isSidebarOpen = await this.sidebarNewChatButton.isVisible();
     if (!isSidebarOpen) {
       await this.toggleSidebarButton.click();
@@ -108,7 +120,7 @@ export class ChatPage extends BasePage {
     }
   }
 
-  async ensureSidebarHidden(): Promise<void> {
+  async ensureChatSidebarHidden(): Promise<void> {
     const isSidebarOpen = await this.sidebarNewChatButton.isVisible();
     if (isSidebarOpen) {
       await this.toggleSidebarButton.click();
@@ -228,5 +240,42 @@ export class ChatPage extends BasePage {
     await expect(this.exportAsFlowButton).not.toBeVisible({ timeout: TIMEOUTS.STANDARD });
 
     return new FlowsCreatePage(this.page);
+  }
+
+  async ensureToolsSidebarVisible(): Promise<void> {
+    const isSidebarOpen = await this.hideMcpPanelButton.isVisible();
+    if (isSidebarOpen) {
+      return;
+    }
+
+    const toggleButton = (await this.toolsSelectionButton.isVisible())
+      ? this.toolsSelectionButton
+      : this.showMcpPanelButton;
+    await toggleButton.click();
+    await expect(this.hideMcpPanelButton).toBeVisible();
+  }
+
+  async ensureToolsSidebarHidden(): Promise<void> {
+    const isSidebarOpen = await this.hideMcpPanelButton.isVisible();
+    if (isSidebarOpen) {
+      await this.hideMcpPanelButton.click();
+      await expect(this.hideMcpPanelButton).not.toBeVisible();
+    }
+  }
+
+  async filterTools(term: string): Promise<void> {
+    await this.filterToolsInput.fill(term);
+  }
+
+  getMcpServerLabel(serverName: string): Locator {
+    return this.page.getByText(serverName);
+  }
+
+  async getToolCount(): Promise<number> {
+    return this.toolCheckboxes.count();
+  }
+
+  getToolByName(name: string): Locator {
+    return this.page.getByText(name, { exact: true });
   }
 }
