@@ -164,6 +164,7 @@ export class GooseRecipe implements Disposable {
         title: options.name,
         prompt: options.prompt,
         instructions: options.instruction,
+        parameters: options.parameters,
         settings: {
           goose_provider: gooseProvider,
           goose_model: options.model.label,
