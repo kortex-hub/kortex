@@ -21,6 +21,7 @@ import type { ElectronApplication, Page } from '@playwright/test';
 
 import { MCP_SERVERS, type MCPServerId, PROVIDERS, type ResourceId } from '../model/core/types';
 import { NavigationBar } from '../model/navigation/navigation';
+import { saveTestArtifacts } from '../utils/test-artifacts';
 import { type ElectronFixtures, getFirstPage, launchElectronApp, test as base } from './electron-app';
 
 interface WorkerFixtures {
@@ -64,7 +65,12 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
   workerPage: [
     async ({ workerElectronApp }, use): Promise<void> => {
       const page = await getFirstPage(workerElectronApp);
+      await page.context().tracing.start({ screenshots: true, snapshots: true, sources: true });
       await use(page);
+      await page
+        .context()
+        .tracing.stop()
+        .catch(() => {});
     },
     { scope: 'worker' },
   ],
@@ -140,7 +146,7 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
 
   gooseSetup: [
     async ({ workerNavigationBar }, use): Promise<void> => {
-      if (!!process.env.CI && process.platform === 'win32' && process.arch === 'arm64') {
+      if (process.env.CI && process.platform === 'win32' && process.arch === 'arm64') {
         console.warn('Goose setup skipped: Windows ARM gha runners not supported');
         await use();
         return;
@@ -163,8 +169,10 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
     await use(workerElectronApp);
   },
 
-  page: async ({ workerPage }, use): Promise<void> => {
+  page: async ({ workerPage }, use, testInfo): Promise<void> => {
+    await workerPage.context().tracing.startChunk();
     await use(workerPage);
+    await saveTestArtifacts(workerPage, testInfo);
   },
 });
 
