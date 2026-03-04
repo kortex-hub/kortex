@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 /** biome-ignore-all lint/correctness/noEmptyPattern: Playwright fixture pattern requires empty object when no dependencies are needed */
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -180,13 +180,11 @@ function prepareElectronEnv(): Record<string, string> {
 }
 
 function setupTestConfigDir(electronEnv: Record<string, string>): void {
-  const testDataDir = join(tmpdir(), 'kortex-test-data');
+  const testDataDir = mkdtempSync(join(tmpdir(), 'kortex-test-'));
   electronEnv.KORTEX_HOME_DIR = testDataDir;
 
   const configDir = join(testDataDir, 'configuration');
-  if (!existsSync(configDir)) {
-    mkdirSync(configDir, { recursive: true });
-  }
+  mkdirSync(configDir, { recursive: true });
 
   writeFileSync(join(configDir, 'settings.json'), JSON.stringify({ 'preferences.OpenDevTools': 'none' }));
 }

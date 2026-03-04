@@ -44,6 +44,9 @@ export async function saveTestArtifacts(page: Page, testInfo: TestInfo): Promise
     await context.tracing.stopChunk().catch(() => {});
   }
 
+  // saveAs() is safe to call while the page is still open — it copies the
+  // recording captured so far without waiting for page/context closure.
+  // Only video.delete() blocks until the page closes.
   const video = page.video();
   if (video && failed) {
     const videoPath = testInfo.outputPath('video.webm');
