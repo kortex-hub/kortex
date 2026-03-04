@@ -19,7 +19,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
 import type { ResourceId } from '../core/types';
-import { PROVIDERS } from '../core/types';
+import { PROVIDERS, TIMEOUTS } from '../core/types';
 import { BasePage } from './base-page';
 import { SettingsCliPage } from './settings-cli-tab-page';
 import { SettingsPreferencesPage } from './settings-preferences-tab-page';
@@ -42,11 +42,15 @@ export class SettingsPage extends BasePage {
     this.tabs = [this.resourcesTab, this.cliTab, this.proxyTab, this.preferencesTab];
   }
 
+  async isCurrentPage(): Promise<boolean> {
+    return this.resourcesTab.isVisible();
+  }
+
   async waitForLoad(): Promise<void> {
-    await expect(this.resourcesTab).toBeVisible();
-    await expect(this.cliTab).toBeVisible();
-    await expect(this.proxyTab).toBeVisible();
-    await expect(this.preferencesTab).toBeVisible();
+    await expect(this.resourcesTab).toBeVisible({ timeout: TIMEOUTS.SHORT });
+    await expect(this.cliTab).toBeVisible({ timeout: TIMEOUTS.SHORT });
+    await expect(this.proxyTab).toBeVisible({ timeout: TIMEOUTS.SHORT });
+    await expect(this.preferencesTab).toBeVisible({ timeout: TIMEOUTS.SHORT });
   }
 
   async openResources(): Promise<SettingsResourcesPage> {

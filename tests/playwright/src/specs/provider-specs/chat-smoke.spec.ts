@@ -15,10 +15,18 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { TIMEOUTS } from 'src/model/core/types';
+import { MCP_SERVERS, TIMEOUTS } from 'src/model/core/types';
 
 import { expect, test } from '../../fixtures/provider-fixtures';
 import { waitForNavigationReady } from '../../utils/app-ready';
+
+const isCI = !!process.env.CI;
+const isLinux = process.platform === 'linux';
+const hasGithubToken = !!process.env[MCP_SERVERS.github.envVarName];
+
+test.use({
+  mcpServers: process.env[MCP_SERVERS.github.envVarName] && process.platform !== 'linux' ? ['github'] : [],
+});
 
 test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
   test.beforeEach(async ({ page, navigationBar }) => {
@@ -33,7 +41,7 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
   });
 
   test('[CHAT-02] Create and check new chat history item', async ({ chatPage }) => {
-    await chatPage.ensureSidebarVisible();
+    await chatPage.ensureChatSidebarVisible();
     const initialCount = await chatPage.getChatHistoryCount();
     await chatPage.getSuggestedMessages().last().click();
     await expect
@@ -42,7 +50,7 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
   });
 
   test('[CHAT-03] Create and switch between multiple chat sessions without data loss', async ({ chatPage }) => {
-    await chatPage.ensureSidebarVisible();
+    await chatPage.ensureChatSidebarVisible();
     let messageCount = await chatPage.getChatHistoryCount();
 
     const chatSessions = [
@@ -67,7 +75,7 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
   });
 
   test('[CHAT-04] Delete single chat item and then delete all remaining items', async ({ chatPage }) => {
-    await chatPage.ensureSidebarVisible();
+    await chatPage.ensureChatSidebarVisible();
     const initialCount = await chatPage.getChatHistoryCount();
 
     await chatPage.deleteChatHistoryItemByIndex(0);
@@ -111,7 +119,7 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
       return;
     }
 
-    await chatPage.ensureSidebarVisible();
+    await chatPage.ensureChatSidebarVisible();
     await chatPage.clickNewChat();
     const initialCount = await chatPage.getChatHistoryCount();
 
@@ -139,7 +147,48 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
     }
   });
 
-  test('[CHAT-07] Export chat as Flow', async ({
+  test('[CHAT-07] Verify MCP tool list visibility and sidebar interaction', async ({
+    mcpSetup: _mcpSetup,
+    navigationBar,
+    chatPage,
+  }) => {
+    const skipConditions: Array<{ condition: boolean; reason: string }> = [
+      { condition: !hasGithubToken, reason: `${MCP_SERVERS.github.envVarName} environment variable is not set` },
+      { condition: isLinux, reason: 'safeStorage issues on Linux' },
+    ];
+
+    for (const { condition, reason } of skipConditions) {
+      test.skip(condition, reason);
+    }
+
+    if (!isCI) {
+      test.fail();
+    }
+
+    await navigationBar.navigateToChatPage();
+
+    await expect(chatPage.toolsSelectionButton).toBeVisible({ timeout: TIMEOUTS.SHORT });
+    await expect(chatPage.configureMcpServersButton).not.toBeVisible();
+
+    await chatPage.ensureToolsSidebarVisible();
+    await expect(chatPage.filterToolsInput).toBeVisible();
+
+    await expect(chatPage.getMcpServerLabel(MCP_SERVERS.github.serverName)).toBeVisible();
+    const toolCount = await chatPage.getToolCount();
+    expect(toolCount).toBeGreaterThan(1);
+
+    const toolName = 'create_branch';
+    await chatPage.filterTools(toolName);
+    await expect(chatPage.getToolByName(toolName)).toBeVisible();
+
+    await chatPage.filterToolsInput.clear();
+    await expect.poll(async () => chatPage.getToolCount()).toBe(toolCount);
+
+    await chatPage.ensureToolsSidebarHidden();
+    await expect(chatPage.showMcpPanelButton).toBeVisible();
+  });
+
+  test('[CHAT-08] Export chat as Flow', async ({
     chatPage,
     navigationBar,
     flowsPage,
@@ -152,7 +201,9 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
       'Goose not supported on Windows ARM gha runners',
     );
 
-    await chatPage.ensureSidebarVisible();
+    await navigationBar.navigateToChatPage();
+
+    await chatPage.ensureChatSidebarVisible();
     await chatPage.clickNewChat();
 
     const promptForExport =
@@ -185,7 +236,7 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
     await flowsPage.deleteAllFlows();
   });
 
-  test('[CHAT-08] Verify send button state changes during message generation', async ({ chatPage }) => {
+  test('[CHAT-09] Verify send button state changes during message generation', async ({ chatPage }) => {
     await chatPage.clickNewChat();
     await chatPage.verifySendButtonVisible();
 

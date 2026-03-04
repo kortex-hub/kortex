@@ -76,6 +76,13 @@ export class NavigationBar {
   }
 
   async navigateToSettingsPage(): Promise<SettingsPage> {
-    return this.navigateTo(this.settingsLink, SettingsPage);
+    const settingsPage = new SettingsPage(this.page);
+    // Settings nav link is a toggle: clicking while on Settings exits it
+    if (!(await settingsPage.isCurrentPage())) {
+      await expect(this.settingsLink).toBeVisible();
+      await this.settingsLink.click();
+    }
+    await settingsPage.waitForLoad();
+    return settingsPage;
   }
 }
