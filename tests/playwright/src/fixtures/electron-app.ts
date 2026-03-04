@@ -83,8 +83,11 @@ export const test = base.extend<ElectronFixtures>({
 
     await use(page);
 
-    await saveTestArtifacts(page, testInfo);
-    await context.tracing.stop().catch(() => {});
+    try {
+      await saveTestArtifacts(page, testInfo);
+    } finally {
+      await context.tracing.stop().catch(() => {});
+    }
   },
 
   navigationBar: async ({ page }, use): Promise<void> => {
