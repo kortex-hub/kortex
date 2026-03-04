@@ -20,6 +20,7 @@ import { createHash } from 'node:crypto';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import type {
   Disposable,
+  InferenceModel,
   Provider,
   provider as ProviderAPI,
   ProviderConnectionStatus,
@@ -157,7 +158,14 @@ export class OpenAI implements Disposable {
       throw new Error(`connection already exists for token (hidden) baseURL ${baseURL}`);
     }
 
-    const models = await this.listModels(baseURL, token);
+    let models: InferenceModel[] = [];
+    let status: ProviderConnectionStatus = 'unknown';
+
+    try {
+      models = await this.listModels(baseURL, token);
+    } catch (err: unknown) {
+      status = 'stopped';
+    }
 
     // create ProviderV2
     const openai = createOpenAICompatible({
@@ -180,7 +188,7 @@ export class OpenAI implements Disposable {
       name: baseURL,
       sdk: openai,
       status(): ProviderConnectionStatus {
-        return 'unknown'; // if status is not unknown we cannot delete the connection
+        return status;
       },
       lifecycle: {
         delete: clean.bind(this),
