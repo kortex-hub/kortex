@@ -44,6 +44,7 @@ import type {
 import type { DynamicToolUIPart, UIMessageChunk } from 'ai';
 import { contextBridge, ipcRenderer } from 'electron';
 
+import type { AgentWorkspaceCreateOptions, AgentWorkspaceInfo } from '/@api/agent-workspace-info';
 import type { DetectFlowFieldsParams, DetectFlowFieldsResult } from '/@api/chat/detect-flow-fields-schema.ts';
 import type { FlowGenerationParameters } from '/@api/chat/flow-generation-parameters-schema';
 import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
@@ -403,6 +404,34 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld('refreshFlows', async (): Promise<void> => {
     return ipcInvoke('flows:refresh');
+  });
+
+  // Agent Workspaces
+  contextBridge.exposeInMainWorld('listAgentWorkspaces', async (): Promise<AgentWorkspaceInfo[]> => {
+    return ipcInvoke('agent-workspace:list');
+  });
+
+  contextBridge.exposeInMainWorld('getAgentWorkspace', async (id: string): Promise<AgentWorkspaceInfo> => {
+    return ipcInvoke('agent-workspace:get', id);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'createAgentWorkspace',
+    async (options: AgentWorkspaceCreateOptions): Promise<AgentWorkspaceInfo> => {
+      return ipcInvoke('agent-workspace:create', options);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('startAgentWorkspace', async (id: string): Promise<AgentWorkspaceInfo> => {
+    return ipcInvoke('agent-workspace:start', id);
+  });
+
+  contextBridge.exposeInMainWorld('stopAgentWorkspace', async (id: string): Promise<AgentWorkspaceInfo> => {
+    return ipcInvoke('agent-workspace:stop', id);
+  });
+
+  contextBridge.exposeInMainWorld('deleteAgentWorkspace', async (id: string): Promise<void> => {
+    return ipcInvoke('agent-workspace:delete', id);
   });
 
   contextBridge.exposeInMainWorld('reconnectContainerProviders', async (): Promise<PodInfo[]> => {
