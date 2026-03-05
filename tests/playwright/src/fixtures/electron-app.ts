@@ -17,7 +17,9 @@
  ***********************************************************************/
 
 /** biome-ignore-all lint/correctness/noEmptyPattern: Playwright fixture pattern requires empty object when no dependencies are needed */
-import { dirname, resolve } from 'node:path';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { _electron as electron, type ElectronApplication, type Page, test as base } from '@playwright/test';
@@ -30,10 +32,12 @@ import { McpPage } from 'src/model/pages/mcp-page';
 import { SettingsPage } from 'src/model/pages/settings-page';
 
 import { waitForAppReady } from '../utils/app-ready';
+import { saveTestArtifacts } from '../utils/test-artifacts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const DEVTOOLS_URL_PREFIX = 'devtools://';
+const isProductionMode = !!process.env.KORTEX_BINARY;
 
 export interface ElectronFixtures {
   electronApp: ElectronApplication;
@@ -71,9 +75,19 @@ export const test = base.extend<ElectronFixtures>({
     }
   },
 
-  page: async ({ electronApp }, use): Promise<void> => {
+  page: async ({ electronApp }, use, testInfo): Promise<void> => {
     const page = await getFirstPage(electronApp);
+    const context = page.context();
+    await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
+    await context.tracing.startChunk();
+
     await use(page);
+
+    try {
+      await saveTestArtifacts(page, testInfo);
+    } finally {
+      await context.tracing.stop().catch(() => {});
+    }
   },
 
   navigationBar: async ({ page }, use): Promise<void> => {
@@ -158,7 +172,7 @@ function prepareElectronEnv(): Record<string, string> {
   const electronEnv: Record<string, string> = {};
 
   for (const [key, value] of Object.entries(process.env)) {
-    if (value !== undefined && typeof value === 'string') {
+    if (value !== undefined) {
       electronEnv[key] = value;
     }
   }
@@ -168,24 +182,31 @@ function prepareElectronEnv(): Record<string, string> {
   return electronEnv;
 }
 
+function setupTestConfigDir(electronEnv: Record<string, string>): void {
+  const testDataDir = mkdtempSync(join(tmpdir(), 'kortex-test-'));
+  electronEnv.KORTEX_HOME_DIR = testDataDir;
+
+  const configDir = join(testDataDir, 'configuration');
+  mkdirSync(configDir, { recursive: true });
+
+  writeFileSync(join(configDir, 'settings.json'), JSON.stringify({ 'preferences.OpenDevTools': 'none' }));
+}
+
 function createLaunchConfig(): Parameters<typeof electron.launch>[0] {
-  const isProductionMode = !!process.env.KORTEX_BINARY;
   const electronEnv = prepareElectronEnv();
+  const recordVideo = { dir: join(tmpdir(), 'kortex-test-videos') };
+
+  setupTestConfigDir(electronEnv);
 
   if (isProductionMode) {
-    const executablePath = process.env.KORTEX_BINARY;
-    if (!executablePath) {
-      throw new Error('KORTEX_BINARY environment variable is set but empty');
-    }
-
     return {
-      executablePath,
+      executablePath: process.env.KORTEX_BINARY,
       args: ['--no-sandbox'],
       env: electronEnv,
+      recordVideo,
     };
   }
 
-  // Development mode
   return {
     args: ['.', '--no-sandbox'],
     env: {
@@ -193,24 +214,15 @@ function createLaunchConfig(): Parameters<typeof electron.launch>[0] {
       ELECTRON_IS_DEV: '1',
     },
     cwd: resolve(__dirname, '../../../..'),
+    recordVideo,
   };
 }
 
 export async function launchElectronApp(): Promise<ElectronApplication> {
-  const launchConfig = createLaunchConfig();
-
-  try {
-    const electronApp = await electron.launch(launchConfig);
-
-    return electronApp;
-  } catch (error) {
-    console.error('Failed to launch Electron app:', error);
-    throw new Error(`Failed to launch Electron app: ${error instanceof Error ? error.message : String(error)}`);
-  }
+  return electron.launch(createLaunchConfig());
 }
 
 export async function getFirstPage(electronApp: ElectronApplication): Promise<Page> {
-  const isProductionMode = !!process.env.KORTEX_BINARY;
   let page: Page;
 
   try {
@@ -231,6 +243,7 @@ export async function getFirstPage(electronApp: ElectronApplication): Promise<Pa
   }
 
   await page.waitForLoadState('load', { timeout: TIMEOUTS.PAGE_LOAD });
+
   await waitForAppReady(page);
 
   page.on('console', msg => console.log(`[${msg.type()}] ${msg.text()}`));
@@ -244,7 +257,7 @@ export async function getFirstPage(electronApp: ElectronApplication): Promise<Pa
 
 export async function closeAllWindows(electronApp: ElectronApplication): Promise<void> {
   const windows = electronApp.windows();
-  await Promise.allSettled(windows.map(window => window.close().catch(() => {})));
+  await Promise.allSettled(windows.map(window => window.close()));
 }
 
 export { expect } from '@playwright/test';
