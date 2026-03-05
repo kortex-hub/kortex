@@ -134,16 +134,20 @@ export class AgentWorkspaceManager implements Disposable {
 
   start(id: string): AgentWorkspaceInfo {
     const workspace = this.get(id);
-    workspace.status = 'running';
-    workspace.startedAt = new Date().toISOString();
-    this.apiSender.send('agent-workspace:updated');
+    if (workspace.status !== 'running') {
+      workspace.status = 'running';
+      workspace.startedAt = new Date().toISOString();
+      this.apiSender.send('agent-workspace:updated');
+    }
     return workspace;
   }
 
   stop(id: string): AgentWorkspaceInfo {
     const workspace = this.get(id);
-    workspace.status = 'stopped';
-    this.apiSender.send('agent-workspace:updated');
+    if (workspace.status !== 'stopped') {
+      workspace.status = 'stopped';
+      this.apiSender.send('agent-workspace:updated');
+    }
     return workspace;
   }
 

@@ -44,9 +44,9 @@ import type {
 import type { DynamicToolUIPart, UIMessageChunk } from 'ai';
 import { contextBridge, ipcRenderer } from 'electron';
 
+import type { AgentWorkspaceCreateOptions, AgentWorkspaceInfo } from '/@api/agent-workspace-info';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type';
 import type { AuthenticationProviderInfo } from '/@api/authentication/authentication';
-import type { AgentWorkspaceCreateOptions, AgentWorkspaceInfo } from '/@api/agent-workspace-info';
 import type { DetectFlowFieldsParams, DetectFlowFieldsResult } from '/@api/chat/detect-flow-fields-schema.ts';
 import type { FlowGenerationParameters } from '/@api/chat/flow-generation-parameters-schema';
 import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';

@@ -67,7 +67,7 @@ const ipcHandle: IPCHandle = vi.fn();
 beforeEach(() => {
   vi.clearAllMocks();
   manager = new AgentWorkspaceManager(apiSender, ipcHandle);
-  vi.spyOn(manager, 'loadWorkspaces').mockReturnValue(TEST_WORKSPACES);
+  vi.spyOn(manager, 'loadWorkspaces').mockReturnValue(structuredClone(TEST_WORKSPACES));
   manager.init();
 });
 
@@ -189,6 +189,18 @@ describe('start', () => {
     expect(apiSender.send).toHaveBeenCalledWith('agent-workspace:updated');
   });
 
+  test('is idempotent when already running', () => {
+    manager.start('ws-2');
+    const originalStartedAt = manager.get('ws-2').startedAt;
+    vi.mocked(apiSender.send).mockClear();
+
+    const result = manager.start('ws-2');
+
+    expect(result.status).toBe('running');
+    expect(result.startedAt).toBe(originalStartedAt);
+    expect(apiSender.send).not.toHaveBeenCalled();
+  });
+
   test('throws for unknown id', () => {
     expect(() => manager.start('bad-id')).toThrow('Agent workspace not found: bad-id');
   });
@@ -204,6 +216,15 @@ describe('stop', () => {
   test('sends update event', () => {
     manager.stop('ws-2');
     expect(apiSender.send).toHaveBeenCalledWith('agent-workspace:updated');
+  });
+
+  test('is idempotent when already stopped', () => {
+    vi.mocked(apiSender.send).mockClear();
+
+    const result = manager.stop('ws-1');
+
+    expect(result.status).toBe('stopped');
+    expect(apiSender.send).not.toHaveBeenCalled();
   });
 
   test('throws for unknown id', () => {

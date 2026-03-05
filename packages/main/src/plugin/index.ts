@@ -51,9 +51,8 @@ import type { IpcMainInvokeEvent } from 'electron/main';
 import { Container } from 'inversify';
 import { lookup } from 'mime-types';
 
-import { IPCHandle, IPCMainOn, WebContentsType } from '/@/plugin/api.js';
 import { AgentWorkspaceManager } from '/@/plugin/agent-workspace/agent-workspace-manager.js';
-import type { KubernetesGeneratorInfo } from '/@/plugin/api/KubernetesGeneratorInfo.js';
+import { IPCHandle, IPCMainOn, WebContentsType } from '/@/plugin/api.js';
 import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import { ContainerfileParser } from '/@/plugin/containerfile-parser.js';
 import { ExtensionApiVersion } from '/@/plugin/extension/extension-api-version.js';
