@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2023-2025 Red Hat, Inc.
+ * Copyright (C) 2026 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,23 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-export const Directories = Symbol.for('Directories');
-export interface Directories {
-  getConfigurationDirectory(): string;
-  getPluginsDirectory(): string;
-  getPluginsScanDirectory(): string;
-  getExtensionsStorageDirectory(): string;
-  getContributionStorageDir(): string;
-  getSafeStorageDirectory(): string;
-  getDataDirectory(): string;
-  getManagedDefaultsDirectory(): string;
-  getChatPersistenceDirectory(): string;
-  getSkillsDirectory(): string;
+export interface SkillInfo extends SkillMetadata {
+  content: string;
+  path: string;
+  enabled: boolean;
 }
+
+export interface SkillMetadata {
+  name: string;
+  description: string;
+}
+
+export interface SkillCreateOptions {
+  name: string;
+  description: string;
+  content: string;
+}
+
+export const SKILL_SECTION = 'skills';
+export const SKILL_ENABLED = 'enabled';
+export const SKILL_FILE_NAME = 'SKILL.md';

@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2023-2025 Red Hat, Inc.
+ * Copyright (C) 2026 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,18 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-export const Directories = Symbol.for('Directories');
-export interface Directories {
-  getConfigurationDirectory(): string;
-  getPluginsDirectory(): string;
-  getPluginsScanDirectory(): string;
-  getExtensionsStorageDirectory(): string;
-  getContributionStorageDir(): string;
-  getSafeStorageDirectory(): string;
-  getDataDirectory(): string;
-  getManagedDefaultsDirectory(): string;
-  getChatPersistenceDirectory(): string;
-  getSkillsDirectory(): string;
+import { TableColumn } from '@podman-desktop/ui-svelte';
+import SimpleColumn from '@podman-desktop/ui-svelte/TableSimpleColumn';
+
+import type { SkillInfo } from '/@api/skill/skill-info';
+
+export class SkillDescriptionColumn extends TableColumn<SkillInfo, string> {
+  constructor() {
+    super('Description', {
+      width: '3fr',
+      renderMapping: (skill): string => skill.description,
+      renderer: SimpleColumn,
+      comparator: (a, b): number => a.description.localeCompare(b.description),
+    });
+  }
 }

@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2023-2025 Red Hat, Inc.
+ * Copyright (C) 2026 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,29 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-export const Directories = Symbol.for('Directories');
-export interface Directories {
-  getConfigurationDirectory(): string;
-  getPluginsDirectory(): string;
-  getPluginsScanDirectory(): string;
-  getExtensionsStorageDirectory(): string;
-  getContributionStorageDir(): string;
-  getSafeStorageDirectory(): string;
-  getDataDirectory(): string;
-  getManagedDefaultsDirectory(): string;
-  getChatPersistenceDirectory(): string;
-  getSkillsDirectory(): string;
-}
+import '@testing-library/jest-dom/vitest';
+
+import { render, screen } from '@testing-library/svelte';
+import { beforeEach, expect, test, vi } from 'vitest';
+
+import type { SkillInfo } from '/@api/skill/skill-info';
+
+import SkillActions from './SkillActions.svelte';
+
+beforeEach(() => {
+  vi.resetAllMocks();
+});
+
+const skill: SkillInfo = {
+  name: 'my-skill',
+  description: 'A test skill',
+  content: '# Test',
+  path: '/skills/my-skill',
+  enabled: true,
+};
+
+test('should render the delete button', () => {
+  render(SkillActions, { object: skill });
+
+  expect(screen.getByTitle('Delete')).toBeInTheDocument();
+});

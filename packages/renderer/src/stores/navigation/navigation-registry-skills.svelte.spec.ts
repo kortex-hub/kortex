@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2023-2025 Red Hat, Inc.
+ * Copyright (C) 2026 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,21 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-export const Directories = Symbol.for('Directories');
-export interface Directories {
-  getConfigurationDirectory(): string;
-  getPluginsDirectory(): string;
-  getPluginsScanDirectory(): string;
-  getExtensionsStorageDirectory(): string;
-  getContributionStorageDir(): string;
-  getSafeStorageDirectory(): string;
-  getDataDirectory(): string;
-  getManagedDefaultsDirectory(): string;
-  getChatPersistenceDirectory(): string;
-  getSkillsDirectory(): string;
-}
+import { beforeEach, expect, test, vi } from 'vitest';
+
+import { createNavigationSkillsEntry } from './navigation-registry-skills.svelte';
+
+beforeEach(() => {
+  vi.resetAllMocks();
+});
+
+test('createNavigationSkillsEntry should return a valid navigation entry', () => {
+  const entry = createNavigationSkillsEntry();
+
+  expect(entry).toBeDefined();
+  expect(entry.name).toBe('Skills');
+  expect(entry.link).toBe('/skills');
+  expect(entry.tooltip).toBe('Skills');
+  expect(entry.type).toBe('entry');
+  expect(entry.counter).toBe(0);
+});

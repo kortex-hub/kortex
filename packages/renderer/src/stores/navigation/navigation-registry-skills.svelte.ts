@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2023-2025 Red Hat, Inc.
+ * Copyright (C) 2026 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,23 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-export const Directories = Symbol.for('Directories');
-export interface Directories {
-  getConfigurationDirectory(): string;
-  getPluginsDirectory(): string;
-  getPluginsScanDirectory(): string;
-  getExtensionsStorageDirectory(): string;
-  getContributionStorageDir(): string;
-  getSafeStorageDirectory(): string;
-  getDataDirectory(): string;
-  getManagedDefaultsDirectory(): string;
-  getChatPersistenceDirectory(): string;
-  getSkillsDirectory(): string;
+import { faWrench } from '@fortawesome/free-solid-svg-icons/faWrench';
+
+import type { NavigationRegistryEntry } from './navigation-registry';
+
+const count = $state(0);
+
+export function createNavigationSkillsEntry(): NavigationRegistryEntry {
+  const registry: NavigationRegistryEntry = {
+    name: 'Skills',
+    icon: { faIcon: { definition: faWrench, size: 'lg' } },
+    link: '/skills',
+    tooltip: 'Skills',
+    type: 'entry',
+
+    get counter() {
+      return count;
+    },
+  };
+  return registry;
 }
