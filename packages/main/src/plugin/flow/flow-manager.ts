@@ -20,6 +20,7 @@ import { basename, extname } from 'node:path';
 import type { Disposable, Flow, FlowProviderConnection, Logger, ProviderSchedulerOptions } from '@kortex-app/api';
 import { inject, injectable, preDestroy } from 'inversify';
 
+import { IPCHandle } from '/@/plugin/api.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
@@ -28,7 +29,6 @@ import type { FlowInfo } from '/@api/flow-info.js';
 import type { FlowScheduleInfo } from '/@api/flow-schedule-info.js';
 
 import { TaskManager } from '../tasks/task-manager.js';
-import { IPCHandle } from '/@/plugin/api.js';
 
 class BufferLogger implements Logger {
   #buffer = '';

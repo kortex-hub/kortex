@@ -1,5 +1,6 @@
 <script lang="ts">
 import { type Chat } from '@ai-sdk/svelte';
+import type { UIMessage } from 'ai';
 import { toast } from 'svelte-sonner';
 
 import { flowCreationData } from '/@/lib/chat/state/flow-creation-data.svelte';
@@ -55,7 +56,7 @@ const exportAsFlow = async (): Promise<void> => {
       connectionName,
       modelId: label,
       tools: tools,
-      messages: $state.snapshot(chatClient.messages),
+      messages: $state.snapshot(chatClient.messages) as UIMessage[],
     });
 
     flowCreationData.value = {

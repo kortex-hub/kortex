@@ -27,12 +27,12 @@ import type { HttpsOptions, OptionsOfTextResponseBody } from 'got';
 import { HttpProxyAgent, HttpsProxyAgent } from 'hpagent';
 import { inject, injectable } from 'inversify';
 
-import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import { MCPPackage } from '/@/plugin/mcp/package/mcp-package.js';
 import { formatArguments } from '/@/plugin/mcp/utils/arguments.js';
 import { formatKeyValueInputs } from '/@/plugin/mcp/utils/format-key-value-inputs.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
+import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import { IConfigurationNode, IConfigurationRegistry } from '/@api/configuration/models.js';
 import type { ValidatedServerDetail, ValidatedServerList, ValidatedServerResponse } from '/@api/mcp/mcp-server-info.js';
 import { MCPServerDetail } from '/@api/mcp/mcp-server-info.js';

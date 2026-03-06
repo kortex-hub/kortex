@@ -644,18 +644,6 @@ declare module '@kortex-app/api' {
     status(): ProviderConnectionStatus;
   }
 
-  /**
-   * @deprecated
-   */
-  export type MCPProviderConnection = {
-    name: string;
-    mcp: {
-      // utility methods
-    };
-    lifecycle?: ProviderConnectionLifecycle;
-    status(): ProviderConnectionStatus;
-  };
-
   export interface InferenceModel {
     label: string;
   }

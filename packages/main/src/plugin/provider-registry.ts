@@ -69,8 +69,8 @@ import type {
 } from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
-import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
+import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { Event } from '/@api/event.js';
 import type {
   LifecycleMethod,

@@ -18,8 +18,8 @@
 
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
-import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
+import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IConfigurationRegistry } from '/@api/configuration/models.js';
 
 import type { Certificates } from '../certificates.js';

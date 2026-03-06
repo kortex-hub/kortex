@@ -46,8 +46,8 @@ import type {
   VmProviderConnectionFactory,
 } from '@kortex-app/api';
 
-import type { IDisposable } from '/@api/disposable.js';
 import type { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
+import type { IDisposable } from '/@api/disposable.js';
 
 import type { ContainerProviderRegistry } from './container-registry.js';
 import { Emitter } from './events/emitter.js';

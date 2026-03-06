@@ -31,6 +31,7 @@ import type { ContributionManager } from '/@/plugin/contribution-manager.js';
 import type { ExtensionApiVersion } from '/@/plugin/extension/extension-api-version.js';
 import type { FeatureRegistry } from '/@/plugin/feature-registry.js';
 import type { KubeGeneratorRegistry } from '/@/plugin/kubernetes/kube-generator-registry.js';
+import type { MCPRegistry } from '/@/plugin/mcp/mcp-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
 import type { WebviewRegistry } from '/@/plugin/webview/webview-registry.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
@@ -82,7 +83,6 @@ import type { ExtensionDevelopmentFolders } from './extension-development-folder
 import type { ActivatedExtension, AnalyzedExtensionWithApi, RequireCacheDict } from './extension-loader.js';
 import { ExtensionLoader } from './extension-loader.js';
 import type { ExtensionWatcher } from './extension-watcher.js';
-import { MCPRegistry } from '/@/plugin/mcp/mcp-registry.js';
 
 class TestExtensionLoader extends ExtensionLoader {
   public override async setupScanningDirectory(): Promise<void> {

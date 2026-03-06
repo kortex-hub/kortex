@@ -140,7 +140,7 @@ let filteredItems = $derived.by(() => {
 onMount(async () => {
   const platform = await window.getOsPlatform();
   isMac = platform === 'darwin';
-  // documentationItems = await window.getDocumentationItems();
+  // commented out waiting for https://github.com/podman-desktop/podman-desktop/issues/16463 documentationItems = await window.getDocumentationItems();
 });
 
 // Focus the input when the command palette becomes visible
