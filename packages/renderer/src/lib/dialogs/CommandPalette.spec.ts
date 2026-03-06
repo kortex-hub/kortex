@@ -546,7 +546,7 @@ describe('Command Palette', () => {
     expect(gotoTab).not.toHaveClass('border-[var(--pd-button-tab-border-selected)]');
 
     // Test that placeholder text is correct for each tab
-    expect(input).toHaveAttribute('placeholder', 'Search Podman Desktop, or type > for commands');
+    expect(input).toHaveAttribute('placeholder', 'Search Kortex, or type > for commands');
 
     // Click Commands tab and verify placeholder changes
     await userEvent.click(commandsTab);
@@ -559,14 +559,10 @@ describe('Command Palette', () => {
 
     // Click Go to tab and verify placeholder changes
     await userEvent.click(gotoTab);
-    await vi.waitFor(() =>
-      expect(input).toHaveAttribute('placeholder', 'Search images, containers, pods, and other resources'),
-    );
+    await vi.waitFor(() => expect(input).toHaveAttribute('placeholder', 'Search resources'));
 
     // Click All tab and verify placeholder changes back
     await userEvent.click(allTab);
-    await vi.waitFor(() =>
-      expect(input).toHaveAttribute('placeholder', 'Search Podman Desktop, or type > for commands'),
-    );
+    await vi.waitFor(() => expect(input).toHaveAttribute('placeholder', 'Search Kortex, or type > for commands'));
   });
 });
