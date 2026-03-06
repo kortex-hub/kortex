@@ -20,6 +20,8 @@ import type { BindToFluentSyntax, ContainerModuleLoadOptions } from 'inversify';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import { socketFinderModule } from '/@/helper/socket-finder/_socket-finder-module';
+import { DockerSocketLinuxFinder } from '/@/helper/socket-finder/docker/docker-linux-finder';
+import { PodmanSocketLinuxFinder } from '/@/helper/socket-finder/podman/podman-linux-finder';
 import { PodmanSocketMacOSFinder } from '/@/helper/socket-finder/podman/podman-macos-finder';
 import { PodmanSocketWindowsFinder } from '/@/helper/socket-finder/podman/podman-windows-finder';
 
@@ -53,7 +55,18 @@ test('test bindings on Windows', async () => {
 test('test bindings on macOS', async () => {
   vi.mocked(env).isWindows = false;
   vi.mocked(env).isMac = true;
+  vi.mocked(env).isLinux = false;
   await socketFinderModule.load(options);
 
   expect(options.bind).toHaveBeenCalledWith(PodmanSocketMacOSFinder);
+});
+
+test('test bindings on Linux', async () => {
+  vi.mocked(env).isWindows = false;
+  vi.mocked(env).isMac = false;
+  vi.mocked(env).isLinux = true;
+  await socketFinderModule.load(options);
+
+  expect(options.bind).toHaveBeenCalledWith(PodmanSocketLinuxFinder);
+  expect(options.bind).toHaveBeenCalledWith(DockerSocketLinuxFinder);
 });

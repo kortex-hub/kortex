@@ -21,7 +21,9 @@ import { ContainerModule } from 'inversify';
 
 import { SocketFinder } from '/@/api/socket-finder';
 
+import { DockerSocketLinuxFinder } from './docker/docker-linux-finder';
 import { DockerSocketMacOSFinder } from './docker/docker-macos-finder';
+import { PodmanSocketLinuxFinder } from './podman/podman-linux-finder';
 import { PodmanSocketMacOSFinder } from './podman/podman-macos-finder';
 import { PodmanSocketWindowsFinder } from './podman/podman-windows-finder';
 
@@ -34,6 +36,11 @@ const socketFinderModule = new ContainerModule(options => {
   } else if (env.isWindows) {
     options.bind<PodmanSocketWindowsFinder>(PodmanSocketWindowsFinder).toSelf().inSingletonScope();
     options.bind<SocketFinder>(SocketFinder).toService(PodmanSocketWindowsFinder);
+  } else if (env.isLinux) {
+    options.bind<PodmanSocketLinuxFinder>(PodmanSocketLinuxFinder).toSelf().inSingletonScope();
+    options.bind<DockerSocketLinuxFinder>(DockerSocketLinuxFinder).toSelf().inSingletonScope();
+    options.bind<SocketFinder>(SocketFinder).toService(PodmanSocketLinuxFinder);
+    options.bind<SocketFinder>(SocketFinder).toService(DockerSocketLinuxFinder);
   }
 });
 
