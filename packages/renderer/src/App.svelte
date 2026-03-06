@@ -79,6 +79,7 @@ import PVCDetails from './lib/pvc/PVCDetails.svelte';
 import PVCList from './lib/pvc/PVCList.svelte';
 import ServiceDetails from './lib/service/ServiceDetails.svelte';
 import ServicesList from './lib/service/ServicesList.svelte';
+import SkillsList from './lib/skills/SkillsList.svelte';
 import StatusBar from './lib/statusbar/StatusBar.svelte';
 import IconsStyle from './lib/style/IconsStyle.svelte';
 import { PodmanDesktopStoragePersist } from './lib/table/PodmanDesktopStoragePersist';
@@ -204,6 +205,13 @@ tablePersistence.storage = new PodmanDesktopStoragePersist();
         </Route>
         <Route path="/mcp-install-from-registry/:serverId/*" breadcrumb="Install MCP Server from Registry" let:meta>
           <McpRegistryCreateFromRegistryForm serverId={decodeURIComponent(meta.params.serverId)} />
+        </Route>
+
+        <!-- Skills -->
+        <Route path="/skills/*" breadcrumb="Skills" navigationHint="root" firstmatch>
+          <Route path="/" breadcrumb="Skills" navigationHint="root">
+            <SkillsList />
+          </Route>
         </Route>
 
         <Route path="/containers" breadcrumb="Containers" navigationHint="root">

@@ -61,4 +61,5 @@ export enum NavigationPage {
   EXTENSIONS_CATALOG = 'extensions-catalog',
   MCP_DETAILS = 'mcp-details',
   AGENT_WORKSPACES = 'agent-workspaces',
+  SKILLS = 'skills',
 }

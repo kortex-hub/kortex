@@ -28,6 +28,7 @@ import { createNavigationFlowsEntry } from '/@/stores/navigation/navigation-regi
 import { createNavigationAgentWorkspacesEntry } from './navigation-registry-agent-workspaces.svelte';
 import { createNavigationExtensionEntry, createNavigationExtensionGroup } from './navigation-registry-extension.svelte';
 import { createNavigationMcpEntry } from './navigation-registry-mcp.svelte';
+import { createNavigationSkillsEntry } from './navigation-registry-skills.svelte';
 
 export interface NavigationRegistryEntry {
   name: string;
@@ -72,6 +73,7 @@ const init = (): void => {
   values.push(createNavigationAgentWorkspacesEntry());
   values.push(createNavigationMcpEntry());
   values.push(createNavigationFlowsEntry());
+  values.push(createNavigationSkillsEntry());
   values.push(createNavigationExtensionEntry());
   values.push(createNavigationExtensionGroup());
   hideItems().catch((err: unknown) => console.error('Error hiding navigation items', err));

@@ -77,6 +77,7 @@ export interface NavigationParameters {
     serverId: string;
   };
   [NavigationPage.AGENT_WORKSPACES]: never;
+  [NavigationPage.SKILLS]: never;
 }
 
 // the parameters property is optional when the NavigationParameters say it is
