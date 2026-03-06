@@ -104,3 +104,21 @@ test('findPaths returns empty array when XDG_RUNTIME_DIR is not set and rootful 
 
   expect(result).toEqual([]);
 });
+
+test('findPaths falls back to /run/user/$UID when XDG_RUNTIME_DIR is unset', async () => {
+  const finder = new PodmanSocketLinuxFinder();
+
+  delete process.env.XDG_RUNTIME_DIR;
+  const uid = process.getuid?.();
+  const expectedSocket = resolve(`/run/user/${uid}`, 'podman/podman.sock');
+
+  vi.mocked(existsSync).mockImplementation((path: PathLike) => {
+    return String(path) === expectedSocket;
+  });
+
+  const result = await finder.findPaths();
+
+  if (uid !== undefined) {
+    expect(result).toContain(expectedSocket);
+  }
+});

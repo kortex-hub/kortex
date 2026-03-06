@@ -29,7 +29,9 @@ export class PodmanSocketLinuxFinder implements SocketFinder {
     const paths: string[] = [];
 
     // Rootless socket via XDG_RUNTIME_DIR (e.g. /run/user/1000/podman/podman.sock)
-    const xdgRuntimeDir = process.env.XDG_RUNTIME_DIR;
+    // Falls back to /run/user/$UID for headless/SSH/non-systemd environments
+    const uid = process.getuid?.();
+    const xdgRuntimeDir = process.env.XDG_RUNTIME_DIR ?? (uid !== undefined ? `/run/user/${uid}` : undefined);
     if (xdgRuntimeDir) {
       const rootlessSocket = resolve(xdgRuntimeDir, 'podman/podman.sock');
       if (existsSync(rootlessSocket)) {
