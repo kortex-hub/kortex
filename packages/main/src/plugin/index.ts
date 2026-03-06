@@ -51,6 +51,7 @@ import type { IpcMainInvokeEvent } from 'electron/main';
 import { Container } from 'inversify';
 import { lookup } from 'mime-types';
 
+import { AgentWorkspaceManager } from '/@/plugin/agent-workspace/agent-workspace-manager.js';
 import type { KubernetesGeneratorInfo } from '/@/plugin/api/KubernetesGeneratorInfo.js';
 import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import { ExtensionLoader } from '/@/plugin/extension/extension-loader.js';
@@ -540,6 +541,7 @@ export class PluginSystem {
     container.bind<ProviderRegistry>(ProviderRegistry).toSelf().inSingletonScope();
     container.bind<MCPManager>(MCPManager).toSelf().inSingletonScope();
     container.bind<FlowManager>(FlowManager).toSelf().inSingletonScope();
+    container.bind<AgentWorkspaceManager>(AgentWorkspaceManager).toSelf().inSingletonScope();
     container.bind<TrayMenuRegistry>(TrayMenuRegistry).toSelf().inSingletonScope();
     container.bind<InputQuickPickRegistry>(InputQuickPickRegistry).toSelf().inSingletonScope();
     container.bind<FilesystemMonitoring>(FilesystemMonitoring).toSelf().inSingletonScope();
@@ -620,6 +622,9 @@ export class PluginSystem {
 
     const flowManager = container.get<FlowManager>(FlowManager);
     flowManager.init();
+
+    const agentWorkspaceManager = container.get<AgentWorkspaceManager>(AgentWorkspaceManager);
+    agentWorkspaceManager.init();
 
     const chatManager = container.get<ChatManager>(ChatManager);
     await chatManager.init();
