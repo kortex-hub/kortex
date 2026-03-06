@@ -241,6 +241,7 @@ export class ChatManager {
           createdAt: new Date(),
           attachments: [],
           config,
+          tokens: null,
         },
       ],
     });
@@ -250,6 +251,7 @@ export class ChatManager {
     const reader = streaming
       .toUIMessageStream({
         onFinish: async ({ messages }): Promise<void> => {
+          const totalUsage = await streaming.totalUsage;
           await this.chatQueries.saveMessages({
             messages: messages.map(message => ({
               id: randomUUID().toString(),
@@ -259,6 +261,7 @@ export class ChatManager {
               chatId,
               attachments: [],
               config,
+              tokens: totalUsage.totalTokens ?? 0,
             })),
           });
         },
@@ -270,7 +273,8 @@ export class ChatManager {
       const { done, value } = await reader.read();
       if (done) {
         // end
-        this.webContents.send('inference:streamText-onEnd', params.onDataId);
+        const usage = await streaming.totalUsage;
+        this.webContents.send('inference:streamText-onEnd', params.onDataId, usage.totalTokens);
         break;
       }
       this.webContents.send('inference:streamText-onChunk', params.onDataId, value);
