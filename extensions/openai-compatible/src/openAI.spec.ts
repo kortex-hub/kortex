@@ -267,7 +267,7 @@ describe('restoreConnections', () => {
 });
 
 describe('listModels error handling (through factory)', () => {
-  test('non-200 response should throw', async () => {
+  test('non-200 response should return undefined', async () => {
     const openai = new OpenAI(PROVIDER_API_MOCK, SECRET_STORAGE_MOCK);
     await openai.init();
 
@@ -281,7 +281,7 @@ describe('listModels error handling (through factory)', () => {
     );
   });
 
-  test('missing data field should throw', async () => {
+  test('missing data field should return undefined', async () => {
     const openai = new OpenAI(PROVIDER_API_MOCK, SECRET_STORAGE_MOCK);
     await openai.init();
 
@@ -295,7 +295,7 @@ describe('listModels error handling (through factory)', () => {
     );
   });
 
-  test('data not array should throw', async () => {
+  test('data not array should return undefined', async () => {
     const openai = new OpenAI(PROVIDER_API_MOCK, SECRET_STORAGE_MOCK);
     await openai.init();
 
