@@ -18,42 +18,66 @@
 
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import type { ApiSenderType, IPCHandle } from '/@/plugin/api.js';
-import type { AgentWorkspaceInfo } from '/@api/agent-workspace-info.js';
+import type { IPCHandle } from '/@/plugin/api.js';
+import type { AgentWorkspaceInfo, AgentWorkspaceStatus, AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
+import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 
 import { AgentWorkspaceManager } from './agent-workspace-manager.js';
+import {
+  mockCreateWorkspace,
+  mockDeleteWorkspace,
+  mockGetWorkspaceDetail,
+  mockGetWorkspaceStatus,
+  mockListWorkspaces,
+  mockStartWorkspace,
+  mockStopWorkspace,
+} from './agent-workspace-mock-data.js';
 
-const TEST_WORKSPACES: AgentWorkspaceInfo[] = [
+vi.mock('./agent-workspace-mock-data.js', () => ({
+  mockListWorkspaces: vi.fn(),
+  mockGetWorkspaceStatus: vi.fn(),
+  mockGetWorkspaceDetail: vi.fn(),
+  mockStartWorkspace: vi.fn(),
+  mockStopWorkspace: vi.fn(),
+  mockDeleteWorkspace: vi.fn(),
+  mockCreateWorkspace: vi.fn(),
+}));
+
+const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
   {
     id: 'ws-1',
     name: 'test-workspace-1',
+    paths: { source: '/tmp/ws1', configuration: '/tmp/ws1/.kortex.yaml' },
     description: 'First test workspace',
     agent: 'claude',
     model: 'claude-sonnet-4-20250514',
-    status: 'stopped',
-    workingDirectory: '/tmp/ws1',
-    contextUsage: { used: 0, total: 200_000 },
     resources: { skills: ['kubernetes'], mcpServers: ['github'] },
-    fileAccess: 'workspace',
-    stats: { messages: 0, toolCalls: 0, filesModified: 0, linesChanged: 0 },
     createdAt: '2026-03-01T00:00:00.000Z',
   },
   {
     id: 'ws-2',
     name: 'test-workspace-2',
+    paths: { source: '/tmp/ws2', configuration: '/tmp/ws2/.kortex.yaml' },
     description: 'Second test workspace',
     agent: 'cursor',
     model: 'gpt-4o',
-    status: 'running',
-    workingDirectory: '/tmp/ws2',
-    contextUsage: { used: 50_000, total: 128_000 },
     resources: { skills: [], mcpServers: ['filesystem'] },
-    fileAccess: 'home',
-    stats: { messages: 10, toolCalls: 5, filesModified: 3, linesChanged: 120 },
-    startedAt: '2026-03-01T01:00:00.000Z',
     createdAt: '2026-03-01T00:00:00.000Z',
   },
 ];
+
+const TEST_DETAIL: AgentWorkspaceInfo = {
+  ...TEST_SUMMARIES[0]!,
+  state: 'stopped',
+  contextUsage: { used: 0, total: 200_000 },
+  fileAccess: 'workspace',
+  stats: { messages: 0, toolCalls: 0, filesModified: 0, linesChanged: 0 },
+};
+
+const TEST_STATUS: AgentWorkspaceStatus = {
+  state: 'stopped',
+  contextUsage: { used: 0, total: 200_000 },
+};
 
 let manager: AgentWorkspaceManager;
 
@@ -67,7 +91,6 @@ const ipcHandle: IPCHandle = vi.fn();
 beforeEach(() => {
   vi.clearAllMocks();
   manager = new AgentWorkspaceManager(apiSender, ipcHandle);
-  vi.spyOn(manager, 'loadWorkspaces').mockReturnValue(structuredClone(TEST_WORKSPACES));
   manager.init();
 });
 
@@ -75,184 +98,190 @@ describe('init', () => {
   test('registers IPC handlers', () => {
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:list', expect.any(Function));
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:get', expect.any(Function));
+    expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:getStatus', expect.any(Function));
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:create', expect.any(Function));
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:start', expect.any(Function));
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:stop', expect.any(Function));
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:delete', expect.any(Function));
   });
-
-  test('loads workspaces from loadWorkspaces', () => {
-    expect(manager.loadWorkspaces).toHaveBeenCalled();
-    expect(manager.list()).toHaveLength(TEST_WORKSPACES.length);
-  });
 });
 
 describe('list', () => {
-  test('returns all loaded workspaces', () => {
-    const workspaces = manager.list();
-    expect(workspaces).toHaveLength(2);
-    expect(workspaces.map(w => w.id)).toEqual(['ws-1', 'ws-2']);
+  test('delegates to mockListWorkspaces', () => {
+    vi.mocked(mockListWorkspaces).mockReturnValue(structuredClone(TEST_SUMMARIES));
+
+    const result = manager.list();
+
+    expect(mockListWorkspaces).toHaveBeenCalled();
+    expect(result).toHaveLength(2);
+    expect(result.map(s => s.id)).toEqual(['ws-1', 'ws-2']);
+  });
+
+  test('returns summaries without status or detail fields', () => {
+    vi.mocked(mockListWorkspaces).mockReturnValue(structuredClone(TEST_SUMMARIES));
+
+    const summary = manager.list()[0]!;
+
+    expect(summary).toHaveProperty('id');
+    expect(summary).toHaveProperty('name');
+    expect(summary).toHaveProperty('agent');
+    expect(summary).toHaveProperty('resources');
+    expect(summary).not.toHaveProperty('state');
+    expect(summary).not.toHaveProperty('contextUsage');
+    expect(summary).not.toHaveProperty('stats');
+    expect(summary).not.toHaveProperty('fileAccess');
   });
 });
 
 describe('get', () => {
-  test('returns a workspace by id', () => {
+  test('delegates to mockGetWorkspaceDetail', () => {
+    vi.mocked(mockGetWorkspaceDetail).mockReturnValue(structuredClone(TEST_DETAIL));
+
     const result = manager.get('ws-1');
+
+    expect(mockGetWorkspaceDetail).toHaveBeenCalledWith('ws-1');
     expect(result.name).toBe('test-workspace-1');
-    expect(result.agent).toBe('claude');
+    expect(result.state).toBe('stopped');
+    expect(result.fileAccess).toBe('workspace');
+    expect(result.stats).toBeDefined();
   });
 
-  test('throws for unknown id', () => {
-    expect(() => manager.get('nonexistent-id')).toThrow('Agent workspace not found: nonexistent-id');
+  test('throws when workspace not found', () => {
+    vi.mocked(mockGetWorkspaceDetail).mockReturnValue(undefined);
+
+    expect(() => manager.get('bad-id')).toThrow('Agent workspace not found: bad-id');
+  });
+});
+
+describe('getStatus', () => {
+  test('delegates to mockGetWorkspaceStatus', () => {
+    vi.mocked(mockGetWorkspaceStatus).mockReturnValue(structuredClone(TEST_STATUS));
+
+    const result = manager.getStatus('ws-1');
+
+    expect(mockGetWorkspaceStatus).toHaveBeenCalledWith('ws-1');
+    expect(result.state).toBe('stopped');
+    expect(result.contextUsage).toEqual({ used: 0, total: 200_000 });
+  });
+
+  test('throws when workspace not found', () => {
+    vi.mocked(mockGetWorkspaceStatus).mockReturnValue(undefined);
+
+    expect(() => manager.getStatus('bad-id')).toThrow('Agent workspace not found: bad-id');
   });
 });
 
 describe('create', () => {
-  test('creates a workspace with provided options', () => {
-    const ws = manager.create({
+  test('delegates to mockCreateWorkspace with options', () => {
+    const mockResult: AgentWorkspaceInfo = {
+      ...TEST_SUMMARIES[0]!,
+      id: 'new-id',
+      name: 'new-workspace',
+      state: 'stopped',
+      contextUsage: { used: 0, total: 128_000 },
+      fileAccess: 'home',
+      stats: { messages: 0, toolCalls: 0, filesModified: 0, linesChanged: 0 },
+    };
+    vi.mocked(mockCreateWorkspace).mockReturnValue(structuredClone(mockResult));
+
+    const options = {
       name: 'new-workspace',
       description: 'Test description',
-      agent: 'goose',
-      model: 'custom-model',
+      agent: 'goose' as const,
       workingDirectory: '/tmp/test',
       skills: ['k8s'],
       mcpServers: ['github'],
-      fileAccess: 'home',
-    });
+      fileAccess: 'home' as const,
+    };
 
-    expect(ws.id).toBeDefined();
+    const ws = manager.create(options);
+
+    expect(mockCreateWorkspace).toHaveBeenCalledWith(options);
     expect(ws.name).toBe('new-workspace');
-    expect(ws.description).toBe('Test description');
-    expect(ws.agent).toBe('goose');
-    expect(ws.model).toBe('custom-model');
-    expect(ws.status).toBe('stopped');
-    expect(ws.workingDirectory).toBe('/tmp/test');
-    expect(ws.resources.skills).toEqual(['k8s']);
-    expect(ws.resources.mcpServers).toEqual(['github']);
-    expect(ws.fileAccess).toBe('home');
-    expect(ws.stats).toEqual({ messages: 0, toolCalls: 0, filesModified: 0, linesChanged: 0 });
-
-    expect(manager.get(ws.id)).toBeDefined();
-    expect(manager.list()).toHaveLength(3);
-  });
-
-  test('applies defaults for optional fields', () => {
-    const ws = manager.create({ name: 'minimal', agent: 'claude' });
-
-    expect(ws.description).toBe('');
-    expect(ws.model).toBe('claude-sonnet-4-20250514');
-    expect(ws.workingDirectory).toBe('.');
-    expect(ws.resources.skills).toEqual([]);
-    expect(ws.resources.mcpServers).toEqual([]);
-    expect(ws.fileAccess).toBe('workspace');
-  });
-
-  test('assigns correct default model per agent', () => {
-    const claude = manager.create({ name: 'c', agent: 'claude' });
-    const cursor = manager.create({ name: 'cu', agent: 'cursor' });
-    const goose = manager.create({ name: 'g', agent: 'goose' });
-
-    expect(claude.model).toBe('claude-sonnet-4-20250514');
-    expect(cursor.model).toBe('gpt-4o');
-    expect(goose.model).toBe('granite-3.1');
-  });
-
-  test('derives context window size from model', () => {
-    const claude = manager.create({ name: 'c', agent: 'claude' });
-    const cursor = manager.create({ name: 'cu', agent: 'cursor' });
-
-    expect(claude.contextUsage.total).toBe(200_000);
-    expect(cursor.contextUsage.total).toBe(128_000);
-  });
-
-  test('falls back to 128k for unknown models', () => {
-    const ws = manager.create({ name: 'custom', agent: 'claude', model: 'some-future-model' });
-    expect(ws.contextUsage.total).toBe(128_000);
+    expect(ws.state).toBe('stopped');
   });
 
   test('sends update event', () => {
+    vi.mocked(mockCreateWorkspace).mockReturnValue(structuredClone(TEST_DETAIL));
+
     manager.create({ name: 'test', agent: 'claude' });
     expect(apiSender.send).toHaveBeenCalledWith('agent-workspace:updated');
   });
 });
 
 describe('start', () => {
-  test('sets status to running', () => {
-    const result = manager.start('ws-1');
+  test('delegates to mockStartWorkspace and returns status', () => {
+    const runningStatus: AgentWorkspaceStatus = {
+      state: 'running',
+      contextUsage: { used: 0, total: 200_000 },
+      startedAt: '2026-03-01T00:00:00.000Z',
+    };
+    vi.mocked(mockStartWorkspace).mockReturnValue(structuredClone(runningStatus));
 
-    expect(result.status).toBe('running');
-    expect(result.startedAt).toBeDefined();
+    const status = manager.start('ws-1');
+
+    expect(mockStartWorkspace).toHaveBeenCalledWith('ws-1');
+    expect(status.state).toBe('running');
+    expect(status.startedAt).toBeDefined();
   });
 
   test('sends update event', () => {
+    vi.mocked(mockStartWorkspace).mockReturnValue(structuredClone(TEST_STATUS));
+
     manager.start('ws-1');
     expect(apiSender.send).toHaveBeenCalledWith('agent-workspace:updated');
   });
 
-  test('is idempotent when already running', () => {
-    manager.start('ws-2');
-    const originalStartedAt = manager.get('ws-2').startedAt;
-    vi.mocked(apiSender.send).mockClear();
+  test('throws when workspace not found', () => {
+    vi.mocked(mockStartWorkspace).mockReturnValue(undefined);
 
-    const result = manager.start('ws-2');
-
-    expect(result.status).toBe('running');
-    expect(result.startedAt).toBe(originalStartedAt);
-    expect(apiSender.send).not.toHaveBeenCalled();
-  });
-
-  test('throws for unknown id', () => {
     expect(() => manager.start('bad-id')).toThrow('Agent workspace not found: bad-id');
   });
 });
 
 describe('stop', () => {
-  test('sets status to stopped', () => {
-    const result = manager.stop('ws-2');
+  test('delegates to mockStopWorkspace and returns status', () => {
+    vi.mocked(mockStopWorkspace).mockReturnValue(structuredClone(TEST_STATUS));
 
-    expect(result.status).toBe('stopped');
+    const status = manager.stop('ws-1');
+
+    expect(mockStopWorkspace).toHaveBeenCalledWith('ws-1');
+    expect(status.state).toBe('stopped');
   });
 
   test('sends update event', () => {
-    manager.stop('ws-2');
+    vi.mocked(mockStopWorkspace).mockReturnValue(structuredClone(TEST_STATUS));
+
+    manager.stop('ws-1');
     expect(apiSender.send).toHaveBeenCalledWith('agent-workspace:updated');
   });
 
-  test('is idempotent when already stopped', () => {
-    vi.mocked(apiSender.send).mockClear();
+  test('throws when workspace not found', () => {
+    vi.mocked(mockStopWorkspace).mockReturnValue(undefined);
 
-    const result = manager.stop('ws-1');
-
-    expect(result.status).toBe('stopped');
-    expect(apiSender.send).not.toHaveBeenCalled();
-  });
-
-  test('throws for unknown id', () => {
     expect(() => manager.stop('bad-id')).toThrow('Agent workspace not found: bad-id');
   });
 });
 
 describe('delete', () => {
-  test('removes the workspace', () => {
+  test('delegates to mockDeleteWorkspace', () => {
+    vi.mocked(mockDeleteWorkspace).mockReturnValue(true);
+
     manager.delete('ws-1');
 
-    expect(manager.list()).toHaveLength(1);
-    expect(() => manager.get('ws-1')).toThrow();
+    expect(mockDeleteWorkspace).toHaveBeenCalledWith('ws-1');
   });
 
   test('sends update event', () => {
+    vi.mocked(mockDeleteWorkspace).mockReturnValue(true);
+
     manager.delete('ws-1');
     expect(apiSender.send).toHaveBeenCalledWith('agent-workspace:updated');
   });
 
-  test('throws for unknown id', () => {
-    expect(() => manager.delete('bad-id')).toThrow('Agent workspace not found: bad-id');
-  });
-});
+  test('throws when workspace not found', () => {
+    vi.mocked(mockDeleteWorkspace).mockReturnValue(false);
 
-describe('dispose', () => {
-  test('clears all workspaces', () => {
-    manager.dispose();
-    expect(manager.list()).toHaveLength(0);
+    expect(() => manager.delete('bad-id')).toThrow('Agent workspace not found: bad-id');
   });
 });

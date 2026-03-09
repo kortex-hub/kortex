@@ -16,18 +16,38 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { randomUUID } from 'node:crypto';
-
 import type { Disposable } from '@kortex-app/api';
 import { inject, injectable, preDestroy } from 'inversify';
 
-import { ApiSenderType, IPCHandle } from '/@/plugin/api.js';
-import type { AgentWorkspaceCreateOptions, AgentWorkspaceInfo } from '/@api/agent-workspace-info.js';
+import { IPCHandle } from '/@/plugin/api.js';
+import type {
+  AgentWorkspaceCreateOptions,
+  AgentWorkspaceInfo,
+  AgentWorkspaceStatus,
+  AgentWorkspaceSummary,
+} from '/@api/agent-workspace-info.js';
+import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 
+import {
+  mockCreateWorkspace,
+  mockDeleteWorkspace,
+  mockGetWorkspaceDetail,
+  mockGetWorkspaceStatus,
+  mockListWorkspaces,
+  mockStartWorkspace,
+  mockStopWorkspace,
+} from './agent-workspace-mock-data.js';
+
+/**
+ * Manages agent workspaces.
+ *
+ * Each public method delegates to a mock function that simulates
+ * a CLI call. When the real `kortex` CLI is ready, replace the
+ * mock imports with actual exec() + JSON.parse(stdout) calls
+ * following the same pattern as ContributionManager / Podman finders.
+ */
 @injectable()
 export class AgentWorkspaceManager implements Disposable {
-  #workspaces: Map<string, AgentWorkspaceInfo> = new Map();
-
   constructor(
     @inject(ApiSenderType)
     private apiSender: ApiSenderType,
@@ -35,161 +55,75 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly ipcHandle: IPCHandle,
   ) {}
 
-  loadWorkspaces(): AgentWorkspaceInfo[] {
-    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-
-    return [
-      {
-        id: randomUUID(),
-        name: 'api-refactor',
-        description: 'Refactor the REST API to use async handlers',
-        agent: 'claude',
-        model: 'claude-sonnet-4-20250514',
-        status: 'running',
-        workingDirectory: '/home/user/projects/backend',
-        contextUsage: { used: 45_000, total: 200_000 },
-        resources: {
-          skills: ['kubernetes', 'code-review'],
-          mcpServers: ['github', 'filesystem'],
-        },
-        fileAccess: 'workspace',
-        stats: { messages: 24, toolCalls: 18, filesModified: 7, linesChanged: 342 },
-        startedAt: tenMinutesAgo,
-        createdAt: tenMinutesAgo,
-      },
-      {
-        id: randomUUID(),
-        name: 'test-suite-fix',
-        description: 'Fix failing integration tests in CI pipeline',
-        agent: 'claude',
-        model: 'claude-sonnet-4-20250514',
-        status: 'stopped',
-        workingDirectory: '/home/user/projects/backend',
-        contextUsage: { used: 120_000, total: 200_000 },
-        resources: {
-          skills: ['kubernetes'],
-          mcpServers: ['github'],
-        },
-        fileAccess: 'workspace',
-        stats: { messages: 56, toolCalls: 43, filesModified: 12, linesChanged: 891 },
-        createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: randomUUID(),
-        name: 'frontend-redesign',
-        description: 'Redesign the dashboard components with new design system',
-        agent: 'cursor',
-        model: 'gpt-4o',
-        status: 'stopped',
-        workingDirectory: '/home/user/projects/frontend',
-        contextUsage: { used: 80_000, total: 128_000 },
-        resources: {
-          skills: ['podman'],
-          mcpServers: ['filesystem'],
-        },
-        fileAccess: 'home',
-        stats: { messages: 31, toolCalls: 22, filesModified: 15, linesChanged: 1_204 },
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-    ];
+  // Future: exec('kortex', ['workspace', 'list', '--format', 'json'])
+  list(): AgentWorkspaceSummary[] {
+    return mockListWorkspaces();
   }
 
-  list(): AgentWorkspaceInfo[] {
-    return Array.from(this.#workspaces.values());
-  }
-
+  // Future: exec('kortex', ['workspace', 'inspect', id, '--format', 'json'])
   get(id: string): AgentWorkspaceInfo {
-    const workspace = this.#workspaces.get(id);
+    const workspace = mockGetWorkspaceDetail(id);
     if (!workspace) {
       throw new Error(`Agent workspace not found: ${id}`);
     }
     return workspace;
   }
 
-  create(options: AgentWorkspaceCreateOptions): AgentWorkspaceInfo {
-    const model = options.model ?? this.getDefaultModel(options.agent);
-    const workspace: AgentWorkspaceInfo = {
-      id: randomUUID(),
-      name: options.name,
-      description: options.description ?? '',
-      agent: options.agent,
-      model,
-      status: 'stopped',
-      workingDirectory: options.workingDirectory ?? '.',
-      contextUsage: { used: 0, total: this.getContextWindowSize(model) },
-      resources: {
-        skills: options.skills ?? [],
-        mcpServers: options.mcpServers ?? [],
-      },
-      fileAccess: options.fileAccess ?? 'workspace',
-      customPaths: options.customPaths,
-      stats: { messages: 0, toolCalls: 0, filesModified: 0, linesChanged: 0 },
-      createdAt: new Date().toISOString(),
-    };
-
-    this.#workspaces.set(workspace.id, workspace);
-    this.apiSender.send('agent-workspace:updated');
-    return workspace;
-  }
-
-  start(id: string): AgentWorkspaceInfo {
-    const workspace = this.get(id);
-    if (workspace.status !== 'running') {
-      workspace.status = 'running';
-      workspace.startedAt = new Date().toISOString();
-      this.apiSender.send('agent-workspace:updated');
-    }
-    return workspace;
-  }
-
-  stop(id: string): AgentWorkspaceInfo {
-    const workspace = this.get(id);
-    if (workspace.status !== 'stopped') {
-      workspace.status = 'stopped';
-      this.apiSender.send('agent-workspace:updated');
-    }
-    return workspace;
-  }
-
-  delete(id: string): void {
-    if (!this.#workspaces.has(id)) {
+  // Future: exec('kortex', ['workspace', 'status', id, '--format', 'json'])
+  getStatus(id: string): AgentWorkspaceStatus {
+    const status = mockGetWorkspaceStatus(id);
+    if (!status) {
       throw new Error(`Agent workspace not found: ${id}`);
     }
-    this.#workspaces.delete(id);
+    return status;
+  }
+
+  // Future: exec('kortex', ['workspace', 'create', '--format', 'json', ...])
+  create(options: AgentWorkspaceCreateOptions): AgentWorkspaceInfo {
+    const workspace = mockCreateWorkspace(options);
     this.apiSender.send('agent-workspace:updated');
+    return workspace;
   }
 
-  private getDefaultModel(agent: AgentWorkspaceCreateOptions['agent']): string {
-    switch (agent) {
-      case 'claude':
-        return 'claude-sonnet-4-20250514';
-      case 'cursor':
-        return 'gpt-4o';
-      case 'goose':
-        return 'granite-3.1';
+  // Future: exec('kortex', ['workspace', 'start', id, '--format', 'json'])
+  start(id: string): AgentWorkspaceStatus {
+    const status = mockStartWorkspace(id);
+    if (!status) {
+      throw new Error(`Agent workspace not found: ${id}`);
     }
+    this.apiSender.send('agent-workspace:updated');
+    return status;
   }
 
-  private getContextWindowSize(model: string): number {
-    const contextWindows: Record<string, number> = {
-      'claude-sonnet-4-20250514': 200_000,
-      'gpt-4o': 128_000,
-      'granite-3.1': 128_000,
-    };
-    return contextWindows[model] ?? 128_000;
+  // Future: exec('kortex', ['workspace', 'stop', id, '--format', 'json'])
+  stop(id: string): AgentWorkspaceStatus {
+    const status = mockStopWorkspace(id);
+    if (!status) {
+      throw new Error(`Agent workspace not found: ${id}`);
+    }
+    this.apiSender.send('agent-workspace:updated');
+    return status;
+  }
+
+  // Future: exec('kortex', ['workspace', 'delete', id])
+  delete(id: string): void {
+    if (!mockDeleteWorkspace(id)) {
+      throw new Error(`Agent workspace not found: ${id}`);
+    }
+    this.apiSender.send('agent-workspace:updated');
   }
 
   init(): void {
-    for (const ws of this.loadWorkspaces()) {
-      this.#workspaces.set(ws.id, ws);
-    }
-
-    this.ipcHandle('agent-workspace:list', async (): Promise<AgentWorkspaceInfo[]> => {
+    this.ipcHandle('agent-workspace:list', async (): Promise<AgentWorkspaceSummary[]> => {
       return this.list();
     });
 
     this.ipcHandle('agent-workspace:get', async (_listener, id: string): Promise<AgentWorkspaceInfo> => {
       return this.get(id);
+    });
+
+    this.ipcHandle('agent-workspace:getStatus', async (_listener, id: string): Promise<AgentWorkspaceStatus> => {
+      return this.getStatus(id);
     });
 
     this.ipcHandle(
@@ -199,11 +133,11 @@ export class AgentWorkspaceManager implements Disposable {
       },
     );
 
-    this.ipcHandle('agent-workspace:start', async (_listener, id: string): Promise<AgentWorkspaceInfo> => {
+    this.ipcHandle('agent-workspace:start', async (_listener, id: string): Promise<AgentWorkspaceStatus> => {
       return this.start(id);
     });
 
-    this.ipcHandle('agent-workspace:stop', async (_listener, id: string): Promise<AgentWorkspaceInfo> => {
+    this.ipcHandle('agent-workspace:stop', async (_listener, id: string): Promise<AgentWorkspaceStatus> => {
       return this.stop(id);
     });
 
@@ -214,6 +148,6 @@ export class AgentWorkspaceManager implements Disposable {
 
   @preDestroy()
   dispose(): void {
-    this.#workspaces.clear();
+    // no-op for now; will clean up CLI process handles if needed
   }
 }

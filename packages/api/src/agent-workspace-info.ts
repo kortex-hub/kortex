@@ -17,37 +17,48 @@
  ***********************************************************************/
 
 export type AgentType = 'claude' | 'cursor' | 'goose';
-export type AgentWorkspaceStatus = 'running' | 'stopped' | 'error';
+export type AgentWorkspaceState = 'running' | 'stopped' | 'error';
 export type FileAccessLevel = 'workspace' | 'home' | 'custom' | 'full';
 
-export interface AgentWorkspaceInfo {
+/**
+ * Static workspace data displayed in each card of the list view.
+ *
+ * Required fields (`id`, `name`, `paths`) match the current CLI output.
+ * Optional fields will be populated as the CLI evolves.
+ */
+export interface AgentWorkspaceSummary {
   id: string;
   name: string;
-  description: string;
-  agent: AgentType;
-  model: string;
-  status: AgentWorkspaceStatus;
-  workingDirectory: string;
+  paths: {
+    source: string;
+    configuration: string;
+  };
+  description?: string;
+  agent?: AgentType;
+  model?: string;
+  resources?: {
+    skills: string[];
+    mcpServers: string[];
+  };
+  createdAt?: string;
+}
+
+/**
+ * Live-updating status: state and context/token usage.
+ * This data changes frequently and can be polled independently.
+ */
+export interface AgentWorkspaceStatus {
+  state: AgentWorkspaceState;
   contextUsage: {
     used: number;
     total: number;
   };
-  resources: {
-    skills: string[];
-    mcpServers: string[];
-  };
-  fileAccess: FileAccessLevel;
-  customPaths?: string[];
-  stats: {
-    messages: number;
-    toolCalls: number;
-    filesModified: number;
-    linesChanged: number;
-  };
   startedAt?: string;
-  createdAt: string;
 }
 
+/**
+ * Options for creating a new agent workspace.
+ */
 export interface AgentWorkspaceCreateOptions {
   name: string;
   description?: string;
@@ -58,4 +69,19 @@ export interface AgentWorkspaceCreateOptions {
   mcpServers?: string[];
   fileAccess?: FileAccessLevel;
   customPaths?: string[];
+}
+
+/**
+ * Full workspace detail combining summary, status, and detail-only fields.
+ * Used by the detail page.
+ */
+export interface AgentWorkspaceInfo extends AgentWorkspaceSummary, AgentWorkspaceStatus {
+  fileAccess?: FileAccessLevel;
+  customPaths?: string[];
+  stats?: {
+    messages: number;
+    toolCalls: number;
+    filesModified: number;
+    linesChanged: number;
+  };
 }

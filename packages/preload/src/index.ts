@@ -44,7 +44,12 @@ import type {
 import type { DynamicToolUIPart, UIMessageChunk } from 'ai';
 import { contextBridge, ipcRenderer } from 'electron';
 
-import type { AgentWorkspaceCreateOptions, AgentWorkspaceInfo } from '/@api/agent-workspace-info';
+import type {
+  AgentWorkspaceCreateOptions,
+  AgentWorkspaceInfo,
+  AgentWorkspaceStatus,
+  AgentWorkspaceSummary,
+} from '/@api/agent-workspace-info';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type';
 import type { AuthenticationProviderInfo } from '/@api/authentication/authentication';
 import type { DetectFlowFieldsParams, DetectFlowFieldsResult } from '/@api/chat/detect-flow-fields-schema.ts';
@@ -420,12 +425,16 @@ export function initExposure(): void {
   });
 
   // Agent Workspaces
-  contextBridge.exposeInMainWorld('listAgentWorkspaces', async (): Promise<AgentWorkspaceInfo[]> => {
+  contextBridge.exposeInMainWorld('listAgentWorkspaces', async (): Promise<AgentWorkspaceSummary[]> => {
     return ipcInvoke('agent-workspace:list');
   });
 
   contextBridge.exposeInMainWorld('getAgentWorkspace', async (id: string): Promise<AgentWorkspaceInfo> => {
     return ipcInvoke('agent-workspace:get', id);
+  });
+
+  contextBridge.exposeInMainWorld('getAgentWorkspaceStatus', async (id: string): Promise<AgentWorkspaceStatus> => {
+    return ipcInvoke('agent-workspace:getStatus', id);
   });
 
   contextBridge.exposeInMainWorld(
@@ -435,11 +444,11 @@ export function initExposure(): void {
     },
   );
 
-  contextBridge.exposeInMainWorld('startAgentWorkspace', async (id: string): Promise<AgentWorkspaceInfo> => {
+  contextBridge.exposeInMainWorld('startAgentWorkspace', async (id: string): Promise<AgentWorkspaceStatus> => {
     return ipcInvoke('agent-workspace:start', id);
   });
 
-  contextBridge.exposeInMainWorld('stopAgentWorkspace', async (id: string): Promise<AgentWorkspaceInfo> => {
+  contextBridge.exposeInMainWorld('stopAgentWorkspace', async (id: string): Promise<AgentWorkspaceStatus> => {
     return ipcInvoke('agent-workspace:stop', id);
   });
 
