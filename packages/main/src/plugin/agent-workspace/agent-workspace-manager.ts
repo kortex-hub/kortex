@@ -31,6 +31,7 @@ import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import {
   mockCreateWorkspace,
   mockDeleteWorkspace,
+  mockGetSupportedAgents,
   mockGetWorkspaceDetail,
   mockGetWorkspaceStatus,
   mockListWorkspaces,
@@ -54,6 +55,11 @@ export class AgentWorkspaceManager implements Disposable {
     @inject(IPCHandle)
     private readonly ipcHandle: IPCHandle,
   ) {}
+
+  // Future: exec('kortex', ['workspace', 'supported-agents', '--format', 'json'])
+  getSupportedAgents(): string[] {
+    return mockGetSupportedAgents();
+  }
 
   // Future: exec('kortex', ['workspace', 'list', '--format', 'json'])
   list(): AgentWorkspaceSummary[] {
@@ -114,6 +120,10 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   init(): void {
+    this.ipcHandle('agent-workspace:supportedAgents', async (): Promise<string[]> => {
+      return this.getSupportedAgents();
+    });
+
     this.ipcHandle('agent-workspace:list', async (): Promise<AgentWorkspaceSummary[]> => {
       return this.list();
     });

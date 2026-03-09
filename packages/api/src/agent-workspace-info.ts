@@ -18,31 +18,15 @@
 
 import type { components } from '@kortex-hub/kortex-cli-api';
 
-export type AgentType = 'claude' | 'cursor' | 'goose';
 export type AgentWorkspaceState = 'running' | 'stopped' | 'error';
 export type FileAccessLevel = 'workspace' | 'home' | 'custom' | 'full';
 
 /**
- * CLI workspace type from the `kortex workspace list` command.
+ * Workspace data from the `kortex workspace list` command.
+ * Matches the CLI contract exactly — fields will be added here
+ * as the CLI evolves and publishes them in @kortex-hub/kortex-cli-api.
  */
-export type CliWorkspace = components['schemas']['Workspace'];
-
-/**
- * Static workspace data displayed in each card of the list view.
- *
- * Extends the CLI `Workspace` schema with optional fields
- * that will be populated as the CLI evolves.
- */
-export interface AgentWorkspaceSummary extends CliWorkspace {
-  description?: string;
-  agent?: AgentType;
-  model?: string;
-  resources?: {
-    skills: string[];
-    mcpServers: string[];
-  };
-  createdAt?: string;
-}
+export type AgentWorkspaceSummary = components['schemas']['Workspace'];
 
 /**
  * Live-updating status: state and context/token usage.
@@ -63,7 +47,7 @@ export interface AgentWorkspaceStatus {
 export interface AgentWorkspaceCreateOptions {
   name: string;
   description?: string;
-  agent: AgentType;
+  agent: string;
   model?: string;
   workingDirectory?: string;
   skills?: string[];

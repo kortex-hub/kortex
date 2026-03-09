@@ -26,6 +26,7 @@ import { AgentWorkspaceManager } from './agent-workspace-manager.js';
 import {
   mockCreateWorkspace,
   mockDeleteWorkspace,
+  mockGetSupportedAgents,
   mockGetWorkspaceDetail,
   mockGetWorkspaceStatus,
   mockListWorkspaces,
@@ -34,6 +35,7 @@ import {
 } from './agent-workspace-mock-data.js';
 
 vi.mock('./agent-workspace-mock-data.js', () => ({
+  mockGetSupportedAgents: vi.fn(),
   mockListWorkspaces: vi.fn(),
   mockGetWorkspaceStatus: vi.fn(),
   mockGetWorkspaceDetail: vi.fn(),
@@ -48,21 +50,11 @@ const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
     id: 'ws-1',
     name: 'test-workspace-1',
     paths: { source: '/tmp/ws1', configuration: '/tmp/ws1/.kortex.yaml' },
-    description: 'First test workspace',
-    agent: 'claude',
-    model: 'claude-sonnet-4-20250514',
-    resources: { skills: ['kubernetes'], mcpServers: ['github'] },
-    createdAt: '2026-03-01T00:00:00.000Z',
   },
   {
     id: 'ws-2',
     name: 'test-workspace-2',
     paths: { source: '/tmp/ws2', configuration: '/tmp/ws2/.kortex.yaml' },
-    description: 'Second test workspace',
-    agent: 'cursor',
-    model: 'gpt-4o',
-    resources: { skills: [], mcpServers: ['filesystem'] },
-    createdAt: '2026-03-01T00:00:00.000Z',
   },
 ];
 
@@ -96,6 +88,7 @@ beforeEach(() => {
 
 describe('init', () => {
   test('registers IPC handlers', () => {
+    expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:supportedAgents', expect.any(Function));
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:list', expect.any(Function));
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:get', expect.any(Function));
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:getStatus', expect.any(Function));
@@ -103,6 +96,17 @@ describe('init', () => {
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:start', expect.any(Function));
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:stop', expect.any(Function));
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:delete', expect.any(Function));
+  });
+});
+
+describe('getSupportedAgents', () => {
+  test('delegates to mockGetSupportedAgents', () => {
+    vi.mocked(mockGetSupportedAgents).mockReturnValue(['claude', 'cursor', 'goose']);
+
+    const agents = manager.getSupportedAgents();
+
+    expect(mockGetSupportedAgents).toHaveBeenCalled();
+    expect(agents).toEqual(['claude', 'cursor', 'goose']);
   });
 });
 
@@ -117,15 +121,14 @@ describe('list', () => {
     expect(result.map(s => s.id)).toEqual(['ws-1', 'ws-2']);
   });
 
-  test('returns summaries without status or detail fields', () => {
+  test('returns summaries with only CLI fields', () => {
     vi.mocked(mockListWorkspaces).mockReturnValue(structuredClone(TEST_SUMMARIES));
 
     const summary = manager.list()[0]!;
 
     expect(summary).toHaveProperty('id');
     expect(summary).toHaveProperty('name');
-    expect(summary).toHaveProperty('agent');
-    expect(summary).toHaveProperty('resources');
+    expect(summary).toHaveProperty('paths');
     expect(summary).not.toHaveProperty('state');
     expect(summary).not.toHaveProperty('contextUsage');
     expect(summary).not.toHaveProperty('stats');
@@ -174,9 +177,9 @@ describe('getStatus', () => {
 describe('create', () => {
   test('delegates to mockCreateWorkspace with options', () => {
     const mockResult: AgentWorkspaceInfo = {
-      ...TEST_SUMMARIES[0]!,
       id: 'new-id',
       name: 'new-workspace',
+      paths: { source: '/tmp/test', configuration: '/home/user/.config/kortex/workspaces/new-workspace.yaml' },
       state: 'stopped',
       contextUsage: { used: 0, total: 128_000 },
       fileAccess: 'home',
@@ -186,11 +189,8 @@ describe('create', () => {
 
     const options = {
       name: 'new-workspace',
-      description: 'Test description',
-      agent: 'goose' as const,
+      agent: 'goose',
       workingDirectory: '/tmp/test',
-      skills: ['k8s'],
-      mcpServers: ['github'],
       fileAccess: 'home' as const,
     };
 

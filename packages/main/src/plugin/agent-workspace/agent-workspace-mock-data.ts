@@ -41,14 +41,6 @@ const SUMMARIES: AgentWorkspaceSummary[] = [
       source: '/home/user/projects/backend',
       configuration: '/home/user/.config/kortex/workspaces/api-refactor.yaml',
     },
-    description: 'Refactor the REST API to use async handlers',
-    agent: 'claude',
-    model: 'claude-sonnet-4-20250514',
-    resources: {
-      skills: ['kubernetes', 'code-review'],
-      mcpServers: ['github', 'filesystem'],
-    },
-    createdAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
   },
   {
     id: 'mock-ws-test-suite',
@@ -57,14 +49,6 @@ const SUMMARIES: AgentWorkspaceSummary[] = [
       source: '/home/user/projects/backend',
       configuration: '/home/user/.config/kortex/workspaces/test-suite-fix.yaml',
     },
-    description: 'Fix failing integration tests in CI pipeline',
-    agent: 'claude',
-    model: 'claude-sonnet-4-20250514',
-    resources: {
-      skills: ['kubernetes'],
-      mcpServers: ['github'],
-    },
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: 'mock-ws-frontend',
@@ -73,14 +57,6 @@ const SUMMARIES: AgentWorkspaceSummary[] = [
       source: '/home/user/projects/frontend',
       configuration: '/home/user/.config/kortex/workspaces/frontend-redesign.yaml',
     },
-    description: 'Redesign the dashboard components with new design system',
-    agent: 'cursor',
-    model: 'gpt-4o',
-    resources: {
-      skills: ['podman'],
-      mcpServers: ['filesystem'],
-    },
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
   },
 ];
 
@@ -127,6 +103,12 @@ const DETAIL_FIELDS: Record<string, DetailFields> = {
 };
 
 // ── Mock CLI functions ──────────────────────────────────────────────
+// Future: exec('kortex', ['workspace', 'supported-agents', '--format', 'json'])
+
+export function mockGetSupportedAgents(): string[] {
+  return ['claude', 'cursor', 'goose'];
+}
+
 // Future: exec('kortex', ['workspace', 'list', '--format', 'json'])
 
 export function mockListWorkspaces(): AgentWorkspaceSummary[] {
@@ -186,7 +168,6 @@ export function mockDeleteWorkspace(id: string): boolean {
 // Future: exec('kortex', ['workspace', 'create', '--format', 'json', ...])
 export function mockCreateWorkspace(options: AgentWorkspaceCreateOptions): AgentWorkspaceInfo {
   const id = crypto.randomUUID();
-  const now = new Date().toISOString();
   const source = options.workingDirectory ?? '.';
 
   const summary: AgentWorkspaceSummary = {
@@ -196,14 +177,6 @@ export function mockCreateWorkspace(options: AgentWorkspaceCreateOptions): Agent
       source,
       configuration: `/home/user/.config/kortex/workspaces/${options.name}.yaml`,
     },
-    description: options.description,
-    agent: options.agent,
-    model: options.model,
-    resources: {
-      skills: options.skills ?? [],
-      mcpServers: options.mcpServers ?? [],
-    },
-    createdAt: now,
   };
 
   const status: AgentWorkspaceStatus = {

@@ -425,6 +425,10 @@ export function initExposure(): void {
   });
 
   // Agent Workspaces
+  contextBridge.exposeInMainWorld('getSupportedAgents', async (): Promise<string[]> => {
+    return ipcInvoke('agent-workspace:supportedAgents');
+  });
+
   contextBridge.exposeInMainWorld('listAgentWorkspaces', async (): Promise<AgentWorkspaceSummary[]> => {
     return ipcInvoke('agent-workspace:list');
   });
