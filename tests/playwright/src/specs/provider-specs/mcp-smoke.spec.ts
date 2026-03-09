@@ -15,17 +15,11 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-
-import * as os from 'node:os';
-
 import { expect, test } from '../../fixtures/provider-fixtures';
 import { MCP_SERVERS } from '../../model/core/types';
 import { waitForNavigationReady } from '../../utils/app-ready';
 
-const isMacOS26 = process.platform === 'darwin' && os.release().startsWith('25');
 const isCI = !!process.env.CI;
-
-test.skip(isMacOS26 && isCI, 'Skipping on macOS 26 gha runners due to stability issues');
 
 const MCP_REGISTRY_EXAMPLE = 'MCP Registry example';
 const MCP_REGISTRY_URL = 'https://registry.modelcontextprotocol.io';
@@ -70,13 +64,11 @@ test.describe('MCP Registry Management', { tag: '@smoke' }, () => {
     mcpSetup: _mcpSetup,
     mcpPage,
   }) => {
-    const isLinux = process.platform === 'linux';
     const hasGithubToken = !!process.env[MCP_SERVERS.github.envVarName];
 
     // Skip conditions - safeStorage has issues on Linux
     const skipConditions: Array<{ condition: boolean; reason: string }> = [
       { condition: !hasGithubToken, reason: `${MCP_SERVERS.github.envVarName} environment variable is not set` },
-      { condition: isLinux, reason: 'safeStorage issues on Linux' },
     ];
 
     for (const { condition, reason } of skipConditions) {

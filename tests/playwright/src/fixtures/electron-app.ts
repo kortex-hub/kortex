@@ -198,17 +198,22 @@ function createLaunchConfig(): Parameters<typeof electron.launch>[0] {
 
   setupTestConfigDir(electronEnv);
 
+  const args = ['--no-sandbox'];
+  if (process.env.CI) {
+    args.push('--use-mock-keychain');
+  }
+
   if (isProductionMode) {
     return {
       executablePath: process.env.KORTEX_BINARY,
-      args: ['--no-sandbox'],
+      args,
       env: electronEnv,
       recordVideo,
     };
   }
 
   return {
-    args: ['.', '--no-sandbox'],
+    args: ['.', ...args],
     env: {
       ...electronEnv,
       ELECTRON_IS_DEV: '1',
