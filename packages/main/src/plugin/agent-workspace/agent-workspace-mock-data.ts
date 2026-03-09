@@ -213,6 +213,7 @@ export function mockCreateWorkspace(options: AgentWorkspaceCreateOptions): Agent
 
   const detail: DetailFields = {
     fileAccess: options.fileAccess ?? 'workspace',
+    customPaths: options.customPaths,
     stats: { messages: 0, toolCalls: 0, filesModified: 0, linesChanged: 0 },
   };
 
@@ -220,5 +221,5 @@ export function mockCreateWorkspace(options: AgentWorkspaceCreateOptions): Agent
   STATUSES[id] = status;
   DETAIL_FIELDS[id] = detail;
 
-  return structuredClone({ ...summary, ...status, ...detail, customPaths: options.customPaths });
+  return structuredClone({ ...summary, ...status, ...detail });
 }

@@ -16,23 +16,24 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import type { components } from '@kortex-hub/kortex-cli-api';
+
 export type AgentType = 'claude' | 'cursor' | 'goose';
 export type AgentWorkspaceState = 'running' | 'stopped' | 'error';
 export type FileAccessLevel = 'workspace' | 'home' | 'custom' | 'full';
 
 /**
+ * CLI workspace type from the `kortex workspace list` command.
+ */
+export type CliWorkspace = components['schemas']['Workspace'];
+
+/**
  * Static workspace data displayed in each card of the list view.
  *
- * Required fields (`id`, `name`, `paths`) match the current CLI output.
- * Optional fields will be populated as the CLI evolves.
+ * Extends the CLI `Workspace` schema with optional fields
+ * that will be populated as the CLI evolves.
  */
-export interface AgentWorkspaceSummary {
-  id: string;
-  name: string;
-  paths: {
-    source: string;
-    configuration: string;
-  };
+export interface AgentWorkspaceSummary extends CliWorkspace {
   description?: string;
   agent?: AgentType;
   model?: string;

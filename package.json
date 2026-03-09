@@ -154,6 +154,7 @@
     "@types/semver": "^7.7.1",
     "@types/stream-json": "^1.7.8",
     "@types/winreg": "^1.2.36",
+    "@kortex-hub/kortex-cli-api": "^0.1.3",
     "adm-zip": "^0.5.16",
     "ai": "^6.0.116",
     "bcrypt-ts": "^8.0.1",
