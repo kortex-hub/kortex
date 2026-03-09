@@ -269,7 +269,7 @@ test('parseSkillFile should throw when name contains uppercase or invalid charac
   const skillManager = createSkillManager();
 
   await expect(skillManager.parseSkillFile('/test/SKILL.md')).rejects.toThrow(
-    `'name' must contain only lowercase letters, numbers, hyphens, and colons`,
+    `'name' must contain only lowercase letters, numbers, and hyphens`,
   );
 });
 
@@ -287,7 +287,7 @@ test('parseSkillFile should throw when name contains XML tags', async () => {
   const skillManager = createSkillManager();
 
   await expect(skillManager.parseSkillFile('/test/SKILL.md')).rejects.toThrow(
-    `'name' must contain only lowercase letters, numbers, hyphens, and colons`,
+    `'name' must contain only lowercase letters, numbers, and hyphens`,
   );
 });
 
@@ -556,7 +556,15 @@ test('createSkill should throw on invalid name', async () => {
 
   await expect(
     skillManager.createSkill({ name: 'Invalid_Name', description: 'Bad name', content: '# Bad' }),
-  ).rejects.toThrow(`'name' must contain only lowercase letters, numbers, hyphens, and colons`);
+  ).rejects.toThrow(`'name' must contain only lowercase letters, numbers, and hyphens`);
+});
+
+test('createSkill should reject name containing colons', async () => {
+  const skillManager = createSkillManager();
+
+  await expect(
+    skillManager.createSkill({ name: 'team:my-skill', description: 'Colons are invalid', content: '# Bad' }),
+  ).rejects.toThrow(`'name' must contain only lowercase letters, numbers, and hyphens`);
 });
 
 test('saveSkillsToConfig should write only enabled skill names', async () => {

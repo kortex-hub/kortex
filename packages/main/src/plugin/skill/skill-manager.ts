@@ -22,7 +22,7 @@ import { join, resolve } from 'node:path';
 
 import type { Configuration } from '@kortex-app/api';
 import { inject, injectable, preDestroy } from 'inversify';
-import { load } from 'js-yaml';
+import { dump, load } from 'js-yaml';
 
 import { IPCHandle } from '/@/plugin/api.js';
 import { Directories } from '/@/plugin/directories.js';
@@ -49,9 +49,9 @@ export class SkillManager {
   private disposables: IDisposable[] = [];
 
   constructor(
-    @inject(ApiSenderType) private apiSender: ApiSenderType,
-    @inject(IConfigurationRegistry) private configurationRegistry: IConfigurationRegistry,
-    @inject(Directories) private directories: Directories,
+    @inject(ApiSenderType) private readonly apiSender: ApiSenderType,
+    @inject(IConfigurationRegistry) private readonly configurationRegistry: IConfigurationRegistry,
+    @inject(Directories) private readonly directories: Directories,
     @inject(IPCHandle) private readonly ipcHandle: IPCHandle,
   ) {}
 
@@ -152,8 +152,8 @@ export class SkillManager {
     if (metadata.name.length > 64) {
       throw new Error(`'name' exceeds 64 characters in ${filePath}`);
     }
-    if (!/^[a-z0-9:-]+$/.test(metadata.name)) {
-      throw new Error(`'name' must contain only lowercase letters, numbers, hyphens, and colons in ${filePath}`);
+    if (!/^[a-z0-9-]+$/.test(metadata.name)) {
+      throw new Error(`'name' must contain only lowercase letters, numbers, and hyphens in ${filePath}`);
     }
     if (RESERVED_WORDS.some(word => metadata.name.includes(word))) {
       throw new Error(`'name' contains a reserved word in ${filePath}`);
@@ -238,7 +238,8 @@ export class SkillManager {
 
     await mkdir(skillDir, { recursive: true });
 
-    const fileContent = `---\nname: ${metadata.name}\ndescription: ${metadata.description}\n---\n\n${options.content}`;
+    const frontmatter = dump({ name: metadata.name, description: metadata.description }).trimEnd();
+    const fileContent = `---\n${frontmatter}\n---\n\n${options.content}`;
     await writeFile(join(skillDir, SKILL_FILE_NAME), fileContent, 'utf-8');
 
     const skill: SkillInfo = {
