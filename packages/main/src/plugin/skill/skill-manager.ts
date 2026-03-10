@@ -184,7 +184,7 @@ export class SkillManager {
    * and the reference is persisted to config.
    */
   async registerSkill(folderPath: string): Promise<SkillInfo> {
-    const resolvedPath = resolve(homedir(), folderPath);
+    const resolvedPath = resolve(folderPath);
     const skillFilePath = join(resolvedPath, SKILL_FILE_NAME);
 
     if (!existsSync(skillFilePath)) {
