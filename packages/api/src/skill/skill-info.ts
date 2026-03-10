@@ -16,23 +16,21 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-export interface SkillInfo extends SkillMetadata {
-  content: string;
-  path: string;
-  enabled: boolean;
-}
-
 export interface SkillMetadata {
   name: string;
   description: string;
 }
 
-export interface SkillCreateOptions {
-  name: string;
-  description: string;
+export interface SkillInfo extends SkillMetadata {
+  path: string;
+  enabled: boolean;
+}
+
+export interface SkillCreateOptions extends SkillMetadata {
   content: string;
 }
 
 export const SKILL_SECTION = 'skills';
 export const SKILL_ENABLED = 'enabled';
+export const SKILL_REGISTERED = 'registered';
 export const SKILL_FILE_NAME = 'SKILL.md';

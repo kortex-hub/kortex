@@ -17,8 +17,8 @@
  ***********************************************************************/
 
 import { existsSync } from 'node:fs';
-import { cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
@@ -26,12 +26,13 @@ import type { IPCHandle } from '/@/plugin/api.js';
 import type { Directories } from '/@/plugin/directories.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IConfigurationRegistry } from '/@api/configuration/models.js';
-import { SKILL_ENABLED, SKILL_FILE_NAME, type SkillInfo } from '/@api/skill/skill-info.js';
+import { SKILL_ENABLED, SKILL_FILE_NAME, SKILL_REGISTERED, type SkillInfo } from '/@api/skill/skill-info.js';
 
 import { SkillManager } from './skill-manager.js';
 
 vi.mock('node:fs');
 vi.mock('node:fs/promises');
+vi.mock('node:os', () => ({ homedir: (): string => '/test-home' }));
 
 const updateMock = vi.fn().mockResolvedValue(undefined);
 const getMock = vi.fn();
@@ -50,7 +51,8 @@ const apiSender: ApiSenderType = {
   receive: vi.fn(),
 };
 
-const SKILLS_DIR = resolve('/test/skills');
+const TEST_HOME = '/test-home';
+const SKILLS_DIR = join(TEST_HOME, 'skills');
 
 const directories = {
   getSkillsDirectory: vi.fn().mockReturnValue(SKILLS_DIR),
@@ -135,7 +137,7 @@ afterEach(() => {
   console.warn = originalConsoleWarn;
 });
 
-test('init should register configuration section with only skills.enabled', async () => {
+test('init should register configuration section with skills.enabled and skills.registered', async () => {
   vi.mocked(existsSync).mockReturnValue(false);
   const skillManager = createSkillManager();
   await skillManager.init();
@@ -146,6 +148,10 @@ test('init should register configuration section with only skills.enabled', asyn
       title: 'Skills',
       properties: {
         'skills.enabled': expect.objectContaining({
+          type: 'array',
+          hidden: true,
+        }),
+        'skills.registered': expect.objectContaining({
           type: 'array',
           hidden: true,
         }),
@@ -226,7 +232,6 @@ test('parseSkillFile should extract name and description from valid SKILL.md', a
   expect(result).toEqual({
     name: 'my-test-skill',
     description: 'A test skill for unit testing',
-    content: '# My Test Skill\n\nSome instructions here.',
   });
 });
 
@@ -264,7 +269,7 @@ test('parseSkillFile should throw when name exceeds 64 characters', async () => 
 });
 
 test('parseSkillFile should throw when name contains uppercase or invalid characters', async () => {
-  vi.mocked(readFile).mockResolvedValue(`---\nname: My_Skill\ndescription: Valid\n---\n`);
+  vi.mocked(readFile).mockResolvedValue('---\nname: My_Skill\ndescription: Valid\n---\n');
 
   const skillManager = createSkillManager();
 
@@ -274,7 +279,7 @@ test('parseSkillFile should throw when name contains uppercase or invalid charac
 });
 
 test('parseSkillFile should throw when name contains reserved word', async () => {
-  vi.mocked(readFile).mockResolvedValue(`---\nname: my-claude-skill\ndescription: Valid\n---\n`);
+  vi.mocked(readFile).mockResolvedValue('---\nname: my-claude-skill\ndescription: Valid\n---\n');
 
   const skillManager = createSkillManager();
 
@@ -312,33 +317,20 @@ test('parseSkillFile should throw when description contains XML tags', async () 
   );
 });
 
-test('registerSkill should register a skill from a valid folder and copy to skills directory', async () => {
+test('registerSkill should reference the original folder without copying', async () => {
   vi.mocked(existsSync).mockImplementation(p => String(p).endsWith(SKILL_FILE_NAME));
   vi.mocked(readFile).mockResolvedValue(validSkillMd);
-  vi.mocked(cp).mockResolvedValue(undefined);
 
   const skillManager = createSkillManager();
   await skillManager.init();
-  const skill = await skillManager.registerSkill(resolve('/my/skill/folder'));
+  const skill = await skillManager.registerSkill('/my/skill/folder');
 
   expect(skill.name).toBe('my-test-skill');
   expect(skill.description).toBe('A test skill for unit testing');
-  expect(skill.path).toBe(join(SKILLS_DIR, 'my-test-skill'));
+  expect(skill.path).toBe('/my/skill/folder');
   expect(skill.enabled).toBe(true);
-  expect(cp).toHaveBeenCalledWith(resolve('/my/skill/folder'), join(SKILLS_DIR, 'my-test-skill'), { recursive: true });
   expect(apiSender.send).toHaveBeenCalledWith('skill-manager-update');
-  expect(updateMock).toHaveBeenCalled();
-});
-
-test('registerSkill should skip copy when source is already in skills directory', async () => {
-  vi.mocked(existsSync).mockReturnValue(true);
-  vi.mocked(readFile).mockResolvedValue(validSkillMd);
-
-  const skillManager = createSkillManager();
-  const skill = await skillManager.registerSkill(join(SKILLS_DIR, 'my-test-skill'));
-
-  expect(skill.path).toBe(join(SKILLS_DIR, 'my-test-skill'));
-  expect(cp).not.toHaveBeenCalled();
+  expect(updateMock).toHaveBeenCalledWith(SKILL_REGISTERED, ['/my/skill/folder']);
 });
 
 test('registerSkill should throw when SKILL.md not found', async () => {
@@ -346,18 +338,17 @@ test('registerSkill should throw when SKILL.md not found', async () => {
 
   const skillManager = createSkillManager();
 
-  await expect(skillManager.registerSkill(resolve('/missing/folder'))).rejects.toThrow('SKILL.md not found');
+  await expect(skillManager.registerSkill('/missing/folder')).rejects.toThrow('SKILL.md not found');
 });
 
 test('registerSkill should throw on duplicate name', async () => {
   vi.mocked(existsSync).mockImplementation(p => String(p).endsWith(SKILL_FILE_NAME));
   vi.mocked(readFile).mockResolvedValue(validSkillMd);
-  vi.mocked(cp).mockResolvedValue(undefined);
 
   const skillManager = createSkillManager();
-  await skillManager.registerSkill(resolve('/first/folder'));
+  await skillManager.registerSkill('/first/folder');
 
-  await expect(skillManager.registerSkill(resolve('/second/folder'))).rejects.toThrow(
+  await expect(skillManager.registerSkill('/second/folder')).rejects.toThrow(
     `Skill with name 'my-test-skill' already registered`,
   );
 });
@@ -412,7 +403,7 @@ test('enableSkill should throw when skill name not found', () => {
   expect(skillManager.enableSkill.bind(skillManager, 'nonexistent')).toThrow('Skill not found with name');
 });
 
-test('unregisterSkill should remove skill and delete folder from disk', async () => {
+test('unregisterSkill should delete folder for managed skills', async () => {
   vi.mocked(existsSync).mockReturnValue(true);
   vi.mocked(readFile).mockResolvedValue(validSkillMd);
   vi.mocked(rm).mockResolvedValue(undefined);
@@ -429,6 +420,23 @@ test('unregisterSkill should remove skill and delete folder from disk', async ()
   expect(rm).toHaveBeenCalledWith(skill.path, { recursive: true, force: true });
   expect(apiSender.send).toHaveBeenCalledWith('skill-manager-update');
   expect(updateMock).toHaveBeenCalled();
+});
+
+test('unregisterSkill should not delete folder for external skills', async () => {
+  vi.mocked(existsSync).mockImplementation(p => String(p).endsWith(SKILL_FILE_NAME));
+  vi.mocked(readFile).mockResolvedValue(validSkillMd);
+
+  const skillManager = createSkillManager();
+  await skillManager.init();
+  await skillManager.registerSkill('/external/skill/folder');
+  vi.mocked(apiSender.send).mockClear();
+  updateMock.mockClear();
+
+  await skillManager.unregisterSkill('my-test-skill');
+
+  expect(skillManager.listSkills()).toHaveLength(0);
+  expect(rm).not.toHaveBeenCalled();
+  expect(updateMock).toHaveBeenCalledWith(SKILL_REGISTERED, []);
 });
 
 test('unregisterSkill should throw when skill name not found', async () => {
@@ -460,15 +468,14 @@ test('getSkillContent should return the SKILL.md content for a registered skill'
   vi.mocked(existsSync).mockReturnValue(true);
   vi.mocked(readFile).mockResolvedValue(validSkillMd);
 
-  const folderPath = join(SKILLS_DIR, 'my-test-skill');
   const skillManager = createSkillManager();
-  await skillManager.registerSkill(folderPath);
+  const skill = await skillManager.registerSkill(join(SKILLS_DIR, 'my-test-skill'));
 
   vi.mocked(readFile).mockResolvedValue('full markdown content');
 
   const content = await skillManager.getSkillContent('my-test-skill');
   expect(content).toBe('full markdown content');
-  expect(readFile).toHaveBeenCalledWith(join(folderPath, 'SKILL.md'), 'utf-8');
+  expect(readFile).toHaveBeenCalledWith(join(skill.path, 'SKILL.md'), 'utf-8');
 });
 
 test('getSkillContent should throw when skill name not found', async () => {
@@ -481,9 +488,8 @@ test('listSkillFolderContent should return folder entries for a registered skill
   vi.mocked(existsSync).mockReturnValue(true);
   vi.mocked(readFile).mockResolvedValue(validSkillMd);
 
-  const folderPath = join(SKILLS_DIR, 'my-test-skill');
   const skillManager = createSkillManager();
-  await skillManager.registerSkill(folderPath);
+  const skill = await skillManager.registerSkill(join(SKILLS_DIR, 'my-test-skill'));
 
   vi.mocked(readdir).mockResolvedValue(['SKILL.md', 'utils.ts', 'templates'] as unknown as Awaited<
     ReturnType<typeof readdir>
@@ -491,7 +497,7 @@ test('listSkillFolderContent should return folder entries for a registered skill
 
   const entries = await skillManager.listSkillFolderContent('my-test-skill');
   expect(entries).toEqual(['SKILL.md', 'utils.ts', 'templates']);
-  expect(readdir).toHaveBeenCalledWith(folderPath);
+  expect(readdir).toHaveBeenCalledWith(skill.path);
 });
 
 test('listSkillFolderContent should throw when skill name not found', async () => {
@@ -516,7 +522,6 @@ test('createSkill should create a SKILL.md and register the skill', async () => 
   const expectedDir = join(SKILLS_DIR, 'new-skill');
   expect(skill.name).toBe('new-skill');
   expect(skill.description).toBe('A new skill');
-  expect(skill.content).toBe('# New Skill\n\nInstructions here.');
   expect(skill.path).toBe(expectedDir);
   expect(skill.enabled).toBe(true);
   expect(mkdir).toHaveBeenCalledWith(expectedDir, { recursive: true });

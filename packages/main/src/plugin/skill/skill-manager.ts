@@ -17,7 +17,8 @@
  ***********************************************************************/
 
 import { existsSync } from 'node:fs';
-import { cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 import type { Configuration } from '@kortex-app/api';
@@ -33,6 +34,7 @@ import type { IDisposable } from '/@api/disposable.js';
 import {
   SKILL_ENABLED,
   SKILL_FILE_NAME,
+  SKILL_REGISTERED,
   SKILL_SECTION,
   type SkillCreateOptions,
   type SkillInfo,
@@ -70,12 +72,17 @@ export class SkillManager {
           type: 'array',
           hidden: true,
         },
+        [`${SKILL_SECTION}.${SKILL_REGISTERED}`]: {
+          description: 'Registered external skill paths',
+          type: 'array',
+          hidden: true,
+        },
       },
     };
     this.disposables.push(this.configurationRegistry.registerConfigurations([skillsConfiguration]));
     this.configuration = this.configurationRegistry.getConfiguration(SKILL_SECTION);
 
-    await this.discoverSkillsFromDirectory();
+    await this.discoverSkills();
 
     this.ipcHandle('skill-manager:listSkills', async (): Promise<SkillInfo[]> => {
       return this.listSkills();
@@ -112,16 +119,16 @@ export class SkillManager {
 
   /**
    * Parses a SKILL.md file, extracting YAML frontmatter (name, description)
-   * and the markdown content body. Validates metadata against naming constraints.
+   * and validating metadata against naming constraints.
    */
-  async parseSkillFile(filePath: string): Promise<SkillCreateOptions> {
+  async parseSkillFile(filePath: string): Promise<SkillMetadata> {
     const rawContent = (await readFile(filePath, 'utf-8')).trimStart();
-    const { metadata, content } = this.extractFrontmatter(rawContent, filePath);
+    const metadata = this.extractFrontmatter(rawContent, filePath);
     this.validateMetadata(metadata, filePath);
-    return { ...metadata, content };
+    return metadata;
   }
 
-  private extractFrontmatter(rawContent: string, filePath: string): { metadata: SkillMetadata; content: string } {
+  private extractFrontmatter(rawContent: string, filePath: string): SkillMetadata {
     const DELIMITER = '---';
     if (!rawContent.startsWith(DELIMITER)) {
       throw new Error(`No metadata found in ${filePath}`);
@@ -138,8 +145,7 @@ export class SkillManager {
       throw new Error(`Invalid metadata in ${filePath}`);
     }
 
-    const content = rawContent.slice(endIndex + DELIMITER.length + 1).trim();
-    return { metadata: parsed as SkillMetadata, content };
+    return parsed as SkillMetadata;
   }
 
   private validateMetadata(metadata: SkillMetadata, filePath: string): void {
@@ -174,12 +180,12 @@ export class SkillManager {
   }
 
   /**
-   * Registers a skill from an external folder by copying it into the skills
-   * directory. If the folder is already inside the skills directory, the copy
-   * is skipped. The skill is enabled immediately and persisted to config.
+   * Registers a skill from an external folder by storing a reference to its
+   * path. The original folder is not copied. The skill is enabled immediately
+   * and the reference is persisted to config.
    */
   async registerSkill(folderPath: string): Promise<SkillInfo> {
-    const resolvedPath = resolve(folderPath);
+    const resolvedPath = resolve(homedir(), folderPath);
     const skillFilePath = join(resolvedPath, SKILL_FILE_NAME);
 
     if (!existsSync(skillFilePath)) {
@@ -193,19 +199,9 @@ export class SkillManager {
       throw new Error(`Skill with name '${metadata.name}' already registered at path: ${duplicate.path}`);
     }
 
-    const skillsDir = this.directories.getSkillsDirectory();
-    const targetDir = join(skillsDir, metadata.name);
-
-    if (resolvedPath !== targetDir) {
-      if (existsSync(targetDir)) {
-        throw new Error(`Skill directory already exists: ${targetDir}`);
-      }
-      await cp(resolvedPath, targetDir, { recursive: true });
-    }
-
     const skill: SkillInfo = {
       ...metadata,
-      path: targetDir,
+      path: resolvedPath,
       enabled: true,
     };
 
@@ -244,7 +240,6 @@ export class SkillManager {
 
     const skill: SkillInfo = {
       ...metadata,
-      content: options.content,
       path: skillDir,
       enabled: true,
     };
@@ -279,12 +274,15 @@ export class SkillManager {
   }
 
   /**
-   * Permanently removes a skill by deleting its folder from disk
-   * and removing it from the in-memory list and config.
+   * Removes a skill from the registry and config. If the skill lives inside
+   * the managed skills directory (created via createSkill), its folder is
+   * deleted. External skills registered via registerSkill are only dereferenced.
    */
   async unregisterSkill(name: string): Promise<void> {
     const skill = this.findSkillByName(name);
-    await rm(skill.path, { recursive: true, force: true });
+    if (this.isManagedSkill(skill)) {
+      await rm(skill.path, { recursive: true, force: true });
+    }
     this.skills = this.skills.filter(s => s.name !== name);
     this.saveSkillsToConfig();
     this.apiSender.send('skill-manager-update');
@@ -315,81 +313,70 @@ export class SkillManager {
     return skill;
   }
 
-  /**
-   * Scans the skills directory for folders containing a valid SKILL.md.
-   * Skills already in `skills.enabled` config keep their state; newly
-   * discovered skills are enabled by default and persisted to config.
-   */
-  async discoverSkillsFromDirectory(): Promise<void> {
+  private isManagedSkill(skill: SkillInfo): boolean {
     const skillsDir = this.directories.getSkillsDirectory();
-    if (!existsSync(skillsDir)) {
-      return;
-    }
+    return skill.path.startsWith(skillsDir);
+  }
 
+  /**
+   * Discovers skills from both the managed skills directory and
+   * externally registered paths persisted in `skills.registered`.
+   * Newly discovered skills are enabled by default.
+   */
+  async discoverSkills(): Promise<void> {
     const enabledNames = new Set<string>(this.configuration?.get<string[]>(SKILL_ENABLED) ?? []);
+    const folderPaths: string[] = [...(this.configuration?.get<string[]>(SKILL_REGISTERED) ?? [])];
 
-    let entries;
-    try {
-      entries = await readdir(skillsDir, { withFileTypes: true });
-    } catch {
-      return;
+    const skillsDir = this.directories.getSkillsDirectory();
+    if (existsSync(skillsDir)) {
+      try {
+        const entries = await readdir(skillsDir, { withFileTypes: true });
+        for (const entry of entries) {
+          if (entry.isDirectory()) {
+            folderPaths.push(join(skillsDir, entry.name));
+          }
+        }
+      } catch {
+        // ignore read errors on the managed directory
+      }
     }
 
-    if (!Array.isArray(entries)) {
-      return;
+    const discovered: SkillInfo[] = [];
+
+    for (const folderPath of folderPaths) {
+      const skillFilePath = join(folderPath, SKILL_FILE_NAME);
+      if (!existsSync(skillFilePath)) {
+        continue;
+      }
+
+      try {
+        const metadata = await this.parseSkillFile(skillFilePath);
+        if (this.skills.some(s => s.name === metadata.name) || discovered.some(s => s.name === metadata.name)) {
+          continue;
+        }
+        discovered.push({
+          ...metadata,
+          path: folderPath,
+          enabled: enabledNames.has(metadata.name) || !enabledNames.size,
+        });
+      } catch (error: unknown) {
+        console.warn(`[SkillManager] Skipping invalid skill at ${folderPath}: ${error}`);
+      }
     }
 
-    const directories = entries.filter(entry => typeof entry.isDirectory === 'function' && entry.isDirectory());
-    let newSkillDiscovered = false;
-
-    await Promise.allSettled(
-      directories.map(async entry => {
-        const folderPath = join(skillsDir, entry.name);
-        const skillFilePath = join(folderPath, SKILL_FILE_NAME);
-        if (!existsSync(skillFilePath)) {
-          return;
-        }
-
-        try {
-          const metadata = await this.parseSkillFile(skillFilePath);
-          const duplicate = this.skills.find(s => s.name === metadata.name);
-          if (duplicate) {
-            return;
-          }
-
-          const isEnabled = enabledNames.has(metadata.name);
-
-          this.skills = [
-            ...this.skills,
-            {
-              ...metadata,
-              path: folderPath,
-              enabled: isEnabled || !enabledNames.size,
-            },
-          ];
-
-          if (!isEnabled) {
-            newSkillDiscovered = true;
-          }
-        } catch (error: unknown) {
-          console.warn(`[SkillManager] Skipping invalid skill at ${folderPath}:`, error);
-        }
-      }),
-    );
-
-    if (newSkillDiscovered) {
+    this.skills = [...this.skills, ...discovered];
+    if (discovered.some(s => !enabledNames.has(s.name))) {
       this.saveSkillsToConfig();
     }
   }
 
-  /** Persists the list of enabled skill names to the `skills.enabled` config key. */
+  /** Persists enabled skill names and external skill path references to config. */
   private saveSkillsToConfig(): void {
-    this.configuration
-      ?.update(
-        SKILL_ENABLED,
-        this.skills.filter(s => s.enabled).map(s => s.name),
-      )
-      .catch(console.error);
+    const enabledNames = this.skills.filter(s => s.enabled).map(s => s.name);
+    this.configuration?.update(SKILL_ENABLED, enabledNames).catch(console.error);
+
+    const registeredPaths = this.skills.filter(s => !this.isManagedSkill(s)).map(s => s.path);
+    this.configuration?.update(SKILL_REGISTERED, registeredPaths).catch(console.error);
   }
 
   @preDestroy()
