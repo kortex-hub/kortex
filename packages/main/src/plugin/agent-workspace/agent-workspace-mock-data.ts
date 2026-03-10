@@ -25,7 +25,7 @@ import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
  * an actual `exec('kortex', [...])` invocation + JSON.parse(stdout).
  */
 
-const SUMMARIES: AgentWorkspaceSummary[] = [
+const INITIAL_SUMMARIES: AgentWorkspaceSummary[] = [
   {
     id: 'mock-ws-api-refactor',
     name: 'api-refactor',
@@ -52,7 +52,18 @@ const SUMMARIES: AgentWorkspaceSummary[] = [
   },
 ];
 
+const store: AgentWorkspaceSummary[] = structuredClone(INITIAL_SUMMARIES);
+
 // Future: exec('kortex', ['workspace', 'list', '--format', 'json'])
 export function mockListWorkspaces(): AgentWorkspaceSummary[] {
-  return structuredClone(SUMMARIES);
+  return structuredClone(store);
+}
+
+// Future: exec('kortex', ['workspace', 'remove', id, '--format', 'json'])
+export function mockRemoveWorkspace(id: string): void {
+  const idx = store.findIndex(ws => ws.id === id);
+  if (idx === -1) {
+    throw new Error(`workspace "${id}" not found. Use "workspace list" to see available workspaces.`);
+  }
+  store.splice(idx, 1);
 }

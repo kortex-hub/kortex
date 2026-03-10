@@ -22,7 +22,7 @@ import type { IPCHandle } from '/@/plugin/api.js';
 import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
 
 import { AgentWorkspaceManager } from './agent-workspace-manager.js';
-import { mockListWorkspaces } from './agent-workspace-mock-data.js';
+import { mockListWorkspaces, mockRemoveWorkspace } from './agent-workspace-mock-data.js';
 
 vi.mock(import('./agent-workspace-mock-data.js'));
 
@@ -53,6 +53,10 @@ describe('init', () => {
   test('registers IPC handler for list', () => {
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:list', expect.any(Function));
   });
+
+  test('registers IPC handler for remove', () => {
+    expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:remove', expect.any(Function));
+  });
 });
 
 describe('list', () => {
@@ -76,5 +80,21 @@ describe('list', () => {
     expect(summary).toHaveProperty('paths');
     expect(summary.paths).toHaveProperty('source');
     expect(summary.paths).toHaveProperty('configuration');
+  });
+});
+
+describe('remove', () => {
+  test('delegates to mockRemoveWorkspace with the given id', () => {
+    manager.remove('ws-1');
+
+    expect(mockRemoveWorkspace).toHaveBeenCalledWith('ws-1');
+  });
+
+  test('throws when mockRemoveWorkspace throws for unknown id', () => {
+    vi.mocked(mockRemoveWorkspace).mockImplementation(() => {
+      throw new Error('workspace "unknown-id" not found. Use "workspace list" to see available workspaces.');
+    });
+
+    expect(() => manager.remove('unknown-id')).toThrow('workspace "unknown-id" not found');
   });
 });

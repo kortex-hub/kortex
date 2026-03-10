@@ -22,7 +22,7 @@ import { inject, injectable, preDestroy } from 'inversify';
 import { IPCHandle } from '/@/plugin/api.js';
 import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
 
-import { mockListWorkspaces } from './agent-workspace-mock-data.js';
+import { mockListWorkspaces, mockRemoveWorkspace } from './agent-workspace-mock-data.js';
 
 /**
  * Manages agent workspaces.
@@ -43,9 +43,18 @@ export class AgentWorkspaceManager implements Disposable {
     return mockListWorkspaces();
   }
 
+  // Future: exec('kortex', ['workspace', 'remove', id, '--format', 'json'])
+  remove(id: string): void {
+    mockRemoveWorkspace(id);
+  }
+
   init(): void {
     this.ipcHandle('agent-workspace:list', async (): Promise<AgentWorkspaceSummary[]> => {
       return this.list();
+    });
+
+    this.ipcHandle('agent-workspace:remove', async (_listener: unknown, id: string): Promise<void> => {
+      return this.remove(id);
     });
   }
 
