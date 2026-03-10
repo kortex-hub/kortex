@@ -23,7 +23,7 @@ import { resolve } from 'node:path';
 import type { MockInstance } from 'vitest';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import type { ApiSenderType, IPCHandle } from '/@/plugin/api.js';
+import type { IPCHandle } from '/@/plugin/api.js';
 import type { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import type { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';

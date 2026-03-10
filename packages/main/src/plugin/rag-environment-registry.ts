@@ -23,7 +23,7 @@ import { basename, resolve } from 'node:path';
 import { type ChunkProvider, ProviderRagConnection } from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
-import { ApiSenderType, IPCHandle } from '/@/plugin/api.js';
+import { IPCHandle } from '/@/plugin/api.js';
 import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
 import { INTERNAL_PROVIDER_ID } from '/@/plugin/mcp/mcp-registry.js';

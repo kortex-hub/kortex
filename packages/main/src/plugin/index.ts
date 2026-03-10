@@ -68,7 +68,6 @@ import { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
 import { MenuRegistry } from '/@/plugin/menu-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
 import { RagEnvironmentRegistry } from '/@/plugin/rag-environment-registry.js';
-import type { ExtensionBanner, RecommendedRegistry } from '/@/plugin/recommendations/recommendations-api.js';
 import { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
 import { SkillManager } from '/@/plugin/skill/skill-manager.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
