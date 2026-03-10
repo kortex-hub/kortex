@@ -24,9 +24,7 @@ import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
 import { AgentWorkspaceManager } from './agent-workspace-manager.js';
 import { mockListWorkspaces } from './agent-workspace-mock-data.js';
 
-vi.mock('./agent-workspace-mock-data.js', () => ({
-  mockListWorkspaces: vi.fn(),
-}));
+vi.mock(import('./agent-workspace-mock-data.js'));
 
 const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
   {
@@ -46,7 +44,7 @@ let manager: AgentWorkspaceManager;
 const ipcHandle: IPCHandle = vi.fn();
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
   manager = new AgentWorkspaceManager(ipcHandle);
   manager.init();
 });
