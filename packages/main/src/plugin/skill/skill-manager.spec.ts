@@ -34,7 +34,6 @@ const SKILLS_DIR = resolve('/test/skills');
 
 vi.mock('node:fs');
 vi.mock('node:fs/promises');
-vi.mock('node:os', () => ({ homedir: (): string => '/test-home' }));
 
 const updateMock = vi.fn().mockResolvedValue(undefined);
 const getMock = vi.fn();
@@ -338,7 +337,7 @@ test('registerSkill should throw when SKILL.md not found', async () => {
 
   const skillManager = createSkillManager();
 
-  await expect(skillManager.registerSkill('/missing/folder')).rejects.toThrow('SKILL.md not found');
+  await expect(skillManager.registerSkill(resolve('/missing/folder'))).rejects.toThrow('SKILL.md not found');
 });
 
 test('registerSkill should throw on duplicate name', async () => {
@@ -346,9 +345,9 @@ test('registerSkill should throw on duplicate name', async () => {
   vi.mocked(readFile).mockResolvedValue(validSkillMd);
 
   const skillManager = createSkillManager();
-  await skillManager.registerSkill('/first/folder');
+  await skillManager.registerSkill(resolve('/first/folder'));
 
-  await expect(skillManager.registerSkill('/second/folder')).rejects.toThrow(
+  await expect(skillManager.registerSkill(resolve('/second/folder'))).rejects.toThrow(
     `Skill with name 'my-test-skill' already registered`,
   );
 });
