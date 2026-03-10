@@ -112,6 +112,7 @@ import type { Guide } from '/@api/learning-center/guide';
 import type { ContainerCreateOptions as PodmanContainerCreateOptions, PlayKubeInfo } from '/@api/libpod/libpod';
 import type { ListOrganizerItem } from '/@api/list-organizer';
 import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '/@api/manifest-info';
+import type { MCPExportTarget } from '/@api/mcp/mcp-export';
 import type { MCPRemoteServerInfo, MCPServerDetail } from '/@api/mcp/mcp-server-info';
 import type { MCPSetupOptions } from '/@api/mcp/mcp-setup';
 import type { Menu } from '/@api/menu.js';
@@ -1927,6 +1928,15 @@ export function initExposure(): void {
       return ipcInvoke('mcp-registry:createMCPRegistry', registryCreateOptions);
     },
   );
+  contextBridge.exposeInMainWorld(
+    'exportMcpServer',
+    async (serverId: string, target: MCPExportTarget): Promise<void> => {
+      return ipcInvoke('mcp-registry:exportServer', serverId, target);
+    },
+  );
+  contextBridge.exposeInMainWorld('getMcpExportConfigPath', async (target: MCPExportTarget): Promise<string> => {
+    return ipcInvoke('mcp-registry:getExportConfigPath', target);
+  });
 
   // can't send configuration object as it is not serializable
   // https://www.electronjs.org/docs/latest/api/context-bridge#parameter--error--return-type-support

@@ -63,6 +63,7 @@ import { FlowManager } from '/@/plugin/flow/flow-manager.js';
 import { KubeGeneratorRegistry } from '/@/plugin/kubernetes/kube-generator-registry.js';
 import { LockedConfiguration } from '/@/plugin/locked-configuration.js';
 import { MCPExchanges } from '/@/plugin/mcp/mcp-exchanges.js';
+import { MCPExporter } from '/@/plugin/mcp/mcp-exporter.js';
 import { MCPIPCHandler } from '/@/plugin/mcp/mcp-ipc-handler.js';
 import { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
 import { MenuRegistry } from '/@/plugin/menu-registry.js';
@@ -564,6 +565,7 @@ export class PluginSystem {
     container.bind<ImageRegistry>(ImageRegistry).toSelf().inSingletonScope();
     container.bind<MCPSchemaValidator>(MCPSchemaValidator).toSelf().inSingletonScope();
     container.bind<MCPRegistry>(MCPRegistry).toSelf().inSingletonScope();
+    container.bind<MCPExporter>(MCPExporter).toSelf().inSingletonScope();
     container.bind<MCPIPCHandler>(MCPIPCHandler).toSelf().inSingletonScope();
     container.bind<ChunkProviderRegistry>(ChunkProviderRegistry).toSelf().inSingletonScope();
     container.bind<ViewRegistry>(ViewRegistry).toSelf().inSingletonScope();

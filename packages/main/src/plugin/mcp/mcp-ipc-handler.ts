@@ -21,7 +21,9 @@ import type { IpcMainInvokeEvent } from 'electron/main';
 import { inject, injectable } from 'inversify';
 
 import { IPCHandle } from '/@/plugin/api.js';
+import { MCPExporter } from '/@/plugin/mcp/mcp-exporter.js';
 import { MCPRegistry } from '/@/plugin/mcp/mcp-registry.js';
+import type { MCPExportTarget } from '/@api/mcp/mcp-export.js';
 
 @injectable()
 export class MCPIPCHandler {
@@ -30,10 +32,14 @@ export class MCPIPCHandler {
     private readonly ipcHandle: IPCHandle,
     @inject(MCPRegistry)
     private readonly mcpRegistry: MCPRegistry,
+    @inject(MCPExporter)
+    private readonly mcpExporter: MCPExporter,
   ) {}
 
   init(): void {
     this.ipcHandle('mcp-registry:createMCPRegistry', this.createMCPRegistry.bind(this));
+    this.ipcHandle('mcp-registry:exportServer', this.exportServer.bind(this));
+    this.ipcHandle('mcp-registry:getExportConfigPath', this.getExportConfigPath.bind(this));
   }
 
   protected async createMCPRegistry(
@@ -41,5 +47,13 @@ export class MCPIPCHandler {
     registryCreateOptions: containerDesktopAPI.MCPRegistryCreateOptions,
   ): Promise<void> {
     await this.mcpRegistry.createRegistry(registryCreateOptions);
+  }
+
+  protected async exportServer(_: IpcMainInvokeEvent, serverId: string, target: MCPExportTarget): Promise<void> {
+    await this.mcpExporter.exportServer(serverId, target);
+  }
+
+  protected getExportConfigPath(_: IpcMainInvokeEvent, target: MCPExportTarget): string {
+    return this.mcpExporter.getConfigFilePath(target);
   }
 }
