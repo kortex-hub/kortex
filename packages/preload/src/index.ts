@@ -137,7 +137,7 @@ import type { ChunkProviderInfo } from '/@api/rag/chunk-provider-info';
 import type { RagEnvironment } from '/@api/rag/rag-environment';
 import type { ExtensionBanner, RecommendedRegistry } from '/@api/recommendations/recommendations';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info';
-import type { SkillFileContent, SkillFolderInfo, SkillInfo } from '/@api/skill/skill-info';
+import type { SkillFileContent, SkillFolderInfo, SkillInfo, SkillMetadata } from '/@api/skill/skill-info';
 import type { StatusBarEntryDescriptor } from '/@api/status-bar';
 import type { PinOption } from '/@api/status-bar/pin-option';
 import type { TelemetryMessages } from '/@api/telemetry';
@@ -353,7 +353,7 @@ export function initExposure(): void {
     return ipcInvoke('flows:listSchedules');
   });
 
-  contextBridge.exposeInMainWorld('listSkills', async (): Promise<Array<SkillInfo>> => {
+  contextBridge.exposeInMainWorld('listSkills', async (): Promise<Array<SkillMetadata>> => {
     return ipcInvoke('skill-manager:listSkills');
   });
 
