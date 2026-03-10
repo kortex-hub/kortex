@@ -18,7 +18,6 @@
 
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 import type { Configuration } from '@kortex-app/api';
@@ -185,7 +184,7 @@ export class SkillManager {
    * and the reference is persisted to config.
    */
   async registerSkill(folderPath: string): Promise<SkillInfo> {
-    const resolvedPath = resolve(homedir(), folderPath);
+    const resolvedPath = resolve(folderPath);
     const skillFilePath = join(resolvedPath, SKILL_FILE_NAME);
 
     if (!existsSync(skillFilePath)) {

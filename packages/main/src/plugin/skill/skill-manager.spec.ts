@@ -30,14 +30,10 @@ import { SKILL_ENABLED, SKILL_FILE_NAME, SKILL_REGISTERED, type SkillInfo } from
 
 import { SkillManager } from './skill-manager.js';
 
-const TEST_HOME = '/test-home';
-const SKILLS_DIR = join(TEST_HOME, 'skills');
+const SKILLS_DIR = resolve('/test/skills');
 
 vi.mock('node:fs');
 vi.mock('node:fs/promises');
-vi.mock('node:os', async () => {
-  return { homedir: (): string => resolve(TEST_HOME) };
-});
 
 const updateMock = vi.fn().mockResolvedValue(undefined);
 const getMock = vi.fn();
@@ -420,7 +416,7 @@ test('unregisterSkill should delete folder for managed skills', async () => {
   await skillManager.unregisterSkill(skill.name);
 
   expect(skillManager.listSkills()).toHaveLength(0);
-  expect(rm).toHaveBeenCalledWith(skill.path, { recursive: true, force: true });
+  expect(rm).toHaveBeenCalledWith(resolve(skill.path), { recursive: true, force: true });
   expect(apiSender.send).toHaveBeenCalledWith('skill-manager-update');
   expect(updateMock).toHaveBeenCalled();
 });
