@@ -315,6 +315,10 @@ export function initExposure(): void {
     return ipcInvoke('agent-workspace:list');
   });
 
+  contextBridge.exposeInMainWorld('removeAgentWorkspace', async (id: string): Promise<void> => {
+    return ipcInvoke('agent-workspace:remove', id);
+  });
+
   contextBridge.exposeInMainWorld('listFlows', async (): Promise<Array<FlowInfo>> => {
     return ipcInvoke('flows:list');
   });
