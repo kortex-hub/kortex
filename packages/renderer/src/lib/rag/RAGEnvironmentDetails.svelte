@@ -1,5 +1,6 @@
 <script lang="ts">
 import { Tab } from '@podman-desktop/ui-svelte';
+import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { router } from 'tinro';
 
 import { getChunkProviderName, getDatabaseName } from '/@/lib/rag/rag-environment-utils.svelte';
@@ -89,7 +90,7 @@ const chunkProviderName = $derived(getChunkProviderName($chunkProviders, ragEnvi
               <div class="source-item flex items-center justify-between px-5 py-4 border-b border-[var(--pd-content-divider)] last:border-b-0 hover:bg-[var(--pd-content-card-inset-bg)] transition-colors duration-200">
                 <div class="source-info flex items-center gap-3">
                   <div class="w-8 h-8 bg-[var(--pd-content-card-inset-bg)] rounded-md flex items-center justify-center text-[var(--pd-content-text-secondary)]">
-                    <i class="fa fa-file fa-2x"></i>
+                    <Icon icon="fas fa-file" class="fa-2x"/>
                   </div>
                   <div class="source-details">
                     <h4 class="text-sm font-medium text-[var(--pd-content-text)] m-0 mb-1">{file.path.split('/').pop() ?? file.path}</h4>

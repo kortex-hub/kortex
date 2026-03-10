@@ -8,7 +8,7 @@ export function getDatabaseName(providerInfos: ProviderInfo[], ragEnvironment: R
   const ragConnection = ragProvider?.ragConnections.find(
     connection => connection.name === ragEnvironment?.ragConnection.name,
   );
-  return ragConnection?.name ? `${ragConnection.name} (${ragProvider?.name})` : `N/A`;
+  return ragConnection?.name ? `${ragConnection.name} (${ragProvider?.name})` : 'N/A';
 }
 
 export function getChunkProviderName(

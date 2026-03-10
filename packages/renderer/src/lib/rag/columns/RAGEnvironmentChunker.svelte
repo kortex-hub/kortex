@@ -10,7 +10,7 @@ interface Props {
 const { object }: Props = $props();
 
 // Extract chunker name from ID or show the ID
-const chunkerName = getChunkProviderName($chunkProviders, object);
+const chunkerName = $derived(getChunkProviderName($chunkProviders, object));
 </script>
 
 <div class="flex items-center">
