@@ -2,7 +2,7 @@ name: Feature 💡
 description: A request, idea, or new functionality
 type: feature
 labels: [kind/feature 💡]
-projects: ["podman-desktop/4"]
+projects: ["kortex-hub/1"]
 
 body:
   - type: markdown

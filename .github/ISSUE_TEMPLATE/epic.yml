@@ -2,7 +2,7 @@ name: Epic ⚡
 description: A high-level feature
 type: epic
 labels: [kind/epic ⚡]
-projects: ["podman-desktop/4","podman-desktop/7"]
+projects: ["kortex-hub/1"]
 
 body:
   - type: markdown
@@ -16,7 +16,7 @@ body:
     attributes:
       label: Epic domain
       description: A clear and concise description of the feature area or domain that this epic will address.
-      placeholder: Podman Desktop should support [...]
+      placeholder: Kortex should support [...]
     validations:
       required: true
 
