@@ -51,6 +51,7 @@ import type { IpcMainInvokeEvent } from 'electron/main';
 import { Container } from 'inversify';
 import { lookup } from 'mime-types';
 
+import { AgentWorkspaceManager } from '/@/plugin/agent-workspace/agent-workspace-manager.js';
 import { IPCHandle, IPCMainOn, WebContentsType } from '/@/plugin/api.js';
 import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import { ContainerfileParser } from '/@/plugin/containerfile-parser.js';
@@ -572,6 +573,7 @@ export class PluginSystem {
     container.bind<MCPExchanges>(MCPExchanges).toSelf().inSingletonScope();
     container.bind<ProviderRegistry>(ProviderRegistry).toSelf().inSingletonScope();
     container.bind<MCPManager>(MCPManager).toSelf().inSingletonScope();
+    container.bind<AgentWorkspaceManager>(AgentWorkspaceManager).toSelf().inSingletonScope();
     container.bind<FlowManager>(FlowManager).toSelf().inSingletonScope();
     container.bind<TrayMenuRegistry>(TrayMenuRegistry).toSelf().inSingletonScope();
     container.bind<InputQuickPickRegistry>(InputQuickPickRegistry).toSelf().inSingletonScope();
@@ -654,6 +656,9 @@ export class PluginSystem {
 
     const mcpManager = container.get<MCPManager>(MCPManager);
     mcpManager.init();
+
+    const agentWorkspaceManager = container.get<AgentWorkspaceManager>(AgentWorkspaceManager);
+    agentWorkspaceManager.init();
 
     const flowManager = container.get<FlowManager>(FlowManager);
     flowManager.init();
