@@ -18,7 +18,7 @@
 
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
@@ -30,9 +30,14 @@ import { SKILL_ENABLED, SKILL_FILE_NAME, SKILL_REGISTERED, type SkillInfo } from
 
 import { SkillManager } from './skill-manager.js';
 
+const TEST_HOME = '/test-home';
+const SKILLS_DIR = join(TEST_HOME, 'skills');
+
 vi.mock('node:fs');
 vi.mock('node:fs/promises');
-vi.mock('node:os', () => ({ homedir: (): string => '/test-home' }));
+vi.mock('node:os', async () => {
+  return { homedir: (): string => resolve(TEST_HOME) };
+});
 
 const updateMock = vi.fn().mockResolvedValue(undefined);
 const getMock = vi.fn();
@@ -50,9 +55,6 @@ const apiSender: ApiSenderType = {
   send: vi.fn(),
   receive: vi.fn(),
 };
-
-const TEST_HOME = '/test-home';
-const SKILLS_DIR = join(TEST_HOME, 'skills');
 
 const directories = {
   getSkillsDirectory: vi.fn().mockReturnValue(SKILLS_DIR),
@@ -323,14 +325,15 @@ test('registerSkill should reference the original folder without copying', async
 
   const skillManager = createSkillManager();
   await skillManager.init();
-  const skill = await skillManager.registerSkill('/my/skill/folder');
+  const externalPath = resolve('/my/skill/folder');
+  const skill = await skillManager.registerSkill(externalPath);
 
   expect(skill.name).toBe('my-test-skill');
   expect(skill.description).toBe('A test skill for unit testing');
-  expect(skill.path).toBe('/my/skill/folder');
+  expect(skill.path).toBe(externalPath);
   expect(skill.enabled).toBe(true);
   expect(apiSender.send).toHaveBeenCalledWith('skill-manager-update');
-  expect(updateMock).toHaveBeenCalledWith(SKILL_REGISTERED, ['/my/skill/folder']);
+  expect(updateMock).toHaveBeenCalledWith(SKILL_REGISTERED, [externalPath]);
 });
 
 test('registerSkill should throw when SKILL.md not found', async () => {
@@ -338,7 +341,7 @@ test('registerSkill should throw when SKILL.md not found', async () => {
 
   const skillManager = createSkillManager();
 
-  await expect(skillManager.registerSkill('/missing/folder')).rejects.toThrow('SKILL.md not found');
+  await expect(skillManager.registerSkill(resolve('/missing/folder'))).rejects.toThrow('SKILL.md not found');
 });
 
 test('registerSkill should throw on duplicate name', async () => {
@@ -346,9 +349,9 @@ test('registerSkill should throw on duplicate name', async () => {
   vi.mocked(readFile).mockResolvedValue(validSkillMd);
 
   const skillManager = createSkillManager();
-  await skillManager.registerSkill('/first/folder');
+  await skillManager.registerSkill(resolve('/first/folder'));
 
-  await expect(skillManager.registerSkill('/second/folder')).rejects.toThrow(
+  await expect(skillManager.registerSkill(resolve('/second/folder'))).rejects.toThrow(
     `Skill with name 'my-test-skill' already registered`,
   );
 });
