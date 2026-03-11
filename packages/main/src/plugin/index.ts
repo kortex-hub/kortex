@@ -51,6 +51,7 @@ import type { IpcMainInvokeEvent } from 'electron/main';
 import { Container } from 'inversify';
 import { lookup } from 'mime-types';
 
+import { AgentWorkspaceManager } from '/@/plugin/agent-workspace/agent-workspace-manager.js';
 import { IPCHandle, IPCMainOn, WebContentsType } from '/@/plugin/api.js';
 import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import { ContainerfileParser } from '/@/plugin/containerfile-parser.js';
@@ -67,6 +68,7 @@ import { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
 import { MenuRegistry } from '/@/plugin/menu-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
 import { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
+import { SkillManager } from '/@/plugin/skill/skill-manager.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import { Uri } from '/@/plugin/types/uri.js';
 import { Updater } from '/@/plugin/updater.js';
@@ -572,7 +574,9 @@ export class PluginSystem {
     container.bind<MCPExchanges>(MCPExchanges).toSelf().inSingletonScope();
     container.bind<ProviderRegistry>(ProviderRegistry).toSelf().inSingletonScope();
     container.bind<MCPManager>(MCPManager).toSelf().inSingletonScope();
+    container.bind<AgentWorkspaceManager>(AgentWorkspaceManager).toSelf().inSingletonScope();
     container.bind<FlowManager>(FlowManager).toSelf().inSingletonScope();
+    container.bind<SkillManager>(SkillManager).toSelf().inSingletonScope();
     container.bind<TrayMenuRegistry>(TrayMenuRegistry).toSelf().inSingletonScope();
     container.bind<InputQuickPickRegistry>(InputQuickPickRegistry).toSelf().inSingletonScope();
     container.bind<FilesystemMonitoring>(FilesystemMonitoring).toSelf().inSingletonScope();
@@ -655,8 +659,14 @@ export class PluginSystem {
     const mcpManager = container.get<MCPManager>(MCPManager);
     mcpManager.init();
 
+    const agentWorkspaceManager = container.get<AgentWorkspaceManager>(AgentWorkspaceManager);
+    agentWorkspaceManager.init();
+
     const flowManager = container.get<FlowManager>(FlowManager);
     flowManager.init();
+
+    const skillManager = container.get<SkillManager>(SkillManager);
+    await skillManager.init();
 
     const chatManager = container.get<ChatManager>(ChatManager);
     await chatManager.init();

@@ -44,6 +44,7 @@ import type {
 import type { DynamicToolUIPart, UIMessageChunk } from 'ai';
 import { contextBridge, ipcRenderer } from 'electron';
 
+import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type';
 import type { AuthenticationProviderInfo } from '/@api/authentication/authentication';
 import type { DetectFlowFieldsParams, DetectFlowFieldsResult } from '/@api/chat/detect-flow-fields-schema.ts';
@@ -134,6 +135,7 @@ import type { PullEvent } from '/@api/pull-event';
 import type { ChunkProviderInfo } from '/@api/rag/chunk-provider-info';
 import type { ExtensionBanner, RecommendedRegistry } from '/@api/recommendations/recommendations';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info';
+import type { SkillCreateOptions, SkillInfo } from '/@api/skill/skill-info';
 import type { StatusBarEntryDescriptor } from '/@api/status-bar';
 import type { PinOption } from '/@api/status-bar/pin-option';
 import type { TelemetryMessages } from '/@api/telemetry';
@@ -309,6 +311,15 @@ export function initExposure(): void {
     return ipcInvoke('container-provider-registry:listPods');
   });
 
+  // Agent Workspaces
+  contextBridge.exposeInMainWorld('listAgentWorkspaces', async (): Promise<AgentWorkspaceSummary[]> => {
+    return ipcInvoke('agent-workspace:list');
+  });
+
+  contextBridge.exposeInMainWorld('removeAgentWorkspace', async (id: string): Promise<void> => {
+    return ipcInvoke('agent-workspace:remove', id);
+  });
+
   contextBridge.exposeInMainWorld('listFlows', async (): Promise<Array<FlowInfo>> => {
     return ipcInvoke('flows:list');
   });
@@ -331,6 +342,38 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld('listScheduledFlows', async (): Promise<Array<FlowScheduleInfo>> => {
     return ipcInvoke('flows:listSchedules');
+  });
+
+  contextBridge.exposeInMainWorld('listSkills', async (): Promise<Array<SkillInfo>> => {
+    return ipcInvoke('skill-manager:listSkills');
+  });
+
+  contextBridge.exposeInMainWorld('registerSkill', async (folderPath: string): Promise<SkillInfo> => {
+    return ipcInvoke('skill-manager:registerSkill', folderPath);
+  });
+
+  contextBridge.exposeInMainWorld('disableSkill', async (name: string): Promise<void> => {
+    return ipcInvoke('skill-manager:disableSkill', name);
+  });
+
+  contextBridge.exposeInMainWorld('enableSkill', async (name: string): Promise<void> => {
+    return ipcInvoke('skill-manager:enableSkill', name);
+  });
+
+  contextBridge.exposeInMainWorld('unregisterSkill', async (name: string): Promise<void> => {
+    return ipcInvoke('skill-manager:unregisterSkill', name);
+  });
+
+  contextBridge.exposeInMainWorld('createSkill', async (options: SkillCreateOptions): Promise<SkillInfo> => {
+    return ipcInvoke('skill-manager:createSkill', options);
+  });
+
+  contextBridge.exposeInMainWorld('getSkillContent', async (name: string): Promise<string> => {
+    return ipcInvoke('skill-manager:getSkillContent', name);
+  });
+
+  contextBridge.exposeInMainWorld('listSkillFolderContent', async (name: string): Promise<string[]> => {
+    return ipcInvoke('skill-manager:listSkillFolderContent', name);
   });
 
   contextBridge.exposeInMainWorld(
