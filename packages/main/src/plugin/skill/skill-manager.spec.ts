@@ -315,14 +315,32 @@ test('parseSkillFile should throw when description contains XML tags', async () 
   );
 });
 
-test('registerSkill should reference the original folder without copying', async () => {
+test('registerSkill should return a disposable that unregisters the skill', async () => {
   vi.mocked(existsSync).mockImplementation(p => String(p).endsWith(SKILL_FILE_NAME));
   vi.mocked(readFile).mockResolvedValue(validSkillMd);
 
   const skillManager = createSkillManager();
   await skillManager.init();
   const externalPath = resolve('/my/skill/folder');
-  const skill = await skillManager.registerSkill(externalPath);
+  const disposable = await skillManager.registerSkill(externalPath);
+
+  expect(disposable).toBeDefined();
+  expect(disposable.dispose).toBeDefined();
+  expect(skillManager.listSkills()).toHaveLength(1);
+
+  disposable.dispose();
+
+  expect(skillManager.listSkills()).toHaveLength(0);
+});
+
+test('addSkill should reference the original folder without copying', async () => {
+  vi.mocked(existsSync).mockImplementation(p => String(p).endsWith(SKILL_FILE_NAME));
+  vi.mocked(readFile).mockResolvedValue(validSkillMd);
+
+  const skillManager = createSkillManager();
+  await skillManager.init();
+  const externalPath = resolve('/my/skill/folder');
+  const skill = await skillManager.addSkill(externalPath);
 
   expect(skill.name).toBe('my-test-skill');
   expect(skill.description).toBe('A test skill for unit testing');
@@ -358,7 +376,7 @@ test('disableSkill should disable a registered skill', async () => {
 
   const skillManager = createSkillManager();
   await skillManager.init();
-  const skill = await skillManager.registerSkill(join(SKILLS_DIR, 'my-test-skill'));
+  const skill = await skillManager.addSkill(join(SKILLS_DIR, 'my-test-skill'));
   vi.mocked(apiSender.send).mockClear();
   updateMock.mockClear();
 
@@ -376,7 +394,7 @@ test('enableSkill should re-enable a disabled skill', async () => {
 
   const skillManager = createSkillManager();
   await skillManager.init();
-  const skill = await skillManager.registerSkill(join(SKILLS_DIR, 'my-test-skill'));
+  const skill = await skillManager.addSkill(join(SKILLS_DIR, 'my-test-skill'));
   skillManager.disableSkill(skill.name);
   expect(skillManager.listSkills().at(0)?.enabled).toBe(false);
 
@@ -409,7 +427,7 @@ test('unregisterSkill should delete folder for managed skills', async () => {
 
   const skillManager = createSkillManager();
   await skillManager.init();
-  const skill = await skillManager.registerSkill(join(SKILLS_DIR, 'my-test-skill'));
+  const skill = await skillManager.addSkill(join(SKILLS_DIR, 'my-test-skill'));
   vi.mocked(apiSender.send).mockClear();
   updateMock.mockClear();
 
@@ -468,7 +486,7 @@ test('getSkillContent should return the SKILL.md content for a registered skill'
   vi.mocked(readFile).mockResolvedValue(validSkillMd);
 
   const skillManager = createSkillManager();
-  const skill = await skillManager.registerSkill(join(SKILLS_DIR, 'my-test-skill'));
+  const skill = await skillManager.addSkill(join(SKILLS_DIR, 'my-test-skill'));
 
   vi.mocked(readFile).mockResolvedValue('full markdown content');
 
@@ -488,7 +506,7 @@ test('listSkillFolderContent should return folder entries for a registered skill
   vi.mocked(readFile).mockResolvedValue(validSkillMd);
 
   const skillManager = createSkillManager();
-  const skill = await skillManager.registerSkill(join(SKILLS_DIR, 'my-test-skill'));
+  const skill = await skillManager.addSkill(join(SKILLS_DIR, 'my-test-skill'));
 
   vi.mocked(readdir).mockResolvedValue(['SKILL.md', 'utils.ts', 'templates'] as unknown as Awaited<
     ReturnType<typeof readdir>
