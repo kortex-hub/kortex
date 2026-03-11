@@ -197,6 +197,7 @@ test.describe
       gooseSetup: _gooseSetup,
     }) => {
       test.skip(resource === 'ollama', 'Flows not supported for Ollama');
+      test.skip(resource === 'ramalama', 'Flows not supported for RamaLama');
       test.skip(
         !!process.env.CI && process.platform === 'win32' && process.arch === 'arm64',
         'Goose not supported on Windows ARM gha runners',

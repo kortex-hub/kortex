@@ -1,0 +1,170 @@
+#
+# Copyright (C) 2026 Red Hat, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Setup RamaLama
+description: Install RamaLama, pull a model, and serve it via Podman. Sets RAMALAMA_ENABLED and RAMALAMA_CONTAINER_ID in the environment on success.
+
+inputs:
+  model:
+    description: 'Model to pull and serve (e.g., granite3.2:2b)'
+    required: true
+  port:
+    description: 'Port to serve the model on'
+    required: false
+    default: '8080'
+
+outputs:
+  enabled:
+    description: "'true' if the RamaLama API became ready, 'false' otherwise"
+    value: ${{ steps.serve.outputs.enabled }}
+  container_id:
+    description: 'Podman container ID of the running RamaLama server'
+    value: ${{ steps.serve.outputs.container_id }}
+  load_time:
+    description: 'Seconds elapsed from serve start to API ready'
+    value: ${{ steps.serve.outputs.load_time }}
+
+runs:
+  using: composite
+  steps:
+    - name: Enable Podman socket
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        systemctl --user enable --now podman.socket
+        echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
+
+    - name: Verify Python environment
+      shell: bash
+      run: |
+        python3 --version
+        pip --version
+
+    - name: Install RamaLama
+      shell: bash
+      run: |
+        # Pin to major version to prevent breaking changes from upstream
+        pip install 'ramalama>=0.1.0,<1.0.0'
+        echo "RamaLama installed: $(ramalama --version)"
+
+    - name: Cleanup previous RamaLama containers
+      shell: bash
+      run: |
+        # Remove any leftover containers from previous runs on this runner
+        podman ps -a --filter "label=ramalama" --format "{{.ID}}" | xargs -r podman rm -f || true
+        podman ps -a --filter "name=ramalama" --format "{{.ID}}" | xargs -r podman rm -f || true
+        echo "Cleaned up previous RamaLama containers"
+
+    - name: Cache RamaLama models
+      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+      with:
+        path: ~/.local/share/ramalama
+        key: ramalama-${{ inputs.model }}-${{ runner.os }}
+
+    - name: Pull RamaLama model
+      id: pull
+      shell: bash
+      env:
+        RAMALAMA_CONTAINER_ENGINE: podman
+      run: |
+        # Pull with retry logic to handle transient network and registry issues
+        for attempt in {1..5}; do
+          echo "Pulling ${{ inputs.model }} model (attempt $attempt/5)..."
+
+          if ramalama pull "ollama://${{ inputs.model }}" 2>&1; then
+            echo "Model ${{ inputs.model }} pulled successfully"
+            echo "Available models:"
+            ramalama list
+            echo "pulled=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "$attempt" -lt 5 ]; then
+            wait_time=$((attempt * 15))
+            echo "Pull failed, retrying in ${wait_time} seconds..."
+            sleep $wait_time
+          fi
+        done
+
+        echo "::warning::Failed to pull ${{ inputs.model }} model after 5 attempts - RamaLama tests will be skipped"
+        echo "pulled=false" >> "$GITHUB_OUTPUT"
+
+    - name: Serve RamaLama model
+      id: serve
+      if: steps.pull.outputs.pulled == 'true'
+      shell: bash
+      env:
+        RAMALAMA_CONTAINER_ENGINE: podman
+      run: |
+        ramalama serve --detach --port ${{ inputs.port }} "ollama://${{ inputs.model }}"
+
+        # Give the container a moment to register before we try to find it
+        sleep 2
+        CONTAINER_ID=$(podman ps -a --filter "label=ramalama" --format "{{.ID}}" | head -1)
+        if [ -z "$CONTAINER_ID" ]; then
+          CONTAINER_ID=$(podman ps -a --latest --format "{{.ID}}")
+        fi
+        echo "RamaLama container ID: $CONTAINER_ID"
+        echo "container_id=$CONTAINER_ID" >> "$GITHUB_OUTPUT"
+        echo "RAMALAMA_CONTAINER_ID=$CONTAINER_ID" >> "$GITHUB_ENV"
+
+        # Apply resource limits to prevent the container starving other processes on the runner
+        if [ -n "$CONTAINER_ID" ]; then
+          podman update --memory 4g --cpus 2.0 "$CONTAINER_ID" 2>/dev/null \
+            && echo "Resource limits applied (4g RAM, 2 CPUs)" \
+            || echo "::warning::Could not apply resource limits to RamaLama container"
+        fi
+
+        # Track model load time for performance visibility
+        LOAD_START=$SECONDS
+
+        # Wait for API readiness with periodic diagnostics
+        for i in {1..60}; do
+          if curl -sf http://localhost:${{ inputs.port }}/v1/models > /dev/null 2>&1; then
+            LOAD_TIME=$((SECONDS - LOAD_START))
+            echo "RamaLama API is ready (load time: ${LOAD_TIME}s)"
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "load_time=${LOAD_TIME}" >> "$GITHUB_OUTPUT"
+            echo "RAMALAMA_ENABLED=true" >> "$GITHUB_ENV"
+            echo "RAMALAMA_LOAD_TIME=${LOAD_TIME}" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          # Every 10 attempts (~20s), print container status for live debugging
+          if [ $((i % 10)) -eq 0 ] && [ -n "$CONTAINER_ID" ]; then
+            echo "=== Container status (attempt $i/60) ==="
+            podman ps -a --filter "id=$CONTAINER_ID" || true
+            echo "=== Recent logs ==="
+            podman logs --tail 20 "$CONTAINER_ID" 2>&1 || true
+          fi
+
+          echo "Waiting for RamaLama API... (attempt $i/60)"
+          sleep 2
+        done
+
+        # Dump full diagnostics before marking as skipped
+        echo "::error::RamaLama API failed to become ready after 120 seconds"
+        if [ -n "$CONTAINER_ID" ]; then
+          echo "=== Full container logs ==="
+          podman logs "$CONTAINER_ID" 2>&1 || true
+          echo "=== Container inspect ==="
+          podman inspect "$CONTAINER_ID" 2>&1 || true
+        fi
+        echo "=== System resources ==="
+        df -h && free -h || true
+        echo "enabled=false" >> "$GITHUB_OUTPUT"
+        echo "::warning::RamaLama tests will be skipped"
