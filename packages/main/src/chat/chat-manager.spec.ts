@@ -17,6 +17,7 @@
  ***********************************************************************/
 
 import type { UIMessage } from 'ai';
+import { isTextUIPart } from 'ai';
 import type { WebContents } from 'electron';
 import { beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
@@ -26,26 +27,10 @@ import type { MCPManager } from '../plugin/mcp/mcp-manager.js';
 import type { ProviderRegistry } from '../plugin/provider-registry.js';
 import { ChatManager } from './chat-manager.js';
 
-vi.mock('ai', () => ({
-  generateText: vi.fn(),
-  generateObject: vi.fn(),
-  streamText: vi.fn(),
-  convertToModelMessages: vi.fn().mockResolvedValue([]),
-  stepCountIs: vi.fn().mockReturnValue(() => false),
-  isTextUIPart: (p: { type: string }): boolean => p.type === 'text',
-}));
-
-vi.mock('better-sqlite3', () => ({
-  default: vi.fn(),
-}));
-
-vi.mock('drizzle-orm/better-sqlite3', () => ({
-  drizzle: vi.fn(),
-}));
-
-vi.mock('./db/migrate.js', () => ({
-  runMigrate: vi.fn(),
-}));
+vi.mock(import('ai'));
+vi.mock(import('better-sqlite3'));
+vi.mock(import('drizzle-orm/better-sqlite3'));
+vi.mock(import('./db/migrate.js'));
 
 const mockWebContents = {
   send: vi.fn(),
@@ -82,6 +67,7 @@ function createChatManager(): ChatManager {
 describe('ChatManager', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(isTextUIPart).mockImplementation(part => part.type === 'text');
   });
 
   describe('extractPlaceholderTitle', () => {
@@ -167,6 +153,36 @@ describe('ChatManager', () => {
       });
 
       expect(vi.mocked(mockWebContents.send)).toHaveBeenCalledWith('api-sender', 'chat-list-updated');
+    });
+
+    it('should not notify UI when database update fails', async () => {
+      const { generateText } = await import('ai');
+      vi.mocked(generateText).mockResolvedValue({ text: 'Generated Title' } as Awaited<
+        ReturnType<typeof generateText>
+      >);
+
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const chatManager = createChatManager();
+      const dbError = new Error('DB write failed');
+      const mockUpdateChatTitleById = vi.fn().mockReturnValue({ isOk: () => false, error: dbError });
+      (chatManager as unknown as { chatQueries: { updateChatTitleById: MockInstance } }).chatQueries = {
+        updateChatTitleById: mockUpdateChatTitleById,
+      } as never;
+
+      const mockModel = 'mock-model';
+      const userMessage = { role: 'user', parts: [{ type: 'text', text: 'Hello' }] };
+
+      (
+        chatManager as unknown as { generateTitleInBackground: (m: unknown, u: unknown, id: string) => void }
+      ).generateTitleInBackground(mockModel, userMessage, 'chat-123');
+
+      await vi.waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith('Failed to update chat title in database', dbError);
+      });
+
+      expect(vi.mocked(mockWebContents.send)).not.toHaveBeenCalledWith('api-sender', 'chat-list-updated');
+      consoleSpy.mockRestore();
     });
 
     it('should log error and not throw when generateText fails', async () => {

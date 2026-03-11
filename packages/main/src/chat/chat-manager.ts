@@ -224,8 +224,12 @@ export class ChatManager {
       - do not use quotes or colons`,
     })
       .then(async result => {
-        await this.chatQueries.updateChatTitleById({ chatId, title: result.text });
-        this.webContents.send('api-sender', 'chat-list-updated');
+        const updateResult = await this.chatQueries.updateChatTitleById({ chatId, title: result.text });
+        if (updateResult.isOk()) {
+          this.webContents.send('api-sender', 'chat-list-updated');
+        } else {
+          console.error('Failed to update chat title in database', updateResult.error);
+        }
       })
       .catch((error: unknown) => {
         console.error('Failed to generate chat title', error);
