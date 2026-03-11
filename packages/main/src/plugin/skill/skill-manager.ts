@@ -26,6 +26,7 @@ import { dump, load } from 'js-yaml';
 
 import { IPCHandle } from '/@/plugin/api.js';
 import { Directories } from '/@/plugin/directories.js';
+import { Disposable } from '/@/plugin/types/disposable.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IConfigurationNode } from '/@api/configuration/models.js';
 import { IConfigurationRegistry } from '/@api/configuration/models.js';
@@ -102,7 +103,7 @@ export class SkillManager {
     });
 
     this.ipcHandle('skill-manager:registerSkill', async (_listener, folderPath: string): Promise<SkillInfo> => {
-      return this.registerSkill(folderPath);
+      return this.addSkill(folderPath);
     });
 
     this.ipcHandle('skill-manager:disableSkill', async (_listener, name: string): Promise<void> => {
@@ -216,7 +217,14 @@ export class SkillManager {
    * path. The original folder is not copied. The skill is enabled immediately
    * and the reference is persisted to config.
    */
-  async registerSkill(folderPath: string): Promise<SkillInfo> {
+  async registerSkill(folderPath: string): Promise<Disposable> {
+    const skill = await this.addSkill(folderPath);
+    return Disposable.create(() => {
+      this.unregisterSkill(skill.name).catch(console.error);
+    });
+  }
+
+  async addSkill(folderPath: string): Promise<SkillInfo> {
     const resolvedPath = resolve(folderPath);
     const skillFilePath = join(resolvedPath, SKILL_FILE_NAME);
 

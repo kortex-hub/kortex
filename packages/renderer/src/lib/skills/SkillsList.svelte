@@ -60,7 +60,11 @@ function closeCreateDialog(): void {
   {#snippet additionalActions()}
     <Button icon={faPlus} onclick={openCreateDialog}>
       New skill
+    </Button>
   {/snippet}
+
+  {#snippet content()}
+    <div class="flex min-w-full h-full">
       {#if skills.length === 0}
         {#if searchTerm}
           <FilteredEmptyScreen icon={NoLogIcon} kind="skills" bind:searchTerm={searchTerm} />
