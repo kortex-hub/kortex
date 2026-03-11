@@ -53,8 +53,8 @@ test('should show the "New skill" buttons', () => {
 
 test('should show table when skills exist', () => {
   const skills: SkillInfo[] = [
-    { name: 'skill-a', description: 'First skill', content: '# A', path: '/skills/skill-a', enabled: true },
-    { name: 'skill-b', description: 'Second skill', content: '# B', path: '/skills/skill-b', enabled: false },
+    { name: 'skill-a', description: 'First skill', path: '/skills/skill-a', enabled: true },
+    { name: 'skill-b', description: 'Second skill', path: '/skills/skill-b', enabled: false },
   ];
   vi.mocked(skillsStore).filteredSkillInfos = writable(skills);
 

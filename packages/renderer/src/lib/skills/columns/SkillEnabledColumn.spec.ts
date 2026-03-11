@@ -34,7 +34,6 @@ beforeEach(() => {
 const enabledSkill: SkillInfo = {
   name: 'my-skill',
   description: 'A test skill',
-  content: '# Test',
   path: '/skills/my-skill',
   enabled: true,
 };
@@ -42,7 +41,6 @@ const enabledSkill: SkillInfo = {
 const disabledSkill: SkillInfo = {
   name: 'my-skill',
   description: 'A test skill',
-  content: '# Test',
   path: '/skills/my-skill',
   enabled: false,
 };

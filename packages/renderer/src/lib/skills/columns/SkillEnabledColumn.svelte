@@ -11,8 +11,7 @@ let { object }: Props = $props();
 
 function onToggle(_checked: boolean): void {
   const promise = object.enabled ? window.disableSkill(object.name) : window.enableSkill(object.name);
-  promise
-    .catch((err: unknown) => console.error('Error toggling skill:', err));
+  promise.catch((err: unknown) => console.error('Error toggling skill:', err));
 }
 </script>
 
