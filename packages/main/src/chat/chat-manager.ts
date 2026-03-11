@@ -202,6 +202,9 @@ export class ChatManager {
     };
   }
 
+  /**
+   * Extracts a placeholder title from the first text part of a user message, truncated to 80 characters.
+   */
   private extractPlaceholderTitle(userMessage: UIMessage): string {
     const textPart = userMessage.parts.find(p => p.type === 'text');
     if (textPart && 'text' in textPart) {
@@ -210,6 +213,9 @@ export class ChatManager {
     return 'New Chat';
   }
 
+  /**
+   * Asynchronously generates an AI-powered chat title and persists it, notifying the UI on success.
+   */
   private generateTitleInBackground(model: LanguageModelV2, userMessage: UIMessage, chatId: string): void {
     generateText({
       model,
