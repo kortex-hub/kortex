@@ -21,9 +21,14 @@ import type { ResourceId } from './src/model/core/types';
 
 // Locally: Assumes Ollama is not available unless OLLAMA_ENABLED is explicitly set
 const ollamaAvailable = !!process.env.OLLAMA_ENABLED;
+const ramaLamaAvailable = !!process.env.RAMALAMA_ENABLED;
 
 if (ollamaAvailable) {
   console.log('Ollama enabled - running Ollama-Provider tests');
+}
+
+if (ramaLamaAvailable) {
+  console.log('RamaLama enabled - running RamaLama-Provider tests');
 }
 
 const config: PlaywrightTestConfig & {
@@ -89,6 +94,16 @@ const config: PlaywrightTestConfig & {
       testIgnore: ollamaAvailable
         ? ['**/provider-specs/flows-smoke.spec.ts'] // Flows not yet supported for Ollama
         : ['**/*'], // Skip all if Ollama is not running
+    },
+    {
+      name: 'RamaLama-Provider',
+      testMatch: ['**/provider-specs/*.spec.ts'],
+      use: {
+        resource: 'ramalama',
+      },
+      testIgnore: ramaLamaAvailable
+        ? ['**/provider-specs/flows-smoke.spec.ts'] // Flows not yet supported for RamaLama
+        : ['**/*'], // Skip all if RamaLama is not running
     },
   ],
 

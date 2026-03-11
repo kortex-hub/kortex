@@ -30,6 +30,7 @@ export const builtInExtensions = [
   { name: 'goose', locator: 'kortex.goose' },
   { name: 'Ollama', locator: 'kortex.ollama' },
   { name: 'OpenAI Compatible', locator: 'kortex.openai-compatible' },
+  { name: 'RamaLama', locator: 'kortex.ramalama' },
   { name: 'OpenShift AI', locator: 'kortex.openshift-ai' },
 ] as const;
 
@@ -88,6 +89,7 @@ export const resources = {
   goose: { displayName: 'goose', hasCreateButton: false },
   gemini: { displayName: 'Gemini', hasCreateButton: true },
   ollama: { displayName: 'Ollama', hasCreateButton: false },
+  ramalama: { displayName: 'RamaLama', hasCreateButton: false },
 } as const;
 
 export type SettingsResourceId = keyof typeof resources;
@@ -131,6 +133,11 @@ export const PROVIDERS = {
   ollama: {
     envVarName: 'OLLAMA_ENABLED',
     resourceId: 'ollama',
+    autoDetected: true,
+  },
+  ramalama: {
+    envVarName: 'RAMALAMA_ENABLED',
+    resourceId: 'ramalama',
     autoDetected: true,
   },
   'openshift-ai': {
