@@ -5510,4 +5510,28 @@ declare module '@kortex-app/api' {
   export namespace rag {
     export function registerChunkProvider(provider: ChunkProvider): Disposable;
   }
+
+  export interface SkillFolderRegistration {
+    label: string;
+    badge: string;
+    icon?: string;
+    baseDirectory: string;
+  }
+
+  export namespace skills {
+    /**
+     * Registers a skill folder that provides a storage location for skills.
+     * Extensions use this to contribute their own skill directories (e.g. Claude, Cursor).
+     * The folder is automatically unregistered when the extension is deactivated.
+     * @param folder The folder registration containing label, badge, and base directory
+     */
+    export function registerSkillFolder(folder: SkillFolderRegistration): Disposable;
+
+    /**
+     * Registers a skill from an external folder containing a SKILL.md file.
+     * The folder is not copied; only a reference is stored.
+     * @param folderPath Absolute path to the folder containing SKILL.md
+     */
+    export function registerSkill(folderPath: string): Promise<void>;
+  }
 }
