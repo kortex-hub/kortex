@@ -176,5 +176,8 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
     case NavigationPage.MCP_DETAILS:
       router.goto(`/mcps/${encodeURIComponent(request.parameters.id)}/summary`);
       break;
+    case NavigationPage.AGENT_WORKSPACES:
+      router.goto('/agent-workspaces');
+      break;
   }
 };

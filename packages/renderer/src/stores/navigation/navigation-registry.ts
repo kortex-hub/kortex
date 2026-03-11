@@ -25,6 +25,7 @@ import { configurationProperties } from '/@/stores/configurationProperties';
 import { EventStore } from '/@/stores/event-store';
 import { createNavigationFlowsEntry } from '/@/stores/navigation/navigation-registry-flows.svelte';
 
+import { createNavigationAgentWorkspacesEntry } from './navigation-registry-agent-workspaces.svelte';
 import { createNavigationExtensionEntry, createNavigationExtensionGroup } from './navigation-registry-extension.svelte';
 import { createNavigationMcpEntry } from './navigation-registry-mcp.svelte';
 
@@ -68,6 +69,7 @@ const init = (): void => {
   values.push(createNavigationNetworkEntry());
   values.push(createNavigationKubernetesGroup());
   */
+  values.push(createNavigationAgentWorkspacesEntry());
   values.push(createNavigationMcpEntry());
   values.push(createNavigationFlowsEntry());
   values.push(createNavigationExtensionEntry());

@@ -60,4 +60,5 @@ export enum NavigationPage {
   NETWORK_CREATE = 'network-create',
   EXTENSIONS_CATALOG = 'extensions-catalog',
   MCP_DETAILS = 'mcp-details',
+  AGENT_WORKSPACES = 'agent-workspaces',
 }

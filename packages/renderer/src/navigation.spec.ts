@@ -308,3 +308,9 @@ test(`Test navigationHandle for ${NavigationPage.EXTENSIONS_CATALOG}`, () => {
     '/extensions?screen=catalog&searchTerm=not%3Ainstalled%20category%3Afoo%20keyword%3Abar%20red%20hat',
   );
 });
+
+test(`Test navigationHandle for ${NavigationPage.AGENT_WORKSPACES}`, () => {
+  handleNavigation({ page: NavigationPage.AGENT_WORKSPACES });
+
+  expect(vi.mocked(router.goto)).toHaveBeenCalledWith('/agent-workspaces');
+});
