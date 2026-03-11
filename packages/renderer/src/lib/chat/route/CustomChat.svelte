@@ -1,6 +1,6 @@
 <script lang="ts">
 import { ThemeProvider } from '@sejohnson/svelte-themes';
-import { onMount } from 'svelte';
+import { onDestroy, onMount } from 'svelte';
 
 import AppSidebar from '/@/lib/chat/components/app-sidebar.svelte';
 import Chat from '/@/lib/chat/components/chat.svelte';
@@ -35,6 +35,8 @@ onMount(() => {
   selectedChatModel = new SelectedModel(DEFAULT_CHAT_MODEL);
   selectedChatModel.setContext();
 });
+
+onDestroy(() => chatHistory.dispose());
 </script>
 
 {#if selectedChatModel}

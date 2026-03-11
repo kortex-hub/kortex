@@ -437,4 +437,15 @@ export class ChatQueries {
       return ok(undefined);
     });
   };
+
+  updateChatTitleById = ({ chatId, title }: { chatId: string; title: string }): ResultAsync<undefined, DbError> => {
+    const db = this.db;
+    return safeTry(async function* () {
+      yield* fromPromise(
+        db.update(chat).set({ title }).where(eq(chat.id, chatId)),
+        e => new DbInternalError({ cause: e }),
+      );
+      return ok(undefined);
+    });
+  };
 }

@@ -1,0 +1,194 @@
+/**********************************************************************
+ * Copyright (C) 2025-2026 Red Hat, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ***********************************************************************/
+
+import type { UIMessage } from 'ai';
+import type { WebContents } from 'electron';
+import { beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
+
+import type { Directories } from '/@/plugin/directories.js';
+
+import type { MCPManager } from '../plugin/mcp/mcp-manager.js';
+import type { ProviderRegistry } from '../plugin/provider-registry.js';
+import { ChatManager } from './chat-manager.js';
+
+vi.mock('ai', () => ({
+  generateText: vi.fn(),
+  generateObject: vi.fn(),
+  streamText: vi.fn(),
+  convertToModelMessages: vi.fn().mockResolvedValue([]),
+  stepCountIs: vi.fn().mockReturnValue(() => false),
+  isTextUIPart: (p: { type: string }): boolean => p.type === 'text',
+}));
+
+vi.mock('better-sqlite3', () => ({
+  default: vi.fn(),
+}));
+
+vi.mock('drizzle-orm/better-sqlite3', () => ({
+  drizzle: vi.fn(),
+}));
+
+vi.mock('./db/migrate.js', () => ({
+  runMigrate: vi.fn(),
+}));
+
+const mockWebContents = {
+  send: vi.fn(),
+} as unknown as WebContents;
+
+const mockProviderRegistry = {
+  getMatchingProviderInternalId: vi.fn().mockReturnValue('internal-id'),
+  getInferenceSDK: vi.fn().mockReturnValue({
+    languageModel: vi.fn().mockReturnValue('mock-model'),
+  }),
+} as unknown as ProviderRegistry;
+
+const mockMcpManager = {
+  getToolSet: vi.fn().mockResolvedValue({}),
+  getExchanges: vi.fn().mockResolvedValue([]),
+} as unknown as MCPManager;
+
+const mockDirectories = {
+  getChatPersistenceDirectory: vi.fn().mockReturnValue('/tmp/test-chat'),
+} as unknown as Directories;
+
+const mockIpcHandle = vi.fn();
+
+function createChatManager(): ChatManager {
+  return new (ChatManager as unknown as new (...args: unknown[]) => ChatManager)(
+    mockProviderRegistry,
+    mockMcpManager,
+    mockWebContents,
+    mockIpcHandle,
+    mockDirectories,
+  );
+}
+
+describe('ChatManager', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('extractPlaceholderTitle', () => {
+    it('should extract text from user message parts', () => {
+      const chatManager = createChatManager();
+      const userMessage = {
+        role: 'user',
+        parts: [{ type: 'text', text: 'What is Kubernetes?' }],
+      } as UIMessage;
+
+      const title = (
+        chatManager as unknown as { extractPlaceholderTitle: (m: UIMessage) => string }
+      ).extractPlaceholderTitle(userMessage);
+      expect(title).toBe('What is Kubernetes?');
+    });
+
+    it('should truncate text to 80 characters', () => {
+      const chatManager = createChatManager();
+      const longText = 'A'.repeat(120);
+      const userMessage = {
+        role: 'user',
+        parts: [{ type: 'text', text: longText }],
+      } as UIMessage;
+
+      const title = (
+        chatManager as unknown as { extractPlaceholderTitle: (m: UIMessage) => string }
+      ).extractPlaceholderTitle(userMessage);
+      expect(title).toHaveLength(80);
+    });
+
+    it('should return "New Chat" when message has no text parts', () => {
+      const chatManager = createChatManager();
+      const userMessage = {
+        role: 'user',
+        parts: [{ type: 'file', url: 'file://test.png', mediaType: 'image/png' }],
+      } as UIMessage;
+
+      const title = (
+        chatManager as unknown as { extractPlaceholderTitle: (m: UIMessage) => string }
+      ).extractPlaceholderTitle(userMessage);
+      expect(title).toBe('New Chat');
+    });
+
+    it('should use the first text part when multiple parts exist', () => {
+      const chatManager = createChatManager();
+      const userMessage = {
+        role: 'user',
+        parts: [
+          { type: 'file', url: 'file://test.png', mediaType: 'image/png' },
+          { type: 'text', text: 'Explain this image' },
+        ],
+      } as UIMessage;
+
+      const title = (
+        chatManager as unknown as { extractPlaceholderTitle: (m: UIMessage) => string }
+      ).extractPlaceholderTitle(userMessage);
+      expect(title).toBe('Explain this image');
+    });
+  });
+
+  describe('generateTitleInBackground', () => {
+    it('should call generateText and update chat title on success', async () => {
+      const { generateText } = await import('ai');
+      vi.mocked(generateText).mockResolvedValue({ text: 'Generated Title' } as Awaited<
+        ReturnType<typeof generateText>
+      >);
+
+      const chatManager = createChatManager();
+      const mockUpdateChatTitleById = vi.fn().mockReturnValue({ isOk: () => true });
+      (chatManager as unknown as { chatQueries: { updateChatTitleById: MockInstance } }).chatQueries = {
+        updateChatTitleById: mockUpdateChatTitleById,
+      } as never;
+
+      const mockModel = 'mock-model';
+      const userMessage = { role: 'user', parts: [{ type: 'text', text: 'Hello' }] };
+
+      (
+        chatManager as unknown as { generateTitleInBackground: (m: unknown, u: unknown, id: string) => void }
+      ).generateTitleInBackground(mockModel, userMessage, 'chat-123');
+
+      await vi.waitFor(() => {
+        expect(mockUpdateChatTitleById).toHaveBeenCalledWith({ chatId: 'chat-123', title: 'Generated Title' });
+      });
+
+      expect(vi.mocked(mockWebContents.send)).toHaveBeenCalledWith('api-sender', 'chat-list-updated');
+    });
+
+    it('should log error and not throw when generateText fails', async () => {
+      const { generateText } = await import('ai');
+      vi.mocked(generateText).mockRejectedValue(new Error('Model unavailable'));
+
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const chatManager = createChatManager();
+
+      const mockModel = 'mock-model';
+      const userMessage = { role: 'user', parts: [{ type: 'text', text: 'Hello' }] };
+
+      (
+        chatManager as unknown as { generateTitleInBackground: (m: unknown, u: unknown, id: string) => void }
+      ).generateTitleInBackground(mockModel, userMessage, 'chat-123');
+
+      await vi.waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith('Failed to generate chat title', expect.any(Error));
+      });
+
+      consoleSpy.mockRestore();
+    });
+  });
+});

@@ -3,6 +3,7 @@ import { toast } from 'svelte-sonner';
 
 import type { VisibilityType } from '/@/lib/chat/components/visibility-type';
 import type { Chat } from '/@api/chat/schema.js';
+import type { IDisposable } from '/@api/disposable.js';
 
 const contextKey = Symbol('ChatHistory');
 
@@ -10,6 +11,7 @@ export class ChatHistory {
   #loading = $state(false);
   #revalidating = $state(false);
   chats = $state<Chat[]>([]);
+  #chatListSubscription: IDisposable | undefined;
 
   get loading(): boolean {
     return this.#loading;
@@ -31,6 +33,17 @@ export class ChatHistory {
       .catch((error: unknown) => {
         console.error('Failed to load chat history', error);
       });
+
+    this.#chatListSubscription = window.events?.receive('chat-list-updated', () => {
+      this.refetch().catch((error: unknown) => {
+        console.error('Failed to refetch chat history after chat-list-updated event', error);
+      });
+    });
+  }
+
+  dispose(): void {
+    this.#chatListSubscription?.dispose();
+    this.#chatListSubscription = undefined;
   }
 
   getChatDetails = (chatId: string): Chat | undefined => {
