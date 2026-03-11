@@ -180,6 +180,15 @@ Tests are co-located with source files:
 - Test configuration: `vitest.config.js` at root defines workspace test projects
 - 627 total test files across the codebase
 
+### Unit Test Conventions
+
+Unit tests use Vitest and follow these conventions:
+
+- **Mocking**: Use `vi.mock(import('...'))` for auto-mocking modules. Avoid manual mock factories (`vi.mock('...', () => ({...}))`) when possible
+- **Resetting mocks**: Use `vi.resetAllMocks()` in `beforeEach`, not `vi.clearAllMocks()`
+- **Customizing auto-mocks**: When an auto-mocked function or class method needs a real implementation, use `vi.mocked(...)`. For class methods, use the prototype pattern: `vi.mocked(MyClass.prototype.myMethod).mockImplementation(...)`
+- **Import aliases**: Use `/@/` path aliases (e.g., `'/@/plugin/provider-registry.js'`) instead of relative paths (e.g., `'../plugin/provider-registry.js'`) for imports outside the current directory's module group. Relative imports are only used for the module under test (e.g., `'./chat-manager.js'`)
+
 ### Extension Lifecycle
 
 1. **Discovery**: `ExtensionLoader` scans `extensions/` directory

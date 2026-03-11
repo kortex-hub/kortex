@@ -22,9 +22,9 @@ import type { WebContents } from 'electron';
 import { beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 
 import type { Directories } from '/@/plugin/directories.js';
+import type { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
+import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 
-import type { MCPManager } from '../plugin/mcp/mcp-manager.js';
-import type { ProviderRegistry } from '../plugin/provider-registry.js';
 import { ChatManager } from './chat-manager.js';
 
 vi.mock(import('ai'));
@@ -66,7 +66,7 @@ function createChatManager(): ChatManager {
 
 describe('ChatManager', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     vi.mocked(isTextUIPart).mockImplementation(part => part.type === 'text');
   });
 
