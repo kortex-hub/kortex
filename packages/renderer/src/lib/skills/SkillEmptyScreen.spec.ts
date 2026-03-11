@@ -18,7 +18,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { fireEvent, render, screen } from '@testing-library/svelte';
+import { render, screen } from '@testing-library/svelte';
 import { expect, test, vi } from 'vitest';
 
 import SkillEmptyScreen from './SkillEmptyScreen.svelte';
@@ -33,13 +33,4 @@ test('should render the "No skills" title', () => {
   render(SkillEmptyScreen, { onclick: vi.fn() });
 
   expect(screen.getByText('No skills')).toBeInTheDocument();
-});
-
-test('should call onclick when "New skill" button is clicked', async () => {
-  const onclickMock = vi.fn();
-  render(SkillEmptyScreen, { onclick: onclickMock });
-
-  await fireEvent.click(screen.getByText('New skill'));
-
-  expect(onclickMock).toHaveBeenCalled();
 });

@@ -12,7 +12,7 @@ let { onclick }: Props = $props();
 </script>
 
 <EmptyScreen title="No skills" icon={NoLogIcon}>
-  <Button icon={faPlus} onclick={onclick}>
+  <Button icon={faPlus} onclick={onclick} disabled={true}>
     New skill
   </Button>
 </EmptyScreen>

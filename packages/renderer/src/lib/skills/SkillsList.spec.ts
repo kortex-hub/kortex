@@ -18,9 +18,8 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { fireEvent, render, screen } from '@testing-library/svelte';
+import { render, screen } from '@testing-library/svelte';
 import { writable } from 'svelte/store';
-import { router } from 'tinro';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import * as skillsStore from '/@/stores/skills';
@@ -29,8 +28,6 @@ import type { SkillInfo } from '/@api/skill/skill-info';
 import SkillsList from './SkillsList.svelte';
 
 vi.mock('/@/stores/skills');
-
-vi.mock(import('tinro'));
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -62,13 +59,4 @@ test('should show table when skills exist', () => {
 
   expect(screen.getByText('skill-a')).toBeInTheDocument();
   expect(screen.getByText('skill-b')).toBeInTheDocument();
-});
-
-test('should navigate to create page when "New skill" is clicked', async () => {
-  render(SkillsList);
-
-  const buttons = screen.getAllByText('New skill');
-  await fireEvent.click(buttons[0]);
-
-  expect(router.goto).toHaveBeenCalledWith('/skills/create');
 });

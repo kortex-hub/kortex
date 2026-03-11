@@ -55,7 +55,7 @@ function navigateToCreateSkill(): void {
 
 <NavPage bind:searchTerm={searchTerm} title="Skills">
   {#snippet additionalActions()}
-    <Button icon={faPlus} onclick={navigateToCreateSkill}>
+    <Button icon={faPlus} onclick={navigateToCreateSkill} disabled={true}>
       New skill
     </Button>
   {/snippet}
