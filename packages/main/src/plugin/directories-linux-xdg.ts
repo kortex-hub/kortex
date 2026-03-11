@@ -39,6 +39,7 @@ export class LinuxXDGDirectories implements Directories {
   private readonly contributionStorageDirectory: string;
   private readonly safeStorageDirectory: string;
   private readonly chatPersistenceDirectory: string;
+  private readonly skillsDirectory: string;
 
   constructor() {
     // XDG_CONFIG_HOME: user-specific configuration files
@@ -58,6 +59,7 @@ export class LinuxXDGDirectories implements Directories {
     this.contributionStorageDirectory = path.resolve(this.dataDirectory, 'contributions');
     this.safeStorageDirectory = path.resolve(this.dataDirectory, 'safe-storage');
     this.chatPersistenceDirectory = path.resolve(this.dataDirectory, 'chat-persistence');
+    this.skillsDirectory = path.resolve(this.dataDirectory, 'skills');
   }
 
   getConfigurationDirectory(): string {
@@ -98,5 +100,9 @@ export class LinuxXDGDirectories implements Directories {
 
   getChatPersistenceDirectory(): string {
     return this.chatPersistenceDirectory;
+  }
+
+  getSkillsDirectory(): string {
+    return this.skillsDirectory;
   }
 }
