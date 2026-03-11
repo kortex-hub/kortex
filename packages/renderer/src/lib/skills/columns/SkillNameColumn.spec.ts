@@ -28,7 +28,6 @@ import SkillNameColumn from './SkillNameColumn.svelte';
 const skill: SkillInfo = {
   name: 'my-test-skill',
   description: 'A test skill',
-  content: '# Test',
   path: '/skills/my-test-skill',
   enabled: true,
 };

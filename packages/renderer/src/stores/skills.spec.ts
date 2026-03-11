@@ -31,8 +31,8 @@ beforeEach(() => {
 
 test('fetchSkills should call window.listSkills and update the store', async () => {
   const skills: SkillInfo[] = [
-    { name: 'skill-a', description: 'First skill', content: '# A', path: '/skills/skill-a', enabled: true },
-    { name: 'skill-b', description: 'Second skill', content: '# B', path: '/skills/skill-b', enabled: false },
+    { name: 'skill-a', description: 'First skill', path: '/skills/skill-a', enabled: true },
+    { name: 'skill-b', description: 'Second skill', path: '/skills/skill-b', enabled: false },
   ];
   vi.mocked(window.listSkills).mockResolvedValue(skills);
 
@@ -44,8 +44,8 @@ test('fetchSkills should call window.listSkills and update the store', async () 
 
 test('filteredSkillInfos should return all skills when search pattern is empty', () => {
   const skills: SkillInfo[] = [
-    { name: 'skill-a', description: 'First skill', content: '# A', path: '/skills/skill-a', enabled: true },
-    { name: 'skill-b', description: 'Second skill', content: '# B', path: '/skills/skill-b', enabled: false },
+    { name: 'skill-a', description: 'First skill', path: '/skills/skill-a', enabled: true },
+    { name: 'skill-b', description: 'Second skill', path: '/skills/skill-b', enabled: false },
   ];
   skillInfos.set(skills);
 
@@ -54,8 +54,8 @@ test('filteredSkillInfos should return all skills when search pattern is empty',
 
 test('filteredSkillInfos should filter by search pattern', () => {
   const skills: SkillInfo[] = [
-    { name: 'skill-a', description: 'First skill', content: '# A', path: '/skills/skill-a', enabled: true },
-    { name: 'skill-b', description: 'Second skill', content: '# B', path: '/skills/skill-b', enabled: false },
+    { name: 'skill-a', description: 'First skill', path: '/skills/skill-a', enabled: true },
+    { name: 'skill-b', description: 'Second skill', path: '/skills/skill-b', enabled: false },
   ];
   skillInfos.set(skills);
   skillSearchPattern.set('skill-a');
@@ -65,9 +65,7 @@ test('filteredSkillInfos should filter by search pattern', () => {
 });
 
 test('filteredSkillInfos should return empty when no skills match search', () => {
-  const skills: SkillInfo[] = [
-    { name: 'skill-a', description: 'First skill', content: '# A', path: '/skills/skill-a', enabled: true },
-  ];
+  const skills: SkillInfo[] = [{ name: 'skill-a', description: 'First skill', path: '/skills/skill-a', enabled: true }];
   skillInfos.set(skills);
   skillSearchPattern.set('nonexistent');
 
