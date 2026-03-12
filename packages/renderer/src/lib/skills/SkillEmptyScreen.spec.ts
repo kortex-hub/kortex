@@ -1,0 +1,45 @@
+/**********************************************************************
+ * Copyright (C) 2026 Red Hat, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ***********************************************************************/
+
+import '@testing-library/jest-dom/vitest';
+
+import { fireEvent, render, screen } from '@testing-library/svelte';
+import { expect, test, vi } from 'vitest';
+
+import SkillEmptyScreen from './SkillEmptyScreen.svelte';
+
+test('should render the "New skill" button', () => {
+  render(SkillEmptyScreen, { onclick: vi.fn() });
+
+  expect(screen.getByText('New skill')).toBeInTheDocument();
+});
+
+test('should render the "No skills" title', () => {
+  render(SkillEmptyScreen, { onclick: vi.fn() });
+
+  expect(screen.getByText('No skills')).toBeInTheDocument();
+});
+
+test('should call onclick when "New skill" button is clicked', async () => {
+  const onclickMock = vi.fn();
+  render(SkillEmptyScreen, { onclick: onclickMock });
+
+  await fireEvent.click(screen.getByText('New skill'));
+
+  expect(onclickMock).toHaveBeenCalled();
+});

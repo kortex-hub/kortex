@@ -5498,4 +5498,17 @@ declare module '@kortex-app/api' {
   export namespace rag {
     export function registerChunkProvider(provider: ChunkProvider): Disposable;
   }
+
+  /**
+   * Manage skills that can be used by AI agents.
+   */
+  export namespace skills {
+    /**
+     * Registers a skill from an external folder containing a SKILL.md file.
+     * The folder is not copied; only a reference is stored.
+     * The skill is automatically unregistered when the extension is deactivated.
+     * @param folderPath Absolute path to the folder containing SKILL.md
+     */
+    export function registerSkill(folderPath: string): Promise<void>;
+  }
 }
