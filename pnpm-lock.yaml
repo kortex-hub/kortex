@@ -207,8 +207,8 @@ importers:
         specifier: 'workspace:'
         version: link:packages/extension-api
       '@kortex-hub/kortex-cli-api':
-        specifier: ^0.1.3
-        version: 0.1.3
+        specifier: ^0.1.4
+        version: 0.1.4
       '@kortex-hub/mcp-registry-types':
         specifier: ^1.4.0-next.20251210140818.04eeb13
         version: 1.4.0-next.20251210140818.04eeb13
@@ -1650,8 +1650,8 @@ packages:
     peerDependencies:
       jsep: ^0.4.0||^1.0.0
 
-  '@kortex-hub/kortex-cli-api@0.1.3':
-    resolution: {integrity: sha512-G5ux375dpNv58EpA0e0bdgMChsOxmwB3k8PRuhYglEEvkSxiGAfm3jWwNqy25mc5zL87UCucVvxR9LnCQPZtnA==}
+  '@kortex-hub/kortex-cli-api@0.1.4':
+    resolution: {integrity: sha512-UqwJsq11TDI90FQPihautoEFGARGIkCvezEJArPR6ZynM6N8a+tgHHBGembuA3VYdJvTeSFAcYjnyEdgJBloUw==}
 
   '@kortex-hub/mcp-registry-types@1.4.0-next.20251210140818.04eeb13':
     resolution: {integrity: sha512-xYO35mnv6qtwIC3+1WJHUet94w3C2CWwu9GdxM0jSSG763OMuOoyPTirsXDNeiPE7pYUwr1rR9Ea1WVcHT+1pA==}
@@ -5844,6 +5844,10 @@ packages:
     resolution: {integrity: sha512-+CGM1L1CgmtheLcBuleyYOn7NWPVu0s0EJH2C4puxgEZb9h8QpR9G2dBfZJOAUhi7VQxuBPMd0hiISWcTyiYyQ==}
     engines: {node: '>=10'}
 
+  node-abi@3.88.0:
+    resolution: {integrity: sha512-At6b4UqIEVudaqPsXjmUO1r/N5BUr4yhDGs5PkBE8/oG5+TfLPhFechiskFsnT6Ql0VfUXbalUUCbfXxtj7K+w==}
+    engines: {node: '>=10'}
+
   node-abi@4.26.0:
     resolution: {integrity: sha512-8QwIZqikRvDIkXS2S93LjzhsSPJuIbfaMETWH+Bx8oOT9Sa9UsUtBFQlc3gBNd1+QINjaTloitXr1W3dQLi9Iw==}
     engines: {node: '>=22.12.0'}
@@ -7011,6 +7015,10 @@ packages:
     resolution: {integrity: sha512-8mOPs1//5q/rlkNSPcCegA6hiHJYDmSLEI8aMH/CdSQJNWztHC9WHNam5zdQlfpTwB9Xp7IBEsHfV5LKMJGVAw==}
     engines: {node: '>=18'}
 
+  tar@7.5.11:
+    resolution: {integrity: sha512-ChjMH33/KetonMTAtpYdgUFr0tbz69Fp2v7zWxQfYZX4g5ZN2nOBXm1R2xyA+lMIKrLKIoKAwFj93jE/avX9cQ==}
+    engines: {node: '>=18'}
+
   teex@1.0.1:
     resolution: {integrity: sha512-eYE6iEI62Ni1H8oIa7KlDU6uQBtqr4Eajni3wX7rpfXD8ysFx8z0+dri+KWEPWpBsxXfxu58x/0jvTVT1ekOSg==}
 
@@ -7985,7 +7993,7 @@ snapshots:
       make-fetch-happen: 10.2.1
       nopt: 6.0.0
       proc-log: 2.0.1
-      semver: 7.7.4
+      semver: 7.7.3
       tar: 7.5.10
       which: 2.0.2
     transitivePeerDependencies:
@@ -8019,13 +8027,13 @@ snapshots:
       detect-libc: 2.1.2
       fs-extra: 10.1.0
       got: 11.8.6
-      node-abi: 3.87.0
+      node-abi: 3.88.0
       node-api-version: 0.2.1
       node-gyp: 9.4.1
       ora: 5.4.1
       read-binary-file-arch: 1.0.6
       semver: 7.7.4
-      tar: 7.5.10
+      tar: 7.5.11
       yargs: 17.7.2
     transitivePeerDependencies:
       - bluebird
@@ -8461,7 +8469,7 @@ snapshots:
     dependencies:
       jsep: 1.4.0
 
-  '@kortex-hub/kortex-cli-api@0.1.3': {}
+  '@kortex-hub/kortex-cli-api@0.1.4': {}
 
   '@kortex-hub/mcp-registry-types@1.4.0-next.20251210140818.04eeb13':
     dependencies:
@@ -8580,7 +8588,7 @@ snapshots:
   '@npmcli/fs@2.1.2':
     dependencies:
       '@gar/promisify': 1.1.3
-      semver: 7.7.4
+      semver: 7.7.3
 
   '@npmcli/fs@4.0.0':
     dependencies:
@@ -9761,7 +9769,7 @@ snapshots:
       resedit: 1.7.2
       sanitize-filename: 1.6.3
       semver: 7.7.4
-      tar: 7.5.10
+      tar: 7.5.11
       temp-file: 3.4.0
     transitivePeerDependencies:
       - bluebird
@@ -13260,6 +13268,10 @@ snapshots:
     dependencies:
       semver: 7.7.4
 
+  node-abi@3.88.0:
+    dependencies:
+      semver: 7.7.4
+
   node-abi@4.26.0:
     dependencies:
       semver: 7.7.4
@@ -13313,7 +13325,7 @@ snapshots:
       npmlog: 6.0.2
       rimraf: 3.0.2
       semver: 7.7.4
-      tar: 7.5.10
+      tar: 7.5.11
       which: 2.0.2
     transitivePeerDependencies:
       - bluebird
@@ -14607,6 +14619,14 @@ snapshots:
       - react-native-b4a
 
   tar@7.5.10:
+    dependencies:
+      '@isaacs/fs-minipass': 4.0.1
+      chownr: 3.0.0
+      minipass: 7.1.3
+      minizlib: 3.1.0
+      yallist: 5.0.0
+
+  tar@7.5.11:
     dependencies:
       '@isaacs/fs-minipass': 4.0.1
       chownr: 3.0.0

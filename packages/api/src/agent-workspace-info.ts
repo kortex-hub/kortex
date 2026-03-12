@@ -24,3 +24,9 @@ import type { components } from '@kortex-hub/kortex-cli-api';
  * as the CLI evolves and publishes them in @kortex-hub/kortex-cli-api.
  */
 export type AgentWorkspaceSummary = components['schemas']['Workspace'];
+
+/**
+ * Returned by mutating workspace commands (e.g. remove, init) to confirm
+ * which workspace was affected. Maps to the CLI `WorkspaceId` schema.
+ */
+export type AgentWorkspaceId = components['schemas']['WorkspaceId'];

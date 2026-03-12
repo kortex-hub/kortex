@@ -20,7 +20,7 @@ import type { Disposable } from '@kortex-app/api';
 import { inject, injectable, preDestroy } from 'inversify';
 
 import { IPCHandle } from '/@/plugin/api.js';
-import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
+import type { AgentWorkspaceId, AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
 
 import { mockListWorkspaces, mockRemoveWorkspace } from './agent-workspace-mock-data.js';
 
@@ -44,8 +44,8 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   // Future: exec('kortex', ['workspace', 'remove', id, '--format', 'json'])
-  remove(id: string): void {
-    mockRemoveWorkspace(id);
+  remove(id: string): AgentWorkspaceId {
+    return mockRemoveWorkspace(id);
   }
 
   init(): void {
@@ -53,7 +53,7 @@ export class AgentWorkspaceManager implements Disposable {
       return this.list();
     });
 
-    this.ipcHandle('agent-workspace:remove', async (_listener: unknown, id: string): Promise<void> => {
+    this.ipcHandle('agent-workspace:remove', async (_listener: unknown, id: string): Promise<AgentWorkspaceId> => {
       return this.remove(id);
     });
   }

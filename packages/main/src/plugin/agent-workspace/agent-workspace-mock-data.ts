@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
+import type { AgentWorkspaceId, AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
 
 /**
  * Mock CLI responses.
@@ -60,10 +60,11 @@ export function mockListWorkspaces(): AgentWorkspaceSummary[] {
 }
 
 // Future: exec('kortex', ['workspace', 'remove', id, '--format', 'json'])
-export function mockRemoveWorkspace(id: string): void {
+export function mockRemoveWorkspace(id: string): AgentWorkspaceId {
   const idx = store.findIndex(ws => ws.id === id);
   if (idx === -1) {
     throw new Error(`workspace "${id}" not found. Use "workspace list" to see available workspaces.`);
   }
   store.splice(idx, 1);
+  return { id };
 }

@@ -19,7 +19,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { IPCHandle } from '/@/plugin/api.js';
-import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
+import type { AgentWorkspaceId, AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
 
 import { AgentWorkspaceManager } from './agent-workspace-manager.js';
 import { mockListWorkspaces, mockRemoveWorkspace } from './agent-workspace-mock-data.js';
@@ -84,10 +84,14 @@ describe('list', () => {
 });
 
 describe('remove', () => {
-  test('delegates to mockRemoveWorkspace with the given id', () => {
-    manager.remove('ws-1');
+  test('delegates to mockRemoveWorkspace and returns the workspace id', () => {
+    const expected: AgentWorkspaceId = { id: 'ws-1' };
+    vi.mocked(mockRemoveWorkspace).mockReturnValue(expected);
+
+    const result = manager.remove('ws-1');
 
     expect(mockRemoveWorkspace).toHaveBeenCalledWith('ws-1');
+    expect(result).toEqual(expected);
   });
 
   test('throws when mockRemoveWorkspace throws for unknown id', () => {
