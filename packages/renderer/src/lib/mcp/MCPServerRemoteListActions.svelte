@@ -35,13 +35,6 @@ async function confirmCredentialWarning(configPath: string): Promise<boolean> {
 async function exportToTarget(target: MCPExportTarget): Promise<void> {
   exportInProgress = true;
   try {
-    if (target === VSCODE) {
-      const paths = await window.openDialog({ title: 'Select workspace folder', selectors: ['openDirectory'] });
-      if (!paths?.length) {
-        return;
-      }
-    }
-
     const configPath = await window.getMcpExportConfigPath(target);
     const confirmed = await confirmCredentialWarning(configPath);
     if (!confirmed) {
@@ -49,8 +42,18 @@ async function exportToTarget(target: MCPExportTarget): Promise<void> {
     }
 
     await window.exportMcpServer(object.infos.serverId, target);
+
+    await window.showMessageBox({
+      title: 'MCP Server Exported',
+      message: `MCP server configuration has been written to:\n${configPath}`,
+      buttons: ['OK'],
+    });
   } catch (err: unknown) {
-    console.error('Failed to export MCP server', err);
+    await window.showMessageBox({
+      title: 'Export Failed',
+      message: `Failed to export MCP server: ${err instanceof Error ? err.message : String(err)}`,
+      buttons: ['OK'],
+    });
   } finally {
     exportInProgress = false;
   }
