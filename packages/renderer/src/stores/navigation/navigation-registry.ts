@@ -28,8 +28,8 @@ import { createNavigationFlowsEntry } from '/@/stores/navigation/navigation-regi
 import { createNavigationAgentWorkspacesEntry } from './navigation-registry-agent-workspaces.svelte';
 import { createNavigationExtensionEntry, createNavigationExtensionGroup } from './navigation-registry-extension.svelte';
 import { createNavigationMcpEntry } from './navigation-registry-mcp.svelte';
-import { createNavigationSkillsEntry } from './navigation-registry-skills.svelte';
 import { createNavigationRagEntry } from './navigation-registry-rag.svelte';
+import { createNavigationSkillsEntry } from './navigation-registry-skills.svelte';
 
 export interface NavigationRegistryEntry {
   name: string;
