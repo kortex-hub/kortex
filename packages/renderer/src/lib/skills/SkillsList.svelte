@@ -21,9 +21,7 @@ $effect(() => {
   skillSearchPattern.set(searchTerm);
 });
 
-const row = new TableRow<SkillSelectable>({
-  selectable: (_): boolean => false,
-});
+const row = new TableRow<SkillSelectable>({});
 
 const nameColumn = new TableColumn<SkillSelectable>('Name', {
   width: '2fr',
