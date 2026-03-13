@@ -172,14 +172,3 @@ function selectChunkProvider(id: string): void {
     </div>
   </div>
 </Modal>
-
-<style>
-.tile {
-  min-height: 100px;
-}
-
-.tile:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--pd-button-primary-bg);
-}
-</style>
