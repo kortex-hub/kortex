@@ -1674,6 +1674,13 @@ export function initExposure(): void {
     return ipcInvoke('rag-environment-registry:getRagEnvironments');
   });
 
+  contextBridge.exposeInMainWorld(
+    'createRagEnvironment',
+    async (name: string, ragConnection: { name: string; providerId: string }, chunkerId: string): Promise<void> => {
+      return ipcInvoke('rag-environment-registry:createRagEnvironment', name, ragConnection, chunkerId);
+    },
+  );
+
   contextBridge.exposeInMainWorld('deleteRagEnvironment', async (name: string): Promise<void> => {
     return ipcInvoke('rag-environment-registry:deleteRagEnvironment', name);
   });
