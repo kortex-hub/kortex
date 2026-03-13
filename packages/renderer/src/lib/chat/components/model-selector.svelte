@@ -1,7 +1,18 @@
+<script lang="ts" module>
+import type { ModelInfo } from '/@/lib/chat/components/model-info';
+
+export function groupAndSortModels(models: Array<ModelInfo>): Map<string, Array<ModelInfo>> {
+  return new Map(
+    Array.from(
+      Map.groupBy(models, ({ providerId, connectionName }) => `${providerId}:${connectionName}`).entries(),
+    ).map(([key, models]) => [key, models.toSorted((a, b) => a.label.localeCompare(b.label))]),
+  );
+}
+</script>
+
 <script lang="ts">
 import type { ClassValue } from 'svelte/elements';
 
-import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { cn } from '/@/lib/chat/utils/shadcn';
 
 import CheckCircleFillIcon from './icons/check-circle-fill.svelte';
@@ -27,9 +38,7 @@ let {
   models: Array<ModelInfo>;
 } = $props();
 
-let groups: Map<string, Array<ModelInfo>> = $derived(
-  Map.groupBy(models, ({ providerId, connectionName }) => `${providerId}:${connectionName}`),
-);
+let groups: Map<string, Array<ModelInfo>> = $derived(groupAndSortModels(models));
 
 let open = $state(false);
 const selectedChatModelDetails = $derived(
