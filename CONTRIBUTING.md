@@ -1,8 +1,4 @@
-# Contributing to Podman Desktop
-
-<p align="center">
-  <img alt="Podman Desktop" src="https://raw.githubusercontent.com/podman-desktop/podman-desktop/media/screenshot.png">
-</p>
+# Contributing to Kortex
 
 We'd love to have you join the community! Below summarizes the processes
 that we follow.
@@ -18,12 +14,11 @@ that we follow.
 - [Communication](#communication)
 - [Code Architecture](#code-architecture)
 - [Maintainer Tasks](#maintainer-tasks)
-- [Website Contributions](#website-contributions)
 
 ## Reporting Issues
 
 Before opening an issue, check the backlog of
-[open issues](https://github.com/podman-desktop/podman-desktop/issues)
+[open issues](https://github.com/kortex-hub/kortex/issues)
 to see if someone else has already reported it.
 
 If so, feel free to add
@@ -40,30 +35,34 @@ Please don't include any private/sensitive information in your issue!
 
 ## Providing Extensions
 
-Some of the best features of Podman Desktop aren't even in this repository!
-Podman Desktop provides a set of API that expands its capabilities
-by installing [extensions](https://podman-desktop.io/extensions).
+Some of the best features of Kortex aren't even in this repository!
+Kortex provides a set of APIs that expand its capabilities through extensions.
 
-Extensions add support for new container engines, command line tools,
-Kubernetes providers, or add elements to the UI like actions, badges, or views.
-You can create your own extension and contribute it to the catalog for
-others to use.
+Extensions add support for:
 
-See the [extension documentation](https://podman-desktop.io/docs/extensions) on our website for more information.
+- AI providers (Gemini, OpenAI-compatible, OpenShift AI)
+- Flow providers (like Goose for AI-powered automation)
+- MCP (Model Context Protocol) server registries
+- Container engines and Kubernetes providers
+- UI elements like actions, badges, or views
+
+You can create your own extension and contribute it to the project.
+
+See the `packages/extension-api` documentation and existing extensions in the `extensions/` directory for more information.
 
 ## Working On Issues
 
 Often issues will be assigned to someone, to be worked on at a later time.
 
-If you are a member of the [Podman Desktop](https://github.com/podman-desktop) organization,
+If you are a member of the [Kortex](https://github.com/kortex-hub) organization,
 self-assign the issue with the `status/in-progress` label.
 
-If you can not set the label: add a quick comment in the issue asking that
-the `status/in-progress` label to be set and a maintainer will label it.
+If you cannot set the label, add a quick comment in the issue asking that
+the `status/in-progress` label be set and a maintainer will label it.
 
 ## Contributing
 
-This section describes how to start a contribution to Podman Desktop.
+This section describes how to start a contribution to Kortex.
 
 ### Prerequisites: Prepare your environment
 
@@ -76,11 +75,6 @@ Requirements:
 
 Optional Linux requirements:
 
-- [Flatpak builder, runtime, and SDK, version 25.08](https://docs.flatpak.org/en/latest/first-build.html)
-  ```sh
-  flatpak remote-add --if-not-exists flathub --user https://flathub.org/repo/flathub.flatpakrepo
-  flatpak install --user flathub org.flatpak.Builder org.freedesktop.Platform//25.08 org.freedesktop.Sdk//25.08
-  ```
 - GNU C and C++ compiler
   Fedora/RHEL
   ```sh
@@ -95,14 +89,14 @@ On Windows:
 
 - [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#visual-studio-2015-2017-2019-and-2022)
 
-### Step 1. Fork and clone Podman Desktop
+### Step 1. Fork and clone Kortex
 
 Clone and fork the project.
 
 Fork the repo using GitHub site and then clone the directory:
 
 ```sh
-git clone https://github.com/<you>/podman-desktop && cd podman-desktop
+git clone https://github.com/<you>/kortex && cd kortex
 ```
 
 ### Step 2. Install dependencies
@@ -127,139 +121,132 @@ The dev environment will track all files changes and reload the application resp
 
 Write tests! Please try to write some unit tests when submitting your PR.
 
-Run the unit and component tests using `pnpm`:
+Run the unit tests using `pnpm`:
 
 ```sh
 pnpm test:unit
 ```
 
-Depending on to what part of project you contribute to, you can specify to run tests for the given module only, ie., if you are working on extensions, you can run the tests for extensions and have faster feedback:
+Run unit tests with coverage:
 
 ```sh
-pnpm test:extensions
+pnpm test:unit:coverage
 ```
 
-or if you are contributing to a particular extension, you can call:
+Depending on which part of the project you contribute to, you can specify to run tests for a specific module:
 
 ```sh
-pnpm test:extensions:compose
+pnpm test:main           # Main process tests
+pnpm test:renderer       # Renderer tests
+pnpm test:preload        # Preload tests
+pnpm test:extensions     # Extension tests
 ```
 
-This will show a test results for restricted amount of tests:
+For development, you can run tests in watch mode:
 
-```
- ✓ src/os.spec.ts (3)
- ✓ src/detect.spec.ts (10) 518ms
- ✓ src/compose-github-releases.spec.ts (10)
- ✓ src/compose-extension.spec.ts (16)
- ✓ src/compose-wrapper-generator.spec.ts (4)
-
- Test Files  5 passed (5)
-      Tests  43 passed (43)
-   Start at  17:17:07
-   Duration  1.27s (transform 562ms, setup 0ms, collect 1.25s, tests 587ms)
+```sh
+pnpm test:watch
 ```
 
 Check the npm script tasks in our `package.json` for more options.
 
 ### Step 5. Run E2E tests
 
-In case of adding new feature, it is always suitable to make sure we do not bring any new regression. For this purpose we are using the E2E tests. They can be built and run using `pnpm` with a variety of options:
+When adding new features, it's important to ensure we don't introduce regressions. For this purpose we use E2E tests built with Playwright:
 
-- For all the tests:
+Build and run all E2E tests:
 
 ```sh
 pnpm test:e2e
 ```
 
-- For the smoke tests:
+Run E2E tests only (after building):
 
 ```sh
-pnpm test:e2e:smoke
+pnpm test:e2e:run
 ```
 
-- For the extension tests:
+View the test report:
 
 ```sh
-pnpm test:e2e:extension
+pnpm test:e2e:report
 ```
 
-You can find more specific options on the [package.json](https://github.com/podman-desktop/podman-desktop/blob/main/package.json) file, under 'scripts'.
-
-However, there are some things that you have to take into account:
-
-- In order to make the tests pass you have to either:
-  - Remove `settings.json` from `~/.local/share/containers/podman-desktop/configuration/` or,
-  - Remove the objects with keys `"welcome.version"` and `"telemetry.*"` from the file, if you do not want to lose your settings
-- Some of the tests can only be executed in certain operating systems. If your execution is skipping a test, this is very likely the reason why.
-- If you want to execute the tests outside of the repository, you can find a setup guide in this [README](https://github.com/podman-desktop/podman-desktop/tree/main/tests/playwright#podman-desktop-playwright-tests).
-
-Finally, after executing the E2E tests, you can check the results in your browser with:
+After executing the E2E tests, you can check the results with:
 
 ```sh
 pnpm exec playwright show-report tests/playwright/output/html-results
 ```
 
-In case of an error, you can find more information that can help you debug in the `podman-desktop/tests/playwright/output` folder. You have the video repetitions on `videos`, captures of the application failing the test on `screenshots`, and the traces of the execution on `traces`. The latter ones can be opened with `npx playwright show-trace <path/to/trace/zip`.
+In case of an error, you can find more information in the `tests/playwright/output` folder:
+
+- Video recordings in `videos/`
+- Screenshots of failures in `screenshots/`
+- Execution traces in `traces/` (can be opened with `npx playwright show-trace <path/to/trace.zip>`)
 
 ### Step 6. Code coverage
 
-Part of every test is also a code coverage report which can be obtain from the test run output (using simple text reporter)
-found in project root `./test-resources/coverage/*`. Depending if you have run all or just a part of the tests, you will have partial test coverage report generated, example:
+Code coverage reports are generated when running tests with coverage enabled:
 
-```
- % Coverage report from c8
-------------------------------|---------|----------|---------|---------|-------------------
-File                          | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
-------------------------------|---------|----------|---------|---------|-------------------
-All files                     |    75.1 |    97.22 |   93.75 |    75.1 |
- cli-run.ts                   |       0 |        0 |       0 |       0 | 1-119
- compose-extension.ts         |     100 |      100 |     100 |     100 |
- compose-github-releases.ts   |     100 |      100 |     100 |     100 |
- compose-wrapper-generator.ts |     100 |      100 |     100 |     100 |
- detect.ts                    |     100 |      100 |     100 |     100 |
- extension.ts                 |       0 |        0 |       0 |       0 | 1-54
- os.ts                        |     100 |      100 |     100 |     100 |
-------------------------------|---------|----------|---------|---------|-------------------
+```sh
+pnpm test:unit:coverage
 ```
 
-For a detailed information about the code coverage you can search the mentioned folder and find `html` lcov report:
-`test-resources/coverage/extensions/compose/lcov-report/index.html`
-
-When contributing the new code, you should consider not lowering overall code coverage.
+Coverage reports can be found in the coverage output directory. When contributing new code, you should strive to maintain or improve overall code coverage.
 
 ### Step 7. Code formatter / linter
 
-We use `@biomejs/biome` (and `prettier` for markdown) as formatter and `eslint` for linting.
-
-Stage your changes in git and check that it is properly linted and formatted:
+Check that your code is properly formatted:
 
 ```sh
-pnpm lint-staged
+pnpm format:check        # Check formatting
+pnpm format:fix          # Fix formatting issues
+```
+
+Run linting:
+
+```sh
+pnpm lint:check          # Check for linting issues
+pnpm lint:fix            # Fix linting issues
+```
+
+Run type checking:
+
+```sh
+pnpm typecheck           # Check all packages
+pnpm typecheck:main      # Main process only
+pnpm typecheck:renderer  # Renderer only
+pnpm svelte:check        # Svelte component type checking
 ```
 
 ### Step 8. Compile production binaries (optional)
 
-You may want to test the binary against your local system before pushing a PR, you can do so by running the following command:
+You may want to test the binary against your local system before pushing a PR. You can do so by running:
+
+Development build (directory output, no packaging):
 
 ```sh
-pnpm compile:current
+pnpm compile
 ```
 
-This will create a binary according to your local system and output it to the `dist/` folder.
+Production builds:
 
-> **_NOTE:_** macOS and Windows create binaries while Linux will create a `.flatpak`. Make sure your flatpak dependencies are installed for successful compiling on Linux.
+```sh
+pnpm compile:current     # Current version
+pnpm compile:next        # With auto-publishing
+pnpm compile:pull-request # Without publishing
+```
 
-> **_macOS NOTE:_** On macOS the `dist/` folder will contain folders for `arm64` and `universal` `.app` files. Ignore these and use the `.app` file in the `dist/mac/` folder for testing.
+The compiled binaries will be output to the `dist/` folder.
 
-> **_macOS CODE SIGNING:_** When testing the compiled binary on macOS, you must ad-hoc sign the application before launching it. Without signing, macOS will terminate the app with a `Code Signature Invalid` error. Run the following command after compiling: 
+> **_macOS CODE SIGNING:_** When testing the compiled binary on macOS, you must ad-hoc sign the application before launching it. Without signing, macOS will terminate the app with a `Code Signature Invalid` error. Run the following command after compiling:
 >
 > ```sh
 > # Compile
 > pnpm compile:current
-> 
+>
 > # Sign the binary
-> codesign --force --deep --sign - "dist/mac-arm64/Podman Desktop.app"
+> codesign --force --deep --sign - "dist/mac-arm64/Kortex.app"
 > ```
 
 ## Submitting Pull Requests
@@ -270,7 +257,7 @@ Whether it is a large patch or a one-line bug fix, make sure you explain in deta
 
 Make sure you include the issue in your PR! For example, say: `Closes #XXX`.
 
-PRs will be approved by an [approver][owners] listed in [`CODEOWNERS`](CODEOWNERS).
+PRs will be approved by a maintainer listed in [`CODEOWNERS`](CODEOWNERS).
 
 We typically require one approval for code as well as documentation-related PR's. If it is a large code-related PR, proof of review / testing (a video / screenshot) is required.
 
@@ -294,7 +281,7 @@ Some examples for correct titles would be:
 - `chore: drop support for Node 6`
 - `docs: add quickstart guide`
 
-For Podman Desktop we use the following types:
+For Kortex we use the following types:
 
 - `fix:` A bug fix
 - `chore:` Very small change / insignificant impact
@@ -358,12 +345,12 @@ This ensures that CI resources are used efficiently while still providing flexib
 ### Review process
 
 1. Submit your PR
-2. Reviewers are assigned by GitHub to two Podman Desktop developers
-3. PR's require 1 LGTM / Approval (2 if it's a large code change)
+2. Reviewers are assigned by GitHub
+3. PRs require at least 1 approval (2 if it's a large code change)
 
-> **_NOTE:_** Confirm that your PR works on macOS, Windows and Linux if it's a significant change (not a UI improvement)
+> **_NOTE:_** Confirm that your PR works on macOS, Windows and Linux if it's a significant change (not just a UI improvement)
 
-> **_NOTE:_** If your PR hasn't been merged in an appropriate amount of time, ping the two developers assigned to the issue with `@`
+> **_NOTE:_** If your PR hasn't been merged in a reasonable amount of time, ping the assigned reviewers with `@`
 
 ## Continuous Integration
 
@@ -371,80 +358,86 @@ All pull requests and branch-merges automatically run:
 
 - Format and lint checking
 - Cross-platform builds (Windows, macOS, Linux)
-- Unit test (Linux)
-- E2E tests (Linux, triggered by PR check, do not prevent merging of the PR in case of instability)
+- Unit tests
+- E2E tests (triggered by PR checks)
 
-You can follow these jobs in Github Actions https://github.com/podman-desktop/podman-desktop/actions
+You can follow these jobs in GitHub Actions: https://github.com/kortex-hub/kortex/actions
 
 ## Communication
 
-For bugs/feature requests please [file issues](https://github.com/podman-desktop/podman-desktop/issues/new/choose)
+For bugs/feature requests please [file issues](https://github.com/kortex-hub/kortex/issues/new/choose)
 
-Discussions are possible using Github Discussions https://github.com/podman-desktop/podman-desktop/discussions/
+Discussions are possible using GitHub Discussions: https://github.com/kortex-hub/kortex/discussions/
 
 ## Code Architecture
 
 ### Frameworks and tooling
 
-Within Podman Desktop, we use the following frameworks and tools to build the desktop application:
+Within Kortex, we use the following frameworks and tools to build the desktop application:
 
-- [Electron](https://www.electronjs.org/): In order to deploy cross-platform to multiple operating systems.
-- [Svelte](https://svelte.dev/): The reactive UI/UX framework for building the interface.
-- [Tailwind CSS](https://tailwindcss.com/): A utility-first CSS framework for the UI/UX framework.
-- [Vite](https://vitejs.dev/): Dev tooling for rapid development, debugging and deployment.
+- [Electron](https://www.electronjs.org/): Cross-platform desktop application framework
+- [Svelte](https://svelte.dev/): Reactive UI/UX framework for building the interface
+- [Tailwind CSS](https://tailwindcss.com/): Utility-first CSS framework for styling
+- [Vite](https://vitejs.dev/): Dev tooling for rapid development, debugging and deployment
+- [Inversify](https://inversify.io/): Dependency injection container for plugin system
 
-> **_NOTE:_** We also use TypeScript instead of JavaScript for strongly typed programming language development.
+> **_NOTE:_** We use TypeScript throughout the codebase for type safety.
 
 ### Testing
 
-Within Podman Desktop, we use the following for testing:
+Within Kortex, we use the following for testing:
 
-- [Vitest](https://vitest.dev/): Unit tests - Written as `spec.ts` files.
-- [Testing Library](https://testing-library.com/): Component tests - Utilities and best practices for writing component tests.
-- [Playwright](https://playwright.dev/): Integration and E2E tests.
+- [Vitest](https://vitest.dev/): Unit tests - Written as `*.spec.ts` files co-located with source code
+- [Testing Library](https://testing-library.com/): Component tests - Utilities and best practices for writing component tests
+- [Playwright](https://playwright.dev/): E2E tests located in `tests/playwright/`
 
 ### Folders
 
-Below are brief descriptions on the architecture on each folder of Podman Desktop and how it's organized.
+Below are brief descriptions of Kortex's folder structure and organization:
 
-If you're unsure where to add code (renderer, UI, extensions, plugins) see the below TLDR:
+This is a pnpm monorepo with workspaces defined in `pnpm-workspace.yaml`:
 
-- `__mocks__/`: Mock packages for Vitest.
-- `buildResources`: Podman Desktop logo location / build resources for electron
-- `extensions`: We separate functionality into separate "extensions" to keep Podman Desktop modular. Here you'll find extensions such as Kubernetes, CRC, Podman and Docker functionality that Podman Desktop interacts with and integrates into the API (see `packages/extension-api`). Examples include `extensions/crc`, `extensions/podman`, `extensions/docker`.
-- `packages/extension-api`: The extension API for extensions such as `extensions/podman` to interact with the Podman Desktop GUI. This API acts as a "middleware" to the main Electron functionality such as displaying notifications, progress messages, configuration changes, etc.
-- `packages/main`: Electron process code that is responsible for creating the app's main windows, setting up system events and communicating with other processes
-- `packages/preload`: Electron code that runs before the page gets rendered. Typically has access to APIs and used to setup communication processes between the main and renderer code.
-- `packages/preload-docker-extension`: Electron preload code specific to the Docker Desktop extension.
-- `packages/renderer`: Electron code that runs in the renderer process. The renderer runs separate to the main process and is responsible for typically rendering the main pages of Podman Desktop. Typically, this is where you find the `.svelte` code that renders the main Podman Desktop UI.
-- `scripts`: Scripts Podman Desktop requires such as `pnpm watch` functionality and updating Electron vendorered modules.
-- `tests`: Contains e2e tests for Podman Desktop.
-- `types`: Additional types required for TypeScript.
-- `website`: The documentation as well as [Podman Desktop website](https://podman-desktop.io) developed in [Docusaurus](https://docusaurus.io).
-- `node_modules`: Location for Node.JS packages / dependencies.
+- `extensions/`: Extension packages that add functionality to Kortex
+  - `gemini/`: Google Gemini AI provider integration
+  - `goose/`: Goose flow execution provider
+  - `mcp-registries/`: MCP server registries
+  - `openai-compatible/`: OpenAI-compatible API support
+  - `openshift-ai/`: OpenShift AI platform integration
+- `packages/`: Core application packages
+  - `packages/main`: Main Electron process - handles system integration, extension loading, container/Kubernetes operations, and business logic
+  - `packages/renderer`: Renderer Electron process - Svelte-based UI running in browser context
+  - `packages/preload`: Preload scripts - bridge layer for secure IPC communication between main and renderer
+  - `packages/preload-webview`: Preload scripts for webview contexts
+  - `packages/extension-api` (also `@kortex-app/api`): Extension API providing TypeScript definitions for provider registration, configuration, commands, UI components, etc.
+  - `packages/api`: Internal API types and interfaces
+  - `packages/webview-api`: API for webview components
+- `scripts/`: Build and utility scripts
+- `tests/`: E2E test suite
+  - `tests/playwright/`: Playwright E2E tests
+- `node_modules/`: Node.js packages and dependencies
 
-> **_NOTE:_** Each `extension` folder is a separately packaged module. If there are any issues with loading, make sure your module is packaged correctly.
+> **_NOTE:_** Each extension has its own `package.json` with `main` pointing to `./dist/extension.js` and must declare `engines.kortex` version compatibility.
 
 ### UI colors
 
-Colors in Podman Desktop are now managed by a [`color-registry.ts`](https://github.com/podman-desktop/podman-desktop/blob/main/packages/main/src/plugin/color-registry.ts) file in order to easily switch between light and dark mode.
+Colors in Kortex are managed by a [`color-registry.ts`](packages/main/src/plugin/color-registry.ts) file to easily switch between light and dark mode.
 
-When contributing a UI component to Podman Desktop that is colorized, you must go through some steps to figure out what color to use and how to reference it.
+When contributing a UI component to Kortex that is colorized, you must figure out what color to use and how to reference it:
 
 Steps:
 
-1. Open the [`color-registry.ts`](https://github.com/podman-desktop/podman-desktop/blob/main/packages/main/src/plugin/color-registry.ts) file.
-2. Figure out which color category from the `initColors()` function.
+1. Open the `packages/main/src/plugin/color-registry.ts` file
+2. Find the appropriate color category from the `initColors()` function
 3. Use the referenced color with the format `[var(--pd-<color>)]`
 
 Example:
 
-1. Choose what UI component you want to add: Ex. I want to add a new primary button.
-2. Look under `initColors()` and pick `this.initButton()` and scroll down to `protected initButton()`.
-3. Pick a color. I want to use the the "primary" button. So I will pick: `${button}primary-bg`.
-4. Scroll up and note the `const` below `protected initButton()` which is `const button = 'button-';`
-5. The color can be referenced with `[var(--pd-button-primary-bg)]`. The `[var(--pd-` portion will always be consistent when refering to a color variable.
-6. For example:
+1. Choose what UI component you want to add (e.g., a new primary button)
+2. Look under `initColors()` and find `this.initButton()`, then scroll to `protected initButton()`
+3. Pick a color. For a "primary" button: `${button}primary-bg`
+4. Note the `const` below `protected initButton()` which is `const button = 'button-';`
+5. The color can be referenced with `[var(--pd-button-primary-bg)]`
+6. Example:
 
 ```ts
 <Button class="bg-[var(--pd-button-primary-bg)]"/>
@@ -456,15 +449,11 @@ List of maintainer tasks to help the project run smoothly.
 
 ### Triage manager
 
-Each sprint a new "Triage manager" will be assigned.
+Each sprint a new "Triage manager" may be assigned.
 
 Your responsibilities include:
 
-- Reviewing the [status/need-triage](https://github.com/podman-desktop/podman-desktop/issues?q=is%3Aopen+is%3Aissue+label%3Astatus%2Fneed-triage) label on new issues. As a maintainer, you will need to categorize these issues under the correct [area labels](https://github.com/podman-desktop/podman-desktop/labels?q=area%2F). Once categorized, remove the `status/need-triage` label and apply the appropriate area label.
-- Evaluating the severity of new issues. If an issue is classified as "critical" or "high priority" and requires immediate attention, tag a maintainer in the issue and notify them via the public community channel.
+- Reviewing the [status/need-triage](https://github.com/kortex-hub/kortex/issues?q=is%3Aopen+is%3Aissue+label%3Astatus%2Fneed-triage) label on new issues. As a maintainer, you will need to categorize these issues under the correct [area labels](https://github.com/kortex-hub/kortex/labels?q=area%2F). Once categorized, remove the `status/need-triage` label and apply the appropriate area label.
+- Evaluating the severity of new issues. If an issue is classified as "critical" or "high priority" and requires immediate attention, tag a maintainer in the issue and notify them appropriately.
 - Identifying issues that are simple to resolve and marking them as "good first issue," thereby encouraging newcomers to contribute to the project.
-- Evaluating any stale / lingering pull requests and pinging the respective contributors. If the pull request has been opened for an extensive amount of time, ping someone to contact the contributor / push any changes required to get it merged in. If there is no communication / the pull request is stale, close them.
-
-## Website Contributions
-
-See our [WEBSITE_CONTRIBUTING](/WEBSITE_CONTRIBUTING.md) documentation for more details on how to contribute to the website.
+- Evaluating any stale or lingering pull requests and pinging the respective contributors. If the pull request has been opened for an extensive amount of time, contact the contributor or push any changes required to get it merged. If there is no communication or the pull request is stale, consider closing them.
