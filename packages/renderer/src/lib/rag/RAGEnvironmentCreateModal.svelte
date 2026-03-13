@@ -119,7 +119,7 @@ function selectChunkProvider(id: string): void {
                 option.key
                   ? 'border-[var(--pd-button-primary-bg)] bg-[var(--pd-button-primary-bg)]/10'
                   : 'border-[var(--pd-modal-header-border)] bg-[var(--pd-content-card-bg)] hover:border-[var(--pd-content-text)]'}"
-                onclick={():void => selectRagConnection(option.key)}>
+                onclick={selectRagConnection.bind(undefined, option.key)}>
                 <div class="flex items-center gap-3 mb-2">
                   <div
                     class="tile-logo w-8 h-8 rounded-md flex items-center justify-center text-white text-xs font-bold bg-gradient-to-br from-purple-500 to-purple-700">
@@ -146,7 +146,7 @@ function selectChunkProvider(id: string): void {
                 provider.id
                   ? 'border-[var(--pd-button-primary-bg)] bg-[var(--pd-button-primary-bg)]/10'
                   : 'border-[var(--pd-modal-header-border)] bg-[var(--pd-content-card-bg)] hover:border-[var(--pd-content-text)]'}"
-                onclick={():void => selectChunkProvider(provider.id)}>
+                onclick={selectChunkProvider.bind(undefined, provider.id)}>
                 <div class="flex items-center gap-3 mb-2">
                   <div
                     class="tile-logo w-8 h-8 rounded-md flex items-center justify-center text-white text-xs font-bold bg-gradient-to-br from-green-500 to-green-700">
@@ -167,8 +167,8 @@ function selectChunkProvider(id: string): void {
     <!-- Action Buttons -->
     <div
       class="flex flex-row justify-end gap-3 px-6 py-5 border-t border-[var(--pd-modal-header-border)] bg-[var(--pd-modal-header-bg)]">
-      <Button type="secondary" on:click={closeCallback}>Cancel</Button>
-      <Button aria-label="Create Environment" disabled={!isFormValid} on:click={handleCreate}>Create Environment</Button>
+      <Button type="secondary" onclick={closeCallback}>Cancel</Button>
+      <Button aria-label="Create Environment" disabled={!isFormValid} onclick={handleCreate}>Create Environment</Button>
     </div>
   </div>
 </Modal>
