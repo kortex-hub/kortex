@@ -37,7 +37,7 @@ const workspace: AgentWorkspaceSummary = {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(window.showMessageBox).mockResolvedValue({ response: 1 });
-  vi.mocked(window.removeAgentWorkspace).mockResolvedValue(undefined);
+  vi.mocked(window.removeAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
   vi.mocked(window.listAgentWorkspaces).mockResolvedValue([]);
 });
 
