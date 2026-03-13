@@ -1,7 +1,9 @@
 <script lang="ts">
-import { faFolder, faGear } from '@fortawesome/free-solid-svg-icons';
+import { faFolder, faGear, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
+import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
+import { fetchAgentWorkspaces } from '/@/stores/agent-workspaces';
 import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info';
 
 interface Props {
@@ -9,6 +11,13 @@ interface Props {
 }
 
 let { workspace }: Props = $props();
+
+function handleRemove(): void {
+  withConfirmation(
+    () => window.removeAgentWorkspace(workspace.id).then(fetchAgentWorkspaces).catch(console.error),
+    `remove workspace ${workspace.name}`,
+  );
+}
 </script>
 
 <div
@@ -27,5 +36,14 @@ let { workspace }: Props = $props();
       <Icon icon={faGear} class="shrink-0 opacity-70" />
       <span class="truncate">{workspace.paths.configuration}</span>
     </div>
+  </div>
+  <div class="flex justify-end">
+    <button
+      onclick={handleRemove}
+      class="inline-flex items-center justify-center w-7 h-7 rounded-full text-(--pd-action-button-text) hover:bg-(--pd-action-button-hover-bg) hover:text-(--pd-action-button-hover-text) transition-colors"
+      title="Remove workspace"
+      aria-label="Remove workspace {workspace.name}">
+      <Icon icon={faTrash} />
+    </button>
   </div>
 </div>

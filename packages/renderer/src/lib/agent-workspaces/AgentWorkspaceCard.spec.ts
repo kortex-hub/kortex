@@ -18,8 +18,8 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { render, screen } from '@testing-library/svelte';
-import { expect, test } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/svelte';
+import { beforeEach, expect, test, vi } from 'vitest';
 
 import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info';
 
@@ -33,6 +33,13 @@ const workspace: AgentWorkspaceSummary = {
     configuration: '/home/user/.config/kortex/workspaces/api-refactor.yaml',
   },
 };
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.mocked(window.showMessageBox).mockResolvedValue({ response: 1 });
+  vi.mocked(window.removeAgentWorkspace).mockResolvedValue(undefined);
+  vi.mocked(window.listAgentWorkspaces).mockResolvedValue([]);
+});
 
 test('Expect card displays workspace name', () => {
   render(AgentWorkspaceCard, { workspace });
@@ -56,4 +63,43 @@ test('Expect card has aria label with workspace name', () => {
   render(AgentWorkspaceCard, { workspace });
 
   expect(screen.getByRole('region', { name: 'workspace api-refactor' })).toBeInTheDocument();
+});
+
+test('Expect remove button is rendered', () => {
+  render(AgentWorkspaceCard, { workspace });
+
+  expect(screen.getByRole('button', { name: 'Remove workspace api-refactor' })).toBeInTheDocument();
+});
+
+test('Expect confirmation dialog shown when remove button clicked', async () => {
+  render(AgentWorkspaceCard, { workspace });
+
+  const removeButton = screen.getByRole('button', { name: 'Remove workspace api-refactor' });
+  await fireEvent.click(removeButton);
+
+  expect(window.showMessageBox).toHaveBeenCalledOnce();
+});
+
+test('Expect workspace removed when user confirms', async () => {
+  vi.mocked(window.showMessageBox).mockResolvedValue({ response: 0 });
+
+  render(AgentWorkspaceCard, { workspace });
+
+  const removeButton = screen.getByRole('button', { name: 'Remove workspace api-refactor' });
+  await fireEvent.click(removeButton);
+
+  await vi.waitFor(() => {
+    expect(window.removeAgentWorkspace).toHaveBeenCalledWith('ws-1');
+  });
+});
+
+test('Expect workspace not removed when user cancels', async () => {
+  vi.mocked(window.showMessageBox).mockResolvedValue({ response: 1 });
+
+  render(AgentWorkspaceCard, { workspace });
+
+  const removeButton = screen.getByRole('button', { name: 'Remove workspace api-refactor' });
+  await fireEvent.click(removeButton);
+
+  expect(window.removeAgentWorkspace).not.toHaveBeenCalled();
 });
