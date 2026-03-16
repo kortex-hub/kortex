@@ -25,6 +25,8 @@ import type { components } from '@kortex-hub/mcp-registry-types';
 import { inject, injectable } from 'inversify';
 
 import { MCPRegistry } from '/@/plugin/mcp/mcp-registry.js';
+import { MCPPackage } from '/@/plugin/mcp/package/mcp-package.js';
+import type { ResolvedServerPackage } from '/@/plugin/mcp/package/mcp-spawner.js';
 import { isMac, isWindows } from '/@/util.js';
 import type { MCPExportTarget } from '/@api/mcp/mcp-export.js';
 import { CLAUDE_CODE, CLAUDE_DESKTOP, CURSOR, VSCODE } from '/@api/mcp/mcp-export.js';
@@ -90,25 +92,22 @@ export class MCPExporter {
     pack: ServerPackage,
     config: { runtimeArguments?: string[]; packageArguments?: string[]; environmentVariables?: Record<string, string> },
   ): MCPServerEntry {
-    const isNpm = pack.registryType === 'npm';
-    const command = isNpm ? 'npx' : 'uvx';
-    const versionSep = isNpm ? '@' : '==';
-    const packageSpec = pack.version ? `${pack.identifier}${versionSep}${pack.version}` : pack.identifier;
-
-    const args = [...(config.runtimeArguments ?? []), packageSpec, ...(config.packageArguments ?? [])];
-
-    const env =
-      config.environmentVariables && Object.keys(config.environmentVariables).length > 0
-        ? config.environmentVariables
-        : undefined;
+    const resolved: ResolvedServerPackage = {
+      ...pack,
+      runtimeArguments: config.runtimeArguments,
+      packageArguments: config.packageArguments,
+      environmentVariables: config.environmentVariables,
+    };
+    const spec = new MCPPackage(resolved).buildCommandSpec();
+    const env = spec.env && Object.keys(spec.env).length > 0 ? spec.env : undefined;
 
     switch (target) {
       case CLAUDE_DESKTOP:
       case CURSOR:
-        return { command, args, ...(env ? { env } : {}) };
+        return { command: spec.command, args: spec.args, ...(env ? { env } : {}) };
       case CLAUDE_CODE:
       case VSCODE:
-        return { type: 'stdio', command, args, ...(env ? { env } : {}) };
+        return { type: 'stdio', command: spec.command, args: spec.args, ...(env ? { env } : {}) };
     }
   }
 

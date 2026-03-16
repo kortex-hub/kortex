@@ -20,6 +20,7 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
 import type { IAsyncDisposable } from '/@api/async-disposable.js';
 
+import type { CommandSpec } from './mcp-spawner.js';
 import { MCPSpawner } from './mcp-spawner.js';
 
 const NPX_COMMAND = 'npx';
@@ -27,22 +28,22 @@ const NPX_COMMAND = 'npx';
 export class NPMSpawner extends MCPSpawner<'npm'> {
   #disposables: Array<IAsyncDisposable> = [];
 
-  async spawn(): Promise<Transport> {
+  buildCommandSpec(): CommandSpec {
     if (!this.pack.identifier) throw new Error('missing identifier in MCP Local Server configuration');
+    const packageSpec = this.pack.version ? `${this.pack.identifier}@${this.pack.version}` : this.pack.identifier;
+    return {
+      command: NPX_COMMAND,
+      args: [...(this.pack.runtimeArguments ?? []), packageSpec, ...(this.pack.packageArguments ?? [])],
+      env: this.pack.environmentVariables,
+    };
+  }
+
+  async spawn(): Promise<Transport> {
     if (this.pack.fileSha256) {
       console.warn('specified file sha256 is not supported with npx spawner');
     }
-
-    const transport = new StdioClientTransport({
-      command: NPX_COMMAND,
-      args: [
-        ...(this.pack.runtimeArguments ?? []),
-        // let's use package@version if version is specified
-        this.pack.version ? `${this.pack.identifier}@${this.pack.version}` : this.pack.identifier,
-        ...(this.pack.packageArguments ?? []),
-      ],
-      env: this.pack.environmentVariables,
-    });
+    const spec = this.buildCommandSpec();
+    const transport = new StdioClientTransport(spec);
     this.#disposables.push({
       asyncDispose: (): Promise<void> => {
         return transport.close();

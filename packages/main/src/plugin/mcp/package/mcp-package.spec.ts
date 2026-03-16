@@ -61,6 +61,40 @@ describe('MCPPackage', () => {
     expect(vi.mocked(NPMSpawner)).not.toHaveBeenCalled();
   });
 
+  test('should delegate buildCommandSpec to NPMSpawner', () => {
+    const pack = {
+      identifier: 'test-package',
+      version: '1.0.0',
+      registryType: 'npm' as const,
+      transport: { type: 'stdio' as const },
+    };
+
+    const mockSpec = { command: 'npx', args: ['test-package@1.0.0'] };
+    vi.mocked(NPMSpawner).prototype.buildCommandSpec = vi.fn().mockReturnValue(mockSpec);
+
+    const mcpPackage = new MCPPackage(pack);
+    const result = mcpPackage.buildCommandSpec();
+
+    expect(result).toBe(mockSpec);
+  });
+
+  test('should delegate buildCommandSpec to PyPiSpawner', () => {
+    const pack = {
+      identifier: 'test-package',
+      version: '1.0.0',
+      registryType: 'pypi' as const,
+      transport: { type: 'stdio' as const },
+    };
+
+    const mockSpec = { command: 'uvx', args: ['test-package==1.0.0'] };
+    vi.mocked(PyPiSpawner).prototype.buildCommandSpec = vi.fn().mockReturnValue(mockSpec);
+
+    const mcpPackage = new MCPPackage(pack);
+    const result = mcpPackage.buildCommandSpec();
+
+    expect(result).toBe(mockSpec);
+  });
+
   test('should throw error for unsupported registry type', () => {
     const pack = {
       identifier: 'test-package',

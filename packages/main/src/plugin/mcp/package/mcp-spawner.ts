@@ -29,9 +29,16 @@ export type ResolvedServerPackage = Omit<
   environmentVariables?: Record<string, string>;
 };
 
+export interface CommandSpec {
+  command: string;
+  args: string[];
+  env?: Record<string, string>;
+}
+
 export abstract class MCPSpawner<T extends string = string> implements IAsyncDisposable {
   constructor(protected readonly pack: ResolvedServerPackage & { registryType: T }) {}
 
+  abstract buildCommandSpec(): CommandSpec;
   abstract spawn(): Promise<Transport>;
   abstract asyncDispose(): Promise<void>;
 }

@@ -19,7 +19,7 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
 import type { IAsyncDisposable } from '/@api/async-disposable.js';
 
-import type { MCPSpawner, ResolvedServerPackage } from './mcp-spawner.js';
+import type { CommandSpec, MCPSpawner, ResolvedServerPackage } from './mcp-spawner.js';
 import { NPMSpawner } from './npm-spawner.js';
 import { PyPiSpawner } from './pypi-spawner.js';
 
@@ -47,6 +47,10 @@ export class MCPPackage implements IAsyncDisposable {
       default:
         throw new Error(`unsupported registry type: ${pack.registryType}`);
     }
+  }
+
+  buildCommandSpec(): CommandSpec {
+    return this.#spawner.buildCommandSpec();
   }
 
   spawn(): Promise<Transport> {
