@@ -76,8 +76,11 @@ async function handleCreateEnvironment(
   try {
     await window.createRagEnvironment(name, ragConnection, chunkerId);
     closeCreateModal();
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Failed to create RAG environment:', error);
+    window
+      .showMessageBox({ title: 'Error', message: 'Error creating RAG environment', detail: String(error) })
+      .catch(console.error);
   }
 }
 </script>
