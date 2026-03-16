@@ -83,8 +83,19 @@ test.describe
       const expectedCountAfterSingleDelete = initialCount - 1;
       await chatPage.waitForChatHistoryCount(expectedCountAfterSingleDelete);
 
+      // Click on a chat to view it before deleting all
+      if (expectedCountAfterSingleDelete > 0) {
+        await chatPage.clickChatHistoryItemByIndex(0);
+        // Verify we're viewing the conversation (no suggested messages)
+        await expect(chatPage.suggestedMessagesGrid).not.toBeVisible();
+      }
+
       await chatPage.deleteAllChatHistoryItems();
       await chatPage.verifyChatHistoryEmpty();
+
+      // Verify the chat view resets to a fresh conversation state
+      await chatPage.verifySuggestedMessagesVisible();
+      await expect(chatPage.conversationMessages).toHaveCount(0);
 
       await chatPage.ensureNotificationsAreNotVisible();
     });

@@ -4,6 +4,7 @@ import { toast } from 'svelte-sonner';
 import { router } from 'tinro';
 
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
+import { currentChatId } from '/@/lib/chat/state/current-chat-id.svelte';
 import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
 import type { Chat } from '/@api/chat/schema.js';
 
@@ -107,6 +108,11 @@ async function handleDeleteAllChats(): Promise<void> {
     },
     error: 'Failed to delete all chats',
   });
+
+  if (chatId) {
+    currentChatId.value = undefined;
+    router.goto('/');
+  }
 }
 </script>
 
