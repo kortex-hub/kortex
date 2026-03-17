@@ -5,6 +5,7 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 import { tablePersistence } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
+import AgentWorkspaceDetails from '/@/lib/agent-workspaces/AgentWorkspaceDetails.svelte';
 import AgentWorkspaceList from '/@/lib/agent-workspaces/AgentWorkspaceList.svelte';
 import { parseExtensionListRequest } from '/@/lib/extensions/extension-list';
 import FlowCreate from '/@/lib/flows/FlowCreate.svelte';
@@ -178,6 +179,9 @@ tablePersistence.storage = new PodmanDesktopStoragePersist();
 
         <Route path="/agent-workspaces" breadcrumb="Agent Workspaces" navigationHint="root">
           <AgentWorkspaceList />
+        </Route>
+        <Route path="/agent-workspaces/:id/*" breadcrumb="Workspace Details" let:meta navigationHint="details">
+          <AgentWorkspaceDetails workspaceId={decodeURIComponent(meta.params.id)} />
         </Route>
 
         <Route path="/flows/*" breadcrumb="Flows" navigationHint="root" firstmatch>

@@ -1,6 +1,7 @@
 <script lang="ts">
 import { faFolder, faGear, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
+import { router } from 'tinro';
 
 import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
 import { fetchAgentWorkspaces } from '/@/stores/agent-workspaces';
@@ -12,6 +13,21 @@ interface Props {
 
 let { workspace }: Props = $props();
 
+function handleOpen(): void {
+  router.goto(`/agent-workspaces/${encodeURIComponent(workspace.id)}/summary`);
+}
+
+function handleKeydown(e: KeyboardEvent): void {
+  if (e.key === 'Enter') {
+    handleOpen();
+  }
+}
+
+function handleRemoveClick(e: MouseEvent): void {
+  e.stopPropagation();
+  handleRemove();
+}
+
 function handleRemove(): void {
   withConfirmation(
     () => window.removeAgentWorkspace(workspace.id).then(fetchAgentWorkspaces).catch(console.error),
@@ -21,9 +37,12 @@ function handleRemove(): void {
 </script>
 
 <div
-  class="flex flex-col gap-3 p-4 bg-(--pd-content-card-carousel-card-bg) hover:bg-(--pd-content-card-carousel-card-hover-bg) rounded-md"
-  role="region"
-  aria-label="workspace {workspace.name}">
+  class="flex flex-col gap-3 p-4 bg-(--pd-content-card-carousel-card-bg) hover:bg-(--pd-content-card-carousel-card-hover-bg) rounded-md cursor-pointer"
+  role="button"
+  aria-label="workspace {workspace.name}"
+  onclick={handleOpen}
+  onkeydown={handleKeydown}
+  tabindex="0">
   <div class="text-start">
     <span class="text-(--pd-invert-content-card-text) font-semibold text-base">{workspace.name}</span>
   </div>
@@ -39,7 +58,7 @@ function handleRemove(): void {
   </div>
   <div class="flex justify-end">
     <button
-      onclick={handleRemove}
+      onclick={handleRemoveClick}
       class="inline-flex items-center justify-center w-7 h-7 rounded-full text-(--pd-action-button-text) hover:bg-(--pd-action-button-hover-bg) hover:text-(--pd-action-button-hover-text) transition-colors"
       title="Remove workspace"
       aria-label="Remove workspace {workspace.name}">

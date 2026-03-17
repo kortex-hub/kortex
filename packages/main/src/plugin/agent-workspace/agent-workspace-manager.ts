@@ -20,9 +20,13 @@ import type { Disposable } from '@kortex-app/api';
 import { inject, injectable, preDestroy } from 'inversify';
 
 import { IPCHandle } from '/@/plugin/api.js';
-import type { AgentWorkspaceId, AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
+import type {
+  AgentWorkspaceConfiguration,
+  AgentWorkspaceId,
+  AgentWorkspaceSummary,
+} from '/@api/agent-workspace-info.js';
 
-import { mockListWorkspaces, mockRemoveWorkspace } from './agent-workspace-mock-data.js';
+import { mockGetWorkspaceConfiguration, mockListWorkspaces, mockRemoveWorkspace } from './agent-workspace-mock-data.js';
 
 /**
  * Manages agent workspaces.
@@ -48,6 +52,11 @@ export class AgentWorkspaceManager implements Disposable {
     return mockRemoveWorkspace(id);
   }
 
+  // Future: readFile(paths.configuration) + YAML.parse()
+  getConfiguration(id: string): AgentWorkspaceConfiguration {
+    return mockGetWorkspaceConfiguration(id);
+  }
+
   init(): void {
     this.ipcHandle('agent-workspace:list', async (): Promise<AgentWorkspaceSummary[]> => {
       return this.list();
@@ -56,6 +65,13 @@ export class AgentWorkspaceManager implements Disposable {
     this.ipcHandle('agent-workspace:remove', async (_listener: unknown, id: string): Promise<AgentWorkspaceId> => {
       return this.remove(id);
     });
+
+    this.ipcHandle(
+      'agent-workspace:getConfiguration',
+      async (_listener: unknown, id: string): Promise<AgentWorkspaceConfiguration> => {
+        return this.getConfiguration(id);
+      },
+    );
   }
 
   @preDestroy()

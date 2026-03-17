@@ -19,10 +19,14 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { IPCHandle } from '/@/plugin/api.js';
-import type { AgentWorkspaceId, AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
+import type {
+  AgentWorkspaceConfiguration,
+  AgentWorkspaceId,
+  AgentWorkspaceSummary,
+} from '/@api/agent-workspace-info.js';
 
 import { AgentWorkspaceManager } from './agent-workspace-manager.js';
-import { mockListWorkspaces, mockRemoveWorkspace } from './agent-workspace-mock-data.js';
+import { mockGetWorkspaceConfiguration, mockListWorkspaces, mockRemoveWorkspace } from './agent-workspace-mock-data.js';
 
 vi.mock(import('./agent-workspace-mock-data.js'));
 
@@ -56,6 +60,10 @@ describe('init', () => {
 
   test('registers IPC handler for remove', () => {
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:remove', expect.any(Function));
+  });
+
+  test('registers IPC handler for getConfiguration', () => {
+    expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:getConfiguration', expect.any(Function));
   });
 });
 
@@ -100,5 +108,25 @@ describe('remove', () => {
     });
 
     expect(() => manager.remove('unknown-id')).toThrow('workspace "unknown-id" not found');
+  });
+});
+
+describe('getConfiguration', () => {
+  test('delegates to mockGetWorkspaceConfiguration and returns the configuration', () => {
+    const expected: AgentWorkspaceConfiguration = { name: 'test-workspace-1' };
+    vi.mocked(mockGetWorkspaceConfiguration).mockReturnValue(expected);
+
+    const result = manager.getConfiguration('ws-1');
+
+    expect(mockGetWorkspaceConfiguration).toHaveBeenCalledWith('ws-1');
+    expect(result).toEqual(expected);
+  });
+
+  test('throws when mockGetWorkspaceConfiguration throws for unknown id', () => {
+    vi.mocked(mockGetWorkspaceConfiguration).mockImplementation(() => {
+      throw new Error('workspace "unknown-id" not found. Use "workspace list" to see available workspaces.');
+    });
+
+    expect(() => manager.getConfiguration('unknown-id')).toThrow('workspace "unknown-id" not found');
   });
 });

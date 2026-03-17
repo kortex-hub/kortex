@@ -16,17 +16,24 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { components } from '@kortex-hub/kortex-cli-api';
+import type { components as cliComponents } from '@kortex-hub/kortex-cli-api';
+import type { components as configComponents } from '@kortex-hub/kortex-workspace-configuration';
 
 /**
  * Workspace data from the `kortex workspace list` command.
  * Matches the CLI contract exactly — fields will be added here
  * as the CLI evolves and publishes them in @kortex-hub/kortex-cli-api.
  */
-export type AgentWorkspaceSummary = components['schemas']['Workspace'];
+export type AgentWorkspaceSummary = cliComponents['schemas']['Workspace'];
 
 /**
  * Returned by mutating workspace commands (e.g. remove, init) to confirm
  * which workspace was affected. Maps to the CLI `WorkspaceId` schema.
  */
-export type AgentWorkspaceId = components['schemas']['WorkspaceId'];
+export type AgentWorkspaceId = cliComponents['schemas']['WorkspaceId'];
+
+/**
+ * The schema for a workspace's YAML configuration file
+ * Matches the contract in @kortex-hub/kortex-workspace-configuration.
+ */
+export type AgentWorkspaceConfiguration = configComponents['schemas']['WorkspaceConfiguration'];

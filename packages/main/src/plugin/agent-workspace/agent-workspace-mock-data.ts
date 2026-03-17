@@ -16,7 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { AgentWorkspaceId, AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
+import type {
+  AgentWorkspaceConfiguration,
+  AgentWorkspaceId,
+  AgentWorkspaceSummary,
+} from '/@api/agent-workspace-info.js';
 
 /**
  * Mock CLI responses.
@@ -52,6 +56,22 @@ const INITIAL_SUMMARIES: AgentWorkspaceSummary[] = [
   },
 ];
 
+/**
+ * Mock workspace configurations keyed by workspace id.
+ * Simulates reading + parsing the YAML file at paths.configuration.
+ */
+const CONFIGURATIONS: Record<string, AgentWorkspaceConfiguration> = {
+  'mock-ws-api-refactor': {
+    name: 'api-refactor',
+  },
+  'mock-ws-test-suite': {
+    name: 'test-suite-fix',
+  },
+  'mock-ws-frontend': {
+    name: 'frontend-redesign',
+  },
+};
+
 const store: AgentWorkspaceSummary[] = structuredClone(INITIAL_SUMMARIES);
 
 // Future: exec('kortex', ['workspace', 'list', '--format', 'json'])
@@ -67,4 +87,13 @@ export function mockRemoveWorkspace(id: string): AgentWorkspaceId {
   }
   store.splice(idx, 1);
   return { id };
+}
+
+// Future: readFile(paths.configuration) + YAML.parse() validated against WorkspaceConfiguration schema
+export function mockGetWorkspaceConfiguration(id: string): AgentWorkspaceConfiguration {
+  const config = CONFIGURATIONS[id];
+  if (!config) {
+    throw new Error(`workspace "${id}" not found. Use "workspace list" to see available workspaces.`);
+  }
+  return structuredClone(config);
 }
