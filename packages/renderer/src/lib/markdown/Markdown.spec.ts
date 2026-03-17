@@ -263,6 +263,22 @@ test('Expect to render a markdown table as an HTML table', async () => {
   expect(table).toContainHTML('<td>Cell 1</td>');
 });
 
+describe('Unrecognized directives', () => {
+  test('Expect text with colon-separated words to be preserved', async () => {
+    await waitRender({ markdown: 'look at that:poof!' });
+    const markdownContent = screen.getByRole('region', { name: 'markdown-content' });
+    expect(markdownContent).toBeInTheDocument();
+    expect(markdownContent.textContent).toContain('look at that:poof!');
+  });
+
+  test('Expect unrecognized directive with label to be preserved', async () => {
+    await waitRender({ markdown: ':unknown[some label]' });
+    const markdownContent = screen.getByRole('region', { name: 'markdown-content' });
+    expect(markdownContent).toBeInTheDocument();
+    expect(markdownContent.textContent).toContain(':unknown[some label]');
+  });
+});
+
 describe('jump to TOC section', () => {
   test('Expect TOC to be clickable', async () => {
     await waitRender({

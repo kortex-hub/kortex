@@ -78,6 +78,7 @@ import { gfmTable, gfmTableHtml } from 'micromark-extension-gfm-table';
 import { onDestroy, onMount } from 'svelte';
 
 import { button } from './micromark-button-directive';
+import { fallback } from './micromark-fallback-directive';
 import { image } from './micromark-image-directive';
 import { link } from './micromark-link-directive';
 import { createListener } from './micromark-listener-handler';
@@ -115,7 +116,11 @@ function renderMarkdown(source: string): string {
   // Provide micromark + extensions
   const rendered = micromark(source, {
     extensions: [gfmAutolinkLiteral(), gfmTable(), directive()],
-    htmlExtensions: [gfmAutolinkLiteralHtml(), gfmTableHtml(), directiveHtml({ button, image, link, warnings })],
+    htmlExtensions: [
+      gfmAutolinkLiteralHtml(),
+      gfmTableHtml(),
+      directiveHtml({ button, image, link, warnings, '*': fallback }),
+    ],
   });
 
   // remove href values in each anchor using # for links
