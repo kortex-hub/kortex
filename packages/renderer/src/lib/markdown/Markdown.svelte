@@ -54,6 +54,9 @@ UI guidelines -->
 .markdown :global(tr:nth-child(even)) {
   background-color: var(--muted);
 }
+.markdown > :global(pre) {
+  margin-bottom: 8px;
+}
 .markdown :global(a) {
   color: var(--pd-link);
   text-decoration: none;
