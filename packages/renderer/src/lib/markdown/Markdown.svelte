@@ -68,6 +68,9 @@ UI guidelines -->
 </style>
 
 <script lang="ts">
+import './syntax-highlighting.css';
+
+import hljs from 'highlight.js';
 import { micromark } from 'micromark';
 import { directive, directiveHtml } from 'micromark-extension-directive';
 import { gfmAutolinkLiteral, gfmAutolinkLiteralHtml } from 'micromark-extension-gfm-autolink-literal';
@@ -100,12 +103,7 @@ export let inProgressMarkdownCommandExecutionCallback: (
 const eventListeners: EventListener[] = [];
 
 // Render the markdown or the html+micromark markdown reactively
-$: markdown
-  ? (html = micromark(markdown, {
-      extensions: [gfmAutolinkLiteral(), gfmTable(), directive()],
-      htmlExtensions: [gfmAutolinkLiteralHtml(), gfmTableHtml(), directiveHtml({ button, image, link, warnings })],
-    }))
-  : undefined;
+$: html = markdown ? renderMarkdown(markdown) : '';
 
 function decode(htmlString: string): string {
   let textArea = document.createElement('textarea');
@@ -113,13 +111,9 @@ function decode(htmlString: string): string {
   return textArea.value;
 }
 
-onMount(() => {
-  if (markdown) {
-    text = markdown;
-  }
-
+function renderMarkdown(source: string): string {
   // Provide micromark + extensions
-  html = micromark(text, {
+  const rendered = micromark(source, {
     extensions: [gfmAutolinkLiteral(), gfmTable(), directive()],
     htmlExtensions: [gfmAutolinkLiteralHtml(), gfmTableHtml(), directiveHtml({ button, image, link, warnings })],
   });
@@ -127,7 +121,7 @@ onMount(() => {
   // remove href values in each anchor using # for links
   // and set the attribute data-pd-jump-in-page
   const parser = new DOMParser();
-  const doc = parser.parseFromString(decode(html), 'text/html');
+  const doc = parser.parseFromString(decode(rendered), 'text/html');
   const links = doc.querySelectorAll('a');
   links.forEach(link => {
     const currentHref = link.getAttribute('href');
@@ -161,7 +155,18 @@ onMount(() => {
     }
   });
 
-  html = doc.body.innerHTML;
+  // Apply syntax highlighting to code blocks
+  doc.querySelectorAll('pre code').forEach(block => {
+    hljs.highlightElement(block as HTMLElement);
+  });
+
+  return doc.body.innerHTML;
+}
+
+onMount(() => {
+  if (markdown) {
+    text = markdown;
+  }
 
   // We create a click listener in order to execute any internal micromark commands
   // We add the clickListener here since we're unable to add it in the directive typescript file.
