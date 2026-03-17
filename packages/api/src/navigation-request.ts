@@ -77,6 +77,7 @@ export interface NavigationParameters {
     serverId: string;
   };
   [NavigationPage.AGENT_WORKSPACES]: never;
+  [NavigationPage.AGENT_WORKSPACE_CREATE]: never;
   [NavigationPage.SKILLS]: never;
   [NavigationPage.RAG_ENVIRONMENT_DETAILS]: {
     name: string;

@@ -61,6 +61,7 @@ export enum NavigationPage {
   EXTENSIONS_CATALOG = 'extensions-catalog',
   MCP_DETAILS = 'mcp-details',
   AGENT_WORKSPACES = 'agent-workspaces',
+  AGENT_WORKSPACE_CREATE = 'agent-workspace-create',
   SKILLS = 'skills',
   RAG_ENVIRONMENT_DETAILS = 'rag-environment-details',
 }

@@ -179,6 +179,9 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
     case NavigationPage.AGENT_WORKSPACES:
       router.goto('/agent-workspaces');
       break;
+    case NavigationPage.AGENT_WORKSPACE_CREATE:
+      router.goto('/agent-workspaces/create');
+      break;
     case NavigationPage.RAG_ENVIRONMENT_DETAILS:
       router.goto(`/rag-environments/${encodeURIComponent(request.parameters.name)}/summary`);
       break;

@@ -1,14 +1,22 @@
 <script lang="ts">
-import { NavPage } from '@podman-desktop/ui-svelte';
+import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { Button, NavPage } from '@podman-desktop/ui-svelte';
 
+import { handleNavigation } from '/@/navigation';
 import { agentWorkspaces } from '/@/stores/agent-workspaces';
+import { NavigationPage } from '/@api/navigation-page';
 
 import AgentWorkspaceCard from './AgentWorkspaceCard.svelte';
 import AgentWorkspaceEmptyScreen from './AgentWorkspaceEmptyScreen.svelte';
+
+function navigateToCreate(): void {
+  handleNavigation({ page: NavigationPage.AGENT_WORKSPACE_CREATE });
+}
 </script>
 
 <NavPage searchEnabled={false} title="Agent Workspaces">
   {#snippet additionalActions()}
+    <Button icon={faPlus} onclick={navigateToCreate}>Create Workspace</Button>
     <span class="text-(--pd-content-text)">{$agentWorkspaces.length} total sessions</span>
   {/snippet}
 

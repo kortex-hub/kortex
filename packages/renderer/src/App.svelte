@@ -5,6 +5,7 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 import { tablePersistence } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
+import AgentWorkspaceCreate from '/@/lib/agent-workspaces/AgentWorkspaceCreate.svelte';
 import AgentWorkspaceDetails from '/@/lib/agent-workspaces/AgentWorkspaceDetails.svelte';
 import AgentWorkspaceList from '/@/lib/agent-workspaces/AgentWorkspaceList.svelte';
 import { parseExtensionListRequest } from '/@/lib/extensions/extension-list';
@@ -177,8 +178,13 @@ tablePersistence.storage = new PodmanDesktopStoragePersist();
           <CustomChat chatId={meta.params.chatId} />
         </Route>
 
-        <Route path="/agent-workspaces" breadcrumb="Agent Workspaces" navigationHint="root">
-          <AgentWorkspaceList />
+        <Route path="/agent-workspaces/*" breadcrumb="Agent Workspaces" navigationHint="root" firstmatch>
+          <Route path="/" breadcrumb="Agent Workspaces" navigationHint="root">
+            <AgentWorkspaceList />
+          </Route>
+          <Route path="/create" breadcrumb="Create">
+            <AgentWorkspaceCreate />
+          </Route>
         </Route>
         <Route path="/agent-workspaces/:id/*" breadcrumb="Workspace Details" let:meta navigationHint="details">
           <AgentWorkspaceDetails workspaceId={decodeURIComponent(meta.params.id)} />
