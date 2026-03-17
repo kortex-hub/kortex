@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Spinner, Tab } from '@podman-desktop/ui-svelte';
+import { ErrorMessage, Spinner, Tab } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 import { router } from 'tinro';
 
@@ -19,6 +19,7 @@ let { workspaceId }: Props = $props();
 
 let loading: boolean = $state(true);
 let configuration: AgentWorkspaceConfiguration | undefined = $state(undefined);
+let error: string | undefined = $state(undefined);
 
 onMount(() => {
   window
@@ -26,7 +27,10 @@ onMount(() => {
     .then((config: AgentWorkspaceConfiguration) => {
       configuration = config;
     })
-    .catch(console.error)
+    .catch((err: unknown) => {
+      error = String(err);
+      console.error(err);
+    })
     .finally(() => {
       loading = false;
     });
@@ -37,6 +41,8 @@ onMount(() => {
   <div class="flex items-center justify-center h-full">
     <Spinner />
   </div>
+{:else if error}
+  <ErrorMessage error={error} />
 {:else if configuration}
   <DetailsPage title={configuration.name ?? ''}>
     {#snippet tabsSnippet()}

@@ -18,7 +18,8 @@ function handleOpen(): void {
 }
 
 function handleKeydown(e: KeyboardEvent): void {
-  if (e.key === 'Enter') {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
     handleOpen();
   }
 }

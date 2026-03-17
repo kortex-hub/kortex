@@ -64,3 +64,13 @@ test('Expect Summary tab is present', async () => {
     expect(screen.getByText('Summary')).toBeInTheDocument();
   });
 });
+
+test('Expect error message displayed when configuration fetch fails', async () => {
+  vi.mocked(window.getAgentWorkspaceConfiguration).mockRejectedValue(new Error('workspace not found'));
+
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-unknown' });
+
+  await waitFor(() => {
+    expect(screen.getByText('Error: workspace not found')).toBeInTheDocument();
+  });
+});

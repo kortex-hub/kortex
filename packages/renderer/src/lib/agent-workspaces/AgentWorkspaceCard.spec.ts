@@ -26,11 +26,7 @@ import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info';
 
 import AgentWorkspaceCard from './AgentWorkspaceCard.svelte';
 
-vi.mock('tinro', () => ({
-  router: {
-    goto: vi.fn(),
-  },
-}));
+vi.mock(import('tinro'));
 
 const workspace: AgentWorkspaceSummary = {
   id: 'ws-1',
