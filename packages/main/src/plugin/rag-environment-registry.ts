@@ -69,6 +69,24 @@ export class RagEnvironmentRegistry {
     this.ipcHandle('rag-environment-registry:deleteRagEnvironment', async (_, name: string): Promise<void> => {
       return this.deleteRagEnvironment(name);
     });
+    this.ipcHandle(
+      'rag-environment-registry:createRagEnvironment',
+      async (
+        _listener,
+        name: string,
+        ragConnection: { name: string; providerId: string },
+        chunkerId: string,
+      ): Promise<void> => {
+        const ragEnvironment: RagEnvironment = {
+          name,
+          ragConnection,
+          chunkerId,
+          files: [],
+        };
+        await this.createEnvironment(name, ragConnection, chunkerId);
+        this.apiSender.send('rag-environment-created', ragEnvironment);
+      },
+    );
 
     return this.loadEnvironments();
   }
