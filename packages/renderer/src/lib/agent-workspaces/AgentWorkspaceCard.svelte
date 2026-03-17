@@ -29,6 +29,12 @@ function handleRemoveClick(e: MouseEvent): void {
   handleRemove();
 }
 
+function handleRemoveKeydown(e: KeyboardEvent): void {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.stopPropagation();
+  }
+}
+
 function handleRemove(): void {
   withConfirmation(
     () => window.removeAgentWorkspace(workspace.id).then(fetchAgentWorkspaces).catch(console.error),
@@ -60,6 +66,7 @@ function handleRemove(): void {
   <div class="flex justify-end">
     <button
       onclick={handleRemoveClick}
+      onkeydown={handleRemoveKeydown}
       class="inline-flex items-center justify-center w-7 h-7 rounded-full text-(--pd-action-button-text) hover:bg-(--pd-action-button-hover-bg) hover:text-(--pd-action-button-hover-text) transition-colors"
       title="Remove workspace"
       aria-label="Remove workspace {workspace.name}">
