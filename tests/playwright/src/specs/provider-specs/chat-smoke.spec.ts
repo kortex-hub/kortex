@@ -51,6 +51,8 @@ test.describe
     });
 
     test('[CHAT-03] Create and switch between multiple chat sessions without data loss', async ({ chatPage }) => {
+      test.slow();
+
       await chatPage.ensureChatSidebarVisible();
       let messageCount = await chatPage.getChatHistoryCount();
 
@@ -113,6 +115,8 @@ test.describe
     });
 
     test('[CHAT-06] Change models mid-conversation, verify conversation history is preserved', async ({ chatPage }) => {
+      test.slow();
+
       const modelCount = await chatPage.getAvailableModelsCount();
 
       if (modelCount < 2) {
@@ -243,8 +247,7 @@ test.describe
       await chatPage.verifySendButtonVisible();
 
       const message = 'What is Podman?';
-      // Pass 0 timeout to avoid waiting for generation to complete before checking stop button
-      await chatPage.sendMessage(message, 0);
+      await chatPage.sendMessage(message, { waitForMessage: false });
 
       await chatPage.verifyStopButtonVisible();
       await chatPage.verifySendButtonHidden();

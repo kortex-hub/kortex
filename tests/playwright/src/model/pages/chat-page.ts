@@ -34,6 +34,7 @@ export class ChatPage extends BasePage {
   readonly suggestedMessagesGrid: Locator;
   readonly chatHistoryItems: Locator;
   readonly conversationMessages: Locator;
+  readonly conversationMessageParagraphs: Locator;
   readonly modelConversationMessages: Locator;
   readonly chatHistoryItem: Locator;
   readonly chatHistoryItemMenuAction: Locator;
@@ -64,6 +65,7 @@ export class ChatPage extends BasePage {
     this.suggestedMessagesGrid = page.getByRole('region', { name: 'Suggested prompts' });
     this.chatHistoryItems = page.locator('li[data-sidebar="menu-item"]');
     this.conversationMessages = page.locator('div[data-role]');
+    this.conversationMessageParagraphs = this.conversationMessages.getByRole('paragraph');
     this.modelConversationMessages = page.locator('div[data-role="assistant"]');
     this.chatHistoryItem = page.locator('button[data-sidebar="menu-button"]');
     this.chatHistoryItemMenuAction = page.locator('button[data-sidebar="menu-action"]');
@@ -90,6 +92,10 @@ export class ChatPage extends BasePage {
 
   getSuggestedMessages(): Locator {
     return this.suggestedMessagesGrid.getByRole('button');
+  }
+
+  getConversationMessage(message: string): Locator {
+    return this.conversationMessageParagraphs.getByText(message, { exact: true });
   }
 
   async verifyHeaderElementsVisible(): Promise<void> {
@@ -128,12 +134,14 @@ export class ChatPage extends BasePage {
     }
   }
 
-  async sendMessage(message: string, timeout = 5_000): Promise<void> {
+  async sendMessage(message: string, { waitForMessage = true, timeout = TIMEOUTS.SHORT } = {}): Promise<void> {
     await this.messageField.fill(message);
     await expect(this.messageField).toHaveValue(message);
     await expect(this.sendButton).toBeEnabled();
     await this.sendButton.click();
-    await this.page.waitForTimeout(timeout);
+    if (waitForMessage) {
+      await expect(this.getConversationMessage(message)).toBeVisible({ timeout });
+    }
   }
 
   async clickNewChat(): Promise<void> {
@@ -174,8 +182,8 @@ export class ChatPage extends BasePage {
     await expect(this.chatHistoryEmptyMessage).toBeVisible();
   }
 
-  async verifyConversationMessage(message: string): Promise<void> {
-    await expect(this.conversationMessages.getByRole('paragraph').getByText(message, { exact: true })).toBeVisible();
+  async verifyConversationMessage(message: string, timeout = TIMEOUTS.SHORT): Promise<void> {
+    await expect(this.getConversationMessage(message)).toBeVisible({ timeout });
   }
 
   async verifyModelConversationMessage(textOrRegex: string | RegExp): Promise<boolean> {
