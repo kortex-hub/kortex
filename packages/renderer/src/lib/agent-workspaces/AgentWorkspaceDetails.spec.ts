@@ -20,18 +20,22 @@ import '@testing-library/jest-dom/vitest';
 
 import { render, screen, waitFor } from '@testing-library/svelte';
 import { writable } from 'svelte/store';
+import { router } from 'tinro';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import type { AgentWorkspaceConfiguration } from '/@api/agent-workspace-info';
 
 import AgentWorkspaceDetails from './AgentWorkspaceDetails.svelte';
 
-vi.mock('tinro', () => ({
-  router: {
-    ...writable({ path: '/agent-workspaces/ws-1/summary' }),
-    goto: vi.fn(),
-  },
-}));
+vi.mock(import('tinro'));
+
+const routerStore = writable({
+  path: '/agent-workspaces/ws-1/summary',
+  url: '/agent-workspaces/ws-1/summary',
+  from: '/',
+  query: {} as Record<string, string>,
+  hash: '',
+});
 
 const configuration: AgentWorkspaceConfiguration = {
   name: 'api-refactor',
@@ -40,6 +44,7 @@ const configuration: AgentWorkspaceConfiguration = {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.useFakeTimers({ shouldAdvanceTime: true });
+  vi.mocked(router).subscribe.mockImplementation(routerStore.subscribe);
   vi.mocked(window.getAgentWorkspaceConfiguration).mockResolvedValue(configuration);
 });
 

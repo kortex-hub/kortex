@@ -1,6 +1,5 @@
 <script lang="ts">
 import { ErrorMessage, Spinner, Tab } from '@podman-desktop/ui-svelte';
-import { onMount } from 'svelte';
 import { router } from 'tinro';
 
 import DetailsCell from '/@/lib/details/DetailsCell.svelte';
@@ -9,7 +8,6 @@ import DetailsTitle from '/@/lib/details/DetailsTitle.svelte';
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
-import type { AgentWorkspaceConfiguration } from '/@api/agent-workspace-info';
 
 interface Props {
   workspaceId: string;
@@ -17,33 +15,14 @@ interface Props {
 
 let { workspaceId }: Props = $props();
 
-let loading: boolean = $state(true);
-let configuration: AgentWorkspaceConfiguration | undefined = $state(undefined);
-let error: string | undefined = $state(undefined);
-
-onMount(() => {
-  window
-    .getAgentWorkspaceConfiguration(workspaceId)
-    .then((config: AgentWorkspaceConfiguration) => {
-      configuration = config;
-    })
-    .catch((err: unknown) => {
-      error = String(err);
-      console.error(err);
-    })
-    .finally(() => {
-      loading = false;
-    });
-});
+const configurationPromise = $derived(window.getAgentWorkspaceConfiguration(workspaceId));
 </script>
 
-{#if loading}
+{#await configurationPromise}
   <div class="flex items-center justify-center h-full">
     <Spinner />
   </div>
-{:else if error}
-  <ErrorMessage error={error} />
-{:else if configuration}
+{:then configuration}
   <DetailsPage title={configuration.name ?? ''}>
     {#snippet tabsSnippet()}
       <Tab title="Summary" selected={isTabSelected($router.path, 'summary')} url={getTabUrl($router.path, 'summary')} />
@@ -66,4 +45,6 @@ onMount(() => {
       </Route>
     {/snippet}
   </DetailsPage>
-{/if}
+{:catch error}
+  <ErrorMessage error={String(error)} />
+{/await}
