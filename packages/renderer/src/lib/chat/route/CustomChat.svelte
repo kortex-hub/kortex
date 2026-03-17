@@ -1,6 +1,6 @@
 <script lang="ts">
 import { ThemeProvider } from '@sejohnson/svelte-themes';
-import { onDestroy, onMount } from 'svelte';
+import { onDestroy } from 'svelte';
 
 import AppSidebar from '/@/lib/chat/components/app-sidebar.svelte';
 import Chat from '/@/lib/chat/components/chat.svelte';
@@ -9,9 +9,6 @@ import { Toaster } from '/@/lib/chat/components/ui/sonner';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte.js';
 import { currentChatId } from '/@/lib/chat/state/current-chat-id.svelte';
 import { sidebarCollapsed } from '/@/lib/chat/state/sidebar-collapsed.svelte';
-
-import { DEFAULT_CHAT_MODEL } from '../ai/models';
-import { SelectedModel } from '../hooks/selected-model.svelte';
 
 interface Props {
   chatId?: string;
@@ -28,24 +25,15 @@ const chatMessagesPromise = $derived(
   chatId ? window.inferenceGetChatMessagesById(chatId) : Promise.resolve({ chat: undefined, messages: [] }),
 );
 
-let selectedChatModel: SelectedModel | undefined = $state(undefined);
-
-onMount(() => {
-  // define select model to be the default chat model
-  selectedChatModel = new SelectedModel(DEFAULT_CHAT_MODEL);
-  selectedChatModel.setContext();
-});
-
 onDestroy(() => chatHistory.dispose());
 </script>
 
-{#if selectedChatModel}
 <div class="flex h-full w-full">
 <ThemeProvider attribute="class" disableTransitionOnChange >
 	<Toaster position="top-center" />
   {#await chatMessagesPromise}
     Loading
-  {:then { chat, messages }} 
+  {:then { chat, messages }}
     <SidebarProvider open={!sidebarCollapsed.value} onOpenChange={(open: boolean): boolean => sidebarCollapsed.value = !open}>
       <AppSidebar {chatId} />
       <SidebarInset>
@@ -55,5 +43,4 @@ onDestroy(() => chatHistory.dispose());
   {/await}
 </ThemeProvider>
 </div>
-{/if}
 
