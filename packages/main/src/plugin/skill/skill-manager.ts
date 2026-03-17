@@ -39,6 +39,7 @@ import {
   type SkillFolderInfo,
   type SkillInfo,
   type SkillMetadata,
+  type SkillTarget,
 } from '/@api/skill/skill-info.js';
 
 const RESERVED_WORDS = ['anthropic', 'claude'];
