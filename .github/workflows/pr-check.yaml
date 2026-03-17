@@ -281,6 +281,8 @@ jobs:
     with:
       instance: ubuntu-24.04
       mode: ${{ matrix.mode }}
+      inference_provider: ollama
+      inference_model: 'granite3.2:2b'
       compile_args: '--linux dir'
     secrets: inherit
 
