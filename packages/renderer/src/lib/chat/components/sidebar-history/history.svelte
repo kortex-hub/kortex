@@ -143,7 +143,7 @@ async function handleDeleteAllChats(): Promise<void> {
 		</SidebarGroupContent>
 	</SidebarGroup>
 {:else}
-	<SidebarGroup>
+	<SidebarGroup class="flex-1 overflow-auto">
 		<SidebarGroupContent>
 			<SidebarMenu>
 				{#each Object.entries(groupedChats) as [group, chats] (group)}
@@ -166,19 +166,16 @@ async function handleDeleteAllChats(): Promise<void> {
 			</SidebarMenu>
 		</SidebarGroupContent>
 	</SidebarGroup>
-  <SidebarGroup class="mt-auto">
-    <SidebarGroupContent>
-      <Button
-        variant="ghost"
-        class="w-full text-zinc-500 hover:text-red-500"
-        onclick={(): void => withConfirmation(handleDeleteAllChats, 'This action cannot be undone. This will permanently delete all of your chats')}
-      >
-        Delete all chats
-      </Button>
-    </SidebarGroupContent>
-  </SidebarGroup>
-
-
-
+	<SidebarGroup class="flex-shrink-0">
+		<SidebarGroupContent>
+			<Button
+				variant="ghost"
+				class="w-full text-zinc-500 hover:text-red-500"
+				onclick={(): void => withConfirmation(handleDeleteAllChats, 'This action cannot be undone. This will permanently delete all of your chats')}
+			>
+				Delete all chats
+			</Button>
+		</SidebarGroupContent>
+	</SidebarGroup>
 {/if}
 
