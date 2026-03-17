@@ -132,6 +132,21 @@ test('escape should hide the menu', async () => {
   });
 });
 
+test('clicking outside the menu should close it', async () => {
+  const { queryByTitle } = await getOpenedPinActions();
+
+  // verify the menu is open
+  expect(queryByTitle('Pin Menu')).toBeInTheDocument();
+
+  // click outside the component (on document body)
+  await fireEvent.click(document.body);
+
+  // menu should be closed
+  await vi.waitFor(() => {
+    expect(queryByTitle('Pin Menu')).toBeNull();
+  });
+});
+
 describe('pin / unpin', () => {
   beforeEach(() => {
     // pin podman
