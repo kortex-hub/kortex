@@ -213,10 +213,36 @@ export class ChatPage extends BasePage {
     return count;
   }
 
+  async getChatModelNames(): Promise<string[]> {
+    await this.modelDropdownSelector.click();
+    await expect(this.modelDropdownContent).toBeVisible();
+    try {
+      const count = await this.modelMenuItems.count();
+      const modelNames: string[] = [];
+      for (let i = 0; i < count; i++) {
+        const text = await this.modelMenuItems.nth(i).textContent();
+        if (text && !text.toLowerCase().includes('embed')) {
+          modelNames.push(text.trim());
+        }
+      }
+      return modelNames;
+    } finally {
+      await this.page.keyboard.press('Escape');
+    }
+  }
+
   async selectModelByIndex(index: number): Promise<void> {
     await this.modelDropdownSelector.click();
     await expect(this.modelDropdownContent).toBeVisible();
     const modelItem = this.modelMenuItems.nth(index);
+    await expect(modelItem).toBeVisible();
+    await modelItem.click();
+  }
+
+  async selectModelByName(modelName: string): Promise<void> {
+    await this.modelDropdownSelector.click();
+    await expect(this.modelDropdownContent).toBeVisible();
+    const modelItem = this.modelDropdownContent.getByRole('menuitem', { name: modelName, exact: true });
     await expect(modelItem).toBeVisible();
     await modelItem.click();
   }

@@ -56,6 +56,12 @@ test.describe
 
       await chatPage.ensureChatSidebarVisible();
       let messageCount = await chatPage.getChatHistoryCount();
+      if (messageCount > 0) {
+        await expect(chatPage.deleteAllChatsButton).toBeVisible();
+        await chatPage.deleteAllChatHistoryItems();
+        await chatPage.verifyChatHistoryEmpty();
+        messageCount = 0;
+      }
 
       const chatSessions = [
         { message: 'What is Kubernetes?', expectedIndex: 1 },
@@ -80,7 +86,24 @@ test.describe
 
     test('[CHAT-04] Delete single chat item and then delete all remaining items', async ({ chatPage }) => {
       await chatPage.ensureChatSidebarVisible();
-      const initialCount = await chatPage.getChatHistoryCount();
+      let initialCount = await chatPage.getChatHistoryCount();
+
+      // Create at least 2 chats if none exist
+      if (initialCount < 2) {
+        for (let i = initialCount; i < 2; i++) {
+          await chatPage.clickNewChat();
+          const message = `Test message ${i + 1}`;
+          await chatPage.sendMessage(message, { timeout: 100 });
+          await chatPage.verifyConversationMessage(message);
+        }
+        await expect
+          .poll(async () => await chatPage.getChatHistoryCount(), { timeout: TIMEOUTS.MODEL_RESPONSE })
+          .toBeGreaterThanOrEqual(2);
+        initialCount = await chatPage.getChatHistoryCount();
+      }
+
+      // Verify delete all button is visible when there are chats
+      await expect(chatPage.deleteAllChatsButton).toBeVisible();
 
       await chatPage.deleteChatHistoryItemByIndex(0);
       const expectedCountAfterSingleDelete = initialCount - 1;
@@ -91,6 +114,8 @@ test.describe
         await chatPage.clickChatHistoryItemByIndex(0);
         // Verify we're viewing the conversation (no suggested messages)
         await expect(chatPage.suggestedMessagesGrid).not.toBeVisible();
+        // Delete all button should still be visible
+        await expect(chatPage.deleteAllChatsButton).toBeVisible();
       }
 
       await chatPage.deleteAllChatHistoryItems();
@@ -100,27 +125,30 @@ test.describe
       await chatPage.verifySuggestedMessagesVisible();
       await expect(chatPage.conversationMessages).toHaveCount(0);
 
+      // Verify delete all button is no longer visible when there are no chats
+      await expect(chatPage.deleteAllChatsButton).not.toBeVisible();
+
       await chatPage.ensureNotificationsAreNotVisible();
     });
 
     test('[CHAT-05] Switch between all available models and verify each selection', async ({ chatPage }) => {
-      const modelCount = await chatPage.getAvailableModelsCount();
+      const chatModelNames = await chatPage.getChatModelNames();
 
-      if (modelCount < 2) {
-        test.skip(true, 'Skipping test: Less than 2 models available');
+      if (chatModelNames.length < 2) {
+        test.skip(true, 'Skipping test: Less than 2 chat models available');
         return;
       }
 
-      const maxModelsToTest = Math.min(modelCount, 3);
+      const modelsToTest = chatModelNames.slice(0, 3).reverse();
 
-      for (let modelIndex = maxModelsToTest - 1; modelIndex >= 0; modelIndex--) {
-        await chatPage.selectModelByIndex(modelIndex);
+      for (const modelName of modelsToTest) {
+        await chatPage.clickNewChat(); // Select a new chat before selecting a model
+
+        await chatPage.selectModelByName(modelName);
         const selectedModelName = await chatPage.getSelectedModelName();
-        expect(selectedModelName).toBeTruthy();
+        expect(selectedModelName).toBe(modelName);
 
-        await chatPage.clickNewChat();
-
-        const testMessage = `Test message for model: ${selectedModelName}`;
+        const testMessage = `Test message for model: "${selectedModelName}"`;
         await chatPage.sendMessage(testMessage);
         await chatPage.verifyConversationMessage(testMessage);
       }
@@ -129,10 +157,10 @@ test.describe
     test('[CHAT-06] Change models mid-conversation, verify conversation history is preserved', async ({ chatPage }) => {
       test.slow();
 
-      const modelCount = await chatPage.getAvailableModelsCount();
+      const chatModelNames = await chatPage.getChatModelNames();
 
-      if (modelCount < 2) {
-        test.skip(true, 'Skipping test: Less than 2 models available');
+      if (chatModelNames.length < 2) {
+        test.skip(true, 'Skipping test: Less than 2 chat models available');
         return;
       }
 
@@ -141,17 +169,17 @@ test.describe
       const initialCount = await chatPage.getChatHistoryCount();
 
       const modelSwitches = [
-        { modelIndex: 0, message: 'Hello, how are you?' },
-        { modelIndex: 1, message: 'Tell me about AI models' },
+        { modelName: chatModelNames[0], message: 'Hello, how are you?' },
+        { modelName: chatModelNames[1], message: 'Tell me about AI models' },
       ];
 
       const sentMessages: string[] = [];
       const expectedCountAfterFirstMessage = initialCount + 1;
 
       for (const modelSwitch of modelSwitches) {
-        await chatPage.selectModelByIndex(modelSwitch.modelIndex);
-        const modelName = await chatPage.getSelectedModelName();
-        expect(modelName).toBeTruthy();
+        await chatPage.selectModelByName(modelSwitch.modelName);
+        const selectedModelName = await chatPage.getSelectedModelName();
+        expect(selectedModelName).toBe(modelSwitch.modelName);
 
         await chatPage.sendMessage(modelSwitch.message);
         sentMessages.push(modelSwitch.message);
@@ -184,7 +212,7 @@ test.describe
 
       await navigationBar.navigateToChatPage();
 
-      await expect(chatPage.toolsSelectionButton).toBeVisible({ timeout: TIMEOUTS.SHORT });
+      await expect(chatPage.toolsSelectionButton).toBeVisible({ timeout: TIMEOUTS.MODEL_RESPONSE });
       await expect(chatPage.configureMcpServersButton).not.toBeVisible();
 
       await chatPage.ensureToolsSidebarVisible();
@@ -266,6 +294,35 @@ test.describe
 
       await chatPage.verifySendButtonVisible(TIMEOUTS.MODEL_RESPONSE);
       await chatPage.verifyStopButtonHidden();
+    });
+
+    test('[CHAT-10] Delete all button remains visible without scrolling', async ({ chatPage }) => {
+      await chatPage.ensureChatSidebarVisible();
+
+      const expectedChats = 15;
+      const initialCount = await chatPage.getChatHistoryCount();
+
+      // Create missing chats to reach the expected count
+      if (initialCount < expectedChats) {
+        const chatsToCreate = expectedChats - initialCount;
+        for (let i = 0; i < chatsToCreate; i++) {
+          await chatPage.clickNewChat();
+          await chatPage.sendMessage(`Reply "OK ${i + 1}", nothing else.`, { waitForMessage: false });
+        }
+
+        // Wait for all chats to appear in history
+        await expect
+          .poll(async () => await chatPage.getChatHistoryCount(), { timeout: TIMEOUTS.MODEL_RESPONSE })
+          .toBeGreaterThanOrEqual(expectedChats);
+      }
+
+      // Verify delete all button is visible in viewport without scrolling
+      await expect(chatPage.deleteAllChatsButton).toBeInViewport();
+
+      // Clean up - delete all chats
+      await chatPage.deleteAllChatHistoryItems();
+      await chatPage.verifyChatHistoryEmpty();
+      await chatPage.ensureNotificationsAreNotVisible();
     });
 
     test('[CHAT-11] Last used model is remembered when starting a new chat', async ({ chatPage }) => {
