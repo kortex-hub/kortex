@@ -34,6 +34,10 @@ const SKILLS_DIR = resolve('/test/skills');
 
 vi.mock('node:fs');
 vi.mock('node:fs/promises');
+vi.mock('node:os', async () => ({
+  ...(await vi.importActual('node:os')),
+  homedir: (): string => '/home/test',
+}));
 
 const updateMock = vi.fn().mockResolvedValue(undefined);
 const getMock = vi.fn();
@@ -51,6 +55,8 @@ const apiSender: ApiSenderType = {
   send: vi.fn(),
   receive: vi.fn(),
 };
+
+const CLAUDE_SKILLS_DIR = resolve('/home/test/.claude/skills');
 
 const directories = {
   getSkillsDirectory: vi.fn().mockReturnValue(SKILLS_DIR),
