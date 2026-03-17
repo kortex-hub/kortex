@@ -26,8 +26,10 @@ export interface SkillInfo extends SkillMetadata {
   enabled: boolean;
 }
 
-export interface SkillCreateOptions extends SkillMetadata {
-  content: string;
+export type SkillTarget = 'kortex' | 'claude';
+
+export interface SkillFileContent extends SkillMetadata {
+  content?: string;
 }
 
 export const SKILL_SECTION = 'skills';

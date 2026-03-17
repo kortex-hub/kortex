@@ -18,6 +18,7 @@
 
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 import type { Configuration } from '@kortex-app/api';
@@ -35,9 +36,10 @@ import {
   SKILL_FILE_NAME,
   SKILL_REGISTERED,
   SKILL_SECTION,
-  type SkillCreateOptions,
+  type SkillFileContent,
   type SkillInfo,
   type SkillMetadata,
+  type SkillTarget,
 } from '/@api/skill/skill-info.js';
 
 const RESERVED_WORDS = ['anthropic', 'claude'];
@@ -103,9 +105,12 @@ export class SkillManager {
       return this.unregisterSkill(name);
     });
 
-    this.ipcHandle('skill-manager:createSkill', async (_listener, options: SkillCreateOptions): Promise<SkillInfo> => {
-      return this.createSkill(options);
-    });
+    this.ipcHandle(
+      'skill-manager:createSkill',
+      async (_listener, options: SkillFileContent, target: SkillTarget): Promise<SkillInfo> => {
+        return this.createSkill(options, target);
+      },
+    );
 
     this.ipcHandle('skill-manager:getSkillContent', async (_listener, name: string): Promise<string> => {
       return this.getSkillContent(name);
@@ -114,6 +119,13 @@ export class SkillManager {
     this.ipcHandle('skill-manager:listSkillFolderContent', async (_listener, name: string): Promise<string[]> => {
       return this.listSkillFolderContent(name);
     });
+
+    this.ipcHandle(
+      'skill-manager:getSkillFileContent',
+      async (_listener, filePath: string): Promise<SkillFileContent> => {
+        return this.getSkillFileContent(filePath);
+      },
+    );
   }
 
   /**
@@ -145,6 +157,15 @@ export class SkillManager {
     }
 
     return parsed as SkillMetadata;
+  }
+
+  private stripFrontmatter(content: string): string {
+    const trimmed = content.trimStart();
+    const DELIMITER = '---';
+    if (!trimmed.startsWith(DELIMITER)) return content;
+    const endIndex = trimmed.indexOf(`\n${DELIMITER}`, DELIMITER.length);
+    if (endIndex === -1) return content;
+    return trimmed.slice(endIndex + DELIMITER.length + 2).trim();
   }
 
   private validateMetadata(metadata: SkillMetadata, filePath: string): void {
@@ -215,7 +236,13 @@ export class SkillManager {
    * description, and content into the skills directory. The skill is
    * enabled immediately and persisted to config.
    */
-  async createSkill(options: SkillCreateOptions): Promise<SkillInfo> {
+  async createSkill(options: SkillFileContent, target: SkillTarget): Promise<SkillInfo> {
+    if (!options.content) {
+      throw new Error('Content must be provided');
+    }
+
+    const rawContent = options.content;
+
     const metadata: SkillMetadata = { name: options.name, description: options.description };
     this.validateMetadata(metadata, SKILL_FILE_NAME);
 
@@ -224,7 +251,7 @@ export class SkillManager {
       throw new Error(`Skill with name '${metadata.name}' already registered at path: ${duplicate.path}`);
     }
 
-    const skillsDir = this.directories.getSkillsDirectory();
+    const skillsDir = this.getBaseDirectoryForTarget(target);
     const skillDir = join(skillsDir, metadata.name);
 
     if (existsSync(skillDir)) {
@@ -233,8 +260,9 @@ export class SkillManager {
 
     await mkdir(skillDir, { recursive: true });
 
+    const body = this.stripFrontmatter(rawContent);
     const frontmatter = dump({ name: metadata.name, description: metadata.description }).trimEnd();
-    const fileContent = `---\n${frontmatter}\n---\n\n${options.content}`;
+    const fileContent = `---\n${frontmatter}\n---\n\n${body}`;
     await writeFile(join(skillDir, SKILL_FILE_NAME), fileContent, 'utf-8');
 
     const skill: SkillInfo = {
@@ -246,6 +274,16 @@ export class SkillManager {
     this.saveSkillsToConfig();
     this.apiSender.send('skill-manager-update');
     return skill;
+  }
+
+  private getBaseDirectoryForTarget(target: SkillTarget): string {
+    switch (target) {
+      case 'claude':
+        return resolve(homedir(), '.claude', 'skills');
+      case 'kortex':
+      default:
+        return this.directories.getSkillsDirectory();
+    }
   }
 
   /**
@@ -296,6 +334,18 @@ export class SkillManager {
     const skill = this.findSkillByName(name);
     const filePath = join(skill.path, SKILL_FILE_NAME);
     return readFile(filePath, 'utf-8');
+  }
+
+  /**
+   * Helper to read a SKILL.md file by path and return parsed metadata
+   * and body content. Used by the renderer to preview and prefill the
+   * create-skill dialog before submission.
+   */
+  async getSkillFileContent(filePath: string): Promise<SkillFileContent> {
+    const rawContent = (await readFile(filePath, 'utf-8')).trimStart();
+    const metadata = this.extractFrontmatter(rawContent, filePath);
+    const body = this.stripFrontmatter(rawContent);
+    return { name: metadata.name, description: metadata.description, content: body };
   }
 
   /** Lists all file/directory names inside the skill's folder. */

@@ -34,6 +34,10 @@ const SKILLS_DIR = resolve('/test/skills');
 
 vi.mock('node:fs');
 vi.mock('node:fs/promises');
+vi.mock('node:os', async () => ({
+  ...(await vi.importActual('node:os')),
+  homedir: (): string => '/home/test',
+}));
 
 const updateMock = vi.fn().mockResolvedValue(undefined);
 const getMock = vi.fn();
@@ -51,6 +55,8 @@ const apiSender: ApiSenderType = {
   send: vi.fn(),
   receive: vi.fn(),
 };
+
+const CLAUDE_SKILLS_DIR = resolve('/home/test/.claude/skills');
 
 const directories = {
   getSkillsDirectory: vi.fn().mockReturnValue(SKILLS_DIR),
@@ -512,11 +518,10 @@ test('createSkill should create a SKILL.md and register the skill', async () => 
 
   const skillManager = createSkillManager();
   await skillManager.init();
-  const skill = await skillManager.createSkill({
-    name: 'new-skill',
-    description: 'A new skill',
-    content: '# New Skill\n\nInstructions here.',
-  });
+  const skill = await skillManager.createSkill(
+    { name: 'new-skill', description: 'A new skill', content: '# New Skill\n\nInstructions here.' },
+    'kortex',
+  );
 
   const expectedDir = join(SKILLS_DIR, 'new-skill');
   expect(skill.name).toBe('new-skill');
@@ -533,6 +538,30 @@ test('createSkill should create a SKILL.md and register the skill', async () => 
   expect(updateMock).toHaveBeenCalled();
 });
 
+test('createSkill should strip existing frontmatter from content', async () => {
+  vi.mocked(existsSync).mockReturnValue(false);
+  vi.mocked(mkdir).mockResolvedValue(undefined);
+  vi.mocked(writeFile).mockResolvedValue(undefined);
+
+  const skillManager = createSkillManager();
+  await skillManager.init();
+  await skillManager.createSkill(
+    {
+      name: 'imported-skill',
+      description: 'Overridden description',
+      content: '---\nname: old-name\ndescription: old desc\n---\n\n# Body content',
+    },
+    'kortex',
+  );
+
+  const writtenContent = vi.mocked(writeFile).mock.calls[0]![1] as string;
+  expect(writtenContent).toContain('name: imported-skill');
+  expect(writtenContent).toContain('description: Overridden description');
+  expect(writtenContent).not.toContain('old-name');
+  expect(writtenContent).not.toContain('old desc');
+  expect(writtenContent).toContain('# Body content');
+});
+
 test('createSkill should throw on duplicate name', async () => {
   vi.mocked(existsSync).mockReturnValue(true);
   vi.mocked(readFile).mockResolvedValue(validSkillMd);
@@ -541,7 +570,7 @@ test('createSkill should throw on duplicate name', async () => {
   await skillManager.registerSkill(join(SKILLS_DIR, 'my-test-skill'));
 
   await expect(
-    skillManager.createSkill({ name: 'my-test-skill', description: 'Duplicate', content: '# Dup' }),
+    skillManager.createSkill({ name: 'my-test-skill', description: 'Duplicate', content: '# Dup' }, 'kortex'),
   ).rejects.toThrow(`Skill with name 'my-test-skill' already registered`);
 });
 
@@ -551,7 +580,7 @@ test('createSkill should throw when directory already exists', async () => {
   const skillManager = createSkillManager();
 
   await expect(
-    skillManager.createSkill({ name: 'existing-dir', description: 'Exists', content: '# Exists' }),
+    skillManager.createSkill({ name: 'existing-dir', description: 'Exists', content: '# Exists' }, 'kortex'),
   ).rejects.toThrow('Skill directory already exists');
 });
 
@@ -559,7 +588,7 @@ test('createSkill should throw on invalid name', async () => {
   const skillManager = createSkillManager();
 
   await expect(
-    skillManager.createSkill({ name: 'Invalid_Name', description: 'Bad name', content: '# Bad' }),
+    skillManager.createSkill({ name: 'Invalid_Name', description: 'Bad name', content: '# Bad' }, 'kortex'),
   ).rejects.toThrow(`'name' must contain only lowercase letters, numbers, and hyphens`);
 });
 
@@ -567,8 +596,52 @@ test('createSkill should reject name containing colons', async () => {
   const skillManager = createSkillManager();
 
   await expect(
-    skillManager.createSkill({ name: 'team:my-skill', description: 'Colons are invalid', content: '# Bad' }),
+    skillManager.createSkill({ name: 'team:my-skill', description: 'Colons are invalid', content: '# Bad' }, 'kortex'),
   ).rejects.toThrow(`'name' must contain only lowercase letters, numbers, and hyphens`);
+});
+
+test('createSkill with claude target should write to claude skills directory', async () => {
+  vi.mocked(existsSync).mockReturnValue(false);
+  vi.mocked(mkdir).mockResolvedValue(undefined);
+  vi.mocked(writeFile).mockResolvedValue(undefined);
+
+  const skillManager = createSkillManager();
+  await skillManager.init();
+  const skill = await skillManager.createSkill(
+    { name: 'new-skill', description: 'A claude skill', content: '# Claude Skill' },
+    'claude',
+  );
+
+  const expectedDir = join(CLAUDE_SKILLS_DIR, 'new-skill');
+  expect(skill.path).toBe(expectedDir);
+  expect(mkdir).toHaveBeenCalledWith(expectedDir, { recursive: true });
+  expect(writeFile).toHaveBeenCalledWith(
+    join(expectedDir, 'SKILL.md'),
+    expect.stringContaining('name: new-skill'),
+    'utf-8',
+  );
+});
+
+test('getSkillFileContent should return parsed metadata and body from a SKILL.md file', async () => {
+  vi.mocked(readFile).mockResolvedValue(validSkillMd);
+
+  const skillManager = createSkillManager();
+  const result = await skillManager.getSkillFileContent('/path/to/SKILL.md');
+
+  expect(result).toEqual({
+    name: 'my-test-skill',
+    description: 'A test skill for unit testing',
+    content: '# My Test Skill\n\nSome instructions here.',
+  });
+  expect(readFile).toHaveBeenCalledWith('/path/to/SKILL.md', 'utf-8');
+});
+
+test('getSkillFileContent should throw when file has no frontmatter', async () => {
+  vi.mocked(readFile).mockResolvedValue(noFrontmatterSkillMd);
+
+  const skillManager = createSkillManager();
+
+  await expect(skillManager.getSkillFileContent('/path/to/SKILL.md')).rejects.toThrow('No metadata found');
 });
 
 test('saveSkillsToConfig should write only enabled skill names', async () => {
