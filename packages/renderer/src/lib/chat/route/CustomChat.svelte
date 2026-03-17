@@ -9,6 +9,7 @@ import { Toaster } from '/@/lib/chat/components/ui/sonner';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte.js';
 import { currentChatId } from '/@/lib/chat/state/current-chat-id.svelte';
 import { sidebarCollapsed } from '/@/lib/chat/state/sidebar-collapsed.svelte';
+import { isDark } from '/@/stores/appearance';
 
 interface Props {
   chatId?: string;
@@ -26,10 +27,13 @@ const chatMessagesPromise = $derived(
 );
 
 onDestroy(() => chatHistory.dispose());
+
+// Sync the chat's ThemeProvider with the app's appearance setting
+const forcedTheme = $derived($isDark ? 'dark' : 'light');
 </script>
 
 <div class="flex h-full w-full">
-<ThemeProvider attribute="class" disableTransitionOnChange >
+<ThemeProvider attribute="class" disableTransitionOnChange {forcedTheme}>
 	<Toaster position="top-center" />
   {#await chatMessagesPromise}
     Loading
