@@ -1,3 +1,14 @@
+<script lang="ts" module>
+import type { ModelInfo } from '/@/lib/chat/components/model-info';
+
+export function findModel(models: ModelInfo[], model: ModelInfo | undefined): ModelInfo | undefined {
+  if (!model) return undefined;
+  return models.find(
+    m => m.label === model.label && m.providerId === model.providerId && m.connectionName === model.connectionName,
+  );
+}
+</script>
+
 <script lang="ts">
 import { Chat } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
@@ -5,8 +16,9 @@ import { untrack } from 'svelte';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { toast } from 'svelte-sonner';
 
-import type { ModelInfo } from '/@/lib/chat/components/model-info';
+import { LAST_USED_MODEL_KEY } from '/@/lib/chat/ai/models';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
+import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
 import { convertToUIMessages } from '/@/lib/chat/utils/chat';
 import { getModels } from '/@/lib/models/models-utils';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
@@ -35,6 +47,8 @@ let models: Array<ModelInfo> = $derived(getModels($providerInfos));
 
 const config = MessageConfigSchema.safeParse(messages[messages.length - 1]?.config).data;
 
+const lastUsedModel = new LocalStorage<ModelInfo | undefined>(LAST_USED_MODEL_KEY, undefined);
+
 let selectedModel = $derived<ModelInfo | undefined>(
   config
     ? {
@@ -42,8 +56,14 @@ let selectedModel = $derived<ModelInfo | undefined>(
         label: config.modelId,
         providerId: config.providerId,
       }
-    : models[0],
+    : findModel(models, lastUsedModel.value) ?? models[0],
 );
+
+$effect(() => {
+  if (selectedModel) {
+    lastUsedModel.value = selectedModel;
+  }
+});
 
 /**
  * Here we store the list of tools selected

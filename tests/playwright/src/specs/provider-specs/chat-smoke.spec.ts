@@ -30,8 +30,9 @@ test.use({
 
 test.describe
   .serial('Chat page navigation', { tag: '@smoke' }, () => {
-    test.beforeEach(async ({ page, navigationBar }) => {
+    test.beforeEach(async ({ page, navigationBar, chatPage }) => {
       await waitForNavigationReady(page);
+      await chatPage.clearLastUsedModel();
       await navigationBar.navigateToChatPage();
     });
 
@@ -265,5 +266,24 @@ test.describe
 
       await chatPage.verifySendButtonVisible(TIMEOUTS.MODEL_RESPONSE);
       await chatPage.verifyStopButtonHidden();
+    });
+
+    test('[CHAT-11] Last used model is remembered when starting a new chat', async ({ chatPage }) => {
+      const modelCount = await chatPage.getAvailableModelsCount();
+
+      if (modelCount < 2) {
+        test.skip(true, 'Skipping test: Less than 2 models available');
+        return;
+      }
+
+      // Select the second model
+      await chatPage.selectModelByIndex(1);
+      const selectedModelName = await chatPage.getSelectedModelName();
+      expect(selectedModelName).toBeTruthy();
+
+      // Start a new chat and verify the last used model is still selected
+      await chatPage.clickNewChat();
+      const modelAfterNewChat = await chatPage.getSelectedModelName();
+      expect(modelAfterNewChat).toBe(selectedModelName);
     });
   });

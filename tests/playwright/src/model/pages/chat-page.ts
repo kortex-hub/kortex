@@ -286,4 +286,9 @@ export class ChatPage extends BasePage {
   getToolByName(name: string): Locator {
     return this.page.getByText(name, { exact: true });
   }
+
+  async clearLastUsedModel(): Promise<void> {
+    // Must match LAST_USED_MODEL_KEY from packages/renderer/src/lib/chat/ai/models.ts
+    await this.page.evaluate(() => localStorage.removeItem('last-used-model'));
+  }
 }
