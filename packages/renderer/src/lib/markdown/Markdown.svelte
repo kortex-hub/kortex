@@ -15,7 +15,7 @@ UI guidelines -->
   font-size: revert;
   line-height: normal;
   font-weight: revert;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border);
   margin-bottom: 20px;
 }
 
@@ -34,6 +34,26 @@ UI guidelines -->
   opacity: 0.8;
   line-height: normal;
 }
+.markdown :global(table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 16px;
+}
+.markdown :global(th),
+.markdown :global(td) {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 12px;
+  text-align: left;
+}
+.markdown :global(th) {
+  font-weight: 600;
+  background-color: var(--muted);
+  border-bottom-width: 2px;
+}
+.markdown :global(tr:nth-child(even)) {
+  background-color: var(--muted);
+}
 .markdown :global(a) {
   color: var(--pd-link);
   text-decoration: none;
@@ -48,6 +68,7 @@ UI guidelines -->
 import { micromark } from 'micromark';
 import { directive, directiveHtml } from 'micromark-extension-directive';
 import { gfmAutolinkLiteral, gfmAutolinkLiteralHtml } from 'micromark-extension-gfm-autolink-literal';
+import { gfmTable, gfmTableHtml } from 'micromark-extension-gfm-table';
 import { onDestroy, onMount } from 'svelte';
 
 import { button } from './micromark-button-directive';
@@ -78,8 +99,8 @@ const eventListeners: EventListener[] = [];
 // Render the markdown or the html+micromark markdown reactively
 $: markdown
   ? (html = micromark(markdown, {
-      extensions: [gfmAutolinkLiteral(), directive()],
-      htmlExtensions: [gfmAutolinkLiteralHtml(), directiveHtml({ button, image, link, warnings })],
+      extensions: [gfmAutolinkLiteral(), gfmTable(), directive()],
+      htmlExtensions: [gfmAutolinkLiteralHtml(), gfmTableHtml(), directiveHtml({ button, image, link, warnings })],
     }))
   : undefined;
 
@@ -96,8 +117,8 @@ onMount(() => {
 
   // Provide micromark + extensions
   html = micromark(text, {
-    extensions: [gfmAutolinkLiteral(), directive()],
-    htmlExtensions: [gfmAutolinkLiteralHtml(), directiveHtml({ button, image, link, warnings })],
+    extensions: [gfmAutolinkLiteral(), gfmTable(), directive()],
+    htmlExtensions: [gfmAutolinkLiteralHtml(), gfmTableHtml(), directiveHtml({ button, image, link, warnings })],
   });
 
   // remove href values in each anchor using # for links

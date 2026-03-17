@@ -253,6 +253,16 @@ describe('Custom warnings', () => {
   });
 });
 
+test('Expect to render a markdown table as an HTML table', async () => {
+  await waitRender({ markdown: '| Header 1 | Header 2 |\n| --- | --- |\n| Cell 1 | Cell 2 |' });
+  const markdownContent = screen.getByRole('region', { name: 'markdown-content' });
+  expect(markdownContent).toBeInTheDocument();
+  const table = screen.getByRole('table');
+  expect(table).toBeInTheDocument();
+  expect(table).toContainHTML('<th>Header 1</th>');
+  expect(table).toContainHTML('<td>Cell 1</td>');
+});
+
 describe('jump to TOC section', () => {
   test('Expect TOC to be clickable', async () => {
     await waitRender({
