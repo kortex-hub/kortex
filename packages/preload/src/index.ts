@@ -1681,6 +1681,10 @@ export function initExposure(): void {
     },
   );
 
+  contextBridge.exposeInMainWorld('addFileToPendingFiles', async (name: string, filePath: string): Promise<boolean> => {
+    return ipcInvoke('rag-environment-registry:addFileToPendingFiles', name, filePath);
+  });
+
   contextBridge.exposeInMainWorld('deleteRagEnvironment', async (name: string): Promise<void> => {
     return ipcInvoke('rag-environment-registry:deleteRagEnvironment', name);
   });

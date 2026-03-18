@@ -87,6 +87,12 @@ export class RagEnvironmentRegistry {
         this.apiSender.send('rag-environment-created', ragEnvironment);
       },
     );
+    this.ipcHandle(
+      'rag-environment-registry:addFileToPendingFiles',
+      async (_listener, name: string, filePath: string): Promise<boolean> => {
+        return await this.addFileToPendingFiles(name, filePath);
+      },
+    );
 
     return this.loadEnvironments();
   }
