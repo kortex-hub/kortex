@@ -136,7 +136,7 @@ import type { ChunkProviderInfo } from '/@api/rag/chunk-provider-info';
 import type { RagEnvironment } from '/@api/rag/rag-environment';
 import type { ExtensionBanner, RecommendedRegistry } from '/@api/recommendations/recommendations';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info';
-import type { SkillFileContent, SkillInfo, SkillTarget } from '/@api/skill/skill-info';
+import type { SkillFileContent, SkillFolderInfo, SkillInfo } from '/@api/skill/skill-info';
 import type { StatusBarEntryDescriptor } from '/@api/status-bar';
 import type { PinOption } from '/@api/status-bar/pin-option';
 import type { TelemetryMessages } from '/@api/telemetry';
@@ -349,6 +349,10 @@ export function initExposure(): void {
     return ipcInvoke('skill-manager:listSkills');
   });
 
+  contextBridge.exposeInMainWorld('listSkillFolders', async (): Promise<Array<SkillFolderInfo>> => {
+    return ipcInvoke('skill-manager:listSkillFolders');
+  });
+
   contextBridge.exposeInMainWorld('registerSkill', async (folderPath: string): Promise<SkillInfo> => {
     return ipcInvoke('skill-manager:registerSkill', folderPath);
   });
@@ -367,8 +371,8 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld(
     'createSkill',
-    async (options: SkillFileContent, target: SkillTarget): Promise<SkillInfo> => {
-      return ipcInvoke('skill-manager:createSkill', options, target);
+    async (options: SkillFileContent, targetDirectory: string): Promise<SkillInfo> => {
+      return ipcInvoke('skill-manager:createSkill', options, targetDirectory);
     },
   );
 

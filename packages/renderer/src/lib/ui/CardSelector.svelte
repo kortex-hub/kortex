@@ -2,11 +2,11 @@
 import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
-interface CardSelectorOption {
+export interface CardSelectorOption {
   title: string;
   badge: string;
   value: string;
-  icon: IconDefinition;
+  icon?: IconDefinition | string;
   description?: string;
 }
 
@@ -19,8 +19,7 @@ interface Props {
 let { label, options, selected = $bindable('') }: Props = $props();
 
 function handleClick(value: string): void {
-  if (selected === value) return;
-  selected = value;
+  selected = selected === value ? '' : value;
 }
 </script>
 
@@ -35,7 +34,7 @@ function handleClick(value: string): void {
           hover:bg-[var(--pd-content-card-hover-inset-bg)]
           {selected === option.value ? 'border-[var(--pd-content-card-border-selected)]' : 'border-[var(--pd-content-card-border)]'}
           border-2 flex flex-col overflow-hidden"
-        aria-label={option.value}
+        aria-label={option.title}
         onclick={():void => handleClick(option.value)}>
         <div class="flex flex-row items-start gap-2 min-w-0">
           <div class="flex-shrink-0 mt-0.5">
@@ -47,8 +46,10 @@ function handleClick(value: string): void {
               {/if}
             </div>
           </div>
-          <div class="flex-shrink-0">
-            <Icon class="text-[var(--pd-content-card-icon)]" icon={option.icon} size="lg" />
+          <div class="flex-shrink-0 w-5 h-5">
+            {#if option.icon}
+              <Icon class="text-[var(--pd-content-card-icon)] w-full h-full object-contain" icon={option.icon} size="lg"/>
+            {/if}
           </div>
           <div class="text-left min-w-0">
             <div class="text-sm font-medium text-[var(--pd-content-card-text)] truncate">{option.title}</div>

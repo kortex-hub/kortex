@@ -83,7 +83,7 @@ test('Expect description rendered when provided', () => {
 test('Expect clicking option selects it', async () => {
   render(CardSelector, { options, selected: '' });
 
-  const buttonA = screen.getByRole('button', { name: 'a' });
+  const buttonA = screen.getByRole('button', { name: 'Option A' });
   await fireEvent.click(buttonA);
 
   expect(buttonA.className).toContain('border-[var(--pd-content-card-border-selected)]');
@@ -92,21 +92,21 @@ test('Expect clicking option selects it', async () => {
 test('Expect clicking different option changes selection', async () => {
   render(CardSelector, { options, selected: 'a' });
 
-  const buttonB = screen.getByRole('button', { name: 'b' });
+  const buttonB = screen.getByRole('button', { name: 'Option B' });
   await fireEvent.click(buttonB);
 
   expect(buttonB.className).toContain('border-[var(--pd-content-card-border-selected)]');
 
-  const buttonA = screen.getByRole('button', { name: 'a' });
+  const buttonA = screen.getByRole('button', { name: 'Option A' });
   expect(buttonA.className).toContain('border-[var(--pd-content-card-border)]');
 });
 
-test('Expect each option has a button with aria-label', () => {
+test('Expect each option has a button with aria-label using title', () => {
   render(CardSelector, { options });
 
-  expect(screen.getByRole('button', { name: 'a' })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'b' })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'c' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Option A' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Option B' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Option C' })).toBeInTheDocument();
 });
 
 test('Expect radio indicator filled for selected option', () => {
@@ -120,4 +120,13 @@ test('Expect radio indicator filled for selected option', () => {
   const unselectedButton = buttons[0]!;
   const noRadioFill = unselectedButton.querySelector('.w-2.h-2.rounded-full');
   expect(noRadioFill).not.toBeInTheDocument();
+});
+
+test('Expect deselection when clicking the already selected option', async () => {
+  render(CardSelector, { options, selected: 'a' });
+
+  const buttonA = screen.getByRole('button', { name: 'Option A' });
+  await fireEvent.click(buttonA);
+
+  expect(buttonA.className).toContain('border-[var(--pd-content-card-border)]');
 });

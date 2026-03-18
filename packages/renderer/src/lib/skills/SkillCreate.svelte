@@ -5,9 +5,9 @@ import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { load } from 'js-yaml';
 
 import Dialog from '/@/lib/dialogs/Dialog.svelte';
-import type { SkillFileContent, SkillTarget } from '/@api/skill/skill-info';
+import type { SkillFileContent } from '/@api/skill/skill-info';
 
-import SkillTargetCards from './SkillTargetCards.svelte';
+import SkillFolderCards from './SkillFolderCards.svelte';
 
 interface Props {
   onclose: () => void;
@@ -15,7 +15,7 @@ interface Props {
 
 let { onclose }: Props = $props();
 
-let target = $state<SkillTarget>('kortex');
+let target = $state('');
 let name = $state('');
 let description = $state('');
 let skillContent = $state('');
@@ -25,7 +25,9 @@ let error = $state<string | undefined>();
 let dragging = $state(false);
 let selectedFile = $state('');
 
-const isValid = $derived(name.trim().length > 0 && description.trim().length > 0 && skillContent.trim().length > 0);
+const isValid = $derived(
+  target.length > 0 && name.trim().length > 0 && description.trim().length > 0 && skillContent.trim().length > 0,
+);
 
 async function create(): Promise<void> {
   if (creating || !isValid) return;
@@ -127,7 +129,7 @@ async function handleBrowse(): Promise<void> {
 <Dialog title="Create Skill" onclose={onclose}>
   {#snippet content()}
     <div class="w-full">
-      <SkillTargetCards bind:selected={target} />
+      <SkillFolderCards bind:selected={target} />
 
       {#if !selectedFile}
         <button

@@ -26,7 +26,12 @@ export interface SkillInfo extends SkillMetadata {
   enabled: boolean;
 }
 
-export type SkillTarget = 'kortex' | 'claude';
+export interface SkillFolderInfo {
+  label: string;
+  badge: string;
+  icon?: string;
+  baseDirectory: string;
+}
 
 export interface SkillFileContent extends SkillMetadata {
   content?: string;

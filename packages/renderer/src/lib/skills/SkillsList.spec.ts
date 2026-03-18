@@ -27,12 +27,15 @@ import type { SkillInfo } from '/@api/skill/skill-info';
 
 import SkillsList from './SkillsList.svelte';
 
-vi.mock('/@/stores/skills');
+vi.mock(import('/@/stores/skills'));
 
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(skillsStore).filteredSkillInfos = writable<SkillInfo[]>([]);
   vi.mocked(skillsStore).skillSearchPattern = writable('');
+  vi.mocked(window.listSkillFolders).mockResolvedValue([
+    { label: 'Kortex Skills', badge: 'Kortex', baseDirectory: '/test/skills' },
+  ]);
 });
 
 test('should show empty screen when no skills', () => {
