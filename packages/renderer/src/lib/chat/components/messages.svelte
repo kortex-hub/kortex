@@ -40,7 +40,6 @@ $effect(() => {
   observer.observe(containerRef, {
     childList: true,
     subtree: true,
-    attributes: true,
     characterData: true,
   });
 
