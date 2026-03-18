@@ -134,7 +134,10 @@ export class ChatPage extends BasePage {
     }
   }
 
-  async sendMessage(message: string, { waitForMessage = true, timeout = TIMEOUTS.SHORT } = {}): Promise<void> {
+  async sendMessage(
+    message: string,
+    { waitForMessage = true, timeout = TIMEOUTS.SHORT }: { waitForMessage?: boolean; timeout?: number } = {},
+  ): Promise<void> {
     await this.messageField.fill(message);
     await expect(this.messageField).toHaveValue(message);
     await expect(this.sendButton).toBeEnabled();
