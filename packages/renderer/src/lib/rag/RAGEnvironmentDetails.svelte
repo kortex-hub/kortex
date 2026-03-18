@@ -43,11 +43,15 @@ async function handleAddFile(): Promise<void> {
       const result = await window.addFileToPendingFiles(ragEnvironment.name, filePath);
 
       if (!result) {
-        console.error('Failed to add file to RAG environment');
+        window
+          .showMessageBox({ title: 'Error', message: 'Error indexing file in RAG environment' })
+          .catch(console.error);
       }
     }
   } catch (error: unknown) {
-    console.error('Error selecting file:', error);
+    window
+      .showMessageBox({ title: 'Error', message: 'Error indexing file in RAG environment', detail: String(error) })
+      .catch(console.error);
   }
 }
 </script>
