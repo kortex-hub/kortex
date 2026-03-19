@@ -34,6 +34,12 @@ test.describe
       await waitForNavigationReady(page);
       await chatPage.clearLastUsedModel();
       await navigationBar.navigateToChatPage();
+      const existingCount = await chatPage.getChatHistoryCount();
+      if (existingCount > 0) {
+        await chatPage.deleteAllChatHistoryItems();
+        await chatPage.verifyChatHistoryEmpty();
+        await chatPage.ensureNotificationsAreNotVisible();
+      }
     });
 
     test('[CHAT-01] All chat UI elements are visible', async ({ chatPage }) => {
@@ -319,6 +325,9 @@ test.describe
       // Verify delete all button is visible in viewport without scrolling
       await expect(chatPage.deleteAllChatsButton).toBeInViewport();
 
+      // Wait for send button to ensure all pending model generations have completed
+      await chatPage.verifySendButtonVisible(TIMEOUTS.MODEL_RESPONSE);
+
       // Clean up - delete all chats
       await chatPage.deleteAllChatHistoryItems();
       await chatPage.verifyChatHistoryEmpty();
@@ -342,5 +351,61 @@ test.describe
       await chatPage.clickNewChat();
       const modelAfterNewChat = await chatPage.getSelectedModelName();
       expect(modelAfterNewChat).toBe(selectedModelName);
+    });
+
+    test('[CHAT-12] Edit button enters editing mode and ESC cancels it', async ({ chatPage }) => {
+      test.slow();
+      await chatPage.clickNewChat();
+      await chatPage.verifySendButtonVisible();
+
+      const message = 'Hello, this is a test message';
+      await chatPage.sendMessage(message);
+      await chatPage.verifyConversationMessage(message);
+
+      // Wait for model response before editing
+      await expect(chatPage.modelConversationMessages.first()).toBeVisible({ timeout: TIMEOUTS.MODEL_RESPONSE });
+
+      await chatPage.clickEditOnUserMessage(0);
+      await chatPage.verifyEditingMode(message);
+
+      // Messages after the edited one should be grayed out
+      await chatPage.verifyMessagesGrayedAfterIndex(0);
+
+      // Cancel editing with ESC
+      await chatPage.cancelEditing();
+
+      // Input should be restored to empty (or previous value)
+      await expect(chatPage.messageField).toHaveValue('');
+      // Original message should still be visible
+      await chatPage.verifyConversationMessage(message);
+    });
+
+    test('[CHAT-13] Edit message and submit triggers regeneration', async ({ chatPage }) => {
+      test.slow();
+      await chatPage.clickNewChat();
+      await chatPage.verifySendButtonVisible();
+
+      const originalMessage = 'What is 2 + 2?';
+      await chatPage.sendMessage(originalMessage);
+      await chatPage.verifyConversationMessage(originalMessage);
+
+      // Wait for model response
+      await expect(chatPage.modelConversationMessages.first()).toBeVisible({ timeout: TIMEOUTS.MODEL_RESPONSE });
+
+      // Edit the message
+      await chatPage.clickEditOnUserMessage(0);
+      await chatPage.verifyEditingMode(originalMessage);
+
+      const editedMessage = 'What is 3 + 3?';
+      await chatPage.submitEditedMessage(editedMessage);
+
+      // The edited message should appear in the conversation
+      await chatPage.verifyConversationMessage(editedMessage);
+
+      // The original message should no longer be visible
+      await expect(chatPage.getConversationMessage(originalMessage)).not.toBeVisible({ timeout: TIMEOUTS.SHORT });
+
+      // A new model response should be generated
+      await expect(chatPage.modelConversationMessages.first()).toBeVisible({ timeout: TIMEOUTS.MODEL_RESPONSE });
     });
   });

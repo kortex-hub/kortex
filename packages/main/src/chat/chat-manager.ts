@@ -110,6 +110,7 @@ export class ChatManager {
     this.ipcHandle('inference:getChatMessagesById', (_, id: string) => this.getChatMessagesById(id));
     this.ipcHandle('inference:deleteChat', (_, id: string) => this.deleteChat(id));
     this.ipcHandle('inference:deleteAllChats', () => this.deleteAllChats());
+    this.ipcHandle('inference:deleteTrailingMessages', (_, id: string) => this.deleteTrailingMessages(id));
   }
 
   private async getExchanges(mcpId: string): Promise<DynamicToolUIPart[]> {
@@ -148,6 +149,13 @@ export class ChatManager {
 
   private async deleteAllChats(): Promise<undefined> {
     await this.chatQueries.deleteAllChatsForUser({ userId: this.userId });
+  }
+
+  private async deleteTrailingMessages(id: string): Promise<undefined> {
+    const result = await this.chatQueries.deleteTrailingMessages({ id });
+    if (result.isErr()) {
+      throw result.error;
+    }
   }
 
   private async convertMessages(messages: UIMessage[]): Promise<UIMessage[]> {

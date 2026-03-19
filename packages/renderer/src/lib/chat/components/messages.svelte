@@ -53,7 +53,7 @@ $effect(() => {
 	{/if}
 
 	{#each messages as message (message.id)}
-		<PreviewMessage {message} {readonly} {loading}/>
+		<PreviewMessage {message} {messages} {readonly} {loading}/>
 	{/each}
 
 	{#if loading && messages.length > 0 && messages[messages.length - 1].role === 'user'}

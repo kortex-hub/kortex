@@ -35,6 +35,7 @@ export class ChatPage extends BasePage {
   readonly chatHistoryItems: Locator;
   readonly conversationMessages: Locator;
   readonly conversationMessageParagraphs: Locator;
+  readonly userConversationMessages: Locator;
   readonly modelConversationMessages: Locator;
   readonly chatHistoryItem: Locator;
   readonly chatHistoryItemMenuAction: Locator;
@@ -52,6 +53,7 @@ export class ChatPage extends BasePage {
   readonly showMcpPanelButton: Locator;
   readonly filterToolsInput: Locator;
   readonly toolCheckboxes: Locator;
+  readonly editCancelHint: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -66,6 +68,7 @@ export class ChatPage extends BasePage {
     this.chatHistoryItems = page.locator('li[data-sidebar="menu-item"]');
     this.conversationMessages = page.locator('div[data-role]');
     this.conversationMessageParagraphs = this.conversationMessages.getByRole('paragraph');
+    this.userConversationMessages = page.locator('div[data-role="user"]');
     this.modelConversationMessages = page.locator('div[data-role="assistant"]');
     this.chatHistoryItem = page.locator('button[data-sidebar="menu-button"]');
     this.chatHistoryItemMenuAction = page.locator('button[data-sidebar="menu-action"]');
@@ -83,6 +86,7 @@ export class ChatPage extends BasePage {
     this.showMcpPanelButton = page.getByRole('button', { name: 'Show MCP panel' });
     this.filterToolsInput = page.getByLabel('filter Tools');
     this.toolCheckboxes = page.getByRole('checkbox');
+    this.editCancelHint = page.getByText('Press ESC to cancel editing');
   }
 
   async waitForLoad(): Promise<void> {
@@ -319,5 +323,55 @@ export class ChatPage extends BasePage {
   async clearLastUsedModel(): Promise<void> {
     // Must match LAST_USED_MODEL_KEY from packages/renderer/src/lib/chat/ai/models.ts
     await this.page.evaluate(() => localStorage.removeItem('last-used-model'));
+  }
+
+  getEditButtonForUserMessage(index: number): Locator {
+    return this.userConversationMessages.nth(index).getByLabel('Edit message');
+  }
+
+  async clickEditOnUserMessage(index: number): Promise<void> {
+    const messageLocator = this.userConversationMessages.nth(index);
+    await messageLocator.hover();
+    const editButton = messageLocator.getByLabel('Edit message');
+    // The button is opacity-0 until CSS group-hover takes effect, so force the click
+    await editButton.click({ force: true });
+  }
+
+  async verifyEditingMode(originalText: string): Promise<void> {
+    await expect(this.editCancelHint).toBeVisible();
+    await expect(this.messageField).toHaveValue(originalText);
+  }
+
+  async cancelEditing(): Promise<void> {
+    await this.page.keyboard.press('Escape');
+    await expect(this.editCancelHint).not.toBeVisible();
+  }
+
+  async verifyMessagesGrayedAfterIndex(userMessageIndex: number): Promise<void> {
+    const allMessages = await this.conversationMessages.all();
+    const userMessages = await this.userConversationMessages.all();
+    const editedMessage = userMessages[userMessageIndex];
+
+    // Find the position of the edited user message in all messages
+    let editedGlobalIndex = -1;
+    for (let i = 0; i < allMessages.length; i++) {
+      const el = allMessages[i];
+      if ((await el.innerHTML()) === (await editedMessage.innerHTML())) {
+        editedGlobalIndex = i;
+        break;
+      }
+    }
+
+    // Messages after the edited one should have reduced opacity
+    for (let i = editedGlobalIndex + 1; i < allMessages.length; i++) {
+      await expect(allMessages[i]).toHaveClass(/opacity-40/);
+    }
+  }
+
+  async submitEditedMessage(newText: string): Promise<void> {
+    await this.messageField.clear();
+    await this.messageField.fill(newText);
+    await expect(this.sendButton).toBeEnabled();
+    await this.sendButton.click();
   }
 }

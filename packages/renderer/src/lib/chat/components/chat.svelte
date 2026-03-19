@@ -18,6 +18,7 @@ import { toast } from 'svelte-sonner';
 
 import { LAST_USED_MODEL_KEY } from '/@/lib/chat/ai/models';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
+import { EditState } from '/@/lib/chat/hooks/edit-state.svelte';
 import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
 import { convertToUIMessages } from '/@/lib/chat/utils/chat';
 import { getModels } from '/@/lib/models/models-utils';
@@ -137,6 +138,8 @@ const chatClient = $derived(
     },
   }),
 );
+
+EditState.toContext();
 
 let attachments = $state<Attachment[]>([]);
 let mcpSelectorOpen = $state(false);

@@ -1,11 +1,12 @@
 <script lang="ts">
 import { type Chat } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
-import { onMount } from 'svelte';
+import { onMount, untrack } from 'svelte';
 import type { SvelteMap } from 'svelte/reactivity';
 import { innerWidth } from 'svelte/reactivity/window';
 import { toast } from 'svelte-sonner';
 
+import { EditState } from '/@/lib/chat/hooks/edit-state.svelte';
 import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
 import { cn } from '/@/lib/chat/utils/shadcn';
 
@@ -33,11 +34,34 @@ let {
   selectedModel?: ModelInfo;
 } = $props();
 
+const editState = EditState.fromContext();
+
 let input = $state('');
+let savedInput = $state('');
 let mounted = $state(false);
 let textareaRef = $state<HTMLTextAreaElement | null>(null);
 const storedInput = new LocalStorage('input', '');
 const loading = $derived(chatClient.status === 'streaming' || chatClient.status === 'submitted');
+
+$effect(() => {
+  if (editState.editingMessage) {
+    const text = editState.editingMessage.parts
+      .filter(part => part.type === 'text')
+      .map(part => (part as { type: 'text'; text: string }).text)
+      .join('');
+    untrack(() => {
+      savedInput = input;
+      setInput(text);
+      textareaRef?.focus();
+    });
+  }
+});
+
+function cancelEditing(): void {
+  editState.cancelEditing();
+  setInput(savedInput);
+  savedInput = '';
+}
 
 const adjustHeight = (): void => {
   if (textareaRef) {
@@ -60,6 +84,29 @@ function setInput(value: string): void {
 
 async function submitForm(): Promise<void> {
   const text = input;
+
+  if (editState.editingMessage) {
+    const editingMessage = editState.editingMessage;
+    setInput('');
+    savedInput = '';
+    editState.cancelEditing();
+
+    await window.inferenceDeleteTrailingMessages(editingMessage.id);
+
+    const index = chatClient.messages.findIndex(m => m.id === editingMessage.id);
+    if (index !== -1) {
+      const updatedMessage = {
+        ...editingMessage,
+        parts: [{ type: 'text' as const, text }],
+      };
+      chatClient.messages = [...chatClient.messages.slice(0, index), updatedMessage];
+    }
+
+    resetHeight();
+    await chatClient.regenerate();
+    return;
+  }
+
   setInput('');
   await chatClient.sendMessage({
     text,
@@ -133,6 +180,10 @@ $effect.pre(() => {
 		</div>
 	{/if}
 
+	{#if editState.isEditing}
+		<div class="text-muted-foreground px-3 pt-2 text-sm">Press ESC to cancel editing</div>
+	{/if}
+
 	<Textarea
 		bind:ref={textareaRef}
 		placeholder="Send a message..."
@@ -144,6 +195,12 @@ $effect.pre(() => {
 		rows={2}
 		autofocus
 		onkeydown={async(event): Promise<void> => {
+			if (event.key === 'Escape' && editState.isEditing) {
+				event.preventDefault();
+				cancelEditing();
+				return;
+			}
+
 			if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
 				event.preventDefault();
 
