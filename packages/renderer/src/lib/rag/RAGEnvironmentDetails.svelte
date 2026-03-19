@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Tab } from '@podman-desktop/ui-svelte';
+import { Button, Tab } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { router } from 'tinro';
 
@@ -36,6 +36,24 @@ async function handleAddFile(): Promise<void> {
     const selectedFiles = await window.openDialog({
       title: 'Select file to add to RAG environment',
       selectors: ['openFile'],
+      filters: [
+        {
+          name: 'Normal text file',
+          extensions: ['txt'],
+        },
+        {
+          name: 'Markdown',
+          extensions: ['md', 'markdown'],
+        },
+        {
+          name: 'Hyper Text Markup Language',
+          extensions: ['htm', 'html', 'shtm', 'shtml', 'xht', 'xhtml', 'hta'],
+        },
+        {
+          name: 'Adobe PDF',
+          extensions: ['pdf'],
+        },
+      ],
     });
 
     if (selectedFiles && selectedFiles.length > 0) {
@@ -107,14 +125,15 @@ async function handleAddFile(): Promise<void> {
       {#if ragEnvironment}
         <!-- Sources Tab -->
         <div
-          class="upload-area border-2 border-dashed border-[var(--pd-content-divider)] rounded-lg py-12 px-6 text-center cursor-pointer hover:border-[var(--pd-button-primary)] hover:bg-[color-mix(in_srgb,var(--pd-button-primary)_5%,transparent)] transition-all duration-200 mb-6"
-          onclick={handleAddFile}
-          role="button"
-          tabindex="0"
+          class="upload-area border-2 border-dashed border-[var(--pd-content-divider)] rounded-lg py-12 px-6 text-center hover:border-[var(--pd-button-primary)] hover:bg-[color-mix(in_srgb,var(--pd-button-primary)_5%,transparent)] transition-all duration-200 mb-6"
         >
-          <Icon icon="fas fa-upload" class="fa-4x"/>
-          <div class="upload-text text-base text-[var(--pd-content-text)] mb-2">Drop files here or click to upload</div>
-          <div class="upload-subtext text-sm text-[var(--pd-content-text-secondary)]">Supports PDF, TXT, MD, and more</div>
+          <Button
+            onclick={handleAddFile} type="link"
+          >
+            <Icon icon="fas fa-upload" class="fa-4x"/>
+            <div class="upload-text text-base text-[var(--pd-content-text)] mb-2">Click to upload</div>
+            <div class="upload-subtext text-sm text-[var(--pd-content-text-secondary)]">Supports PDF, TXT, MD, and more</div>
+          </Button>
         </div>
 
         <div class="sources-list bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-divider)] rounded-lg overflow-hidden">
