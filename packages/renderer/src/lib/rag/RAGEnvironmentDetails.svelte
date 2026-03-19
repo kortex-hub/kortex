@@ -3,6 +3,7 @@ import { Button, Tab } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { router } from 'tinro';
 
+import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
 import { getChunkProviderName, getDatabaseName } from '/@/lib/rag/rag-environment-utils.svelte';
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
@@ -71,6 +72,26 @@ async function handleAddFile(): Promise<void> {
       .showMessageBox({ title: 'Error', message: 'Error indexing file in RAG environment', detail: String(error) })
       .catch(console.error);
   }
+}
+
+async function handleRemoveFile(filePath: string): Promise<void> {
+  if (!ragEnvironment) return;
+
+  withConfirmation(async () => {
+    try {
+      const result = await window.removeFileFromEnvironment(ragEnvironment.name, filePath);
+
+      if (!result) {
+        window
+          .showMessageBox({ title: 'Error', message: 'Error removing file from RAG environment' })
+          .catch(console.error);
+      }
+    } catch (error: unknown) {
+      window
+        .showMessageBox({ title: 'Error', message: 'Error removing file from RAG environment', detail: String(error) })
+        .catch(console.error);
+    }
+  }, `remove file from environment ${ragEnvironment.name}`);
 }
 </script>
 
@@ -153,6 +174,14 @@ async function handleAddFile(): Promise<void> {
                     <div class="source-meta text-xs text-[var(--pd-content-text-secondary)]">{file.status}</div>
                   </div>
                 </div>
+                <Button
+                  onclick={handleRemoveFile.bind(undefined, file.path)}
+                  type="link"
+                  aria-label="Remove file"
+                  title="Remove file from RAG environment"
+                  icon="fas fa-trash"
+                >
+                </Button>
               </div>
             {/each}
           {:else}

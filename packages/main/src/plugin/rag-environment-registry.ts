@@ -93,6 +93,12 @@ export class RagEnvironmentRegistry {
         return await this.addFileToPendingFiles(name, filePath);
       },
     );
+    this.ipcHandle(
+      'rag-environment-registry:removeFileFromEnvironment',
+      async (_listener, name: string, filePath: string): Promise<boolean> => {
+        return await this.removeFileFromEnvironment(name, filePath);
+      },
+    );
 
     return this.loadEnvironments();
   }
@@ -284,6 +290,60 @@ export class RagEnvironmentRegistry {
     } catch (error) {
       console.error(`Failed to add file to RAG environment ${name}:`, error);
       return false;
+    }
+  }
+
+  /**
+   * Remove a file from the RAG environment
+   * @param name The name of the RAG environment
+   * @param filePath The path of the file to remove
+   * @returns true if the file was removed successfully, false otherwise
+   */
+  public async removeFileFromEnvironment(name: string, filePath: string): Promise<boolean> {
+    const ragEnvironment = this.getEnvironment(name);
+    if (!ragEnvironment) {
+      console.error(`RAG environment ${name} not found`);
+      return false;
+    }
+
+    // Check if file exists in the environment
+    const fileIndex = ragEnvironment.files.findIndex(file => file.path === filePath);
+    if (fileIndex === -1) {
+      console.warn(`File ${filePath} is not in RAG environment ${name}`);
+      return false;
+    }
+
+    const ragConnection = this.getRagConnection(ragEnvironment);
+    if (!ragConnection) {
+      console.error(`Rag connection ${ragEnvironment.ragConnection.name} not found`);
+      return false;
+    }
+
+    const deindexTask = this.taskManager.createTask({
+      title: `Removing ${filePath} from ${ragEnvironment.name}`,
+    });
+    deindexTask.state = 'running';
+    deindexTask.status = 'in-progress';
+
+    try {
+      // Remove from vector database
+      await ragConnection.connection.deindex(Uri.file(filePath));
+
+      // Remove from files array
+      ragEnvironment.files.splice(fileIndex, 1);
+
+      // Save updated environment
+      await this.saveOrUpdate(ragEnvironment);
+
+      deindexTask.status = 'success';
+      return true;
+    } catch (error) {
+      console.error(`Failed to remove file from RAG environment ${name}:`, error);
+      deindexTask.status = 'failure';
+      deindexTask.error = String(error);
+      return false;
+    } finally {
+      deindexTask.state = 'completed';
     }
   }
 

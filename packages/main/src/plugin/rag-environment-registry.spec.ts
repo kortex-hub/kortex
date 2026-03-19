@@ -20,6 +20,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
+import type { ChunkProvider, ProviderRagConnection } from '@kortex-app/api';
 import type { MockInstance } from 'vitest';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -28,6 +29,7 @@ import type { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js
 import type { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { TaskManager } from '/@/plugin/tasks/task-manager.js';
+import type { Task } from '/@/plugin/tasks/tasks.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { RagEnvironment } from '/@api/rag/rag-environment.js';
 
@@ -51,6 +53,7 @@ const ipcHandle: IPCHandle = vi.fn();
 
 const chunkProviderRegistry = {
   getChunkProvider: vi.fn(),
+  findProviderById: vi.fn(),
 } as unknown as ChunkProviderRegistry;
 
 const providerRegistry = {
@@ -61,6 +64,7 @@ const providerRegistry = {
 
 const taskManager = {
   getTask: vi.fn(),
+  createTask: vi.fn(),
 } as unknown as TaskManager;
 
 const mcpManager = {} as unknown as MCPManager;
@@ -306,5 +310,461 @@ describe('RagEnvironmentRegistry', () => {
     const expectedFilePath = resolve(mockRagDirectory, 'test-env.json');
     expect(writeFile).toHaveBeenCalledTimes(2);
     expect(writeFile).toHaveBeenLastCalledWith(expectedFilePath, JSON.stringify(updatedEnvironment, undefined, 2));
+  });
+
+  describe('addFileToPendingFiles', () => {
+    test('should successfully add a file to pending files and trigger indexing', async () => {
+      const ragEnvironment: RagEnvironment = {
+        name: 'test-env',
+        ragConnection: {
+          providerId: 'provider-1',
+          name: 'rag-conn-1',
+        },
+        chunkerId: 'chunker-1',
+        files: [],
+      };
+
+      await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
+
+      // Mock chunk provider
+      const mockChunkProvider = {
+        name: 'chunker',
+        chunk: vi.fn().mockResolvedValue([{ text: 'chunk1' }, { text: 'chunk2' }]),
+      };
+      vi.mocked(chunkProviderRegistry.findProviderById).mockReturnValue(mockChunkProvider);
+
+      // Mock RAG connection
+      const mockRagConnection = {
+        providerId: 'provider-1',
+        connection: {
+          name: 'rag-conn-1',
+          index: vi.fn().mockResolvedValue(undefined),
+          deindex: vi.fn(),
+        },
+      } as unknown as ProviderRagConnection;
+      vi.mocked(providerRegistry.getRagConnections).mockReturnValue([mockRagConnection]);
+
+      // Mock task manager
+      const mockTask = {
+        state: '',
+        status: '',
+        error: '',
+      } as unknown as Task;
+      vi.mocked(taskManager.createTask).mockReturnValue(mockTask);
+
+      const result = await ragEnvironmentRegistry.addFileToPendingFiles('test-env', '/path/to/newfile.txt');
+
+      expect(result).toBe(true);
+      expect(chunkProviderRegistry.findProviderById).toHaveBeenCalledWith('chunker-1');
+      expect(providerRegistry.getRagConnections).toHaveBeenCalled();
+
+      // Verify chunking and indexing were called
+      expect(mockChunkProvider.chunk).toHaveBeenCalled();
+      expect(mockRagConnection.connection.index).toHaveBeenCalled();
+
+      // Check that the file was added and indexed successfully
+      const updatedEnv = ragEnvironmentRegistry.getEnvironment('test-env');
+      expect(updatedEnv?.files).toHaveLength(1);
+      expect(updatedEnv?.files[0]).toEqual({
+        path: '/path/to/newfile.txt',
+        status: 'indexed',
+      });
+    });
+
+    test('should return false if environment does not exist', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const result = await ragEnvironmentRegistry.addFileToPendingFiles('non-existent', '/path/to/file.txt');
+
+      expect(result).toBe(false);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('RAG environment non-existent not found'));
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    test('should return false if file is already in the environment', async () => {
+      const ragEnvironment: RagEnvironment = {
+        name: 'test-env',
+        ragConnection: {
+          providerId: 'provider-1',
+          name: 'rag-conn-1',
+        },
+        chunkerId: 'chunker-1',
+        files: [{ path: '/path/to/existing.txt', status: 'indexed' }],
+      };
+
+      await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
+
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const result = await ragEnvironmentRegistry.addFileToPendingFiles('test-env', '/path/to/existing.txt');
+
+      expect(result).toBe(false);
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('File /path/to/existing.txt is already in RAG environment test-env'),
+      );
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    test('should return false if chunk provider is not found', async () => {
+      const ragEnvironment: RagEnvironment = {
+        name: 'test-env',
+        ragConnection: {
+          providerId: 'provider-1',
+          name: 'rag-conn-1',
+        },
+        chunkerId: 'chunker-1',
+        files: [],
+      };
+
+      await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
+
+      vi.mocked(chunkProviderRegistry.findProviderById).mockReturnValue(undefined);
+
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const result = await ragEnvironmentRegistry.addFileToPendingFiles('test-env', '/path/to/newfile.txt');
+
+      expect(result).toBe(false);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Chunk provider with ID chunker-1 not found'),
+      );
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    test('should return false if RAG connection is not found', async () => {
+      const ragEnvironment: RagEnvironment = {
+        name: 'test-env',
+        ragConnection: {
+          providerId: 'provider-1',
+          name: 'rag-conn-1',
+        },
+        chunkerId: 'chunker-1',
+        files: [],
+      };
+
+      await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
+
+      const mockChunkProvider = {
+        chunk: vi.fn(),
+      } as unknown as ChunkProvider;
+      vi.mocked(chunkProviderRegistry.findProviderById).mockReturnValue(mockChunkProvider);
+      vi.mocked(providerRegistry.getRagConnections).mockReturnValue([]);
+
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const result = await ragEnvironmentRegistry.addFileToPendingFiles('test-env', '/path/to/newfile.txt');
+
+      expect(result).toBe(false);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Rag connection rag-conn-1 not found'));
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    test('should handle chunking failure gracefully', async () => {
+      const ragEnvironment: RagEnvironment = {
+        name: 'test-env',
+        ragConnection: {
+          providerId: 'provider-1',
+          name: 'rag-conn-1',
+        },
+        chunkerId: 'chunker-1',
+        files: [],
+      };
+
+      await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
+
+      // Mock chunk provider that fails
+      const mockChunkProvider = {
+        chunk: vi.fn().mockRejectedValue(new Error('Chunking failed')),
+      } as unknown as ChunkProvider;
+      vi.mocked(chunkProviderRegistry.findProviderById).mockReturnValue(mockChunkProvider);
+
+      const mockRagConnection = {
+        providerId: 'provider-1',
+        connection: {
+          name: 'rag-conn-1',
+          index: vi.fn(),
+          deindex: vi.fn(),
+        },
+      } as unknown as ProviderRagConnection;
+      vi.mocked(providerRegistry.getRagConnections).mockReturnValue([mockRagConnection]);
+
+      const mockTask = {
+        state: '',
+        status: '',
+        error: '',
+      } as unknown as Task;
+      vi.mocked(taskManager.createTask).mockReturnValue(mockTask);
+
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const result = await ragEnvironmentRegistry.addFileToPendingFiles('test-env', '/path/to/newfile.txt');
+
+      expect(result).toBe(true); // File is added to pending, but indexing fails async
+
+      expect(mockChunkProvider.chunk).toHaveBeenCalled();
+      expect(mockRagConnection.connection.index).not.toHaveBeenCalled();
+      expect(mockTask.status).toBe('failure');
+      expect(mockTask.error).toContain('Chunking failed');
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    test('should handle indexing failure gracefully', async () => {
+      const ragEnvironment: RagEnvironment = {
+        name: 'test-env',
+        ragConnection: {
+          providerId: 'provider-1',
+          name: 'rag-conn-1',
+        },
+        chunkerId: 'chunker-1',
+        files: [],
+      };
+
+      await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
+
+      // Mock chunk provider
+      const mockChunkProvider = {
+        chunk: vi.fn().mockResolvedValue([{ text: 'chunk1' }, { text: 'chunk2' }]),
+      } as unknown as ChunkProvider;
+      vi.mocked(chunkProviderRegistry.findProviderById).mockReturnValue(mockChunkProvider);
+
+      // Mock RAG connection that fails
+      const mockRagConnection = {
+        providerId: 'provider-1',
+        connection: {
+          name: 'rag-conn-1',
+          index: vi.fn().mockRejectedValue(new Error('Indexing failed')),
+          deindex: vi.fn(),
+        },
+      } as unknown as ProviderRagConnection;
+      vi.mocked(providerRegistry.getRagConnections).mockReturnValue([mockRagConnection]);
+
+      const chunkTask = { state: '', status: '', error: '' } as unknown as Task;
+      const indexTask = { state: '', status: '', error: '' } as unknown as Task;
+      vi.mocked(taskManager.createTask).mockReturnValueOnce(chunkTask).mockReturnValueOnce(indexTask);
+
+      const result = await ragEnvironmentRegistry.addFileToPendingFiles('test-env', '/path/to/newfile.txt');
+
+      expect(result).toBe(true);
+
+      expect(mockChunkProvider.chunk).toHaveBeenCalled();
+      expect(mockRagConnection.connection.index).toHaveBeenCalled();
+      expect(chunkTask.status).toBe('success');
+      expect(indexTask.status).toBe('failure');
+      expect(indexTask.error).toContain('Indexing failed');
+    });
+  });
+
+  describe('removeFileFromEnvironment', () => {
+    test('should successfully remove a file from the environment', async () => {
+      const ragEnvironment: RagEnvironment = {
+        name: 'test-env',
+        ragConnection: {
+          providerId: 'provider-1',
+          name: 'rag-conn-1',
+        },
+        chunkerId: 'chunker-1',
+        files: [
+          { path: '/path/to/file1.txt', status: 'indexed' },
+          { path: '/path/to/file2.txt', status: 'indexed' },
+        ],
+      };
+
+      await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
+
+      // Mock RAG connection
+      const mockRagConnection = {
+        providerId: 'provider-1',
+        connection: {
+          name: 'rag-conn-1',
+          index: vi.fn(),
+          deindex: vi.fn().mockResolvedValue(undefined),
+        },
+      } as unknown as ProviderRagConnection;
+      vi.mocked(providerRegistry.getRagConnections).mockReturnValue([mockRagConnection]);
+
+      // Mock task manager
+      const mockTask = {
+        state: '',
+        status: '',
+        error: '',
+      } as unknown as Task;
+      vi.mocked(taskManager.createTask).mockReturnValue(mockTask);
+
+      const result = await ragEnvironmentRegistry.removeFileFromEnvironment('test-env', '/path/to/file1.txt');
+
+      expect(result).toBe(true);
+      expect(taskManager.createTask).toHaveBeenCalledWith({
+        title: 'Removing /path/to/file1.txt from test-env',
+      });
+      expect(mockRagConnection.connection.deindex).toHaveBeenCalled();
+      expect(mockTask.status).toBe('success');
+      expect(mockTask.state).toBe('completed');
+
+      // Check that the file was removed
+      const updatedEnv = ragEnvironmentRegistry.getEnvironment('test-env');
+      expect(updatedEnv?.files).toHaveLength(1);
+      expect(updatedEnv?.files[0]?.path).toBe('/path/to/file2.txt');
+    });
+
+    test('should return false if environment does not exist', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const result = await ragEnvironmentRegistry.removeFileFromEnvironment('non-existent', '/path/to/file.txt');
+
+      expect(result).toBe(false);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('RAG environment non-existent not found'));
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    test('should return false if file is not in the environment', async () => {
+      const ragEnvironment: RagEnvironment = {
+        name: 'test-env',
+        ragConnection: {
+          providerId: 'provider-1',
+          name: 'rag-conn-1',
+        },
+        chunkerId: 'chunker-1',
+        files: [{ path: '/path/to/file1.txt', status: 'indexed' }],
+      };
+
+      await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
+
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const result = await ragEnvironmentRegistry.removeFileFromEnvironment('test-env', '/path/to/nonexistent.txt');
+
+      expect(result).toBe(false);
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('File /path/to/nonexistent.txt is not in RAG environment test-env'),
+      );
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    test('should return false if RAG connection is not found', async () => {
+      const ragEnvironment: RagEnvironment = {
+        name: 'test-env',
+        ragConnection: {
+          providerId: 'provider-1',
+          name: 'rag-conn-1',
+        },
+        chunkerId: 'chunker-1',
+        files: [{ path: '/path/to/file1.txt', status: 'indexed' }],
+      };
+
+      await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
+
+      vi.mocked(providerRegistry.getRagConnections).mockReturnValue([]);
+
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const result = await ragEnvironmentRegistry.removeFileFromEnvironment('test-env', '/path/to/file1.txt');
+
+      expect(result).toBe(false);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Rag connection rag-conn-1 not found'));
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    test('should handle deindexing failure and mark task as failed', async () => {
+      const ragEnvironment: RagEnvironment = {
+        name: 'test-env',
+        ragConnection: {
+          providerId: 'provider-1',
+          name: 'rag-conn-1',
+        },
+        chunkerId: 'chunker-1',
+        files: [{ path: '/path/to/file1.txt', status: 'indexed' }],
+      };
+
+      await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
+
+      // Mock RAG connection that fails
+      const mockRagConnection = {
+        providerId: 'provider-1',
+        connection: {
+          name: 'rag-conn-1',
+          index: vi.fn(),
+          deindex: vi.fn().mockRejectedValue(new Error('Deindexing failed')),
+        },
+      } as unknown as ProviderRagConnection;
+      vi.mocked(providerRegistry.getRagConnections).mockReturnValue([mockRagConnection]);
+
+      const mockTask = {
+        state: '',
+        status: '',
+        error: '',
+      } as unknown as Task;
+      vi.mocked(taskManager.createTask).mockReturnValue(mockTask);
+
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const result = await ragEnvironmentRegistry.removeFileFromEnvironment('test-env', '/path/to/file1.txt');
+
+      expect(result).toBe(false);
+      expect(mockRagConnection.connection.deindex).toHaveBeenCalled();
+      expect(mockTask.status).toBe('failure');
+      expect(mockTask.error).toContain('Deindexing failed');
+      expect(mockTask.state).toBe('completed');
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to remove file from RAG environment test-env'),
+        expect.anything(),
+      );
+
+      // File should not be removed if deindexing failed
+      const updatedEnv = ragEnvironmentRegistry.getEnvironment('test-env');
+      expect(updatedEnv?.files).toHaveLength(1);
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    test('should remove file even if it has pending status', async () => {
+      const ragEnvironment: RagEnvironment = {
+        name: 'test-env',
+        ragConnection: {
+          providerId: 'provider-1',
+          name: 'rag-conn-1',
+        },
+        chunkerId: 'chunker-1',
+        files: [
+          { path: '/path/to/file1.txt', status: 'pending' },
+          { path: '/path/to/file2.txt', status: 'indexed' },
+        ],
+      };
+
+      await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
+
+      const mockRagConnection = {
+        providerId: 'provider-1',
+        connection: {
+          name: 'rag-conn-1',
+          index: vi.fn(),
+          deindex: vi.fn().mockResolvedValue(undefined),
+        },
+      } as unknown as ProviderRagConnection;
+      vi.mocked(providerRegistry.getRagConnections).mockReturnValue([mockRagConnection]);
+
+      const mockTask = {
+        state: '',
+        status: '',
+        error: '',
+      } as unknown as Task;
+      vi.mocked(taskManager.createTask).mockReturnValue(mockTask);
+
+      const result = await ragEnvironmentRegistry.removeFileFromEnvironment('test-env', '/path/to/file1.txt');
+
+      expect(result).toBe(true);
+      expect(mockRagConnection.connection.deindex).toHaveBeenCalled();
+
+      const updatedEnv = ragEnvironmentRegistry.getEnvironment('test-env');
+      expect(updatedEnv?.files).toHaveLength(1);
+      expect(updatedEnv?.files[0]?.path).toBe('/path/to/file2.txt');
+    });
   });
 });
