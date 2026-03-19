@@ -9,6 +9,7 @@ import { router } from 'tinro';
 
 import { EditState } from '/@/lib/chat/hooks/edit-state.svelte';
 import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
+import { fileUIPart2Attachment } from '/@/lib/chat/utils/chat';
 import { cn } from '/@/lib/chat/utils/shadcn';
 import { ChatSettings } from '/@api/chat/chat-settings';
 
@@ -44,6 +45,7 @@ const editState = EditState.fromContext();
 
 let input = $state('');
 let savedInput = $state('');
+let savedAttachments = $state<Attachment[]>([]);
 let mounted = $state(false);
 let textareaRef = $state<HTMLTextAreaElement | null>(null);
 const storedInput = new LocalStorage('input', '');
@@ -53,13 +55,17 @@ const loading = $derived(
 
 $effect(() => {
   if (editState.editingMessage) {
-    const text = editState.editingMessage.parts
-      .filter(part => part.type === 'text')
-      .map(part => (part as { type: 'text'; text: string }).text)
-      .join('');
+    const parts = editState.editingMessage.parts;
     untrack(() => {
+      const text = parts
+        .filter(part => part.type === 'text')
+        .map(part => (part as { type: 'text'; text: string }).text)
+        .join('');
+      const fileAttachments = parts.filter(part => part.type === 'file').map(part => fileUIPart2Attachment(part));
       savedInput = input;
+      savedAttachments = [...attachments];
       input = text;
+      attachments = fileAttachments;
       // Wait for DOM to update before adjusting height
       requestAnimationFrame(() => {
         adjustHeight();
@@ -77,6 +83,8 @@ async function cancelEditing(): Promise<void> {
   editState.cancelEditing();
   input = savedInput;
   savedInput = '';
+  attachments = savedAttachments;
+  savedAttachments = [];
 
   // Wait for DOM to update before resetting height
   await new Promise(resolve => requestAnimationFrame(resolve));
@@ -103,12 +111,11 @@ function setInput(value: string): void {
   adjustHeight();
 }
 
+function removeAttachment(index: number): void {
+  attachments = attachments.filter((_, i) => i !== index);
+}
+
 function canSubmit(): boolean {
-  // When editing, only allow non-empty text (attachments are discarded in edit mode)
-  if (editState.isEditing) {
-    return input.trim().length > 0;
-  }
-  // When not editing, allow either text or attachments
   return input.trim().length > 0 || attachments.length > 0;
 }
 
@@ -120,9 +127,12 @@ async function submitForm(): Promise<void> {
 
   if (editState.editingMessage) {
     const editingMessage = editState.editingMessage;
+    const editedAttachments = attachments;
     // Clear input directly instead of using setInput('') to avoid calling adjustHeight() before DOM updates
     input = '';
     savedInput = '';
+    attachments = [];
+    savedAttachments = [];
     editState.cancelEditing();
 
     // Wait for DOM to update before resetting height
@@ -133,9 +143,15 @@ async function submitForm(): Promise<void> {
 
     const index = chatClient.messages.findIndex(m => m.id === editingMessage.id);
     if (index !== -1) {
+      const fileParts = editedAttachments.map(attachment => ({
+        type: 'file' as const,
+        url: attachment.url,
+        filename: attachment.name,
+        mediaType: attachment.contentType ?? 'application/octet-stream',
+      }));
       const updatedMessage = {
         ...editingMessage,
-        parts: [{ type: 'text' as const, text }],
+        parts: [...(text.trim().length > 0 ? [{ type: 'text' as const, text }] : []), ...fileParts],
       };
       chatClient.messages = [...chatClient.messages.slice(0, index), updatedMessage];
     }
@@ -210,19 +226,23 @@ function rejectOversizedFile(fileName: string, maxSizeMB: number): void {
 }
 
 async function handleFile(): Promise<void> {
-  const filepath = await window.openDialog({
-    title: 'Select a file',
+  const filepaths = await window.openDialog({
+    title: 'Select files',
+    selectors: ['openFile', 'multiSelections'],
   });
-  if (filepath?.[0]) {
-    const maxSizeBytes = await getMaxFileSizeBytes();
-    const fileSize = await window.pathFileSize(filepath[0]);
+  if (!filepaths?.length) return;
+
+  const maxSizeBytes = await getMaxFileSizeBytes();
+
+  for (const filepath of filepaths) {
+    const fileSize = await window.pathFileSize(filepath);
     if (fileSize > maxSizeBytes) {
-      const fileName = filepath[0].split(/[/\\]/).pop() ?? filepath[0];
+      const fileName = filepath.split(/[/\\]/).pop() ?? filepath;
       rejectOversizedFile(fileName, maxSizeBytes / (1024 * 1024));
-      return;
+      continue;
     }
-    const mimeType = await window.pathMimeType(filepath[0]);
-    const url = fileUrl(filepath[0]);
+    const mimeType = await window.pathMimeType(filepath);
+    const url = fileUrl(filepath);
     attachments.push({
       url,
       name: url.substring(url.lastIndexOf('/') + 1),
@@ -328,14 +348,6 @@ $effect((): (() => void) | void => {
     <SuggestedActions {chatClient} {selectedMCPTools} />
   {/if}
 
-  {#if attachments.length > 0}
-    <div class="flex flex-row items-end gap-2 overflow-x-scroll">
-      {#each attachments as attachment (attachment.url)}
-        <PreviewAttachment {attachment} />
-      {/each}
-    </div>
-  {/if}
-
   {#if editState.isEditing}
     <div class="text-muted-foreground px-3 pt-2 text-sm">Press ESC to cancel editing</div>
   {/if}
@@ -353,6 +365,18 @@ $effect((): (() => void) | void => {
     ondragleave={handleDragLeave}
     ondrop={(e): void => { handleDrop(e).catch(console.error); }}
   >
+    {#if attachments.length > 0}
+      <div
+        class="flex flex-row items-end gap-2 overflow-x-auto overflow-y-visible px-2 pt-1 pb-0"
+        onwheel={(e): void => { if (e.deltaX !== 0) e.stopPropagation(); }}
+        ontouchmove={(e): void => { e.stopPropagation(); }}
+      >
+        {#each attachments as attachment, index (`${attachment.url}:${index}`)}
+          <PreviewAttachment {attachment} onremove={(): void => removeAttachment(index)} />
+        {/each}
+      </div>
+    {/if}
+
     <Textarea
       bind:ref={textareaRef}
       placeholder="Send a message..."

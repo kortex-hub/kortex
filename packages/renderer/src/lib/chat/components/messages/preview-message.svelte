@@ -40,6 +40,7 @@ const tools: Array<DynamicToolUIPart> = $derived(message.parts.filter(part => pa
 const reasoningParts = $derived(message.parts.filter(part => part.type === 'reasoning'));
 const textParts = $derived(message.parts.filter(part => part.type === 'text'));
 const hasText = $derived(textParts.some(part => part.text.trim().length > 0));
+const hasFiles = $derived(message.parts.some(part => part.type === 'file'));
 
 // Show spinner only for the last assistant message while loading (during reasoning or text generation)
 const isLastMessage = $derived(messages.length > 0 && messages[messages.length - 1].id === message.id);
@@ -56,10 +57,7 @@ const isGeneratingResponse = $derived(loading && isLastAssistantMessage);
 >
 
   <div
-    class={cn(
-      'flex w-full gap-4 group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl',
-      'group-data-[role=user]/message:w-fit',
-    )}
+    class="flex w-full gap-4 group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl"
   >
     {#if message.role === 'assistant'}
       <div
@@ -71,7 +69,7 @@ const isGeneratingResponse = $derived(loading && isLastAssistantMessage);
       </div>
     {/if}
 
-    <div class="flex w-full flex-col gap-4" use:codeCopyButtons>
+    <div class="flex w-full min-w-0 flex-col gap-4" use:codeCopyButtons>
       {#if message.role === 'assistant'}
         <!-- do we have tooling in parts ?-->
         {#if tools.length > 0}
@@ -80,10 +78,12 @@ const isGeneratingResponse = $derived(loading && isLastAssistantMessage);
       {/if}
 
       {#if message.parts.filter(part => part.type === 'file').length > 0}
-        <div class="flex flex-row justify-end gap-2">
-          {#each message.parts.filter(part => part.type === 'file') as attachment (attachment.url)}
-            <PreviewAttachment attachment={fileUIPart2Attachment(attachment)} />
-          {/each}
+        <div class="w-full overflow-x-auto overflow-y-visible">
+          <div class="ml-auto flex w-max flex-row gap-2">
+            {#each message.parts.filter(part => part.type === 'file') as attachment, i (`${attachment.url}:${i}`)}
+              <PreviewAttachment attachment={fileUIPart2Attachment(attachment)} />
+            {/each}
+          </div>
         </div>
       {/if}
 
@@ -96,7 +96,7 @@ const isGeneratingResponse = $derived(loading && isLastAssistantMessage);
       {#each textParts as part, i (`${message.id}-text-${i}`)}
         <div
           class={cn('flex flex-col gap-4 overflow-hidden [&_p:last-child]:mb-0 [&_p:last-child]:pb-0', {
-            'bg-primary text-primary-foreground rounded-xl px-3 pt-4': message.role === 'user',
+            'bg-primary text-primary-foreground ml-auto w-fit rounded-xl px-3 pt-4': message.role === 'user',
             'animate-fade-in': message.role === 'assistant',
           })}
         >
@@ -113,8 +113,8 @@ const isGeneratingResponse = $derived(loading && isLastAssistantMessage);
         </div>
       {/if}
 
-      {#if hasText && (message.role === 'user' || !isGeneratingResponse)}
-        <MessageActions {message} {readonly} alwaysVisible={isLastAssistantMessage && !isGeneratingResponse} />
+      {#if (hasText || hasFiles) && (message.role === 'user' || !isGeneratingResponse)}
+        <MessageActions {message} {readonly} alwaysVisible={isLastAssistantMessage && !isGeneratingResponse} hasCopyableText={hasText} />
       {/if}
     </div>
   </div>

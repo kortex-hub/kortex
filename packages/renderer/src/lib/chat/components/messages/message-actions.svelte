@@ -15,10 +15,12 @@ let {
   message,
   readonly,
   alwaysVisible = false,
+  hasCopyableText = true,
 }: {
   message: UIMessage;
   readonly: boolean;
   alwaysVisible?: boolean;
+  hasCopyableText?: boolean;
 } = $props();
 
 const editState = EditState.fromContext();
@@ -83,6 +85,7 @@ onDestroy(() => {
     </Tooltip>
   {/if}
 
+  {#if hasCopyableText}
   {#key copied}
     <Tooltip>
       <TooltipTrigger>
@@ -105,4 +108,5 @@ onDestroy(() => {
       <TooltipContent>{copied ? 'Copied!' : 'Copy'}</TooltipContent>
     </Tooltip>
   {/key}
+  {/if}
 </div>
