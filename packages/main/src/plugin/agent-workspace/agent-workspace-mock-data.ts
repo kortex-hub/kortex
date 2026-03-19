@@ -97,3 +97,22 @@ export function mockGetWorkspaceConfiguration(id: string): AgentWorkspaceConfigu
   }
   return structuredClone(config);
 }
+
+function assertWorkspaceExists(id: string): void {
+  const ws = store.find(ws => ws.id === id);
+  if (!ws) {
+    throw new Error(`workspace "${id}" not found. Use "workspace list" to see available workspaces.`);
+  }
+}
+
+// Future: exec('kortex', ['workspace', 'start', id, '--format', 'json'])
+export function mockStartWorkspace(id: string): AgentWorkspaceId {
+  assertWorkspaceExists(id);
+  return { id };
+}
+
+// Future: exec('kortex', ['workspace', 'stop', id, '--format', 'json'])
+export function mockStopWorkspace(id: string): AgentWorkspaceId {
+  assertWorkspaceExists(id);
+  return { id };
+}

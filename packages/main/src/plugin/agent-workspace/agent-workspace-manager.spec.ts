@@ -26,7 +26,13 @@ import type {
 } from '/@api/agent-workspace-info.js';
 
 import { AgentWorkspaceManager } from './agent-workspace-manager.js';
-import { mockGetWorkspaceConfiguration, mockListWorkspaces, mockRemoveWorkspace } from './agent-workspace-mock-data.js';
+import {
+  mockGetWorkspaceConfiguration,
+  mockListWorkspaces,
+  mockRemoveWorkspace,
+  mockStartWorkspace,
+  mockStopWorkspace,
+} from './agent-workspace-mock-data.js';
 
 vi.mock(import('./agent-workspace-mock-data.js'));
 
@@ -64,6 +70,14 @@ describe('init', () => {
 
   test('registers IPC handler for getConfiguration', () => {
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:getConfiguration', expect.any(Function));
+  });
+
+  test('registers IPC handler for start', () => {
+    expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:start', expect.any(Function));
+  });
+
+  test('registers IPC handler for stop', () => {
+    expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:stop', expect.any(Function));
   });
 });
 
@@ -128,5 +142,45 @@ describe('getConfiguration', () => {
     });
 
     expect(() => manager.getConfiguration('unknown-id')).toThrow('workspace "unknown-id" not found');
+  });
+});
+
+describe('start', () => {
+  test('delegates to mockStartWorkspace and returns the workspace id', () => {
+    const expected: AgentWorkspaceId = { id: 'ws-1' };
+    vi.mocked(mockStartWorkspace).mockReturnValue(expected);
+
+    const result = manager.start('ws-1');
+
+    expect(mockStartWorkspace).toHaveBeenCalledWith('ws-1');
+    expect(result).toEqual(expected);
+  });
+
+  test('throws when mockStartWorkspace throws for unknown id', () => {
+    vi.mocked(mockStartWorkspace).mockImplementation(() => {
+      throw new Error('workspace "unknown-id" not found. Use "workspace list" to see available workspaces.');
+    });
+
+    expect(() => manager.start('unknown-id')).toThrow('workspace "unknown-id" not found');
+  });
+});
+
+describe('stop', () => {
+  test('delegates to mockStopWorkspace and returns the workspace id', () => {
+    const expected: AgentWorkspaceId = { id: 'ws-1' };
+    vi.mocked(mockStopWorkspace).mockReturnValue(expected);
+
+    const result = manager.stop('ws-1');
+
+    expect(mockStopWorkspace).toHaveBeenCalledWith('ws-1');
+    expect(result).toEqual(expected);
+  });
+
+  test('throws when mockStopWorkspace throws for unknown id', () => {
+    vi.mocked(mockStopWorkspace).mockImplementation(() => {
+      throw new Error('workspace "unknown-id" not found. Use "workspace list" to see available workspaces.');
+    });
+
+    expect(() => manager.stop('unknown-id')).toThrow('workspace "unknown-id" not found');
   });
 });

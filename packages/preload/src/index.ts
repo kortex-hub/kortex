@@ -329,6 +329,14 @@ export function initExposure(): void {
     },
   );
 
+  contextBridge.exposeInMainWorld('startAgentWorkspace', async (id: string): Promise<AgentWorkspaceId> => {
+    return ipcInvoke('agent-workspace:start', id);
+  });
+
+  contextBridge.exposeInMainWorld('stopAgentWorkspace', async (id: string): Promise<AgentWorkspaceId> => {
+    return ipcInvoke('agent-workspace:stop', id);
+  });
+
   contextBridge.exposeInMainWorld('listFlows', async (): Promise<Array<FlowInfo>> => {
     return ipcInvoke('flows:list');
   });

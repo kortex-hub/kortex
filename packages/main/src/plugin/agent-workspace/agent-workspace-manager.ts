@@ -26,7 +26,13 @@ import type {
   AgentWorkspaceSummary,
 } from '/@api/agent-workspace-info.js';
 
-import { mockGetWorkspaceConfiguration, mockListWorkspaces, mockRemoveWorkspace } from './agent-workspace-mock-data.js';
+import {
+  mockGetWorkspaceConfiguration,
+  mockListWorkspaces,
+  mockRemoveWorkspace,
+  mockStartWorkspace,
+  mockStopWorkspace,
+} from './agent-workspace-mock-data.js';
 
 /**
  * Manages agent workspaces.
@@ -57,6 +63,16 @@ export class AgentWorkspaceManager implements Disposable {
     return mockGetWorkspaceConfiguration(id);
   }
 
+  // Future: exec('kortex', ['workspace', 'start', id, '--format', 'json'])
+  start(id: string): AgentWorkspaceId {
+    return mockStartWorkspace(id);
+  }
+
+  // Future: exec('kortex', ['workspace', 'stop', id, '--format', 'json'])
+  stop(id: string): AgentWorkspaceId {
+    return mockStopWorkspace(id);
+  }
+
   init(): void {
     this.ipcHandle('agent-workspace:list', async (): Promise<AgentWorkspaceSummary[]> => {
       return this.list();
@@ -72,6 +88,14 @@ export class AgentWorkspaceManager implements Disposable {
         return this.getConfiguration(id);
       },
     );
+
+    this.ipcHandle('agent-workspace:start', async (_listener: unknown, id: string): Promise<AgentWorkspaceId> => {
+      return this.start(id);
+    });
+
+    this.ipcHandle('agent-workspace:stop', async (_listener: unknown, id: string): Promise<AgentWorkspaceId> => {
+      return this.stop(id);
+    });
   }
 
   @preDestroy()
