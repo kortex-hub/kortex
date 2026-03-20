@@ -32,17 +32,26 @@ export async function fetchAgentWorkspaces(): Promise<void> {
 }
 
 export async function startAgentWorkspace(id: string): Promise<void> {
-  const statuses = get(agentWorkspaceStatuses);
-  statuses.set(id, 'starting');
-  agentWorkspaceStatuses.set(new Map(statuses));
+  agentWorkspaceStatuses.update(statuses => {
+    const next = new Map(statuses);
+    next.set(id, 'starting');
+    return next;
+  });
   try {
     await window.startAgentWorkspace(id);
-    statuses.set(id, 'running');
+    agentWorkspaceStatuses.update(statuses => {
+      const next = new Map(statuses);
+      next.set(id, 'running');
+      return next;
+    });
   } catch (error: unknown) {
-    statuses.set(id, 'stopped');
+    agentWorkspaceStatuses.update(statuses => {
+      const next = new Map(statuses);
+      next.set(id, 'stopped');
+      return next;
+    });
     console.error('Failed to start agent workspace', error);
   }
-  agentWorkspaceStatuses.set(new Map(statuses));
 }
 
 export async function stopAgentWorkspace(id: string): Promise<void> {
