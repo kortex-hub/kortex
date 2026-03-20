@@ -18,11 +18,12 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { render, screen, waitFor } from '@testing-library/svelte';
-import { writable } from 'svelte/store';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { get, writable } from 'svelte/store';
 import { router } from 'tinro';
 import { beforeEach, expect, test, vi } from 'vitest';
 
+import { agentWorkspaceStatuses } from '/@/stores/agent-workspaces';
 import type { AgentWorkspaceConfiguration } from '/@api/agent-workspace-info';
 
 import AgentWorkspaceDetails from './AgentWorkspaceDetails.svelte';
@@ -46,6 +47,9 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.mocked(router).subscribe.mockImplementation(routerStore.subscribe);
   vi.mocked(window.getAgentWorkspaceConfiguration).mockResolvedValue(configuration);
+  vi.mocked(window.startAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
+  vi.mocked(window.stopAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
+  agentWorkspaceStatuses.set(new Map());
 });
 
 test('Expect page title to use configuration name', async () => {
@@ -77,5 +81,55 @@ test('Expect error message displayed when configuration fetch fails', async () =
 
   await waitFor(() => {
     expect(screen.getByText('Error: workspace not found')).toBeInTheDocument();
+  });
+});
+
+test('Expect start button is rendered when workspace is stopped', async () => {
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Start Workspace' })).toBeInTheDocument();
+  });
+});
+
+test('Expect clicking start button transitions workspace to running', async () => {
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Start Workspace' })).toBeInTheDocument();
+  });
+
+  const startButton = screen.getByRole('button', { name: 'Start Workspace' });
+  await fireEvent.click(startButton);
+
+  await waitFor(() => {
+    expect(get(agentWorkspaceStatuses).get('ws-1')).toBe('running');
+  });
+});
+
+test('Expect stop button is rendered when workspace is running', async () => {
+  agentWorkspaceStatuses.set(new Map([['ws-1', 'running']]));
+
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Stop Workspace' })).toBeInTheDocument();
+  });
+});
+
+test('Expect clicking stop button transitions workspace to stopped', async () => {
+  agentWorkspaceStatuses.set(new Map([['ws-1', 'running']]));
+
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Stop Workspace' })).toBeInTheDocument();
+  });
+
+  const stopButton = screen.getByRole('button', { name: 'Stop Workspace' });
+  await fireEvent.click(stopButton);
+
+  await waitFor(() => {
+    expect(get(agentWorkspaceStatuses).get('ws-1')).toBe('stopped');
   });
 });

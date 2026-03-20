@@ -1,10 +1,17 @@
 <script lang="ts">
-import { faFolder, faGear, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faFolder, faGear, faPlay, faStop, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { router } from 'tinro';
 
 import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
-import { fetchAgentWorkspaces } from '/@/stores/agent-workspaces';
+import LoadingIcon from '/@/lib/ui/LoadingIcon.svelte';
+import type { AgentWorkspaceStatus } from '/@/stores/agent-workspaces';
+import {
+  agentWorkspaceStatuses,
+  fetchAgentWorkspaces,
+  startAgentWorkspace,
+  stopAgentWorkspace,
+} from '/@/stores/agent-workspaces';
 import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info';
 
 interface Props {
@@ -12,6 +19,10 @@ interface Props {
 }
 
 let { workspace }: Props = $props();
+
+const status: AgentWorkspaceStatus = $derived($agentWorkspaceStatuses.get(workspace.id) ?? 'stopped');
+const isRunning = $derived(status === 'running' || status === 'stopping');
+const inProgress = $derived(status === 'starting' || status === 'stopping');
 
 function handleOpen(): void {
   router.goto(`/agent-workspaces/${encodeURIComponent(workspace.id)}/summary`);
@@ -24,15 +35,29 @@ function handleKeydown(e: KeyboardEvent): void {
   }
 }
 
-function handleRemoveClick(e: MouseEvent): void {
-  e.stopPropagation();
-  handleRemove();
-}
-
-function handleRemoveKeydown(e: KeyboardEvent): void {
+function handleActionKeydown(e: KeyboardEvent): void {
   if (e.key === 'Enter' || e.key === ' ') {
     e.stopPropagation();
   }
+}
+
+function handleStartStopClick(e: MouseEvent): void {
+  e.stopPropagation();
+  handleStartStop();
+}
+
+function handleStartStop(): void {
+  if (inProgress) return;
+  if (isRunning) {
+    stopAgentWorkspace(workspace.id).catch(console.error);
+  } else {
+    startAgentWorkspace(workspace.id).catch(console.error);
+  }
+}
+
+function handleRemoveClick(e: MouseEvent): void {
+  e.stopPropagation();
+  handleRemove();
 }
 
 function handleRemove(): void {
@@ -63,10 +88,20 @@ function handleRemove(): void {
       <span class="truncate">{workspace.paths.configuration}</span>
     </div>
   </div>
-  <div class="flex justify-end">
+  <div class="flex justify-end gap-1">
+    <button
+      onclick={handleStartStopClick}
+      onkeydown={handleActionKeydown}
+      class="inline-flex items-center justify-center w-7 h-7 rounded-full text-(--pd-action-button-text) hover:bg-(--pd-action-button-hover-bg) hover:text-(--pd-action-button-hover-text) transition-colors"
+      class:disabled={inProgress}
+      disabled={inProgress}
+      title={isRunning ? 'Stop workspace' : 'Start workspace'}
+      aria-label="{isRunning ? 'Stop' : 'Start'} workspace {workspace.name}">
+      <LoadingIcon icon={isRunning ? faStop : faPlay} loading={inProgress} />
+    </button>
     <button
       onclick={handleRemoveClick}
-      onkeydown={handleRemoveKeydown}
+      onkeydown={handleActionKeydown}
       class="inline-flex items-center justify-center w-7 h-7 rounded-full text-(--pd-action-button-text) hover:bg-(--pd-action-button-hover-bg) hover:text-(--pd-action-button-hover-text) transition-colors"
       title="Remove workspace"
       aria-label="Remove workspace {workspace.name}">

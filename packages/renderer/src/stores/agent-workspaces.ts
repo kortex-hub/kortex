@@ -17,15 +17,46 @@
  ***********************************************************************/
 
 import type { Writable } from 'svelte/store';
-import { writable } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 
 import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info';
 
+export type AgentWorkspaceStatus = 'stopped' | 'running' | 'starting' | 'stopping';
+
 export const agentWorkspaces: Writable<AgentWorkspaceSummary[]> = writable([]);
+export const agentWorkspaceStatuses: Writable<Map<string, AgentWorkspaceStatus>> = writable(new Map());
 
 export async function fetchAgentWorkspaces(): Promise<void> {
   const data = await window.listAgentWorkspaces();
   agentWorkspaces.set(data);
+}
+
+export async function startAgentWorkspace(id: string): Promise<void> {
+  const statuses = get(agentWorkspaceStatuses);
+  statuses.set(id, 'starting');
+  agentWorkspaceStatuses.set(new Map(statuses));
+  try {
+    await window.startAgentWorkspace(id);
+    statuses.set(id, 'running');
+  } catch (error: unknown) {
+    statuses.set(id, 'stopped');
+    console.error('Failed to start agent workspace', error);
+  }
+  agentWorkspaceStatuses.set(new Map(statuses));
+}
+
+export async function stopAgentWorkspace(id: string): Promise<void> {
+  const statuses = get(agentWorkspaceStatuses);
+  statuses.set(id, 'stopping');
+  agentWorkspaceStatuses.set(new Map(statuses));
+  try {
+    await window.stopAgentWorkspace(id);
+    statuses.set(id, 'stopped');
+  } catch (error: unknown) {
+    statuses.set(id, 'running');
+    console.error('Failed to stop agent workspace', error);
+  }
+  agentWorkspaceStatuses.set(new Map(statuses));
 }
 
 window.addEventListener('system-ready', () => {
