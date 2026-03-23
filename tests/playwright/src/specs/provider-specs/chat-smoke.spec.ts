@@ -388,7 +388,7 @@ test.describe
       await chatPage.submitEditedMessage(editedMessage);
 
       await chatPage.verifyConversationMessage(editedMessage);
-      await expect(chatPage.getConversationMessage(originalMessage)).not.toBeVisible({ timeout: TIMEOUTS.SHORT });
+      await expect(chatPage.getConversationMessage(originalMessage)).not.toBeVisible();
       await chatPage.waitForModelResponse();
     });
   });
