@@ -328,16 +328,15 @@ export class ChatPage extends BasePage {
     await this.page.evaluate(() => localStorage.removeItem('last-used-model'));
   }
 
-  getEditButtonForUserMessage(index: number): Locator {
-    return this.userConversationMessages.nth(index).getByLabel('Edit message');
+  async waitForModelResponse(): Promise<void> {
+    await expect(this.modelConversationMessages.first()).toBeVisible({ timeout: TIMEOUTS.MODEL_RESPONSE });
+    await this.verifySendButtonVisible(TIMEOUTS.MODEL_RESPONSE);
   }
 
-  async clickEditOnUserMessage(index: number): Promise<void> {
-    const messageLocator = this.userConversationMessages.nth(index);
+  async clickEditOnUserMessage(messageText: string): Promise<void> {
+    const messageLocator = this.userConversationMessages.filter({ hasText: messageText });
     await messageLocator.hover();
-    const editButton = messageLocator.getByLabel('Edit message');
-    // The button is opacity-0 until CSS group-hover takes effect, so force the click
-    await editButton.click({ force: true });
+    await messageLocator.getByLabel('Edit message').click({ force: true });
   }
 
   async verifyEditingMode(originalText: string): Promise<void> {
@@ -350,24 +349,29 @@ export class ChatPage extends BasePage {
     await expect(this.editCancelHint).not.toBeVisible();
   }
 
-  async verifyMessagesGrayedAfterIndex(userMessageIndex: number): Promise<void> {
+  async verifyMessagesAfterEditAreDimmed(editedMessageText: string): Promise<void> {
     const allMessages = await this.conversationMessages.all();
-    const userMessages = await this.userConversationMessages.all();
-    const editedMessage = userMessages[userMessageIndex];
 
-    // Find the position of the edited user message in all messages
     let editedGlobalIndex = -1;
     for (let i = 0; i < allMessages.length; i++) {
-      const el = allMessages[i];
-      if ((await el.innerHTML()) === (await editedMessage.innerHTML())) {
+      const text = await allMessages[i].textContent();
+      if (text?.includes(editedMessageText)) {
         editedGlobalIndex = i;
         break;
       }
     }
 
-    // Messages after the edited one should have reduced opacity
+    expect(editedGlobalIndex).toBeGreaterThan(-1);
+
     for (let i = editedGlobalIndex + 1; i < allMessages.length; i++) {
       await expect(allMessages[i]).toHaveClass(/opacity-40/);
+    }
+  }
+
+  async verifyMessagesAfterEditAreNotDimmed(): Promise<void> {
+    const allMessages = await this.conversationMessages.all();
+    for (const message of allMessages) {
+      await expect(message).not.toHaveClass(/opacity-40/);
     }
   }
 

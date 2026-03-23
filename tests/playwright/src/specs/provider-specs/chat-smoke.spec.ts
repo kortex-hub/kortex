@@ -360,25 +360,17 @@ test.describe
 
       const message = 'Hello, this is a test message';
       await chatPage.sendMessage(message);
-      await chatPage.verifyConversationMessage(message);
+      await chatPage.waitForModelResponse();
 
-      // Wait for model response and stream completion before editing
-      await expect(chatPage.modelConversationMessages.first()).toBeVisible({ timeout: TIMEOUTS.MODEL_RESPONSE });
-      await chatPage.verifySendButtonVisible(TIMEOUTS.MODEL_RESPONSE);
-
-      await chatPage.clickEditOnUserMessage(0);
+      await chatPage.clickEditOnUserMessage(message);
       await chatPage.verifyEditingMode(message);
+      await chatPage.verifyMessagesAfterEditAreDimmed(message);
 
-      // Messages after the edited one should be grayed out
-      await chatPage.verifyMessagesGrayedAfterIndex(0);
-
-      // Cancel editing with ESC
       await chatPage.cancelEditing();
 
-      // Input should be restored to empty (or previous value)
       await expect(chatPage.messageField).toHaveValue('');
-      // Original message should still be visible
       await chatPage.verifyConversationMessage(message);
+      await chatPage.verifyMessagesAfterEditAreNotDimmed();
     });
 
     test('[CHAT-13] Edit message and submit triggers regeneration', async ({ chatPage }) => {
@@ -388,26 +380,16 @@ test.describe
 
       const originalMessage = 'What is 2 + 2?';
       await chatPage.sendMessage(originalMessage);
-      await chatPage.verifyConversationMessage(originalMessage);
+      await chatPage.waitForModelResponse();
 
-      // Wait for model response and stream completion before editing
-      await expect(chatPage.modelConversationMessages.first()).toBeVisible({ timeout: TIMEOUTS.MODEL_RESPONSE });
-      await chatPage.verifySendButtonVisible(TIMEOUTS.MODEL_RESPONSE);
-
-      // Edit the message
-      await chatPage.clickEditOnUserMessage(0);
+      await chatPage.clickEditOnUserMessage(originalMessage);
       await chatPage.verifyEditingMode(originalMessage);
 
       const editedMessage = 'What is 3 + 3?';
       await chatPage.submitEditedMessage(editedMessage);
 
-      // The edited message should appear in the conversation
       await chatPage.verifyConversationMessage(editedMessage);
-
-      // The original message should no longer be visible
       await expect(chatPage.getConversationMessage(originalMessage)).not.toBeVisible({ timeout: TIMEOUTS.SHORT });
-
-      // A new model response should be generated
-      await expect(chatPage.modelConversationMessages.first()).toBeVisible({ timeout: TIMEOUTS.MODEL_RESPONSE });
+      await chatPage.waitForModelResponse();
     });
   });
