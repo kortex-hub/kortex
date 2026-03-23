@@ -19,11 +19,11 @@
 import '@testing-library/jest-dom/vitest';
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
-import { get, writable } from 'svelte/store';
+import { writable } from 'svelte/store';
 import { router } from 'tinro';
 import { beforeEach, expect, test, vi } from 'vitest';
 
-import { agentWorkspaceStatuses } from '/@/stores/agent-workspaces';
+import { agentWorkspaceStatuses } from '/@/stores/agent-workspaces.svelte';
 import type { AgentWorkspaceConfiguration } from '/@api/agent-workspace-info';
 
 import AgentWorkspaceDetails from './AgentWorkspaceDetails.svelte';
@@ -49,7 +49,7 @@ beforeEach(() => {
   vi.mocked(window.getAgentWorkspaceConfiguration).mockResolvedValue(configuration);
   vi.mocked(window.startAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
   vi.mocked(window.stopAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
-  agentWorkspaceStatuses.set(new Map());
+  agentWorkspaceStatuses.clear();
 });
 
 test('Expect page title to use configuration name', async () => {
@@ -103,12 +103,12 @@ test('Expect clicking start button transitions workspace to running', async () =
   await fireEvent.click(startButton);
 
   await waitFor(() => {
-    expect(get(agentWorkspaceStatuses).get('ws-1')).toBe('running');
+    expect(agentWorkspaceStatuses.get('ws-1')).toBe('running');
   });
 });
 
 test('Expect stop button is rendered when workspace is running', async () => {
-  agentWorkspaceStatuses.set(new Map([['ws-1', 'running']]));
+  agentWorkspaceStatuses.set('ws-1', 'running');
 
   render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
 
@@ -118,7 +118,7 @@ test('Expect stop button is rendered when workspace is running', async () => {
 });
 
 test('Expect clicking stop button transitions workspace to stopped', async () => {
-  agentWorkspaceStatuses.set(new Map([['ws-1', 'running']]));
+  agentWorkspaceStatuses.set('ws-1', 'running');
 
   render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
 
@@ -130,6 +130,6 @@ test('Expect clicking stop button transitions workspace to stopped', async () =>
   await fireEvent.click(stopButton);
 
   await waitFor(() => {
-    expect(get(agentWorkspaceStatuses).get('ws-1')).toBe('stopped');
+    expect(agentWorkspaceStatuses.get('ws-1')).toBe('stopped');
   });
 });
