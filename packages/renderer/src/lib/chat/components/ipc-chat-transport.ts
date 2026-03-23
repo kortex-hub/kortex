@@ -25,10 +25,12 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
 
     const tools = this.dependencies.getMCPTools();
 
+    const abortSignal = options.abortSignal;
+
     return new ReadableStream<UIMessageChunk>({
-      async start(controller): Promise<void> {
+      start(controller): void {
         const { providerId, connectionName, label } = model;
-        await window.inferenceStreamText(
+        const onDataId = window.inferenceStreamText(
           {
             chatId: options.chatId,
             providerId,
@@ -50,6 +52,20 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
             controller.close();
           },
         );
+
+        if (abortSignal) {
+          if (abortSignal.aborted) {
+            window.inferenceStopStream(onDataId).catch(console.error);
+          } else {
+            abortSignal.addEventListener(
+              'abort',
+              () => {
+                window.inferenceStopStream(onDataId).catch(console.error);
+              },
+              { once: true },
+            );
+          }
+        }
       },
     });
   }

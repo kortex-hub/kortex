@@ -318,6 +318,11 @@ export class ChatPage extends BasePage {
     await expect(this.stopButton).not.toBeVisible({ timeout });
   }
 
+  async clickStopButton(): Promise<void> {
+    await expect(this.stopButton).toBeVisible();
+    await this.stopButton.click();
+  }
+
   async exportAsFlow(): Promise<FlowsCreatePage> {
     await expect(this.exportAsFlowButton).toBeEnabled({ timeout: TIMEOUTS.STANDARD });
     await this.exportAsFlowButton.click();

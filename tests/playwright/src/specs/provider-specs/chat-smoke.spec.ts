@@ -459,4 +459,26 @@ test.describe
 
       await chatPage.ensureNotificationsAreNotVisible();
     });
+
+    test('[CHAT-17] Stop generation cancels the AI response stream', async ({ chatPage }) => {
+      await chatPage.clickNewChat();
+
+      // Send a message that should generate a long response
+      const message = 'Write a very detailed and long essay about the history of container orchestration systems';
+      await chatPage.sendMessage(message, { waitForMessage: false });
+
+      // Verify the stop button appears during generation
+      await chatPage.verifyStopButtonVisible();
+      await chatPage.verifySendButtonHidden();
+
+      // Click the stop button to cancel generation
+      await chatPage.clickStopButton();
+
+      // Verify the UI returns to the ready state
+      await chatPage.verifyStopButtonHidden(TIMEOUTS.SHORT);
+      await chatPage.verifySendButtonVisible(TIMEOUTS.SHORT);
+
+      // Verify the user message is still visible in the conversation
+      await chatPage.verifyConversationMessage(message);
+    });
   });

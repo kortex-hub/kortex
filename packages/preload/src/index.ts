@@ -1400,17 +1400,33 @@ export function initExposure(): void {
   >();
   contextBridge.exposeInMainWorld(
     'inferenceStreamText',
-    async (
+    (
       params: InferenceParameters & { chatId: string },
       onChunk: (data: UIMessageChunk) => void,
       onError: (error: string) => void,
       onEnd: () => void,
-    ): Promise<number> => {
+    ): number => {
       onDataCallbacksStreamTextId++;
-      onDataCallbacksStreamText.set(onDataCallbacksStreamTextId, { onChunk, onError, onEnd });
-      return ipcInvoke('inference:streamText', { ...params, onDataId: onDataCallbacksStreamTextId });
+      const id = onDataCallbacksStreamTextId;
+      onDataCallbacksStreamText.set(id, { onChunk, onError, onEnd });
+      ipcInvoke('inference:streamText', { ...params, onDataId: id }).catch((err: unknown) => {
+        const callback = onDataCallbacksStreamText.get(id);
+        if (callback) {
+          onDataCallbacksStreamText.delete(id);
+          try {
+            callback.onError(String(err));
+          } finally {
+            callback.onEnd();
+          }
+        }
+      });
+      return id;
     },
   );
+
+  contextBridge.exposeInMainWorld('inferenceStopStream', async (onDataId: number): Promise<void> => {
+    return ipcInvoke('inference:stopStream', onDataId);
+  });
 
   ipcRenderer.on('inference:streamText-onChunk', (_, callbackId: number, chunk: UIMessageChunk) => {
     // grab callback from the map
