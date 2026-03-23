@@ -283,6 +283,7 @@ jobs:
       mode: ${{ matrix.mode }}
       inference_provider: ollama
       inference_model: 'granite3.2:2b'
+      inference_second_model: 'granite3.1-dense:2b'
       compile_args: '--linux dir'
     secrets: inherit
 

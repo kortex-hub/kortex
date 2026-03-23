@@ -68,12 +68,16 @@ jobs:
         os: [ubuntu-24.04]
         mode: [prod, dev]
         inference_provider: [ollama, ramalama]
+        include:
+          - inference_provider: ollama
+            second_model: 'granite3.1-dense:2b'
     uses: ./.github/workflows/e2e-test-job.yaml
     with:
       instance: ${{ matrix.os }}
       mode: ${{ matrix.mode }}
       inference_provider: ${{ matrix.inference_provider }}
       inference_model: 'granite3.2:2b'
+      inference_second_model: ${{ matrix.second_model }}
       compile_args: '--linux dir'
       repo: ${{ inputs.repo }}
       ref: ${{ inputs.ref }}
