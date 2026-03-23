@@ -46,7 +46,6 @@ function handleStartStop(): void {
         title={isRunning ? 'Stop Workspace' : 'Start Workspace'}
         onClick={handleStartStop}
         icon={isRunning ? faStop : faPlay}
-        detailed={true}
         inProgress={inProgress} />
     {/snippet}
     {#snippet tabsSnippet()}
