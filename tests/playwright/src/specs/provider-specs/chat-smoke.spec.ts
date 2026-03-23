@@ -32,7 +32,6 @@ test.describe
   .serial('Chat page navigation', { tag: '@smoke' }, () => {
     test.beforeEach(async ({ page, navigationBar, chatPage }) => {
       await waitForNavigationReady(page);
-      await chatPage.clearLastUsedModel();
       await navigationBar.navigateToChatPage();
       const existingCount = await chatPage.getChatHistoryCount();
       if (existingCount > 0) {

@@ -323,11 +323,6 @@ export class ChatPage extends BasePage {
     return this.page.getByText(name, { exact: true });
   }
 
-  async clearLastUsedModel(): Promise<void> {
-    // Must match LAST_USED_MODEL_KEY from packages/renderer/src/lib/chat/ai/models.ts
-    await this.page.evaluate(() => localStorage.removeItem('last-used-model'));
-  }
-
   async waitForModelResponse(): Promise<void> {
     await expect(this.modelConversationMessages.first()).toBeVisible({ timeout: TIMEOUTS.MODEL_RESPONSE });
     await this.verifySendButtonVisible(TIMEOUTS.MODEL_RESPONSE);
