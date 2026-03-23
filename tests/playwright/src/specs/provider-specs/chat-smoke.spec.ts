@@ -362,8 +362,9 @@ test.describe
       await chatPage.sendMessage(message);
       await chatPage.verifyConversationMessage(message);
 
-      // Wait for model response before editing
+      // Wait for model response and stream completion before editing
       await expect(chatPage.modelConversationMessages.first()).toBeVisible({ timeout: TIMEOUTS.MODEL_RESPONSE });
+      await chatPage.verifySendButtonVisible(TIMEOUTS.MODEL_RESPONSE);
 
       await chatPage.clickEditOnUserMessage(0);
       await chatPage.verifyEditingMode(message);
@@ -389,8 +390,9 @@ test.describe
       await chatPage.sendMessage(originalMessage);
       await chatPage.verifyConversationMessage(originalMessage);
 
-      // Wait for model response
+      // Wait for model response and stream completion before editing
       await expect(chatPage.modelConversationMessages.first()).toBeVisible({ timeout: TIMEOUTS.MODEL_RESPONSE });
+      await chatPage.verifySendButtonVisible(TIMEOUTS.MODEL_RESPONSE);
 
       // Edit the message
       await chatPage.clickEditOnUserMessage(0);

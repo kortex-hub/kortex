@@ -144,6 +144,9 @@ export class ChatPage extends BasePage {
   ): Promise<void> {
     await this.messageField.fill(message);
     await expect(this.messageField).toHaveValue(message);
+    if (await this.stopButton.isVisible()) {
+      await expect(this.stopButton).not.toBeVisible({ timeout: TIMEOUTS.MODEL_RESPONSE });
+    }
     await expect(this.sendButton).toBeEnabled();
     await this.sendButton.click();
     if (waitForMessage) {
@@ -371,6 +374,9 @@ export class ChatPage extends BasePage {
   async submitEditedMessage(newText: string): Promise<void> {
     await this.messageField.clear();
     await this.messageField.fill(newText);
+    if (await this.stopButton.isVisible()) {
+      await expect(this.stopButton).not.toBeVisible({ timeout: TIMEOUTS.MODEL_RESPONSE });
+    }
     await expect(this.sendButton).toBeEnabled();
     await this.sendButton.click();
   }
