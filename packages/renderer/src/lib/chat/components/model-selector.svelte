@@ -41,6 +41,8 @@ let {
 let groups: Map<string, Array<ModelInfo>> = $derived(groupAndSortModels(models));
 
 let open = $state(false);
+let contentContainer: HTMLElement | null = $state(null);
+
 const selectedChatModelDetails = $derived(
   models
     .values()
@@ -56,6 +58,25 @@ function onSelect(model: ModelInfo): void {
   open = false;
   value = model;
 }
+
+// Scroll to the selected model when dropdown opens
+$effect(() => {
+  if (open && contentContainer) {
+    // Use setTimeout to ensure the dropdown is fully rendered before scrolling
+    const timeoutId = setTimeout(() => {
+      // Re-check conditions before scrolling
+      if (open && contentContainer) {
+        const activeMenuItem = contentContainer.querySelector('[data-active="true"]');
+        if (activeMenuItem) {
+          activeMenuItem.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+        }
+      }
+    }, 0);
+
+    // Cleanup function to cancel timeout if dropdown closes or component unmounts
+    return (): void => clearTimeout(timeoutId);
+  }
+});
 </script>
 
 <DropdownMenu {open} onOpenChange={(val): boolean => (open = val)}>
@@ -75,7 +96,7 @@ function onSelect(model: ModelInfo): void {
 			</Button>
 		{/snippet}
 	</DropdownMenuTrigger>
-	<DropdownMenuContent align="start" class="min-w-[300px]">
+	<DropdownMenuContent bind:ref={contentContainer} align="start" class="min-w-[300px] max-h-[400px] overflow-y-auto">
     {#each groups.entries() as [key, mModels] (key)}
 
       <DropdownMenuGroup>
