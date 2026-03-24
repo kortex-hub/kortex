@@ -136,20 +136,30 @@ describe('ChatManager', () => {
       >);
 
       const chatManager = createChatManager();
-      const mockUpdateChatTitleById = vi.fn().mockReturnValue({ isOk: () => true });
-      (chatManager as unknown as { chatQueries: { updateChatTitleById: MockInstance } }).chatQueries = {
-        updateChatTitleById: mockUpdateChatTitleById,
+      const mockUpdateChatTitleIfMatches = vi.fn(
+        async (): Promise<{ isOk: () => boolean; isErr: () => boolean; value: boolean }> => ({
+          isOk: () => true,
+          isErr: () => false,
+          value: true, // Row was updated
+        }),
+      );
+      (chatManager as unknown as { chatQueries: { updateChatTitleIfMatches: MockInstance } }).chatQueries = {
+        updateChatTitleIfMatches: mockUpdateChatTitleIfMatches,
       } as never;
 
       const mockModel = 'mock-model';
       const userMessage = { role: 'user', parts: [{ type: 'text', text: 'Hello' }] };
 
       (
-        chatManager as unknown as { generateTitleInBackground: (m: unknown, u: unknown, id: string) => void }
-      ).generateTitleInBackground(mockModel, userMessage, 'chat-123');
+        chatManager as unknown as { generateTitleInBackground: (m: unknown, u: unknown, id: string, p: string) => void }
+      ).generateTitleInBackground(mockModel, userMessage, 'chat-123', 'Hello');
 
       await vi.waitFor(() => {
-        expect(mockUpdateChatTitleById).toHaveBeenCalledWith({ chatId: 'chat-123', title: 'Generated Title' });
+        expect(mockUpdateChatTitleIfMatches).toHaveBeenCalledWith({
+          chatId: 'chat-123',
+          expectedTitle: 'Hello',
+          newTitle: 'Generated Title',
+        });
       });
 
       expect(vi.mocked(mockWebContents.send)).toHaveBeenCalledWith('api-sender', 'chat-list-updated');
@@ -165,17 +175,23 @@ describe('ChatManager', () => {
 
       const chatManager = createChatManager();
       const dbError = new Error('DB write failed');
-      const mockUpdateChatTitleById = vi.fn().mockReturnValue({ isOk: () => false, error: dbError });
-      (chatManager as unknown as { chatQueries: { updateChatTitleById: MockInstance } }).chatQueries = {
-        updateChatTitleById: mockUpdateChatTitleById,
+      const mockUpdateChatTitleIfMatches = vi.fn(
+        async (): Promise<{ isOk: () => boolean; isErr: () => boolean; error: Error }> => ({
+          isOk: () => false,
+          isErr: () => true,
+          error: dbError,
+        }),
+      );
+      (chatManager as unknown as { chatQueries: { updateChatTitleIfMatches: MockInstance } }).chatQueries = {
+        updateChatTitleIfMatches: mockUpdateChatTitleIfMatches,
       } as never;
 
       const mockModel = 'mock-model';
       const userMessage = { role: 'user', parts: [{ type: 'text', text: 'Hello' }] };
 
       (
-        chatManager as unknown as { generateTitleInBackground: (m: unknown, u: unknown, id: string) => void }
-      ).generateTitleInBackground(mockModel, userMessage, 'chat-123');
+        chatManager as unknown as { generateTitleInBackground: (m: unknown, u: unknown, id: string, p: string) => void }
+      ).generateTitleInBackground(mockModel, userMessage, 'chat-123', 'Hello');
 
       await vi.waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith('Failed to update chat title in database', dbError);
@@ -197,14 +213,52 @@ describe('ChatManager', () => {
       const userMessage = { role: 'user', parts: [{ type: 'text', text: 'Hello' }] };
 
       (
-        chatManager as unknown as { generateTitleInBackground: (m: unknown, u: unknown, id: string) => void }
-      ).generateTitleInBackground(mockModel, userMessage, 'chat-123');
+        chatManager as unknown as { generateTitleInBackground: (m: unknown, u: unknown, id: string, p: string) => void }
+      ).generateTitleInBackground(mockModel, userMessage, 'chat-123', 'Hello');
 
       await vi.waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith('Failed to generate chat title', expect.any(Error));
       });
 
       consoleSpy.mockRestore();
+    });
+
+    it('should not update title if user has manually renamed the chat', async () => {
+      const { generateText } = await import('ai');
+      vi.mocked(generateText).mockResolvedValue({ text: 'Generated Title' } as Awaited<
+        ReturnType<typeof generateText>
+      >);
+
+      const chatManager = createChatManager();
+      // Simulate user has renamed the chat - atomic update returns false (no rows updated)
+      const mockUpdateChatTitleIfMatches = vi.fn(
+        async (): Promise<{ isOk: () => boolean; isErr: () => boolean; value: boolean }> => ({
+          isOk: () => true,
+          isErr: () => false,
+          value: false, // No rows updated - title didn't match
+        }),
+      );
+      (chatManager as unknown as { chatQueries: { updateChatTitleIfMatches: MockInstance } }).chatQueries = {
+        updateChatTitleIfMatches: mockUpdateChatTitleIfMatches,
+      } as never;
+
+      const mockModel = 'mock-model';
+      const userMessage = { role: 'user', parts: [{ type: 'text', text: 'Hello' }] };
+
+      (
+        chatManager as unknown as { generateTitleInBackground: (m: unknown, u: unknown, id: string, p: string) => void }
+      ).generateTitleInBackground(mockModel, userMessage, 'chat-123', 'Hello');
+
+      await vi.waitFor(() => {
+        expect(mockUpdateChatTitleIfMatches).toHaveBeenCalledWith({
+          chatId: 'chat-123',
+          expectedTitle: 'Hello',
+          newTitle: 'Generated Title',
+        });
+      });
+
+      // Should NOT emit event because no rows were updated (title was changed by user)
+      expect(vi.mocked(mockWebContents.send)).not.toHaveBeenCalledWith('api-sender', 'chat-list-updated');
     });
   });
 });

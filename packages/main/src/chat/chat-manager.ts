@@ -111,6 +111,7 @@ export class ChatManager {
     this.ipcHandle('inference:deleteChat', (_, id: string) => this.deleteChat(id));
     this.ipcHandle('inference:deleteAllChats', () => this.deleteAllChats());
     this.ipcHandle('inference:deleteTrailingMessages', (_, id: string) => this.deleteTrailingMessages(id));
+    this.ipcHandle('inference:renameChat', (_, id: string, title: string) => this.renameChat(id, title));
   }
 
   private async getExchanges(mcpId: string): Promise<DynamicToolUIPart[]> {
@@ -156,6 +157,14 @@ export class ChatManager {
     if (result.isErr()) {
       throw result.error;
     }
+  }
+
+  private async renameChat(id: string, title: string): Promise<undefined> {
+    const result = await this.chatQueries.updateChatTitleById({ chatId: id, title });
+    if (result.isErr()) {
+      throw result.error;
+    }
+    this.webContents.send('api-sender', 'chat-list-updated');
   }
 
   private async convertMessages(messages: UIMessage[]): Promise<UIMessage[]> {
@@ -223,8 +232,14 @@ export class ChatManager {
 
   /**
    * Asynchronously generates an AI-powered chat title and persists it, notifying the UI on success.
+   * Only updates the title if it hasn't been manually changed from the placeholder.
    */
-  private generateTitleInBackground(model: LanguageModelV2, userMessage: UIMessage, chatId: string): void {
+  private generateTitleInBackground(
+    model: LanguageModelV2,
+    userMessage: UIMessage,
+    chatId: string,
+    placeholderTitle: string,
+  ): void {
     generateText({
       model,
       prompt: userMessage.parts
@@ -238,11 +253,21 @@ export class ChatManager {
       - do not use quotes or colons`,
     })
       .then(async result => {
-        const updateResult = await this.chatQueries.updateChatTitleById({ chatId, title: result.text });
-        if (updateResult.isOk()) {
-          this.webContents.send('api-sender', 'chat-list-updated');
-        } else {
+        // Atomically update title only if it still matches the placeholder
+        const updateResult = await this.chatQueries.updateChatTitleIfMatches({
+          chatId,
+          expectedTitle: placeholderTitle,
+          newTitle: result.text,
+        });
+
+        if (updateResult.isErr()) {
           console.error('Failed to update chat title in database', updateResult.error);
+          return;
+        }
+
+        // Only emit event if a row was actually updated
+        if (updateResult.value) {
+          this.webContents.send('api-sender', 'chat-list-updated');
         }
       })
       .catch((error: unknown) => {
@@ -270,7 +295,7 @@ export class ChatManager {
       const internalProviderId = this.providerRegistry.getMatchingProviderInternalId(params.providerId);
       const sdk = this.providerRegistry.getInferenceSDK(internalProviderId, params.connectionName);
       const model = sdk.languageModel(params.modelId);
-      this.generateTitleInBackground(model, userMessage, chatId);
+      this.generateTitleInBackground(model, userMessage, chatId, placeholderTitle);
     }
 
     const inferenceComponents = await this.getInferenceComponents(params);

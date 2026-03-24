@@ -448,4 +448,31 @@ export class ChatQueries {
       return ok(undefined);
     });
   };
+
+  /**
+   * Atomically updates chat title only if it matches the expected current title.
+   * Returns true if a row was updated, false if no match was found.
+   */
+  updateChatTitleIfMatches = ({
+    chatId,
+    expectedTitle,
+    newTitle,
+  }: {
+    chatId: string;
+    expectedTitle: string;
+    newTitle: string;
+  }): ResultAsync<boolean, DbError> => {
+    const db = this.db;
+    return safeTry(async function* () {
+      const result = yield* fromPromise(
+        db
+          .update(chat)
+          .set({ title: newTitle })
+          .where(and(eq(chat.id, chatId), eq(chat.title, expectedTitle))),
+        e => new DbInternalError({ cause: e }),
+      );
+      // Check if any rows were affected
+      return ok(result.changes > 0);
+    });
+  };
 }
