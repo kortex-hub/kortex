@@ -62,6 +62,7 @@ const originalConsoleError = console.error;
 const providerRegistry = {
   onDidRegisterRagConnection: vi.fn(),
   onDidUnregisterRagConnection: vi.fn(),
+  onDidUpdateRagConnection: vi.fn(),
 } as unknown as ProviderRegistry;
 
 beforeEach(() => {

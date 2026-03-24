@@ -132,16 +132,23 @@ export class MCPRegistry {
       this.proxySettings = this.proxy.proxy;
     }
 
-    this.providerRegistry.onDidRegisterRagConnection(e =>
-      this.setupMCPServer(e.connection.mcpServer.serverId, e.connection.mcpServer.config),
-    );
-    this.providerRegistry.onDidUnregisterRagConnection(e =>
-      this.resetMCPServer(
-        e.connection.mcpServer.serverId,
-        e.connection.mcpServer.config.type,
-        e.connection.mcpServer.config.index,
-      ),
-    );
+    this.providerRegistry.onDidRegisterRagConnection(e => {
+      if (e.connection.status() === 'started') {
+        this.setupMCPServer(e.connection.mcpServer.serverId, e.connection.mcpServer.config).catch(console.error);
+      }
+    });
+
+    this.providerRegistry.onDidUpdateRagConnection(e => {
+      if (e.status === 'started') {
+        this.setupMCPServer(e.connection.mcpServer.serverId, e.connection.mcpServer.config).catch(console.error);
+      } else if (e.status === 'stopped') {
+        this.resetMCPServer(
+          e.connection.mcpServer.serverId,
+          e.connection.mcpServer.config.type,
+          e.connection.mcpServer.config.index,
+        ).catch(console.error);
+      }
+    });
 
     const mcpRegistriesConfiguration: IConfigurationNode = {
       id: 'preferences.mcp',
