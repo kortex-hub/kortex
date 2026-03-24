@@ -10,8 +10,8 @@ import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
 import ListItemButtonIcon from '/@/lib/ui/ListItemButtonIcon.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
-import type { AgentWorkspaceStatus } from '/@/stores/agent-workspaces';
-import { agentWorkspaceStatuses, startAgentWorkspace, stopAgentWorkspace } from '/@/stores/agent-workspaces';
+import type { AgentWorkspaceStatus } from '/@/stores/agent-workspaces.svelte';
+import { agentWorkspaceStatuses, startAgentWorkspace, stopAgentWorkspace } from '/@/stores/agent-workspaces.svelte';
 
 interface Props {
   workspaceId: string;
@@ -21,7 +21,7 @@ let { workspaceId }: Props = $props();
 
 const configurationPromise = $derived(window.getAgentWorkspaceConfiguration(workspaceId));
 
-const status: AgentWorkspaceStatus = $derived($agentWorkspaceStatuses.get(workspaceId) ?? 'stopped');
+const status: AgentWorkspaceStatus = $derived(agentWorkspaceStatuses.get(workspaceId) ?? 'stopped');
 const isRunning = $derived(status === 'running' || status === 'stopping');
 const inProgress = $derived(status === 'starting' || status === 'stopping');
 

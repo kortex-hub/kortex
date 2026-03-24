@@ -21,7 +21,7 @@ import '@testing-library/jest-dom/vitest';
 import { render, screen } from '@testing-library/svelte';
 import { beforeEach, expect, test, vi } from 'vitest';
 
-import { agentWorkspaces } from '/@/stores/agent-workspaces';
+import { agentWorkspaces } from '/@/stores/agent-workspaces.svelte';
 import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info';
 
 import AgentWorkspaceList from './AgentWorkspaceList.svelte';
