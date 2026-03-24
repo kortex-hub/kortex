@@ -6,12 +6,7 @@ import { router } from 'tinro';
 import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
 import LoadingIcon from '/@/lib/ui/LoadingIcon.svelte';
 import type { AgentWorkspaceStatus } from '/@/stores/agent-workspaces.svelte';
-import {
-  agentWorkspaceStatuses,
-  fetchAgentWorkspaces,
-  startAgentWorkspace,
-  stopAgentWorkspace,
-} from '/@/stores/agent-workspaces.svelte';
+import { agentWorkspaceStatuses, startAgentWorkspace, stopAgentWorkspace } from '/@/stores/agent-workspaces.svelte';
 import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info';
 
 interface Props {
@@ -62,7 +57,7 @@ function handleRemoveClick(e: MouseEvent): void {
 
 function handleRemove(): void {
   withConfirmation(
-    () => window.removeAgentWorkspace(workspace.id).then(fetchAgentWorkspaces).catch(console.error),
+    () => window.removeAgentWorkspace(workspace.id).catch(console.error),
     `remove workspace ${workspace.name}`,
   );
 }

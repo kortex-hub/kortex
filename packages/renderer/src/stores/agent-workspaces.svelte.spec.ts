@@ -16,13 +16,62 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { get } from 'svelte/store';
 import { beforeEach, expect, test, vi } from 'vitest';
 
-import { agentWorkspaceStatuses, startAgentWorkspace, stopAgentWorkspace } from './agent-workspaces.svelte';
+const receiveMock = vi.fn();
+
+Object.defineProperty(window, 'events', {
+  value: { receive: receiveMock },
+  configurable: true,
+});
+
+const { agentWorkspaces, agentWorkspaceStatuses, fetchAgentWorkspaces, startAgentWorkspace, stopAgentWorkspace } =
+  await import('./agent-workspaces.svelte');
+
+// Capture subscription calls before beforeEach resets mock state
+const receiveCallsAtLoad = [...receiveMock.mock.calls];
 
 beforeEach(() => {
   vi.resetAllMocks();
   agentWorkspaceStatuses.clear();
+  agentWorkspaces.set([]);
+});
+
+test('fetchAgentWorkspaces should call window.listAgentWorkspaces and update the store', async () => {
+  const workspaces = [
+    { id: 'ws-1', name: 'workspace-1', paths: { source: '/tmp/ws1', configuration: '/tmp/ws1/.kortex.yaml' } },
+    { id: 'ws-2', name: 'workspace-2', paths: { source: '/tmp/ws2', configuration: '/tmp/ws2/.kortex.yaml' } },
+  ];
+  vi.mocked(window.listAgentWorkspaces).mockResolvedValue(workspaces);
+
+  await fetchAgentWorkspaces();
+
+  expect(window.listAgentWorkspaces).toHaveBeenCalled();
+  expect(get(agentWorkspaces)).toEqual(workspaces);
+});
+
+test('should subscribe to agent-workspace-update event', () => {
+  const subscribeCall = receiveCallsAtLoad.find((c: unknown[]) => c[0] === 'agent-workspace-update');
+  expect(subscribeCall).toBeDefined();
+  expect(subscribeCall![1]).toEqual(expect.any(Function));
+});
+
+test('agent-workspace-update event should trigger fetchAgentWorkspaces', async () => {
+  const workspaces = [
+    { id: 'ws-1', name: 'workspace-1', paths: { source: '/tmp/ws1', configuration: '/tmp/ws1/.kortex.yaml' } },
+  ];
+  vi.mocked(window.listAgentWorkspaces).mockResolvedValue(workspaces);
+
+  const subscribeCall = receiveCallsAtLoad.find((c: unknown[]) => c[0] === 'agent-workspace-update');
+  expect(subscribeCall).toBeDefined();
+
+  const callback = subscribeCall![1] as () => void;
+  callback();
+
+  await vi.waitFor(() => {
+    expect(get(agentWorkspaces)).toEqual(workspaces);
+  });
 });
 
 test('startAgentWorkspace should transition status from stopped to running', async () => {

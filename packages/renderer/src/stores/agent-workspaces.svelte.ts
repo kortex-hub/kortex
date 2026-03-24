@@ -53,6 +53,12 @@ export async function stopAgentWorkspace(id: string): Promise<void> {
   }
 }
 
+window.events?.receive('agent-workspace-update', () => {
+  fetchAgentWorkspaces().catch((error: unknown) => {
+    console.error('Failed to fetch agent workspaces', error);
+  });
+});
+
 window.addEventListener('system-ready', () => {
   fetchAgentWorkspaces().catch((error: unknown) => {
     console.error('Failed to fetch agent workspaces', error);

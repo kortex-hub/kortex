@@ -25,6 +25,7 @@ import type {
   AgentWorkspaceId,
   AgentWorkspaceSummary,
 } from '/@api/agent-workspace-info.js';
+import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 
 import {
   mockGetWorkspaceConfiguration,
@@ -44,6 +45,8 @@ import {
 @injectable()
 export class AgentWorkspaceManager implements Disposable {
   constructor(
+    @inject(ApiSenderType)
+    private readonly apiSender: ApiSenderType,
     @inject(IPCHandle)
     private readonly ipcHandle: IPCHandle,
   ) {}
@@ -55,7 +58,9 @@ export class AgentWorkspaceManager implements Disposable {
 
   // Future: exec('kortex', ['workspace', 'remove', id, '--format', 'json'])
   remove(id: string): AgentWorkspaceId {
-    return mockRemoveWorkspace(id);
+    const result = mockRemoveWorkspace(id);
+    this.apiSender.send('agent-workspace-update');
+    return result;
   }
 
   // Future: readFile(paths.configuration) + YAML.parse()
@@ -65,12 +70,16 @@ export class AgentWorkspaceManager implements Disposable {
 
   // Future: exec('kortex', ['workspace', 'start', id, '--format', 'json'])
   start(id: string): AgentWorkspaceId {
-    return mockStartWorkspace(id);
+    const result = mockStartWorkspace(id);
+    this.apiSender.send('agent-workspace-update');
+    return result;
   }
 
   // Future: exec('kortex', ['workspace', 'stop', id, '--format', 'json'])
   stop(id: string): AgentWorkspaceId {
-    return mockStopWorkspace(id);
+    const result = mockStopWorkspace(id);
+    this.apiSender.send('agent-workspace-update');
+    return result;
   }
 
   init(): void {
