@@ -1,4 +1,5 @@
 <script lang="ts">
+import { faPlay, faStop } from '@fortawesome/free-solid-svg-icons';
 import { ErrorMessage, Spinner, Tab } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
@@ -6,8 +7,11 @@ import DetailsCell from '/@/lib/details/DetailsCell.svelte';
 import DetailsTable from '/@/lib/details/DetailsTable.svelte';
 import DetailsTitle from '/@/lib/details/DetailsTitle.svelte';
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
+import ListItemButtonIcon from '/@/lib/ui/ListItemButtonIcon.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
+import type { AgentWorkspaceStatus } from '/@/stores/agent-workspaces';
+import { agentWorkspaceStatuses, startAgentWorkspace, stopAgentWorkspace } from '/@/stores/agent-workspaces';
 
 interface Props {
   workspaceId: string;
@@ -16,6 +20,19 @@ interface Props {
 let { workspaceId }: Props = $props();
 
 const configurationPromise = $derived(window.getAgentWorkspaceConfiguration(workspaceId));
+
+const status: AgentWorkspaceStatus = $derived($agentWorkspaceStatuses.get(workspaceId) ?? 'stopped');
+const isRunning = $derived(status === 'running' || status === 'stopping');
+const inProgress = $derived(status === 'starting' || status === 'stopping');
+
+function handleStartStop(): void {
+  if (inProgress) return;
+  if (isRunning) {
+    stopAgentWorkspace(workspaceId).catch(console.error);
+  } else {
+    startAgentWorkspace(workspaceId).catch(console.error);
+  }
+}
 </script>
 
 {#await configurationPromise}
@@ -24,6 +41,13 @@ const configurationPromise = $derived(window.getAgentWorkspaceConfiguration(work
   </div>
 {:then configuration}
   <DetailsPage title={configuration.name ?? ''}>
+    {#snippet actionsSnippet()}
+      <ListItemButtonIcon
+        title={isRunning ? 'Stop Workspace' : 'Start Workspace'}
+        onClick={handleStartStop}
+        icon={isRunning ? faStop : faPlay}
+        inProgress={inProgress} />
+    {/snippet}
     {#snippet tabsSnippet()}
       <Tab title="Summary" selected={isTabSelected($router.path, 'summary')} url={getTabUrl($router.path, 'summary')} />
     {/snippet}

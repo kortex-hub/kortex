@@ -1,5 +1,5 @@
 <script lang="ts">
-import { type Chat } from '@ai-sdk/svelte';
+import type { Chat } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
 import { onMount, untrack } from 'svelte';
 import type { SvelteMap } from 'svelte/reactivity';
@@ -51,30 +51,39 @@ $effect(() => {
       .join('');
     untrack(() => {
       savedInput = input;
-      setInput(text);
-      textareaRef?.focus();
+      input = text;
+      // Wait for DOM to update before adjusting height
+      requestAnimationFrame(() => {
+        adjustHeight();
+        textareaRef?.focus();
+      });
     });
   }
 });
 
-function cancelEditing(): void {
+async function cancelEditing(): Promise<void> {
   editState.cancelEditing();
-  setInput(savedInput);
+  input = savedInput;
   savedInput = '';
+
+  // Wait for DOM to update before resetting height
+  await new Promise(resolve => requestAnimationFrame(resolve));
+  adjustHeight();
 }
 
 const adjustHeight = (): void => {
   if (textareaRef) {
     textareaRef.style.height = 'auto';
-    textareaRef.style.height = `${textareaRef.scrollHeight + 2}px`;
+    // Let the browser recalculate scrollHeight for the current content
+    const scrollHeight = textareaRef.scrollHeight;
+    const maxHeight = window.innerHeight * 0.25;
+    const newHeight = Math.min(scrollHeight + 2, maxHeight);
+    textareaRef.style.height = `${newHeight}px`;
   }
 };
 
 const resetHeight = (): void => {
-  if (textareaRef) {
-    textareaRef.style.height = 'auto';
-    textareaRef.style.height = '98px';
-  }
+  adjustHeight();
 };
 
 function setInput(value: string): void {
@@ -82,14 +91,31 @@ function setInput(value: string): void {
   adjustHeight();
 }
 
+function canSubmit(): boolean {
+  // When editing, only allow non-empty text (attachments are discarded in edit mode)
+  if (editState.isEditing) {
+    return input.trim().length > 0;
+  }
+  // When not editing, allow either text or attachments
+  return input.trim().length > 0 || attachments.length > 0;
+}
+
 async function submitForm(): Promise<void> {
+  if (!canSubmit()) {
+    return;
+  }
   const text = input;
 
   if (editState.editingMessage) {
     const editingMessage = editState.editingMessage;
-    setInput('');
+    // Clear input directly instead of using setInput('') to avoid calling adjustHeight() before DOM updates
+    input = '';
     savedInput = '';
     editState.cancelEditing();
+
+    // Wait for DOM to update before resetting height
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    resetHeight();
 
     await window.inferenceDeleteTrailingMessages(editingMessage.id);
 
@@ -102,12 +128,17 @@ async function submitForm(): Promise<void> {
       chatClient.messages = [...chatClient.messages.slice(0, index), updatedMessage];
     }
 
-    resetHeight();
     await chatClient.regenerate();
     return;
   }
 
-  setInput('');
+  // Clear input directly instead of using setInput('') to avoid calling adjustHeight() before DOM updates
+  input = '';
+
+  // Wait for DOM to update before resetting height
+  await new Promise(resolve => requestAnimationFrame(resolve));
+  resetHeight();
+
   await chatClient.sendMessage({
     text,
     files: attachments.map(attachment => ({
@@ -119,7 +150,6 @@ async function submitForm(): Promise<void> {
   });
 
   attachments = [];
-  resetHeight();
 
   if (innerWidth.current && innerWidth.current > 768) {
     textareaRef?.focus();
@@ -164,96 +194,112 @@ onMount(() => {
 $effect.pre(() => {
   storedInput.value = input;
 });
+
+// Global ESC handler for edit mode
+$effect((): (() => void) | void => {
+  if (editState.isEditing) {
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        cancelEditing().catch(console.error);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return (): void => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }
+});
 </script>
 
 <div class="relative flex w-full flex-col gap-4">
-	{#if mounted && chatClient.messages.length === 0 && attachments.length === 0}
-		<SuggestedActions {chatClient} {selectedMCPTools} />
-	{/if}
+  {#if mounted && chatClient.messages.length === 0 && attachments.length === 0}
+    <SuggestedActions {chatClient} {selectedMCPTools} />
+  {/if}
 
-	{#if attachments.length > 0}
-		<div class="flex flex-row items-end gap-2 overflow-x-scroll">
-			{#each attachments as attachment (attachment.url)}
-				<PreviewAttachment {attachment} />
-			{/each}
+  {#if attachments.length > 0}
+    <div class="flex flex-row items-end gap-2 overflow-x-scroll">
+      {#each attachments as attachment (attachment.url)}
+        <PreviewAttachment {attachment} />
+      {/each}
+    </div>
+  {/if}
 
-		</div>
-	{/if}
+  {#if editState.isEditing}
+    <div class="text-muted-foreground px-3 pt-2 text-sm">Press ESC to cancel editing</div>
+  {/if}
 
-	{#if editState.isEditing}
-		<div class="text-muted-foreground px-3 pt-2 text-sm">Press ESC to cancel editing</div>
-	{/if}
+  <div class={cn(
+    'bg-muted flex flex-col rounded-2xl border dark:border-zinc-700',
+    c
+  )}>
+    <Textarea
+      bind:ref={textareaRef}
+      placeholder="Send a message..."
+      bind:value={():string => input, setInput}
+      class="max-h-[calc(25dvh)] min-h-[24px] resize-none overflow-y-auto border-0 bg-transparent text-base! shadow-none focus-visible:ring-0"
+      rows={2}
+      autofocus
+      onkeydown={async(event): Promise<void> => {
+        if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+          event.preventDefault();
 
-	<Textarea
-		bind:ref={textareaRef}
-		placeholder="Send a message..."
-		bind:value={():string => input, setInput}
-		class={cn(
-			'bg-muted max-h-[calc(75dvh)] min-h-[24px] resize-none overflow-hidden rounded-2xl pb-10 !text-base dark:border-zinc-700',
-			c
-		)}
-		rows={2}
-		autofocus
-		onkeydown={async(event): Promise<void> => {
-			if (event.key === 'Escape' && editState.isEditing) {
-				event.preventDefault();
-				cancelEditing();
-				return;
-			}
+          if (loading) {
+            toast.error('Please wait for the model to finish its response!');
+          } else {
+            await submitForm();
+          }
+        }
+      }}
+    />
 
-			if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
-				event.preventDefault();
+    <div class="flex w-full flex-row items-center justify-between px-2 pb-2">
+      <div class="flex flex-row justify-start">
+        <Button
+          class="h-fit rounded-md rounded-bl-lg p-[7px] hover:bg-zinc-200 dark:border-zinc-700 hover:dark:bg-zinc-900"
+          onclick={(event): void => {
+            event.preventDefault();
+            handleFile().catch(console.error);
+          }}
+          disabled={loading}
+          variant="ghost"
+          aria-label="Attach file"
+          title="Attach file"
+        >
+          <PaperclipIcon size={14} />
+        </Button>
+      </div>
 
-				if (loading) {
-					toast.error('Please wait for the model to finish its response!');
-				} else {
-					await submitForm();
-				}
-			}
-		}}
-	/>
-
-	<div class="absolute bottom-0 flex w-fit flex-row justify-start p-2">
-
-		<Button
-			class="h-fit rounded-md rounded-bl-lg p-[7px] hover:bg-zinc-200 dark:border-zinc-700 hover:dark:bg-zinc-900"
-			onclick={(event): void => {
-				event.preventDefault();
-				handleFile().catch(console.error);
-			}}
-			disabled={loading}
-			variant="ghost"
-		>
-			<PaperclipIcon size={14} />
-		</Button>
-	</div>
-
-	<div class="absolute right-0 bottom-0 flex w-fit flex-row items-center justify-end p-2">
-		<ExportButton {chatClient} {selectedModel} {loading} {selectedMCPTools}/>
-		{#if loading}
-			<Button
-				aria-label="Stop generation"
-				class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
-				onclick={(event): void => {
-					event.preventDefault();
-					stop();
-					chatClient.messages = chatClient.messages;
-				}}
-			>
-				<StopIcon size={14} />
-			</Button>
-		{:else}
-			<Button
-					aria-label="Send message"
-					class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
-					onclick={async(event): Promise<void> => {
-						event.preventDefault();
-						await submitForm();
-					}}
-					disabled={input.trim().length === 0}
-				>
-				<ArrowUpIcon size={14} />
-			</Button>
-		{/if}
-	</div>
+      <div class="flex flex-row items-center justify-end gap-2">
+        <ExportButton {chatClient} {selectedModel} {loading} {selectedMCPTools}/>
+        {#if loading}
+          <Button
+            aria-label="Stop generation"
+            title="Stop generation"
+            class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
+            onclick={async (event): Promise<void> => {
+              event.preventDefault();
+              await chatClient.stop();
+            }}
+          >
+            <StopIcon size={14} />
+          </Button>
+        {:else}
+          <Button
+              aria-label="Send message"
+              title="Send message"
+              class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
+              onclick={async(event): Promise<void> => {
+                event.preventDefault();
+                await submitForm();
+              }}
+              disabled={!canSubmit()}
+            >
+            <ArrowUpIcon size={14} />
+          </Button>
+        {/if}
+      </div>
+    </div>
+  </div>
 </div>
