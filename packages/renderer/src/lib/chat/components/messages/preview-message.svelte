@@ -8,6 +8,7 @@ import { fileUIPart2Attachment } from '/@/lib/chat/utils/chat';
 import { cn } from '/@/lib/chat/utils/shadcn';
 import Markdown from '/@/lib/markdown/Markdown.svelte';
 
+import LoaderIcon from '../icons/loader.svelte';
 import PencilEditIcon from '../icons/pencil-edit.svelte';
 import SparklesIcon from '../icons/sparkles.svelte';
 import MessageReasoning from '../message-reasoning.svelte';
@@ -33,6 +34,15 @@ const editState = EditState.fromContext();
 const isGrayed = $derived(editState.isAfterEditingMessage(messages, message));
 
 const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type === 'dynamic-tool') ?? [];
+
+// Separate reasoning and text parts for proper ordering
+const reasoningParts = $derived(message.parts.filter(part => part.type === 'reasoning'));
+const textParts = $derived(message.parts.filter(part => part.type === 'text'));
+const hasText = $derived(textParts.some(part => part.text.trim().length > 0));
+
+// Show spinner only for the last assistant message while loading (during reasoning or text generation)
+const isLastMessage = $derived(messages.length > 0 && messages[messages.length - 1].id === message.id);
+const isGeneratingResponse = $derived(loading && message.role === 'assistant' && isLastMessage);
 </script>
 
 <div
@@ -75,86 +85,57 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type 
         </div>
       {/if}
 
-      {#each message.parts as part, i (`${message.id}-${i}`)}
-        {@const { type } = part}
-        {#if type === 'reasoning'}
-          <MessageReasoning {loading} reasoning={part.text} />
-        {:else if type === 'text'}
-          <div class="flex flex-row items-center gap-2">
-            {#if message.role === 'user' && !readonly}
-              <Tooltip>
-                <TooltipTrigger>
-                  {#snippet child({ props })}
-                    <Button
-                      {...props}
-                      variant="ghost"
-                      class={cn(
-                        'text-muted-foreground h-fit rounded-full px-2 opacity-0 group-hover/message:opacity-100',
-                        { 'invisible': editState.isEditing }
-                      )}
-                      aria-label="Edit message"
-                      onclick={(): void => {
-                        editState.startEditing(message);
-                      }}
-                      disabled={editState.isEditing}
-                    >
-                      <PencilEditIcon />
-                    </Button>
-                  {/snippet}
-                </TooltipTrigger>
-                <TooltipContent>Edit message</TooltipContent>
-              </Tooltip>
-            {/if}
-            <div
-              class={cn('flex flex-col gap-4', {
-                'bg-primary text-primary-foreground rounded-xl px-3 pt-4': message.role === 'user',
-                'animate-fade-in': message.role === 'assistant',
-              })}
-            >
-              <Markdown markdown={part.text} allowDangerousHtml={message.role !== 'user'} />
-            </div>
-          </div>
-
-          <!-- TODO -->
-          <!-- {:else if type === 'tool-invocation'}
-          {@const { toolInvocation } = part}
-          {@const { toolName, state } = toolInvocation}
-
-          {#if state === 'call'}
-            {@const { args } = toolInvocation}
-            <div
-              class={cn({
-                skeleton: ['getWeather'].includes(toolName)
-              })}
-            >
-              {#if toolName === 'getWeather'}
-                <Weather />
-              {:else if toolName === 'createDocument'}
-                <DocumentPreview {readonly} {args} />
-              {:else if toolName === 'updateDocument'}
-                <DocumentToolCall type="update" {args} {readonly} />
-              {:else if toolName === 'requestSuggestions'}
-                <DocumentToolCall type="request-suggestions" {args} {readonly} />
-              {/if}
-            </div>
-          {:else if state === 'result'}
-          {@const { result } = toolInvocation}
-            <div>
-              {#if toolName === 'getWeather'}
-                <Weather weatherAtLocation={result} />
-              {:else if toolName === 'createDocument'}
-                <DocumentPreview {readonly} {result} />
-              {:else if toolName === 'updateDocument'}
-                <DocumentToolResult type="update" {result} {readonly} />
-              {:else if toolName === 'requestSuggestions'}
-                <DocumentToolResult type="request-suggestions" {result} {readonly} />
-              {:else}
-                <pre>{JSON.stringify(result, null, 2)}</pre>
-              {/if}
-            </div>
-          {/if} -->
-        {/if}
+      <!-- Show reasoning first -->
+      {#each reasoningParts as part, i (`${message.id}-reasoning-${i}`)}
+        <MessageReasoning {loading} reasoningContent={part.text} {hasText} />
       {/each}
+
+      <!-- Show text parts after reasoning -->
+      {#each textParts as part, i (`${message.id}-text-${i}`)}
+        <div class="flex flex-row items-center gap-2">
+          {#if message.role === 'user' && !readonly}
+            <Tooltip>
+              <TooltipTrigger>
+                {#snippet child({ props })}
+                  <Button
+                    {...props}
+                    variant="ghost"
+                    class={cn(
+                      'text-muted-foreground h-fit rounded-full px-2 opacity-0 group-hover/message:opacity-100',
+                      { 'invisible': editState.isEditing }
+                    )}
+                    aria-label="Edit message"
+                    onclick={(): void => {
+                      editState.startEditing(message);
+                    }}
+                    disabled={editState.isEditing}
+                  >
+                    <PencilEditIcon />
+                  </Button>
+                {/snippet}
+              </TooltipTrigger>
+              <TooltipContent>Edit message</TooltipContent>
+            </Tooltip>
+          {/if}
+          <div
+            class={cn('flex flex-col gap-4', {
+              'bg-primary text-primary-foreground rounded-xl px-3 pt-4': message.role === 'user',
+              'animate-fade-in': message.role === 'assistant',
+            })}
+          >
+            <Markdown markdown={part.text} allowDangerousHtml={message.role !== 'user'} />
+          </div>
+        </div>
+      {/each}
+
+      <!-- Show spinner at the end while response is streaming (after reasoning completes) -->
+      {#if isGeneratingResponse}
+        <div class="flex">
+          <div class="animate-spin">
+            <LoaderIcon size={16} />
+          </div>
+        </div>
+      {/if}
 
       <!-- TODO -->
       <!-- {#if !readonly}
