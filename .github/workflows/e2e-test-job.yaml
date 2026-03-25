@@ -100,6 +100,8 @@ jobs:
 
       - name: Run Smoke E2E tests in ${{ inputs.mode == 'prod' && 'Production' || 'Development' }} Mode
         shell: bash
+        env:
+          VITE_CI: 'true'
         run: |
           # Derive binary path from instance (OS and architecture)
           INSTANCE="${{ inputs.instance }}"
