@@ -55,7 +55,11 @@ $effect(() => {
       // Wait for DOM to update before adjusting height
       requestAnimationFrame(() => {
         adjustHeight();
-        textareaRef?.focus();
+        if (textareaRef) {
+          textareaRef.focus();
+          // Set cursor to the end of the text
+          textareaRef.setSelectionRange(textareaRef.value.length, textareaRef.value.length);
+        }
       });
     });
   }
