@@ -2,7 +2,7 @@
 import type { UIMessage } from '@ai-sdk/svelte';
 import { onMount } from 'svelte';
 
-import { getLock } from '/@/lib/chat/hooks/lock';
+import { getLock } from '/@/lib/chat/hooks/lock.svelte';
 
 import Overview from './messages/overview.svelte';
 import PreviewMessage from './messages/preview-message.svelte';
@@ -29,12 +29,44 @@ onMount(async () => {
 
 const scrollLock = getLock('messages-scroll');
 
+const updateScrollLock = (): void => {
+  if (!containerRef) return;
+
+  const { scrollTop, scrollHeight, clientHeight } = containerRef;
+  const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+  // Consider "at bottom" if within 50px of the bottom
+  const isAtBottom = distanceFromBottom <= 50;
+
+  scrollLock.userScrolledAway = !isAtBottom;
+};
+
+// Clear user scroll lock when loading starts (e.g., after editing a message)
+$effect(() => {
+  if (loading) {
+    scrollLock.userScrolledAway = false;
+  }
+});
+
+$effect(() => {
+  if (!containerRef) return;
+
+  // Update lock state on user scroll
+  containerRef.addEventListener('scroll', updateScrollLock);
+
+  return (): void => {
+    containerRef?.removeEventListener('scroll', updateScrollLock);
+  };
+});
+
 $effect(() => {
   if (!(containerRef && endRef)) return;
 
   const observer = new MutationObserver(() => {
     if (!endRef || scrollLock.locked) return;
     endRef.scrollIntoView({ behavior: 'instant', block: 'end' });
+    // Update lock state after auto-scroll
+    updateScrollLock();
   });
 
   observer.observe(containerRef, {

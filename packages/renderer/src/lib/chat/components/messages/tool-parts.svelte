@@ -11,7 +11,7 @@ import { slide } from 'svelte/transition';
 import Fa from 'svelte-fa';
 
 import ChevronDownIcon from '/@/lib/chat/components/icons/chevron-down.svelte';
-import { getLock } from '/@/lib/chat/hooks/lock';
+import { getLock } from '/@/lib/chat/hooks/lock.svelte';
 import { formatText } from '/@/lib/format/format';
 
 interface Props {
@@ -25,13 +25,13 @@ let expanded: Set<string> = new SvelteSet();
 const scrollLock = getLock('messages-scroll');
 
 function lockScrolling(): void {
-  scrollLock.locked = true;
+  scrollLock.lockTransition();
 }
 
 function unlockScrolling(): void {
   tick()
     .then(() => {
-      scrollLock.locked = false;
+      scrollLock.unlockTransition();
     })
     .catch(console.error);
 }
