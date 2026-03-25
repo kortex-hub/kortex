@@ -35,7 +35,7 @@ import { isMac, isWindows, stoppedExtensions } from './util.js';
 
 // On Linux, enable plaintext encryption for safeStorage when no keyring is available (e.g. headless CI).
 // Must be called before app.whenReady(). See https://www.electronjs.org/docs/latest/api/safe-storage
-if (process.platform === 'linux' && process.env.ELECTRON_PLAINTEXT_SAFE_STORAGE === '1') {
+if (process.platform === 'linux' && process.env['ELECTRON_PLAINTEXT_SAFE_STORAGE'] === '1') {
   safeStorage.setUsePlainTextEncryption(true);
 }
 
