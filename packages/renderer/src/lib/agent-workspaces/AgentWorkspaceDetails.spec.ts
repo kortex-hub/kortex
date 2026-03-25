@@ -49,6 +49,8 @@ beforeEach(() => {
   vi.mocked(window.getAgentWorkspaceConfiguration).mockResolvedValue(configuration);
   vi.mocked(window.startAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
   vi.mocked(window.stopAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
+  vi.mocked(window.showMessageBox).mockResolvedValue({ response: 1 });
+  vi.mocked(window.removeAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
   agentWorkspaceStatuses.clear();
 });
 
@@ -132,4 +134,60 @@ test('Expect clicking stop button transitions workspace to stopped', async () =>
   await waitFor(() => {
     expect(agentWorkspaceStatuses.get('ws-1')).toBe('stopped');
   });
+});
+
+test('Expect remove button is rendered', async () => {
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Remove Workspace' })).toBeInTheDocument();
+  });
+});
+
+test('Expect confirmation dialog shown when remove button clicked', async () => {
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Remove Workspace' })).toBeInTheDocument();
+  });
+
+  const removeButton = screen.getByRole('button', { name: 'Remove Workspace' });
+  await fireEvent.click(removeButton);
+
+  expect(window.showMessageBox).toHaveBeenCalledOnce();
+});
+
+test('Expect workspace removed and navigated to list when user confirms', async () => {
+  vi.mocked(window.showMessageBox).mockResolvedValue({ response: 0 });
+
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Remove Workspace' })).toBeInTheDocument();
+  });
+
+  const removeButton = screen.getByRole('button', { name: 'Remove Workspace' });
+  await fireEvent.click(removeButton);
+
+  await waitFor(() => {
+    expect(window.removeAgentWorkspace).toHaveBeenCalledWith('ws-1');
+  });
+
+  expect(router.goto).toHaveBeenCalledWith('/agent-workspaces');
+});
+
+test('Expect workspace not removed when user cancels', async () => {
+  vi.mocked(window.showMessageBox).mockResolvedValue({ response: 1 });
+
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Remove Workspace' })).toBeInTheDocument();
+  });
+
+  const removeButton = screen.getByRole('button', { name: 'Remove Workspace' });
+  await fireEvent.click(removeButton);
+
+  expect(window.removeAgentWorkspace).not.toHaveBeenCalled();
+  expect(router.goto).not.toHaveBeenCalled();
 });
