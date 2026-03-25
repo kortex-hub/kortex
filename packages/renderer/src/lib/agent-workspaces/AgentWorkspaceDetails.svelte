@@ -12,7 +12,12 @@ import ListItemButtonIcon from '/@/lib/ui/ListItemButtonIcon.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
 import type { AgentWorkspaceStatus } from '/@/stores/agent-workspaces.svelte';
-import { agentWorkspaceStatuses, startAgentWorkspace, stopAgentWorkspace } from '/@/stores/agent-workspaces.svelte';
+import {
+  agentWorkspaces,
+  agentWorkspaceStatuses,
+  startAgentWorkspace,
+  stopAgentWorkspace,
+} from '/@/stores/agent-workspaces.svelte';
 
 interface Props {
   workspaceId: string;
@@ -21,6 +26,7 @@ interface Props {
 let { workspaceId }: Props = $props();
 
 const configurationPromise = $derived(window.getAgentWorkspaceConfiguration(workspaceId));
+const workspaceSummary = $derived($agentWorkspaces.find(ws => ws.id === workspaceId));
 
 const status: AgentWorkspaceStatus = $derived(agentWorkspaceStatuses.get(workspaceId) ?? 'stopped');
 const isRunning = $derived(status === 'running' || status === 'stopping');
@@ -71,6 +77,15 @@ function handleRemove(name: string): void {
       <Route path="/summary" breadcrumb="Summary" navigationHint="tab">
         <div class="h-min">
           <DetailsTable>
+            <tr>
+              <DetailsTitle>Workspace</DetailsTitle>
+            </tr>
+            {#if workspaceSummary?.project}
+              <tr>
+                <DetailsCell>Project</DetailsCell>
+                <DetailsCell>{workspaceSummary.project}</DetailsCell>
+              </tr>
+            {/if}
             <tr>
               <DetailsTitle>Configuration</DetailsTitle>
             </tr>
