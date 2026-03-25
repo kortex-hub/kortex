@@ -16,14 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { get } from 'svelte/store';
 import { beforeEach, expect, test, vi } from 'vitest';
 
-import { agentWorkspaceStatuses, startAgentWorkspace, stopAgentWorkspace } from './agent-workspaces';
+import { agentWorkspaceStatuses, startAgentWorkspace, stopAgentWorkspace } from './agent-workspaces.svelte';
 
 beforeEach(() => {
   vi.resetAllMocks();
-  agentWorkspaceStatuses.set(new Map());
+  agentWorkspaceStatuses.clear();
 });
 
 test('startAgentWorkspace should transition status from stopped to running', async () => {
@@ -32,7 +31,7 @@ test('startAgentWorkspace should transition status from stopped to running', asy
   await startAgentWorkspace('ws-1');
 
   expect(window.startAgentWorkspace).toHaveBeenCalledWith('ws-1');
-  expect(get(agentWorkspaceStatuses).get('ws-1')).toBe('running');
+  expect(agentWorkspaceStatuses.get('ws-1')).toBe('running');
 });
 
 test('startAgentWorkspace should set starting status during the call', async () => {
@@ -45,12 +44,12 @@ test('startAgentWorkspace should set starting status during the call', async () 
 
   const promise = startAgentWorkspace('ws-1');
 
-  expect(get(agentWorkspaceStatuses).get('ws-1')).toBe('starting');
+  expect(agentWorkspaceStatuses.get('ws-1')).toBe('starting');
 
   resolveStart({ id: 'ws-1' });
   await promise;
 
-  expect(get(agentWorkspaceStatuses).get('ws-1')).toBe('running');
+  expect(agentWorkspaceStatuses.get('ws-1')).toBe('running');
 });
 
 test('startAgentWorkspace should revert to stopped on failure', async () => {
@@ -58,21 +57,21 @@ test('startAgentWorkspace should revert to stopped on failure', async () => {
 
   await startAgentWorkspace('ws-1');
 
-  expect(get(agentWorkspaceStatuses).get('ws-1')).toBe('stopped');
+  expect(agentWorkspaceStatuses.get('ws-1')).toBe('stopped');
 });
 
 test('stopAgentWorkspace should transition status from running to stopped', async () => {
-  agentWorkspaceStatuses.set(new Map([['ws-1', 'running']]));
+  agentWorkspaceStatuses.set('ws-1', 'running');
   vi.mocked(window.stopAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
 
   await stopAgentWorkspace('ws-1');
 
   expect(window.stopAgentWorkspace).toHaveBeenCalledWith('ws-1');
-  expect(get(agentWorkspaceStatuses).get('ws-1')).toBe('stopped');
+  expect(agentWorkspaceStatuses.get('ws-1')).toBe('stopped');
 });
 
 test('stopAgentWorkspace should set stopping status during the call', async () => {
-  agentWorkspaceStatuses.set(new Map([['ws-1', 'running']]));
+  agentWorkspaceStatuses.set('ws-1', 'running');
 
   let resolveStop: (value: { id: string }) => void = () => {};
   vi.mocked(window.stopAgentWorkspace).mockReturnValue(
@@ -83,19 +82,19 @@ test('stopAgentWorkspace should set stopping status during the call', async () =
 
   const promise = stopAgentWorkspace('ws-1');
 
-  expect(get(agentWorkspaceStatuses).get('ws-1')).toBe('stopping');
+  expect(agentWorkspaceStatuses.get('ws-1')).toBe('stopping');
 
   resolveStop({ id: 'ws-1' });
   await promise;
 
-  expect(get(agentWorkspaceStatuses).get('ws-1')).toBe('stopped');
+  expect(agentWorkspaceStatuses.get('ws-1')).toBe('stopped');
 });
 
 test('stopAgentWorkspace should revert to running on failure', async () => {
-  agentWorkspaceStatuses.set(new Map([['ws-1', 'running']]));
+  agentWorkspaceStatuses.set('ws-1', 'running');
   vi.mocked(window.stopAgentWorkspace).mockRejectedValue(new Error('stop failed'));
 
   await stopAgentWorkspace('ws-1');
 
-  expect(get(agentWorkspaceStatuses).get('ws-1')).toBe('running');
+  expect(agentWorkspaceStatuses.get('ws-1')).toBe('running');
 });

@@ -3,7 +3,7 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { Button, NavPage } from '@podman-desktop/ui-svelte';
 
 import { handleNavigation } from '/@/navigation';
-import { agentWorkspaces } from '/@/stores/agent-workspaces';
+import { agentWorkspaces } from '/@/stores/agent-workspaces.svelte';
 import { NavigationPage } from '/@api/navigation-page';
 
 import AgentWorkspaceCard from './AgentWorkspaceCard.svelte';

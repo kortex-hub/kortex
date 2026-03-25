@@ -22,11 +22,18 @@ inputs:
   model:
     description: 'Model to pull and serve (e.g., granite3.2:2b)'
     required: true
+  second_model:
+    description: 'Optional second inference model to pull (e.g., granite3.1-dense:2b).'
+    required: false
+    default: ''
 
 outputs:
   enabled:
-    description: "'true' if the model is ready, 'false' otherwise"
+    description: "'true' if the primary model is ready, 'false' otherwise"
     value: ${{ steps.pull.outputs.enabled }}
+  second_model_enabled:
+    description: "'true' if the second model was pulled successfully, 'false' or empty otherwise"
+    value: ${{ steps.pull.outputs.second_model_enabled }}
 
 runs:
   using: composite
@@ -38,9 +45,9 @@ runs:
       uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
       with:
         path: ~/.ollama/models
-        key: ollama-${{ inputs.model }}-${{ runner.os }}
+        key: ollama-${{ inputs.model }}-${{ inputs.second_model || 'none' }}-${{ runner.os }}
 
-    - name: Pull Ollama model
+    - name: Pull Ollama model(s)
       id: pull
       shell: bash
       run: |
@@ -59,30 +66,47 @@ runs:
           fi
         done
 
-        # Check if model is already cached and available
-        if ollama list | grep -q "${{ inputs.model }}"; then
-          echo "Model ${{ inputs.model }} is already available (from cache)"
+        pull_model() {
+          local model="$1"
+
+          if ollama list | grep -q "$model"; then
+            echo "Model $model is already available (from cache)"
+            return 0
+          fi
+
+          for attempt in {1..5}; do
+            echo "Pulling $model (attempt $attempt/5)..."
+            ollama rm "$model" 2>/dev/null || true
+
+            if ollama pull "$model" 2>&1 && ollama list | grep -q "$model"; then
+              echo "Model $model is ready"
+              return 0
+            fi
+
+            wait_time=$((attempt * 10))
+            echo "Pull failed, retrying in ${wait_time} seconds..."
+            sleep $wait_time
+          done
+
+          return 1
+        }
+
+        # Pull primary model
+        if pull_model "${{ inputs.model }}"; then
           echo "OLLAMA_ENABLED=true" >> "$GITHUB_ENV"
           echo "enabled=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "::warning::Failed to pull ${{ inputs.model }} model after 5 attempts - Ollama tests will be skipped"
+          echo "enabled=false" >> "$GITHUB_OUTPUT"
           exit 0
         fi
 
-        # Pull the model with retries (digest mismatch is a known Ollama issue)
-        for attempt in {1..5}; do
-          echo "Pulling ${{ inputs.model }} model (attempt $attempt/5)..."
-          ollama rm "${{ inputs.model }}" 2>/dev/null || true
-
-          if ollama pull "${{ inputs.model }}" 2>&1 && ollama list | grep -q "${{ inputs.model }}"; then
-            echo "Model ${{ inputs.model }} is ready"
-            echo "OLLAMA_ENABLED=true" >> "$GITHUB_ENV"
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-            exit 0
+        # Pull second model if specified
+        if [ -n "${{ inputs.second_model }}" ]; then
+          if pull_model "${{ inputs.second_model }}"; then
+            echo "second_model_enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Failed to pull ${{ inputs.second_model }} after 5 attempts - second model tests will be skipped"
+            echo "second_model_enabled=false" >> "$GITHUB_OUTPUT"
           fi
-
-          wait_time=$((attempt * 10))
-          echo "Pull failed, retrying in ${wait_time} seconds..."
-          sleep $wait_time
-        done
-
-        echo "::warning::Failed to pull ${{ inputs.model }} model after 5 attempts - Ollama tests will be skipped"
-        echo "enabled=false" >> "$GITHUB_OUTPUT"
+        fi

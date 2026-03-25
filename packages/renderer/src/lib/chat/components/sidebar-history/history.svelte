@@ -159,6 +159,12 @@ async function handleDeleteAllChats(): Promise<void> {
 									chatIdToDelete = chatId;
 									withConfirmation(handleDeleteChat, 'This action cannot be undone. This will permanently delete your chat');
 								}}
+								onrename={(chatId, newTitle): void => {
+									const chatToUpdate = chatHistory.chats.find(c => c.id === chatId);
+									if (chatToUpdate) {
+										chatToUpdate.title = newTitle;
+									}
+								}}
 							/>
 						{/each}
 					{/if}

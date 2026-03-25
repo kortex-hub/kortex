@@ -19,11 +19,10 @@
 import '@testing-library/jest-dom/vitest';
 
 import { fireEvent, render, screen } from '@testing-library/svelte';
-import { get } from 'svelte/store';
 import { router } from 'tinro';
 import { beforeEach, expect, test, vi } from 'vitest';
 
-import { agentWorkspaceStatuses } from '/@/stores/agent-workspaces';
+import { agentWorkspaceStatuses } from '/@/stores/agent-workspaces.svelte';
 import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info';
 
 import AgentWorkspaceCard from './AgentWorkspaceCard.svelte';
@@ -46,7 +45,7 @@ beforeEach(() => {
   vi.mocked(window.listAgentWorkspaces).mockResolvedValue([]);
   vi.mocked(window.startAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
   vi.mocked(window.stopAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
-  agentWorkspaceStatuses.set(new Map());
+  agentWorkspaceStatuses.clear();
 });
 
 test('Expect card displays workspace name', () => {
@@ -134,12 +133,12 @@ test('Expect clicking start button calls startAgentWorkspace', async () => {
   await fireEvent.click(startButton);
 
   await vi.waitFor(() => {
-    expect(get(agentWorkspaceStatuses).get('ws-1')).toBe('running');
+    expect(agentWorkspaceStatuses.get('ws-1')).toBe('running');
   });
 });
 
 test('Expect stop button is rendered when workspace is running', async () => {
-  agentWorkspaceStatuses.set(new Map([['ws-1', 'running']]));
+  agentWorkspaceStatuses.set('ws-1', 'running');
 
   render(AgentWorkspaceCard, { workspace });
 
@@ -147,7 +146,7 @@ test('Expect stop button is rendered when workspace is running', async () => {
 });
 
 test('Expect clicking stop button calls stopAgentWorkspace', async () => {
-  agentWorkspaceStatuses.set(new Map([['ws-1', 'running']]));
+  agentWorkspaceStatuses.set('ws-1', 'running');
 
   render(AgentWorkspaceCard, { workspace });
 
@@ -155,6 +154,6 @@ test('Expect clicking stop button calls stopAgentWorkspace', async () => {
   await fireEvent.click(stopButton);
 
   await vi.waitFor(() => {
-    expect(get(agentWorkspaceStatuses).get('ws-1')).toBe('stopped');
+    expect(agentWorkspaceStatuses.get('ws-1')).toBe('stopped');
   });
 });

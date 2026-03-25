@@ -5,13 +5,8 @@ import { router } from 'tinro';
 
 import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
 import LoadingIcon from '/@/lib/ui/LoadingIcon.svelte';
-import type { AgentWorkspaceStatus } from '/@/stores/agent-workspaces';
-import {
-  agentWorkspaceStatuses,
-  fetchAgentWorkspaces,
-  startAgentWorkspace,
-  stopAgentWorkspace,
-} from '/@/stores/agent-workspaces';
+import type { AgentWorkspaceStatus } from '/@/stores/agent-workspaces.svelte';
+import { agentWorkspaceStatuses, startAgentWorkspace, stopAgentWorkspace } from '/@/stores/agent-workspaces.svelte';
 import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info';
 
 interface Props {
@@ -20,7 +15,7 @@ interface Props {
 
 let { workspace }: Props = $props();
 
-const status: AgentWorkspaceStatus = $derived($agentWorkspaceStatuses.get(workspace.id) ?? 'stopped');
+const status: AgentWorkspaceStatus = $derived(agentWorkspaceStatuses.get(workspace.id) ?? 'stopped');
 const isRunning = $derived(status === 'running' || status === 'stopping');
 const inProgress = $derived(status === 'starting' || status === 'stopping');
 
@@ -62,7 +57,7 @@ function handleRemoveClick(e: MouseEvent): void {
 
 function handleRemove(): void {
   withConfirmation(
-    () => window.removeAgentWorkspace(workspace.id).then(fetchAgentWorkspaces).catch(console.error),
+    () => window.removeAgentWorkspace(workspace.id).catch(console.error),
     `remove workspace ${workspace.name}`,
   );
 }

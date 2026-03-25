@@ -31,6 +31,7 @@ import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import { Uri } from '/@/plugin/types/uri.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
+import { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info.js';
 import { FileInfo, RagEnvironment } from '/@api/rag/rag-environment.js';
 
 import { Directories } from './directories.js';
@@ -58,8 +59,9 @@ export class RagEnvironmentRegistry {
   ) {
     // Create the rag directory inside the kortex home directory
     this.#ragDirectory = resolve(this.directories.getConfigurationDirectory(), '..', 'rag');
-    this.providerRegistry.onDidRegisterRagConnection(this.refreshEnvironments.bind(this));
-    this.providerRegistry.onDidUnregisterRagConnection(this.refreshEnvironments.bind(this));
+    this.apiSender.receive('mcp-manager-update', () => {
+      this.refreshEnvironments().catch(console.error);
+    });
   }
 
   async init(): Promise<void> {
@@ -187,17 +189,23 @@ export class RagEnvironmentRegistry {
   }
 
   private async ensureMCPServer(environment: RagEnvironment): Promise<void> {
-    if (!environment.mcpServer) {
-      const ragConnection = this.getRagConnection(environment);
-      if (ragConnection) {
-        const serverId = ragConnection.connection.mcpServer.serverId;
-        environment.mcpServer = this.mcpManager.findMcpRemoteServer(
-          INTERNAL_PROVIDER_ID,
-          serverId,
-          ragConnection.connection.mcpServer.config.type,
-          ragConnection.connection.mcpServer.config.index,
-        );
-      }
+    let mcpServer: MCPRemoteServerInfo | undefined = undefined;
+    const ragConnection = this.getRagConnection(environment);
+    if (ragConnection) {
+      const serverId = ragConnection.connection.mcpServer.serverId;
+      mcpServer = this.mcpManager.findMcpRemoteServer(
+        INTERNAL_PROVIDER_ID,
+        serverId,
+        ragConnection.connection.mcpServer.config.type,
+        ragConnection.connection.mcpServer.config.index,
+      );
+    }
+    if (
+      (environment.mcpServer !== undefined && mcpServer === undefined) ||
+      (environment.mcpServer === undefined && mcpServer !== undefined)
+    ) {
+      environment.mcpServer = mcpServer;
+      this.apiSender.send('rag-environment-updated', environment);
     }
   }
 

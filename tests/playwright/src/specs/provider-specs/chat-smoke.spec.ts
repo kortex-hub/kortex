@@ -389,4 +389,72 @@ test.describe
       await expect(chatPage.getConversationMessage(originalMessage)).not.toBeVisible();
       await chatPage.waitForModelResponse();
     });
+
+    test('[CHAT-15] Rename chat from history sidebar', async ({ chatPage }) => {
+      await chatPage.ensureChatSidebarVisible();
+      await chatPage.clickNewChat();
+
+      const message = 'Test message for renaming';
+      await chatPage.sendMessage(message);
+      await chatPage.waitForModelResponse();
+
+      // Wait for chat to appear in history
+      const initialCount = await chatPage.getChatHistoryCount();
+      expect(initialCount).toBeGreaterThan(0);
+
+      // Get the original title (should be auto-generated from the message)
+      await expect
+        .poll(
+          async () => {
+            const title = await chatPage.getChatHistoryItemTitle(0);
+            return title.trim().length > 0;
+          },
+          { timeout: TIMEOUTS.MODEL_RESPONSE },
+        )
+        .toBeTruthy();
+
+      // Rename the chat
+      const newTitle = 'My Renamed Chat';
+      await chatPage.renameChatHistoryItemByIndex(0, newTitle);
+
+      // Verify the title has been updated
+      await expect
+        .poll(async () => await chatPage.getChatHistoryItemTitle(0), { timeout: TIMEOUTS.SHORT })
+        .toBe(newTitle);
+
+      await chatPage.ensureNotificationsAreNotVisible();
+    });
+
+    test('[CHAT-16] Cancel rename with Escape key preserves original title', async ({ chatPage }) => {
+      await chatPage.ensureChatSidebarVisible();
+      await chatPage.clickNewChat();
+
+      const message = 'Test message for cancel rename';
+      await chatPage.sendMessage(message);
+      await chatPage.waitForModelResponse();
+
+      // Wait for chat to appear in history with auto-generated title
+      await expect
+        .poll(
+          async () => {
+            const title = await chatPage.getChatHistoryItemTitle(0);
+            return title.trim().length > 0;
+          },
+          { timeout: TIMEOUTS.MODEL_RESPONSE },
+        )
+        .toBeTruthy();
+
+      // Capture the original title
+      const originalTitle = await chatPage.getChatHistoryItemTitle(0);
+      expect(originalTitle).toBeTruthy();
+
+      // Open rename UI, type a new title, but press Escape to cancel
+      await chatPage.cancelRenameChatHistoryItemByIndex(0, 'This should not be saved');
+
+      // Verify the title remains unchanged
+      const titleAfterCancel = await chatPage.getChatHistoryItemTitle(0);
+      expect(titleAfterCancel).toBe(originalTitle);
+
+      await chatPage.ensureNotificationsAreNotVisible();
+    });
   });

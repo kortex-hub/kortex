@@ -40,6 +40,7 @@ export class ChatPage extends BasePage {
   readonly chatHistoryItem: Locator;
   readonly chatHistoryItemMenuAction: Locator;
   readonly chatHistoryItemDeleteButton: Locator;
+  readonly chatHistoryItemRenameButton: Locator;
   readonly chatHistoryEmptyMessage: Locator;
   readonly toasts: Locator;
   readonly modelDropdownContent: Locator;
@@ -73,6 +74,7 @@ export class ChatPage extends BasePage {
     this.chatHistoryItem = page.locator('button[data-sidebar="menu-button"]');
     this.chatHistoryItemMenuAction = page.locator('button[data-sidebar="menu-action"]');
     this.chatHistoryItemDeleteButton = page.getByRole('menuitem', { name: 'Delete' });
+    this.chatHistoryItemRenameButton = page.getByRole('menuitem', { name: 'Rename' });
     this.chatHistoryEmptyMessage = page.getByText('Your conversations will appear here once you start chatting!');
     this.toasts = page.locator('[data-sonner-toast]');
     this.modelDropdownContent = page.locator('[data-slot="dropdown-menu-content"]');
@@ -182,6 +184,44 @@ export class ChatPage extends BasePage {
   async deleteAllChatHistoryItems(): Promise<void> {
     await this.deleteAllChatsButton.click();
     await handleDialogIfPresent(this.page);
+  }
+
+  async renameChatHistoryItemByIndex(index: number, newTitle: string): Promise<void> {
+    const item = this.chatHistoryItems.nth(index);
+    await item.locator(this.chatHistoryItemMenuAction).click();
+    await this.chatHistoryItemRenameButton.click();
+
+    // Find the input field using accessible label
+    const inputField = item.getByLabel('Rename conversation');
+    await expect(inputField).toBeVisible();
+    await inputField.fill(newTitle);
+    await inputField.press('Enter');
+  }
+
+  async cancelRenameChatHistoryItemByIndex(index: number, textBeforeCancel?: string): Promise<void> {
+    const item = this.chatHistoryItems.nth(index);
+    await item.locator(this.chatHistoryItemMenuAction).click();
+    await this.chatHistoryItemRenameButton.click();
+
+    // Find the input field using accessible label
+    const inputField = item.getByLabel('Rename conversation');
+    await expect(inputField).toBeVisible();
+
+    // Optionally fill text before canceling (to test that changes are discarded)
+    if (textBeforeCancel) {
+      await inputField.fill(textBeforeCancel);
+    }
+
+    await inputField.press('Escape');
+
+    // Verify the input is no longer visible
+    await expect(inputField).not.toBeVisible();
+  }
+
+  async getChatHistoryItemTitle(index: number): Promise<string> {
+    const item = this.chatHistoryItems.nth(index);
+    const title = await item.locator(this.chatHistoryItem).textContent();
+    return title?.trim() ?? '';
   }
 
   async waitForChatHistoryCount(expectedCount: number, timeout = 10_000): Promise<void> {

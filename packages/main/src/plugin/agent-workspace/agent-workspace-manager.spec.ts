@@ -24,6 +24,7 @@ import type {
   AgentWorkspaceId,
   AgentWorkspaceSummary,
 } from '/@api/agent-workspace-info.js';
+import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 
 import { AgentWorkspaceManager } from './agent-workspace-manager.js';
 import {
@@ -51,11 +52,15 @@ const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
 
 let manager: AgentWorkspaceManager;
 
+const apiSender: ApiSenderType = {
+  send: vi.fn(),
+  receive: vi.fn(),
+};
 const ipcHandle: IPCHandle = vi.fn();
 
 beforeEach(() => {
   vi.resetAllMocks();
-  manager = new AgentWorkspaceManager(ipcHandle);
+  manager = new AgentWorkspaceManager(apiSender, ipcHandle);
   manager.init();
 });
 
@@ -116,6 +121,14 @@ describe('remove', () => {
     expect(result).toEqual(expected);
   });
 
+  test('emits agent-workspace-update event', () => {
+    vi.mocked(mockRemoveWorkspace).mockReturnValue({ id: 'ws-1' });
+
+    manager.remove('ws-1');
+
+    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
+  });
+
   test('throws when mockRemoveWorkspace throws for unknown id', () => {
     vi.mocked(mockRemoveWorkspace).mockImplementation(() => {
       throw new Error('workspace "unknown-id" not found. Use "workspace list" to see available workspaces.');
@@ -156,6 +169,14 @@ describe('start', () => {
     expect(result).toEqual(expected);
   });
 
+  test('emits agent-workspace-update event', () => {
+    vi.mocked(mockStartWorkspace).mockReturnValue({ id: 'ws-1' });
+
+    manager.start('ws-1');
+
+    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
+  });
+
   test('throws when mockStartWorkspace throws for unknown id', () => {
     vi.mocked(mockStartWorkspace).mockImplementation(() => {
       throw new Error('workspace "unknown-id" not found. Use "workspace list" to see available workspaces.');
@@ -174,6 +195,14 @@ describe('stop', () => {
 
     expect(mockStopWorkspace).toHaveBeenCalledWith('ws-1');
     expect(result).toEqual(expected);
+  });
+
+  test('emits agent-workspace-update event', () => {
+    vi.mocked(mockStopWorkspace).mockReturnValue({ id: 'ws-1' });
+
+    manager.stop('ws-1');
+
+    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
   });
 
   test('throws when mockStopWorkspace throws for unknown id', () => {

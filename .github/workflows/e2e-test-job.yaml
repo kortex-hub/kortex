@@ -52,6 +52,11 @@ on:
         required: false
         type: string
         default: 'granite3.2:2b'
+      inference_second_model:
+        description: 'Optional second inference model to pull (Ollama only, e.g., granite3.1-dense:2b).'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   e2e-test:
@@ -85,6 +90,7 @@ jobs:
         uses: ./.github/actions/setup-ollama
         with:
           model: ${{ inputs.inference_model }}
+          second_model: ${{ inputs.inference_second_model }}
 
       - name: Setup RamaLama
         if: inputs.inference_provider == 'ramalama'
