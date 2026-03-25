@@ -21,15 +21,33 @@ import { type Writable, writable } from 'svelte/store';
 
 import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info';
 
+import { EventStore } from './event-store';
+
 export type AgentWorkspaceStatus = 'stopped' | 'running' | 'starting' | 'stopping';
 
 export const agentWorkspaces: Writable<AgentWorkspaceSummary[]> = writable([]);
 export const agentWorkspaceStatuses = new SvelteMap<string, AgentWorkspaceStatus>();
 
-export async function fetchAgentWorkspaces(): Promise<void> {
-  const data = await window.listAgentWorkspaces();
-  agentWorkspaces.set(data);
+let readyToUpdate = false;
+
+export async function checkForUpdate(eventName: string): Promise<boolean> {
+  if ('system-ready' === eventName) {
+    readyToUpdate = true;
+  }
+  return readyToUpdate;
 }
+
+const listWorkspaces = (): Promise<AgentWorkspaceSummary[]> => window.listAgentWorkspaces();
+
+export const agentWorkspacesEventStore = new EventStore<AgentWorkspaceSummary[]>(
+  'agent-workspaces',
+  agentWorkspaces,
+  checkForUpdate,
+  ['agent-workspace-update'],
+  ['system-ready'],
+  listWorkspaces,
+);
+agentWorkspacesEventStore.setup();
 
 export async function startAgentWorkspace(id: string): Promise<void> {
   agentWorkspaceStatuses.set(id, 'starting');
@@ -52,15 +70,3 @@ export async function stopAgentWorkspace(id: string): Promise<void> {
     console.error('Failed to stop agent workspace', error);
   }
 }
-
-window.events?.receive('agent-workspace-update', () => {
-  fetchAgentWorkspaces().catch((error: unknown) => {
-    console.error('Failed to fetch agent workspaces', error);
-  });
-});
-
-window.addEventListener('system-ready', () => {
-  fetchAgentWorkspaces().catch((error: unknown) => {
-    console.error('Failed to fetch agent workspaces', error);
-  });
-});
