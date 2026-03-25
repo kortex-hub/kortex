@@ -33,10 +33,9 @@ import { AnimatedTray } from './tray-animate-icon.js';
 import { TrayMenu } from './tray-menu.js';
 import { isMac, isWindows, stoppedExtensions } from './util.js';
 
-// On Linux CI, enable plaintext encryption for safeStorage when no keyring daemon is available.
-// VITE_CI is set at build time and tree-shaken out of release builds.
-// Must be called before app.whenReady(). See https://www.electronjs.org/docs/latest/api/safe-storage
-if (import.meta.env.VITE_CI && process.platform === 'linux' && process.env['ELECTRON_PLAINTEXT_SAFE_STORAGE'] === '1') {
+// Enable plaintext safeStorage on Linux CI (tree-shaken out of release builds via VITE_CI).
+// Must be called before app.whenReady().
+if (import.meta.env.VITE_CI && process.platform === 'linux') {
   safeStorage.setUsePlainTextEncryption(true);
 }
 
