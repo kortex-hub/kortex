@@ -33,9 +33,9 @@ import { AnimatedTray } from './tray-animate-icon.js';
 import { TrayMenu } from './tray-menu.js';
 import { isMac, isWindows, stoppedExtensions } from './util.js';
 
-// On Linux, enable plaintext encryption for safeStorage when no keyring is available (e.g. headless CI).
+// On Linux CI, enable plaintext encryption for safeStorage when no keyring daemon is available.
 // Must be called before app.whenReady(). See https://www.electronjs.org/docs/latest/api/safe-storage
-if (process.platform === 'linux' && process.env['ELECTRON_PLAINTEXT_SAFE_STORAGE'] === '1') {
+if (process.platform === 'linux' && process.env['CI'] && process.env['ELECTRON_PLAINTEXT_SAFE_STORAGE'] === '1') {
   safeStorage.setUsePlainTextEncryption(true);
 }
 
