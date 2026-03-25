@@ -21,11 +21,10 @@ import { expect, test } from '../../fixtures/provider-fixtures';
 import { waitForNavigationReady } from '../../utils/app-ready';
 
 const isCI = !!process.env.CI;
-const isLinux = process.platform === 'linux';
 const hasGithubToken = !!process.env[MCP_SERVERS.github.envVarName];
 
 test.use({
-  mcpServers: process.env[MCP_SERVERS.github.envVarName] && process.platform !== 'linux' ? ['github'] : [],
+  mcpServers: process.env[MCP_SERVERS.github.envVarName] ? ['github'] : [],
 });
 
 test.describe
@@ -204,7 +203,6 @@ test.describe
     }) => {
       const skipConditions: Array<{ condition: boolean; reason: string }> = [
         { condition: !hasGithubToken, reason: `${MCP_SERVERS.github.envVarName} environment variable is not set` },
-        { condition: isLinux, reason: 'safeStorage issues on Linux' },
       ];
 
       for (const { condition, reason } of skipConditions) {

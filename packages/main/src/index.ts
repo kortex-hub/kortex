@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { app, ipcMain, Menu, Tray } from 'electron';
+import { app, ipcMain, Menu, safeStorage, Tray } from 'electron';
 
 import { restoreWindow } from '/@/mainWindow.js';
 import type { ExtensionLoader } from '/@/plugin/extension/extension-loader.js';
@@ -32,6 +32,12 @@ import { WindowHandler } from './system/window/window-handler.js';
 import { AnimatedTray } from './tray-animate-icon.js';
 import { TrayMenu } from './tray-menu.js';
 import { isMac, isWindows, stoppedExtensions } from './util.js';
+
+// On Linux, enable plaintext encryption for safeStorage when no keyring is available (e.g. headless CI).
+// Must be called before app.whenReady(). See https://www.electronjs.org/docs/latest/api/safe-storage
+if (process.platform === 'linux' && process.env.ELECTRON_PLAINTEXT_SAFE_STORAGE === '1') {
+  safeStorage.setUsePlainTextEncryption(true);
+}
 
 let extensionLoader: ExtensionLoader | undefined;
 

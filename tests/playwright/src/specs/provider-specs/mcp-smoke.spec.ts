@@ -26,9 +26,8 @@ const MCP_REGISTRY_URL = 'https://registry.modelcontextprotocol.io';
 const SERVER_LIST_UPDATE_TIMEOUT = 120_000;
 const SERVER_CONNECTION_TIMEOUT = 10_000;
 
-// Configure MCP setup only when GITHUB_TOKEN is available and not on Linux
 test.use({
-  mcpServers: process.env[MCP_SERVERS.github.envVarName] && process.platform !== 'linux' ? ['github'] : [],
+  mcpServers: process.env[MCP_SERVERS.github.envVarName] ? ['github'] : [],
 });
 
 test.describe('MCP Registry Management', { tag: '@smoke' }, () => {
@@ -64,13 +63,10 @@ test.describe('MCP Registry Management', { tag: '@smoke' }, () => {
     mcpSetup: _mcpSetup,
     mcpPage,
   }) => {
-    const isLinux = process.platform === 'linux';
     const hasGithubToken = !!process.env[MCP_SERVERS.github.envVarName];
 
-    // Skip conditions - safeStorage has issues on Linux
     const skipConditions: Array<{ condition: boolean; reason: string }> = [
       { condition: !hasGithubToken, reason: `${MCP_SERVERS.github.envVarName} environment variable is not set` },
-      { condition: isLinux, reason: 'safeStorage issues on Linux' },
     ];
 
     for (const { condition, reason } of skipConditions) {

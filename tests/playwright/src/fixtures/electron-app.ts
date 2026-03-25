@@ -200,7 +200,11 @@ function createLaunchConfig(): Parameters<typeof electron.launch>[0] {
 
   const args = ['--no-sandbox'];
   if (process.env.CI) {
-    args.push('--use-mock-keychain');
+    if (process.platform === 'linux') {
+      electronEnv.ELECTRON_PLAINTEXT_SAFE_STORAGE = '1';
+    } else {
+      args.push('--use-mock-keychain');
+    }
   }
 
   if (isProductionMode) {
