@@ -36,9 +36,13 @@ function handleStartStop(): void {
 }
 
 function handleRemove(name: string): void {
-  withConfirmation(() => {
-    window.removeAgentWorkspace(workspaceId).catch(console.error);
-    router.goto('/agent-workspaces');
+  withConfirmation(async () => {
+    try {
+      await window.removeAgentWorkspace(workspaceId);
+      router.goto('/agent-workspaces');
+    } catch (error: unknown) {
+      console.error('Failed to remove agent workspace', error);
+    }
   }, `remove workspace ${name}`);
 }
 </script>

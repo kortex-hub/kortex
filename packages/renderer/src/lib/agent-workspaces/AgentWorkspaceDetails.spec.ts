@@ -191,3 +191,23 @@ test('Expect workspace not removed when user cancels', async () => {
   expect(window.removeAgentWorkspace).not.toHaveBeenCalled();
   expect(router.goto).not.toHaveBeenCalled();
 });
+
+test('Expect no navigation when removal fails', async () => {
+  vi.mocked(window.showMessageBox).mockResolvedValue({ response: 0 });
+  vi.mocked(window.removeAgentWorkspace).mockRejectedValue(new Error('removal failed'));
+
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Remove Workspace' })).toBeInTheDocument();
+  });
+
+  const removeButton = screen.getByRole('button', { name: 'Remove Workspace' });
+  await fireEvent.click(removeButton);
+
+  await waitFor(() => {
+    expect(window.removeAgentWorkspace).toHaveBeenCalledWith('ws-1');
+  });
+
+  expect(router.goto).not.toHaveBeenCalled();
+});
