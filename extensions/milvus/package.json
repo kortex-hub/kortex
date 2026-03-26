@@ -27,7 +27,7 @@
     }
   },
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && node ./scripts/build.js",
     "test": "vitest run --coverage",
     "test:watch": "vitest watch --coverage",
     "watch": "vite build --watch"
@@ -39,6 +39,7 @@
   "devDependencies": {
     "@kortex-app/api": "workspace:*",
     "@kortex-app/container-extension-api": "workspace:*",
+    "mkdirp": "^3.0.1",
     "vite": "^7.1.2",
     "vitest": "^4.0.10"
   }

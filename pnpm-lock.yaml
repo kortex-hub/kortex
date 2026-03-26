@@ -432,6 +432,9 @@ importers:
       '@kortex-app/container-extension-api':
         specifier: workspace:*
         version: link:../container/packages/api
+      mkdirp:
+        specifier: ^3.0.1
+        version: 3.0.1
       vite:
         specifier: ^7.1.2
         version: 7.3.1(@types/node@24.12.0)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.36.0)(tsx@4.20.3)(yaml@2.8.2)
@@ -534,6 +537,9 @@ importers:
       '@kortex-app/container-extension-api':
         specifier: workspace:*
         version: link:../container/packages/api
+      mkdirp:
+        specifier: ^3.0.1
+        version: 3.0.1
       vite:
         specifier: ^7.1.2
         version: 7.3.1(@types/node@24.12.0)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.36.0)(tsx@4.20.3)(yaml@2.8.2)
