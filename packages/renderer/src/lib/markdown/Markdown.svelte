@@ -70,6 +70,7 @@ UI guidelines -->
 <script lang="ts">
 import './syntax-highlighting.css';
 
+import DOMPurify from 'dompurify';
 import hljs from 'highlight.js';
 import { micromark } from 'micromark';
 import { directive, directiveHtml } from 'micromark-extension-directive';
@@ -91,6 +92,10 @@ let html: string;
 // the user can use: <Markdown>**bold</Markdown> or <Markdown markdown="**bold**" /> syntax
 export let markdown = '';
 
+// Whether to allow raw HTML tags in markdown prose.
+// Safe for model responses; should be disabled for user-authored content.
+export let allowDangerousHtml = false;
+
 // Button micromark related:
 //
 // In progress execution callbacks for all markdown buttons.
@@ -104,17 +109,12 @@ export let inProgressMarkdownCommandExecutionCallback: (
 const eventListeners: EventListener[] = [];
 
 // Render the markdown or the html+micromark markdown reactively
-$: html = markdown ? renderMarkdown(markdown) : '';
+$: html = markdown ? renderMarkdown(markdown, allowDangerousHtml) : '';
 
-function decode(htmlString: string): string {
-  let textArea = document.createElement('textarea');
-  textArea.innerHTML = htmlString;
-  return textArea.value;
-}
-
-function renderMarkdown(source: string): string {
+function renderMarkdown(source: string, dangerousHtml: boolean): string {
   // Provide micromark + extensions
   const rendered = micromark(source, {
+    allowDangerousHtml: dangerousHtml,
     extensions: [gfmAutolinkLiteral(), gfmTable(), directive()],
     htmlExtensions: [
       gfmAutolinkLiteralHtml(),
@@ -126,7 +126,7 @@ function renderMarkdown(source: string): string {
   // remove href values in each anchor using # for links
   // and set the attribute data-pd-jump-in-page
   const parser = new DOMParser();
-  const doc = parser.parseFromString(decode(rendered), 'text/html');
+  const doc = parser.parseFromString(rendered, 'text/html');
   const links = doc.querySelectorAll('a');
   links.forEach(link => {
     const currentHref = link.getAttribute('href');
@@ -165,7 +165,10 @@ function renderMarkdown(source: string): string {
     hljs.highlightElement(block as HTMLElement);
   });
 
-  return doc.body.innerHTML;
+  // Sanitize the output to prevent XSS from raw HTML (e.g. <img onerror="...">)
+  return DOMPurify.sanitize(doc.body.innerHTML, {
+    ADD_ATTR: ['data-pd-jump-in-page', 'data-command', 'data-args', 'data-expandable'],
+  });
 }
 
 onMount(() => {

@@ -111,7 +111,7 @@ const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type 
                 'animate-fade-in': message.role === 'assistant',
               })}
             >
-              <Markdown markdown={part.text} />
+              <Markdown markdown={part.text} allowDangerousHtml={message.role !== 'user'} />
             </div>
           </div>
 
