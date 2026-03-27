@@ -81,6 +81,7 @@ import { ProviderRegistry } from '../provider-registry.js';
 import { Proxy } from '../proxy.js';
 import { createHttpPatchedModules } from '../proxy-resolver.js';
 import { SafeStorageRegistry } from '../safe-storage/safe-storage-registry.js';
+import { SkillManager } from '../skill/skill-manager.js';
 import {
   StatusBarAlignLeft,
   StatusBarAlignRight,
@@ -232,6 +233,8 @@ export class ExtensionLoader implements IAsyncDisposable {
     private mcpRegistry: MCPRegistry,
     @inject(ChunkProviderRegistry)
     private chunkProviderRegistry: ChunkProviderRegistry,
+    @inject(SkillManager)
+    private skillManager: SkillManager,
   ) {
     this.pluginsDirectory = directories.getPluginsDirectory();
     this.pluginsScanDirectory = directories.getPluginsScanDirectory();
@@ -1697,6 +1700,22 @@ export class ExtensionLoader implements IAsyncDisposable {
       },
     };
 
+    const skills: typeof containerDesktopAPI.skills = {
+      registerSkillFolder: (folder: containerDesktopAPI.SkillFolderRegistration): containerDesktopAPI.Disposable => {
+        let resolvedIcon: string | undefined;
+        if (folder.icon) {
+          const img = instance.updateImage(folder.icon, extensionPath);
+          resolvedIcon = typeof img === 'string' ? img : img?.light;
+        }
+        const disposable = this.skillManager.registerSkillFolder({ ...folder, icon: resolvedIcon });
+        disposables.push(disposable);
+        return disposable;
+      },
+      registerSkill: async (folderPath: string): Promise<void> => {
+        await this.skillManager.registerSkill(folderPath);
+      },
+    };
+
     return <typeof containerDesktopAPI>{
       // Types
       Disposable: Disposable,
@@ -1734,6 +1753,7 @@ export class ExtensionLoader implements IAsyncDisposable {
       net,
       mcpRegistry,
       rag,
+      skills,
     };
   }
 
