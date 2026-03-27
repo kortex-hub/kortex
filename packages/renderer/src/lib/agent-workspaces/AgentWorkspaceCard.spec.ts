@@ -33,6 +33,7 @@ const workspace: AgentWorkspaceSummary = {
   id: 'ws-1',
   name: 'api-refactor',
   project: 'backend',
+  agent: 'claude',
   paths: {
     source: '/home/user/projects/backend',
     configuration: '/home/user/.config/kortex/workspaces/api-refactor.yaml',
@@ -53,6 +54,12 @@ test('Expect card displays workspace name', () => {
   render(AgentWorkspaceCard, { workspace });
 
   expect(screen.getByText('api-refactor')).toBeInTheDocument();
+});
+
+test('Expect card displays agent name', () => {
+  render(AgentWorkspaceCard, { workspace });
+
+  expect(screen.getByText('claude')).toBeInTheDocument();
 });
 
 test('Expect card displays project name', () => {

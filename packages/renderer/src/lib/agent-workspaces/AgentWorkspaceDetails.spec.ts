@@ -21,6 +21,7 @@ import '@testing-library/jest-dom/vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { get, writable } from 'svelte/store';
 import { router } from 'tinro';
+import { createRouteObject } from 'tinro/dist/tinro_lib';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import { agentWorkspaces, agentWorkspaceStatuses } from '/@/stores/agent-workspaces.svelte';
@@ -29,6 +30,7 @@ import type { AgentWorkspaceConfiguration, AgentWorkspaceSummary } from '/@api/a
 import AgentWorkspaceDetails from './AgentWorkspaceDetails.svelte';
 
 vi.mock(import('tinro'));
+vi.mock(import('tinro/dist/tinro_lib'));
 
 const routerStore = writable({
   path: '/agent-workspaces/ws-1/summary',
@@ -39,13 +41,21 @@ const routerStore = writable({
 });
 
 const configuration: AgentWorkspaceConfiguration = {
-  name: 'api-refactor',
+  mounts: {
+    dependencies: ['../shared-libs'],
+    configs: ['.config/git', '.ssh'],
+  },
+  environment: [
+    { name: 'OPENAI_API_KEY', secret: 'openai-key' },
+    { name: 'LOG_LEVEL', value: 'debug' },
+  ],
 };
 
 const workspaceSummary: AgentWorkspaceSummary = {
   id: 'ws-1',
   name: 'api-refactor',
   project: 'backend',
+  agent: 'claude',
   paths: {
     source: '/home/user/projects/backend',
     configuration: '/home/user/.config/kortex/workspaces/api-refactor.yaml',
@@ -56,6 +66,13 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.mocked(router).subscribe.mockImplementation(routerStore.subscribe);
+  vi.mocked(createRouteObject).mockImplementation(
+    ({ onShow, onMeta }: { onShow: () => void; onMeta: (meta: unknown) => void }) => {
+      onMeta({ breadcrumbs: [], query: {}, params: {} });
+      onShow();
+      return { update: vi.fn() };
+    },
+  );
   vi.mocked(window.getAgentWorkspaceConfiguration).mockResolvedValue(configuration);
   vi.mocked(window.startAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
   vi.mocked(window.stopAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
@@ -65,7 +82,7 @@ beforeEach(() => {
   agentWorkspaceStatuses.clear();
 });
 
-test('Expect page title to use configuration name', async () => {
+test('Expect page title to use workspace summary name', async () => {
   render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
 
   await waitFor(() => {
@@ -231,4 +248,73 @@ test('Expect no navigation when removal fails', async () => {
   });
 
   expect(router.goto).not.toHaveBeenCalled();
+});
+
+test('Expect agent field displayed in workspace section', async () => {
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByText('Agent')).toBeInTheDocument();
+    expect(screen.getByText('claude')).toBeInTheDocument();
+  });
+});
+
+test('Expect mounts dependencies displayed', async () => {
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByText('Mounts')).toBeInTheDocument();
+    expect(screen.getByText('Dependencies')).toBeInTheDocument();
+    expect(screen.getByText('../shared-libs')).toBeInTheDocument();
+  });
+});
+
+test('Expect mounts configs displayed', async () => {
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByText('Configs')).toBeInTheDocument();
+    expect(screen.getByText('.config/git')).toBeInTheDocument();
+    expect(screen.getByText('.ssh')).toBeInTheDocument();
+  });
+});
+
+test('Expect environment variables displayed', async () => {
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByText('Environment')).toBeInTheDocument();
+    expect(screen.getByText('OPENAI_API_KEY')).toBeInTheDocument();
+    expect(screen.getByText('openai-key')).toBeInTheDocument();
+    expect(screen.getByText('LOG_LEVEL')).toBeInTheDocument();
+    expect(screen.getByText('debug')).toBeInTheDocument();
+  });
+});
+
+test('Expect mounts section hidden when no mounts configured', async () => {
+  vi.mocked(window.getAgentWorkspaceConfiguration).mockResolvedValue({
+    environment: [{ name: 'FOO', value: 'bar' }],
+  });
+
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByText('Environment')).toBeInTheDocument();
+  });
+
+  expect(screen.queryByText('Mounts')).not.toBeInTheDocument();
+});
+
+test('Expect environment section hidden when no environment configured', async () => {
+  vi.mocked(window.getAgentWorkspaceConfiguration).mockResolvedValue({
+    mounts: { dependencies: ['../lib'] },
+  });
+
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByText('Mounts')).toBeInTheDocument();
+  });
+
+  expect(screen.queryByText('Environment')).not.toBeInTheDocument();
 });

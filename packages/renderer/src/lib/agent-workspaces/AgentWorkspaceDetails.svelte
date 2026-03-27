@@ -1,6 +1,7 @@
 <script lang="ts">
-import { faPlay, faStop, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faKey, faPlay, faStop, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { ErrorMessage, Spinner, Tab } from '@podman-desktop/ui-svelte';
+import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { router } from 'tinro';
 
 import DetailsCell from '/@/lib/details/DetailsCell.svelte';
@@ -41,15 +42,18 @@ function handleStartStop(): void {
   }
 }
 
-function handleRemove(name: string): void {
-  withConfirmation(async () => {
-    try {
-      await window.removeAgentWorkspace(workspaceId);
-      router.goto('/agent-workspaces');
-    } catch (error: unknown) {
-      console.error('Failed to remove agent workspace', error);
-    }
-  }, `remove workspace ${name}`);
+function handleRemove(): void {
+  withConfirmation(
+    async () => {
+      try {
+        await window.removeAgentWorkspace(workspaceId);
+        router.goto('/agent-workspaces');
+      } catch (error: unknown) {
+        console.error('Failed to remove agent workspace', error);
+      }
+    },
+    `remove workspace ${workspaceSummary?.name ?? workspaceId}`,
+  );
 }
 </script>
 
@@ -58,17 +62,14 @@ function handleRemove(name: string): void {
     <Spinner />
   </div>
 {:then configuration}
-  <DetailsPage title={configuration.name ?? ''}>
+  <DetailsPage title={workspaceSummary?.name ?? ''}>
     {#snippet actionsSnippet()}
       <ListItemButtonIcon
         title={isRunning ? 'Stop Workspace' : 'Start Workspace'}
         onClick={handleStartStop}
         icon={isRunning ? faStop : faPlay}
-        inProgress={inProgress} />
-      <ListItemButtonIcon
-        title="Remove Workspace"
-        onClick={handleRemove.bind(undefined, configuration.name ?? '')}
-        icon={faTrash} />
+        {inProgress} />
+      <ListItemButtonIcon title="Remove Workspace" onClick={handleRemove} icon={faTrash} />
     {/snippet}
     {#snippet tabsSnippet()}
       <Tab title="Summary" selected={isTabSelected($router.path, 'summary')} url={getTabUrl($router.path, 'summary')} />
@@ -86,14 +87,58 @@ function handleRemove(name: string): void {
                 <DetailsCell>{workspaceSummary.project}</DetailsCell>
               </tr>
             {/if}
-            <tr>
-              <DetailsTitle>Configuration</DetailsTitle>
-            </tr>
-            {#if configuration?.name}
+            {#if workspaceSummary?.agent}
               <tr>
-                <DetailsCell>Name</DetailsCell>
-                <DetailsCell>{configuration.name}</DetailsCell>
+                <DetailsCell>Agent</DetailsCell>
+                <DetailsCell>{workspaceSummary.agent}</DetailsCell>
               </tr>
+            {/if}
+
+            {#if configuration.mounts?.dependencies?.length ?? configuration.mounts?.configs?.length}
+              <tr>
+                <DetailsTitle>Mounts</DetailsTitle>
+              </tr>
+              {#if configuration.mounts?.dependencies?.length}
+                <tr>
+                  <DetailsCell>Dependencies</DetailsCell>
+                  <DetailsCell>
+                    {#each configuration.mounts.dependencies as dep (dep)}
+                      <span class="block">{dep}</span>
+                    {/each}
+                  </DetailsCell>
+                </tr>
+              {/if}
+              {#if configuration.mounts?.configs?.length}
+                <tr>
+                  <DetailsCell>Configs</DetailsCell>
+                  <DetailsCell>
+                    {#each configuration.mounts.configs as cfg (cfg)}
+                      <span class="block">{cfg}</span>
+                    {/each}
+                  </DetailsCell>
+                </tr>
+              {/if}
+            {/if}
+
+            {#if configuration.environment?.length}
+              <tr>
+                <DetailsTitle>Environment</DetailsTitle>
+              </tr>
+              {#each configuration.environment as envVar (envVar.name)}
+                <tr>
+                  <DetailsCell>{envVar.name}</DetailsCell>
+                  <DetailsCell>
+                    {#if envVar.secret}
+                      <span class="inline-flex items-center gap-1">
+                        <Icon icon={faKey} class="shrink-0 opacity-70" />
+                        {envVar.secret}
+                      </span>
+                    {:else}
+                      {envVar.value ?? ''}
+                    {/if}
+                  </DetailsCell>
+                </tr>
+              {/each}
             {/if}
           </DetailsTable>
         </div>

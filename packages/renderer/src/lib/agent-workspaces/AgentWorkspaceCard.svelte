@@ -1,5 +1,5 @@
 <script lang="ts">
-import { faCubes, faFolder, faGear, faPlay, faStop, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faCubes, faFolder, faGear, faPlay, faRobot, faStop, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { router } from 'tinro';
 
@@ -71,7 +71,13 @@ function handleRemove(): void {
   onkeydown={handleKeydown}
   tabindex="0">
   <div class="flex items-center justify-between text-start">
-    <span class="text-(--pd-invert-content-card-text) font-semibold text-base">{workspace.name}</span>
+    <div class="flex flex-col">
+      <span class="text-(--pd-invert-content-card-text) font-semibold text-base">{workspace.name}</span>
+      <span class="flex items-center gap-1 text-xs text-(--pd-invert-content-card-text) opacity-70">
+        <Icon icon={faRobot} class="shrink-0" />
+        {workspace.agent}
+      </span>
+    </div>
     <span class="flex items-center gap-1 text-xs text-(--pd-invert-content-card-text) opacity-70">
       <Icon icon={faCubes} class="shrink-0" />
       {workspace.project}

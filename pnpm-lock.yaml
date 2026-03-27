@@ -207,11 +207,11 @@ importers:
         specifier: 'workspace:'
         version: link:packages/extension-api
       '@kortex-hub/kortex-cli-api':
-        specifier: ^0.1.6
-        version: 0.1.6
+        specifier: ^0.1.7
+        version: 0.1.7
       '@kortex-hub/kortex-workspace-configuration':
-        specifier: ^0.1.4
-        version: 0.1.4
+        specifier: ^0.1.7
+        version: 0.1.7
       '@kortex-hub/mcp-registry-types':
         specifier: ^1.4.0-next.20251210140818.04eeb13
         version: 1.4.0-next.20251210140818.04eeb13
@@ -1680,11 +1680,11 @@ packages:
     peerDependencies:
       jsep: ^0.4.0||^1.0.0
 
-  '@kortex-hub/kortex-cli-api@0.1.6':
-    resolution: {integrity: sha512-e0ekovbwR8EzPJww2f0QMc09Sn/8F7xTjMYl5woxZDrIL7oLI6hGJRSWb1r1D3mzpZQIWXlMaSvLJfp0Tz82ug==}
+  '@kortex-hub/kortex-cli-api@0.1.7':
+    resolution: {integrity: sha512-1MEkZ52qavEy9y3YuD7/qH/IqVaCESXStoQZAIvyQC0y/xOPxF+BHpjsZ1tH6d53OAho7aIa4tk8Gbr1OlSO8A==}
 
-  '@kortex-hub/kortex-workspace-configuration@0.1.4':
-    resolution: {integrity: sha512-TuSjsPrnu2PkhNbtPFRehoyvEFKE4E/XrGWLd+lwW0ywqKM42mCBfWibCCeo5wBCy+nbKcfPvEWo6Alvy+Cp3Q==}
+  '@kortex-hub/kortex-workspace-configuration@0.1.7':
+    resolution: {integrity: sha512-+/KdTW+8S61IeB4ic7RKgc7jfcYvVwuDKzLr6LPK530omy5JWQX8Td2z8n+9YboGUx0E/RY4BfhBKwCQ177MDw==}
 
   '@kortex-hub/mcp-registry-types@1.4.0-next.20251210140818.04eeb13':
     resolution: {integrity: sha512-xYO35mnv6qtwIC3+1WJHUet94w3C2CWwu9GdxM0jSSG763OMuOoyPTirsXDNeiPE7pYUwr1rR9Ea1WVcHT+1pA==}
@@ -8599,9 +8599,9 @@ snapshots:
     dependencies:
       jsep: 1.4.0
 
-  '@kortex-hub/kortex-cli-api@0.1.6': {}
+  '@kortex-hub/kortex-cli-api@0.1.7': {}
 
-  '@kortex-hub/kortex-workspace-configuration@0.1.4': {}
+  '@kortex-hub/kortex-workspace-configuration@0.1.7': {}
 
   '@kortex-hub/mcp-registry-types@1.4.0-next.20251210140818.04eeb13':
     dependencies:

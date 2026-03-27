@@ -34,6 +34,7 @@ const INITIAL_SUMMARIES: AgentWorkspaceSummary[] = [
     id: 'mock-ws-api-refactor',
     name: 'api-refactor',
     project: 'backend',
+    agent: 'claude',
     paths: {
       source: '/home/user/projects/backend',
       configuration: '/home/user/.config/kortex/workspaces/api-refactor.yaml',
@@ -43,6 +44,7 @@ const INITIAL_SUMMARIES: AgentWorkspaceSummary[] = [
     id: 'mock-ws-test-suite',
     name: 'test-suite-fix',
     project: 'backend',
+    agent: 'claude',
     paths: {
       source: '/home/user/projects/backend',
       configuration: '/home/user/.config/kortex/workspaces/test-suite-fix.yaml',
@@ -52,6 +54,7 @@ const INITIAL_SUMMARIES: AgentWorkspaceSummary[] = [
     id: 'mock-ws-frontend',
     name: 'frontend-redesign',
     project: 'frontend',
+    agent: 'codex',
     paths: {
       source: '/home/user/projects/frontend',
       configuration: '/home/user/.config/kortex/workspaces/frontend-redesign.yaml',
@@ -65,13 +68,26 @@ const INITIAL_SUMMARIES: AgentWorkspaceSummary[] = [
  */
 const CONFIGURATIONS: Record<string, AgentWorkspaceConfiguration> = {
   'mock-ws-api-refactor': {
-    name: 'api-refactor',
+    mounts: {
+      dependencies: ['../shared-libs'],
+      configs: ['.config/git', '.ssh'],
+    },
+    environment: [
+      { name: 'OPENAI_API_KEY', secret: 'openai-key' },
+      { name: 'LOG_LEVEL', value: 'debug' },
+    ],
   },
   'mock-ws-test-suite': {
-    name: 'test-suite-fix',
+    mounts: {
+      dependencies: ['../test-fixtures'],
+    },
+    environment: [{ name: 'CI', value: 'true' }],
   },
   'mock-ws-frontend': {
-    name: 'frontend-redesign',
+    environment: [
+      { name: 'NODE_ENV', value: 'development' },
+      { name: 'API_TOKEN', secret: 'frontend-api-token' },
+    ],
   },
 };
 
