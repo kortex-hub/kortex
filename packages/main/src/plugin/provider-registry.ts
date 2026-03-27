@@ -71,6 +71,7 @@ import type {
 import { inject, injectable } from 'inversify';
 
 import { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
+import { SkillManager } from '/@/plugin/skill/skill-manager.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { Event } from '/@api/event.js';
 import type {
@@ -218,6 +219,8 @@ export class ProviderRegistry {
     private telemetryService: Telemetry,
     @inject(SchedulerRegistry)
     private schedulerRegistry: SchedulerRegistry,
+    @inject(SkillManager)
+    private skillManager: SkillManager,
   ) {
     this.providers = new Map();
     this.listeners = [];
@@ -268,6 +271,7 @@ export class ProviderRegistry {
       this,
       this.containerRegistry,
       this.schedulerRegistry,
+      this.skillManager,
     );
     this.count++;
     this.providers.set(id, providerImpl);

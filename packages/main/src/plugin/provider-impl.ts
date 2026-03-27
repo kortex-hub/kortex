@@ -20,6 +20,7 @@ import type {
   Auditor,
   ContainerProviderConnection,
   ContainerProviderConnectionFactory,
+  CreateSkillParams,
   Event,
   FlowProviderConnection,
   InferenceProviderConnection,
@@ -47,6 +48,7 @@ import type {
 } from '@kortex-app/api';
 
 import type { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
+import type { SkillManager } from '/@/plugin/skill/skill-manager.js';
 import type { IDisposable } from '/@api/disposable.js';
 
 import type { ContainerProviderRegistry } from './container-registry.js';
@@ -100,6 +102,7 @@ export class ProviderImpl implements Provider, IDisposable {
     private providerRegistry: ProviderRegistry,
     private containerRegistry: ContainerProviderRegistry,
     private schedulerRegistry: SchedulerRegistry,
+    private skillManager: SkillManager,
   ) {
     this.containerProviderConnectionsStatuses = new Map();
     this.containerProviderConnections = new Set();
@@ -404,5 +407,15 @@ export class ProviderImpl implements Provider, IDisposable {
 
   registerCleanup(cleanup: ProviderCleanup): Disposable {
     return this.providerRegistry.registerCleanup(this, cleanup);
+  }
+
+  registerSkill(skill: CreateSkillParams): Disposable {
+    return Disposable.create(
+      this.skillManager.registerSkillFolder({
+        label: skill.label,
+        badge: this.extensionDisplayName,
+        baseDirectory: skill.path,
+      }).dispose,
+    );
   }
 }
