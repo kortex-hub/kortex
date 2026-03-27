@@ -64,7 +64,7 @@
     "typecheck:extensions": "echo TODO_EXTENSIONS",
     "typecheck": "pnpm run typecheck:main && pnpm run typecheck:preload && pnpm run typecheck:renderer && pnpm run typecheck:preload-webview && pnpm run typecheck:extensions && pnpm run typecheck:extension-api",
     "prepare": "husky install",
-    "postinstall": "electron-builder install-app-deps && node -e \"const fs=require('fs');fs.cpSync('node_modules/@sveltejs/opencode/skills','.agents/skills',{recursive:true})\""
+    "postinstall": "electron-builder install-app-deps && node scripts/copy-svelte-skills.js"
   },
   "lint-staged": {
     "*.{js,ts,tsx,svelte}": [
