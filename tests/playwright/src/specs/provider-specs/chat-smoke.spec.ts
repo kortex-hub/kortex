@@ -479,4 +479,55 @@ test.describe
       // Verify the user message is still visible in the conversation
       await chatPage.verifyConversationMessage(message);
     });
+
+    test('[CHAT-18] Background streaming continues when returning to chat', async ({
+      chatPage,
+      navigationBar,
+      flowsPage,
+      page,
+    }) => {
+      const delay = (): Promise<void> => page.waitForTimeout(250);
+      await chatPage.clickNewChat();
+
+      // Send a message that should generate a long response
+      const message = 'Write a comprehensive and detailed explanation of Kubernetes networking';
+      await chatPage.sendMessage(message, { waitForMessage: true });
+
+      // Verify streaming has started
+      await chatPage.verifyStopButtonVisible();
+      await chatPage.verifySendButtonHidden();
+      await delay();
+      // Navigate away from the chat page while streaming is active
+      await navigationBar.navigateToFlowsPage();
+      await flowsPage.waitForLoad();
+      await delay();
+      // Return to the chat page and select the conversation from history
+      await navigationBar.navigateToChatPage();
+      await chatPage.waitForLoad();
+      await chatPage.ensureChatSidebarVisible();
+      await chatPage.clickChatHistoryItemByIndex(0);
+      await delay();
+      // Verify the user message is visible
+      await chatPage.verifyConversationMessage(message);
+
+      // Verify model response is visible (from buffered chunks or completed stream)
+      await expect(chatPage.modelConversationMessages.first()).toBeVisible({ timeout: TIMEOUTS.SHORT });
+
+      // The stream may still be active or may have completed while navigated away.
+      // Either way, we should see the stop button OR the send button.
+      const isStillStreaming = await chatPage.stopButton.isVisible();
+
+      if (isStillStreaming) {
+        // Stop the background stream
+        await chatPage.clickStopButton();
+      }
+
+      // Verify the UI is in ready state (stream finished or was stopped)
+      await chatPage.verifyStopButtonHidden(TIMEOUTS.SHORT);
+      await chatPage.verifySendButtonVisible(TIMEOUTS.SHORT);
+
+      // Verify the conversation still contains both messages
+      await chatPage.verifyConversationMessage(message);
+      await expect(chatPage.modelConversationMessages.first()).toBeVisible();
+    });
   });

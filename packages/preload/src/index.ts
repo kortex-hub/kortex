@@ -1398,6 +1398,20 @@ export function initExposure(): void {
     number,
     { onChunk: (chunk: UIMessageChunk) => void; onError: (error: string) => void; onEnd: () => void }
   >();
+
+  // Grace period to keep buffered chunks after stream completion, allowing late reconnection
+  const STREAM_BUFFER_TTL_MS = 30_000;
+
+  // Track active streams by chatId and buffer chunks for background streams
+  const activeStreamsByChatId = new Map<
+    string,
+    {
+      onDataId: number;
+      bufferedChunks: UIMessageChunk[];
+      isComplete: boolean;
+      error?: string;
+    }
+  >();
   contextBridge.exposeInMainWorld(
     'inferenceStreamText',
     (
@@ -1409,6 +1423,14 @@ export function initExposure(): void {
       onDataCallbacksStreamTextId++;
       const id = onDataCallbacksStreamTextId;
       onDataCallbacksStreamText.set(id, { onChunk, onError, onEnd });
+
+      // Track this stream by chatId
+      activeStreamsByChatId.set(params.chatId, {
+        onDataId: id,
+        bufferedChunks: [],
+        isComplete: false,
+      });
+
       ipcInvoke('inference:streamText', { ...params, onDataId: id }).catch((err: unknown) => {
         const callback = onDataCallbacksStreamText.get(id);
         if (callback) {
@@ -1419,6 +1441,12 @@ export function initExposure(): void {
             callback.onEnd();
           }
         }
+        // Track error in stream state
+        const streamState = activeStreamsByChatId.get(params.chatId);
+        if (streamState) {
+          streamState.error = String(err);
+          streamState.isComplete = true;
+        }
       });
       return id;
     },
@@ -1428,8 +1456,68 @@ export function initExposure(): void {
     return ipcInvoke('inference:stopStream', onDataId);
   });
 
+  contextBridge.exposeInMainWorld(
+    'inferenceGetActiveStream',
+    (chatId: string): { onDataId: number; bufferedChunks: UIMessageChunk[]; isComplete: boolean } | null => {
+      const streamState = activeStreamsByChatId.get(chatId);
+      return streamState ? { ...streamState } : null;
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'inferenceReconnectToStream',
+    (
+      chatId: string,
+      onChunk: (data: UIMessageChunk) => void,
+      onError: (error: string) => void,
+      onEnd: () => void,
+    ): { bufferedChunks: UIMessageChunk[]; onDataId: number } | null => {
+      const streamState = activeStreamsByChatId.get(chatId);
+      if (!streamState) {
+        return null;
+      }
+
+      // Register callbacks for this stream
+      onDataCallbacksStreamText.set(streamState.onDataId, { onChunk, onError, onEnd });
+
+      // Return buffered chunks to be replayed (keep them for potential re-reconnection)
+      const bufferedChunks = [...streamState.bufferedChunks];
+
+      // If stream completed while disconnected, trigger onEnd
+      if (streamState.isComplete) {
+        // Trigger after buffered chunks are processed
+        setTimeout(() => {
+          if (streamState.error) {
+            onError(streamState.error);
+          } else {
+            onEnd();
+          }
+          onDataCallbacksStreamText.delete(streamState.onDataId);
+        }, 0);
+      }
+
+      return {
+        bufferedChunks,
+        onDataId: streamState.onDataId,
+      };
+    },
+  );
+
+  contextBridge.exposeInMainWorld('inferenceDisconnectFromStream', (onDataId: number): void => {
+    // Remove the active callback, but keep stream state for buffering
+    onDataCallbacksStreamText.delete(onDataId);
+  });
+
   ipcRenderer.on('inference:streamText-onChunk', (_, callbackId: number, chunk: UIMessageChunk) => {
-    // grab callback from the map
+    // Always buffer chunks for potential reconnection
+    for (const [, streamState] of activeStreamsByChatId.entries()) {
+      if (streamState.onDataId === callbackId) {
+        streamState.bufferedChunks.push(chunk);
+        break;
+      }
+    }
+
+    // Deliver to active callback if present
     const callback = onDataCallbacksStreamText.get(callbackId);
     if (callback) {
       callback.onChunk(chunk);
@@ -1441,6 +1529,15 @@ export function initExposure(): void {
     if (callback) {
       callback.onError(error);
     }
+
+    // Mark stream as complete with error
+    for (const [, streamState] of activeStreamsByChatId.entries()) {
+      if (streamState.onDataId === callbackId) {
+        streamState.error = error;
+        streamState.isComplete = true;
+        break;
+      }
+    }
   });
 
   ipcRenderer.on('inference:streamText-onEnd', (_, callbackId: number) => {
@@ -1450,6 +1547,18 @@ export function initExposure(): void {
       callback.onEnd();
       // remove callback from the map
       onDataCallbacksStreamText.delete(callbackId);
+    }
+
+    // Mark stream as complete and keep buffered chunks for potential reconnection
+    for (const [chatId, streamState] of activeStreamsByChatId.entries()) {
+      if (streamState.onDataId === callbackId) {
+        streamState.isComplete = true;
+        // Clean up after a delay to allow reconnection
+        setTimeout(() => {
+          activeStreamsByChatId.delete(chatId);
+        }, STREAM_BUFFER_TTL_MS);
+        break;
+      }
     }
   });
 
