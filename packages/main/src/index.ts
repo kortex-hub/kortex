@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { app, ipcMain, Menu, Tray } from 'electron';
+import { app, ipcMain, Menu, safeStorage, Tray } from 'electron';
 
 import { restoreWindow } from '/@/mainWindow.js';
 import type { ExtensionLoader } from '/@/plugin/extension/extension-loader.js';
@@ -32,6 +32,12 @@ import { WindowHandler } from './system/window/window-handler.js';
 import { AnimatedTray } from './tray-animate-icon.js';
 import { TrayMenu } from './tray-menu.js';
 import { isMac, isWindows, stoppedExtensions } from './util.js';
+
+// Enable plaintext safeStorage on Linux CI (tree-shaken out of release builds via VITE_CI).
+// Must be called before app.whenReady().
+if (import.meta.env.VITE_CI && process.platform === 'linux') {
+  safeStorage.setUsePlainTextEncryption(true);
+}
 
 let extensionLoader: ExtensionLoader | undefined;
 

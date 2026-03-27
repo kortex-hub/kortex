@@ -1124,6 +1124,11 @@ declare module '@kortex-app/api' {
     providerId: string;
     connection: RagProviderConnection;
   }
+  export interface UpdateRagConnectionEvent {
+    providerId: string;
+    connection: RagProviderConnection;
+    status: ProviderConnectionStatus;
+  }
   export interface UnregisterRagConnectionEvent {
     providerId: string;
     connection: RagProviderConnection;

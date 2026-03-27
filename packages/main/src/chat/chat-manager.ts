@@ -55,6 +55,7 @@ import { ParameterExtractor } from './parameter-extraction.js';
 export class ChatManager {
   private chatQueries!: ChatQueries;
   private userId!: string;
+  private activeStreams = new Map<number, { controller: AbortController; chatId: string }>();
 
   constructor(
     @inject(ProviderRegistry)
@@ -102,6 +103,7 @@ export class ChatManager {
     this.userId = await getOrCreateUserId();
 
     this.ipcHandle('inference:streamText', (_, params) => this.streamText(params));
+    this.ipcHandle('inference:stopStream', (_, onDataId: number) => this.stopStream(onDataId));
     this.ipcHandle('inference:generate', (_, params) => this.generate(params));
     this.ipcHandle('inference:generateFlowParams', (_, params) => this.generateFlowParams(params));
     this.ipcHandle('inference:detectFlowFields', (_, params) => this.detectFlowFields(params));
@@ -145,10 +147,16 @@ export class ChatManager {
   }
 
   private async deleteChat(id: string): Promise<undefined> {
+    this.stopStreamsByChat(id);
     await this.chatQueries.deleteChatById({ id });
   }
 
   private async deleteAllChats(): Promise<undefined> {
+    // Abort all active streams
+    for (const [onDataId, stream] of this.activeStreams.entries()) {
+      stream.controller.abort();
+      this.activeStreams.delete(onDataId);
+    }
     await this.chatQueries.deleteAllChatsForUser({ userId: this.userId });
   }
 
@@ -277,81 +285,112 @@ export class ChatManager {
 
   async streamText(params: InferenceParameters & { onDataId: number; chatId: string }): Promise<number> {
     const { chatId } = params;
-    const chatGetter = await this.chatQueries.getChatById({ id: chatId });
+    const abortController = new AbortController();
+    this.activeStreams.set(params.onDataId, { controller: abortController, chatId });
 
-    if (!chatGetter.isOk()) {
-      const userMessage = this.getMostRecentUserMessage(params.messages);
-      if (!userMessage) {
-        throw new Error('No user message found');
+    try {
+      const chatGetter = await this.chatQueries.getChatById({ id: chatId });
+      if (abortController.signal.aborted) return params.onDataId;
+
+      if (!chatGetter.isOk()) {
+        const userMessage = this.getMostRecentUserMessage(params.messages);
+        if (!userMessage) {
+          throw new Error('No user message found');
+        }
+        const placeholderTitle = this.extractPlaceholderTitle(userMessage);
+        await this.chatQueries.saveChat({
+          id: chatId,
+          userId: this.userId,
+          title: placeholderTitle,
+        });
+        if (abortController.signal.aborted) return params.onDataId;
+
+        this.webContents.send('api-sender', 'chat-list-updated');
+
+        const internalProviderId = this.providerRegistry.getMatchingProviderInternalId(params.providerId);
+        const sdk = this.providerRegistry.getInferenceSDK(internalProviderId, params.connectionName);
+        const model = sdk.languageModel(params.modelId);
+        this.generateTitleInBackground(model, userMessage, chatId, placeholderTitle);
       }
-      const placeholderTitle = this.extractPlaceholderTitle(userMessage);
-      await this.chatQueries.saveChat({
-        id: chatId,
-        userId: this.userId,
-        title: placeholderTitle,
+
+      const inferenceComponents = await this.getInferenceComponents(params);
+      if (abortController.signal.aborted) return params.onDataId;
+
+      const config: MessageConfig = {
+        tools: params.tools,
+        modelId: params.modelId,
+        connectionName: params.connectionName,
+        providerId: params.providerId,
+      };
+      await this.chatQueries.saveMessages({
+        messages: [
+          {
+            chatId,
+            id: inferenceComponents.userMessage.id,
+            role: 'user',
+            parts: inferenceComponents.userMessage.parts,
+            createdAt: new Date(),
+            attachments: [],
+            config,
+          },
+        ],
       });
-      this.webContents.send('api-sender', 'chat-list-updated');
+      if (abortController.signal.aborted) return params.onDataId;
 
-      const internalProviderId = this.providerRegistry.getMatchingProviderInternalId(params.providerId);
-      const sdk = this.providerRegistry.getInferenceSDK(internalProviderId, params.connectionName);
-      const model = sdk.languageModel(params.modelId);
-      this.generateTitleInBackground(model, userMessage, chatId, placeholderTitle);
-    }
+      const streaming = streamText({
+        ...inferenceComponents,
+        abortSignal: abortController.signal,
+      });
 
-    const inferenceComponents = await this.getInferenceComponents(params);
+      const reader = streaming
+        .toUIMessageStream({
+          onFinish: async ({ messages }): Promise<void> => {
+            await this.chatQueries.saveMessages({
+              messages: messages.map(message => ({
+                id: randomUUID().toString(),
+                role: message.role,
+                parts: message.parts,
+                createdAt: new Date(),
+                chatId,
+                attachments: [],
+                config,
+              })),
+            });
+          },
+        })
+        .getReader();
 
-    const config: MessageConfig = {
-      tools: params.tools,
-      modelId: params.modelId,
-      connectionName: params.connectionName,
-      providerId: params.providerId,
-    };
-    await this.chatQueries.saveMessages({
-      messages: [
-        {
-          chatId,
-          id: inferenceComponents.userMessage.id,
-          role: 'user',
-          parts: inferenceComponents.userMessage.parts,
-          createdAt: new Date(),
-          attachments: [],
-          config,
-        },
-      ],
-    });
-
-    const streaming = streamText(inferenceComponents);
-
-    const reader = streaming
-      .toUIMessageStream({
-        onFinish: async ({ messages }): Promise<void> => {
-          await this.chatQueries.saveMessages({
-            messages: messages.map(message => ({
-              id: randomUUID().toString(),
-              role: message.role,
-              parts: message.parts,
-              createdAt: new Date(),
-              chatId,
-              attachments: [],
-              config,
-            })),
-          });
-        },
-      })
-      .getReader();
-
-    // loop to wait for the stream to finish
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        // end
-        this.webContents.send('inference:streamText-onEnd', params.onDataId);
-        break;
+      // loop to wait for the stream to finish
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+        this.webContents.send('inference:streamText-onChunk', params.onDataId, value);
       }
-      this.webContents.send('inference:streamText-onChunk', params.onDataId, value);
+    } finally {
+      this.activeStreams.delete(params.onDataId);
+      this.webContents.send('inference:streamText-onEnd', params.onDataId);
     }
 
     return params.onDataId;
+  }
+
+  private stopStream(onDataId: number): void {
+    const stream = this.activeStreams.get(onDataId);
+    if (stream) {
+      stream.controller.abort();
+      this.activeStreams.delete(onDataId);
+    }
+  }
+
+  private stopStreamsByChat(chatId: string): void {
+    for (const [onDataId, stream] of this.activeStreams.entries()) {
+      if (stream.chatId === chatId) {
+        stream.controller.abort();
+        this.activeStreams.delete(onDataId);
+      }
+    }
   }
 
   async generate(params: InferenceParameters): Promise<string> {

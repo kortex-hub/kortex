@@ -33,6 +33,7 @@ const INITIAL_SUMMARIES: AgentWorkspaceSummary[] = [
   {
     id: 'mock-ws-api-refactor',
     name: 'api-refactor',
+    project: 'backend',
     paths: {
       source: '/home/user/projects/backend',
       configuration: '/home/user/.config/kortex/workspaces/api-refactor.yaml',
@@ -41,6 +42,7 @@ const INITIAL_SUMMARIES: AgentWorkspaceSummary[] = [
   {
     id: 'mock-ws-test-suite',
     name: 'test-suite-fix',
+    project: 'backend',
     paths: {
       source: '/home/user/projects/backend',
       configuration: '/home/user/.config/kortex/workspaces/test-suite-fix.yaml',
@@ -49,6 +51,7 @@ const INITIAL_SUMMARIES: AgentWorkspaceSummary[] = [
   {
     id: 'mock-ws-frontend',
     name: 'frontend-redesign',
+    project: 'frontend',
     paths: {
       source: '/home/user/projects/frontend',
       configuration: '/home/user/.config/kortex/workspaces/frontend-redesign.yaml',

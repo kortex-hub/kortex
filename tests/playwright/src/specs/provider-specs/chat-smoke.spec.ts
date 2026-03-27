@@ -21,11 +21,10 @@ import { expect, test } from '../../fixtures/provider-fixtures';
 import { waitForNavigationReady } from '../../utils/app-ready';
 
 const isCI = !!process.env.CI;
-const isLinux = process.platform === 'linux';
 const hasGithubToken = !!process.env[MCP_SERVERS.github.envVarName];
 
 test.use({
-  mcpServers: process.env[MCP_SERVERS.github.envVarName] && process.platform !== 'linux' ? ['github'] : [],
+  mcpServers: process.env[MCP_SERVERS.github.envVarName] ? ['github'] : [],
 });
 
 test.describe
@@ -204,7 +203,6 @@ test.describe
     }) => {
       const skipConditions: Array<{ condition: boolean; reason: string }> = [
         { condition: !hasGithubToken, reason: `${MCP_SERVERS.github.envVarName} environment variable is not set` },
-        { condition: isLinux, reason: 'safeStorage issues on Linux' },
       ];
 
       for (const { condition, reason } of skipConditions) {
@@ -458,5 +456,27 @@ test.describe
       expect(titleAfterCancel).toBe(originalTitle);
 
       await chatPage.ensureNotificationsAreNotVisible();
+    });
+
+    test('[CHAT-17] Stop generation cancels the AI response stream', async ({ chatPage }) => {
+      await chatPage.clickNewChat();
+
+      // Send a message that should generate a long response
+      const message = 'Write a very detailed and long essay about the history of container orchestration systems';
+      await chatPage.sendMessage(message, { waitForMessage: false });
+
+      // Verify the stop button appears during generation
+      await chatPage.verifyStopButtonVisible();
+      await chatPage.verifySendButtonHidden();
+
+      // Click the stop button to cancel generation
+      await chatPage.clickStopButton();
+
+      // Verify the UI returns to the ready state
+      await chatPage.verifyStopButtonHidden(TIMEOUTS.SHORT);
+      await chatPage.verifySendButtonVisible(TIMEOUTS.SHORT);
+
+      // Verify the user message is still visible in the conversation
+      await chatPage.verifyConversationMessage(message);
     });
   });

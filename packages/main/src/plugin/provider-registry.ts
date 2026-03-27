@@ -64,6 +64,7 @@ import type {
   UnregisterVmConnectionEvent,
   UpdateContainerConnectionEvent,
   UpdateKubernetesConnectionEvent,
+  UpdateRagConnectionEvent,
   UpdateVmConnectionEvent,
   VmProviderConnection,
 } from '@kortex-app/api';
@@ -184,6 +185,9 @@ export class ProviderRegistry {
 
   private readonly _onDidRegisterRagConnection = new Emitter<RegisterRagConnectionEvent>();
   readonly onDidRegisterRagConnection: Event<RegisterRagConnectionEvent> = this._onDidRegisterRagConnection.event;
+
+  private readonly _onDidUpdateRagConnection = new Emitter<UpdateRagConnectionEvent>();
+  readonly onDidUpdateRagConnection: Event<UpdateRagConnectionEvent> = this._onDidUpdateRagConnection.event;
 
   private readonly _onDidUnregisterRagConnection = new Emitter<UnregisterRagConnectionEvent>();
   readonly onDidUnregisterRagConnection: Event<UnregisterRagConnectionEvent> = this._onDidUnregisterRagConnection.event;
@@ -1324,7 +1328,7 @@ export class ProviderRegistry {
   }
 
   isRagConnectionInfo(
-    connection: ProviderConnectionInfo | ContainerProviderConnection,
+    connection: ProviderConnectionInfo | RagProviderConnection,
   ): connection is ProviderRagConnectionInfo {
     return (connection as ProviderRagConnectionInfo).connectionType === 'rag';
   }
@@ -1403,6 +1407,15 @@ export class ProviderRegistry {
           },
           status: 'started',
         });
+      } else if (this.isRagConnectionInfo(providerConnectionInfo)) {
+        const connection = this.ragProviders.get(provider.id + '.' + providerConnectionInfo.name);
+        if (connection !== undefined) {
+          this._onDidUpdateRagConnection.fire({
+            providerId: provider.id,
+            connection,
+            status: 'started',
+          });
+        }
       } else {
         this._onDidUpdateVmConnection.fire({
           providerId: provider.id,
@@ -1518,6 +1531,15 @@ export class ProviderRegistry {
           },
           status: 'stopped',
         });
+      } else if (this.isRagConnectionInfo(providerConnectionInfo)) {
+        const connection = this.ragProviders.get(provider.id + '.' + providerConnectionInfo.name);
+        if (connection !== undefined) {
+          this._onDidUpdateRagConnection.fire({
+            providerId: provider.id,
+            connection,
+            status: 'stopped',
+          });
+        }
       } else {
         this._onDidUpdateVmConnection.fire({
           providerId: provider.id,

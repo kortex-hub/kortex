@@ -48,6 +48,7 @@ test('Expect workspace cards displayed with total count', () => {
     {
       id: 'ws-1',
       name: 'api-refactor',
+      project: 'backend',
       paths: {
         source: '/home/user/projects/backend',
         configuration: '/home/user/.config/kortex/workspaces/api-refactor.yaml',
@@ -56,6 +57,7 @@ test('Expect workspace cards displayed with total count', () => {
     {
       id: 'ws-2',
       name: 'frontend-redesign',
+      project: 'frontend',
       paths: {
         source: '/home/user/projects/frontend',
         configuration: '/home/user/.config/kortex/workspaces/frontend-redesign.yaml',

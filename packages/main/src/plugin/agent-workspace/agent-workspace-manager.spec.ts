@@ -41,11 +41,13 @@ const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
   {
     id: 'ws-1',
     name: 'test-workspace-1',
+    project: 'project-alpha',
     paths: { source: '/tmp/ws1', configuration: '/tmp/ws1/.kortex.yaml' },
   },
   {
     id: 'ws-2',
     name: 'test-workspace-2',
+    project: 'project-beta',
     paths: { source: '/tmp/ws2', configuration: '/tmp/ws2/.kortex.yaml' },
   },
 ];
@@ -104,6 +106,7 @@ describe('list', () => {
 
     expect(summary).toHaveProperty('id');
     expect(summary).toHaveProperty('name');
+    expect(summary).toHaveProperty('project');
     expect(summary).toHaveProperty('paths');
     expect(summary.paths).toHaveProperty('source');
     expect(summary.paths).toHaveProperty('configuration');

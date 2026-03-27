@@ -5,7 +5,7 @@ import { cubicInOut } from 'svelte/easing';
 import { slide } from 'svelte/transition';
 
 /* eslint-enable simple-import-sort/imports */
-import { getLock } from '/@/lib/chat/hooks/lock';
+import { getLock } from '/@/lib/chat/hooks/lock.svelte';
 
 import ChevronDownIcon from './icons/chevron-down.svelte';
 import LoaderIcon from './icons/loader.svelte';
@@ -16,13 +16,13 @@ let expanded = $state(false);
 const scrollLock = getLock('messages-scroll');
 
 function lockScrolling(): void {
-  scrollLock.locked = true;
+  scrollLock.lockTransition();
 }
 
 function unlockScrolling(): void {
   tick()
     .then(() => {
-      scrollLock.locked = false;
+      scrollLock.unlockTransition();
     })
     .catch((error: unknown) => {
       console.error('Unable to unlock scrolling', error);

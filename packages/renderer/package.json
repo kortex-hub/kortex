@@ -65,6 +65,7 @@
     "bits-ui": "^2.9.2",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "dompurify": "^3.3.3",
     "electron-context-menu": "4.1.1",
     "highlight.js": "^11.11.1",
     "js-yaml": "^4.1.1",

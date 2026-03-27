@@ -207,8 +207,8 @@ importers:
         specifier: 'workspace:'
         version: link:packages/extension-api
       '@kortex-hub/kortex-cli-api':
-        specifier: ^0.1.4
-        version: 0.1.4
+        specifier: ^0.1.6
+        version: 0.1.6
       '@kortex-hub/kortex-workspace-configuration':
         specifier: ^0.1.4
         version: 0.1.4
@@ -719,6 +719,9 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
+      dompurify:
+        specifier: ^3.3.3
+        version: 3.3.3
       electron-context-menu:
         specifier: 4.1.1
         version: 4.1.1
@@ -1677,8 +1680,8 @@ packages:
     peerDependencies:
       jsep: ^0.4.0||^1.0.0
 
-  '@kortex-hub/kortex-cli-api@0.1.4':
-    resolution: {integrity: sha512-UqwJsq11TDI90FQPihautoEFGARGIkCvezEJArPR6ZynM6N8a+tgHHBGembuA3VYdJvTeSFAcYjnyEdgJBloUw==}
+  '@kortex-hub/kortex-cli-api@0.1.6':
+    resolution: {integrity: sha512-e0ekovbwR8EzPJww2f0QMc09Sn/8F7xTjMYl5woxZDrIL7oLI6hGJRSWb1r1D3mzpZQIWXlMaSvLJfp0Tz82ug==}
 
   '@kortex-hub/kortex-workspace-configuration@0.1.4':
     resolution: {integrity: sha512-TuSjsPrnu2PkhNbtPFRehoyvEFKE4E/XrGWLd+lwW0ywqKM42mCBfWibCCeo5wBCy+nbKcfPvEWo6Alvy+Cp3Q==}
@@ -3802,8 +3805,8 @@ packages:
   dom-accessibility-api@0.6.3:
     resolution: {integrity: sha512-7ZgogeTnjuHbo+ct10G9Ffp0mif17idi0IyWNVA/wcwcm7NPOD/WEHVP3n7n3MhXqxoIYm8d6MuZohYWIZ4T3w==}
 
-  dompurify@3.3.1:
-    resolution: {integrity: sha512-qkdCKzLNtrgPFP1Vo+98FRzJnBRGe4ffyCea9IwHB1fyxPOeNTHpLKYGd4Uk9xvNoH0ZoOjwZxNptyMwqrId1Q==}
+  dompurify@3.3.3:
+    resolution: {integrity: sha512-Oj6pzI2+RqBfFG+qOaOLbFXLQ90ARpcGG6UePL82bJLtdsa6CYJD7nmiU8MW9nQNOtCHV3lZ/Bzq1X0QYbBZCA==}
 
   dot-prop@5.3.0:
     resolution: {integrity: sha512-QM8q3zDe58hqUqjraQOmzZ1LIH9SWQJTlEKCH4kJ2oQvLZk7RbQXvtDM2XEq3fwkV9CCvvH4LA0AV+ogFsBM2Q==}
@@ -8596,7 +8599,7 @@ snapshots:
     dependencies:
       jsep: 1.4.0
 
-  '@kortex-hub/kortex-cli-api@0.1.4': {}
+  '@kortex-hub/kortex-cli-api@0.1.6': {}
 
   '@kortex-hub/kortex-workspace-configuration@0.1.4': {}
 
@@ -11014,7 +11017,7 @@ snapshots:
 
   dom-accessibility-api@0.6.3: {}
 
-  dompurify@3.3.1:
+  dompurify@3.3.3:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
@@ -13434,7 +13437,7 @@ snapshots:
 
   monaco-editor@0.55.1:
     dependencies:
-      dompurify: 3.3.1
+      dompurify: 3.3.3
       marked: 14.0.0
 
   moo-color@1.0.3:

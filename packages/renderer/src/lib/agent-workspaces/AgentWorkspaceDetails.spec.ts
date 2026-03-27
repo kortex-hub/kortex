@@ -19,12 +19,12 @@
 import '@testing-library/jest-dom/vitest';
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
-import { writable } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 import { router } from 'tinro';
 import { beforeEach, expect, test, vi } from 'vitest';
 
-import { agentWorkspaceStatuses } from '/@/stores/agent-workspaces.svelte';
-import type { AgentWorkspaceConfiguration } from '/@api/agent-workspace-info';
+import { agentWorkspaces, agentWorkspaceStatuses } from '/@/stores/agent-workspaces.svelte';
+import type { AgentWorkspaceConfiguration, AgentWorkspaceSummary } from '/@api/agent-workspace-info';
 
 import AgentWorkspaceDetails from './AgentWorkspaceDetails.svelte';
 
@@ -42,6 +42,16 @@ const configuration: AgentWorkspaceConfiguration = {
   name: 'api-refactor',
 };
 
+const workspaceSummary: AgentWorkspaceSummary = {
+  id: 'ws-1',
+  name: 'api-refactor',
+  project: 'backend',
+  paths: {
+    source: '/home/user/projects/backend',
+    configuration: '/home/user/.config/kortex/workspaces/api-refactor.yaml',
+  },
+};
+
 beforeEach(() => {
   vi.resetAllMocks();
   vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -51,6 +61,7 @@ beforeEach(() => {
   vi.mocked(window.stopAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
   vi.mocked(window.showMessageBox).mockResolvedValue({ response: 1 });
   vi.mocked(window.removeAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
+  agentWorkspaces.set([workspaceSummary]);
   agentWorkspaceStatuses.clear();
 });
 
@@ -74,6 +85,16 @@ test('Expect Summary tab is present', async () => {
   await waitFor(() => {
     expect(screen.getByText('Summary')).toBeInTheDocument();
   });
+});
+
+test('Expect workspace summary with project is resolved from the store', () => {
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  const storeValue = [workspaceSummary];
+  agentWorkspaces.set(storeValue);
+
+  const resolved = get(agentWorkspaces);
+  expect(resolved.find(ws => ws.id === 'ws-1')?.project).toBe('backend');
 });
 
 test('Expect error message displayed when configuration fetch fails', async () => {
