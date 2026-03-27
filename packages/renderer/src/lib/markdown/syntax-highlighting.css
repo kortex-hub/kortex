@@ -19,46 +19,106 @@
 /* Syntax highlighting styles using GitHub's color scheme */
 /* Uses CSS custom properties for easy light/dark mode switching */
 
-/* Light mode syntax highlighting */
+/* Define light and dark color palettes once (GitHub color scheme) */
 :root {
-  --hljs-comment: #6a737d;
-  --hljs-keyword: #d73a49;
-  --hljs-string: #032f62;
-  --hljs-title: #6f42c1;
-  --hljs-function: #6f42c1;
-  --hljs-number: #005cc5;
-  --hljs-literal: #005cc5;
-  --hljs-built-in: #005cc5;
-  --hljs-type: #d73a49;
-  --hljs-variable: #e36209;
-  --hljs-attribute: #e36209;
-  --hljs-meta: #6a737d;
-  --hljs-tag: #22863a;
-  --hljs-name: #22863a;
-  --hljs-operator: #d73a49;
-  --hljs-bg: transparent;
-  --hljs-fg: #24292e;
+  --hljs-light-comment: #6a737d;
+  --hljs-light-keyword: #d73a49;
+  --hljs-light-string: #032f62;
+  --hljs-light-title: #6f42c1;
+  --hljs-light-number: #005cc5;
+  --hljs-light-variable: #e36209;
+  --hljs-light-tag: #22863a;
+  --hljs-light-fg: #24292e;
+
+  --hljs-dark-comment: #8b949e;
+  --hljs-dark-keyword: #ff7b72;
+  --hljs-dark-string: #a5d6ff;
+  --hljs-dark-title: #d2a8ff;
+  --hljs-dark-number: #79c0ff;
+  --hljs-dark-variable: #ffa657;
+  --hljs-dark-tag: #7ee787;
+  --hljs-dark-fg: #c9d1d9;
 }
 
-/* Dark mode syntax highlighting */
-.dark {
-  --hljs-comment: #8b949e;
-  --hljs-keyword: #ff7b72;
-  --hljs-string: #a5d6ff;
-  --hljs-title: #d2a8ff;
-  --hljs-function: #d2a8ff;
-  --hljs-number: #79c0ff;
-  --hljs-literal: #79c0ff;
-  --hljs-built-in: #79c0ff;
-  --hljs-type: #ff7b72;
-  --hljs-variable: #ffa657;
-  --hljs-attribute: #ffa657;
-  --hljs-meta: #8b949e;
-  --hljs-tag: #7ee787;
-  --hljs-name: #7ee787;
-  --hljs-operator: #ff7b72;
+/* Light mode: use light palette */
+:root {
+  --hljs-comment: var(--hljs-light-comment);
+  --hljs-keyword: var(--hljs-light-keyword);
+  --hljs-string: var(--hljs-light-string);
+  --hljs-title: var(--hljs-light-title);
+  --hljs-function: var(--hljs-light-title);
+  --hljs-number: var(--hljs-light-number);
+  --hljs-literal: var(--hljs-light-number);
+  --hljs-built-in: var(--hljs-light-number);
+  --hljs-type: var(--hljs-light-keyword);
+  --hljs-variable: var(--hljs-light-variable);
+  --hljs-attribute: var(--hljs-light-variable);
+  --hljs-meta: var(--hljs-light-comment);
+  --hljs-tag: var(--hljs-light-tag);
+  --hljs-name: var(--hljs-light-tag);
+  --hljs-operator: var(--hljs-light-keyword);
   --hljs-bg: transparent;
-  --hljs-fg: #c9d1d9;
+  --hljs-fg: var(--hljs-light-fg);
+}
+
+/* Dark mode: use dark palette */
+.dark {
+  --hljs-comment: var(--hljs-dark-comment);
+  --hljs-keyword: var(--hljs-dark-keyword);
+  --hljs-string: var(--hljs-dark-string);
+  --hljs-title: var(--hljs-dark-title);
+  --hljs-function: var(--hljs-dark-title);
+  --hljs-number: var(--hljs-dark-number);
+  --hljs-literal: var(--hljs-dark-number);
+  --hljs-built-in: var(--hljs-dark-number);
+  --hljs-type: var(--hljs-dark-keyword);
+  --hljs-variable: var(--hljs-dark-variable);
+  --hljs-attribute: var(--hljs-dark-variable);
+  --hljs-meta: var(--hljs-dark-comment);
+  --hljs-tag: var(--hljs-dark-tag);
+  --hljs-name: var(--hljs-dark-tag);
+  --hljs-operator: var(--hljs-dark-keyword);
+  --hljs-bg: transparent;
+  --hljs-fg: var(--hljs-dark-fg);
+}
+
+/* User messages have an inverted background, so swap the highlight theme */
+:root [data-role='user'] {
+  --hljs-comment: var(--hljs-dark-comment);
+  --hljs-keyword: var(--hljs-dark-keyword);
+  --hljs-string: var(--hljs-dark-string);
+  --hljs-title: var(--hljs-dark-title);
+  --hljs-function: var(--hljs-dark-title);
+  --hljs-number: var(--hljs-dark-number);
+  --hljs-literal: var(--hljs-dark-number);
+  --hljs-built-in: var(--hljs-dark-number);
+  --hljs-type: var(--hljs-dark-keyword);
+  --hljs-variable: var(--hljs-dark-variable);
+  --hljs-attribute: var(--hljs-dark-variable);
+  --hljs-meta: var(--hljs-dark-comment);
+  --hljs-tag: var(--hljs-dark-tag);
+  --hljs-name: var(--hljs-dark-tag);
+  --hljs-operator: var(--hljs-dark-keyword);
+  --hljs-fg: var(--hljs-dark-fg);
+}
+
+.dark [data-role='user'] {
+  --hljs-comment: var(--hljs-light-comment);
+  --hljs-keyword: var(--hljs-light-keyword);
+  --hljs-string: var(--hljs-light-string);
+  --hljs-title: var(--hljs-light-title);
+  --hljs-function: var(--hljs-light-title);
+  --hljs-number: var(--hljs-light-number);
+  --hljs-literal: var(--hljs-light-number);
+  --hljs-built-in: var(--hljs-light-number);
+  --hljs-type: var(--hljs-light-keyword);
+  --hljs-variable: var(--hljs-light-variable);
+  --hljs-attribute: var(--hljs-light-variable);
+  --hljs-meta: var(--hljs-light-comment);
+  --hljs-tag: var(--hljs-light-tag);
+  --hljs-name: var(--hljs-light-tag);
+  --hljs-operator: var(--hljs-light-keyword);
+  --hljs-fg: var(--hljs-light-fg);
 }
 
 /* Highlight.js base styles */
