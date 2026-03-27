@@ -397,20 +397,29 @@ export class ChatManager {
         abortSignal: abortController.signal,
       });
 
+      let onFinishSavePromise: Promise<void> | undefined;
+
       const reader = streaming
         .toUIMessageStream({
-          onFinish: async ({ messages }): Promise<void> => {
-            await this.chatQueries.saveMessages({
-              messages: messages.map(message => ({
-                id: randomUUID().toString(),
-                role: message.role,
-                parts: message.parts,
-                createdAt: new Date(),
-                chatId,
-                attachments: [],
-                config,
-              })),
-            });
+          onFinish: ({ messages }): void => {
+            onFinishSavePromise = this.chatQueries
+              .saveMessages({
+                messages: messages.map(message => ({
+                  id: randomUUID().toString(),
+                  role: message.role,
+                  parts: message.parts,
+                  createdAt: new Date(),
+                  chatId,
+                  attachments: [],
+                  config,
+                })),
+              })
+              .match(
+                () => {},
+                error => {
+                  throw error;
+                },
+              );
           },
         })
         .getReader();
@@ -422,6 +431,11 @@ export class ChatManager {
           break;
         }
         this.webContents.send('inference:streamText-onChunk', params.onDataId, value);
+      }
+
+      // Wait for onFinish message save to complete before signaling stream end
+      if (onFinishSavePromise) {
+        await onFinishSavePromise;
       }
     } finally {
       this.activeStreams.delete(params.onDataId);

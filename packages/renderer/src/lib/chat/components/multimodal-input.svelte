@@ -26,12 +26,16 @@ let {
   class: c,
   selectedMCPTools,
   selectedModel,
+  hasActiveStream,
+  activeStreamOnDataId,
 }: {
   attachments: Attachment[];
   chatClient: Chat;
   class?: string;
   selectedMCPTools: SvelteMap<string, Set<string>>;
   selectedModel?: ModelInfo;
+  hasActiveStream?: boolean;
+  activeStreamOnDataId?: number;
 } = $props();
 
 const editState = EditState.fromContext();
@@ -41,7 +45,9 @@ let savedInput = $state('');
 let mounted = $state(false);
 let textareaRef = $state<HTMLTextAreaElement | null>(null);
 const storedInput = new LocalStorage('input', '');
-const loading = $derived(chatClient.status === 'streaming' || chatClient.status === 'submitted');
+const loading = $derived(
+  chatClient.status === 'streaming' || chatClient.status === 'submitted' || hasActiveStream === true,
+);
 
 $effect(() => {
   if (editState.editingMessage) {
@@ -255,7 +261,7 @@ $effect((): (() => void) | void => {
       class="max-h-[calc(25dvh)] min-h-[24px] resize-none overflow-y-auto border-0 bg-transparent text-base! shadow-none focus-visible:ring-0"
       rows={2}
       autofocus
-      onkeydown={async(event): Promise<void> => {
+      onkeydown={async (event): Promise<void> => {
         if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
           event.preventDefault();
 
@@ -286,7 +292,7 @@ $effect((): (() => void) | void => {
       </div>
 
       <div class="flex flex-row items-center justify-end gap-2">
-        <ExportButton {chatClient} {selectedModel} {loading} {selectedMCPTools}/>
+        <ExportButton {chatClient} {selectedModel} {loading} {selectedMCPTools} />
         {#if loading}
           <Button
             aria-label="Stop generation"
@@ -294,7 +300,13 @@ $effect((): (() => void) | void => {
             class="h-fit rounded-full border border-[var(--pd-input-field-stroke)] p-1.5"
             onclick={async (event): Promise<void> => {
               event.preventDefault();
-              await chatClient.stop();
+              try {
+                await chatClient.stop();
+              } finally {
+                if (activeStreamOnDataId !== undefined) {
+                  await window.inferenceStopStream(activeStreamOnDataId);
+                }
+              }
             }}
           >
             <StopIcon size={14} />
@@ -304,7 +316,7 @@ $effect((): (() => void) | void => {
               aria-label="Send message"
               title="Send message"
               class="h-fit rounded-full border border-[var(--pd-input-field-stroke)] p-1.5"
-              onclick={async(event): Promise<void> => {
+              onclick={async (event): Promise<void> => {
                 event.preventDefault();
                 await submitForm();
               }}
