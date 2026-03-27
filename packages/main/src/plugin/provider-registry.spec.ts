@@ -43,6 +43,7 @@ import type {
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
+import type { SkillManager } from '/@/plugin/skill/skill-manager.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type {
   CheckStatus,
@@ -68,6 +69,7 @@ const apiSenderSendMock = vi.fn();
 let containerRegistry: ContainerProviderRegistry;
 
 let schedulerRegistry: SchedulerRegistry;
+let skillManager: SkillManager;
 
 class TestProviderRegistry extends ProviderRegistry {
   getKubernetesProviders(): Map<string, KubernetesProviderConnection> {
@@ -102,8 +104,11 @@ beforeEach(() => {
   schedulerRegistry = {
     register: vi.fn(),
   } as unknown as SchedulerRegistry;
+  skillManager = {
+    registerSkillFolder: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+  } as unknown as SkillManager;
 
-  providerRegistry = new TestProviderRegistry(apiSender, containerRegistry, telemetry, schedulerRegistry);
+  providerRegistry = new TestProviderRegistry(apiSender, containerRegistry, telemetry, schedulerRegistry, skillManager);
   autostartEngine = {
     registerProvider: vi.fn(),
   } as unknown as AutostartEngine;

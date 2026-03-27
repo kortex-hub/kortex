@@ -940,6 +940,11 @@ declare module '@kortex-app/api' {
     getExecution(id: string): Promise<ProviderScheduleExecution | undefined>;
   }
 
+  export interface CreateSkillParams {
+    label: string;
+    path: string;
+  }
+
   export interface Provider {
     setContainerProviderConnectionFactory(
       containerProviderConnectionFactory: ContainerProviderConnectionFactory,
@@ -971,6 +976,8 @@ declare module '@kortex-app/api' {
     registerRagProviderConnection(connection: RagProviderConnection): Disposable;
 
     registerFlowProviderConnection(connection: FlowProviderConnection): Disposable;
+
+    registerSkill(skill: CreateSkillParams): Disposable;
 
     registerLifecycle(lifecycle: ProviderLifecycle): Disposable;
 
