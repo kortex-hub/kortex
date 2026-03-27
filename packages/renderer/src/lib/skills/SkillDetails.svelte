@@ -1,8 +1,8 @@
 <script lang="ts">
 import { faFile, faFolder } from '@fortawesome/free-regular-svg-icons';
 import { Checkbox, Spinner, Tab } from '@podman-desktop/ui-svelte';
+import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { onMount } from 'svelte';
-import Fa from 'svelte-fa';
 import { router } from 'tinro';
 
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
@@ -33,7 +33,14 @@ onMount(() => {
       folderContents = contents;
     }),
   ])
-    .catch(console.error)
+    .then(results => {
+      for (const result of results) {
+        if (result.status === 'rejected') {
+          console.error('Error loading skill details:', result.reason);
+        }
+      }
+    })
+    .catch((err: unknown) => console.error('Unexpected error loading skill details:', err))
     .finally(() => {
       loading = false;
     });
@@ -152,7 +159,7 @@ function onToggle(): void {
             <div class="flex justify-between items-center px-4 py-3 bg-[var(--pd-content-bg)] border-b border-[var(--pd-content-card-border)]">
               <span class="text-sm font-medium text-[var(--pd-content-text)] font-mono">SKILL.md</span>
             </div>
-            <div class="p-5 overflow-x-auto">
+            <div class="p-5 overflow-auto">
               <pre class="text-sm text-[var(--pd-content-text)] leading-relaxed whitespace-pre-wrap font-mono">{skillContent ?? 'No content available.'}</pre>
             </div>
           </div>
@@ -177,7 +184,7 @@ function onToggle(): void {
               {#each folderContents as item (item)}
                 <div class="flex items-center gap-3 px-5 py-3 border-b border-[var(--pd-content-card-border)] last:border-b-0 hover:bg-[var(--pd-content-card-hover-bg)]">
                   <div class="w-8 h-8 rounded-md flex items-center justify-center bg-[var(--pd-content-bg)]">
-                    <Fa icon={item.endsWith('/') ? faFolder : faFile} class="text-[var(--pd-content-card-text)]" />
+                    <Icon icon={item.endsWith('/') ? faFolder : faFile} class="text-[var(--pd-content-card-text)]" />
                   </div>
                   <span class="text-sm font-medium text-[var(--pd-content-text)] font-mono">{item}</span>
                 </div>
