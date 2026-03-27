@@ -70,9 +70,46 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
     });
   }
 
-  reconnectToStream(options: { chatId: string } & ChatRequestOptions): Promise<ReadableStream<UIMessageChunk> | null> {
-    //FIX ME: not implemented
-    console.log('reconnecting to stream with options', options);
-    return Promise.resolve(null);
+  async reconnectToStream(
+    options: { chatId: string } & ChatRequestOptions,
+  ): Promise<ReadableStream<UIMessageChunk> | null> {
+    // Check if there's an active stream for this chat
+    const activeStream = window.inferenceGetActiveStream(options.chatId);
+    if (!activeStream) {
+      return null;
+    }
+
+    return new ReadableStream<UIMessageChunk>({
+      start(controller): void {
+        // Reconnect to the existing stream
+        const result = window.inferenceReconnectToStream(
+          options.chatId,
+          (chunk: UIMessageChunk) => {
+            console.log('IPCChatTransport->reconnect->chunk:', chunk);
+            controller.enqueue(chunk);
+          },
+          (error: unknown) => {
+            console.error('Error during reconnected stream:', error);
+            controller.error(error);
+          },
+          () => {
+            console.log('IPCChatTransport: Reconnected stream completed');
+            controller.close();
+          },
+        );
+
+        if (!result) {
+          console.log('IPCChatTransport: Stream no longer active');
+          controller.close();
+          return;
+        }
+
+        // First, replay all buffered chunks
+        for (const chunk of result.bufferedChunks) {
+          console.log('IPCChatTransport->reconnect->buffered chunk:', chunk);
+          controller.enqueue(chunk);
+        }
+      },
+    });
   }
 }
