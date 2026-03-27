@@ -18,3 +18,5 @@ extensions-extra/
 .claude
 output/
 __mocks__/@kortex-app/api.ts
+.agents/skills/svelte-code-writer/
+.agents/skills/svelte-core-bestpractices/

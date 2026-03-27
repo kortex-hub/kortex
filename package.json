@@ -64,7 +64,7 @@
     "typecheck:extensions": "echo TODO_EXTENSIONS",
     "typecheck": "pnpm run typecheck:main && pnpm run typecheck:preload && pnpm run typecheck:renderer && pnpm run typecheck:preload-webview && pnpm run typecheck:extensions && pnpm run typecheck:extension-api",
     "prepare": "husky install",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps && node scripts/copy-svelte-skills.js"
   },
   "lint-staged": {
     "*.{js,ts,tsx,svelte}": [
@@ -89,6 +89,7 @@
     "@kortex-hub/mcp-registry-types": "^1.4.0-next.20251210140818.04eeb13",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
+    "@sveltejs/opencode": "^0.1.6",
     "@tsconfig/strictest": "^2.0.8",
     "@types/adm-zip": "^0.5.7",
     "@types/better-sqlite3": "^7.6.13",
