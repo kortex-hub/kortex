@@ -56,6 +56,8 @@ UI guidelines -->
 }
 .markdown > :global(pre) {
   margin-bottom: 8px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 .markdown :global(a) {
   color: var(--pd-link);

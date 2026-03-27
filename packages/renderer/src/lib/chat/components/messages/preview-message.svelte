@@ -118,7 +118,7 @@ const isGeneratingResponse = $derived(loading && message.role === 'assistant' &&
             </Tooltip>
           {/if}
           <div
-            class={cn('flex flex-col gap-4', {
+            class={cn('flex flex-col gap-4 overflow-hidden', {
               'bg-primary text-primary-foreground rounded-xl px-3 pt-4': message.role === 'user',
               'animate-fade-in': message.role === 'assistant',
             })}
