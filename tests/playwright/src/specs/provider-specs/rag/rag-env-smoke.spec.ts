@@ -23,7 +23,8 @@ import { expect, test } from '../../../fixtures/provider-fixtures';
 import { TIMEOUTS } from '../../../model/core/types';
 import { waitForNavigationReady } from '../../../utils/app-ready';
 
-const TEST_FILE_PATH = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../resources/test-doc.pdf');
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const TEST_FILE_PATH = resolve(__dirname, '../../../../resources/test-doc.pdf');
 
 const VECTOR_STORE_NAME = 'e2e-milvus';
 const EMBEDDING_MODEL_NAME = 'docling';

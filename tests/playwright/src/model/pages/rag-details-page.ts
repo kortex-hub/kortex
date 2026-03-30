@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import { type ElectronApplication, expect, type Locator, type Page } from '@playwright/test';
-import { handleDialogIfPresent } from 'src/utils/app-ready';
+import { handleDialogIfPresent, withMockedFileDialog } from 'src/utils/app-ready';
 
 import { BasePage } from './base-page';
 import { RagPage } from './rag-page';
@@ -86,18 +86,10 @@ export class RagDetailsPage extends BasePage {
   }
 
   async uploadFile(absoluteFilePath: string, electronApp: ElectronApplication): Promise<void> {
-    await electronApp.evaluate(({ dialog }, filePath: string) => {
-      dialog.showOpenDialog = (() =>
-        Promise.resolve({ canceled: false, filePaths: [filePath] })) as typeof dialog.showOpenDialog;
-    }, absoluteFilePath);
-    try {
+    await withMockedFileDialog(electronApp, absoluteFilePath, async () => {
       await expect(this.uploadButton).toBeVisible();
       await this.uploadButton.click();
-    } finally {
-      await electronApp.evaluate(({ dialog }) => {
-        delete (dialog as unknown as Record<string, unknown>).showOpenDialog;
-      });
-    }
+    });
   }
 
   getInfoValue(label: string): Locator {

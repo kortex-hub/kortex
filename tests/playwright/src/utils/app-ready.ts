@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { expect, type Locator, type Page } from '@playwright/test';
+import { type ElectronApplication, expect, type Locator, type Page } from '@playwright/test';
 import { type DialogOptions, SELECTORS, TIMEOUTS } from 'src/model/core/types';
 
 export async function waitForAppReady(page: Page, timeout = TIMEOUTS.DEFAULT): Promise<void> {
@@ -108,4 +108,22 @@ export async function handleDialogIfPresent(
 export async function clearAllToasts(page: Page, toastLocator: Locator, timeout = 10_000): Promise<void> {
   await page.keyboard.press('Escape');
   await expect(toastLocator).toHaveCount(0, { timeout });
+}
+
+export async function withMockedFileDialog(
+  electronApp: ElectronApplication,
+  filePath: string,
+  action: () => Promise<void>,
+): Promise<void> {
+  await electronApp.evaluate(({ dialog }, fp: string) => {
+    dialog.showOpenDialog = (() =>
+      Promise.resolve({ canceled: false, filePaths: [fp] })) as typeof dialog.showOpenDialog;
+  }, filePath);
+  try {
+    await action();
+  } finally {
+    await electronApp.evaluate(({ dialog }) => {
+      delete (dialog as unknown as Record<string, unknown>).showOpenDialog;
+    });
+  }
 }

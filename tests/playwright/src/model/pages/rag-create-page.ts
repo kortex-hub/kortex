@@ -21,8 +21,6 @@ import { TIMEOUTS } from 'src/model/core/types';
 
 import { BasePage } from './base-page';
 
-const PROVIDER_TILE_TIMEOUT = TIMEOUTS.INITIALIZING_SCREEN;
-
 export class RagCreatePage extends BasePage {
   readonly modal: Locator;
   readonly heading: Locator;
@@ -60,13 +58,13 @@ export class RagCreatePage extends BasePage {
 
   async selectVectorStore(name: string): Promise<void> {
     const tile = this.getVectorStoreTile(name);
-    await expect(tile).toBeVisible({ timeout: PROVIDER_TILE_TIMEOUT });
+    await expect(tile).toBeVisible({ timeout: TIMEOUTS.STANDARD });
     await tile.click();
   }
 
   async selectEmbeddingModel(name: string): Promise<void> {
     const tile = this.getEmbeddingModelTile(name);
-    await expect(tile).toBeVisible({ timeout: PROVIDER_TILE_TIMEOUT });
+    await expect(tile).toBeVisible({ timeout: TIMEOUTS.STANDARD });
     await tile.click();
   }
 
