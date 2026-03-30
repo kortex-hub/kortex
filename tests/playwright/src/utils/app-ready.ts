@@ -116,6 +116,8 @@ export async function withMockedFileDialog(
   action: () => Promise<void>,
 ): Promise<void> {
   await electronApp.evaluate(({ dialog }, fp: string) => {
+    const g = globalThis as unknown as Record<string, unknown>;
+    g.__originalShowOpenDialog = dialog.showOpenDialog;
     dialog.showOpenDialog = (() =>
       Promise.resolve({ canceled: false, filePaths: [fp] })) as typeof dialog.showOpenDialog;
   }, filePath);
@@ -123,7 +125,9 @@ export async function withMockedFileDialog(
     await action();
   } finally {
     await electronApp.evaluate(({ dialog }) => {
-      delete (dialog as unknown as Record<string, unknown>).showOpenDialog;
+      const g = globalThis as unknown as Record<string, unknown>;
+      dialog.showOpenDialog = g.__originalShowOpenDialog as typeof dialog.showOpenDialog;
+      delete g.__originalShowOpenDialog;
     });
   }
 }

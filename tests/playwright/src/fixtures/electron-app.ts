@@ -189,7 +189,7 @@ function prepareElectronEnv(): Record<string, string> {
   return electronEnv;
 }
 
-function setupTestConfigDir(electronEnv: Record<string, string>): string {
+function setupTestConfigDir(electronEnv: Record<string, string>): void {
   const testDataDir = mkdtempSync(join(tmpdir(), 'kortex-test-'));
   electronEnv.KORTEX_HOME_DIR = testDataDir;
 
@@ -197,14 +197,13 @@ function setupTestConfigDir(electronEnv: Record<string, string>): string {
   mkdirSync(configDir, { recursive: true });
 
   writeFileSync(join(configDir, 'settings.json'), JSON.stringify({ 'preferences.OpenDevTools': 'none' }));
-  return testDataDir;
 }
 
-function createLaunchConfig(): { config: Parameters<typeof electron.launch>[0]; homeDir: string } {
+function createLaunchConfig(): Parameters<typeof electron.launch>[0] {
   const electronEnv = prepareElectronEnv();
   const recordVideo = { dir: join(tmpdir(), 'kortex-test-videos') };
 
-  const homeDir = setupTestConfigDir(electronEnv);
+  setupTestConfigDir(electronEnv);
 
   const args = ['--no-sandbox'];
   if (process.env.CI) {
@@ -215,33 +214,26 @@ function createLaunchConfig(): { config: Parameters<typeof electron.launch>[0]; 
 
   if (isProductionMode) {
     return {
-      config: {
-        executablePath: process.env.KORTEX_BINARY,
-        args,
-        env: electronEnv,
-        recordVideo,
-      },
-      homeDir,
+      executablePath: process.env.KORTEX_BINARY,
+      args,
+      env: electronEnv,
+      recordVideo,
     };
   }
 
   return {
-    config: {
-      args: ['.', ...args],
-      env: {
-        ...electronEnv,
-        ELECTRON_IS_DEV: '1',
-      },
-      cwd: resolve(__dirname, '../../../..'),
-      recordVideo,
+    args: ['.', ...args],
+    env: {
+      ...electronEnv,
+      ELECTRON_IS_DEV: '1',
     },
-    homeDir,
+    cwd: resolve(__dirname, '../../../..'),
+    recordVideo,
   };
 }
 
 export async function launchElectronApp(): Promise<ElectronApplication> {
-  const { config } = createLaunchConfig();
-  return electron.launch(config);
+  return electron.launch(createLaunchConfig());
 }
 
 export async function getFirstPage(electronApp: ElectronApplication): Promise<Page> {

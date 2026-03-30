@@ -34,7 +34,9 @@ export class SettingsResourcesPage extends BasePage {
   }
 
   getResourceRegion(resourceId: string): Locator {
-    return this.page.getByRole('region', { name: 'Featured Provider Resources' }).locator(`[id="${resourceId}"]`);
+    return this.page
+      .getByRole('region', { name: 'Featured Provider Resources' })
+      .getByRole('region', { name: resourceId, exact: true });
   }
 
   getProviderRegion(providerId: string): Locator {
