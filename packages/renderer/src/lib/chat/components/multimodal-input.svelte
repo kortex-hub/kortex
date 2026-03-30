@@ -258,7 +258,7 @@ $effect((): (() => void) | void => {
       }}
     />
 
-    <div class="flex w-full flex-row items-center justify-between px-2 pb-2">
+    <div class="flex w-full flex-row items-center justify-between px-1 py-1">
       <div class="flex flex-row justify-start">
         <Button
           class="h-fit rounded-md rounded-bl-lg p-[7px] hover:bg-zinc-200 dark:border-zinc-700 hover:dark:bg-zinc-900"
