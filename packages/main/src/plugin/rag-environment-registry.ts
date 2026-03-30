@@ -285,20 +285,26 @@ export class RagEnvironmentRegistry {
 
     const fileInfo: FileInfo = { path: filePath, status: 'pending' };
 
-    this.indexFile(ragEnvironment, fileInfo, chunkProvider, ragConnection).catch((err: unknown) =>
-      console.error(`Error indexing file: ${filePath}`, err),
-    );
-
-    // Add file to pending files
+    // Add file to pending files and persist before starting indexing
     ragEnvironment.files.push(fileInfo);
 
     try {
       await this.saveOrUpdate(ragEnvironment);
-      return true;
     } catch (error) {
+      // Rollback in-memory state on save failure
+      const index = ragEnvironment.files.indexOf(fileInfo);
+      if (index !== -1) {
+        ragEnvironment.files.splice(index, 1);
+      }
       console.error(`Failed to add file to RAG environment ${name}:`, error);
       return false;
     }
+
+    this.indexFile(ragEnvironment, fileInfo, chunkProvider, ragConnection).catch((err: unknown) =>
+      console.error(`Error indexing file: ${filePath}`, err),
+    );
+
+    return true;
   }
 
   /**
@@ -393,12 +399,20 @@ export class RagEnvironmentRegistry {
         await this.saveOrUpdate(ragEnvironment);
         indexTask.status = 'success';
       } catch (err: unknown) {
+        fileInfo.status = 'error';
+        await this.saveOrUpdate(ragEnvironment).catch((saveErr: unknown) =>
+          console.error(`Failed to persist error status for ${fileInfo.path}:`, saveErr),
+        );
         indexTask.status = 'failure';
         indexTask.error = String(err);
       } finally {
         indexTask.state = 'completed';
       }
     } catch (err: unknown) {
+      fileInfo.status = 'error';
+      await this.saveOrUpdate(ragEnvironment).catch((saveErr: unknown) =>
+        console.error(`Failed to persist error status for ${fileInfo.path}:`, saveErr),
+      );
       chunkTask.status = 'failure';
       chunkTask.error = String(err);
     } finally {

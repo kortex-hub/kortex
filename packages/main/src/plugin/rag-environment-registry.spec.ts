@@ -358,9 +358,11 @@ describe('RagEnvironmentRegistry', () => {
       expect(chunkProviderRegistry.findProviderById).toHaveBeenCalledWith('chunker-1');
       expect(providerRegistry.getRagConnections).toHaveBeenCalled();
 
-      // Verify chunking and indexing were called
-      expect(mockChunkProvider.chunk).toHaveBeenCalled();
-      expect(mockRagConnection.connection.index).toHaveBeenCalled();
+      // Wait for async indexing to complete
+      await vi.waitFor(() => {
+        expect(mockChunkProvider.chunk).toHaveBeenCalled();
+        expect(mockRagConnection.connection.index).toHaveBeenCalled();
+      });
 
       // Check that the file was added and indexed successfully
       const updatedEnv = ragEnvironmentRegistry.getEnvironment('test-env');
@@ -505,10 +507,18 @@ describe('RagEnvironmentRegistry', () => {
 
       expect(result).toBe(true); // File is added to pending, but indexing fails async
 
+      // Wait for async indexing to complete
+      await vi.waitFor(() => {
+        expect(mockTask.status).toBe('failure');
+      });
+
       expect(mockChunkProvider.chunk).toHaveBeenCalled();
       expect(mockRagConnection.connection.index).not.toHaveBeenCalled();
-      expect(mockTask.status).toBe('failure');
       expect(mockTask.error).toContain('Chunking failed');
+
+      // Verify file status is updated to 'error'
+      const updatedEnv = ragEnvironmentRegistry.getEnvironment('test-env');
+      expect(updatedEnv?.files[0]?.status).toBe('error');
 
       consoleErrorSpy.mockRestore();
     });
@@ -551,11 +561,19 @@ describe('RagEnvironmentRegistry', () => {
 
       expect(result).toBe(true);
 
+      // Wait for async indexing to complete
+      await vi.waitFor(() => {
+        expect(indexTask.status).toBe('failure');
+      });
+
       expect(mockChunkProvider.chunk).toHaveBeenCalled();
       expect(mockRagConnection.connection.index).toHaveBeenCalled();
       expect(chunkTask.status).toBe('success');
-      expect(indexTask.status).toBe('failure');
       expect(indexTask.error).toContain('Indexing failed');
+
+      // Verify file status is updated to 'error'
+      const updatedEnv = ragEnvironmentRegistry.getEnvironment('test-env');
+      expect(updatedEnv?.files[0]?.status).toBe('error');
     });
   });
 
