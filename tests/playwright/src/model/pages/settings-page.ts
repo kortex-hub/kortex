@@ -73,11 +73,12 @@ export class SettingsPage extends BasePage {
     return this.tabs;
   }
 
-  async createResource(providerId: ResourceId, credentials: string): Promise<void> {
+  async createResource(providerId: ResourceId, value: string): Promise<void> {
     const provider = PROVIDERS[providerId];
+    const connectionType = 'connectionType' in provider ? provider.connectionType : 'inference';
     const resourcesPage = await this.openResources();
 
-    if ((await resourcesPage.getCreatedResourceFor(provider.resourceId).count()) > 0) {
+    if ((await resourcesPage.getCreatedConnectionFor(provider.resourceId, connectionType).count()) > 0) {
       console.log(`Resource ${providerId} already exists, skipping...`);
       return;
     }
@@ -85,12 +86,17 @@ export class SettingsPage extends BasePage {
     switch (providerId) {
       case 'gemini': {
         const createGeminiPage = await resourcesPage.openCreateGeminiPage();
-        await createGeminiPage.createAndGoBack(credentials);
+        await createGeminiPage.createAndGoBack(value);
         break;
       }
       case 'openai': {
         const createOpenAIPage = await resourcesPage.openCreateOpenAIPage();
-        await createOpenAIPage.createAndGoBack(PROVIDERS.openai.baseURL, credentials);
+        await createOpenAIPage.createAndGoBack(PROVIDERS.openai.baseURL, value);
+        break;
+      }
+      case 'milvus': {
+        const createMilvusPage = await resourcesPage.openCreateMilvusPage();
+        await createMilvusPage.createAndGoBack(value);
         break;
       }
       case 'openshift-ai':
@@ -100,18 +106,19 @@ export class SettingsPage extends BasePage {
     }
 
     await resourcesPage.waitForLoad();
-    const resource = resourcesPage.getCreatedResourceFor(provider.resourceId);
-    await expect(resource).toBeVisible();
+    const resource = resourcesPage.getCreatedConnectionFor(provider.resourceId, connectionType);
+    await expect(resource).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
   }
 
   async deleteResource(providerId: ResourceId): Promise<void> {
     const provider = PROVIDERS[providerId];
+    const connectionType = 'connectionType' in provider ? provider.connectionType : 'inference';
     const resourcesPage = await this.openResources();
 
     await resourcesPage.waitForLoad();
-    await resourcesPage.deleteCreatedResourceFor(provider.resourceId);
+    await resourcesPage.deleteCreatedConnectionFor(provider.resourceId, connectionType);
 
-    const resource = resourcesPage.getCreatedResourceFor(provider.resourceId);
+    const resource = resourcesPage.getCreatedConnectionFor(provider.resourceId, connectionType);
     await expect(resource).not.toBeVisible();
   }
 

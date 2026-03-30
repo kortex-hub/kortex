@@ -29,6 +29,7 @@ import { ChatPage } from 'src/model/pages/chat-page';
 import { ExtensionsPage } from 'src/model/pages/extensions-page';
 import { FlowsPage } from 'src/model/pages/flows-page';
 import { McpPage } from 'src/model/pages/mcp-page';
+import { RagPage } from 'src/model/pages/rag-page';
 import { SettingsPage } from 'src/model/pages/settings-page';
 
 import { waitForAppReady } from '../utils/app-ready';
@@ -45,6 +46,7 @@ export interface ElectronFixtures {
   navigationBar: NavigationBar;
   settingsPage: SettingsPage;
   flowsPage: FlowsPage;
+  ragPage: RagPage;
   mcpPage: McpPage;
   extensionsPage: ExtensionsPage;
   chatPage: ChatPage;
@@ -103,6 +105,11 @@ export const test = base.extend<ElectronFixtures>({
   flowsPage: async ({ page }, use): Promise<void> => {
     const flowsPage = new FlowsPage(page);
     await use(flowsPage);
+  },
+
+  ragPage: async ({ page }, use): Promise<void> => {
+    const ragPage = new RagPage(page);
+    await use(ragPage);
   },
 
   mcpPage: async ({ page }, use): Promise<void> => {

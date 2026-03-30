@@ -66,11 +66,16 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GEMINI_API_KEY: ${{ !startsWith(inputs.instance, 'ubuntu') && secrets.GEMINI_API_KEY || '' }}
+      PODMAN_ENABLED: ${{ startsWith(inputs.instance, 'ubuntu') && 'true' || '' }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           repository: ${{ inputs.repo || github.repository }}
           ref: ${{ inputs.ref || github.ref }}
+
+      - name: Free disk space
+        if: runner.os == 'Linux'
+        uses: podman-desktop/e2e/.github/actions/disk-cleanup@fe42dc2bd7b4aa6047e5d1f44c44adfded29baca
 
       - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda
         name: Install pnpm
@@ -84,6 +89,13 @@ jobs:
 
       - name: Execute pnpm
         run: pnpm install
+
+      - name: Enable Podman socket
+        if: runner.os == 'Linux'
+        run: |
+          systemctl --user enable --now podman.socket
+          echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
+          podman info
 
       - name: Setup Ollama
         if: inputs.inference_provider == 'ollama'

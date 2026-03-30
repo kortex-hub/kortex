@@ -23,6 +23,7 @@ import { ChatPage } from '../pages/chat-page';
 import { ExtensionsPage } from '../pages/extensions-page';
 import { FlowsPage } from '../pages/flows-page';
 import { McpPage } from '../pages/mcp-page';
+import { RagPage } from '../pages/rag-page';
 import { SettingsPage } from '../pages/settings-page';
 
 export class NavigationBar {
@@ -31,6 +32,7 @@ export class NavigationBar {
   readonly chatLink: Locator;
   readonly mcpLink: Locator;
   readonly flowsLink: Locator;
+  readonly ragLink: Locator;
   readonly extensionsLink: Locator;
   readonly settingsLink: Locator;
   private readonly links: Locator[];
@@ -41,9 +43,10 @@ export class NavigationBar {
     this.chatLink = this.navigationLocator.getByRole('link', { name: 'Chat' });
     this.mcpLink = this.navigationLocator.getByRole('link', { name: 'MCP' });
     this.flowsLink = this.navigationLocator.getByRole('link', { name: 'Flows', exact: true });
+    this.ragLink = this.navigationLocator.getByRole('link', { name: 'RAG', exact: true });
     this.extensionsLink = this.navigationLocator.getByRole('link', { name: 'Extensions', exact: true });
     this.settingsLink = this.navigationLocator.getByRole('link', { name: 'Settings', exact: true });
-    this.links = [this.chatLink, this.mcpLink, this.flowsLink, this.extensionsLink, this.settingsLink];
+    this.links = [this.chatLink, this.mcpLink, this.flowsLink, this.ragLink, this.extensionsLink, this.settingsLink];
   }
 
   getAllLinks(): Locator[] {
@@ -69,6 +72,10 @@ export class NavigationBar {
 
   async navigateToFlowsPage(): Promise<FlowsPage> {
     return this.navigateTo(this.flowsLink, FlowsPage);
+  }
+
+  async navigateToRagPage(): Promise<RagPage> {
+    return this.navigateTo(this.ragLink, RagPage);
   }
 
   async navigateToExtensionsPage(): Promise<ExtensionsPage> {
