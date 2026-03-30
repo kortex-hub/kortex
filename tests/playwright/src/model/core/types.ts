@@ -90,6 +90,7 @@ export const resources = {
   gemini: { displayName: 'Gemini', hasCreateButton: true },
   ollama: { displayName: 'Ollama', hasCreateButton: false },
   ramalama: { displayName: 'RamaLama', hasCreateButton: false },
+  milvus: { displayName: 'Milvus Vector Database', hasCreateButton: true },
 } as const;
 
 export type SettingsResourceId = keyof typeof resources;
@@ -113,11 +114,14 @@ export const MCP_SERVERS = {
 
 export type MCPServerId = keyof typeof MCP_SERVERS;
 
+export type ConnectionType = 'inference' | 'rag';
+
 export interface ResourceConfig {
   readonly envVarName: string;
   readonly resourceId?: SettingsResourceId;
   readonly baseURL?: string;
   readonly autoDetected?: boolean;
+  readonly connectionType?: ConnectionType;
 }
 
 export const PROVIDERS = {
@@ -143,6 +147,11 @@ export const PROVIDERS = {
   'openshift-ai': {
     envVarName: 'OPENSHIFT_AI_TOKEN',
     resourceId: 'openshiftai',
+  },
+  milvus: {
+    envVarName: 'PODMAN_ENABLED',
+    resourceId: 'milvus',
+    connectionType: 'rag',
   },
 } as const satisfies Record<string, ResourceConfig>;
 

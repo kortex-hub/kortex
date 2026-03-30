@@ -91,7 +91,7 @@ function selectChunkProvider(id: string): void {
         </div>
 
         <!-- Vector Store Selection -->
-        <div class="flex flex-col space-y-3">
+        <div role="group" aria-label="Vector Store" class="flex flex-col space-y-3">
           <label class="text-sm font-medium text-[var(--pd-modal-text)]">Vector Store</label>
           <div class="grid grid-cols-2 gap-4">
             {#each ragConnectionOptions as option (option.key)}
@@ -118,7 +118,7 @@ function selectChunkProvider(id: string): void {
         </div>
 
         <!-- Embedding Model Selection -->
-        <div class="flex flex-col space-y-3">
+        <div role="group" aria-label="Embedding Model" class="flex flex-col space-y-3">
           <label class="text-sm font-medium text-[var(--pd-modal-text)]">Embedding Model</label>
           <div class="grid grid-cols-2 gap-4">
             {#each chunkProviders as provider (provider.id)}

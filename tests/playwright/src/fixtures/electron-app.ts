@@ -29,6 +29,7 @@ import { ChatPage } from 'src/model/pages/chat-page';
 import { ExtensionsPage } from 'src/model/pages/extensions-page';
 import { FlowsPage } from 'src/model/pages/flows-page';
 import { McpPage } from 'src/model/pages/mcp-page';
+import { RagPage } from 'src/model/pages/rag-page';
 import { SettingsPage } from 'src/model/pages/settings-page';
 
 import { waitForAppReady } from '../utils/app-ready';
@@ -45,6 +46,7 @@ export interface ElectronFixtures {
   navigationBar: NavigationBar;
   settingsPage: SettingsPage;
   flowsPage: FlowsPage;
+  ragPage: RagPage;
   mcpPage: McpPage;
   extensionsPage: ExtensionsPage;
   chatPage: ChatPage;
@@ -103,6 +105,11 @@ export const test = base.extend<ElectronFixtures>({
   flowsPage: async ({ page }, use): Promise<void> => {
     const flowsPage = new FlowsPage(page);
     await use(flowsPage);
+  },
+
+  ragPage: async ({ page }, use): Promise<void> => {
+    const ragPage = new RagPage(page);
+    await use(ragPage);
   },
 
   mcpPage: async ({ page }, use): Promise<void> => {
@@ -182,7 +189,7 @@ function prepareElectronEnv(): Record<string, string> {
   return electronEnv;
 }
 
-function setupTestConfigDir(electronEnv: Record<string, string>): void {
+function setupTestConfigDir(electronEnv: Record<string, string>): string {
   const testDataDir = mkdtempSync(join(tmpdir(), 'kortex-test-'));
   electronEnv.KORTEX_HOME_DIR = testDataDir;
 
@@ -190,13 +197,14 @@ function setupTestConfigDir(electronEnv: Record<string, string>): void {
   mkdirSync(configDir, { recursive: true });
 
   writeFileSync(join(configDir, 'settings.json'), JSON.stringify({ 'preferences.OpenDevTools': 'none' }));
+  return testDataDir;
 }
 
-function createLaunchConfig(): Parameters<typeof electron.launch>[0] {
+function createLaunchConfig(): { config: Parameters<typeof electron.launch>[0]; homeDir: string } {
   const electronEnv = prepareElectronEnv();
   const recordVideo = { dir: join(tmpdir(), 'kortex-test-videos') };
 
-  setupTestConfigDir(electronEnv);
+  const homeDir = setupTestConfigDir(electronEnv);
 
   const args = ['--no-sandbox'];
   if (process.env.CI) {
@@ -207,26 +215,33 @@ function createLaunchConfig(): Parameters<typeof electron.launch>[0] {
 
   if (isProductionMode) {
     return {
-      executablePath: process.env.KORTEX_BINARY,
-      args,
-      env: electronEnv,
-      recordVideo,
+      config: {
+        executablePath: process.env.KORTEX_BINARY,
+        args,
+        env: electronEnv,
+        recordVideo,
+      },
+      homeDir,
     };
   }
 
   return {
-    args: ['.', ...args],
-    env: {
-      ...electronEnv,
-      ELECTRON_IS_DEV: '1',
+    config: {
+      args: ['.', ...args],
+      env: {
+        ...electronEnv,
+        ELECTRON_IS_DEV: '1',
+      },
+      cwd: resolve(__dirname, '../../../..'),
+      recordVideo,
     },
-    cwd: resolve(__dirname, '../../../..'),
-    recordVideo,
+    homeDir,
   };
 }
 
 export async function launchElectronApp(): Promise<ElectronApplication> {
-  return electron.launch(createLaunchConfig());
+  const { config } = createLaunchConfig();
+  return electron.launch(config);
 }
 
 export async function getFirstPage(electronApp: ElectronApplication): Promise<Page> {

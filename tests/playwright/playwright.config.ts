@@ -22,6 +22,7 @@ import type { ResourceId } from './src/model/core/types';
 // Locally: Assumes Ollama is not available unless OLLAMA_ENABLED is explicitly set
 const ollamaAvailable = !!process.env.OLLAMA_ENABLED;
 const ramaLamaAvailable = !!process.env.RAMALAMA_ENABLED;
+const podmanAvailable = !!process.env.PODMAN_ENABLED;
 
 if (ollamaAvailable) {
   console.log('Ollama enabled - running Ollama-Provider tests');
@@ -29,6 +30,10 @@ if (ollamaAvailable) {
 
 if (ramaLamaAvailable) {
   console.log('RamaLama enabled - running RamaLama-Provider tests');
+}
+
+if (podmanAvailable) {
+  console.log('Podman enabled - running RAG tests');
 }
 
 const config: PlaywrightTestConfig & {
@@ -60,7 +65,7 @@ const config: PlaywrightTestConfig & {
     {
       name: 'Kortex-App-Core',
       testMatch: ['**/*.spec.ts'],
-      testIgnore: ['**/provider-specs/*.spec.ts'],
+      testIgnore: ['**/provider-specs/**/*.spec.ts'],
     },
     {
       name: 'Gemini-Provider',
@@ -105,6 +110,11 @@ const config: PlaywrightTestConfig & {
       testIgnore: ramaLamaAvailable
         ? ['**/provider-specs/flows-smoke.spec.ts'] // Flows not yet supported for RamaLama
         : ['**/*'], // Skip all if RamaLama is not running
+    },
+    {
+      name: 'RAG',
+      testMatch: ['**/provider-specs/rag/*.spec.ts'],
+      testIgnore: podmanAvailable ? [] : ['**/*'], // Skip all if Podman is not available
     },
   ],
 

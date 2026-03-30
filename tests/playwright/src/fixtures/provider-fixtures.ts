@@ -17,9 +17,9 @@
  ***********************************************************************/
 
 /** biome-ignore-all lint/correctness/noEmptyPattern: Playwright fixture pattern requires empty object when no dependencies are needed */
-import type { ElectronApplication, Page } from '@playwright/test';
+import { type ElectronApplication, expect, type Page } from '@playwright/test';
 
-import { MCP_SERVERS, type MCPServerId, PROVIDERS, type ResourceId } from '../model/core/types';
+import { MCP_SERVERS, type MCPServerId, PROVIDERS, type ResourceId, TIMEOUTS } from '../model/core/types';
 import { NavigationBar } from '../model/navigation/navigation';
 import { saveTestArtifacts } from '../utils/test-artifacts';
 import { type ElectronFixtures, getFirstPage, launchElectronApp, test as base } from './electron-app';
@@ -33,6 +33,8 @@ interface WorkerFixtures {
   mcpServers: MCPServerId[];
   mcpSetup: void;
   gooseSetup: void;
+  milvusConnectionName: string;
+  milvusSetup: string;
 }
 
 export const test = base.extend<ElectronFixtures, WorkerFixtures>({
@@ -93,8 +95,20 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
         return;
       }
 
+      // RAG providers (like Milvus) are managed by the dedicated milvusSetup fixture
+      if ('connectionType' in provider && provider.connectionType === 'rag') {
+        await use();
+        return;
+      }
+
+      const credentials = process.env[provider.envVarName];
+      if (!credentials) {
+        console.log(`${provider.envVarName} not set, skipping ${resource} resource setup`);
+        await use();
+        return;
+      }
+
       try {
-        const credentials = requireEnvVar(provider.envVarName);
         const settingsPage = await workerNavigationBar.navigateToSettingsPage();
         await settingsPage.createResource(resource, credentials);
         await use();
@@ -160,6 +174,63 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
       } catch (error) {
         console.warn('Goose setup failed:', error);
         throw error;
+      }
+    },
+    { scope: 'worker', auto: false },
+  ],
+
+  milvusConnectionName: [
+    '',
+    {
+      scope: 'worker',
+      option: true,
+    },
+  ],
+
+  milvusSetup: [
+    async ({ workerNavigationBar, milvusConnectionName }, use): Promise<void> => {
+      if (!milvusConnectionName) {
+        await use('');
+        return;
+      }
+
+      const settingsPage = await workerNavigationBar.navigateToSettingsPage();
+      const resourcesPage = await settingsPage.openResources();
+
+      const existingConnection = resourcesPage.getCreatedConnectionFor('milvus', 'rag');
+      if ((await existingConnection.count()) > 0) {
+        const existingName = (await existingConnection.getAttribute('aria-label')) ?? milvusConnectionName;
+        console.log(`Milvus connection '${existingName}' already exists, reusing it.`);
+        await use(existingName);
+        return;
+      }
+
+      let created = false;
+      try {
+        const createPage = await resourcesPage.openCreateMilvusPage();
+        await createPage.createAndGoBack(milvusConnectionName);
+        created = true;
+        await resourcesPage.waitForLoad();
+        await expect(resourcesPage.getCreatedConnectionFor('milvus', 'rag')).toBeVisible({
+          timeout: TIMEOUTS.DEFAULT,
+        });
+        await use(milvusConnectionName);
+      } catch (error) {
+        if (!created) {
+          console.warn(
+            `Milvus setup skipped: no container engine available. Start Podman or Docker to run RAG tests. (${error})`,
+          );
+          await use('');
+          return;
+        }
+        throw error;
+      } finally {
+        if (created) {
+          await safeCleanup(async () => {
+            const sp = await workerNavigationBar.navigateToSettingsPage();
+            await sp.deleteResource('milvus');
+          }, `Failed to delete Milvus connection '${milvusConnectionName}'`);
+        }
       }
     },
     { scope: 'worker', auto: false },

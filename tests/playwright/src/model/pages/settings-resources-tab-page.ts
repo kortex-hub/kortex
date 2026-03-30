@@ -17,10 +17,11 @@
  ***********************************************************************/
 
 import { expect, type Locator, type Page } from '@playwright/test';
-import { featuredResources, resources } from 'src/model/core/types';
+import { type ConnectionType, featuredResources, resources, TIMEOUTS } from 'src/model/core/types';
 
 import { BasePage } from './base-page';
 import { SettingsCreateGeminiPage } from './settings-create-gemini-page';
+import { SettingsCreateMilvusPage } from './settings-create-milvus-page';
 import { SettingsCreateOpenAIPage } from './settings-create-openai-page';
 
 export class SettingsResourcesPage extends BasePage {
@@ -36,6 +37,10 @@ export class SettingsResourcesPage extends BasePage {
     return this.page.getByRole('region', { name: 'Featured Provider Resources' }).locator(`[id="${resourceId}"]`);
   }
 
+  getProviderRegion(providerId: string): Locator {
+    return this.page.getByRole('region', { name: providerId, exact: true });
+  }
+
   getResourceCreateButton(displayName: string): Locator {
     return this.page.getByRole('button', { name: `Create new ${displayName}` });
   }
@@ -48,22 +53,54 @@ export class SettingsResourcesPage extends BasePage {
     return this.openTab(this.getResourceCreateButton(resources.openai.displayName), SettingsCreateOpenAIPage);
   }
 
-  getCreatedResourcesFor(resourceId: keyof typeof resources): Locator {
-    const resourceRegion = this.getResourceRegion(resourceId);
-    return resourceRegion.getByRole('region').filter({ hasText: '(Inference)' });
+  async openCreateMilvusPage(): Promise<SettingsCreateMilvusPage> {
+    return this.openTab(
+      this.getResourceCreateButton(resources.milvus.displayName),
+      SettingsCreateMilvusPage,
+      TIMEOUTS.DEFAULT,
+    );
   }
 
-  getCreatedResourceFor(resourceId: keyof typeof resources): Locator {
-    return this.getCreatedResourcesFor(resourceId).first();
+  private getConnectionTypeLabel(connectionType: ConnectionType): string {
+    switch (connectionType) {
+      case 'rag':
+        return '(RAG)';
+      default:
+        return '(Inference)';
+    }
+  }
+
+  getCreatedConnectionsFor(resourceId: keyof typeof resources, connectionType: ConnectionType = 'inference'): Locator {
+    const label = this.getConnectionTypeLabel(connectionType);
+    return this.getProviderRegion(resourceId)
+      .getByRole('region', { name: 'Provider Connections' })
+      .getByRole('region')
+      .filter({ hasText: label });
+  }
+
+  getCreatedConnectionFor(resourceId: keyof typeof resources, connectionType: ConnectionType = 'inference'): Locator {
+    return this.getCreatedConnectionsFor(resourceId, connectionType).first();
   }
 
   getDeleteButtonForCreatedResource(resource: Locator): Locator {
     return resource.getByRole('button', { name: 'Delete' });
   }
 
-  async deleteCreatedResourceFor(resourceId: keyof typeof resources): Promise<void> {
-    const resource = this.getCreatedResourceFor(resourceId);
+  getStopButtonForCreatedResource(resource: Locator): Locator {
+    return resource.getByRole('button', { name: 'Stop' });
+  }
+
+  async deleteCreatedConnectionFor(
+    resourceId: keyof typeof resources,
+    connectionType: ConnectionType = 'inference',
+  ): Promise<void> {
+    const resource = this.getCreatedConnectionFor(resourceId, connectionType);
+    const stopButton = this.getStopButtonForCreatedResource(resource);
+    if (await stopButton.isVisible({ timeout: TIMEOUTS.SHORT })) {
+      await stopButton.click();
+    }
     const deleteButton = this.getDeleteButtonForCreatedResource(resource);
+    await expect(deleteButton).toBeEnabled({ timeout: TIMEOUTS.DEFAULT });
     await deleteButton.click();
   }
 }

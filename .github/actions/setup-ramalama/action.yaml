@@ -41,13 +41,6 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Enable Podman socket
-      if: runner.os == 'Linux'
-      shell: bash
-      run: |
-        systemctl --user enable --now podman.socket
-        echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
-
     - name: Verify Python environment
       shell: bash
       run: |

@@ -114,25 +114,25 @@ async function handleRemoveFile(filePath: string): Promise<void> {
         <div class="summary-grid grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-6 mb-8">
           <div class="info-card bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-divider)] rounded-lg p-5">
             <h3 class="info-card-title text-sm font-semibold text-[var(--pd-content-text-secondary)] mb-4 uppercase tracking-wider">General Information</h3>
-            <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]">
+            <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]" aria-label="Name">
               <span class="info-label text-sm text-[var(--pd-content-text-secondary)]">Name</span>
-              <span class="info-value text-sm text-[var(--pd-content-text)] font-medium">{ragEnvironment.name}</span>
+              <span class="info-value text-sm text-[var(--pd-content-text)] font-medium" data-testid="info-value">{ragEnvironment.name}</span>
             </div>
           </div>
 
           <div class="info-card bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-divider)] rounded-lg p-5">
             <h3 class="info-card-title text-sm font-semibold text-[var(--pd-content-text-secondary)] mb-4 uppercase tracking-wider">Configuration</h3>
-            <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]">
+            <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]" aria-label="Vector Store">
               <span class="info-label text-sm text-[var(--pd-content-text-secondary)]">Vector Store</span>
-              <span class="info-value text-sm text-[var(--pd-content-text)] font-medium">{databaseName}</span>
+              <span class="info-value text-sm text-[var(--pd-content-text)] font-medium" data-testid="info-value">{databaseName}</span>
             </div>
-            <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]">
+            <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]" aria-label="Embedding Model">
               <span class="info-label text-sm text-[var(--pd-content-text-secondary)]">Embedding Model</span>
-              <span class="info-value text-sm text-[var(--pd-content-text)] font-medium">{chunkProviderName}</span>
+              <span class="info-value text-sm text-[var(--pd-content-text)] font-medium" data-testid="info-value">{chunkProviderName}</span>
             </div>
-            <div class="info-row flex justify-between py-3 border-b-0">
+            <div class="info-row flex justify-between py-3 border-b-0" aria-label="Source Files">
               <span class="info-label text-sm text-[var(--pd-content-text-secondary)]">Source Files</span>
-              <span class="info-value text-sm text-[var(--pd-content-text)] font-medium">{files.length} files</span>
+              <span class="info-value text-sm text-[var(--pd-content-text)] font-medium" data-testid="info-value">{files.length} files</span>
             </div>
           </div>
         </div>
@@ -164,7 +164,7 @@ async function handleRemoveFile(filePath: string): Promise<void> {
 
           {#if files.length > 0}
             {#each files as file (file.path)}
-              <div class="source-item flex items-center justify-between px-5 py-4 border-b border-[var(--pd-content-divider)] last:border-b-0 hover:bg-[var(--pd-content-card-inset-bg)] transition-colors duration-200">
+              <div class="source-item flex items-center justify-between px-5 py-4 border-b border-[var(--pd-content-divider)] last:border-b-0 hover:bg-[var(--pd-content-card-inset-bg)] transition-colors duration-200" aria-label="source file">
                 <div class="source-info flex items-center gap-3">
                   <div class="w-8 h-8 bg-[var(--pd-content-card-inset-bg)] rounded-md flex items-center justify-center text-[var(--pd-content-text-secondary)]">
                     <Icon icon="fas fa-file" class="fa-2x"/>
@@ -201,13 +201,13 @@ async function handleRemoveFile(filePath: string): Promise<void> {
         <!-- VectorStore Tab -->
         <div class="info-card bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-divider)] rounded-lg p-5 max-w-2xl">
           <h3 class="info-card-title text-sm font-semibold text-[var(--pd-content-text-secondary)] mb-4 uppercase tracking-wider">{databaseName} Configuration</h3>
-          <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]">
+          <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]" aria-label="Database Type">
             <span class="info-label text-sm text-[var(--pd-content-text-secondary)]">Database Type</span>
-            <span class="info-value text-sm text-[var(--pd-content-text)] font-medium">{databaseName}</span>
+            <span class="info-value text-sm text-[var(--pd-content-text)] font-medium" data-testid="info-value">{databaseName}</span>
           </div>
-          <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]">
+          <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]" aria-label="Collection Name">
             <span class="info-label text-sm text-[var(--pd-content-text-secondary)]">Collection Name</span>
-            <span class="info-value text-sm text-[var(--pd-content-text)] font-medium">{ragEnvironment.name.replace(/\W/g, '_')}</span>
+            <span class="info-value text-sm text-[var(--pd-content-text)] font-medium" data-testid="info-value">{ragEnvironment.name.replace(/\W/g, '_')}</span>
           </div>
         </div>
       {:else}
@@ -221,9 +221,9 @@ async function handleRemoveFile(filePath: string): Promise<void> {
         <!-- Chunker Tab -->
         <div class="info-card bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-divider)] rounded-lg p-5 max-w-2xl">
           <h3 class="info-card-title text-sm font-semibold text-[var(--pd-content-text-secondary)] mb-4 uppercase tracking-wider">{chunkProviderName} Configuration</h3>
-          <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]">
+          <div class="info-row flex justify-between py-3 border-b border-[var(--pd-content-divider)]" aria-label="Model">
             <span class="info-label text-sm text-[var(--pd-content-text-secondary)]">Model</span>
-            <span class="info-value text-sm text-[var(--pd-content-text)] font-medium">{chunkProviderName}</span>
+            <span class="info-value text-sm text-[var(--pd-content-text)] font-medium" data-testid="info-value">{chunkProviderName}</span>
           </div>
         </div>
       {:else}
