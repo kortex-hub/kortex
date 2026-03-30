@@ -235,7 +235,7 @@ $effect((): (() => void) | void => {
   {/if}
 
   <div class={cn(
-    'bg-muted flex flex-col rounded-2xl border dark:border-zinc-700',
+    'bg-muted flex flex-col rounded-2xl border border-[var(--pd-input-field-stroke)]',
     c
   )}>
     <Textarea
@@ -261,7 +261,7 @@ $effect((): (() => void) | void => {
     <div class="flex w-full flex-row items-center justify-between px-1 py-1">
       <div class="flex flex-row justify-start">
         <Button
-          class="h-fit rounded-md rounded-bl-lg p-[7px] hover:bg-zinc-200 dark:border-zinc-700 hover:dark:bg-zinc-900"
+          class="h-fit rounded-md rounded-bl-lg p-[7px] hover:bg-[var(--pd-content-card-hover-bg)] dark:hover:bg-[var(--pd-content-card-hover-bg)]"
           onclick={(event): void => {
             event.preventDefault();
             handleFile().catch(console.error);
@@ -281,7 +281,7 @@ $effect((): (() => void) | void => {
           <Button
             aria-label="Stop generation"
             title="Stop generation"
-            class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
+            class="h-fit rounded-full border border-[var(--pd-input-field-stroke)] p-1.5"
             onclick={async (event): Promise<void> => {
               event.preventDefault();
               await chatClient.stop();
@@ -293,7 +293,7 @@ $effect((): (() => void) | void => {
           <Button
               aria-label="Send message"
               title="Send message"
-              class="h-fit rounded-full border p-1.5 dark:border-zinc-600"
+              class="h-fit rounded-full border border-[var(--pd-input-field-stroke)] p-1.5"
               onclick={async(event): Promise<void> => {
                 event.preventDefault();
                 await submitForm();
