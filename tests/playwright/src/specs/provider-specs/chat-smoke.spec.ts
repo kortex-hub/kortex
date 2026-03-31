@@ -29,6 +29,7 @@ test.use({
 test.beforeEach(async ({ page, navigationBar, chatPage }) => {
   await waitForNavigationReady(page);
   await navigationBar.navigateToChatPage();
+  await chatPage.ensureChatSidebarVisible();
   const existingCount = await chatPage.getChatHistoryCount();
   if (existingCount > 0) {
     await chatPage.deleteAllChatHistoryItems();
@@ -464,6 +465,13 @@ test.describe
 
       await chatPage.ensureChatSidebarVisible();
       await chatPage.clickNewChat();
+
+      // Flow export requires structured output — prefer a non-lite model if available
+      const availableModels = await chatPage.getChatModelNames();
+      const capableModel = availableModels.find(name => !name.toLowerCase().includes('lite'));
+      if (capableModel) {
+        await chatPage.selectModelByName(capableModel);
+      }
 
       const promptForExport =
         'write a typescript recursive method that calculates the fibonacci number for a given index without using memoization';

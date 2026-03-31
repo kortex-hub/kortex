@@ -106,7 +106,9 @@ export class ChatPage extends BasePage {
 
   async verifyHeaderElementsVisible(): Promise<void> {
     await expect(this.toggleSidebarButton).toBeVisible();
-    await expect(this.newChatButton).toBeVisible();
+    // newChatButton is in the header only when the sidebar is collapsed; when open it moves into the sidebar
+    const isSidebarOpen = await this.sidebarNewChatButton.isVisible();
+    await expect(isSidebarOpen ? this.sidebarNewChatButton : this.newChatButton).toBeVisible();
     await expect(this.modelDropdownSelector).toBeVisible();
   }
 

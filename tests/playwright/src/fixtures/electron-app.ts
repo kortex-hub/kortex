@@ -192,11 +192,10 @@ function prepareElectronEnv(): Record<string, string> {
 function setupTestConfigDir(electronEnv: Record<string, string>): void {
   const testDataDir = mkdtempSync(join(tmpdir(), 'kortex-test-'));
   electronEnv.KORTEX_HOME_DIR = testDataDir;
-  // Isolate Goose recipes from ~/.config/goose by redirecting HOME to the test temp dir.
-  // realpathSync resolves macOS symlinks (/var/... → /private/var/...) so paths match what the Goose CLI returns.
-  // On Windows, homedir() reads USERPROFILE instead of HOME.
+  // Redirect HOME to the isolated temp dir so homedir() and Goose CLI use it instead of ~/.config/goose.
+  // realpathSync resolves macOS /var → /private/var symlinks so paths match what the Goose CLI returns.
+  // Note: on Windows, Electron depends on USERPROFILE for AppData paths — do not override it.
   electronEnv.HOME = realpathSync(testDataDir);
-  electronEnv.USERPROFILE = electronEnv.HOME;
 
   const configDir = join(testDataDir, 'configuration');
   mkdirSync(configDir, { recursive: true });
