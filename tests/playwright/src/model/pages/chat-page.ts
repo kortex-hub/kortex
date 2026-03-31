@@ -326,9 +326,9 @@ export class ChatPage extends BasePage {
   async exportAsFlow(): Promise<FlowsCreatePage> {
     await expect(this.exportAsFlowButton).toBeEnabled({ timeout: TIMEOUTS.STANDARD });
     await this.exportAsFlowButton.click();
-    await expect(this.exportAsFlowButton).not.toBeVisible({ timeout: TIMEOUTS.STANDARD });
-
-    return new FlowsCreatePage(this.page);
+    const flowCreatePage = new FlowsCreatePage(this.page);
+    await flowCreatePage.waitForLoad();
+    return flowCreatePage;
   }
 
   async ensureToolsSidebarVisible(): Promise<void> {

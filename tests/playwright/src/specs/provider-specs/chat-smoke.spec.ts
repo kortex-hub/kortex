@@ -20,7 +20,6 @@ import { MCP_SERVERS, TIMEOUTS } from 'src/model/core/types';
 import { expect, test } from '../../fixtures/provider-fixtures';
 import { waitForNavigationReady } from '../../utils/app-ready';
 
-const isCI = !!process.env.CI;
 const hasGithubToken = !!process.env[MCP_SERVERS.github.envVarName];
 
 test.use({
@@ -422,10 +421,6 @@ test.describe
 
       for (const { condition, reason } of skipConditions) {
         test.skip(condition, reason);
-      }
-
-      if (!isCI) {
-        test.fail();
       }
 
       await navigationBar.navigateToChatPage();

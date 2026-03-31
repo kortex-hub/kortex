@@ -19,8 +19,6 @@ import { expect, test } from '../../fixtures/provider-fixtures';
 import { MCP_SERVERS } from '../../model/core/types';
 import { waitForNavigationReady } from '../../utils/app-ready';
 
-const isCI = !!process.env.CI;
-
 const MCP_REGISTRY_EXAMPLE = 'MCP Registry example';
 const MCP_REGISTRY_URL = 'https://registry.modelcontextprotocol.io';
 const SERVER_LIST_UPDATE_TIMEOUT = 120_000;
@@ -71,11 +69,6 @@ test.describe('MCP Registry Management', { tag: '@smoke' }, () => {
 
     for (const { condition, reason } of skipConditions) {
       test.skip(condition, reason);
-    }
-
-    // Expect failure locally until https://github.com/kortex-hub/kortex/issues/651 is fixed
-    if (!isCI) {
-      test.fail();
     }
 
     const serverName = MCP_SERVERS.github.serverName;

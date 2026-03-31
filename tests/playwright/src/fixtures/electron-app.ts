@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 /** biome-ignore-all lint/correctness/noEmptyPattern: Playwright fixture pattern requires empty object when no dependencies are needed */
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -192,6 +192,11 @@ function prepareElectronEnv(): Record<string, string> {
 function setupTestConfigDir(electronEnv: Record<string, string>): void {
   const testDataDir = mkdtempSync(join(tmpdir(), 'kortex-test-'));
   electronEnv.KORTEX_HOME_DIR = testDataDir;
+  // Isolate Goose recipes from ~/.config/goose by redirecting HOME to the test temp dir.
+  // realpathSync resolves macOS symlinks (/var/... → /private/var/...) so paths match what the Goose CLI returns.
+  // On Windows, homedir() reads USERPROFILE instead of HOME.
+  electronEnv.HOME = realpathSync(testDataDir);
+  electronEnv.USERPROFILE = electronEnv.HOME;
 
   const configDir = join(testDataDir, 'configuration');
   mkdirSync(configDir, { recursive: true });
@@ -206,10 +211,8 @@ function createLaunchConfig(): Parameters<typeof electron.launch>[0] {
   setupTestConfigDir(electronEnv);
 
   const args = ['--no-sandbox'];
-  if (process.env.CI) {
-    if (process.platform !== 'linux') {
-      args.push('--use-mock-keychain');
-    }
+  if (process.platform !== 'linux') {
+    args.push('--use-mock-keychain');
   }
 
   if (isProductionMode) {
