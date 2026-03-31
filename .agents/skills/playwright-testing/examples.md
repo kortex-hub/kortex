@@ -62,20 +62,28 @@ import { TIMEOUTS } from 'src/model/core/types';
 import { expect, test } from '../../fixtures/provider-fixtures';
 import { waitForNavigationReady } from '../../utils/app-ready';
 
-test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
-  test.beforeEach(async ({ page, navigationBar, chatPage }) => {
-    await waitForNavigationReady(page);
-    await chatPage.clearLastUsedModel();
-    await navigationBar.navigateToChatPage();
-  });
+// Shared beforeEach at file level for all describe blocks
+test.beforeEach(async ({ page, navigationBar, chatPage }) => {
+  await waitForNavigationReady(page);
+  await navigationBar.navigateToChatPage();
+  const existingCount = await chatPage.getChatHistoryCount();
+  if (existingCount > 0) {
+    await chatPage.deleteAllChatHistoryItems();
+    await chatPage.verifyChatHistoryEmpty();
+    await chatPage.ensureNotificationsAreNotVisible();
+  }
+});
 
-  test('[CHAT-01] All chat UI elements are visible', async ({ chatPage }) => {
+test.describe.serial('Chat UI elements', { tag: '@smoke' }, () => {
+  test('[CHAT-UI-01] All chat UI elements are visible', async ({ chatPage }) => {
     await chatPage.verifyHeaderElementsVisible();
     await chatPage.verifyInputAreaVisible();
     await chatPage.verifySuggestedMessagesVisible();
   });
+});
 
-  test('[CHAT-02] Create and check new chat history item', async ({ chatPage }) => {
+test.describe.serial('Chat history management', { tag: '@smoke' }, () => {
+  test('[CHAT-HIST-01] Create and check new chat history item', async ({ chatPage }) => {
     await chatPage.ensureChatSidebarVisible();
     const initialCount = await chatPage.getChatHistoryCount();
     await chatPage.getSuggestedMessages().last().click();
@@ -90,7 +98,8 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
 
 - Import from `../../fixtures/provider-fixtures` (extends electron-app fixtures)
 - `resourceSetup` runs automatically (auto: true) — no explicit call needed
-- Use `test.describe.serial()` when tests depend on shared state
+- Use `test.describe.serial()` to group tests by scenario (e.g., history, model selection, editing)
+- Use `CHAT-<SCENARIO>-<NUM>` test IDs so each group numbers independently
 - Use `expect.poll()` with `TIMEOUTS.MODEL_RESPONSE` for LLM-dependent assertions
 
 ---
@@ -98,7 +107,7 @@ test.describe.serial('Chat page navigation', { tag: '@smoke' }, () => {
 ## Example 3: Multi-Step Workflow with Cleanup
 
 ```typescript
-test('[CHAT-03] Create and switch between multiple chat sessions', async ({ chatPage }) => {
+test('[CHAT-HIST-02] Create and switch between multiple chat sessions', async ({ chatPage }) => {
   test.slow(); // 3x timeout for complex workflows
 
   await chatPage.ensureChatSidebarVisible();
@@ -146,7 +155,7 @@ test('[CHAT-03] Create and switch between multiple chat sessions', async ({ chat
 ## Example 4: Conditional Test Skipping
 
 ```typescript
-test('[CHAT-05] Switch between all available models', async ({ chatPage }) => {
+test('[CHAT-MODEL-01] Switch between all available models', async ({ chatPage }) => {
   const chatModelNames = await chatPage.getChatModelNames();
 
   // Skip if preconditions aren't met
@@ -180,7 +189,7 @@ test('[CHAT-05] Switch between all available models', async ({ chatPage }) => {
 ## Example 5: Cross-Feature Test (Chat + Flows)
 
 ```typescript
-test('[CHAT-08] Export chat as Flow', async ({
+test('[CHAT-INTG-02] Export chat as Flow', async ({
   chatPage,
   navigationBar,
   flowsPage,
@@ -242,7 +251,7 @@ test.use({
   mcpServers: process.env[MCP_SERVERS.github.envVarName] && process.platform !== 'linux' ? ['github'] : [],
 });
 
-test('[CHAT-07] Verify MCP tool list visibility', async ({ mcpSetup: _mcpSetup, navigationBar, chatPage }) => {
+test('[CHAT-INTG-01] Verify MCP tool list visibility', async ({ mcpSetup: _mcpSetup, navigationBar, chatPage }) => {
   test.skip(!hasGithubToken, 'GITHUB_TOKEN not set');
   test.skip(isLinux, 'safeStorage issues on Linux');
 

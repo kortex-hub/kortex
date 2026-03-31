@@ -57,7 +57,7 @@ tests/playwright/
 | Page object    | `*-page.ts`                      | `chat-page.ts`                   |
 | Tab sub-page   | `*-tab-page.ts`                  | `settings-resources-tab-page.ts` |
 | Spec file      | `*-smoke.spec.ts` or `*.spec.ts` | `extensions-smoke.spec.ts`       |
-| Test ID        | `[FEATURE-NUM]`                  | `[CHAT-01]`, `[EXT-03]`          |
+| Test ID        | `[FEATURE-SCENARIO-NUM]`         | `[CHAT-HIST-01]`, `[EXT-03]`     |
 | Provider specs | `provider-specs/*.spec.ts`       | `chat-smoke.spec.ts`             |
 | Fixtures       | camelCase with purpose           | `resourceSetup`, `mcpSetup`      |
 

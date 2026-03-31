@@ -40,7 +40,7 @@ test.beforeEach(async ({ page, navigationBar, chatPage }) => {
 
 test.describe
   .serial('Chat UI elements', { tag: '@smoke' }, () => {
-    test('[CHAT-01] All chat UI elements are visible', async ({ chatPage }) => {
+    test('[CHAT-UI-01] All chat UI elements are visible', async ({ chatPage }) => {
       await chatPage.verifyHeaderElementsVisible();
       await chatPage.verifyInputAreaVisible();
       await chatPage.verifySuggestedMessagesVisible();
@@ -49,7 +49,7 @@ test.describe
 
 test.describe
   .serial('Chat history management', { tag: '@smoke' }, () => {
-    test('[CHAT-02] Create and check new chat history item', async ({ chatPage }) => {
+    test('[CHAT-HIST-01] Create and check new chat history item', async ({ chatPage }) => {
       await chatPage.ensureChatSidebarVisible();
       const initialCount = await chatPage.getChatHistoryCount();
       await chatPage.getSuggestedMessages().last().click();
@@ -58,7 +58,7 @@ test.describe
         .toBe(initialCount + 1);
     });
 
-    test('[CHAT-03] Create and switch between multiple chat sessions without data loss', async ({ chatPage }) => {
+    test('[CHAT-HIST-02] Create and switch between multiple chat sessions without data loss', async ({ chatPage }) => {
       test.slow();
 
       await chatPage.ensureChatSidebarVisible();
@@ -91,7 +91,7 @@ test.describe
       }
     });
 
-    test('[CHAT-04] Delete single chat item and then delete all remaining items', async ({ chatPage }) => {
+    test('[CHAT-HIST-03] Delete single chat item and then delete all remaining items', async ({ chatPage }) => {
       await chatPage.ensureChatSidebarVisible();
       let initialCount = await chatPage.getChatHistoryCount();
 
@@ -138,7 +138,7 @@ test.describe
       await chatPage.ensureNotificationsAreNotVisible();
     });
 
-    test('[CHAT-05] Delete all button remains visible without scrolling', async ({ chatPage }) => {
+    test('[CHAT-HIST-04] Delete all button remains visible without scrolling', async ({ chatPage }) => {
       await chatPage.ensureChatSidebarVisible();
 
       const expectedChats = 15;
@@ -173,7 +173,7 @@ test.describe
 
 test.describe
   .serial('Chat model selection', { tag: '@smoke' }, () => {
-    test('[CHAT-06] Switch between all available models and verify each selection', async ({ chatPage }) => {
+    test('[CHAT-MODEL-01] Switch between all available models and verify each selection', async ({ chatPage }) => {
       const chatModelNames = await chatPage.getChatModelNames();
 
       if (chatModelNames.length < 2) {
@@ -196,7 +196,9 @@ test.describe
       }
     });
 
-    test('[CHAT-07] Change models mid-conversation, verify conversation history is preserved', async ({ chatPage }) => {
+    test('[CHAT-MODEL-02] Change models mid-conversation, verify conversation history is preserved', async ({
+      chatPage,
+    }) => {
       test.slow();
 
       const chatModelNames = await chatPage.getChatModelNames();
@@ -234,7 +236,7 @@ test.describe
       }
     });
 
-    test('[CHAT-08] Last used model is remembered when starting a new chat', async ({ chatPage }) => {
+    test('[CHAT-MODEL-03] Last used model is remembered when starting a new chat', async ({ chatPage }) => {
       const modelCount = await chatPage.getAvailableModelsCount();
 
       if (modelCount < 2) {
@@ -256,7 +258,7 @@ test.describe
 
 test.describe
   .serial('Chat message editing', { tag: '@smoke' }, () => {
-    test('[CHAT-09] Edit button enters editing mode and ESC cancels it', async ({ chatPage }) => {
+    test('[CHAT-EDIT-01] Edit button enters editing mode and ESC cancels it', async ({ chatPage }) => {
       test.slow();
       await chatPage.clickNewChat();
       await chatPage.verifySendButtonVisible();
@@ -276,7 +278,7 @@ test.describe
       await chatPage.verifyMessagesAfterEditAreNotDimmed();
     });
 
-    test('[CHAT-10] Edit message and submit triggers regeneration', async ({ chatPage }) => {
+    test('[CHAT-EDIT-02] Edit message and submit triggers regeneration', async ({ chatPage }) => {
       test.slow();
       await chatPage.clickNewChat();
       await chatPage.verifySendButtonVisible();
@@ -299,7 +301,7 @@ test.describe
 
 test.describe
   .serial('Chat renaming', { tag: '@smoke' }, () => {
-    test('[CHAT-11] Rename chat from history sidebar', async ({ chatPage }) => {
+    test('[CHAT-RENAME-01] Rename chat from history sidebar', async ({ chatPage }) => {
       await chatPage.ensureChatSidebarVisible();
       await chatPage.clickNewChat();
 
@@ -334,7 +336,7 @@ test.describe
       await chatPage.ensureNotificationsAreNotVisible();
     });
 
-    test('[CHAT-12] Cancel rename with Escape key preserves original title', async ({ chatPage }) => {
+    test('[CHAT-RENAME-02] Cancel rename with Escape key preserves original title', async ({ chatPage }) => {
       await chatPage.ensureChatSidebarVisible();
       await chatPage.clickNewChat();
 
@@ -370,7 +372,7 @@ test.describe
 
 test.describe
   .serial('Chat message generation control', { tag: '@smoke' }, () => {
-    test('[CHAT-13] Verify send button state changes during message generation', async ({ chatPage }) => {
+    test('[CHAT-GEN-01] Verify send button state changes during message generation', async ({ chatPage }) => {
       await chatPage.clickNewChat();
       await chatPage.verifySendButtonVisible();
 
@@ -384,7 +386,7 @@ test.describe
       await chatPage.verifyStopButtonHidden();
     });
 
-    test('[CHAT-14] Stop generation cancels the AI response stream', async ({ chatPage }) => {
+    test('[CHAT-GEN-02] Stop generation cancels the AI response stream', async ({ chatPage }) => {
       await chatPage.clickNewChat();
 
       // Send a message that should generate a long response
@@ -409,7 +411,7 @@ test.describe
 
 test.describe
   .serial('Chat integrations', { tag: '@smoke' }, () => {
-    test('[CHAT-15] Verify MCP tool list visibility and sidebar interaction', async ({
+    test('[CHAT-INTG-01] Verify MCP tool list visibility and sidebar interaction', async ({
       mcpSetup: _mcpSetup,
       navigationBar,
       chatPage,
@@ -449,7 +451,7 @@ test.describe
       await expect(chatPage.showMcpPanelButton).toBeVisible();
     });
 
-    test('[CHAT-16] Export chat as Flow', async ({
+    test('[CHAT-INTG-02] Export chat as Flow', async ({
       chatPage,
       navigationBar,
       flowsPage,
