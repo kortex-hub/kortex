@@ -191,13 +191,17 @@ function prepareElectronEnv(): Record<string, string> {
 
 function setupTestConfigDir(electronEnv: Record<string, string>): void {
   const testDataDir = mkdtempSync(join(tmpdir(), 'kortex-test-'));
-  electronEnv.KORTEX_HOME_DIR = testDataDir;
-  // Redirect HOME to the isolated temp dir so homedir() and Goose CLI use it instead of ~/.config/goose.
-  // realpathSync resolves macOS /var → /private/var symlinks so paths match what the Goose CLI returns.
-  // Note: on Windows, Electron depends on USERPROFILE for AppData paths — do not override it.
-  electronEnv.HOME = realpathSync(testDataDir);
+  // realpathSync resolves macOS /var → /private/var symlinks so all paths match what the Goose CLI returns.
+  const realTestDataDir = realpathSync(testDataDir);
+  electronEnv.KORTEX_HOME_DIR = realTestDataDir;
+  // Redirect home-dir env vars to the isolated temp dir so homedir() and Goose CLI use it instead of ~/.config/goose.
+  electronEnv.HOME = realTestDataDir;
+  electronEnv.USERPROFILE = realTestDataDir; // Windows: homedir() reads USERPROFILE
+  // On Linux, LinuxXDGDirectories prefers XDG_CONFIG_HOME/XDG_DATA_HOME over homedir() — point them at the temp dir.
+  electronEnv.XDG_CONFIG_HOME = join(realTestDataDir, '.config');
+  electronEnv.XDG_DATA_HOME = join(realTestDataDir, '.local', 'share');
 
-  const configDir = join(testDataDir, 'configuration');
+  const configDir = join(realTestDataDir, 'configuration');
   mkdirSync(configDir, { recursive: true });
 
   writeFileSync(join(configDir, 'settings.json'), JSON.stringify({ 'preferences.OpenDevTools': 'none' }));
