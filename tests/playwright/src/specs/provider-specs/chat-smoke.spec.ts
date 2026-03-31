@@ -27,25 +27,28 @@ test.use({
   mcpServers: process.env[MCP_SERVERS.github.envVarName] ? ['github'] : [],
 });
 
-test.describe
-  .serial('Chat page navigation', { tag: '@smoke' }, () => {
-    test.beforeEach(async ({ page, navigationBar, chatPage }) => {
-      await waitForNavigationReady(page);
-      await navigationBar.navigateToChatPage();
-      const existingCount = await chatPage.getChatHistoryCount();
-      if (existingCount > 0) {
-        await chatPage.deleteAllChatHistoryItems();
-        await chatPage.verifyChatHistoryEmpty();
-        await chatPage.ensureNotificationsAreNotVisible();
-      }
-    });
+test.beforeEach(async ({ page, navigationBar, chatPage }) => {
+  await waitForNavigationReady(page);
+  await navigationBar.navigateToChatPage();
+  const existingCount = await chatPage.getChatHistoryCount();
+  if (existingCount > 0) {
+    await chatPage.deleteAllChatHistoryItems();
+    await chatPage.verifyChatHistoryEmpty();
+    await chatPage.ensureNotificationsAreNotVisible();
+  }
+});
 
+test.describe
+  .serial('Chat UI elements', { tag: '@smoke' }, () => {
     test('[CHAT-01] All chat UI elements are visible', async ({ chatPage }) => {
       await chatPage.verifyHeaderElementsVisible();
       await chatPage.verifyInputAreaVisible();
       await chatPage.verifySuggestedMessagesVisible();
     });
+  });
 
+test.describe
+  .serial('Chat history management', { tag: '@smoke' }, () => {
     test('[CHAT-02] Create and check new chat history item', async ({ chatPage }) => {
       await chatPage.ensureChatSidebarVisible();
       const initialCount = await chatPage.getChatHistoryCount();
@@ -135,7 +138,42 @@ test.describe
       await chatPage.ensureNotificationsAreNotVisible();
     });
 
-    test('[CHAT-05] Switch between all available models and verify each selection', async ({ chatPage }) => {
+    test('[CHAT-05] Delete all button remains visible without scrolling', async ({ chatPage }) => {
+      await chatPage.ensureChatSidebarVisible();
+
+      const expectedChats = 15;
+      const initialCount = await chatPage.getChatHistoryCount();
+
+      // Create missing chats to reach the expected count
+      if (initialCount < expectedChats) {
+        const chatsToCreate = expectedChats - initialCount;
+        for (let i = 0; i < chatsToCreate; i++) {
+          await chatPage.clickNewChat();
+          await chatPage.sendMessage(`Reply "OK ${i + 1}", nothing else.`, { waitForMessage: false });
+        }
+
+        // Wait for all chats to appear in history
+        await expect
+          .poll(async () => await chatPage.getChatHistoryCount(), { timeout: TIMEOUTS.MODEL_RESPONSE })
+          .toBeGreaterThanOrEqual(expectedChats);
+      }
+
+      // Verify delete all button is visible in viewport without scrolling
+      await expect(chatPage.deleteAllChatsButton).toBeInViewport();
+
+      // Wait for send button to ensure all pending model generations have completed
+      await chatPage.verifySendButtonVisible(TIMEOUTS.MODEL_RESPONSE);
+
+      // Clean up - delete all chats
+      await chatPage.deleteAllChatHistoryItems();
+      await chatPage.verifyChatHistoryEmpty();
+      await chatPage.ensureNotificationsAreNotVisible();
+    });
+  });
+
+test.describe
+  .serial('Chat model selection', { tag: '@smoke' }, () => {
+    test('[CHAT-06] Switch between all available models and verify each selection', async ({ chatPage }) => {
       const chatModelNames = await chatPage.getChatModelNames();
 
       if (chatModelNames.length < 2) {
@@ -158,7 +196,7 @@ test.describe
       }
     });
 
-    test('[CHAT-06] Change models mid-conversation, verify conversation history is preserved', async ({ chatPage }) => {
+    test('[CHAT-07] Change models mid-conversation, verify conversation history is preserved', async ({ chatPage }) => {
       test.slow();
 
       const chatModelNames = await chatPage.getChatModelNames();
@@ -196,7 +234,182 @@ test.describe
       }
     });
 
-    test('[CHAT-07] Verify MCP tool list visibility and sidebar interaction', async ({
+    test('[CHAT-08] Last used model is remembered when starting a new chat', async ({ chatPage }) => {
+      const modelCount = await chatPage.getAvailableModelsCount();
+
+      if (modelCount < 2) {
+        test.skip(true, 'Skipping test: Less than 2 models available');
+        return;
+      }
+
+      // Select the second model
+      await chatPage.selectModelByIndex(1);
+      const selectedModelName = await chatPage.getSelectedModelName();
+      expect(selectedModelName).toBeTruthy();
+
+      // Start a new chat and verify the last used model is still selected
+      await chatPage.clickNewChat();
+      const modelAfterNewChat = await chatPage.getSelectedModelName();
+      expect(modelAfterNewChat).toBe(selectedModelName);
+    });
+  });
+
+test.describe
+  .serial('Chat message editing', { tag: '@smoke' }, () => {
+    test('[CHAT-09] Edit button enters editing mode and ESC cancels it', async ({ chatPage }) => {
+      test.slow();
+      await chatPage.clickNewChat();
+      await chatPage.verifySendButtonVisible();
+
+      const message = 'Hello, this is a test message';
+      await chatPage.sendMessage(message);
+      await chatPage.waitForModelResponse();
+
+      await chatPage.clickEditOnUserMessage(message);
+      await chatPage.verifyEditingMode(message);
+      await chatPage.verifyMessagesAfterEditAreDimmed(message);
+
+      await chatPage.cancelEditing();
+
+      await expect(chatPage.messageField).toHaveValue('');
+      await chatPage.verifyConversationMessage(message);
+      await chatPage.verifyMessagesAfterEditAreNotDimmed();
+    });
+
+    test('[CHAT-10] Edit message and submit triggers regeneration', async ({ chatPage }) => {
+      test.slow();
+      await chatPage.clickNewChat();
+      await chatPage.verifySendButtonVisible();
+
+      const originalMessage = 'What is 2 + 2?';
+      await chatPage.sendMessage(originalMessage);
+      await chatPage.waitForModelResponse();
+
+      await chatPage.clickEditOnUserMessage(originalMessage);
+      await chatPage.verifyEditingMode(originalMessage);
+
+      const editedMessage = 'What is 3 + 3?';
+      await chatPage.submitEditedMessage(editedMessage);
+
+      await chatPage.verifyConversationMessage(editedMessage);
+      await expect(chatPage.getConversationMessage(originalMessage)).not.toBeVisible();
+      await chatPage.waitForModelResponse();
+    });
+  });
+
+test.describe
+  .serial('Chat renaming', { tag: '@smoke' }, () => {
+    test('[CHAT-11] Rename chat from history sidebar', async ({ chatPage }) => {
+      await chatPage.ensureChatSidebarVisible();
+      await chatPage.clickNewChat();
+
+      const message = 'Test message for renaming';
+      await chatPage.sendMessage(message);
+      await chatPage.waitForModelResponse();
+
+      // Wait for chat to appear in history
+      const initialCount = await chatPage.getChatHistoryCount();
+      expect(initialCount).toBeGreaterThan(0);
+
+      // Get the original title (should be auto-generated from the message)
+      await expect
+        .poll(
+          async () => {
+            const title = await chatPage.getChatHistoryItemTitle(0);
+            return title.trim().length > 0;
+          },
+          { timeout: TIMEOUTS.MODEL_RESPONSE },
+        )
+        .toBeTruthy();
+
+      // Rename the chat
+      const newTitle = 'My Renamed Chat';
+      await chatPage.renameChatHistoryItemByIndex(0, newTitle);
+
+      // Verify the title has been updated
+      await expect
+        .poll(async () => await chatPage.getChatHistoryItemTitle(0), { timeout: TIMEOUTS.SHORT })
+        .toBe(newTitle);
+
+      await chatPage.ensureNotificationsAreNotVisible();
+    });
+
+    test('[CHAT-12] Cancel rename with Escape key preserves original title', async ({ chatPage }) => {
+      await chatPage.ensureChatSidebarVisible();
+      await chatPage.clickNewChat();
+
+      const message = 'Test message for cancel rename';
+      await chatPage.sendMessage(message);
+      await chatPage.waitForModelResponse();
+
+      // Wait for chat to appear in history with auto-generated title
+      await expect
+        .poll(
+          async () => {
+            const title = await chatPage.getChatHistoryItemTitle(0);
+            return title.trim().length > 0;
+          },
+          { timeout: TIMEOUTS.MODEL_RESPONSE },
+        )
+        .toBeTruthy();
+
+      // Capture the original title
+      const originalTitle = await chatPage.getChatHistoryItemTitle(0);
+      expect(originalTitle).toBeTruthy();
+
+      // Open rename UI, type a new title, but press Escape to cancel
+      await chatPage.cancelRenameChatHistoryItemByIndex(0, 'This should not be saved');
+
+      // Verify the title remains unchanged
+      const titleAfterCancel = await chatPage.getChatHistoryItemTitle(0);
+      expect(titleAfterCancel).toBe(originalTitle);
+
+      await chatPage.ensureNotificationsAreNotVisible();
+    });
+  });
+
+test.describe
+  .serial('Chat message generation control', { tag: '@smoke' }, () => {
+    test('[CHAT-13] Verify send button state changes during message generation', async ({ chatPage }) => {
+      await chatPage.clickNewChat();
+      await chatPage.verifySendButtonVisible();
+
+      const message = 'What is Podman?';
+      await chatPage.sendMessage(message, { waitForMessage: false });
+
+      await chatPage.verifyStopButtonVisible();
+      await chatPage.verifySendButtonHidden();
+
+      await chatPage.verifySendButtonVisible(TIMEOUTS.MODEL_RESPONSE);
+      await chatPage.verifyStopButtonHidden();
+    });
+
+    test('[CHAT-14] Stop generation cancels the AI response stream', async ({ chatPage }) => {
+      await chatPage.clickNewChat();
+
+      // Send a message that should generate a long response
+      const message = 'Write a very detailed and long essay about the history of container orchestration systems';
+      await chatPage.sendMessage(message, { waitForMessage: false });
+
+      // Verify the stop button appears during generation
+      await chatPage.verifyStopButtonVisible();
+      await chatPage.verifySendButtonHidden();
+
+      // Click the stop button to cancel generation
+      await chatPage.clickStopButton();
+
+      // Verify the UI returns to the ready state
+      await chatPage.verifyStopButtonHidden(TIMEOUTS.SHORT);
+      await chatPage.verifySendButtonVisible(TIMEOUTS.SHORT);
+
+      // Verify the user message is still visible in the conversation
+      await chatPage.verifyConversationMessage(message);
+    });
+  });
+
+test.describe
+  .serial('Chat integrations', { tag: '@smoke' }, () => {
+    test('[CHAT-15] Verify MCP tool list visibility and sidebar interaction', async ({
       mcpSetup: _mcpSetup,
       navigationBar,
       chatPage,
@@ -236,7 +449,7 @@ test.describe
       await expect(chatPage.showMcpPanelButton).toBeVisible();
     });
 
-    test('[CHAT-08] Export chat as Flow', async ({
+    test('[CHAT-16] Export chat as Flow', async ({
       chatPage,
       navigationBar,
       flowsPage,
@@ -283,200 +496,5 @@ test.describe
       await flowsPage.ensureRowExists(flowName, TIMEOUTS.STANDARD, false);
 
       await flowsPage.deleteAllFlows();
-    });
-
-    test('[CHAT-09] Verify send button state changes during message generation', async ({ chatPage }) => {
-      await chatPage.clickNewChat();
-      await chatPage.verifySendButtonVisible();
-
-      const message = 'What is Podman?';
-      await chatPage.sendMessage(message, { waitForMessage: false });
-
-      await chatPage.verifyStopButtonVisible();
-      await chatPage.verifySendButtonHidden();
-
-      await chatPage.verifySendButtonVisible(TIMEOUTS.MODEL_RESPONSE);
-      await chatPage.verifyStopButtonHidden();
-    });
-
-    test('[CHAT-10] Delete all button remains visible without scrolling', async ({ chatPage }) => {
-      await chatPage.ensureChatSidebarVisible();
-
-      const expectedChats = 15;
-      const initialCount = await chatPage.getChatHistoryCount();
-
-      // Create missing chats to reach the expected count
-      if (initialCount < expectedChats) {
-        const chatsToCreate = expectedChats - initialCount;
-        for (let i = 0; i < chatsToCreate; i++) {
-          await chatPage.clickNewChat();
-          await chatPage.sendMessage(`Reply "OK ${i + 1}", nothing else.`, { waitForMessage: false });
-        }
-
-        // Wait for all chats to appear in history
-        await expect
-          .poll(async () => await chatPage.getChatHistoryCount(), { timeout: TIMEOUTS.MODEL_RESPONSE })
-          .toBeGreaterThanOrEqual(expectedChats);
-      }
-
-      // Verify delete all button is visible in viewport without scrolling
-      await expect(chatPage.deleteAllChatsButton).toBeInViewport();
-
-      // Wait for send button to ensure all pending model generations have completed
-      await chatPage.verifySendButtonVisible(TIMEOUTS.MODEL_RESPONSE);
-
-      // Clean up - delete all chats
-      await chatPage.deleteAllChatHistoryItems();
-      await chatPage.verifyChatHistoryEmpty();
-      await chatPage.ensureNotificationsAreNotVisible();
-    });
-
-    test('[CHAT-11] Last used model is remembered when starting a new chat', async ({ chatPage }) => {
-      const modelCount = await chatPage.getAvailableModelsCount();
-
-      if (modelCount < 2) {
-        test.skip(true, 'Skipping test: Less than 2 models available');
-        return;
-      }
-
-      // Select the second model
-      await chatPage.selectModelByIndex(1);
-      const selectedModelName = await chatPage.getSelectedModelName();
-      expect(selectedModelName).toBeTruthy();
-
-      // Start a new chat and verify the last used model is still selected
-      await chatPage.clickNewChat();
-      const modelAfterNewChat = await chatPage.getSelectedModelName();
-      expect(modelAfterNewChat).toBe(selectedModelName);
-    });
-
-    test('[CHAT-12] Edit button enters editing mode and ESC cancels it', async ({ chatPage }) => {
-      test.slow();
-      await chatPage.clickNewChat();
-      await chatPage.verifySendButtonVisible();
-
-      const message = 'Hello, this is a test message';
-      await chatPage.sendMessage(message);
-      await chatPage.waitForModelResponse();
-
-      await chatPage.clickEditOnUserMessage(message);
-      await chatPage.verifyEditingMode(message);
-      await chatPage.verifyMessagesAfterEditAreDimmed(message);
-
-      await chatPage.cancelEditing();
-
-      await expect(chatPage.messageField).toHaveValue('');
-      await chatPage.verifyConversationMessage(message);
-      await chatPage.verifyMessagesAfterEditAreNotDimmed();
-    });
-
-    test('[CHAT-13] Edit message and submit triggers regeneration', async ({ chatPage }) => {
-      test.slow();
-      await chatPage.clickNewChat();
-      await chatPage.verifySendButtonVisible();
-
-      const originalMessage = 'What is 2 + 2?';
-      await chatPage.sendMessage(originalMessage);
-      await chatPage.waitForModelResponse();
-
-      await chatPage.clickEditOnUserMessage(originalMessage);
-      await chatPage.verifyEditingMode(originalMessage);
-
-      const editedMessage = 'What is 3 + 3?';
-      await chatPage.submitEditedMessage(editedMessage);
-
-      await chatPage.verifyConversationMessage(editedMessage);
-      await expect(chatPage.getConversationMessage(originalMessage)).not.toBeVisible();
-      await chatPage.waitForModelResponse();
-    });
-
-    test('[CHAT-15] Rename chat from history sidebar', async ({ chatPage }) => {
-      await chatPage.ensureChatSidebarVisible();
-      await chatPage.clickNewChat();
-
-      const message = 'Test message for renaming';
-      await chatPage.sendMessage(message);
-      await chatPage.waitForModelResponse();
-
-      // Wait for chat to appear in history
-      const initialCount = await chatPage.getChatHistoryCount();
-      expect(initialCount).toBeGreaterThan(0);
-
-      // Get the original title (should be auto-generated from the message)
-      await expect
-        .poll(
-          async () => {
-            const title = await chatPage.getChatHistoryItemTitle(0);
-            return title.trim().length > 0;
-          },
-          { timeout: TIMEOUTS.MODEL_RESPONSE },
-        )
-        .toBeTruthy();
-
-      // Rename the chat
-      const newTitle = 'My Renamed Chat';
-      await chatPage.renameChatHistoryItemByIndex(0, newTitle);
-
-      // Verify the title has been updated
-      await expect
-        .poll(async () => await chatPage.getChatHistoryItemTitle(0), { timeout: TIMEOUTS.SHORT })
-        .toBe(newTitle);
-
-      await chatPage.ensureNotificationsAreNotVisible();
-    });
-
-    test('[CHAT-16] Cancel rename with Escape key preserves original title', async ({ chatPage }) => {
-      await chatPage.ensureChatSidebarVisible();
-      await chatPage.clickNewChat();
-
-      const message = 'Test message for cancel rename';
-      await chatPage.sendMessage(message);
-      await chatPage.waitForModelResponse();
-
-      // Wait for chat to appear in history with auto-generated title
-      await expect
-        .poll(
-          async () => {
-            const title = await chatPage.getChatHistoryItemTitle(0);
-            return title.trim().length > 0;
-          },
-          { timeout: TIMEOUTS.MODEL_RESPONSE },
-        )
-        .toBeTruthy();
-
-      // Capture the original title
-      const originalTitle = await chatPage.getChatHistoryItemTitle(0);
-      expect(originalTitle).toBeTruthy();
-
-      // Open rename UI, type a new title, but press Escape to cancel
-      await chatPage.cancelRenameChatHistoryItemByIndex(0, 'This should not be saved');
-
-      // Verify the title remains unchanged
-      const titleAfterCancel = await chatPage.getChatHistoryItemTitle(0);
-      expect(titleAfterCancel).toBe(originalTitle);
-
-      await chatPage.ensureNotificationsAreNotVisible();
-    });
-
-    test('[CHAT-17] Stop generation cancels the AI response stream', async ({ chatPage }) => {
-      await chatPage.clickNewChat();
-
-      // Send a message that should generate a long response
-      const message = 'Write a very detailed and long essay about the history of container orchestration systems';
-      await chatPage.sendMessage(message, { waitForMessage: false });
-
-      // Verify the stop button appears during generation
-      await chatPage.verifyStopButtonVisible();
-      await chatPage.verifySendButtonHidden();
-
-      // Click the stop button to cancel generation
-      await chatPage.clickStopButton();
-
-      // Verify the UI returns to the ready state
-      await chatPage.verifyStopButtonHidden(TIMEOUTS.SHORT);
-      await chatPage.verifySendButtonVisible(TIMEOUTS.SHORT);
-
-      // Verify the user message is still visible in the conversation
-      await chatPage.verifyConversationMessage(message);
     });
   });
