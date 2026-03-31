@@ -19,7 +19,7 @@ import type { MCPRemoteServerInfo } from '../mcp/mcp-server-info.js';
 
 export interface FileInfo {
   path: string;
-  status: 'pending' | 'indexed';
+  status: 'pending' | 'indexed' | 'error';
 }
 export interface RagEnvironment {
   name: string;
