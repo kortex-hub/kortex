@@ -196,10 +196,16 @@ function setupTestConfigDir(electronEnv: Record<string, string>): void {
   electronEnv.KORTEX_HOME_DIR = realTestDataDir;
   // Redirect home-dir env vars to the isolated temp dir so homedir() and Goose CLI use it instead of ~/.config/goose.
   electronEnv.HOME = realTestDataDir;
-  electronEnv.USERPROFILE = realTestDataDir; // Windows: homedir() reads USERPROFILE
+  // Do NOT override USERPROFILE on Windows — Electron uses it to derive AppData paths and
+  // overriding it causes singleton-lock conflicts. Goose is not supported on Windows GHA runners anyway.
+  if (process.platform !== 'win32') {
+    electronEnv.USERPROFILE = realTestDataDir;
+  }
   // On Linux, LinuxXDGDirectories prefers XDG_CONFIG_HOME/XDG_DATA_HOME over homedir() — point them at the temp dir.
-  electronEnv.XDG_CONFIG_HOME = join(realTestDataDir, '.config');
-  electronEnv.XDG_DATA_HOME = join(realTestDataDir, '.local', 'share');
+  if (process.platform === 'linux') {
+    electronEnv.XDG_CONFIG_HOME = join(realTestDataDir, '.config');
+    electronEnv.XDG_DATA_HOME = join(realTestDataDir, '.local', 'share');
+  }
 
   const configDir = join(realTestDataDir, 'configuration');
   mkdirSync(configDir, { recursive: true });
