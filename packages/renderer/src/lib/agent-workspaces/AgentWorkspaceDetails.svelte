@@ -32,12 +32,23 @@ const status: AgentWorkspaceStatus = $derived(agentWorkspaceStatuses.get(workspa
 const isRunning = $derived(status === 'running' || status === 'stopping');
 const inProgress = $derived(status === 'starting' || status === 'stopping');
 
-function handleStartStop(): void {
+async function handleStartStop(): Promise<void> {
   if (inProgress) return;
-  if (isRunning) {
-    stopAgentWorkspace(workspaceId).catch(console.error);
-  } else {
-    startAgentWorkspace(workspaceId).catch(console.error);
+  const name = workspaceSummary?.name ?? workspaceId;
+  try {
+    if (isRunning) {
+      await stopAgentWorkspace(workspaceId);
+    } else {
+      await startAgentWorkspace(workspaceId);
+    }
+  } catch (error: unknown) {
+    const action = isRunning ? 'stopping' : 'starting';
+    await window.showMessageBox({
+      title: 'Agent Workspace',
+      type: 'error',
+      message: `Error while ${action} workspace "${name}": ${error}`,
+      buttons: ['OK'],
+    });
   }
 }
 

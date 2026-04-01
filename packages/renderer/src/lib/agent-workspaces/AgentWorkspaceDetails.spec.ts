@@ -213,6 +213,78 @@ test('Expect workspace not removed when user cancels', async () => {
   expect(router.goto).not.toHaveBeenCalled();
 });
 
+test('Expect error dialog shown when start fails', async () => {
+  vi.mocked(window.startAgentWorkspace).mockRejectedValue(new Error('container not found'));
+
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Start Workspace' })).toBeInTheDocument();
+  });
+
+  const startButton = screen.getByRole('button', { name: 'Start Workspace' });
+  await fireEvent.click(startButton);
+
+  await waitFor(() => {
+    expect(window.showMessageBox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent Workspace',
+        type: 'error',
+        message: expect.stringContaining('container not found'),
+      }),
+    );
+  });
+
+  expect(agentWorkspaceStatuses.get('ws-1')).toBe('stopped');
+});
+
+test('Expect error dialog uses workspace name when start fails', async () => {
+  vi.mocked(window.startAgentWorkspace).mockRejectedValue(new Error('start failed'));
+
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Start Workspace' })).toBeInTheDocument();
+  });
+
+  const startButton = screen.getByRole('button', { name: 'Start Workspace' });
+  await fireEvent.click(startButton);
+
+  await waitFor(() => {
+    expect(window.showMessageBox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('api-refactor'),
+      }),
+    );
+  });
+});
+
+test('Expect error dialog shown when stop fails', async () => {
+  agentWorkspaceStatuses.set('ws-1', 'running');
+  vi.mocked(window.stopAgentWorkspace).mockRejectedValue(new Error('stop timeout'));
+
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Stop Workspace' })).toBeInTheDocument();
+  });
+
+  const stopButton = screen.getByRole('button', { name: 'Stop Workspace' });
+  await fireEvent.click(stopButton);
+
+  await waitFor(() => {
+    expect(window.showMessageBox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent Workspace',
+        type: 'error',
+        message: expect.stringContaining('stop timeout'),
+      }),
+    );
+  });
+
+  expect(agentWorkspaceStatuses.get('ws-1')).toBe('running');
+});
+
 test('Expect no navigation when removal fails', async () => {
   vi.mocked(window.showMessageBox).mockResolvedValue({ response: 0 });
   vi.mocked(window.removeAgentWorkspace).mockRejectedValue(new Error('removal failed'));

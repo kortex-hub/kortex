@@ -164,3 +164,63 @@ test('Expect clicking stop button calls stopAgentWorkspace', async () => {
     expect(agentWorkspaceStatuses.get('ws-1')).toBe('stopped');
   });
 });
+
+test('Expect error dialog shown when start fails', async () => {
+  vi.mocked(window.startAgentWorkspace).mockRejectedValue(new Error('container not found'));
+
+  render(AgentWorkspaceCard, { workspace });
+
+  const startButton = screen.getByRole('button', { name: 'Start workspace api-refactor' });
+  await fireEvent.click(startButton);
+
+  await vi.waitFor(() => {
+    expect(window.showMessageBox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent Workspace',
+        type: 'error',
+        message: expect.stringContaining('container not found'),
+      }),
+    );
+  });
+
+  expect(agentWorkspaceStatuses.get('ws-1')).toBe('stopped');
+});
+
+test('Expect error dialog uses workspace name when start fails', async () => {
+  vi.mocked(window.startAgentWorkspace).mockRejectedValue(new Error('start failed'));
+
+  render(AgentWorkspaceCard, { workspace });
+
+  const startButton = screen.getByRole('button', { name: 'Start workspace api-refactor' });
+  await fireEvent.click(startButton);
+
+  await vi.waitFor(() => {
+    expect(window.showMessageBox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('api-refactor'),
+      }),
+    );
+  });
+});
+
+test('Expect error dialog shown when stop fails', async () => {
+  agentWorkspaceStatuses.set('ws-1', 'running');
+  vi.mocked(window.stopAgentWorkspace).mockRejectedValue(new Error('stop timeout'));
+
+  render(AgentWorkspaceCard, { workspace });
+
+  const stopButton = screen.getByRole('button', { name: 'Stop workspace api-refactor' });
+  await fireEvent.click(stopButton);
+
+  await vi.waitFor(() => {
+    expect(window.showMessageBox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Agent Workspace',
+        type: 'error',
+        message: expect.stringContaining('stop timeout'),
+      }),
+    );
+  });
+
+  expect(agentWorkspaceStatuses.get('ws-1')).toBe('running');
+});

@@ -57,6 +57,7 @@ export async function startAgentWorkspace(id: string): Promise<void> {
   } catch (error: unknown) {
     agentWorkspaceStatuses.set(id, 'stopped');
     console.error('Failed to start agent workspace', error);
+    throw error;
   }
 }
 
@@ -68,5 +69,6 @@ export async function stopAgentWorkspace(id: string): Promise<void> {
   } catch (error: unknown) {
     agentWorkspaceStatuses.set(id, 'running');
     console.error('Failed to stop agent workspace', error);
+    throw error;
   }
 }

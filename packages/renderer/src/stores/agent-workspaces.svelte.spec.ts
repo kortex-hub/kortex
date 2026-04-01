@@ -52,10 +52,10 @@ test('startAgentWorkspace should set starting status during the call', async () 
   expect(agentWorkspaceStatuses.get('ws-1')).toBe('running');
 });
 
-test('startAgentWorkspace should revert to stopped on failure', async () => {
+test('startAgentWorkspace should revert to stopped on failure and re-throw', async () => {
   vi.mocked(window.startAgentWorkspace).mockRejectedValue(new Error('start failed'));
 
-  await startAgentWorkspace('ws-1');
+  await expect(startAgentWorkspace('ws-1')).rejects.toThrow('start failed');
 
   expect(agentWorkspaceStatuses.get('ws-1')).toBe('stopped');
 });
@@ -90,11 +90,11 @@ test('stopAgentWorkspace should set stopping status during the call', async () =
   expect(agentWorkspaceStatuses.get('ws-1')).toBe('stopped');
 });
 
-test('stopAgentWorkspace should revert to running on failure', async () => {
+test('stopAgentWorkspace should revert to running on failure and re-throw', async () => {
   agentWorkspaceStatuses.set('ws-1', 'running');
   vi.mocked(window.stopAgentWorkspace).mockRejectedValue(new Error('stop failed'));
 
-  await stopAgentWorkspace('ws-1');
+  await expect(stopAgentWorkspace('ws-1')).rejects.toThrow('stop failed');
 
   expect(agentWorkspaceStatuses.get('ws-1')).toBe('running');
 });

@@ -38,15 +38,25 @@ function handleActionKeydown(e: KeyboardEvent): void {
 
 function handleStartStopClick(e: MouseEvent): void {
   e.stopPropagation();
-  handleStartStop();
+  handleStartStop().catch(console.error);
 }
 
-function handleStartStop(): void {
+async function handleStartStop(): Promise<void> {
   if (inProgress) return;
-  if (isRunning) {
-    stopAgentWorkspace(workspace.id).catch(console.error);
-  } else {
-    startAgentWorkspace(workspace.id).catch(console.error);
+  try {
+    if (isRunning) {
+      await stopAgentWorkspace(workspace.id);
+    } else {
+      await startAgentWorkspace(workspace.id);
+    }
+  } catch (error: unknown) {
+    const action = isRunning ? 'stopping' : 'starting';
+    await window.showMessageBox({
+      title: 'Agent Workspace',
+      type: 'error',
+      message: `Error while ${action} workspace "${workspace.name}": ${error}`,
+      buttons: ['OK'],
+    });
   }
 }
 
