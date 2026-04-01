@@ -143,17 +143,27 @@ async function submitForm(): Promise<void> {
   await new Promise(resolve => requestAnimationFrame(resolve));
   resetHeight();
 
-  await chatClient.sendMessage({
-    text,
-    files: attachments.map(attachment => ({
-      type: 'file',
-      url: attachment.url,
-      name: attachment.name,
-      mediaType: attachment.contentType!,
-    })),
-  });
-
+  const files = attachments.map(attachment => ({
+    type: 'file' as const,
+    url: attachment.url,
+    filename: attachment.name,
+    mediaType: attachment.contentType ?? 'application/octet-stream',
+  }));
+  const previousAttachments = attachments;
   attachments = [];
+
+  try {
+    await chatClient.sendMessage({ text, files });
+  } catch (error) {
+    // Restore user state so they can retry
+    attachments = previousAttachments;
+    input = text;
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    resetHeight();
+    console.error('Failed to send message:', error);
+    toast.error('Failed to send message. Please try again.');
+    return;
+  }
 
   if (innerWidth.current && innerWidth.current > 768) {
     textareaRef?.focus();
