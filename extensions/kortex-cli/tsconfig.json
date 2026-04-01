@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "module": "esnext",
+    "lib": ["ES2024"],
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "target": "esnext",
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "types": ["node"],
+    "esModuleInterop": true
+  },
+  "include": ["src"]
+}
