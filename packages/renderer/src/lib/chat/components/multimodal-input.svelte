@@ -205,6 +205,70 @@ async function handleFile(): Promise<void> {
   }
 }
 
+let isDragging = $state(false);
+let dragDepth = 0;
+
+const MAX_DND_FILE_BYTES = 20 * 1024 * 1024; // 20 MB
+
+function isFileDrag(event: DragEvent): boolean {
+  return event.dataTransfer?.types?.includes('Files') ?? false;
+}
+
+function handleDragEnter(event: DragEvent): void {
+  if (!isFileDrag(event)) return;
+  event.preventDefault();
+  dragDepth++;
+  isDragging = true;
+}
+
+function handleDragOver(event: DragEvent): void {
+  if (!isFileDrag(event)) return;
+  event.preventDefault();
+}
+
+function handleDragLeave(): void {
+  dragDepth--;
+  if (dragDepth <= 0) {
+    dragDepth = 0;
+    isDragging = false;
+  }
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (): void => resolve(reader.result as string);
+    reader.onerror = (): void => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleDrop(event: DragEvent): Promise<void> {
+  if (!isFileDrag(event)) return;
+  event.preventDefault();
+  isDragging = false;
+  dragDepth = 0;
+
+  const files = event.dataTransfer?.files;
+  if (!files?.length) return;
+
+  // Collect file references synchronously before any async work
+  const fileList = Array.from(files);
+
+  for (const file of fileList) {
+    if (file.size > MAX_DND_FILE_BYTES) {
+      toast.error(`${file.name} is too large to attach via drag and drop (max 20 MB).`);
+      continue;
+    }
+    const url = await readFileAsDataUrl(file);
+    attachments.push({
+      url,
+      name: file.name,
+      contentType: file.type,
+    });
+  }
+}
+
 onMount(() => {
   input = storedInput.value;
   adjustHeight();
@@ -250,10 +314,19 @@ $effect((): (() => void) | void => {
     <div class="text-muted-foreground px-3 pt-2 text-sm">Press ESC to cancel editing</div>
   {/if}
 
-  <div class={cn(
-    'bg-muted flex flex-col rounded-2xl border border-[var(--pd-input-field-stroke)]',
-    c
-  )}>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <!-- drop zone wraps the interactive textarea, adding a role would be semantically incorrect -->
+  <div
+    class={cn(
+      'bg-muted flex flex-col rounded-2xl border border-[var(--pd-input-field-stroke)]',
+      isDragging && 'border-primary border-dashed',
+      c
+    )}
+    ondragenter={handleDragEnter}
+    ondragover={handleDragOver}
+    ondragleave={handleDragLeave}
+    ondrop={(e): void => { handleDrop(e).catch(console.error); }}
+  >
     <Textarea
       bind:ref={textareaRef}
       placeholder="Send a message..."
