@@ -19,18 +19,17 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-import type { Disposable, ExtensionContext } from '@kortex-app/api';
-import { skills } from '@kortex-app/api';
+import type { Disposable, Provider } from '@kortex-app/api';
 import { inject, injectable } from 'inversify';
 
-import { ExtensionContextSymbol } from '/@/inject/symbol';
+import { ClaudeProviderSymbol } from '/@/inject/symbol';
 
 @injectable()
 export class ClaudeSkillsManager {
-  @inject(ExtensionContextSymbol)
-  private extensionContext: ExtensionContext;
+  @inject(ClaudeProviderSymbol)
+  private claudeProvider: Provider;
 
-  #skillFolderDisposable: Disposable | undefined;
+  #skillDisposable: Disposable | undefined;
 
   static getClaudeSkillsDir(): string {
     return join(homedir(), '.claude', 'skills');
@@ -39,17 +38,14 @@ export class ClaudeSkillsManager {
   async init(): Promise<void> {
     const claudeSkillsDir = ClaudeSkillsManager.getClaudeSkillsDir();
 
-    this.#skillFolderDisposable = skills.registerSkillFolder({
-      label: 'Claude Skills',
-      badge: 'Claude',
-      icon: './icon.png',
-      baseDirectory: claudeSkillsDir,
+    this.#skillDisposable = this.claudeProvider.registerSkill({
+      label: 'Claude',
+      path: claudeSkillsDir,
     });
-    this.extensionContext.subscriptions.push(this.#skillFolderDisposable);
   }
 
   dispose(): void {
-    this.#skillFolderDisposable?.dispose();
-    this.#skillFolderDisposable = undefined;
+    this.#skillDisposable?.dispose();
+    this.#skillDisposable = undefined;
   }
 }

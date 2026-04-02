@@ -23,6 +23,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { ClaudeExtension } from '/@/claude-extension';
 import { ClaudeSkillsManager } from '/@/manager/claude-skills-manager';
 
+vi.mock(import('@kortex-app/api'));
 vi.mock(import('/@/manager/claude-skills-manager'));
 
 class TestClaudeExtension extends ClaudeExtension {

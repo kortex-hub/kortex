@@ -19,36 +19,35 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-import type { Disposable, ExtensionContext } from '@kortex-app/api';
-import * as extensionApi from '@kortex-app/api';
+import type { Disposable, Provider } from '@kortex-app/api';
 import { Container } from 'inversify';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { ExtensionContextSymbol } from '/@/inject/symbol';
+import { ClaudeProviderSymbol } from '/@/inject/symbol';
 
 import { ClaudeSkillsManager } from './claude-skills-manager';
 
 vi.mock(import('node:os'));
-vi.mock(import('@kortex-app/api'));
 
 const MOCK_HOME = '/home/testuser';
 const CLAUDE_SKILLS_DIR = join(MOCK_HOME, '.claude', 'skills');
 
+const disposableMock: Disposable = { dispose: vi.fn() };
+const providerMock: Provider = {
+  registerSkill: vi.fn(),
+} as unknown as Provider;
+
 describe('ClaudeSkillsManager', () => {
   let claudeSkillsManager: ClaudeSkillsManager;
-  let extensionContextMock: ExtensionContext;
 
   beforeEach(async () => {
     vi.resetAllMocks();
     vi.mocked(homedir).mockReturnValue(MOCK_HOME);
-
-    extensionContextMock = {
-      subscriptions: [],
-    } as unknown as ExtensionContext;
+    vi.mocked(providerMock.registerSkill).mockReturnValue(disposableMock);
 
     const container = new Container();
     container.bind(ClaudeSkillsManager).toSelf();
-    container.bind(ExtensionContextSymbol).toConstantValue(extensionContextMock);
+    container.bind(ClaudeProviderSymbol).toConstantValue(providerMock);
     claudeSkillsManager = await container.getAsync<ClaudeSkillsManager>(ClaudeSkillsManager);
   });
 
@@ -56,36 +55,19 @@ describe('ClaudeSkillsManager', () => {
     expect(ClaudeSkillsManager.getClaudeSkillsDir()).toBe(CLAUDE_SKILLS_DIR);
   });
 
-  test('registers skill folder with correct parameters', async () => {
-    const mockDisposable: Disposable = { dispose: vi.fn() };
-    vi.mocked(extensionApi.skills.registerSkillFolder).mockReturnValue(mockDisposable);
-
+  test('registers skill with correct parameters via provider', async () => {
     await claudeSkillsManager.init();
 
-    expect(extensionApi.skills.registerSkillFolder).toHaveBeenCalledWith({
-      label: 'Claude Skills',
-      badge: 'Claude',
-      icon: './icon.png',
-      baseDirectory: CLAUDE_SKILLS_DIR,
+    expect(providerMock.registerSkill).toHaveBeenCalledWith({
+      label: 'Claude',
+      path: CLAUDE_SKILLS_DIR,
     });
   });
 
-  test('pushes disposable to extension context subscriptions', async () => {
-    const mockDisposable: Disposable = { dispose: vi.fn() };
-    vi.mocked(extensionApi.skills.registerSkillFolder).mockReturnValue(mockDisposable);
-
-    await claudeSkillsManager.init();
-
-    expect(extensionContextMock.subscriptions).toContain(mockDisposable);
-  });
-
-  test('dispose cleans up skill folder registration', async () => {
-    const mockDisposable: Disposable = { dispose: vi.fn() };
-    vi.mocked(extensionApi.skills.registerSkillFolder).mockReturnValue(mockDisposable);
-
+  test('dispose cleans up skill registration', async () => {
     await claudeSkillsManager.init();
     claudeSkillsManager.dispose();
 
-    expect(mockDisposable.dispose).toHaveBeenCalled();
+    expect(disposableMock.dispose).toHaveBeenCalled();
   });
 });

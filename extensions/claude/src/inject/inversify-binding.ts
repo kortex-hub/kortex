@@ -16,19 +16,21 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ExtensionContext } from '@kortex-app/api';
+import type { ExtensionContext, Provider } from '@kortex-app/api';
 import { Container } from 'inversify';
 
-import { ExtensionContextSymbol } from '/@/inject/symbol';
+import { ClaudeProviderSymbol, ExtensionContextSymbol } from '/@/inject/symbol';
 import { managersModule } from '/@/manager/_manager-module';
 import { ClaudeSkillsManager } from '/@/manager/claude-skills-manager';
 
 export class InversifyBinding {
   #container: Container | undefined;
 
+  readonly #provider: Provider;
   readonly #extensionContext: ExtensionContext;
 
-  constructor(extensionContext: ExtensionContext) {
+  constructor(provider: Provider, extensionContext: ExtensionContext) {
+    this.#provider = provider;
     this.#extensionContext = extensionContext;
   }
 
@@ -36,6 +38,7 @@ export class InversifyBinding {
     this.#container = new Container();
 
     this.#container.bind(ExtensionContextSymbol).toConstantValue(this.#extensionContext);
+    this.#container.bind(ClaudeProviderSymbol).toConstantValue(this.#provider);
 
     await this.#container.load(managersModule);
 

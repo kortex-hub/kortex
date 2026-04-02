@@ -17,6 +17,7 @@
  ***********************************************************************/
 
 import type { ExtensionContext } from '@kortex-app/api';
+import { provider } from '@kortex-app/api';
 import type { Container } from 'inversify';
 
 import { InversifyBinding } from '/@/inject/inversify-binding';
@@ -34,7 +35,20 @@ export class ClaudeExtension {
   }
 
   async activate(): Promise<void> {
-    this.#inversifyBinding = new InversifyBinding(this.#extensionContext);
+    const claudeProvider = provider.createProvider({
+      name: 'Claude',
+      status: 'unknown',
+      id: 'claude',
+      images: {
+        icon: './icon.png',
+        logo: {
+          dark: './icon.png',
+          light: './icon.png',
+        },
+      },
+    });
+
+    this.#inversifyBinding = new InversifyBinding(claudeProvider, this.#extensionContext);
     this.#container = await this.#inversifyBinding.initBindings();
 
     try {

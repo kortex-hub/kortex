@@ -33,7 +33,6 @@ import type { FeatureRegistry } from '/@/plugin/feature-registry.js';
 import type { KubeGeneratorRegistry } from '/@/plugin/kubernetes/kube-generator-registry.js';
 import type { MCPRegistry } from '/@/plugin/mcp/mcp-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
-import type { SkillManager } from '/@/plugin/skill/skill-manager.js';
 import type { WebviewRegistry } from '/@/plugin/webview/webview-registry.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { ContributionInfo } from '/@api/contribution-info.js';
@@ -165,11 +164,6 @@ const featureRegistry: FeatureRegistry = {
 } as unknown as FeatureRegistry;
 
 const mcpRegistry: MCPRegistry = {} as unknown as MCPRegistry;
-
-const skillManager: SkillManager = {
-  registerSkill: vi.fn(),
-  unregisterSkill: vi.fn(),
-} as unknown as SkillManager;
 
 const apiSender: ApiSenderType = { send: vi.fn() } as unknown as ApiSenderType;
 
@@ -402,7 +396,6 @@ beforeEach(() => {
     featureRegistry,
     mcpRegistry,
     chunkProviderRegistry,
-    skillManager,
   );
 });
 

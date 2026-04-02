@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ExtensionContext } from '@kortex-app/api';
+import type { ExtensionContext, Provider } from '@kortex-app/api';
 import { Container } from 'inversify';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -24,10 +24,11 @@ import { managersModule } from '/@/manager/_manager-module';
 import { ClaudeSkillsManager } from '/@/manager/claude-skills-manager';
 
 import { InversifyBinding } from './inversify-binding';
-import { ExtensionContextSymbol } from './symbol';
+import { ClaudeProviderSymbol, ExtensionContextSymbol } from './symbol';
 
 let inversifyBinding: InversifyBinding;
 
+const providerMock = {} as Provider;
 const extensionContextMock = {} as ExtensionContext;
 
 vi.mock(import('inversify'));
@@ -35,7 +36,7 @@ vi.mock(import('inversify'));
 describe('InversifyBinding', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    inversifyBinding = new InversifyBinding(extensionContextMock);
+    inversifyBinding = new InversifyBinding(providerMock, extensionContextMock);
     vi.mocked(Container.prototype.bind).mockReturnValue({
       toConstantValue: vi.fn(),
     } as unknown as ReturnType<typeof Container.prototype.bind>);
@@ -47,6 +48,7 @@ describe('InversifyBinding', () => {
     await container.getAsync(ClaudeSkillsManager);
 
     expect(vi.mocked(Container.prototype.bind)).toHaveBeenCalledWith(ExtensionContextSymbol);
+    expect(vi.mocked(Container.prototype.bind)).toHaveBeenCalledWith(ClaudeProviderSymbol);
 
     expect(vi.mocked(Container.prototype.load)).toHaveBeenCalledWith(managersModule);
   });
