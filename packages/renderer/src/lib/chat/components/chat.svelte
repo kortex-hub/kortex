@@ -26,6 +26,7 @@ import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import { providerInfos } from '/@/stores/providers';
 import { MessageConfigSchema } from '/@api/chat/message-config';
 import type { Chat as DbChat, Message as DbMessage } from '/@api/chat/schema.js';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 import ChatHeader from './chat-header.svelte';
 import { IPCChatTransport } from './ipc-chat-transport';
@@ -81,6 +82,17 @@ const selectedMCPTools = new SvelteMap<string, SvelteSet<string>>(
     return acc;
   }, new Map<string, SvelteSet<string>>()),
 );
+
+function onMCPServerAdd(mcpServer: MCPRemoteServerInfo): void {
+  const server = $mcpRemoteServerInfos.find(r => r.id === mcpServer.id);
+  if (server) {
+    selectedMCPTools.set(mcpServer.id, new SvelteSet(Object.keys(server.tools)));
+  }
+}
+
+function onMCPServerRemove(mcpServer: MCPRemoteServerInfo): void {
+  selectedMCPTools.delete(mcpServer.id);
+}
 
 const selectedMCPToolsCount = $derived(
   selectedMCPTools.entries().reduce((acc, [, tools]) => {
@@ -163,6 +175,8 @@ function onCheckMCPTool(mcpId: string, toolId: string, checked: boolean): void {
       bind:mcpSelectorOpen={mcpSelectorOpen}
       {readonly}
       models={models}
+      onMCPServerAdd={onMCPServerAdd}
+      onMCPServerRemove={onMCPServerRemove}
       selectedMCPToolsCount={selectedMCPToolsCount}
       bind:selectedModel={selectedModel}
     />

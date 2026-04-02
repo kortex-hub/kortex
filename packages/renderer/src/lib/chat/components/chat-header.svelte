@@ -9,8 +9,11 @@ import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
 import { currentChatId } from '/@/lib/chat/state/current-chat-id.svelte';
 import { cn } from '/@/lib/chat/utils/shadcn';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
+import type { RagEnvironment } from '/@api/rag/rag-environment';
 
 import Plus from './icons/plus.svelte';
+import RagEnvironmentSelector from './rag-environment-selector.svelte';
 import SidebarToggle from './sidebar-toggle.svelte';
 import { Button } from './ui/button';
 import { useSidebar } from './ui/sidebar';
@@ -20,11 +23,15 @@ let {
   readonly,
   models,
   selectedModel = $bindable<ModelInfo | undefined>(),
+  onMCPServerAdd,
+  onMCPServerRemove,
   selectedMCPToolsCount,
   mcpSelectorOpen = $bindable(),
 }: {
   readonly: boolean;
   selectedModel: ModelInfo | undefined;
+  onMCPServerAdd: (mcpServer: MCPRemoteServerInfo) => void;
+  onMCPServerRemove: (mcpServer: MCPRemoteServerInfo) => void;
   models: Array<ModelInfo>;
   /**
    * Represent the number of tools selected
@@ -39,6 +46,18 @@ const noMcps = $derived($mcpRemoteServerInfos.length === 0);
 
 function onToolSelection(): void {
   mcpSelectorOpen = true;
+}
+
+let selectedRagEnvironment = $state<RagEnvironment | undefined>(undefined);
+
+function onSelectRagEnvironment(ragEnvironment: RagEnvironment | undefined): void {
+  if (selectedRagEnvironment?.mcpServer !== undefined) {
+    onMCPServerRemove(selectedRagEnvironment?.mcpServer);
+  }
+  if (ragEnvironment?.mcpServer !== undefined) {
+    onMCPServerAdd(ragEnvironment.mcpServer);
+  }
+  selectedRagEnvironment = ragEnvironment;
 }
 </script>
 
@@ -77,7 +96,12 @@ function onToolSelection(): void {
             models={models}
             bind:value={selectedModel}
         />
-        <div class="flex flex-col gap-1">
+        <RagEnvironmentSelector
+            class="order-2 md:order-3"
+            onSelect={onSelectRagEnvironment}
+        />
+
+    <div class="flex flex-col gap-1">
             {#if noMcps}
                 <div class="flex items-center gap-1 px-1 text-xs text-muted-foreground">
                     <Button
