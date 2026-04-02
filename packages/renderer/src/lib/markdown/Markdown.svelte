@@ -58,6 +58,9 @@ UI guidelines -->
   margin-bottom: 8px;
   white-space: pre-wrap;
   word-wrap: break-word;
+  background-color: var(--muted);
+  border-radius: 8px;
+  padding: 16px;
 }
 .markdown :global(a) {
   color: var(--pd-link);

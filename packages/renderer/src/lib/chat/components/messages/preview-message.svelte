@@ -1,4 +1,6 @@
 <script lang="ts">
+import './code-copy.css';
+
 import type { UIMessage } from '@ai-sdk/svelte';
 import type { DynamicToolUIPart } from 'ai';
 import { fly } from 'svelte/transition';
@@ -9,12 +11,11 @@ import { cn } from '/@/lib/chat/utils/shadcn';
 import Markdown from '/@/lib/markdown/Markdown.svelte';
 
 import LoaderIcon from '../icons/loader.svelte';
-import PencilEditIcon from '../icons/pencil-edit.svelte';
 import SparklesIcon from '../icons/sparkles.svelte';
 import MessageReasoning from '../message-reasoning.svelte';
 import PreviewAttachment from '../preview-attachment.svelte';
-import { Button } from '../ui/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { codeCopyButtons } from './code-copy-action';
+import MessageActions from './message-actions.svelte';
 import ToolParts from './tool-parts.svelte';
 
 let {
@@ -42,7 +43,8 @@ const hasText = $derived(textParts.some(part => part.text.trim().length > 0));
 
 // Show spinner only for the last assistant message while loading (during reasoning or text generation)
 const isLastMessage = $derived(messages.length > 0 && messages[messages.length - 1].id === message.id);
-const isGeneratingResponse = $derived(loading && message.role === 'assistant' && isLastMessage);
+const isLastAssistantMessage = $derived(message.role === 'assistant' && isLastMessage);
+const isGeneratingResponse = $derived(loading && isLastAssistantMessage);
 </script>
 
 <div
@@ -69,7 +71,7 @@ const isGeneratingResponse = $derived(loading && message.role === 'assistant' &&
       </div>
     {/if}
 
-    <div class="flex w-full flex-col gap-4">
+    <div class="flex w-full flex-col gap-4" use:codeCopyButtons>
       {#if message.role === 'assistant'}
         <!-- do we have tooling in parts ?-->
         {#if tools.length > 0}
@@ -92,39 +94,13 @@ const isGeneratingResponse = $derived(loading && message.role === 'assistant' &&
 
       <!-- Show text parts after reasoning -->
       {#each textParts as part, i (`${message.id}-text-${i}`)}
-        <div class="flex flex-row items-center gap-2">
-          {#if message.role === 'user' && !readonly}
-            <Tooltip>
-              <TooltipTrigger>
-                {#snippet child({ props })}
-                  <Button
-                    {...props}
-                    variant="ghost"
-                    class={cn(
-                      'text-muted-foreground h-fit rounded-full px-2 opacity-0 group-hover/message:opacity-100',
-                      { 'invisible': editState.isEditing }
-                    )}
-                    aria-label="Edit message"
-                    onclick={(): void => {
-                      editState.startEditing(message);
-                    }}
-                    disabled={editState.isEditing}
-                  >
-                    <PencilEditIcon />
-                  </Button>
-                {/snippet}
-              </TooltipTrigger>
-              <TooltipContent>Edit message</TooltipContent>
-            </Tooltip>
-          {/if}
-          <div
-            class={cn('flex flex-col gap-4 overflow-hidden', {
-              'bg-primary text-primary-foreground rounded-xl px-3 pt-4': message.role === 'user',
-              'animate-fade-in': message.role === 'assistant',
-            })}
-          >
-            <Markdown markdown={part.text} allowDangerousHtml={message.role !== 'user'} />
-          </div>
+        <div
+          class={cn('flex flex-col gap-4 overflow-hidden [&_p:last-child]:mb-0 [&_p:last-child]:pb-0', {
+            'bg-primary text-primary-foreground rounded-xl px-3 pt-4': message.role === 'user',
+            'animate-fade-in': message.role === 'assistant',
+          })}
+        >
+          <Markdown markdown={part.text} allowDangerousHtml={message.role !== 'user'} />
         </div>
       {/each}
 
@@ -137,10 +113,9 @@ const isGeneratingResponse = $derived(loading && message.role === 'assistant' &&
         </div>
       {/if}
 
-      <!-- TODO -->
-      <!-- {#if !readonly}
-        <MessageActions key={`action-${message.id}`} {chatId} {message} {vote} {isLoading} />
-      {/if} -->
+      {#if hasText && (message.role === 'user' || !isGeneratingResponse)}
+        <MessageActions {message} {readonly} alwaysVisible={isLastAssistantMessage && !isGeneratingResponse} />
+      {/if}
     </div>
   </div>
 </div>

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { faCircleCheck } from '@fortawesome/free-regular-svg-icons';
+import { faCopy } from '@fortawesome/free-solid-svg-icons';
 import Fa, { type IconSize } from 'svelte-fa';
 
 let {
@@ -9,4 +9,4 @@ let {
 } = $props();
 </script>
 
-<Fa icon={faCircleCheck} {size} />
+<Fa icon={faCopy} {size} />
