@@ -123,6 +123,8 @@ pnpm run test:watch
 
 For detailed Playwright E2E testing guidance (Page Object Model, fixtures, locator conventions, examples), see `.agents/skills/playwright-testing/`.
 
+For UI component development guidelines (color-registry usage, Icon component, reusable components), see `.agents/skills/ui-components/` and `CODE-GUIDELINES.md`.
+
 ### Code Quality
 
 ```bash
