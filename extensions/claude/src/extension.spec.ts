@@ -16,61 +16,33 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { homedir } from 'node:os';
-import { join } from 'node:path';
-
-import type { Disposable, ExtensionContext } from '@kortex-app/api';
-import * as extensionApi from '@kortex-app/api';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import type { ExtensionContext } from '@kortex-app/api';
+import { beforeEach, expect, test, vi } from 'vitest';
 
 import { ClaudeExtension } from './claude-extension';
+import { activate, deactivate } from './extension';
 
-vi.mock(import('node:os'));
-vi.mock(import('@kortex-app/api'));
+let extensionContextMock: ExtensionContext;
 
-const MOCK_HOME = '/home/testuser';
-const CLAUDE_SKILLS_DIR = join(MOCK_HOME, '.claude', 'skills');
-
-function createMockExtensionContext(): ExtensionContext {
-  return {
-    subscriptions: [],
-  } as unknown as ExtensionContext;
-}
+vi.mock(import('./claude-extension'));
 
 beforeEach(() => {
+  vi.restoreAllMocks();
   vi.resetAllMocks();
-  vi.mocked(homedir).mockReturnValue(MOCK_HOME);
+
+  extensionContextMock = {} as ExtensionContext;
 });
 
-describe('ClaudeExtension', () => {
-  test('getClaudeSkillsDir returns expected path', () => {
-    expect(ClaudeExtension.getClaudeSkillsDir()).toBe(CLAUDE_SKILLS_DIR);
-  });
+test('should initialize and activate the ClaudeExtension when activate is called', async () => {
+  await activate(extensionContextMock);
 
-  test('registers skill folder with correct parameters', async () => {
-    const mockDisposable: Disposable = { dispose: vi.fn() };
-    vi.mocked(extensionApi.skills.registerSkillFolder).mockReturnValue(mockDisposable);
+  expect(ClaudeExtension.prototype.activate).toHaveBeenCalled();
+});
 
-    const context = createMockExtensionContext();
-    const ext = new ClaudeExtension(context);
-    await ext.init();
+test('should call deactivate when deactivate is called', async () => {
+  await activate(extensionContextMock);
 
-    expect(extensionApi.skills.registerSkillFolder).toHaveBeenCalledWith({
-      label: 'Claude Skills',
-      badge: 'Claude',
-      icon: './icon.png',
-      baseDirectory: CLAUDE_SKILLS_DIR,
-    });
-  });
+  await deactivate();
 
-  test('pushes disposable to extension context subscriptions', async () => {
-    const mockDisposable: Disposable = { dispose: vi.fn() };
-    vi.mocked(extensionApi.skills.registerSkillFolder).mockReturnValue(mockDisposable);
-
-    const context = createMockExtensionContext();
-    const ext = new ClaudeExtension(context);
-    await ext.init();
-
-    expect(context.subscriptions).toContain(mockDisposable);
-  });
+  expect(ClaudeExtension.prototype.deactivate).toHaveBeenCalled();
 });

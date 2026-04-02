@@ -33,6 +33,7 @@ const config = {
     alias: {
       '/@/': join(PACKAGE_ROOT, 'src') + '/',
     },
+    mainFields: ['module', 'jsnext:main', 'jsnext'],
   },
   build: {
     sourcemap: 'inline',

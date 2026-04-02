@@ -16,18 +16,4 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ExtensionContext } from '@kortex-app/api';
-
-import { ClaudeExtension } from './claude-extension';
-
-let claudeExtension: ClaudeExtension | undefined;
-
-export async function activate(extensionContext: ExtensionContext): Promise<void> {
-  claudeExtension ??= new ClaudeExtension(extensionContext);
-  await claudeExtension.activate();
-}
-
-export async function deactivate(): Promise<void> {
-  await claudeExtension?.deactivate();
-  claudeExtension = undefined;
-}
+export const ExtensionContextSymbol = Symbol.for('ExtensionContext');

@@ -382,6 +382,10 @@ importers:
         version: 0.2.1
 
   extensions/claude:
+    dependencies:
+      inversify:
+        specifier: ^7.7.1
+        version: 7.11.0(reflect-metadata@0.2.2)
     devDependencies:
       '@kortex-app/api':
         specifier: workspace:*

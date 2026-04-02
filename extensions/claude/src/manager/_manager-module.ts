@@ -16,18 +16,12 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ExtensionContext } from '@kortex-app/api';
+import { ContainerModule } from 'inversify';
 
-import { ClaudeExtension } from './claude-extension';
+import { ClaudeSkillsManager } from './claude-skills-manager';
 
-let claudeExtension: ClaudeExtension | undefined;
+const managersModule = new ContainerModule(options => {
+  options.bind<ClaudeSkillsManager>(ClaudeSkillsManager).toSelf().inSingletonScope();
+});
 
-export async function activate(extensionContext: ExtensionContext): Promise<void> {
-  claudeExtension ??= new ClaudeExtension(extensionContext);
-  await claudeExtension.activate();
-}
-
-export async function deactivate(): Promise<void> {
-  await claudeExtension?.deactivate();
-  claudeExtension = undefined;
-}
+export { managersModule };

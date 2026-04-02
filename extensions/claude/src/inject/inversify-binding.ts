@@ -17,43 +17,35 @@
  ***********************************************************************/
 
 import type { ExtensionContext } from '@kortex-app/api';
-import type { Container } from 'inversify';
+import { Container } from 'inversify';
 
-import { InversifyBinding } from '/@/inject/inversify-binding';
+import { ExtensionContextSymbol } from '/@/inject/symbol';
+import { managersModule } from '/@/manager/_manager-module';
 import { ClaudeSkillsManager } from '/@/manager/claude-skills-manager';
 
-export class ClaudeExtension {
-  #extensionContext: ExtensionContext;
-
-  #inversifyBinding: InversifyBinding | undefined;
+export class InversifyBinding {
   #container: Container | undefined;
-  #claudeSkillsManager: ClaudeSkillsManager | undefined;
+
+  readonly #extensionContext: ExtensionContext;
 
   constructor(extensionContext: ExtensionContext) {
     this.#extensionContext = extensionContext;
   }
 
-  async activate(): Promise<void> {
-    this.#inversifyBinding = new InversifyBinding(this.#extensionContext);
-    this.#container = await this.#inversifyBinding.initBindings();
+  public async initBindings(): Promise<Container> {
+    this.#container = new Container();
 
-    try {
-      this.#claudeSkillsManager = await this.getContainer()?.getAsync(ClaudeSkillsManager);
-    } catch (e) {
-      console.error('Error while creating the Claude skills manager', e);
-      throw e;
-    }
+    this.#container.bind(ExtensionContextSymbol).toConstantValue(this.#extensionContext);
 
-    await this.#claudeSkillsManager?.init();
-  }
+    await this.#container.load(managersModule);
 
-  protected getContainer(): Container | undefined {
+    await this.#container.getAsync(ClaudeSkillsManager);
     return this.#container;
   }
 
-  async deactivate(): Promise<void> {
-    await this.#inversifyBinding?.dispose();
-    this.#claudeSkillsManager?.dispose();
-    this.#claudeSkillsManager = undefined;
+  async dispose(): Promise<void> {
+    if (this.#container) {
+      await this.#container.unbindAll();
+    }
   }
 }
