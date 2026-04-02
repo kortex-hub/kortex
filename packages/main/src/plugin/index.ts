@@ -577,6 +577,7 @@ export class PluginSystem {
     container.bind<MCPExchanges>(MCPExchanges).toSelf().inSingletonScope();
     container.bind<ProviderRegistry>(ProviderRegistry).toSelf().inSingletonScope();
     container.bind<MCPManager>(MCPManager).toSelf().inSingletonScope();
+    container.bind<CliToolRegistry>(CliToolRegistry).toSelf().inSingletonScope();
     container.bind<AgentWorkspaceManager>(AgentWorkspaceManager).toSelf().inSingletonScope();
     container.bind<FlowManager>(FlowManager).toSelf().inSingletonScope();
     container.bind<SkillManager>(SkillManager).toSelf().inSingletonScope();
@@ -767,7 +768,6 @@ export class PluginSystem {
     libpodApiInit.init();
 
     container.bind<AuthenticationImpl>(AuthenticationImpl).toSelf().inSingletonScope();
-    container.bind<CliToolRegistry>(CliToolRegistry).toSelf().inSingletonScope();
     container.bind<ImageCheckerImpl>(ImageCheckerImpl).toSelf().inSingletonScope();
     container.bind<ImageFilesRegistry>(ImageFilesRegistry).toSelf().inSingletonScope();
     container.bind<Troubleshooting>(Troubleshooting).toSelf().inSingletonScope();
