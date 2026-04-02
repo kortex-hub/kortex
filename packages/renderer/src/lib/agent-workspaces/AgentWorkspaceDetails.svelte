@@ -16,6 +16,7 @@ import {
   startAgentWorkspace,
   stopAgentWorkspace,
 } from '/@/stores/agent-workspaces.svelte';
+  import AgentWorkspaceTerminal from '/@/lib/agent-workspaces/AgentWorkspaceTerminal.svelte';
 
 interface Props {
   workspaceId: string;
@@ -70,10 +71,14 @@ function handleRemove(name: string): void {
     {/snippet}
     {#snippet tabsSnippet()}
       <Tab title="Summary" selected={isTabSelected($router.path, 'summary')} url={getTabUrl($router.path, 'summary')} />
+      <Tab title="Terminal" selected={isTabSelected($router.path, 'terminal')} url={getTabUrl($router.path, 'terminal')} />
     {/snippet}
     {#snippet contentSnippet()}
       <Route path="/summary" breadcrumb="Summary" navigationHint="tab">
         <AgentWorkspaceDetailsSummary {workspaceSummary} {configuration} />
+      </Route>
+      <Route path="/terminal" breadcrumb="Terminal" navigationHint="tab">
+        <AgentWorkspaceTerminal workspaceId={workspaceId} />
       </Route>
     {/snippet}
   </DetailsPage>

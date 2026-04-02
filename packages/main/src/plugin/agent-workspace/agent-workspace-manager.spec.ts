@@ -29,9 +29,12 @@ import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 
 import { AgentWorkspaceManager } from './agent-workspace-manager.js';
+import { ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
+import { WebContents } from 'electron';
 
 vi.mock(import('node:fs/promises'));
 vi.mock(import('yaml'));
+vi.mock(import('node:child_process'));
 
 const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
   {
@@ -64,14 +67,17 @@ const proxy = {
   isEnabled: vi.fn().mockReturnValue(false),
 } as unknown as Proxy;
 const exec = new Exec(proxy);
-
+const webContents = {
+  send: vi.fn(),
+  receive: vi.fn(),
+} as unknown as WebContents;
 function mockExecResult(stdout: string): RunResult {
   return { command: 'kdn', stdout, stderr: '' };
 }
 
 beforeEach(() => {
   vi.resetAllMocks();
-  manager = new AgentWorkspaceManager(apiSender, ipcHandle, exec);
+  manager = new AgentWorkspaceManager(apiSender, ipcHandle, exec, webContents);
   manager.init();
 });
 
@@ -241,5 +247,137 @@ describe('stop', () => {
     vi.spyOn(exec, 'exec').mockRejectedValue(new Error('workspace not found: unknown-id'));
 
     await expect(manager.stop('unknown-id')).rejects.toThrow('workspace not found: unknown-id');
+  });
+});
+
+describe('shellInAgentWorkspace', () => {
+  function createMockProcess(overrides?: {
+    stdoutOn?: ReturnType<typeof vi.fn>;
+    stderrOn?: ReturnType<typeof vi.fn>;
+    processOn?: ReturnType<typeof vi.fn>;
+  }): ChildProcessWithoutNullStreams {
+    return {
+      stdout: { on: overrides?.stdoutOn ?? vi.fn() },
+      stderr: { on: overrides?.stderrOn ?? vi.fn() },
+      stdin: { write: vi.fn() },
+      on: overrides?.processOn ?? vi.fn(),
+      killed: false,
+      kill: vi.fn(),
+    } as unknown as ChildProcessWithoutNullStreams;
+  }
+
+  test('returns write and resize functions', () => {
+    vi.mocked(spawn).mockReturnValue(createMockProcess());
+
+    const result = manager.shellInAgentWorkspace('ws-1', vi.fn(), vi.fn(), vi.fn());
+
+    expect(result).toHaveProperty('write');
+    expect(result).toHaveProperty('resize');
+    expect(result).toHaveProperty('process');
+  });
+
+  test('spawns kdn-cli terminal with correct arguments', () => {
+    vi.mocked(spawn).mockReturnValue(createMockProcess());
+
+    manager.shellInAgentWorkspace('ws-1', vi.fn(), vi.fn(), vi.fn());
+
+    expect(spawn).toHaveBeenCalledWith('kdn-cli', [
+      'terminal',
+      'ws-1',
+      '--',
+      '/bin/sh',
+      '-c',
+      'if command -v bash >/dev/null 2>&1; then bash; else sh; fi',
+    ]);
+  });
+
+  test('write function forwards data to stdin', () => {
+    const mockProcess = createMockProcess();
+    vi.mocked(spawn).mockReturnValue(mockProcess);
+
+    const result = manager.shellInAgentWorkspace('ws-1', vi.fn(), vi.fn(), vi.fn());
+    result.write('hello');
+
+    expect(mockProcess.stdin.write).toHaveBeenCalledWith('hello');
+  });
+
+  test('calls onData when stdout emits data', () => {
+    const stdoutListeners = new Map<string, (data: Buffer) => void>();
+    const mockProcess = createMockProcess({
+      stdoutOn: vi.fn((event: string, cb: (data: Buffer) => void) => stdoutListeners.set(event, cb)),
+    });
+    vi.mocked(spawn).mockReturnValue(mockProcess);
+
+    const onData = vi.fn();
+    manager.shellInAgentWorkspace('ws-1', onData, vi.fn(), vi.fn());
+
+    const dataCallback = stdoutListeners.get('data');
+    expect(dataCallback).toBeDefined();
+    dataCallback!(Buffer.from('output'));
+
+    expect(onData).toHaveBeenCalledWith('output');
+  });
+
+  test('calls onEnd when process closes', () => {
+    const processListeners = new Map<string, () => void>();
+    const mockProcess = createMockProcess({
+      processOn: vi.fn((event: string, cb: () => void) => processListeners.set(event, cb)),
+    });
+    vi.mocked(spawn).mockReturnValue(mockProcess);
+
+    const onEnd = vi.fn();
+    manager.shellInAgentWorkspace('ws-1', vi.fn(), vi.fn(), onEnd);
+
+    const closeCallback = processListeners.get('close');
+    expect(closeCallback).toBeDefined();
+    closeCallback!();
+
+    expect(onEnd).toHaveBeenCalled();
+  });
+
+  test('calls onError when process emits error', () => {
+    const processListeners = new Map<string, (err: Error) => void>();
+    const mockProcess = createMockProcess({
+      processOn: vi.fn((event: string, cb: (err: Error) => void) => processListeners.set(event, cb)),
+    });
+    vi.mocked(spawn).mockReturnValue(mockProcess);
+
+    const onError = vi.fn();
+    manager.shellInAgentWorkspace('ws-1', vi.fn(), onError, vi.fn());
+
+    const errorCallback = processListeners.get('error');
+    expect(errorCallback).toBeDefined();
+    errorCallback!(new Error('spawn failed'));
+
+    expect(onError).toHaveBeenCalledWith('spawn failed');
+  });
+});
+
+describe('dispose', () => {
+  test('kills active terminal processes', async () => {
+    const mockProcess = {
+      stdout: { on: vi.fn() },
+      stderr: { on: vi.fn() },
+      stdin: { write: vi.fn() },
+      on: vi.fn(),
+      killed: false,
+      kill: vi.fn(),
+    } as unknown as ChildProcessWithoutNullStreams;
+    vi.mocked(spawn).mockReturnValue(mockProcess);
+
+    const terminalHandler = vi
+      .mocked(ipcHandle)
+      .mock.calls.find(call => call[0] === 'agent-workspace:terminal')?.[1] as (
+      _listener: unknown,
+      id: string,
+      onDataId: number,
+    ) => Promise<number>;
+    expect(terminalHandler).toBeDefined();
+
+    await terminalHandler({}, 'ws-1', 1);
+
+    manager.dispose();
+
+    expect(mockProcess.kill).toHaveBeenCalled();
   });
 });
