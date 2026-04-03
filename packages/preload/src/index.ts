@@ -3211,6 +3211,10 @@ export function initExposure(): void {
     return ipcInvoke('path:mimeType', from);
   });
 
+  contextBridge.exposeInMainWorld('pathFileSize', async (filePath: string): Promise<number> => {
+    return ipcInvoke('path:fileSize', filePath);
+  });
+
   contextBridge.exposeInMainWorld(
     'listExtensionDevelopmentFolders',
     async (): Promise<ExtensionDevelopmentFolderInfo[]> => {

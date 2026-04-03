@@ -20,6 +20,7 @@
  * @module preload
  */
 import { EventEmitter } from 'node:events';
+import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
@@ -168,6 +169,7 @@ import { AuthenticationImpl } from './authentication.js';
 import { AutostartEngine } from './autostart-engine.js';
 import { CancellationTokenRegistry } from './cancellation-token-registry.js';
 import { Certificates } from './certificates.js';
+import { ChatInit } from './chat-init.js';
 import { CliToolRegistry } from './cli-tool-registry.js';
 import { CloseBehavior } from './close-behavior.js';
 import { ColorRegistry } from './color-registry.js';
@@ -745,6 +747,11 @@ export class PluginSystem {
       const openDevToolsInit = container.get<OpenDevToolsInit>(OpenDevToolsInit);
       openDevToolsInit.init();
     }
+
+    // init chat configuration
+    container.bind<ChatInit>(ChatInit).toSelf().inSingletonScope();
+    const chatInit = container.get<ChatInit>(ChatInit);
+    chatInit.init();
 
     // init editor configuration
     container.bind<EditorInit>(EditorInit).toSelf().inSingletonScope();
@@ -3591,6 +3598,11 @@ export class PluginSystem {
 
     this.ipcHandle('path:mimeType', async (_listener, from: string): Promise<string> => {
       return lookup(from) || 'application/octet-stream';
+    });
+
+    this.ipcHandle('path:fileSize', async (_listener, filePath: string): Promise<number> => {
+      const stats = await fs.promises.stat(filePath);
+      return stats.size;
     });
 
     this.ipcHandle(

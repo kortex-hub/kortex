@@ -137,6 +137,18 @@ describe('multimodal-input drag and drop', () => {
     expect(attachments[0].url).toContain('data:image/png;base64,');
   });
 
+  test('dropping a file with empty MIME type defaults to application/octet-stream', async () => {
+    const { dropZone } = renderComponent();
+    const file = fakeFile('data.xyz', '', 'some-data');
+
+    await fireEvent.drop(dropZone, { dataTransfer: dataTransfer([file]) });
+
+    await waitFor(() => {
+      expect(attachments).toHaveLength(1);
+    });
+    expect(attachments[0].contentType).toBe('application/octet-stream');
+  });
+
   test('dropping multiple files adds all to attachments', async () => {
     const { dropZone } = renderComponent();
     const files = [fakeFile('a.txt', 'text/plain', 'hello'), fakeFile('b.json', 'application/json', '{}')];
@@ -179,6 +191,7 @@ describe('multimodal-input drag and drop', () => {
   });
 
   test('dropping an oversized file shows error toast and skips it', async () => {
+    vi.mocked(window.getConfigurationValue).mockResolvedValue(20);
     const { dropZone } = renderComponent();
     // Create a file stub with size > 20 MB
     const largeFile = fakeFile('huge.bin', 'application/octet-stream', 'x');
@@ -186,8 +199,15 @@ describe('multimodal-input drag and drop', () => {
 
     await fireEvent.drop(dropZone, { dataTransfer: dataTransfer([largeFile]) });
 
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        expect.stringContaining('huge.bin'),
+        expect.objectContaining({
+          action: expect.objectContaining({ label: 'Settings' }),
+        }),
+      );
+    });
     expect(attachments).toHaveLength(0);
-    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('huge.bin'));
   });
 
   test('dropping a text selection is not intercepted', async () => {
@@ -203,6 +223,56 @@ describe('multimodal-input drag and drop', () => {
 
     expect(preventDefault).not.toHaveBeenCalled();
     expect(attachments).toHaveLength(0);
+  });
+
+  test('attach button rejects oversized file', async () => {
+    vi.mocked(window.getConfigurationValue).mockResolvedValue(20);
+    vi.mocked(window.openDialog).mockResolvedValue(['/path/to/huge.bin']);
+    vi.mocked(window.pathFileSize).mockResolvedValue(21 * 1024 * 1024);
+
+    renderComponent();
+    const attachButton = screen.getByRole('button', { name: 'Attach file' });
+    await fireEvent.click(attachButton);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        expect.stringContaining('huge.bin'),
+        expect.objectContaining({
+          action: expect.objectContaining({ label: 'Settings' }),
+        }),
+      );
+    });
+    expect(attachments).toHaveLength(0);
+  });
+
+  test('attach button extracts filename from Windows path', async () => {
+    vi.mocked(window.getConfigurationValue).mockResolvedValue(20);
+    vi.mocked(window.openDialog).mockResolvedValue(['C:\\Users\\test\\huge.bin']);
+    vi.mocked(window.pathFileSize).mockResolvedValue(21 * 1024 * 1024);
+
+    renderComponent();
+    const attachButton = screen.getByRole('button', { name: 'Attach file' });
+    await fireEvent.click(attachButton);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('huge.bin'), expect.anything());
+    });
+  });
+
+  test('attach button allows file within size limit', async () => {
+    vi.mocked(window.getConfigurationValue).mockResolvedValue(20);
+    vi.mocked(window.openDialog).mockResolvedValue(['/path/to/small.txt']);
+    vi.mocked(window.pathFileSize).mockResolvedValue(1024);
+    vi.mocked(window.pathMimeType).mockResolvedValue('text/plain');
+
+    renderComponent();
+    const attachButton = screen.getByRole('button', { name: 'Attach file' });
+    await fireEvent.click(attachButton);
+
+    await waitFor(() => {
+      expect(attachments).toHaveLength(1);
+    });
+    expect(attachments[0].name).toBe('small.txt');
   });
 
   test('textarea is still present and functional', () => {

@@ -5,10 +5,12 @@ import { onMount, untrack } from 'svelte';
 import type { SvelteMap } from 'svelte/reactivity';
 import { innerWidth } from 'svelte/reactivity/window';
 import { toast } from 'svelte-sonner';
+import { router } from 'tinro';
 
 import { EditState } from '/@/lib/chat/hooks/edit-state.svelte';
 import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
 import { cn } from '/@/lib/chat/utils/shadcn';
+import { ChatSettings } from '/@api/chat/chat-settings';
 
 import ExportButton from './ExportButton.svelte';
 import ArrowUpIcon from './icons/arrow-up.svelte';
@@ -190,13 +192,37 @@ function fileUrl(filePath: string): string {
   return encodeURI(`file://${pathName}`).replace(/[?#]/g, encodeURIComponent);
 }
 
+const MAX_FILE_SIZE_KEY = `${ChatSettings.SectionName}.${ChatSettings.MaxDndFileSizeMB}`;
+const DEFAULT_MAX_FILE_SIZE_MB = 20;
+
+async function getMaxFileSizeBytes(): Promise<number> {
+  const maxSizeMB = (await window.getConfigurationValue<number>(MAX_FILE_SIZE_KEY)) ?? DEFAULT_MAX_FILE_SIZE_MB;
+  return maxSizeMB * 1024 * 1024;
+}
+
+function rejectOversizedFile(fileName: string, maxSizeMB: number): void {
+  toast.error(`${fileName} is too large to attach (max ${maxSizeMB} MB).`, {
+    action: {
+      label: 'Settings',
+      onClick: (): void => router.goto('/preferences/default/preferences.chat'),
+    },
+  });
+}
+
 async function handleFile(): Promise<void> {
   const filepath = await window.openDialog({
     title: 'Select a file',
   });
   if (filepath?.[0]) {
-    const mimeType = await window.pathMimeType(filepath?.[0]);
-    const url = fileUrl(filepath?.[0]);
+    const maxSizeBytes = await getMaxFileSizeBytes();
+    const fileSize = await window.pathFileSize(filepath[0]);
+    if (fileSize > maxSizeBytes) {
+      const fileName = filepath[0].split(/[/\\]/).pop() ?? filepath[0];
+      rejectOversizedFile(fileName, maxSizeBytes / (1024 * 1024));
+      return;
+    }
+    const mimeType = await window.pathMimeType(filepath[0]);
+    const url = fileUrl(filepath[0]);
     attachments.push({
       url,
       name: url.substring(url.lastIndexOf('/') + 1),
@@ -207,8 +233,6 @@ async function handleFile(): Promise<void> {
 
 let isDragging = $state(false);
 let dragDepth = 0;
-
-const MAX_DND_FILE_BYTES = 20 * 1024 * 1024; // 20 MB
 
 function isFileDrag(event: DragEvent): boolean {
   return event.dataTransfer?.types?.includes('Files') ?? false;
@@ -252,19 +276,21 @@ async function handleDrop(event: DragEvent): Promise<void> {
   const files = event.dataTransfer?.files;
   if (!files?.length) return;
 
+  const maxSizeBytes = await getMaxFileSizeBytes();
+
   // Collect file references synchronously before any async work
   const fileList = Array.from(files);
 
   for (const file of fileList) {
-    if (file.size > MAX_DND_FILE_BYTES) {
-      toast.error(`${file.name} is too large to attach via drag and drop (max 20 MB).`);
+    if (file.size > maxSizeBytes) {
+      rejectOversizedFile(file.name, maxSizeBytes / (1024 * 1024));
       continue;
     }
     const url = await readFileAsDataUrl(file);
     attachments.push({
       url,
       name: file.name,
-      contentType: file.type,
+      contentType: file.type || 'application/octet-stream',
     });
   }
 }
