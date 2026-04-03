@@ -59,8 +59,16 @@ export class AgentWorkspaceManager implements Disposable {
 
   private async execKortex<T>(args: string[], options?: { cwd?: string }): Promise<T> {
     const cliPath = this.getCliPath();
-    const result = await this.exec.exec(cliPath, ['workspace', ...args, '--output', 'json'], options);
-    return JSON.parse(result.stdout) as T;
+    const fullArgs = ['workspace', ...args, '--output', 'json'];
+    console.log(`Executing: ${cliPath} ${fullArgs.join(' ')}`);
+    try {
+      const result = await this.exec.exec(cliPath, fullArgs, options);
+      return JSON.parse(result.stdout) as T;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.log(`kortex-cli failed: ${cliPath} ${fullArgs.join(' ')} — ${message}`);
+      throw err;
+    }
   }
 
   async create(options: AgentWorkspaceCreateOptions): Promise<AgentWorkspaceId> {
@@ -73,10 +81,17 @@ export class AgentWorkspaceManager implements Disposable {
     if (options.project) {
       args.push('--project', options.project);
     }
-    const result = await this.exec.exec(cliPath, args);
-    const workspaceId = JSON.parse(result.stdout) as AgentWorkspaceId;
-    this.apiSender.send('agent-workspace-update');
-    return workspaceId;
+    console.log(`Executing: ${cliPath} ${args.join(' ')}`);
+    try {
+      const result = await this.exec.exec(cliPath, args);
+      const workspaceId = JSON.parse(result.stdout) as AgentWorkspaceId;
+      this.apiSender.send('agent-workspace-update');
+      return workspaceId;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.log(`kortex-cli failed: ${cliPath} ${args.join(' ')} — ${message}`);
+      throw err;
+    }
   }
 
   async list(): Promise<AgentWorkspaceSummary[]> {

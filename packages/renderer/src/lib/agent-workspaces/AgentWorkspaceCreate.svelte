@@ -118,6 +118,18 @@ let error = $state('');
 async function startWorkspace(): Promise<void> {
   if (!sessionName.trim() || !workingDir.trim() || !selectedAgent) return;
 
+  const config = {
+    name: sessionName,
+    workingDir,
+    description,
+    agent: selectedAgent,
+    fileAccess: selectedFileAccess,
+    customPaths: selectedFileAccess === 'custom' ? customPaths.filter(p => p.trim()) : undefined,
+    skills: selectedSkillIds,
+    mcpServers: selectedMcpIds,
+  };
+  console.log('Starting workspace with config:', config);
+
   creating = true;
   error = '';
   try {
