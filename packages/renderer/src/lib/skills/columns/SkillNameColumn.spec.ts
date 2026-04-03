@@ -42,15 +42,14 @@ test('should display the skill name', () => {
 test('should have correct styling', () => {
   render(SkillNameColumn, { object: skill });
 
-  const text = screen.getByText('my-test-skill');
-  expect(text).toHaveClass('text-[var(--pd-table-body-text-highlight)]');
-  expect(text).toHaveClass('overflow-hidden');
-  expect(text).toHaveClass('text-ellipsis');
+  const button = screen.getByRole('button', { name: 'my-test-skill' });
+  expect(button).toHaveClass('overflow-hidden');
+  expect(button).toHaveClass('text-ellipsis');
 });
 
 test('should have the skill name as title attribute', () => {
   render(SkillNameColumn, { object: skill });
 
-  const text = screen.getByTitle('my-test-skill');
-  expect(text).toBeInTheDocument();
+  const button = screen.getByTitle('my-test-skill');
+  expect(button).toBeInTheDocument();
 });

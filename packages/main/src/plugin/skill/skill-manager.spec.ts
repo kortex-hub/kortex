@@ -490,13 +490,15 @@ test('listSkillFolderContent should return folder entries for a registered skill
   const skillManager = createSkillManager();
   const skill = await skillManager.registerSkill(join(SKILLS_DIR, 'my-test-skill'));
 
-  vi.mocked(readdir).mockResolvedValue(['SKILL.md', 'utils.ts', 'templates'] as unknown as Awaited<
-    ReturnType<typeof readdir>
-  >);
+  vi.mocked(readdir).mockResolvedValue([
+    { name: 'SKILL.md', isDirectory: (): boolean => false },
+    { name: 'utils.ts', isDirectory: (): boolean => false },
+    { name: 'templates', isDirectory: (): boolean => true },
+  ] as unknown as Awaited<ReturnType<typeof readdir>>);
 
   const entries = await skillManager.listSkillFolderContent('my-test-skill');
-  expect(entries).toEqual(['SKILL.md', 'utils.ts', 'templates']);
-  expect(readdir).toHaveBeenCalledWith(skill.path);
+  expect(entries).toEqual(['SKILL.md', 'utils.ts', 'templates/']);
+  expect(readdir).toHaveBeenCalledWith(skill.path, { withFileTypes: true });
 });
 
 test('listSkillFolderContent should throw when skill name not found', async () => {
@@ -697,7 +699,7 @@ test('listSkillFolders should include built-in kaiden folder after init', async 
 
 test('registerSkillFolder should discover skills from its directory after init', async () => {
   const EXTRA_DIR = resolve('/extra/skills');
-  const EXTRA_SKILL_MD = `---\nname: extra-skill\ndescription: An extra skill\n---\n# Extra\n`;
+  const EXTRA_SKILL_MD = '---\nname: extra-skill\ndescription: An extra skill\n---\n# Extra\n';
 
   vi.mocked(existsSync).mockImplementation(p => {
     const path = String(p);
@@ -734,7 +736,7 @@ test('registerSkillFolder should discover skills from its directory after init',
 
 test('disposing a skill folder should remove its skills from the list', async () => {
   const EXTRA_DIR = resolve('/extra/skills');
-  const EXTRA_SKILL_MD = `---\nname: extra-skill\ndescription: An extra skill\n---\n# Extra\n`;
+  const EXTRA_SKILL_MD = '---\nname: extra-skill\ndescription: An extra skill\n---\n# Extra\n';
 
   vi.mocked(existsSync).mockImplementation(p => {
     const path = String(p);

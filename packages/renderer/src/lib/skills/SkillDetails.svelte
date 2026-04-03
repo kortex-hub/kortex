@@ -1,17 +1,18 @@
 <script lang="ts">
 import { faFile, faFolder } from '@fortawesome/free-regular-svg-icons';
-import { Checkbox, Spinner, Tab } from '@podman-desktop/ui-svelte';
+import { Checkbox, EmptyScreen, Tab } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
-import { onMount } from 'svelte';
 import { router } from 'tinro';
 
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
+import NoLogIcon from '/@/lib/ui/NoLogIcon.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
 import { skillInfos } from '/@/stores/skills';
 import type { SkillInfo } from '/@api/skill/skill-info';
 
 import SkillActions from './SkillActions.svelte';
+import SkillDetailRow from './SkillDetailRow.svelte';
 
 interface Props {
   name: string;
@@ -20,31 +21,8 @@ interface Props {
 let { name }: Props = $props();
 
 let skillInfo: SkillInfo | undefined = $derived($skillInfos.find(s => s.name === name));
-let skillContent: string | undefined = $state(undefined);
-let folderContents: string[] = $state([]);
-let loading = $state(true);
-
-onMount(() => {
-  Promise.allSettled([
-    window.getSkillContent(name).then(content => {
-      skillContent = content;
-    }),
-    window.listSkillFolderContent(name).then(contents => {
-      folderContents = contents;
-    }),
-  ])
-    .then(results => {
-      for (const result of results) {
-        if (result.status === 'rejected') {
-          console.error('Error loading skill details:', result.reason);
-        }
-      }
-    })
-    .catch((err: unknown) => console.error('Unexpected error loading skill details:', err))
-    .finally(() => {
-      loading = false;
-    });
-});
+let skillContent: string | undefined = $derived(await window.getSkillContent(name));
+let folderContents: string[] = $derived(await window.listSkillFolderContent(name));
 
 function onToggle(): void {
   if (!skillInfo) return;
@@ -63,12 +41,12 @@ function onToggle(): void {
       </span>
       <span
         class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium"
-        class:text-green-400={skillInfo?.enabled}
-        class:text-gray-400={!skillInfo?.enabled}>
+        class:text-[var(--pd-status-running)]={skillInfo?.enabled}
+        class:text-[var(--pd-status-stopped)]={!skillInfo?.enabled}>
         <span
           class="w-1.5 h-1.5 rounded-full"
-          class:bg-green-500={skillInfo?.enabled}
-          class:bg-gray-500={!skillInfo?.enabled}>
+          class:bg-[var(--pd-status-running)]={skillInfo?.enabled}
+          class:bg-[var(--pd-status-stopped)]={!skillInfo?.enabled}>
         </span>
         {skillInfo?.enabled ? 'Enabled' : 'Disabled'}
       </span>
@@ -95,9 +73,7 @@ function onToggle(): void {
 
   {#snippet contentSnippet()}
     <Route path="/summary" breadcrumb="Summary" navigationHint="tab">
-      {#if loading}
-        <Spinner />
-      {:else if skillInfo}
+      {#if skillInfo}
         <!-- About Section -->
         <div class="px-5 py-4">
           <div class="bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-card-border)] rounded-lg p-5 mb-6">
@@ -112,22 +88,10 @@ function onToggle(): void {
             <div class="bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-card-border)] rounded-lg p-5">
               <h3 class="text-sm font-semibold text-[var(--pd-content-card-header-text)] uppercase tracking-wider mb-4">General Information</h3>
               <div class="divide-y divide-[var(--pd-content-card-border)]">
-                <div class="flex justify-between py-3">
-                  <span class="text-sm text-[var(--pd-content-card-text)]">Name</span>
-                  <span class="text-sm font-medium text-[var(--pd-content-text)]">{skillInfo.name}</span>
-                </div>
-                <div class="flex justify-between py-3">
-                  <span class="text-sm text-[var(--pd-content-card-text)]">Type</span>
-                  <span class="text-sm font-medium text-[var(--pd-content-text)]">{skillInfo.path?.includes('node_modules') ? 'Pre-built' : 'Custom'}</span>
-                </div>
-                <div class="flex justify-between py-3">
-                  <span class="text-sm text-[var(--pd-content-card-text)]">Status</span>
-                  <span class="text-sm font-medium text-[var(--pd-content-text)]">{skillInfo.enabled ? 'Enabled' : 'Disabled'}</span>
-                </div>
-                <div class="flex justify-between py-3">
-                  <span class="text-sm text-[var(--pd-content-card-text)]">Path</span>
-                  <span class="text-sm font-medium text-[var(--pd-content-text)] max-w-[200px] text-right truncate" title={skillInfo.path}>{skillInfo.path}</span>
-                </div>
+                <SkillDetailRow label="Name" value={skillInfo.name} />
+                <SkillDetailRow label="Type" value={skillInfo.path?.includes('node_modules') ? 'Pre-built' : 'Custom'} />
+                <SkillDetailRow label="Status" value={skillInfo.enabled ? 'Enabled' : 'Disabled'} />
+                <SkillDetailRow label="Path" value={skillInfo.path} title={skillInfo.path} truncate />
               </div>
             </div>
 
@@ -135,64 +99,52 @@ function onToggle(): void {
             <div class="bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-card-border)] rounded-lg p-5">
               <h3 class="text-sm font-semibold text-[var(--pd-content-card-header-text)] uppercase tracking-wider mb-4">Metadata</h3>
               <div class="divide-y divide-[var(--pd-content-card-border)]">
-                <div class="flex justify-between py-3">
-                  <span class="text-sm text-[var(--pd-content-card-text)]">Description</span>
-                  <span class="text-sm font-medium text-[var(--pd-content-text)] max-w-[200px] text-right">{skillInfo.description || 'N/A'}</span>
-                </div>
-                <div class="flex justify-between py-3">
-                  <span class="text-sm text-[var(--pd-content-card-text)]">Bundled Resources</span>
-                  <span class="text-sm font-medium text-[var(--pd-content-text)]">{folderContents.length} files</span>
-                </div>
+                <SkillDetailRow label="Description" value={skillInfo.description || 'N/A'} truncate />
+                <SkillDetailRow label="Bundled Resources" value="{folderContents.length} files" />
               </div>
             </div>
           </div>
         </div>
+      {:else}
+        <EmptyScreen title="Skill not found" message="Skill '{name}' could not be found" icon={NoLogIcon} />
       {/if}
     </Route>
 
     <Route path="/instructions" breadcrumb="Instructions" navigationHint="tab">
-      {#if loading}
-        <Spinner />
-      {:else}
-        <div class="px-5 py-4">
-          <div class="bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-card-border)] rounded-lg overflow-hidden">
-            <div class="flex justify-between items-center px-4 py-3 bg-[var(--pd-content-bg)] border-b border-[var(--pd-content-card-border)]">
-              <span class="text-sm font-medium text-[var(--pd-content-text)] font-mono">SKILL.md</span>
-            </div>
-            <div class="p-5 overflow-auto">
-              <pre class="text-sm text-[var(--pd-content-text)] leading-relaxed whitespace-pre-wrap font-mono">{skillContent ?? 'No content available.'}</pre>
-            </div>
+      <div class="px-5 py-4">
+        <div class="bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-card-border)] rounded-lg overflow-hidden">
+          <div class="flex justify-between items-center px-4 py-3 bg-[var(--pd-content-bg)] border-b border-[var(--pd-content-card-border)]">
+            <span class="text-sm font-medium text-[var(--pd-content-text)] font-mono">SKILL.md</span>
+          </div>
+          <div class="p-5 overflow-auto">
+            <pre class="text-sm text-[var(--pd-content-text)] leading-relaxed whitespace-pre-wrap font-mono">{skillContent ?? 'No content available.'}</pre>
           </div>
         </div>
-      {/if}
+      </div>
     </Route>
 
     <Route path="/resources" breadcrumb="Resources" navigationHint="tab">
-      {#if loading}
-        <Spinner />
-      {:else}
-        <div class="px-5 py-4">
-          <div class="bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-card-border)] rounded-lg overflow-hidden">
-            <div class="px-5 py-4 border-b border-[var(--pd-content-card-border)] bg-[var(--pd-content-bg)]">
-              <span class="text-base font-semibold text-[var(--pd-content-text)]">Bundled Resources ({folderContents.length})</span>
-            </div>
-            {#if folderContents.length === 0}
-              <div class="px-6 py-12 text-center">
-                <p class="text-sm text-[var(--pd-content-card-text)]">No bundled resources.</p>
-              </div>
-            {:else}
-              {#each folderContents as item (item)}
-                <div class="flex items-center gap-3 px-5 py-3 border-b border-[var(--pd-content-card-border)] last:border-b-0 hover:bg-[var(--pd-content-card-hover-bg)]">
-                  <div class="w-8 h-8 rounded-md flex items-center justify-center bg-[var(--pd-content-bg)]">
-                    <Icon icon={item.endsWith('/') ? faFolder : faFile} class="text-[var(--pd-content-card-text)]" />
-                  </div>
-                  <span class="text-sm font-medium text-[var(--pd-content-text)] font-mono">{item}</span>
-                </div>
-              {/each}
-            {/if}
+      <div class="px-5 py-4">
+        <div class="bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-card-border)] rounded-lg overflow-hidden">
+          <div class="px-5 py-4 border-b border-[var(--pd-content-card-border)] bg-[var(--pd-content-bg)]">
+            <span class="text-base font-semibold text-[var(--pd-content-text)]">Bundled Resources ({folderContents.length})</span>
           </div>
+          {#if folderContents.length === 0}
+            <div class="px-6 py-12 text-center">
+              <p class="text-sm text-[var(--pd-content-card-text)]">No bundled resources.</p>
+            </div>
+          {:else}
+            {#each folderContents as item (item)}
+              <div class="flex items-center gap-3 px-5 py-3 border-b border-[var(--pd-content-card-border)] last:border-b-0 hover:bg-[var(--pd-content-card-hover-bg)]">
+                <div class="w-8 h-8 rounded-md flex items-center justify-center bg-[var(--pd-content-bg)]">
+                  <Icon icon={item.endsWith('/') ? faFolder : faFile} class="text-[var(--pd-content-card-text)]" />
+                </div>
+                <span class="text-sm font-medium text-[var(--pd-content-text)] font-mono">{item}</span>
+              </div>
+            {/each}
+          {/if}
         </div>
-      {/if}
+      </div>
     </Route>
   {/snippet}
 </DetailsPage>
