@@ -40,4 +40,5 @@ export interface SkillFileContent extends SkillMetadata {
 export const SKILL_SECTION = 'skills';
 export const SKILL_ENABLED = 'enabled';
 export const SKILL_REGISTERED = 'registered';
+export const SKILL_REMOVED = 'removed';
 export const SKILL_FILE_NAME = 'SKILL.md';

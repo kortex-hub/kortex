@@ -26,7 +26,13 @@ import type { IPCHandle } from '/@/plugin/api.js';
 import type { Directories } from '/@/plugin/directories.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IConfigurationRegistry } from '/@api/configuration/models.js';
-import { SKILL_ENABLED, SKILL_FILE_NAME, SKILL_REGISTERED, type SkillInfo } from '/@api/skill/skill-info.js';
+import {
+  SKILL_ENABLED,
+  SKILL_FILE_NAME,
+  SKILL_REGISTERED,
+  SKILL_REMOVED,
+  type SkillInfo,
+} from '/@api/skill/skill-info.js';
 
 import { SkillManager } from './skill-manager.js';
 
@@ -97,21 +103,28 @@ function createSkillManager(): SkillManager {
   return new SkillManager(apiSender, configurationRegistry, directories, ipcHandle);
 }
 
-function mockDirectoryWithSkills(skillFolders: { name: string; content: string }[]): void {
+function mockDirectoryWithSkills(
+  skillFolders: { name: string; content: string }[],
+  baseDirectory: string = SKILLS_DIR,
+): void {
   vi.mocked(existsSync).mockImplementation(p => {
     const path = String(p);
-    if (path === SKILLS_DIR) return true;
-    return skillFolders.some(f => path === join(SKILLS_DIR, f.name, SKILL_FILE_NAME));
+    if (path === baseDirectory) return true;
+    return skillFolders.some(f => path === join(baseDirectory, f.name, SKILL_FILE_NAME));
   });
-  vi.mocked(readdir).mockResolvedValue(
-    skillFolders.map(f => ({
-      name: f.name,
-      isDirectory: (): boolean => true,
-    })) as unknown as Awaited<ReturnType<typeof readdir>>,
-  );
-  vi.mocked(readFile).mockImplementation(async p => {
+  vi.mocked(readdir).mockImplementation(async (p: unknown) => {
     const path = String(p);
-    const match = skillFolders.find(f => path === join(SKILLS_DIR, f.name, SKILL_FILE_NAME));
+    if (path === baseDirectory) {
+      return skillFolders.map(f => ({
+        name: f.name,
+        isDirectory: (): boolean => true,
+      })) as unknown as Awaited<ReturnType<typeof readdir>>;
+    }
+    return [] as unknown as Awaited<ReturnType<typeof readdir>>;
+  });
+  vi.mocked(readFile).mockImplementation(async (p: unknown) => {
+    const path = String(p);
+    const match = skillFolders.find(f => path === join(baseDirectory, f.name, SKILL_FILE_NAME));
     if (match) return match.content;
     throw new Error(`File not found: ${path}`);
   });
@@ -135,7 +148,7 @@ afterEach(() => {
   console.warn = originalConsoleWarn;
 });
 
-test('init should register configuration section with skills.enabled and skills.registered', async () => {
+test('init should register configuration section with skills.enabled, skills.registered, and skills.removed', async () => {
   vi.mocked(existsSync).mockReturnValue(false);
   const skillManager = createSkillManager();
   await skillManager.init();
@@ -153,13 +166,17 @@ test('init should register configuration section with skills.enabled and skills.
           type: 'array',
           hidden: true,
         }),
+        'skills.removed': expect.objectContaining({
+          type: 'array',
+          hidden: true,
+        }),
       },
     }),
   ]);
 });
 
 test('init should discover skills from folder and mark enabled based on config', async () => {
-  getMock.mockReturnValue(['my-test-skill']);
+  getMock.mockReturnValueOnce([]).mockReturnValueOnce(['my-test-skill']);
   mockDirectoryWithSkills([{ name: 'my-test-skill', content: validSkillMd }]);
 
   const skillManager = createSkillManager();
@@ -402,7 +419,7 @@ test('enableSkill should throw when skill name not found', () => {
   expect(skillManager.enableSkill.bind(skillManager, 'nonexistent')).toThrow('Skill not found with name');
 });
 
-test('unregisterSkill should delete folder for managed skills', async () => {
+test('unregisterSkill should delete folder for managed skills and not track as removed', async () => {
   vi.mocked(existsSync).mockReturnValue(true);
   vi.mocked(readFile).mockResolvedValue(validSkillMd);
   vi.mocked(rm).mockResolvedValue(undefined);
@@ -418,10 +435,10 @@ test('unregisterSkill should delete folder for managed skills', async () => {
   expect(skillManager.listSkills()).toHaveLength(0);
   expect(rm).toHaveBeenCalledWith(resolve(skill.path), { recursive: true, force: true });
   expect(apiSender.send).toHaveBeenCalledWith('skill-manager-update');
-  expect(updateMock).toHaveBeenCalled();
+  expect(updateMock).toHaveBeenCalledWith(SKILL_REMOVED, []);
 });
 
-test('unregisterSkill should not delete folder for external skills', async () => {
+test('unregisterSkill should not delete folder for external skills and track as removed', async () => {
   vi.mocked(existsSync).mockImplementation(p => String(p).endsWith(SKILL_FILE_NAME));
   vi.mocked(readFile).mockResolvedValue(validSkillMd);
 
@@ -436,6 +453,7 @@ test('unregisterSkill should not delete folder for external skills', async () =>
   expect(skillManager.listSkills()).toHaveLength(0);
   expect(rm).not.toHaveBeenCalled();
   expect(updateMock).toHaveBeenCalledWith(SKILL_REGISTERED, []);
+  expect(updateMock).toHaveBeenCalledWith(SKILL_REMOVED, ['my-test-skill']);
 });
 
 test('unregisterSkill should throw when skill name not found', async () => {
@@ -697,26 +715,10 @@ test('listSkillFolders should include built-in kortex folder after init', async 
 
 test('registerSkillFolder should discover skills from its directory after init', async () => {
   const EXTRA_DIR = resolve('/extra/skills');
-  const EXTRA_SKILL_MD = `---\nname: extra-skill\ndescription: An extra skill\n---\n# Extra\n`;
-
-  vi.mocked(existsSync).mockImplementation(p => {
-    const path = String(p);
-    return path === EXTRA_DIR || path === join(EXTRA_DIR, 'extra-skill', SKILL_FILE_NAME);
-  });
-  vi.mocked(readdir).mockImplementation(async (p: unknown) => {
-    const path = String(p);
-    if (path === EXTRA_DIR) {
-      return [{ name: 'extra-skill', isDirectory: (): boolean => true }] as unknown as Awaited<
-        ReturnType<typeof readdir>
-      >;
-    }
-    return [] as unknown as Awaited<ReturnType<typeof readdir>>;
-  });
-  vi.mocked(readFile).mockImplementation(async (p: unknown) => {
-    const path = String(p);
-    if (path === join(EXTRA_DIR, 'extra-skill', SKILL_FILE_NAME)) return EXTRA_SKILL_MD;
-    throw new Error(`File not found: ${path}`);
-  });
+  mockDirectoryWithSkills(
+    [{ name: 'extra-skill', content: `---\nname: extra-skill\ndescription: An extra skill\n---\n# Extra\n` }],
+    EXTRA_DIR,
+  );
 
   const skillManager = createSkillManager();
   await skillManager.init();
@@ -734,26 +736,10 @@ test('registerSkillFolder should discover skills from its directory after init',
 
 test('disposing a skill folder should remove its skills from the list', async () => {
   const EXTRA_DIR = resolve('/extra/skills');
-  const EXTRA_SKILL_MD = `---\nname: extra-skill\ndescription: An extra skill\n---\n# Extra\n`;
-
-  vi.mocked(existsSync).mockImplementation(p => {
-    const path = String(p);
-    return path === EXTRA_DIR || path === join(EXTRA_DIR, 'extra-skill', SKILL_FILE_NAME);
-  });
-  vi.mocked(readdir).mockImplementation(async (p: unknown) => {
-    const path = String(p);
-    if (path === EXTRA_DIR) {
-      return [{ name: 'extra-skill', isDirectory: (): boolean => true }] as unknown as Awaited<
-        ReturnType<typeof readdir>
-      >;
-    }
-    return [] as unknown as Awaited<ReturnType<typeof readdir>>;
-  });
-  vi.mocked(readFile).mockImplementation(async (p: unknown) => {
-    const path = String(p);
-    if (path === join(EXTRA_DIR, 'extra-skill', SKILL_FILE_NAME)) return EXTRA_SKILL_MD;
-    throw new Error(`File not found: ${path}`);
-  });
+  mockDirectoryWithSkills(
+    [{ name: 'extra-skill', content: `---\nname: extra-skill\ndescription: An extra skill\n---\n# Extra\n` }],
+    EXTRA_DIR,
+  );
 
   const skillManager = createSkillManager();
   await skillManager.init();
@@ -808,4 +794,200 @@ test('saveSkillsToConfig should write only enabled skill names', async () => {
   skillManager.disableSkill('second-skill');
 
   expect(updateMock).toHaveBeenCalledWith(SKILL_ENABLED, ['my-test-skill']);
+});
+
+test('removed external skill should not be re-added on rediscovery', async () => {
+  const EXTERNAL_DIR = resolve('/external/skills');
+  mockDirectoryWithSkills(
+    [{ name: 'ext-skill', content: `---\nname: ext-skill\ndescription: An external skill\n---\n# External\n` }],
+    EXTERNAL_DIR,
+  );
+
+  const skillManager = createSkillManager();
+  await skillManager.init();
+
+  skillManager.registerSkillFolder({
+    label: 'External',
+    badge: 'Ext',
+    baseDirectory: EXTERNAL_DIR,
+  });
+
+  await vi.waitFor(() => {
+    expect(skillManager.listSkills().some(s => s.name === 'ext-skill')).toBe(true);
+  });
+
+  await skillManager.unregisterSkill('ext-skill');
+  expect(skillManager.listSkills()).toHaveLength(0);
+  expect(rm).not.toHaveBeenCalled();
+  expect(updateMock).toHaveBeenCalledWith(SKILL_REMOVED, ['ext-skill']);
+
+  skillManager.registerSkillFolder({
+    label: 'External Again',
+    badge: 'Ext2',
+    baseDirectory: resolve('/external2/skills'),
+  });
+
+  await vi.waitFor(() => {
+    expect(skillManager.listSkills().some(s => s.name === 'ext-skill')).toBe(false);
+  });
+});
+
+test('skills from extension-registered folders should not be considered managed', async () => {
+  const EXTENSION_DIR = resolve('/extension/skills');
+  mockDirectoryWithSkills([{ name: 'my-test-skill', content: validSkillMd }], EXTENSION_DIR);
+
+  const skillManager = createSkillManager();
+  await skillManager.init();
+
+  skillManager.registerSkillFolder({
+    label: 'Extension',
+    badge: 'Ext',
+    baseDirectory: EXTENSION_DIR,
+  });
+
+  await vi.waitFor(() => {
+    expect(skillManager.listSkills().some(s => s.name === 'my-test-skill')).toBe(true);
+  });
+
+  await skillManager.unregisterSkill('my-test-skill');
+
+  expect(rm).not.toHaveBeenCalled();
+  expect(updateMock).toHaveBeenCalledWith(SKILL_REMOVED, ['my-test-skill']);
+});
+
+test('init should load removed names from config and skip those skills during discovery', async () => {
+  getMock.mockReturnValueOnce(['my-test-skill']);
+  mockDirectoryWithSkills([{ name: 'my-test-skill', content: validSkillMd }]);
+
+  const skillManager = createSkillManager();
+  await skillManager.init();
+
+  expect(skillManager.listSkills()).toHaveLength(0);
+});
+
+test('unregistering multiple external skills should accumulate removed names', async () => {
+  const EXTERNAL_DIR = resolve('/external/skills');
+  mockDirectoryWithSkills(
+    [
+      { name: 'skill-a', content: `---\nname: skill-a\ndescription: Skill A\n---\n# A\n` },
+      { name: 'skill-b', content: `---\nname: skill-b\ndescription: Skill B\n---\n# B\n` },
+    ],
+    EXTERNAL_DIR,
+  );
+
+  const skillManager = createSkillManager();
+  await skillManager.init();
+  skillManager.registerSkillFolder({
+    label: 'External',
+    badge: 'Ext',
+    baseDirectory: EXTERNAL_DIR,
+  });
+
+  await vi.waitFor(() => {
+    expect(skillManager.listSkills()).toHaveLength(2);
+  });
+
+  await skillManager.unregisterSkill('skill-a');
+  expect(updateMock).toHaveBeenCalledWith(SKILL_REMOVED, ['skill-a']);
+
+  updateMock.mockClear();
+  await skillManager.unregisterSkill('skill-b');
+  expect(updateMock).toHaveBeenCalledWith(SKILL_REMOVED, expect.arrayContaining(['skill-a', 'skill-b']));
+  expect(skillManager.listSkills()).toHaveLength(0);
+  expect(rm).not.toHaveBeenCalled();
+});
+
+test('removed skill from skills.registered config should not reappear on init', async () => {
+  const externalPath = resolve('/external/registered-skill');
+
+  getMock.mockReturnValueOnce(['my-test-skill']).mockReturnValueOnce([externalPath]);
+
+  vi.mocked(existsSync).mockImplementation(p => {
+    const path = String(p);
+    return path === join(externalPath, SKILL_FILE_NAME);
+  });
+  vi.mocked(readFile).mockImplementation(async (p: unknown) => {
+    const path = String(p);
+    if (path === join(externalPath, SKILL_FILE_NAME)) return validSkillMd;
+    throw new Error(`File not found: ${path}`);
+  });
+
+  const skillManager = createSkillManager();
+  await skillManager.init();
+
+  expect(skillManager.listSkills()).toHaveLength(0);
+});
+
+test('createSkill in extension-registered folder should not be treated as managed on unregister', async () => {
+  const CUSTOM_DIR = resolve('/custom/skills');
+  vi.mocked(existsSync).mockReturnValue(false);
+  vi.mocked(mkdir).mockResolvedValue(undefined);
+  vi.mocked(writeFile).mockResolvedValue(undefined);
+
+  const skillManager = createSkillManager();
+  await skillManager.init();
+  skillManager.registerSkillFolder({
+    label: 'Custom',
+    badge: 'Custom',
+    baseDirectory: CUSTOM_DIR,
+  });
+
+  await skillManager.createSkill(
+    { name: 'custom-skill', description: 'A custom skill', content: '# Custom' },
+    CUSTOM_DIR,
+  );
+
+  updateMock.mockClear();
+  await skillManager.unregisterSkill('custom-skill');
+
+  expect(rm).not.toHaveBeenCalled();
+  expect(updateMock).toHaveBeenCalledWith(SKILL_REMOVED, ['custom-skill']);
+});
+
+test('init should discover non-removed skills while skipping removed ones', async () => {
+  getMock.mockReturnValueOnce(['my-test-skill']);
+  mockDirectoryWithSkills([
+    { name: 'my-test-skill', content: validSkillMd },
+    { name: 'second-skill', content: secondSkillMd },
+  ]);
+
+  const skillManager = createSkillManager();
+  await skillManager.init();
+
+  expect(skillManager.listSkills()).toHaveLength(1);
+  expect(skillManager.listSkills()[0]?.name).toBe('second-skill');
+});
+
+test('re-registering same external folder should still skip removed skills', async () => {
+  const EXTERNAL_DIR = resolve('/external/skills');
+  mockDirectoryWithSkills(
+    [{ name: 'ext-skill', content: `---\nname: ext-skill\ndescription: An external skill\n---\n# External\n` }],
+    EXTERNAL_DIR,
+  );
+
+  const skillManager = createSkillManager();
+  await skillManager.init();
+
+  const disposable = skillManager.registerSkillFolder({
+    label: 'External',
+    badge: 'Ext',
+    baseDirectory: EXTERNAL_DIR,
+  });
+
+  await vi.waitFor(() => {
+    expect(skillManager.listSkills().some(s => s.name === 'ext-skill')).toBe(true);
+  });
+
+  await skillManager.unregisterSkill('ext-skill');
+  disposable.dispose();
+
+  skillManager.registerSkillFolder({
+    label: 'External',
+    badge: 'Ext',
+    baseDirectory: EXTERNAL_DIR,
+  });
+
+  await vi.waitFor(() => {
+    expect(skillManager.listSkills().some(s => s.name === 'ext-skill')).toBe(false);
+  });
 });

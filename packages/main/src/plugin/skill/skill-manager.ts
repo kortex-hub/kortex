@@ -34,6 +34,7 @@ import {
   SKILL_ENABLED,
   SKILL_FILE_NAME,
   SKILL_REGISTERED,
+  SKILL_REMOVED,
   SKILL_SECTION,
   type SkillFileContent,
   type SkillFolderInfo,
@@ -48,6 +49,7 @@ const XML_TAG_PATTERN = /<[a-zA-Z/][a-zA-Z0-9 "'=/]*>/;
 export class SkillManager {
   private skills: SkillInfo[] = [];
   private skillFolders: SkillFolderInfo[] = [];
+  private removedNames: Set<string> = new Set();
   private configuration: Configuration | undefined;
   private disposables: IDisposable[] = [];
 
@@ -78,10 +80,16 @@ export class SkillManager {
           type: 'array',
           hidden: true,
         },
+        [`${SKILL_SECTION}.${SKILL_REMOVED}`]: {
+          description: 'Removed external skill names',
+          type: 'array',
+          hidden: true,
+        },
       },
     };
     this.disposables.push(this.configurationRegistry.registerConfigurations([skillsConfiguration]));
     this.configuration = this.configurationRegistry.getConfiguration(SKILL_SECTION);
+    this.removedNames = new Set(this.configuration?.get<string[]>(SKILL_REMOVED) ?? []);
 
     this.skillFolders = [
       {
@@ -320,14 +328,17 @@ export class SkillManager {
   }
 
   /**
-   * Removes a skill from the registry and config. If the skill lives inside
-   * the managed skills directory (created via createSkill), its folder is
-   * deleted. External skills registered via registerSkill are only dereferenced.
+   * Removes a skill from the registry and config. Managed skills (inside the
+   * Kortex skills directory) are deleted from disk. External skills (from
+   * extension-registered folders) are tracked as removed so they are not
+   * rediscovered.
    */
   async unregisterSkill(name: string): Promise<void> {
     const skill = this.findSkillByName(name);
     if (this.isManagedSkill(skill)) {
       await rm(skill.path, { recursive: true, force: true });
+    } else {
+      this.removedNames.add(name);
     }
     this.skills = this.skills.filter(s => s.name !== name);
     this.saveAndNotifySkills();
@@ -391,10 +402,8 @@ export class SkillManager {
 
   private isManagedSkill(skill: SkillInfo): boolean {
     const resolvedSkillPath = resolve(skill.path);
-    return this.skillFolders.some(folder => {
-      const resolvedRoot = resolve(folder.baseDirectory);
-      return resolvedSkillPath === resolvedRoot || resolvedSkillPath.startsWith(`${resolvedRoot}${sep}`);
-    });
+    const resolvedRoot = resolve(this.directories.getSkillsDirectory());
+    return resolvedSkillPath === resolvedRoot || resolvedSkillPath.startsWith(`${resolvedRoot}${sep}`);
   }
 
   /**
@@ -442,7 +451,11 @@ export class SkillManager {
 
       try {
         const metadata = await this.parseSkillFile(skillFilePath);
-        if (this.skills.some(s => s.name === metadata.name) || discovered.some(s => s.name === metadata.name)) {
+        if (
+          this.removedNames.has(metadata.name) ||
+          this.skills.some(s => s.name === metadata.name) ||
+          discovered.some(s => s.name === metadata.name)
+        ) {
           continue;
         }
         discovered.push({
@@ -469,13 +482,15 @@ export class SkillManager {
     }
   }
 
-  /** Persists enabled skill names and external skill path references to config. */
+  /** Persists enabled skill names, external skill paths, and removed skill names to config. */
   private saveSkillsToConfig(): void {
     const enabledNames = this.skills.filter(s => s.enabled).map(s => s.name);
     this.configuration?.update(SKILL_ENABLED, enabledNames).catch(console.error);
 
     const registeredPaths = this.skills.filter(s => !this.isManagedSkill(s)).map(s => s.path);
     this.configuration?.update(SKILL_REGISTERED, registeredPaths).catch(console.error);
+
+    this.configuration?.update(SKILL_REMOVED, [...this.removedNames]).catch(console.error);
   }
 
   @preDestroy()
