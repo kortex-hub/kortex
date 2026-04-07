@@ -161,8 +161,11 @@ test.describe
       // Verify delete all button is visible in viewport without scrolling
       await expect(chatPage.deleteAllChatsButton).toBeInViewport();
 
-      // Wait for send button to ensure all pending model generations have completed
-      await chatPage.verifySendButtonVisible(TIMEOUTS.MODEL_RESPONSE);
+      // Stop any stuck generation before cleanup; test does not require model output to finish
+      if (await chatPage.stopButton.isVisible()) {
+        await chatPage.clickStopButton();
+      }
+      await chatPage.verifySendButtonVisible(TIMEOUTS.SHORT);
 
       // Clean up - delete all chats
       await chatPage.deleteAllChatHistoryItems();
