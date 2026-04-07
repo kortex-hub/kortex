@@ -209,6 +209,74 @@ function rejectOversizedFile(fileName: string, maxSizeMB: number): void {
   });
 }
 
+const mimeToExtension: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'image/svg+xml': 'svg',
+};
+
+function extensionForMimeType(mime: string): string {
+  return mimeToExtension[mime] ?? 'bin';
+}
+
+async function processClipboardFiles(clipboardData: DataTransfer): Promise<void> {
+  const files: File[] = [];
+
+  for (const item of Array.from(clipboardData.items)) {
+    if (item.kind === 'file') {
+      const file = item.getAsFile();
+      if (file) files.push(file);
+    }
+  }
+
+  // Fallback for environments where items is empty but files is populated
+  if (files.length === 0 && clipboardData.files.length > 0) {
+    files.push(...Array.from(clipboardData.files));
+  }
+
+  const maxSizeBytes = await getMaxFileSizeBytes();
+
+  for (const file of files) {
+    if (file.size > maxSizeBytes) {
+      rejectOversizedFile(file.name, maxSizeBytes / (1024 * 1024));
+      continue;
+    }
+    const dataUrl = await readFileAsDataUrl(file);
+    let contentType = file.type;
+    if (!contentType && file.name) {
+      contentType = await window.pathMimeType(file.name);
+    }
+    contentType ||= 'application/octet-stream';
+    attachments.push({
+      url: dataUrl,
+      name: file.name || `pasted-file-${Date.now()}.${extensionForMimeType(contentType)}`,
+      contentType,
+    });
+  }
+}
+
+function handlePaste(event: ClipboardEvent): void {
+  const clipboardData = event.clipboardData;
+  if (!clipboardData) return;
+
+  // Check both files and items — in some Chromium builds files may be empty while items has file entries
+  const hasFileItem = Array.from(clipboardData.items ?? []).some(item => item.kind === 'file');
+  if (!hasFileItem && clipboardData.files.length === 0) return;
+
+  // If the clipboard also has non-empty text data, let normal paste handle it
+  const hasTextData =
+    clipboardData.types.includes('text/plain') && clipboardData.getData('text/plain').trim().length > 0;
+  if (hasTextData) return;
+
+  event.preventDefault();
+  processClipboardFiles(clipboardData).catch((error: unknown) => {
+    console.error('Failed to process pasted files:', error);
+    toast.error('Failed to process pasted files. Please try again.');
+  });
+}
+
 async function handleFile(): Promise<void> {
   const filepath = await window.openDialog({
     title: 'Select a file',
@@ -360,6 +428,7 @@ $effect((): (() => void) | void => {
       class="max-h-[calc(25dvh)] min-h-[24px] resize-none overflow-y-auto border-0 bg-transparent text-base! shadow-none focus-visible:ring-0"
       rows={2}
       autofocus
+      onpaste={handlePaste}
       onkeydown={async (event): Promise<void> => {
         if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
           event.preventDefault();

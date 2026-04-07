@@ -53,6 +53,41 @@ function fakeFile(name: string, type: string, content: string): File {
   return new File([content], name, { type });
 }
 
+function dispatchPaste(
+  element: HTMLElement,
+  options: {
+    files?: File[];
+    items?: Array<{ kind: string; type: string; getAsFile: () => File | null }>;
+    types?: string[];
+    textData?: string;
+  },
+): boolean {
+  const files = options.files ?? [];
+  const items = options.items ?? [];
+  const types = options.types ?? [];
+
+  const itemsIterator = items[Symbol.iterator].bind(items);
+  const clipboardData = {
+    files: Object.assign(files, { item: (i: number): File => files[i] }),
+    items: Object.assign(items, {
+      item: (i: number) => items[i],
+      add: vi.fn(),
+      clear: vi.fn(),
+      remove: vi.fn(),
+      [Symbol.iterator]: () => itemsIterator(),
+    }),
+    types,
+    getData: (format: string): string => {
+      if (format === 'text/plain') return options.textData ?? '';
+      return '';
+    },
+  };
+
+  const event = new Event('paste', { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'clipboardData', { value: clipboardData });
+  return !element.dispatchEvent(event);
+}
+
 // Polyfill element.animate for jsdom (used by Svelte transitions)
 if (!HTMLElement.prototype.animate) {
   HTMLElement.prototype.animate = vi.fn(() => ({
@@ -62,26 +97,30 @@ if (!HTMLElement.prototype.animate) {
   })) as unknown as typeof HTMLElement.prototype.animate;
 }
 
+function setupMocks(): void {
+  vi.resetAllMocks();
+
+  vi.mocked(EditState.fromContext).mockReturnValue({
+    isAfterEditingMessage: vi.fn(() => false),
+    isEditing: false,
+    startEditing: vi.fn(),
+    editingMessage: undefined,
+    cancelEditing: vi.fn(),
+  });
+
+  Object.defineProperty(LocalStorage.prototype, 'value', {
+    get: () => '',
+    set: vi.fn(),
+    configurable: true,
+  });
+}
+
 describe('multimodal-input drag and drop', () => {
   let attachments: Attachment[];
 
   beforeEach(() => {
-    vi.resetAllMocks();
+    setupMocks();
     attachments = [];
-
-    vi.mocked(EditState.fromContext).mockReturnValue({
-      isAfterEditingMessage: vi.fn(() => false),
-      isEditing: false,
-      startEditing: vi.fn(),
-      editingMessage: undefined,
-      cancelEditing: vi.fn(),
-    });
-
-    Object.defineProperty(LocalStorage.prototype, 'value', {
-      get: () => '',
-      set: vi.fn(),
-      configurable: true,
-    });
   });
 
   function renderComponent(): { container: HTMLElement; dropZone: Element; chatClient: object } {
@@ -281,5 +320,159 @@ describe('multimodal-input drag and drop', () => {
     renderComponent();
     const textarea = screen.getByPlaceholderText('Send a message...');
     expect(textarea).toBeInTheDocument();
+  });
+});
+
+describe('multimodal-input paste handling', () => {
+  let attachments: Attachment[];
+
+  beforeEach(() => {
+    setupMocks();
+    attachments = [];
+  });
+
+  function renderAndGetTextarea(): HTMLElement {
+    render(MultimodalInput, {
+      attachments,
+      chatClient: createChatClient() as never,
+      selectedMCPTools: new Map() as never,
+    });
+    return screen.getByPlaceholderText('Send a message...');
+  }
+
+  test('pasting an image from clipboard adds it as an attachment', async () => {
+    const imageFile = new File(['fake-png-data'], 'image.png', { type: 'image/png' });
+    const textarea = renderAndGetTextarea();
+
+    dispatchPaste(textarea, {
+      files: [imageFile],
+      items: [{ kind: 'file', type: 'image/png', getAsFile: (): File => imageFile }],
+      types: ['Files'],
+    });
+
+    await waitFor(() => {
+      expect(attachments).toHaveLength(1);
+    });
+    expect(attachments[0].name).toBe('image.png');
+    expect(attachments[0].contentType).toBe('image/png');
+    expect(attachments[0].url).toContain('data:image/png;base64,');
+  });
+
+  test('pasting multiple files adds all as attachments', async () => {
+    const file1 = new File(['content1'], 'document.pdf', { type: 'application/pdf' });
+    const file2 = new File(['content2'], 'readme.txt', { type: 'text/plain' });
+    const textarea = renderAndGetTextarea();
+
+    dispatchPaste(textarea, {
+      files: [file1, file2],
+      items: [
+        { kind: 'file', type: 'application/pdf', getAsFile: (): File => file1 },
+        { kind: 'file', type: 'text/plain', getAsFile: (): File => file2 },
+      ],
+      types: ['Files'],
+    });
+
+    await waitFor(() => {
+      expect(attachments).toHaveLength(2);
+    });
+    expect(attachments[0].name).toBe('document.pdf');
+    expect(attachments[1].name).toBe('readme.txt');
+  });
+
+  test('pasting a file without a MIME type resolves it from the filename', async () => {
+    const file = new File(['data'], 'photo.jpg', { type: '' });
+    vi.mocked(window.pathMimeType).mockResolvedValue('image/jpeg');
+    const textarea = renderAndGetTextarea();
+
+    dispatchPaste(textarea, {
+      files: [file],
+      items: [{ kind: 'file', type: '', getAsFile: (): File => file }],
+      types: ['Files'],
+    });
+
+    await waitFor(() => {
+      expect(attachments).toHaveLength(1);
+    });
+    expect(window.pathMimeType).toHaveBeenCalledWith('photo.jpg');
+    expect(attachments[0].contentType).toBe('image/jpeg');
+  });
+
+  test('pasting with files but empty items still adds attachments', async () => {
+    const imageFile = new File(['fake-png-data'], 'image.png', { type: 'image/png' });
+    const textarea = renderAndGetTextarea();
+
+    dispatchPaste(textarea, {
+      files: [imageFile],
+      items: [],
+      types: ['Files'],
+    });
+
+    await waitFor(() => {
+      expect(attachments).toHaveLength(1);
+    });
+    expect(attachments[0].name).toBe('image.png');
+  });
+
+  test('pasting plain text does not add attachments', () => {
+    const textarea = renderAndGetTextarea();
+
+    dispatchPaste(textarea, {
+      files: [],
+      items: [{ kind: 'string', type: 'text/plain', getAsFile: (): null => null }],
+      types: ['text/plain'],
+      textData: 'hello world',
+    });
+
+    expect(attachments).toHaveLength(0);
+  });
+
+  test('pasting files with text data lets normal paste handle it', () => {
+    const imageFile = new File(['data'], 'image.png', { type: 'image/png' });
+    const textarea = renderAndGetTextarea();
+
+    const wasIntercepted = dispatchPaste(textarea, {
+      files: [imageFile],
+      items: [{ kind: 'file', type: 'image/png', getAsFile: (): File => imageFile }],
+      types: ['Files', 'text/plain'],
+      textData: 'some text content',
+    });
+
+    expect(wasIntercepted).toBe(false);
+    expect(attachments).toHaveLength(0);
+  });
+
+  test('pasting with empty clipboardData does nothing', () => {
+    const textarea = renderAndGetTextarea();
+
+    dispatchPaste(textarea, {
+      files: [],
+      items: [],
+      types: [],
+    });
+
+    expect(attachments).toHaveLength(0);
+  });
+
+  test('pasting an oversized file shows error toast and skips it', async () => {
+    vi.mocked(window.getConfigurationValue).mockResolvedValue(20);
+    const largeFile = new File(['x'], 'huge.bin', { type: 'application/octet-stream' });
+    Object.defineProperty(largeFile, 'size', { value: 21 * 1024 * 1024 });
+    const textarea = renderAndGetTextarea();
+
+    dispatchPaste(textarea, {
+      files: [largeFile],
+      items: [{ kind: 'file', type: 'application/octet-stream', getAsFile: (): File => largeFile }],
+      types: ['Files'],
+    });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        expect.stringContaining('huge.bin'),
+        expect.objectContaining({
+          action: expect.objectContaining({ label: 'Settings' }),
+        }),
+      );
+    });
+    expect(attachments).toHaveLength(0);
   });
 });
