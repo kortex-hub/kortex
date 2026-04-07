@@ -216,9 +216,7 @@
       "tmp-promise>tmp": "^0.2.5",
       "tar": "^7.5.3",
       "cheerio>undici": "^7.18.2",
-      "cpu-features>nan": "^2.25.0",
-      "@kortex-hub/kortex-cli-api": "link:../kortex-cli-api/cli/typescript",
-      "@kortex-hub/kortex-workspace-configuration": "link:../kortex-cli-api/workspace-configuration/typescript"
+      "cpu-features>nan": "^2.25.0"
     },
     "patchedDependencies": {
       "dmg-builder": "patches/dmg-builder.patch"

@@ -24,8 +24,6 @@ overrides:
   tar: ^7.5.3
   cheerio>undici: ^7.18.2
   cpu-features>nan: ^2.25.0
-  '@kortex-hub/kortex-cli-api': link:../kortex-cli-api/cli/typescript
-  '@kortex-hub/kortex-workspace-configuration': link:../kortex-cli-api/workspace-configuration/typescript
 
 patchedDependencies:
   dmg-builder:
@@ -212,11 +210,11 @@ importers:
         specifier: 'workspace:'
         version: link:packages/extension-api
       '@kortex-hub/kortex-cli-api':
-        specifier: link:../kortex-cli-api/cli/typescript
-        version: link:../kortex-cli-api/cli/typescript
+        specifier: ^0.1.11
+        version: 0.1.11
       '@kortex-hub/kortex-workspace-configuration':
-        specifier: link:../kortex-cli-api/workspace-configuration/typescript
-        version: link:../kortex-cli-api/workspace-configuration/typescript
+        specifier: ^0.1.11
+        version: 0.1.11
       '@kortex-hub/mcp-registry-types':
         specifier: ^1.4.0-next.20251210140818.04eeb13
         version: 1.4.0-next.20251210140818.04eeb13
@@ -1687,6 +1685,12 @@ packages:
     engines: {node: '>= 10.16.0'}
     peerDependencies:
       jsep: ^0.4.0||^1.0.0
+
+  '@kortex-hub/kortex-cli-api@0.1.11':
+    resolution: {integrity: sha512-hQ9zRsMD+NnfUT5s8QyJVO1//Gsy36FqhnxfxmNJu67Ucr5Tu69I9JIoTU+QHpB5VFXB7Gmocgnrb89XuF0pZg==}
+
+  '@kortex-hub/kortex-workspace-configuration@0.1.11':
+    resolution: {integrity: sha512-snMPthtPZKcfr1HtHTljMBCNn/NZYY8jdKUiLVnQHI4jbnHTLnmFKdqpxvkjyDHi7izYQqa1lUPXHQc3kCe3IA==}
 
   '@kortex-hub/mcp-registry-types@1.4.0-next.20251210140818.04eeb13':
     resolution: {integrity: sha512-xYO35mnv6qtwIC3+1WJHUet94w3C2CWwu9GdxM0jSSG763OMuOoyPTirsXDNeiPE7pYUwr1rR9Ea1WVcHT+1pA==}
@@ -8648,6 +8652,10 @@ snapshots:
   '@jsep-plugin/regex@1.0.4(jsep@1.4.0)':
     dependencies:
       jsep: 1.4.0
+
+  '@kortex-hub/kortex-cli-api@0.1.11': {}
+
+  '@kortex-hub/kortex-workspace-configuration@0.1.11': {}
 
   '@kortex-hub/mcp-registry-types@1.4.0-next.20251210140818.04eeb13':
     dependencies:
