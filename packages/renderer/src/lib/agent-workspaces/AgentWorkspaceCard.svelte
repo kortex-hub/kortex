@@ -86,12 +86,12 @@ function handleRemove(): void {
       <Icon icon={faGear} class="shrink-0 opacity-70" />
       <span class="truncate">{workspace.paths.configuration}</span>
     </div>
-   
+    {#if workspace.model}
       <div class="flex items-center gap-2 text-(--pd-invert-content-card-text)" title={workspace.model}>
         <Icon icon={faBrain} class="shrink-0 opacity-70" />
-        <span class="truncate">gpt-4o</span>
+        <span class="truncate">{workspace.model}</span>
       </div>
-   
+    {/if}
   </div>
   <div class="flex justify-end gap-1">
     <button
