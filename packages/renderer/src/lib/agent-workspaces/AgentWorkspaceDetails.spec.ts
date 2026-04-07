@@ -39,13 +39,16 @@ const routerStore = writable({
 });
 
 const configuration: AgentWorkspaceConfiguration = {
-  name: 'api-refactor',
+  mounts: { dependencies: ['../shared-lib'] },
+  environment: [{ name: 'API_KEY', value: 'test-key' }],
 };
 
 const workspaceSummary: AgentWorkspaceSummary = {
   id: 'ws-1',
   name: 'api-refactor',
   project: 'backend',
+  agent: 'coder-v1',
+  state: 'stopped',
   paths: {
     source: '/home/user/projects/backend',
     configuration: '/home/user/.config/kortex/workspaces/api-refactor.yaml',
@@ -65,7 +68,7 @@ beforeEach(() => {
   agentWorkspaceStatuses.clear();
 });
 
-test('Expect page title to use configuration name', async () => {
+test('Expect page title to use workspace summary name', async () => {
   render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
 
   await waitFor(() => {

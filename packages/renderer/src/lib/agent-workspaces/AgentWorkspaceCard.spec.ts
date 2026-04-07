@@ -33,6 +33,8 @@ const workspace: AgentWorkspaceSummary = {
   id: 'ws-1',
   name: 'api-refactor',
   project: 'backend',
+  agent: 'coder-v1',
+  state: 'stopped',
   paths: {
     source: '/home/user/projects/backend',
     configuration: '/home/user/.config/kortex/workspaces/api-refactor.yaml',
@@ -71,6 +73,20 @@ test('Expect card displays configuration path', () => {
   render(AgentWorkspaceCard, { workspace });
 
   expect(screen.getByText('/home/user/.config/kortex/workspaces/api-refactor.yaml')).toBeInTheDocument();
+});
+
+test('Expect card displays model when present', () => {
+  const wsWithModel: AgentWorkspaceSummary = { ...workspace, model: 'gpt-4o' };
+
+  render(AgentWorkspaceCard, { workspace: wsWithModel });
+
+  expect(screen.getByText('gpt-4o')).toBeInTheDocument();
+});
+
+test('Expect card does not display model when absent', () => {
+  render(AgentWorkspaceCard, { workspace });
+
+  expect(screen.queryByTitle(workspace.model ?? '')).not.toBeInTheDocument();
 });
 
 test('Expect card has aria label with workspace name', () => {

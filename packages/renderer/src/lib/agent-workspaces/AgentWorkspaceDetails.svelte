@@ -3,9 +3,7 @@ import { faPlay, faStop, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { ErrorMessage, Spinner, Tab } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
-import DetailsCell from '/@/lib/details/DetailsCell.svelte';
-import DetailsTable from '/@/lib/details/DetailsTable.svelte';
-import DetailsTitle from '/@/lib/details/DetailsTitle.svelte';
+import AgentWorkspaceDetailsSummary from '/@/lib/agent-workspaces/AgentWorkspaceDetailsSummary.svelte';
 import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
 import ListItemButtonIcon from '/@/lib/ui/ListItemButtonIcon.svelte';
@@ -58,7 +56,7 @@ function handleRemove(name: string): void {
     <Spinner />
   </div>
 {:then configuration}
-  <DetailsPage title={configuration.name ?? ''}>
+  <DetailsPage title={workspaceSummary?.name ?? ''}>
     {#snippet actionsSnippet()}
       <ListItemButtonIcon
         title={isRunning ? 'Stop Workspace' : 'Start Workspace'}
@@ -67,7 +65,7 @@ function handleRemove(name: string): void {
         inProgress={inProgress} />
       <ListItemButtonIcon
         title="Remove Workspace"
-        onClick={handleRemove.bind(undefined, configuration.name ?? '')}
+        onClick={handleRemove.bind(undefined, workspaceSummary?.name ?? '')}
         icon={faTrash} />
     {/snippet}
     {#snippet tabsSnippet()}
@@ -75,28 +73,7 @@ function handleRemove(name: string): void {
     {/snippet}
     {#snippet contentSnippet()}
       <Route path="/summary" breadcrumb="Summary" navigationHint="tab">
-        <div class="h-min">
-          <DetailsTable>
-            <tr>
-              <DetailsTitle>Workspace</DetailsTitle>
-            </tr>
-            {#if workspaceSummary?.project}
-              <tr>
-                <DetailsCell>Project</DetailsCell>
-                <DetailsCell>{workspaceSummary.project}</DetailsCell>
-              </tr>
-            {/if}
-            <tr>
-              <DetailsTitle>Configuration</DetailsTitle>
-            </tr>
-            {#if configuration?.name}
-              <tr>
-                <DetailsCell>Name</DetailsCell>
-                <DetailsCell>{configuration.name}</DetailsCell>
-              </tr>
-            {/if}
-          </DetailsTable>
-        </div>
+        <AgentWorkspaceDetailsSummary {workspaceSummary} {configuration} />
       </Route>
     {/snippet}
   </DetailsPage>

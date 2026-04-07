@@ -24,6 +24,8 @@ overrides:
   tar: ^7.5.3
   cheerio>undici: ^7.18.2
   cpu-features>nan: ^2.25.0
+  '@kortex-hub/kortex-cli-api': link:../kortex-cli-api/cli/typescript
+  '@kortex-hub/kortex-workspace-configuration': link:../kortex-cli-api/workspace-configuration/typescript
 
 patchedDependencies:
   dmg-builder:
@@ -72,7 +74,7 @@ importers:
         version: 0.5.16
       ai:
         specifier: ^6.0.149
-        version: 6.0.149(zod@4.3.6)
+        version: 6.0.154(zod@4.3.6)
       bcrypt-ts:
         specifier: ^8.0.1
         version: 8.0.1
@@ -210,11 +212,11 @@ importers:
         specifier: 'workspace:'
         version: link:packages/extension-api
       '@kortex-hub/kortex-cli-api':
-        specifier: ^0.1.6
-        version: 0.1.6
+        specifier: link:../kortex-cli-api/cli/typescript
+        version: link:../kortex-cli-api/cli/typescript
       '@kortex-hub/kortex-workspace-configuration':
-        specifier: ^0.1.4
-        version: 0.1.4
+        specifier: link:../kortex-cli-api/workspace-configuration/typescript
+        version: link:../kortex-cli-api/workspace-configuration/typescript
       '@kortex-hub/mcp-registry-types':
         specifier: ^1.4.0-next.20251210140818.04eeb13
         version: 1.4.0-next.20251210140818.04eeb13
@@ -700,7 +702,7 @@ importers:
     dependencies:
       '@ai-sdk/svelte':
         specifier: ^4.0.153
-        version: 4.0.153(svelte@5.47.0)(zod@4.3.6)
+        version: 4.0.154(svelte@5.47.0)(zod@4.3.6)
       '@ai-sdk/ui-utils':
         specifier: ^1.2.11
         version: 1.2.11(zod@4.3.6)
@@ -848,7 +850,7 @@ importers:
         version: 5.47.0
       svelte-check:
         specifier: ^4.3.5
-        version: 4.4.4(picomatch@4.0.4)(svelte@5.47.0)(typescript@5.9.3)
+        version: 4.4.4(picomatch@4.0.3)(svelte@5.47.0)(typescript@5.9.3)
       svelte-eslint-parser:
         specifier: ^1.4.1
         version: 1.5.1(svelte@5.47.0)
@@ -911,14 +913,8 @@ packages:
   '@adobe/css-tools@4.4.3':
     resolution: {integrity: sha512-VQKMkwriZbaOgVCby1UDY/LDk5fIjhQicCvVPFqfe+69fWaPWydbWJ3wRt59/YzIwda1I81loas3oCoHxnqvdA==}
 
-  '@ai-sdk/gateway@3.0.91':
-    resolution: {integrity: sha512-J39Dh6Gyg6HjG3A7OFKnJMp3QyZ3Eex+XDiX8aFBdRwwZm3jGWaMhkCxQPH7yiQ9kRiErZwHXX/Oexx4SyGGGA==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-
-  '@ai-sdk/gateway@3.0.93':
-    resolution: {integrity: sha512-8D6C9eEvDq6IgrdlWzpbniahDkoLiieTCrpzH8p/Hw63/0iPnZJ1uZcqxHrDIVDW/+aaGhBXqmx5C7HSd2eMmQ==}
+  '@ai-sdk/gateway@3.0.94':
+    resolution: {integrity: sha512-uDDwLZhCkvC89crVS3S90D5L7AcVN8WriGuYVNYgVAaVcvy3Mthy3R9ICfzG75BObhz6pm2FWnhxDfNRK+t69Q==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -971,8 +967,8 @@ packages:
     resolution: {integrity: sha512-oGMAgGoQdBXbZqNG0Ze56CHjDZ1IDYOwGYxYjO5KLSlz5HiNQ9udIXsPZ61VWaHGZ5XW/jyjmr6t2xz2jGVwbQ==}
     engines: {node: '>=18'}
 
-  '@ai-sdk/svelte@4.0.153':
-    resolution: {integrity: sha512-zK8zpSOEaZKP5inXAfJibWHfoMrtIZUkD9AKIhy5tIVqy2JwoaSn6kGIeSrzJKwASvzcHuyFykGY75OIsDwmbw==}
+  '@ai-sdk/svelte@4.0.154':
+    resolution: {integrity: sha512-Bx/PEnzFXG2zxnyCEXJNoIm/hU9r7vwFVI4ZP2TvyXXHFPj4rg3Aucjxr8SaeSEJO6zfJTNLBtSoG4ZwTGH83g==}
     peerDependencies:
       svelte: ^5.31.0
 
@@ -1691,12 +1687,6 @@ packages:
     engines: {node: '>= 10.16.0'}
     peerDependencies:
       jsep: ^0.4.0||^1.0.0
-
-  '@kortex-hub/kortex-cli-api@0.1.6':
-    resolution: {integrity: sha512-e0ekovbwR8EzPJww2f0QMc09Sn/8F7xTjMYl5woxZDrIL7oLI6hGJRSWb1r1D3mzpZQIWXlMaSvLJfp0Tz82ug==}
-
-  '@kortex-hub/kortex-workspace-configuration@0.1.4':
-    resolution: {integrity: sha512-TuSjsPrnu2PkhNbtPFRehoyvEFKE4E/XrGWLd+lwW0ywqKM42mCBfWibCCeo5wBCy+nbKcfPvEWo6Alvy+Cp3Q==}
 
   '@kortex-hub/mcp-registry-types@1.4.0-next.20251210140818.04eeb13':
     resolution: {integrity: sha512-xYO35mnv6qtwIC3+1WJHUet94w3C2CWwu9GdxM0jSSG763OMuOoyPTirsXDNeiPE7pYUwr1rR9Ea1WVcHT+1pA==}
@@ -2850,14 +2840,8 @@ packages:
     resolution: {integrity: sha512-4I7Td01quW/RpocfNayFdFVk1qSuoh0E7JrbRJ16nH01HhKFQ88INq9Sd+nd72zqRySlr9BmDA8xlEJ6vJMrYA==}
     engines: {node: '>=8'}
 
-  ai@6.0.149:
-    resolution: {integrity: sha512-3asRb/m3ZGH7H4+VTuTgj8eQYJZ9IJUmV0ljLslY92mQp6Zj+NVn4SmFj0TBr2Y/wFBWC3xgn++47tSGOXxdbw==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-
-  ai@6.0.153:
-    resolution: {integrity: sha512-UlgBe4k0Ja1m1Eufn6FVSsHoF0sc7qwxX35ywJPDogIvBz0pHc+NOmCqiRY904DczNYIuwpZfKBLVz8HXgu3mg==}
+  ai@6.0.154:
+    resolution: {integrity: sha512-HfKJKCTJsDZxqrIUDSVnBQ7DpQlx5WI4ExqtLd7Bl70epLmvkpc/HYMzU1hP9W+g9VEAcvZo4fbMqc3v5D+9gQ==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -6264,10 +6248,6 @@ packages:
     resolution: {integrity: sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==}
     engines: {node: '>=12'}
 
-  picomatch@4.0.4:
-    resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
-    engines: {node: '>=12'}
-
   pify@3.0.0:
     resolution: {integrity: sha512-C3FsVNH1udSEX48gGX1xfvwTWfsYWj5U+8/uK15BGzIGrKoUpghX8hWZwa/OFnakBiiVNmBvemTJR5mcy7iPcg==}
     engines: {node: '>=4'}
@@ -7209,10 +7189,6 @@ packages:
     resolution: {integrity: sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ==}
     engines: {node: '>=12.0.0'}
 
-  tinyglobby@0.2.16:
-    resolution: {integrity: sha512-pn99VhoACYR8nFHhxqix+uvsbXineAasWm5ojXoN8xEwK5Kd3/TrhNn1wByuD52UxWRLy8pu+kRMniEi6Eq9Zg==}
-    engines: {node: '>=12.0.0'}
-
   tinyrainbow@3.0.3:
     resolution: {integrity: sha512-PSkbLUoxOFRzJYjjxHJt9xro7D+iilgMX/C9lawzVuYiIdcihh9DXmVibBe8lmcFrRi/VzlPjBxbN7rH24q8/Q==}
     engines: {node: '>=14.0.0'}
@@ -7820,14 +7796,7 @@ snapshots:
 
   '@adobe/css-tools@4.4.3': {}
 
-  '@ai-sdk/gateway@3.0.91(zod@4.3.6)':
-    dependencies:
-      '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.23(zod@4.3.6)
-      '@vercel/oidc': 3.1.0
-      zod: 4.3.6
-
-  '@ai-sdk/gateway@3.0.93(zod@4.3.6)':
+  '@ai-sdk/gateway@3.0.94(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.8
       '@ai-sdk/provider-utils': 4.0.23(zod@4.3.6)
@@ -7886,10 +7855,10 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/svelte@4.0.153(svelte@5.47.0)(zod@4.3.6)':
+  '@ai-sdk/svelte@4.0.154(svelte@5.47.0)(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider-utils': 4.0.23(zod@4.3.6)
-      ai: 6.0.153(zod@4.3.6)
+      ai: 6.0.154(zod@4.3.6)
       svelte: 5.47.0
     transitivePeerDependencies:
       - zod
@@ -8680,10 +8649,6 @@ snapshots:
     dependencies:
       jsep: 1.4.0
 
-  '@kortex-hub/kortex-cli-api@0.1.6': {}
-
-  '@kortex-hub/kortex-workspace-configuration@0.1.4': {}
-
   '@kortex-hub/mcp-registry-types@1.4.0-next.20251210140818.04eeb13':
     dependencies:
       ajv: 8.17.1
@@ -8805,7 +8770,7 @@ snapshots:
 
   '@npmcli/fs@4.0.0':
     dependencies:
-      semver: 7.7.3
+      semver: 7.7.4
 
   '@npmcli/move-file@2.0.1':
     dependencies:
@@ -9692,7 +9657,7 @@ snapshots:
       debug: 4.4.3
       minimatch: 10.2.5
       semver: 7.7.4
-      tinyglobby: 0.2.16
+      tinyglobby: 0.2.15
       ts-api-utils: 2.5.0(typescript@5.9.3)
       typescript: 5.9.3
     transitivePeerDependencies:
@@ -9975,17 +9940,9 @@ snapshots:
       clean-stack: 2.2.0
       indent-string: 4.0.0
 
-  ai@6.0.149(zod@4.3.6):
+  ai@6.0.154(zod@4.3.6):
     dependencies:
-      '@ai-sdk/gateway': 3.0.91(zod@4.3.6)
-      '@ai-sdk/provider': 3.0.8
-      '@ai-sdk/provider-utils': 4.0.23(zod@4.3.6)
-      '@opentelemetry/api': 1.9.0
-      zod: 4.3.6
-
-  ai@6.0.153(zod@4.3.6):
-    dependencies:
-      '@ai-sdk/gateway': 3.0.93(zod@4.3.6)
+      '@ai-sdk/gateway': 3.0.94(zod@4.3.6)
       '@ai-sdk/provider': 3.0.8
       '@ai-sdk/provider-utils': 4.0.23(zod@4.3.6)
       '@opentelemetry/api': 1.9.0
@@ -11921,10 +11878,6 @@ snapshots:
   fdir@6.5.0(picomatch@4.0.3):
     optionalDependencies:
       picomatch: 4.0.3
-
-  fdir@6.5.0(picomatch@4.0.4):
-    optionalDependencies:
-      picomatch: 4.0.4
 
   fecha@4.2.3: {}
 
@@ -13971,8 +13924,6 @@ snapshots:
 
   picomatch@4.0.3: {}
 
-  picomatch@4.0.4: {}
-
   pify@3.0.0: {}
 
   pkce-challenge@5.0.1: {}
@@ -14886,11 +14837,11 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-  svelte-check@4.4.4(picomatch@4.0.4)(svelte@5.47.0)(typescript@5.9.3):
+  svelte-check@4.4.4(picomatch@4.0.3)(svelte@5.47.0)(typescript@5.9.3):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       chokidar: 4.0.3
-      fdir: 6.5.0(picomatch@4.0.4)
+      fdir: 6.5.0(picomatch@4.0.3)
       picocolors: 1.1.1
       sade: 1.8.1
       svelte: 5.47.0
@@ -15095,11 +15046,6 @@ snapshots:
     dependencies:
       fdir: 6.5.0(picomatch@4.0.3)
       picomatch: 4.0.3
-
-  tinyglobby@0.2.16:
-    dependencies:
-      fdir: 6.5.0(picomatch@4.0.4)
-      picomatch: 4.0.4
 
   tinyrainbow@3.0.3: {}
 

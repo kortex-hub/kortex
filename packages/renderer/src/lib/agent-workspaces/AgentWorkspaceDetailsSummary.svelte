@@ -1,0 +1,73 @@
+<script lang="ts">
+import DetailsCell from '/@/lib/details/DetailsCell.svelte';
+import DetailsTable from '/@/lib/details/DetailsTable.svelte';
+import DetailsTitle from '/@/lib/details/DetailsTitle.svelte';
+import type { AgentWorkspaceConfiguration, AgentWorkspaceSummary } from '/@api/agent-workspace-info';
+
+interface Props {
+  workspaceSummary: AgentWorkspaceSummary | undefined;
+  configuration: AgentWorkspaceConfiguration;
+}
+
+let { workspaceSummary, configuration }: Props = $props();
+</script>
+
+<div class="h-min">
+  <DetailsTable>
+    <tr>
+      <DetailsTitle>Workspace</DetailsTitle>
+    </tr>
+    {#if workspaceSummary?.project}
+      <tr>
+        <DetailsCell>Project</DetailsCell>
+        <DetailsCell>{workspaceSummary.project}</DetailsCell>
+      </tr>
+    {/if}
+    {#if workspaceSummary?.agent}
+      <tr>
+        <DetailsCell>Agent</DetailsCell>
+        <DetailsCell>{workspaceSummary.agent}</DetailsCell>
+      </tr>
+    {/if}
+    {#if workspaceSummary?.state}
+      <tr>
+        <DetailsCell>State</DetailsCell>
+        <DetailsCell>{workspaceSummary.state}</DetailsCell>
+      </tr>
+    {/if}
+    {#if workspaceSummary?.model}
+      <tr>
+        <DetailsCell>Model</DetailsCell>
+        <DetailsCell>{workspaceSummary.model}</DetailsCell>
+      </tr>
+    {/if}
+    {#if configuration?.mounts}
+      <tr>
+        <DetailsTitle>Mounts</DetailsTitle>
+      </tr>
+      {#if configuration.mounts.dependencies?.length}
+        <tr>
+          <DetailsCell>Dependencies</DetailsCell>
+          <DetailsCell>{configuration.mounts.dependencies.join(', ')}</DetailsCell>
+        </tr>
+      {/if}
+      {#if configuration.mounts.configs?.length}
+        <tr>
+          <DetailsCell>Configs</DetailsCell>
+          <DetailsCell>{configuration.mounts.configs.join(', ')}</DetailsCell>
+        </tr>
+      {/if}
+    {/if}
+    {#if configuration?.environment?.length}
+      <tr>
+        <DetailsTitle>Environment</DetailsTitle>
+      </tr>
+      {#each configuration.environment as envVar (envVar.name)}
+        <tr>
+          <DetailsCell>{envVar.name}</DetailsCell>
+          <DetailsCell>{envVar.value ?? `(secret: ${envVar.secret})`}</DetailsCell>
+        </tr>
+      {/each}
+    {/if}
+  </DetailsTable>
+</div>

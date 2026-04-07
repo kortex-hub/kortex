@@ -49,6 +49,8 @@ test('Expect workspace cards displayed with total count', () => {
       id: 'ws-1',
       name: 'api-refactor',
       project: 'backend',
+      agent: 'coder-v1',
+      state: 'stopped',
       paths: {
         source: '/home/user/projects/backend',
         configuration: '/home/user/.config/kortex/workspaces/api-refactor.yaml',
@@ -58,6 +60,8 @@ test('Expect workspace cards displayed with total count', () => {
       id: 'ws-2',
       name: 'frontend-redesign',
       project: 'frontend',
+      agent: 'coder-v2',
+      state: 'running',
       paths: {
         source: '/home/user/projects/frontend',
         configuration: '/home/user/.config/kortex/workspaces/frontend-redesign.yaml',

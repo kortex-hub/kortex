@@ -1,5 +1,5 @@
 <script lang="ts">
-import { faCubes, faFolder, faGear, faPlay, faStop, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faBrain, faCubes, faFolder, faGear, faPlay, faStop, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { router } from 'tinro';
 
@@ -86,6 +86,12 @@ function handleRemove(): void {
       <Icon icon={faGear} class="shrink-0 opacity-70" />
       <span class="truncate">{workspace.paths.configuration}</span>
     </div>
+   
+      <div class="flex items-center gap-2 text-(--pd-invert-content-card-text)" title={workspace.model}>
+        <Icon icon={faBrain} class="shrink-0 opacity-70" />
+        <span class="truncate">gpt-4o</span>
+      </div>
+   
   </div>
   <div class="flex justify-end gap-1">
     <button

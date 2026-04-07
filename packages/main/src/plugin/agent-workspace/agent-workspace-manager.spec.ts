@@ -38,13 +38,18 @@ const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
     id: 'ws-1',
     name: 'test-workspace-1',
     project: 'project-alpha',
-    paths: { source: '/tmp/ws1', configuration: '/tmp/ws1/.kaiden.yaml' },
+    agent: 'coder-v1',
+    state: 'stopped',
+    model: 'gpt-4o',
+    paths: { source: '/tmp/ws1', configuration: '/tmp/ws1/.kortex.yaml' },
   },
   {
     id: 'ws-2',
     name: 'test-workspace-2',
     project: 'project-beta',
-    paths: { source: '/tmp/ws2', configuration: '/tmp/ws2/.kaiden.yaml' },
+    agent: 'coder-v2',
+    state: 'running',
+    paths: { source: '/tmp/ws2', configuration: '/tmp/ws2/.kortex.yaml' },
   },
 ];
 
@@ -111,9 +116,20 @@ describe('list', () => {
     expect(summary).toHaveProperty('id');
     expect(summary).toHaveProperty('name');
     expect(summary).toHaveProperty('project');
+    expect(summary).toHaveProperty('agent');
+    expect(summary).toHaveProperty('state');
+    expect(summary).toHaveProperty('model');
     expect(summary).toHaveProperty('paths');
     expect(summary.paths).toHaveProperty('source');
     expect(summary.paths).toHaveProperty('configuration');
+  });
+
+  test('returns summaries without model when CLI omits it', async () => {
+    vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ items: TEST_SUMMARIES })));
+
+    const summary = (await manager.list())[1]!;
+
+    expect(summary.model).toBeUndefined();
   });
 
   test('rejects when CLI fails', async () => {
@@ -151,15 +167,15 @@ describe('remove', () => {
 describe('getConfiguration', () => {
   test('reads YAML configuration file for the workspace', async () => {
     vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ items: TEST_SUMMARIES })));
-    vi.mocked(readFile).mockResolvedValue('name: test-workspace-1\n');
-    vi.mocked(parseYAML).mockReturnValue({ name: 'test-workspace-1' });
+    vi.mocked(readFile).mockResolvedValue('mounts:\n  dependencies: []\n');
+    vi.mocked(parseYAML).mockReturnValue({ mounts: { dependencies: [] } });
 
     const result = await manager.getConfiguration('ws-1');
 
     expect(exec.exec).toHaveBeenCalledWith('kdn', ['workspace', 'list', '--output', 'json']);
     expect(readFile).toHaveBeenCalledWith('/tmp/ws1/.kaiden.yaml', 'utf-8');
-    expect(parseYAML).toHaveBeenCalledWith('name: test-workspace-1\n');
-    expect(result).toEqual({ name: 'test-workspace-1' });
+    expect(parseYAML).toHaveBeenCalledWith('mounts:\n  dependencies: []\n');
+    expect(result).toEqual({ mounts: { dependencies: [] } });
   });
 
   test('throws when workspace id is not found in list', async () => {

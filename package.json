@@ -84,8 +84,8 @@
     "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^9.39.2",
     "@kortex-app/api": "workspace:",
-    "@kortex-hub/kortex-cli-api": "^0.1.6",
-    "@kortex-hub/kortex-workspace-configuration": "^0.1.4",
+    "@kortex-hub/kortex-cli-api": "^0.1.11",
+    "@kortex-hub/kortex-workspace-configuration": "^0.1.11",
     "@kortex-hub/mcp-registry-types": "^1.4.0-next.20251210140818.04eeb13",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
@@ -216,7 +216,9 @@
       "tmp-promise>tmp": "^0.2.5",
       "tar": "^7.5.3",
       "cheerio>undici": "^7.18.2",
-      "cpu-features>nan": "^2.25.0"
+      "cpu-features>nan": "^2.25.0",
+      "@kortex-hub/kortex-cli-api": "link:../kortex-cli-api/cli/typescript",
+      "@kortex-hub/kortex-workspace-configuration": "link:../kortex-cli-api/workspace-configuration/typescript"
     },
     "patchedDependencies": {
       "dmg-builder": "patches/dmg-builder.patch"
