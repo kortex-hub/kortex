@@ -39,10 +39,10 @@ const workspaceSummary: AgentWorkspaceSummary = {
 };
 
 const configuration: AgentWorkspaceConfiguration = {
-  mounts: {
-    dependencies: ['../shared-lib', '../common-utils'],
-    configs: ['.ssh', '.gitconfig'],
-  },
+  mounts: [
+    { host: '$SOURCES/../shared-lib', target: '/workspace/shared-lib', ro: false },
+    { host: '$HOME/.gitconfig', target: '/workspace/.gitconfig', ro: true },
+  ],
   environment: [
     { name: 'API_KEY', value: 'test-key' },
     { name: 'DB_PASSWORD', secret: 'prod-db-creds' },
@@ -87,16 +87,17 @@ test('Expect model is not displayed when absent', () => {
   expect(screen.queryByText('Model')).not.toBeInTheDocument();
 });
 
-test('Expect mount dependencies are displayed', () => {
+test('Expect mounts are displayed with host and target', () => {
   render(AgentWorkspaceDetailsSummary, { workspaceSummary, configuration });
 
-  expect(screen.getByText('../shared-lib, ../common-utils')).toBeInTheDocument();
+  expect(screen.getByText('$SOURCES/../shared-lib')).toBeInTheDocument();
+  expect(screen.getByText('/workspace/shared-lib')).toBeInTheDocument();
 });
 
-test('Expect mount configs are displayed', () => {
+test('Expect read-only mount shows indicator', () => {
   render(AgentWorkspaceDetailsSummary, { workspaceSummary, configuration });
 
-  expect(screen.getByText('.ssh, .gitconfig')).toBeInTheDocument();
+  expect(screen.getByText('/workspace/.gitconfig (read-only)')).toBeInTheDocument();
 });
 
 test('Expect environment variable with value is displayed', () => {
@@ -117,7 +118,6 @@ test('Expect mounts section is hidden when configuration has no mounts', () => {
   render(AgentWorkspaceDetailsSummary, { workspaceSummary, configuration: {} });
 
   expect(screen.queryByText('Mounts')).not.toBeInTheDocument();
-  expect(screen.queryByText('Dependencies')).not.toBeInTheDocument();
 });
 
 test('Expect environment section is hidden when configuration has no environment', () => {

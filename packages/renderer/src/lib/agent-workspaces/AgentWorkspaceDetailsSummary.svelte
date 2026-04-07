@@ -41,22 +41,16 @@ let { workspaceSummary, configuration }: Props = $props();
         <DetailsCell>{workspaceSummary.model}</DetailsCell>
       </tr>
     {/if}
-    {#if configuration?.mounts}
+    {#if configuration?.mounts?.length}
       <tr>
         <DetailsTitle>Mounts</DetailsTitle>
       </tr>
-      {#if configuration.mounts.dependencies?.length}
+      {#each configuration.mounts as mount (`${mount.host}:${mount.target}`)}
         <tr>
-          <DetailsCell>Dependencies</DetailsCell>
-          <DetailsCell>{configuration.mounts.dependencies.join(', ')}</DetailsCell>
+          <DetailsCell>{mount.host}</DetailsCell>
+          <DetailsCell>{mount.target}{mount.ro ? ' (read-only)' : ''}</DetailsCell>
         </tr>
-      {/if}
-      {#if configuration.mounts.configs?.length}
-        <tr>
-          <DetailsCell>Configs</DetailsCell>
-          <DetailsCell>{configuration.mounts.configs.join(', ')}</DetailsCell>
-        </tr>
-      {/if}
+      {/each}
     {/if}
     {#if configuration?.environment?.length}
       <tr>

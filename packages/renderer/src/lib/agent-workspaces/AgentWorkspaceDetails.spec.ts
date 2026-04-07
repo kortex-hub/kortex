@@ -39,7 +39,7 @@ const routerStore = writable({
 });
 
 const configuration: AgentWorkspaceConfiguration = {
-  mounts: { dependencies: ['../shared-lib'] },
+  mounts: [{ host: '$SOURCES/../shared-lib', target: '$SOURCES/../shared-lib', ro: false }],
   environment: [{ name: 'API_KEY', value: 'test-key' }],
 };
 
