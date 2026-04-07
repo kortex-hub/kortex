@@ -37,7 +37,7 @@ function onToggle(): void {
       <span
         class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
         bg-[var(--pd-label-bg)] text-[var(--pd-label-text)]">
-        {skillInfo?.path?.includes('node_modules') ? 'Pre-built' : 'Custom'}
+        {skillInfo?.type === 'pre-built' ? 'Pre-built' : 'Custom'}
       </span>
       <span
         class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium"
@@ -89,7 +89,7 @@ function onToggle(): void {
               <h3 class="text-sm font-semibold text-[var(--pd-content-card-header-text)] uppercase tracking-wider mb-4">General Information</h3>
               <div class="divide-y divide-[var(--pd-content-card-border)]">
                 <SkillDetailRow label="Name" value={skillInfo.name} />
-                <SkillDetailRow label="Type" value={skillInfo.path?.includes('node_modules') ? 'Pre-built' : 'Custom'} />
+                <SkillDetailRow label="Type" value={skillInfo.type === 'pre-built' ? 'Pre-built' : 'Custom'} />
                 <SkillDetailRow label="Status" value={skillInfo.enabled ? 'Enabled' : 'Disabled'} />
                 <SkillDetailRow label="Path" value={skillInfo.path} title={skillInfo.path} truncate />
               </div>

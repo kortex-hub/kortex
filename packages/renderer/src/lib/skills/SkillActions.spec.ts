@@ -34,6 +34,7 @@ const skill: SkillInfo = {
   description: 'A test skill',
   path: '/skills/my-skill',
   enabled: true,
+  type: 'custom',
 };
 
 test('should render the delete button', () => {

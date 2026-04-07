@@ -120,7 +120,7 @@ test('Expect MCP servers section hidden when no servers available', () => {
 
 test('Expect skills section displayed when skills available', () => {
   vi.mocked(skillsStore).skillInfos = writable<SkillInfo[]>([
-    { name: 'Docker Skill', description: 'Build containers' } as SkillInfo,
+    { name: 'Docker Skill', description: 'Build containers', path: '/skills/docker', enabled: true, type: 'custom' },
   ]);
 
   render(AgentWorkspaceCreate);

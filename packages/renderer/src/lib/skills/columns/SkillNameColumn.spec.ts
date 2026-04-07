@@ -30,6 +30,7 @@ const skill: SkillInfo = {
   description: 'A test skill',
   path: '/skills/my-test-skill',
   enabled: true,
+  type: 'custom',
 };
 
 test('should display the skill name', () => {
