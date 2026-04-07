@@ -16,26 +16,22 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { readFile } from 'node:fs/promises';
+
+import type { RunResult } from '@kortex-app/api';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { parse as parseYAML } from 'yaml';
 
 import type { IPCHandle } from '/@/plugin/api.js';
-import type {
-  AgentWorkspaceConfiguration,
-  AgentWorkspaceId,
-  AgentWorkspaceSummary,
-} from '/@api/agent-workspace-info.js';
+import type { Proxy } from '/@/plugin/proxy.js';
+import { Exec } from '/@/plugin/util/exec.js';
+import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 
 import { AgentWorkspaceManager } from './agent-workspace-manager.js';
-import {
-  mockGetWorkspaceConfiguration,
-  mockListWorkspaces,
-  mockRemoveWorkspace,
-  mockStartWorkspace,
-  mockStopWorkspace,
-} from './agent-workspace-mock-data.js';
 
-vi.mock(import('./agent-workspace-mock-data.js'));
+vi.mock(import('node:fs/promises'));
+vi.mock(import('yaml'));
 
 const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
   {
@@ -59,10 +55,18 @@ const apiSender: ApiSenderType = {
   receive: vi.fn(),
 };
 const ipcHandle: IPCHandle = vi.fn();
+const proxy = {
+  isEnabled: vi.fn().mockReturnValue(false),
+} as unknown as Proxy;
+const exec = new Exec(proxy);
+
+function mockExecResult(stdout: string): RunResult {
+  return { command: 'kortex-cli', stdout, stderr: '' };
+}
 
 beforeEach(() => {
   vi.resetAllMocks();
-  manager = new AgentWorkspaceManager(apiSender, ipcHandle);
+  manager = new AgentWorkspaceManager(apiSender, ipcHandle, exec);
   manager.init();
 });
 
@@ -89,20 +93,20 @@ describe('init', () => {
 });
 
 describe('list', () => {
-  test('delegates to mockListWorkspaces', () => {
-    vi.mocked(mockListWorkspaces).mockReturnValue(structuredClone(TEST_SUMMARIES));
+  test('executes kortex-cli workspace list and returns items', async () => {
+    vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ items: TEST_SUMMARIES })));
 
-    const result = manager.list();
+    const result = await manager.list();
 
-    expect(mockListWorkspaces).toHaveBeenCalled();
+    expect(exec.exec).toHaveBeenCalledWith('kortex-cli', ['workspace', 'list', '--output', 'json']);
     expect(result).toHaveLength(2);
     expect(result.map(s => s.id)).toEqual(['ws-1', 'ws-2']);
   });
 
-  test('returns summaries with only CLI fields', () => {
-    vi.mocked(mockListWorkspaces).mockReturnValue(structuredClone(TEST_SUMMARIES));
+  test('returns summaries with expected CLI fields', async () => {
+    vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ items: TEST_SUMMARIES })));
 
-    const summary = manager.list()[0]!;
+    const summary = (await manager.list())[0]!;
 
     expect(summary).toHaveProperty('id');
     expect(summary).toHaveProperty('name');
@@ -111,108 +115,115 @@ describe('list', () => {
     expect(summary.paths).toHaveProperty('source');
     expect(summary.paths).toHaveProperty('configuration');
   });
+
+  test('rejects when CLI fails', async () => {
+    vi.spyOn(exec, 'exec').mockRejectedValue(new Error('command not found'));
+
+    await expect(manager.list()).rejects.toThrow('command not found');
+  });
 });
 
 describe('remove', () => {
-  test('delegates to mockRemoveWorkspace and returns the workspace id', () => {
-    const expected: AgentWorkspaceId = { id: 'ws-1' };
-    vi.mocked(mockRemoveWorkspace).mockReturnValue(expected);
+  test('executes kortex-cli workspace remove and returns the workspace id', async () => {
+    vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-1' })));
 
-    const result = manager.remove('ws-1');
+    const result = await manager.remove('ws-1');
 
-    expect(mockRemoveWorkspace).toHaveBeenCalledWith('ws-1');
-    expect(result).toEqual(expected);
+    expect(exec.exec).toHaveBeenCalledWith('kortex-cli', ['workspace', 'remove', 'ws-1', '--output', 'json']);
+    expect(result).toEqual({ id: 'ws-1' });
   });
 
-  test('emits agent-workspace-update event', () => {
-    vi.mocked(mockRemoveWorkspace).mockReturnValue({ id: 'ws-1' });
+  test('emits agent-workspace-update event', async () => {
+    vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-1' })));
 
-    manager.remove('ws-1');
+    await manager.remove('ws-1');
 
     expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
   });
 
-  test('throws when mockRemoveWorkspace throws for unknown id', () => {
-    vi.mocked(mockRemoveWorkspace).mockImplementation(() => {
-      throw new Error('workspace "unknown-id" not found. Use "workspace list" to see available workspaces.');
-    });
+  test('rejects when CLI fails for unknown id', async () => {
+    vi.spyOn(exec, 'exec').mockRejectedValue(new Error('workspace not found: unknown-id'));
 
-    expect(() => manager.remove('unknown-id')).toThrow('workspace "unknown-id" not found');
+    await expect(manager.remove('unknown-id')).rejects.toThrow('workspace not found: unknown-id');
   });
 });
 
 describe('getConfiguration', () => {
-  test('delegates to mockGetWorkspaceConfiguration and returns the configuration', () => {
-    const expected: AgentWorkspaceConfiguration = { name: 'test-workspace-1' };
-    vi.mocked(mockGetWorkspaceConfiguration).mockReturnValue(expected);
+  test('reads YAML configuration file for the workspace', async () => {
+    vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ items: TEST_SUMMARIES })));
+    vi.mocked(readFile).mockResolvedValue('name: test-workspace-1\n');
+    vi.mocked(parseYAML).mockReturnValue({ name: 'test-workspace-1' });
 
-    const result = manager.getConfiguration('ws-1');
+    const result = await manager.getConfiguration('ws-1');
 
-    expect(mockGetWorkspaceConfiguration).toHaveBeenCalledWith('ws-1');
-    expect(result).toEqual(expected);
+    expect(exec.exec).toHaveBeenCalledWith('kortex-cli', ['workspace', 'list', '--output', 'json']);
+    expect(readFile).toHaveBeenCalledWith('/tmp/ws1/.kortex.yaml', 'utf-8');
+    expect(parseYAML).toHaveBeenCalledWith('name: test-workspace-1\n');
+    expect(result).toEqual({ name: 'test-workspace-1' });
   });
 
-  test('throws when mockGetWorkspaceConfiguration throws for unknown id', () => {
-    vi.mocked(mockGetWorkspaceConfiguration).mockImplementation(() => {
-      throw new Error('workspace "unknown-id" not found. Use "workspace list" to see available workspaces.');
-    });
+  test('throws when workspace id is not found in list', async () => {
+    vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ items: TEST_SUMMARIES })));
 
-    expect(() => manager.getConfiguration('unknown-id')).toThrow('workspace "unknown-id" not found');
+    await expect(manager.getConfiguration('unknown-id')).rejects.toThrow(
+      'workspace "unknown-id" not found. Use "workspace list" to see available workspaces.',
+    );
+  });
+
+  test('rejects when reading the configuration file fails', async () => {
+    vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ items: TEST_SUMMARIES })));
+    vi.mocked(readFile).mockRejectedValue(new Error('ENOENT: no such file'));
+
+    await expect(manager.getConfiguration('ws-1')).rejects.toThrow('ENOENT: no such file');
   });
 });
 
 describe('start', () => {
-  test('delegates to mockStartWorkspace and returns the workspace id', () => {
-    const expected: AgentWorkspaceId = { id: 'ws-1' };
-    vi.mocked(mockStartWorkspace).mockReturnValue(expected);
+  test('executes kortex-cli workspace start and returns the workspace id', async () => {
+    vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-1' })));
 
-    const result = manager.start('ws-1');
+    const result = await manager.start('ws-1');
 
-    expect(mockStartWorkspace).toHaveBeenCalledWith('ws-1');
-    expect(result).toEqual(expected);
+    expect(exec.exec).toHaveBeenCalledWith('kortex-cli', ['workspace', 'start', 'ws-1', '--output', 'json']);
+    expect(result).toEqual({ id: 'ws-1' });
   });
 
-  test('emits agent-workspace-update event', () => {
-    vi.mocked(mockStartWorkspace).mockReturnValue({ id: 'ws-1' });
+  test('emits agent-workspace-update event', async () => {
+    vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-1' })));
 
-    manager.start('ws-1');
+    await manager.start('ws-1');
 
     expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
   });
 
-  test('throws when mockStartWorkspace throws for unknown id', () => {
-    vi.mocked(mockStartWorkspace).mockImplementation(() => {
-      throw new Error('workspace "unknown-id" not found. Use "workspace list" to see available workspaces.');
-    });
+  test('rejects when CLI fails for unknown id', async () => {
+    vi.spyOn(exec, 'exec').mockRejectedValue(new Error('workspace not found: unknown-id'));
 
-    expect(() => manager.start('unknown-id')).toThrow('workspace "unknown-id" not found');
+    await expect(manager.start('unknown-id')).rejects.toThrow('workspace not found: unknown-id');
   });
 });
 
 describe('stop', () => {
-  test('delegates to mockStopWorkspace and returns the workspace id', () => {
-    const expected: AgentWorkspaceId = { id: 'ws-1' };
-    vi.mocked(mockStopWorkspace).mockReturnValue(expected);
+  test('executes kortex-cli workspace stop and returns the workspace id', async () => {
+    vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-1' })));
 
-    const result = manager.stop('ws-1');
+    const result = await manager.stop('ws-1');
 
-    expect(mockStopWorkspace).toHaveBeenCalledWith('ws-1');
-    expect(result).toEqual(expected);
+    expect(exec.exec).toHaveBeenCalledWith('kortex-cli', ['workspace', 'stop', 'ws-1', '--output', 'json']);
+    expect(result).toEqual({ id: 'ws-1' });
   });
 
-  test('emits agent-workspace-update event', () => {
-    vi.mocked(mockStopWorkspace).mockReturnValue({ id: 'ws-1' });
+  test('emits agent-workspace-update event', async () => {
+    vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-1' })));
 
-    manager.stop('ws-1');
+    await manager.stop('ws-1');
 
     expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
   });
 
-  test('throws when mockStopWorkspace throws for unknown id', () => {
-    vi.mocked(mockStopWorkspace).mockImplementation(() => {
-      throw new Error('workspace "unknown-id" not found. Use "workspace list" to see available workspaces.');
-    });
+  test('rejects when CLI fails for unknown id', async () => {
+    vi.spyOn(exec, 'exec').mockRejectedValue(new Error('workspace not found: unknown-id'));
 
-    expect(() => manager.stop('unknown-id')).toThrow('workspace "unknown-id" not found');
+    await expect(manager.stop('unknown-id')).rejects.toThrow('workspace not found: unknown-id');
   });
 });

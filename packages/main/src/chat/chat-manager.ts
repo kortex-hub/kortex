@@ -49,6 +49,7 @@ import { MCPManager } from '../plugin/mcp/mcp-manager.js';
 import { ProviderRegistry } from '../plugin/provider-registry.js';
 import { runMigrate } from './db/migrate.js';
 import { ChatQueries } from './db/queries.js';
+import { FileContentDetector } from './file-content-detector.js';
 import { buildChatSystemPrompt, buildPromptOnlySystemPrompt } from './flow-detect-prompts.js';
 import { ParameterExtractor } from './parameter-extraction.js';
 
@@ -56,6 +57,7 @@ export class ChatManager {
   private chatQueries!: ChatQueries;
   private userId!: string;
   private activeStreams = new Map<number, { controller: AbortController; chatId: string }>();
+  private readonly fileDetector = new FileContentDetector();
 
   constructor(
     @inject(ProviderRegistry)
@@ -175,17 +177,70 @@ export class ChatManager {
     this.webContents.send('api-sender', 'chat-list-updated');
   }
 
+  /**
+   * Converts a file part to either a text part (for text-based files) or a
+   * file part with raw base64 (for binary files sent to the model).
+   */
+  private convertFilePartForModel(
+    part: { type: 'file'; url: string; mediaType: string; filename?: string },
+    buffer: Buffer,
+    base64: string,
+  ): UIMessage['parts'][number] {
+    if (this.fileDetector.isTextContent(part.mediaType, part.filename, buffer)) {
+      const label = part.filename ? `[File: ${part.filename}]` : '[File]';
+      return { type: 'text', text: `${label}\n${buffer.toString('utf-8')}` };
+    }
+    return { ...part, url: base64 };
+  }
+
+  /**
+   * Converts file parts for model consumption.
+   * - Text-based files are converted to text parts (avoids unsupported MIME type errors).
+   * - file:// URLs: reads the file, mutates the original part to a data URL (for DB persistence),
+   *   and returns a copy with raw base64 (for the model).
+   * - data: URLs (from DB): returns a copy with raw base64 stripped of the data URL prefix.
+   * Raw base64 strings are not valid URLs, so the AI SDK won't attempt to download them.
+   */
   private async convertMessages(messages: UIMessage[]): Promise<UIMessage[]> {
+    const result: UIMessage[] = [];
     for (const message of messages) {
+      const convertedParts: UIMessage['parts'] = [];
       for (const part of message.parts) {
         if (part.type === 'file' && part.url.startsWith('file://')) {
-          const filename = fileURLToPath(part.url);
-          const buffer = await readFile(filename);
-          part.url = `data:${part.mediaType};base64,${buffer.toString('base64')}`;
+          const filepath = fileURLToPath(part.url);
+          let buffer: Buffer;
+          try {
+            buffer = await readFile(filepath);
+          } catch (e) {
+            console.error(`Failed to read file: ${filepath}`, e);
+            convertedParts.push({
+              type: 'text',
+              text: `[File: ${part.filename ?? filepath} - Error reading file]`,
+            });
+            continue;
+          }
+          const base64 = buffer.toString('base64');
+          // Mutate original for DB persistence (data URL)
+          part.url = `data:${part.mediaType};base64,${base64}`;
+          convertedParts.push(this.convertFilePartForModel(part, buffer, base64));
+        } else if (part.type === 'file' && part.url.startsWith('data:')) {
+          // Already a data URL (loaded from DB) — strip prefix for model
+          const commaIndex = part.url.indexOf(',');
+          if (commaIndex < 0) {
+            console.warn(`Malformed data URL (no comma) for file: ${part.filename}`);
+            convertedParts.push(part);
+            continue;
+          }
+          const base64 = part.url.substring(commaIndex + 1);
+          const buffer = Buffer.from(base64, 'base64');
+          convertedParts.push(this.convertFilePartForModel(part, buffer, base64));
+        } else {
+          convertedParts.push(part);
         }
       }
+      result.push({ ...message, parts: convertedParts });
     }
-    return messages;
+    return result;
   }
 
   private getMostRecentUserMessage(messages: UIMessage[]): UIMessage | undefined {
@@ -342,20 +397,29 @@ export class ChatManager {
         abortSignal: abortController.signal,
       });
 
+      let onFinishSavePromise: Promise<void> | undefined;
+
       const reader = streaming
         .toUIMessageStream({
-          onFinish: async ({ messages }): Promise<void> => {
-            await this.chatQueries.saveMessages({
-              messages: messages.map(message => ({
-                id: randomUUID().toString(),
-                role: message.role,
-                parts: message.parts,
-                createdAt: new Date(),
-                chatId,
-                attachments: [],
-                config,
-              })),
-            });
+          onFinish: ({ messages }): void => {
+            onFinishSavePromise = this.chatQueries
+              .saveMessages({
+                messages: messages.map(message => ({
+                  id: randomUUID().toString(),
+                  role: message.role,
+                  parts: message.parts,
+                  createdAt: new Date(),
+                  chatId,
+                  attachments: [],
+                  config,
+                })),
+              })
+              .match(
+                () => {},
+                error => {
+                  throw error;
+                },
+              );
           },
         })
         .getReader();
@@ -367,6 +431,11 @@ export class ChatManager {
           break;
         }
         this.webContents.send('inference:streamText-onChunk', params.onDataId, value);
+      }
+
+      // Wait for onFinish message save to complete before signaling stream end
+      if (onFinishSavePromise) {
+        await onFinishSavePromise;
       }
     } finally {
       this.activeStreams.delete(params.onDataId);

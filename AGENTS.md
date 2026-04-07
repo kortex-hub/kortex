@@ -190,6 +190,7 @@ Tests are co-located with source files:
 
 Unit tests use Vitest and follow these conventions:
 
+- **Test function**: Use `test()` instead of `it()` for test cases
 - **Mocking**: Use `vi.mock(import('...'))` for auto-mocking modules. Avoid manual mock factories (`vi.mock('...', () => ({...}))`) when possible
 - **Resetting mocks**: Use `vi.resetAllMocks()` in `beforeEach`, not `vi.clearAllMocks()`
 - **Customizing auto-mocks**: When an auto-mocked function or class method needs a real implementation, use `vi.mocked(...)`. For class methods, use the prototype pattern: `vi.mocked(MyClass.prototype.myMethod).mockImplementation(...)`

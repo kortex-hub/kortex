@@ -12,6 +12,7 @@ export function findModel(models: ModelInfo[], model: ModelInfo | undefined): Mo
 <script lang="ts">
 import { Chat } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
+import type { ReasoningUIPart, TextUIPart, UIMessage, UIMessageChunk } from 'ai';
 import { untrack } from 'svelte';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { toast } from 'svelte-sonner';
@@ -143,8 +144,11 @@ EditState.toContext();
 
 let attachments = $state<Attachment[]>([]);
 let mcpSelectorOpen = $state(false);
+let activeStreamOnDataId = $state<number | undefined>(undefined);
+let reconnectedStreamingMessage = $state<UIMessage | undefined>(undefined);
 
 const hasModels = $derived(models && models.length > 0);
+const hasActiveStream = $derived(activeStreamOnDataId !== undefined);
 
 function onCheckMCPTool(mcpId: string, toolId: string, checked: boolean): void {
   const tools = selectedMCPTools.get(mcpId) ?? new SvelteSet();
@@ -155,6 +159,140 @@ function onCheckMCPTool(mcpId: string, toolId: string, checked: boolean): void {
   }
   selectedMCPTools.set(mcpId, tools);
 }
+
+// Reconnect to active stream when returning to a chat
+let reconnectedMessageId = '';
+let reconnectedText = '';
+let reconnectedReasoning = '';
+
+$effect(() => {
+  const currentChatId = chat?.id;
+  if (!currentChatId) {
+    activeStreamOnDataId = undefined;
+    reconnectedStreamingMessage = undefined;
+    return;
+  }
+
+  untrack(() => {
+    const activeStream = window.inferenceGetActiveStream(currentChatId);
+    if (!activeStream || activeStream.isComplete) {
+      return;
+    }
+
+    // Reset state for fresh reconnection
+    reconnectedMessageId = '';
+    reconnectedText = '';
+    reconnectedReasoning = '';
+    reconnectedStreamingMessage = undefined;
+
+    function buildParts(
+      state: 'streaming' | 'done',
+    ): Array<TextUIPart | ReasoningUIPart> {
+      const parts: Array<TextUIPart | ReasoningUIPart> = [];
+      if (reconnectedReasoning) {
+        parts.push({ type: 'reasoning' as const, text: reconnectedReasoning, state });
+      }
+      if (reconnectedText || state === 'streaming') {
+        parts.push({ type: 'text' as const, text: reconnectedText, state });
+      }
+      return parts;
+    }
+
+    function appendChunkToLastMessage(chunk: UIMessageChunk): void {
+      if (chunk.type === 'text-start') {
+        reconnectedMessageId = chunk.id;
+        reconnectedText = '';
+        reconnectedReasoning = '';
+        reconnectedStreamingMessage = {
+          id: chunk.id,
+          role: 'assistant',
+          parts: [],
+        };
+      } else if (chunk.type === 'text-delta' && chunk.id === reconnectedMessageId) {
+        reconnectedText += chunk.delta;
+        reconnectedStreamingMessage = {
+          id: reconnectedMessageId,
+          role: 'assistant',
+          parts: buildParts('streaming'),
+        };
+      } else if (chunk.type === 'reasoning-delta' && chunk.id === reconnectedMessageId) {
+        reconnectedReasoning += chunk.delta;
+        reconnectedStreamingMessage = {
+          id: reconnectedMessageId,
+          role: 'assistant',
+          parts: buildParts('streaming'),
+        };
+      } else if (chunk.type === 'text-end' && chunk.id === reconnectedMessageId) {
+        reconnectedStreamingMessage = {
+          id: reconnectedMessageId,
+          role: 'assistant',
+          parts: buildParts('done'),
+        };
+      }
+    }
+
+    const result = window.inferenceReconnectToStream(
+      currentChatId,
+      (chunk: UIMessageChunk): void => {
+        appendChunkToLastMessage(chunk);
+      },
+      (error: unknown): void => {
+        console.error('Error during reconnected stream:', error);
+        activeStreamOnDataId = undefined;
+        reconnectedStreamingMessage = undefined;
+      },
+      (): void => {
+        console.log('Reconnected stream completed');
+        activeStreamOnDataId = undefined;
+        if (!reconnectedStreamingMessage) {
+          // No text chunks were received (the stream may have been aborted before
+          // producing text, e.g. due to model queuing). Load the persisted assistant
+          // message from the database since onFinish saved it before onEnd was sent.
+          window.inferenceGetChatMessagesById(currentChatId).then(({ messages: dbMessages }) => {
+            if (chat?.id !== currentChatId) {
+              return;
+            }
+            const assistantMsg = dbMessages.filter(m => m.role === 'assistant').pop();
+            if (assistantMsg) {
+              reconnectedStreamingMessage = {
+                id: assistantMsg.id,
+                role: 'assistant',
+                parts: assistantMsg.parts as UIMessage['parts'],
+              };
+            }
+          }).catch(console.error);
+        }
+      },
+    );
+
+    if (result) {
+      activeStreamOnDataId = result.onDataId;
+
+      // Process buffered chunks
+      for (const chunk of result.bufferedChunks) {
+        appendChunkToLastMessage(chunk);
+      }
+    }
+  });
+
+  return (): void => {
+    untrack(() => {
+      if (activeStreamOnDataId !== undefined) {
+        window.inferenceDisconnectFromStream(activeStreamOnDataId);
+      }
+      activeStreamOnDataId = undefined;
+      // Only clear the reconnected message when navigating to a different chat.
+      // If the effect re-runs for the same chat (e.g. after chatHistory.refetch()),
+      // keep the message visible since the completed stream can't be reconnected.
+      if (currentChatId !== chat?.id) {
+        reconnectedStreamingMessage = undefined;
+      }
+      reconnectedMessageId = '';
+      reconnectedText = '';
+      reconnectedReasoning = '';
+    });
+  };
+});
 </script>
 
 <div class="bg-background flex h-full min-w-0 flex-col">
@@ -172,12 +310,12 @@ function onCheckMCPTool(mcpId: string, toolId: string, checked: boolean): void {
             <div class="flex flex-col flex-3/4">
                 <Messages
                     {readonly}
-                    loading={chatClient.status === 'streaming' || chatClient.status === 'submitted'}
-                    messages={chatClient.messages}
+                    loading={chatClient.status === 'streaming' || chatClient.status === 'submitted' || hasActiveStream}
+                    messages={reconnectedStreamingMessage ? [...chatClient.messages, reconnectedStreamingMessage] : chatClient.messages}
                 />
                 <form class="bg-background mx-auto flex w-full gap-2 px-4 pb-4 md:max-w-3xl md:pb-6">
                     {#if !readonly}
-                        <MultimodalInput {attachments} {chatClient} {selectedModel} {selectedMCPTools} class="flex-1" />
+                        <MultimodalInput {attachments} {chatClient} {selectedModel} {selectedMCPTools} {hasActiveStream} {activeStreamOnDataId} class="flex-1" />
                     {/if}
                 </form>
             </div>

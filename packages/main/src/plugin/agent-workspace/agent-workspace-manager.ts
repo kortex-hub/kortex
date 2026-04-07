@@ -16,10 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { readFile } from 'node:fs/promises';
+
 import type { Disposable } from '@kortex-app/api';
 import { inject, injectable, preDestroy } from 'inversify';
+import { parse as parseYAML } from 'yaml';
 
 import { IPCHandle } from '/@/plugin/api.js';
+import { Exec } from '/@/plugin/util/exec.js';
 import type {
   AgentWorkspaceConfiguration,
   AgentWorkspaceId,
@@ -27,20 +31,8 @@ import type {
 } from '/@api/agent-workspace-info.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 
-import {
-  mockGetWorkspaceConfiguration,
-  mockListWorkspaces,
-  mockRemoveWorkspace,
-  mockStartWorkspace,
-  mockStopWorkspace,
-} from './agent-workspace-mock-data.js';
-
 /**
- * Manages agent workspaces.
- *
- * Each public method delegates to a mock function that simulates
- * a CLI call. When the real `kortex` CLI is ready, replace the
- * mock imports with actual exec() + JSON.parse(stdout) calls.
+ * Manages agent workspaces by delegating to the `kortex-cli` CLI.
  */
 @injectable()
 export class AgentWorkspaceManager implements Disposable {
@@ -49,35 +41,44 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly apiSender: ApiSenderType,
     @inject(IPCHandle)
     private readonly ipcHandle: IPCHandle,
+    @inject(Exec)
+    private readonly exec: Exec,
   ) {}
 
-  // Future: exec('kortex', ['workspace', 'list', '--format', 'json'])
-  list(): AgentWorkspaceSummary[] {
-    return mockListWorkspaces();
+  private async execKortex<T>(args: string[]): Promise<T> {
+    const result = await this.exec.exec('kortex-cli', ['workspace', ...args, '--output', 'json']);
+    return JSON.parse(result.stdout) as T;
   }
 
-  // Future: exec('kortex', ['workspace', 'remove', id, '--format', 'json'])
-  remove(id: string): AgentWorkspaceId {
-    const result = mockRemoveWorkspace(id);
+  async list(): Promise<AgentWorkspaceSummary[]> {
+    const response = await this.execKortex<{ items: AgentWorkspaceSummary[] }>(['list']);
+    return response.items;
+  }
+
+  async remove(id: string): Promise<AgentWorkspaceId> {
+    const result = await this.execKortex<AgentWorkspaceId>(['remove', id]);
     this.apiSender.send('agent-workspace-update');
     return result;
   }
 
-  // Future: readFile(paths.configuration) + YAML.parse()
-  getConfiguration(id: string): AgentWorkspaceConfiguration {
-    return mockGetWorkspaceConfiguration(id);
+  async getConfiguration(id: string): Promise<AgentWorkspaceConfiguration> {
+    const workspaces = await this.list();
+    const workspace = workspaces.find(ws => ws.id === id);
+    if (!workspace) {
+      throw new Error(`workspace "${id}" not found. Use "workspace list" to see available workspaces.`);
+    }
+    const content = await readFile(workspace.paths.configuration, 'utf-8');
+    return parseYAML(content) as AgentWorkspaceConfiguration;
   }
 
-  // Future: exec('kortex', ['workspace', 'start', id, '--format', 'json'])
-  start(id: string): AgentWorkspaceId {
-    const result = mockStartWorkspace(id);
+  async start(id: string): Promise<AgentWorkspaceId> {
+    const result = await this.execKortex<AgentWorkspaceId>(['start', id]);
     this.apiSender.send('agent-workspace-update');
     return result;
   }
 
-  // Future: exec('kortex', ['workspace', 'stop', id, '--format', 'json'])
-  stop(id: string): AgentWorkspaceId {
-    const result = mockStopWorkspace(id);
+  async stop(id: string): Promise<AgentWorkspaceId> {
+    const result = await this.execKortex<AgentWorkspaceId>(['stop', id]);
     this.apiSender.send('agent-workspace-update');
     return result;
   }
