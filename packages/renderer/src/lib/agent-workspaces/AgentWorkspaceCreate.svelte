@@ -112,8 +112,11 @@ function cancel(): void {
   handleNavigation({ page: NavigationPage.AGENT_WORKSPACES });
 }
 
-function startWorkspace(): void {
-  if (!sessionName.trim()) return;
+let creating = $state(false);
+let error = $state('');
+
+async function startWorkspace(): Promise<void> {
+  if (!sessionName.trim() || !workingDir.trim() || !selectedAgent) return;
 
   const config = {
     name: sessionName,
@@ -126,6 +129,21 @@ function startWorkspace(): void {
     mcpServers: selectedMcpIds,
   };
   console.log('Starting workspace with config:', config);
+
+  creating = true;
+  error = '';
+  try {
+    await window.createAgentWorkspace({
+      sourcePath: workingDir,
+      agent: selectedAgent,
+      name: sessionName,
+    });
+    handleNavigation({ page: NavigationPage.AGENT_WORKSPACES });
+  } catch (err: unknown) {
+    error = err instanceof Error ? err.message : String(err);
+  } finally {
+    creating = false;
+  }
 }
 </script>
 
@@ -264,6 +282,10 @@ function startWorkspace(): void {
             {/if}
           </section>
 
+          {#if error}
+            <div class="text-sm text-red-400 bg-red-900/20 rounded-lg p-3">{error}</div>
+          {/if}
+
           <!-- Footer actions -->
           <div class="flex items-center justify-between pt-4 border-t border-[var(--pd-content-card-border)]">
             <div class="flex items-center gap-3 text-sm text-[var(--pd-content-card-text)] opacity-70">
@@ -272,7 +294,9 @@ function startWorkspace(): void {
             </div>
             <div class="flex gap-3">
               <Button onclick={cancel}>Cancel</Button>
-              <Button disabled={!sessionName.trim()} onclick={startWorkspace}>Start Workspace</Button>
+              <Button disabled={!sessionName.trim() || !workingDir.trim() || !selectedAgent || creating} onclick={startWorkspace}>
+                {creating ? 'Creating...' : 'Start Workspace'}
+              </Button>
             </div>
           </div>
 

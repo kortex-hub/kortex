@@ -44,7 +44,12 @@ import type {
 import type { DynamicToolUIPart, UIMessageChunk } from 'ai';
 import { contextBridge, ipcRenderer } from 'electron';
 
-import type { AgentWorkspaceConfiguration, AgentWorkspaceId, AgentWorkspaceSummary } from '/@api/agent-workspace-info';
+import type {
+  AgentWorkspaceConfiguration,
+  AgentWorkspaceCreateOptions,
+  AgentWorkspaceId,
+  AgentWorkspaceSummary,
+} from '/@api/agent-workspace-info';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type';
 import type { AuthenticationProviderInfo } from '/@api/authentication/authentication';
 import type { DetectFlowFieldsParams, DetectFlowFieldsResult } from '/@api/chat/detect-flow-fields-schema.ts';
@@ -314,6 +319,13 @@ export function initExposure(): void {
   });
 
   // Agent Workspaces
+  contextBridge.exposeInMainWorld(
+    'createAgentWorkspace',
+    async (options: AgentWorkspaceCreateOptions): Promise<AgentWorkspaceId> => {
+      return ipcInvoke('agent-workspace:create', options);
+    },
+  );
+
   contextBridge.exposeInMainWorld('listAgentWorkspaces', async (): Promise<AgentWorkspaceSummary[]> => {
     return ipcInvoke('agent-workspace:list');
   });

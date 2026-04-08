@@ -23,9 +23,11 @@ import { inject, injectable, preDestroy } from 'inversify';
 import { parse as parseYAML } from 'yaml';
 
 import { IPCHandle } from '/@/plugin/api.js';
+import { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import { Exec } from '/@/plugin/util/exec.js';
 import type {
   AgentWorkspaceConfiguration,
+  AgentWorkspaceCreateOptions,
   AgentWorkspaceId,
   AgentWorkspaceSummary,
 } from '/@api/agent-workspace-info.js';
@@ -43,11 +45,53 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly ipcHandle: IPCHandle,
     @inject(Exec)
     private readonly exec: Exec,
+    @inject(CliToolRegistry)
+    private readonly cliToolRegistry: CliToolRegistry,
   ) {}
 
-  private async execKortex<T>(args: string[]): Promise<T> {
-    const result = await this.exec.exec('kortex-cli', ['workspace', ...args, '--output', 'json']);
-    return JSON.parse(result.stdout) as T;
+  private getCliPath(): string {
+    const tool = this.cliToolRegistry.getCliToolInfos().find(t => t.name === 'kortex');
+    if (tool?.path) {
+      return tool.path;
+    }
+    return 'kortex-cli';
+  }
+
+  private async execKortex<T>(args: string[], options?: { cwd?: string }): Promise<T> {
+    const cliPath = this.getCliPath();
+    const fullArgs = ['workspace', ...args, '--output', 'json'];
+    console.log(`Executing: ${cliPath} ${fullArgs.join(' ')}`);
+    try {
+      const result = await this.exec.exec(cliPath, fullArgs, options);
+      return JSON.parse(result.stdout) as T;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.log(`kortex-cli failed: ${cliPath} ${fullArgs.join(' ')} — ${message}`);
+      throw err;
+    }
+  }
+
+  async create(options: AgentWorkspaceCreateOptions): Promise<AgentWorkspaceId> {
+    const cliPath = this.getCliPath();
+    const runtime = options.runtime ?? 'podman';
+    const args = ['init', options.sourcePath, '--runtime', runtime, '--agent', options.agent, '--output', 'json'];
+    if (options.name) {
+      args.push('--name', options.name);
+    }
+    if (options.project) {
+      args.push('--project', options.project);
+    }
+    console.log(`Executing: ${cliPath} ${args.join(' ')}`);
+    try {
+      const result = await this.exec.exec(cliPath, args);
+      const workspaceId = JSON.parse(result.stdout) as AgentWorkspaceId;
+      this.apiSender.send('agent-workspace-update');
+      return workspaceId;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.log(`kortex-cli failed: ${cliPath} ${args.join(' ')} — ${message}`);
+      throw err;
+    }
   }
 
   async list(): Promise<AgentWorkspaceSummary[]> {
@@ -84,6 +128,13 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   init(): void {
+    this.ipcHandle(
+      'agent-workspace:create',
+      async (_listener: unknown, options: AgentWorkspaceCreateOptions): Promise<AgentWorkspaceId> => {
+        return this.create(options);
+      },
+    );
+
     this.ipcHandle('agent-workspace:list', async (): Promise<AgentWorkspaceSummary[]> => {
       return this.list();
     });
