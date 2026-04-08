@@ -1,6 +1,6 @@
 <script lang="ts">
 import { faPlay, faStop, faTrash } from '@fortawesome/free-solid-svg-icons';
-import { Tab } from '@podman-desktop/ui-svelte';
+import { ErrorMessage, Tab } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
 import AgentWorkspaceDetailsSummary from '/@/lib/agent-workspaces/AgentWorkspaceDetailsSummary.svelte';
@@ -24,6 +24,7 @@ interface Props {
 let { workspaceId }: Props = $props();
 
 let configuration: Awaited<ReturnType<typeof window.getAgentWorkspaceConfiguration>> = $state({});
+let configurationError: string | undefined = $state(undefined);
 
 const workspaceSummary = $derived($agentWorkspaces.find(ws => ws.id === workspaceId));
 
@@ -36,8 +37,11 @@ $effect(() => {
     .getAgentWorkspaceConfiguration(workspaceId)
     .then(config => {
       configuration = config;
+      configurationError = undefined;
     })
-    .catch(console.error);
+    .catch((err: unknown) => {
+      configurationError = String(err);
+    });
 });
 
 async function handleStartStop(): Promise<void> {
@@ -92,6 +96,9 @@ function handleRemove(): void {
   {/snippet}
   {#snippet contentSnippet()}
     <Route path="/summary" breadcrumb="Summary" navigationHint="tab">
+      {#if configurationError}
+        <ErrorMessage error={configurationError} />
+      {/if}
       <AgentWorkspaceDetailsSummary {workspaceSummary} {configuration} />
     </Route>
   {/snippet}
