@@ -34,7 +34,7 @@ const editState = EditState.fromContext();
 
 const isGrayed = $derived(editState.isAfterEditingMessage(messages, message));
 
-const tools: Array<DynamicToolUIPart> = message.parts.filter(part => part?.type === 'dynamic-tool') ?? [];
+const tools: Array<DynamicToolUIPart> = $derived(message.parts.filter(part => part?.type === 'dynamic-tool'));
 
 // Separate reasoning and text parts for proper ordering
 const reasoningParts = $derived(message.parts.filter(part => part.type === 'reasoning'));

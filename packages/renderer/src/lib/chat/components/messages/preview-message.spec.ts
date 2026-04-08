@@ -19,11 +19,13 @@ import '@testing-library/jest-dom/vitest';
 
 import type { UIMessage } from '@ai-sdk/svelte';
 import { render } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { EditState } from '/@/lib/chat/hooks/edit-state.svelte';
 import { getLock } from '/@/lib/chat/hooks/lock.svelte';
 
+import PreviewMessageReactiveTest from './preview-message-reactive-test.svelte';
 import PreviewMessageTest from './preview-message-test.svelte';
 
 vi.mock(import('/@/lib/chat/hooks/edit-state.svelte'));
@@ -283,5 +285,63 @@ describe('PreviewMessage - Reasoning and Response Display', () => {
     // Should render both reasoning and response text
     expect(container.textContent).toMatch(/Reasoned for/);
     expect(container.textContent).toContain('Response');
+  });
+});
+
+describe('PreviewMessage - Tool Parts Reactivity', () => {
+  test('should render tool parts when present from the start', () => {
+    const message: UIMessage = {
+      id: 'msg1',
+      role: 'assistant',
+      parts: [
+        {
+          type: 'dynamic-tool',
+          toolCallId: 'call1',
+          toolName: 'list_issues',
+          state: 'output-available',
+          input: { repo: 'test/repo' },
+          output: { issues: [] },
+        },
+        { type: 'text', text: 'Here are the results' },
+      ],
+    };
+
+    const { container } = render(PreviewMessageTest, {
+      message,
+      messages: [message],
+      readonly: true,
+      loading: false,
+    });
+
+    expect(container.textContent).toContain('list_issues');
+    expect(container.textContent).toContain('Here are the results');
+  });
+
+  test('should reactively show tool parts added after initial render', async () => {
+    const { component, container } = render(PreviewMessageReactiveTest, {
+      readonly: true,
+      loading: true,
+    });
+
+    // Set initial parts via the component method
+    component.setParts([{ type: 'text', text: 'Thinking...' }]);
+    await tick();
+
+    // Initially no tool parts
+    expect(container.textContent).not.toContain('list_issues');
+
+    // Simulate a tool call part arriving later in the stream
+    component.addPart({
+      type: 'dynamic-tool',
+      toolCallId: 'call1',
+      toolName: 'list_issues',
+      state: 'input-available',
+      input: { repo: 'test/repo' },
+    });
+
+    await tick();
+
+    // Tool part should now be visible
+    expect(container.textContent).toContain('list_issues');
   });
 });
