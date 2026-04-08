@@ -100,13 +100,15 @@ test('Expect workspace summary with project is resolved from the store', () => {
   expect(resolved.find(ws => ws.id === 'ws-1')?.project).toBe('backend');
 });
 
-test('Expect error message displayed when configuration fetch fails', async () => {
-  vi.mocked(window.getAgentWorkspaceConfiguration).mockRejectedValue(new Error('workspace not found'));
+test('Expect page shell renders when configuration fetch fails', async () => {
+  vi.mocked(window.getAgentWorkspaceConfiguration).mockRejectedValue(new Error('ENOENT'));
 
-  render(AgentWorkspaceDetails, { workspaceId: 'ws-unknown' });
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
 
   await waitFor(() => {
-    expect(screen.getByText('Error: workspace not found')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start Workspace' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Remove Workspace' })).toBeInTheDocument();
+    expect(screen.getByText('Summary')).toBeInTheDocument();
   });
 });
 

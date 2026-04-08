@@ -186,11 +186,22 @@ describe('getConfiguration', () => {
     );
   });
 
-  test('rejects when reading the configuration file fails', async () => {
+  test('returns empty configuration when file does not exist', async () => {
     vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ items: TEST_SUMMARIES })));
-    vi.mocked(readFile).mockRejectedValue(new Error('ENOENT: no such file'));
+    const enoent = Object.assign(new Error('ENOENT: no such file'), { code: 'ENOENT' });
+    vi.mocked(readFile).mockRejectedValue(enoent);
 
-    await expect(manager.getConfiguration('ws-1')).rejects.toThrow('ENOENT: no such file');
+    const result = await manager.getConfiguration('ws-1');
+
+    expect(result).toEqual({});
+  });
+
+  test('rejects when reading the configuration file fails with a non-ENOENT error', async () => {
+    vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ items: TEST_SUMMARIES })));
+    const eacces = Object.assign(new Error('EACCES: permission denied'), { code: 'EACCES' });
+    vi.mocked(readFile).mockRejectedValue(eacces);
+
+    await expect(manager.getConfiguration('ws-1')).rejects.toThrow('EACCES: permission denied');
   });
 });
 

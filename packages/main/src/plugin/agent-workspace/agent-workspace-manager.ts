@@ -67,8 +67,15 @@ export class AgentWorkspaceManager implements Disposable {
     if (!workspace) {
       throw new Error(`workspace "${id}" not found. Use "workspace list" to see available workspaces.`);
     }
-    const content = await readFile(workspace.paths.configuration, 'utf-8');
-    return parseYAML(content) as AgentWorkspaceConfiguration;
+    try {
+      const content = await readFile(workspace.paths.configuration, 'utf-8');
+      return parseYAML(content) as AgentWorkspaceConfiguration;
+    } catch (error: unknown) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return {} as AgentWorkspaceConfiguration;
+      }
+      throw error;
+    }
   }
 
   async start(id: string): Promise<AgentWorkspaceId> {
