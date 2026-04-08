@@ -18,7 +18,7 @@
 
 import * as crypto from 'node:crypto';
 
-import type * as kortexAPI from '@kortex-app/api';
+import type * as kaidenAPI from '@kortex-app/api';
 import { SecretStorage } from '@kortex-app/api';
 import type { components } from '@kortex-hub/mcp-registry-types';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -62,7 +62,7 @@ interface PackageStorageConfigFormat {
 
 type StorageConfigFormat = RemoteStorageConfigFormat | PackageStorageConfigFormat;
 
-type InternalMCPRegistry = kortexAPI.MCPRegistry & { save: boolean };
+type InternalMCPRegistry = kaidenAPI.MCPRegistry & { save: boolean };
 
 const STORAGE_KEY = 'mcp:registry:configurations';
 export const INTERNAL_PROVIDER_ID = 'internal';
@@ -79,25 +79,25 @@ interface MCPRegistryEntry {
 @injectable()
 export class MCPRegistry {
   private registries: InternalMCPRegistry[] = [];
-  private suggestedRegistries: kortexAPI.RegistrySuggestedProvider[] = [];
-  private providers: Map<string, kortexAPI.MCPRegistryProvider> = new Map();
+  private suggestedRegistries: kaidenAPI.RegistrySuggestedProvider[] = [];
+  private providers: Map<string, kaidenAPI.MCPRegistryProvider> = new Map();
   private internalMCPServers: MCPServerDetail[] = [];
   #remoteMCPServers: Map<string, MCPRegistryEntry> = new Map();
 
-  private readonly _onDidRegisterRegistry = new Emitter<kortexAPI.MCPRegistry>();
-  private readonly _onDidUpdateRegistry = new Emitter<kortexAPI.MCPRegistry>();
-  private readonly _onDidUnregisterRegistry = new Emitter<kortexAPI.MCPRegistry>();
+  private readonly _onDidRegisterRegistry = new Emitter<kaidenAPI.MCPRegistry>();
+  private readonly _onDidUpdateRegistry = new Emitter<kaidenAPI.MCPRegistry>();
+  private readonly _onDidUnregisterRegistry = new Emitter<kaidenAPI.MCPRegistry>();
 
-  readonly onDidRegisterRegistry: kortexAPI.Event<kortexAPI.MCPRegistry> = this._onDidRegisterRegistry.event;
-  readonly onDidUpdateRegistry: kortexAPI.Event<kortexAPI.MCPRegistry> = this._onDidUpdateRegistry.event;
-  readonly onDidUnregisterRegistry: kortexAPI.Event<kortexAPI.MCPRegistry> = this._onDidUnregisterRegistry.event;
+  readonly onDidRegisterRegistry: kaidenAPI.Event<kaidenAPI.MCPRegistry> = this._onDidRegisterRegistry.event;
+  readonly onDidUpdateRegistry: kaidenAPI.Event<kaidenAPI.MCPRegistry> = this._onDidUpdateRegistry.event;
+  readonly onDidUnregisterRegistry: kaidenAPI.Event<kaidenAPI.MCPRegistry> = this._onDidUnregisterRegistry.event;
 
-  private proxySettings: kortexAPI.ProxySettings | undefined;
+  private proxySettings: kaidenAPI.ProxySettings | undefined;
   private proxyEnabled: boolean;
 
   private safeStorage: SecretStorage | undefined = undefined;
 
-  private configuration: kortexAPI.Configuration;
+  private configuration: kaidenAPI.Configuration;
 
   constructor(
     @inject(ApiSenderType)
@@ -270,7 +270,7 @@ export class MCPRegistry {
     return crypto.createHash('sha512').update(registry.serverUrl).digest('hex');
   }
 
-  registerMCPRegistry(registry: kortexAPI.MCPRegistry, save: boolean): Disposable {
+  registerMCPRegistry(registry: kaidenAPI.MCPRegistry, save: boolean): Disposable {
     console.log(`[MCPRegistry] registerMCPRegistry ${registry.serverUrl}`);
     const found = this.registries.find(reg => reg.serverUrl === registry.serverUrl);
     if (found) {
@@ -293,7 +293,7 @@ export class MCPRegistry {
     });
   }
 
-  suggestMCPRegistry(registry: kortexAPI.MCPRegistrySuggestedProvider): Disposable {
+  suggestMCPRegistry(registry: kaidenAPI.MCPRegistrySuggestedProvider): Disposable {
     // Do not add it to the list if it's already been suggested by name & URL
     // this may have been done by another extension.
     if (this.suggestedRegistries.find(reg => reg.url === registry.url && reg.name === registry.name)) {
@@ -318,7 +318,7 @@ export class MCPRegistry {
     });
   }
 
-  unsuggestMCPRegistry(registry: kortexAPI.MCPRegistrySuggestedProvider): void {
+  unsuggestMCPRegistry(registry: kaidenAPI.MCPRegistrySuggestedProvider): void {
     // Find the registry within this.suggestedRegistries[] and remove it
     const index = this.suggestedRegistries.findIndex(reg => reg.url === registry.url && reg.name === registry.name);
     if (index > -1) {
@@ -329,7 +329,7 @@ export class MCPRegistry {
     this.apiSender.send('mcp-registry-update', registry);
   }
 
-  unregisterMCPRegistry(registry: kortexAPI.MCPRegistry, save: boolean): void {
+  unregisterMCPRegistry(registry: kaidenAPI.MCPRegistry, save: boolean): void {
     const filtered = this.registries.filter(registryItem => registryItem.serverUrl !== registry.serverUrl);
     if (filtered.length !== this.registries.length) {
       this._onDidUnregisterRegistry.fire(Object.freeze({ ...registry }));
@@ -345,11 +345,11 @@ export class MCPRegistry {
     });
   }
 
-  getRegistries(): readonly kortexAPI.MCPRegistry[] {
+  getRegistries(): readonly kaidenAPI.MCPRegistry[] {
     return this.registries;
   }
 
-  getSuggestedRegistries(): kortexAPI.MCPRegistrySuggestedProvider[] {
+  getSuggestedRegistries(): kaidenAPI.MCPRegistrySuggestedProvider[] {
     return this.suggestedRegistries;
   }
 
@@ -357,14 +357,14 @@ export class MCPRegistry {
     return Array.from(this.providers.keys());
   }
 
-  registerMCPRegistryProvider(registerRegistryProvider: kortexAPI.MCPRegistryProvider): Disposable {
+  registerMCPRegistryProvider(registerRegistryProvider: kaidenAPI.MCPRegistryProvider): Disposable {
     this.providers.set(registerRegistryProvider.name, registerRegistryProvider);
     return Disposable.create(() => {
       this.providers.delete(registerRegistryProvider.name);
     });
   }
 
-  async createRegistry(registryCreateOptions: kortexAPI.MCPRegistryCreateOptions): Promise<Disposable> {
+  async createRegistry(registryCreateOptions: kaidenAPI.MCPRegistryCreateOptions): Promise<Disposable> {
     let telemetryOptions = {};
     try {
       const exists = this.registries.find(registry => registry.serverUrl === registryCreateOptions.serverUrl);
@@ -683,7 +683,7 @@ export class MCPRegistry {
     return serverDetails.concat(this.internalMCPServers);
   }
 
-  async updateMCPRegistry(registry: kortexAPI.MCPRegistry): Promise<void> {
+  async updateMCPRegistry(registry: kaidenAPI.MCPRegistry): Promise<void> {
     const matchingRegistry = this.registries.find(
       existingRegistry => registry.serverUrl === existingRegistry.serverUrl,
     );
@@ -752,7 +752,7 @@ export class MCPRegistry {
   }
 
   private loadRegistriesFromConfig(): void {
-    this.registries = (this.configuration.get<kortexAPI.MCPRegistry[]>(MCP_REGISTRIES) ?? []).map(registry => ({
+    this.registries = (this.configuration.get<kaidenAPI.MCPRegistry[]>(MCP_REGISTRIES) ?? []).map(registry => ({
       ...registry,
       save: true,
     }));

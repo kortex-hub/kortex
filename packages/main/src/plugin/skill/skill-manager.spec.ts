@@ -678,7 +678,7 @@ test('registerSkillFolder should throw on duplicate baseDirectory', async () => 
   ).toThrow(`Skill folder '${SKILLS_DIR}' is already registered`);
 });
 
-test('listSkillFolders should include built-in kortex folder after init', async () => {
+test('listSkillFolders should include built-in kaiden folder after init', async () => {
   vi.mocked(existsSync).mockReturnValue(false);
 
   const skillManager = createSkillManager();
@@ -688,8 +688,8 @@ test('listSkillFolders should include built-in kortex folder after init', async 
   expect(targets).toHaveLength(1);
   expect(targets[0]).toEqual(
     expect.objectContaining({
-      label: 'Kortex Skills',
-      badge: 'Kortex',
+      label: 'Kaiden Skills',
+      badge: 'Kaiden',
       baseDirectory: SKILLS_DIR,
     }),
   );

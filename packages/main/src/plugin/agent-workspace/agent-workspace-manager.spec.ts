@@ -38,13 +38,13 @@ const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
     id: 'ws-1',
     name: 'test-workspace-1',
     project: 'project-alpha',
-    paths: { source: '/tmp/ws1', configuration: '/tmp/ws1/.kortex.yaml' },
+    paths: { source: '/tmp/ws1', configuration: '/tmp/ws1/.kaiden.yaml' },
   },
   {
     id: 'ws-2',
     name: 'test-workspace-2',
     project: 'project-beta',
-    paths: { source: '/tmp/ws2', configuration: '/tmp/ws2/.kortex.yaml' },
+    paths: { source: '/tmp/ws2', configuration: '/tmp/ws2/.kaiden.yaml' },
   },
 ];
 
@@ -61,7 +61,7 @@ const proxy = {
 const exec = new Exec(proxy);
 
 function mockExecResult(stdout: string): RunResult {
-  return { command: 'kortex-cli', stdout, stderr: '' };
+  return { command: 'kdn', stdout, stderr: '' };
 }
 
 beforeEach(() => {
@@ -93,12 +93,12 @@ describe('init', () => {
 });
 
 describe('list', () => {
-  test('executes kortex-cli workspace list and returns items', async () => {
+  test('executes kdn workspace list and returns items', async () => {
     vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ items: TEST_SUMMARIES })));
 
     const result = await manager.list();
 
-    expect(exec.exec).toHaveBeenCalledWith('kortex-cli', ['workspace', 'list', '--output', 'json']);
+    expect(exec.exec).toHaveBeenCalledWith('kdn', ['workspace', 'list', '--output', 'json']);
     expect(result).toHaveLength(2);
     expect(result.map(s => s.id)).toEqual(['ws-1', 'ws-2']);
   });
@@ -124,12 +124,12 @@ describe('list', () => {
 });
 
 describe('remove', () => {
-  test('executes kortex-cli workspace remove and returns the workspace id', async () => {
+  test('executes kdn workspace remove and returns the workspace id', async () => {
     vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-1' })));
 
     const result = await manager.remove('ws-1');
 
-    expect(exec.exec).toHaveBeenCalledWith('kortex-cli', ['workspace', 'remove', 'ws-1', '--output', 'json']);
+    expect(exec.exec).toHaveBeenCalledWith('kdn', ['workspace', 'remove', 'ws-1', '--output', 'json']);
     expect(result).toEqual({ id: 'ws-1' });
   });
 
@@ -156,8 +156,8 @@ describe('getConfiguration', () => {
 
     const result = await manager.getConfiguration('ws-1');
 
-    expect(exec.exec).toHaveBeenCalledWith('kortex-cli', ['workspace', 'list', '--output', 'json']);
-    expect(readFile).toHaveBeenCalledWith('/tmp/ws1/.kortex.yaml', 'utf-8');
+    expect(exec.exec).toHaveBeenCalledWith('kdn', ['workspace', 'list', '--output', 'json']);
+    expect(readFile).toHaveBeenCalledWith('/tmp/ws1/.kaiden.yaml', 'utf-8');
     expect(parseYAML).toHaveBeenCalledWith('name: test-workspace-1\n');
     expect(result).toEqual({ name: 'test-workspace-1' });
   });
@@ -179,12 +179,12 @@ describe('getConfiguration', () => {
 });
 
 describe('start', () => {
-  test('executes kortex-cli workspace start and returns the workspace id', async () => {
+  test('executes kdn workspace start and returns the workspace id', async () => {
     vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-1' })));
 
     const result = await manager.start('ws-1');
 
-    expect(exec.exec).toHaveBeenCalledWith('kortex-cli', ['workspace', 'start', 'ws-1', '--output', 'json']);
+    expect(exec.exec).toHaveBeenCalledWith('kdn', ['workspace', 'start', 'ws-1', '--output', 'json']);
     expect(result).toEqual({ id: 'ws-1' });
   });
 
@@ -204,12 +204,12 @@ describe('start', () => {
 });
 
 describe('stop', () => {
-  test('executes kortex-cli workspace stop and returns the workspace id', async () => {
+  test('executes kdn workspace stop and returns the workspace id', async () => {
     vi.spyOn(exec, 'exec').mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-1' })));
 
     const result = await manager.stop('ws-1');
 
-    expect(exec.exec).toHaveBeenCalledWith('kortex-cli', ['workspace', 'stop', 'ws-1', '--output', 'json']);
+    expect(exec.exec).toHaveBeenCalledWith('kdn', ['workspace', 'stop', 'ws-1', '--output', 'json']);
     expect(result).toEqual({ id: 'ws-1' });
   });
 

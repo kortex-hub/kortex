@@ -34,7 +34,7 @@ import { CronParser } from '/@/helper/cron-parser.js';
 import { ExecutionParser } from '/@/helper/execution-parser.js';
 import { CronPListParser } from '/@/helper/macos/cron-plist-parser.js';
 import { PlistGenerator } from '/@/helper/macos/plist-generator';
-import schedulerExecutorScript from '/@/resources/kortex-scheduler-executor.sh?raw';
+import schedulerExecutorScript from '/@/resources/kaiden-scheduler-executor.sh?raw';
 
 @injectable()
 export class LaunchAgentScheduler implements NativeScheduler {
@@ -57,7 +57,7 @@ export class LaunchAgentScheduler implements NativeScheduler {
 
   constructor() {
     this.launchAgentsDir = path.join(homedir(), 'Library', 'LaunchAgents');
-    this.schedulerBaseDir = path.join(homedir(), '.local', 'share', 'kortex', 'scheduler');
+    this.schedulerBaseDir = path.join(homedir(), '.local', 'share', 'kaiden', 'scheduler');
     this.scriptsDir = path.join(this.schedulerBaseDir, 'scripts');
   }
 
@@ -66,8 +66,8 @@ export class LaunchAgentScheduler implements NativeScheduler {
     await fs.mkdir(this.scriptsDir, { recursive: true });
     await fs.mkdir(this.launchAgentsDir, { recursive: true });
 
-    // Write kortex-scheduler-executor.sh all the time to ensure it's up to date
-    const targetScript = path.join(this.scriptsDir, 'kortex-scheduler-executor.sh');
+    // Write kaiden-scheduler-executor.sh all the time to ensure it's up to date
+    const targetScript = path.join(this.scriptsDir, 'kaiden-scheduler-executor.sh');
     await fs.writeFile(targetScript, schedulerExecutorScript, 'utf-8');
     await fs.chmod(targetScript, 0o700);
   }
@@ -78,7 +78,7 @@ export class LaunchAgentScheduler implements NativeScheduler {
 
     const flowLogDir = path.join(this.schedulerBaseDir, id);
 
-    const executorScript = path.join(this.scriptsDir, 'kortex-scheduler-executor.sh');
+    const executorScript = path.join(this.scriptsDir, 'kaiden-scheduler-executor.sh');
     const outputFile = path.join(flowLogDir, 'latest.log');
 
     const cronComponents = this.cronParser.parse(options.cronExpression);
@@ -144,10 +144,10 @@ export class LaunchAgentScheduler implements NativeScheduler {
 
     try {
       const files = await fs.readdir(this.launchAgentsDir);
-      const kortexPlists = files.filter(f => f.startsWith('io.github.kortex-hub.kortex.') && f.endsWith('.plist'));
+      const kaidenPlists = files.filter(f => f.startsWith('ai.openkaiden.kaiden.') && f.endsWith('.plist'));
 
-      for (const plistFile of kortexPlists) {
-        const id = plistFile.replace('io.github.kortex-hub.kortex.', '').replace('.plist', '');
+      for (const plistFile of kaidenPlists) {
+        const id = plistFile.replace('ai.openkaiden.kaiden.', '').replace('.plist', '');
         const plistPath = this.getPlistPath(id);
         const content = await fs.readFile(plistPath, 'utf-8');
 
@@ -194,7 +194,7 @@ export class LaunchAgentScheduler implements NativeScheduler {
   }
 
   private getPlistPath(schedulerId: string): string {
-    return path.join(this.launchAgentsDir, `io.github.kortex-hub.kortex.${schedulerId}.plist`);
+    return path.join(this.launchAgentsDir, `ai.openkaiden.kaiden.${schedulerId}.plist`);
   }
 
   public readonly name: string = LaunchAgentScheduler.NAME;

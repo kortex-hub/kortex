@@ -32,7 +32,7 @@ export type AdditionalData = {
 };
 
 /**
- * The main Kortex entry point
+ * The main Kaiden entry point
  */
 export class Main implements IDisposable {
   // TODO: should be renamed to #app

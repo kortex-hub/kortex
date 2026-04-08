@@ -562,7 +562,7 @@ describe('Command Palette', () => {
     expect(gotoTab).not.toHaveClass('border-[var(--pd-button-tab-border-selected)]');
 
     // Test that placeholder text is correct for each tab
-    expect(input).toHaveAttribute('placeholder', 'Search Kortex, or type > for commands');
+    expect(input).toHaveAttribute('placeholder', 'Search Kaiden, or type > for commands');
 
     // Click Commands tab and verify placeholder changes
     await userEvent.click(commandsTab);
@@ -579,6 +579,6 @@ describe('Command Palette', () => {
 
     // Click All tab and verify placeholder changes back
     await userEvent.click(allTab);
-    await vi.waitFor(() => expect(input).toHaveAttribute('placeholder', 'Search Kortex, or type > for commands'));
+    await vi.waitFor(() => expect(input).toHaveAttribute('placeholder', 'Search Kaiden, or type > for commands'));
   });
 });

@@ -1,1 +1,1 @@
-# OpenShift AI extension for Kortex
+# OpenShift AI extension for Kaiden

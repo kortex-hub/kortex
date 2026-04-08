@@ -34,7 +34,7 @@ beforeEach(() => {
   vi.mocked(skillsStore).filteredSkillInfos = writable<SkillInfo[]>([]);
   vi.mocked(skillsStore).skillSearchPattern = writable('');
   vi.mocked(window.listSkillFolders).mockResolvedValue([
-    { label: 'Kortex Skills', badge: 'Kortex', baseDirectory: '/test/skills' },
+    { label: 'Kaiden Skills', badge: 'Kaiden', baseDirectory: '/test/skills' },
   ]);
 });
 

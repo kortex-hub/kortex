@@ -45,7 +45,7 @@ const gooseProviderMap = {
   gemini: 'google',
 };
 
-function goose2KortexProvider(gooseprovider: string): string {
+function goose2KaidenProvider(gooseprovider: string): string {
   const entry = Object.entries(gooseProviderMap).find(([, v]) => v === gooseprovider);
   if (!entry) throw new Error(`cannot find inference provider for goose provider ${gooseprovider}`);
   return entry[0];
@@ -80,7 +80,7 @@ export class GooseRecipe implements Disposable {
   constructor(
     private readonly provider: typeof ProviderAPI,
     private readonly gooseCLI: GooseCLI,
-    private readonly kortexVersion: string,
+    private readonly kaidenVersion: string,
   ) {}
 
   protected getBasePath(): string {
@@ -267,7 +267,7 @@ export class GooseRecipe implements Disposable {
     }));
 
     const providerId = parsed['settings']?.['goose_provider']
-      ? goose2KortexProvider(parsed['settings']['goose_provider'])
+      ? goose2KaidenProvider(parsed['settings']['goose_provider'])
       : undefined;
     const gooseModel: string | undefined = parsed['settings']?.['goose_model'] ?? undefined;
     const connection = this.provider
@@ -305,8 +305,8 @@ export class GooseRecipe implements Disposable {
       job: {
         name: `goose-flow-${recipeName}-${generate({ exactly: 2, join: '-' })}`,
       },
-      kortex: {
-        version: this.kortexVersion,
+      kaiden: {
+        version: this.kaidenVersion,
       },
       recipe: {
         flowId: options.flowId,

@@ -63,7 +63,7 @@ const row = new TableRow<JobUI>({ selectable: (_job): boolean => false });
 
 // keep only jobs having the right flow-id
 function filterFlowidJob(job: V1Job): boolean {
-  return job.metadata?.annotations?.['kortex-hub/flow-id'] === flowId;
+  return job.metadata?.annotations?.['kaiden/flow-id'] === flowId;
 }
 </script>
 

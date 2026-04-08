@@ -55,13 +55,13 @@ describe('LinuxXDGDirectories', () => {
     });
 
     test('should use default XDG configuration directory', () => {
-      const expectedConfigDir = path.resolve(os.homedir(), '.config', 'kortex');
+      const expectedConfigDir = path.resolve(os.homedir(), '.config', 'kaiden');
 
       expect(provider.getConfigurationDirectory()).toBe(expectedConfigDir);
     });
 
     test('should use default XDG data directory', () => {
-      const expectedDataDir = path.resolve(os.homedir(), '.local', 'share', 'kortex');
+      const expectedDataDir = path.resolve(os.homedir(), '.local', 'share', 'kaiden');
 
       expect(provider.getDataDirectory()).toBe(expectedDataDir);
     });
@@ -102,8 +102,8 @@ describe('LinuxXDGDirectories', () => {
       const configDir = provider.getConfigurationDirectory();
       const dataDir = provider.getDataDirectory();
 
-      expect(configDir).toBe(path.resolve(customConfigHome, 'kortex'));
-      expect(dataDir).toBe(path.resolve(customDataHome, 'kortex'));
+      expect(configDir).toBe(path.resolve(customConfigHome, 'kaiden'));
+      expect(dataDir).toBe(path.resolve(customDataHome, 'kaiden'));
     });
 
     test('should use custom paths for data subdirectories', () => {
@@ -113,7 +113,7 @@ describe('LinuxXDGDirectories', () => {
 
       provider = new LinuxXDGDirectories();
 
-      const expectedDataDir = path.resolve(customDataHome, 'kortex');
+      const expectedDataDir = path.resolve(customDataHome, 'kaiden');
 
       expect(provider.getPluginsDirectory()).toBe(path.resolve(expectedDataDir, 'plugins'));
       expect(provider.getExtensionsStorageDirectory()).toBe(path.resolve(expectedDataDir, 'extensions-storage'));
@@ -129,7 +129,7 @@ describe('LinuxXDGDirectories', () => {
 
     test('should return flatpak managed folder path when running in Flatpak', () => {
       // biome-ignore lint/complexity/useLiteralKeys: FLATPAK_ID comes from an index signature
-      process.env['FLATPAK_ID'] = 'dev.kortex-hub.Kortex';
+      process.env['FLATPAK_ID'] = 'ai.openkaiden.Kaiden';
 
       provider = new LinuxXDGDirectories();
 

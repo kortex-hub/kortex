@@ -4,13 +4,13 @@ This file provides guidance to AI code assistants when working with code in this
 
 ## Project Overview
 
-Kortex is an Electron-based desktop application built with Svelte that provides AI-powered container and Kubernetes management capabilities. It integrates with multiple AI providers (Gemini, OpenAI-compatible services, OpenShift AI) and supports flow execution through providers like Goose. The application also implements the Model Context Protocol (MCP) for AI agent integration.
+Kaiden is an Electron-based desktop application built with Svelte that provides AI-powered container and Kubernetes management capabilities. It integrates with multiple AI providers (Gemini, OpenAI-compatible services, OpenShift AI) and supports flow execution through providers like Goose. The application also implements the Model Context Protocol (MCP) for AI agent integration.
 
 ## Core Architecture
 
 ### Multi-Process Electron Application
 
-Kortex follows the standard Electron architecture with three main processes:
+Kaiden follows the standard Electron architecture with three main processes:
 
 - **Main Process** (`packages/main`): Node.js backend handling system integration, extension loading, container/Kubernetes operations, and business logic
 - **Renderer Process** (`packages/renderer`): Svelte-based UI running in the browser context
@@ -39,7 +39,7 @@ All major services are registered as singletons in the DI container during initi
 Extensions are located in the `extensions/` directory and follow a standard structure:
 
 - Each extension has a `package.json` with `main` pointing to `./dist/extension.js`
-- Extensions must declare `engines.kortex` version compatibility
+- Extensions must declare `engines.kaiden` version compatibility
 - Extensions can contribute:
   - Inference providers (Gemini, OpenAI-compatible, OpenShift AI)
   - Flow providers (Goose)
@@ -57,7 +57,7 @@ Available built-in extensions:
 
 ### Extension API
 
-Extensions interact with Kortex through `@kortex-app/api` (`packages/extension-api`), which provides TypeScript definitions for:
+Extensions interact with Kaiden through `@kortex-app/api` (`packages/extension-api`), which provides TypeScript definitions for:
 
 - Provider registration (inference, container, Kubernetes, VM, flow)
 - Configuration management
@@ -271,7 +271,7 @@ const task = taskManager.createTask({
 
 1. Create directory in `extensions/<extension-name>`
 2. Add `package.json` with required fields:
-   - `engines.kortex`: Version compatibility
+   - `engines.kaiden`: Version compatibility
    - `main`: Entry point (`./dist/extension.js`)
    - `contributes`: Configuration, commands, etc.
 3. Create `src/extension.ts` with `activate()` function

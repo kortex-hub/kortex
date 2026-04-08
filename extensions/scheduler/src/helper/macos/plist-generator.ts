@@ -55,7 +55,7 @@ export class PlistGenerator {
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>io.github.kortex-hub.kortex.schedule.${id}</string>
+    <string>ai.openkaiden.kaiden.schedule.${id}</string>
 ${metadataDict}
     <key>ProgramArguments</key>
     <array>

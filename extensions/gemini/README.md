@@ -1,1 +1,1 @@
-# Gemini extension for Kortex
+# Gemini extension for Kaiden

@@ -1,6 +1,6 @@
 # Container Extension
 
-A Kortex extension for managing containers.
+A Kaiden extension for managing containers.
 
 ## API
 

@@ -350,7 +350,7 @@ export class ExtensionLoader implements IAsyncDisposable {
     }
 
     this.moduleLoader.addOverride(createHttpPatchedModules(this.proxy, this.certificates)); // add patched http and https
-    this.moduleLoader.addOverride({ '@kortex-app/api': ext => ext.api }); // add podman desktop API
+    this.moduleLoader.addOverride({ '@kortex-app/api': ext => ext.api }); // add kaiden API
 
     this.moduleLoader.overrideRequire();
     // register configuration for the max activation time
@@ -406,7 +406,7 @@ export class ExtensionLoader implements IAsyncDisposable {
   getDisabledExtensionIds(): string[] {
     return this.configurationRegistry
       .getConfiguration(ExtensionLoaderSettings.SectionName)
-      .get<string[]>(ExtensionLoaderSettings.Disabled, ['kortex.openai']);
+      .get<string[]>(ExtensionLoaderSettings.Disabled, ['kaiden.openai']);
   }
 
   setDisabledExtensionIds(disabledExtensionIds: string[]): void {

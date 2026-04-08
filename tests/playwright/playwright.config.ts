@@ -63,7 +63,7 @@ const config: PlaywrightTestConfig & {
 
   projects: [
     {
-      name: 'Kortex-App-Core',
+      name: 'Kaiden-App-Core',
       testMatch: ['**/*.spec.ts'],
       testIgnore: ['**/provider-specs/**/*.spec.ts'],
     },

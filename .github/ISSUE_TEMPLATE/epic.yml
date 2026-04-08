@@ -2,7 +2,7 @@ name: Epic ⚡
 description: A high-level feature
 type: epic
 labels: [kind/epic ⚡]
-projects: ["kortex-hub/1"]
+projects: ["openkaiden/1"]
 
 body:
   - type: markdown
@@ -16,7 +16,7 @@ body:
     attributes:
       label: Epic domain
       description: A clear and concise description of the feature area or domain that this epic will address.
-      placeholder: Kortex should support [...]
+      placeholder: Kaiden should support [...]
     validations:
       required: true
 

@@ -23,7 +23,7 @@ export interface KubeTemplateOptions {
   job: {
     name: string;
   };
-  kortex: {
+  kaiden: {
     version: string;
   };
   recipe: {
@@ -44,8 +44,8 @@ export interface KubeTemplateOptions {
 // https://github.com/packit/ai-workflows/tree/main/goose-container
 export const GOOSE_IMAGE = 'quay.io/kortex/goose:2025-09-03'; //'quay.io/jotnar/goose:latest';
 
-export const KORTEX_VERSION_ANNOTATION = 'kortex-hub/version';
-export const KORTEX_FLOW_ID_ANNOTATION = 'kortex-hub/flow-id';
+export const KAIDEN_VERSION_ANNOTATION = 'kaiden/version';
+export const KAIDEN_FLOW_ID_ANNOTATION = 'kaiden/flow-id';
 
 export class KubeTemplate {
   constructor(private readonly options: KubeTemplateOptions) {}
@@ -59,8 +59,8 @@ export class KubeTemplate {
       },
       // annotations KEYS
       annotations: {
-        version: KORTEX_VERSION_ANNOTATION,
-        flowId: KORTEX_FLOW_ID_ANNOTATION,
+        version: KAIDEN_VERSION_ANNOTATION,
+        flowId: KAIDEN_FLOW_ID_ANNOTATION,
       },
       container: GOOSE_IMAGE,
     };

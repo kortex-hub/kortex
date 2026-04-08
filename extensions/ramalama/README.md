@@ -1,6 +1,6 @@
 # RamaLama Extension
 
-Integrates RamaLama local AI models with Kortex. Automatically discovers and registers models running in containers.
+Integrates RamaLama local AI models with Kaiden. Automatically discovers and registers models running in containers.
 
 ## Requirements
 
@@ -10,5 +10,5 @@ Integrates RamaLama local AI models with Kortex. Automatically discovers and reg
 ## Usage
 
 1. Start RamaLama and serve a model: `ramalama serve <model-name>`
-2. Models will automatically appear in Kortex's models
+2. Models will automatically appear in Kaiden's models
 3. Select any model to start chatting

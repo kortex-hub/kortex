@@ -1,4 +1,4 @@
-# Contributing to Kortex
+# Contributing to Kaiden
 
 We'd love to have you join the community! Below summarizes the processes
 that we follow.
@@ -18,7 +18,7 @@ that we follow.
 ## Reporting Issues
 
 Before opening an issue, check the backlog of
-[open issues](https://github.com/kortex-hub/kortex/issues)
+[open issues](https://github.com/openkaiden/kaiden/issues)
 to see if someone else has already reported it.
 
 If so, feel free to add
@@ -35,8 +35,8 @@ Please don't include any private/sensitive information in your issue!
 
 ## Providing Extensions
 
-Some of the best features of Kortex aren't even in this repository!
-Kortex provides a set of APIs that expand its capabilities through extensions.
+Some of the best features of Kaiden aren't even in this repository!
+Kaiden provides a set of APIs that expand its capabilities through extensions.
 
 Extensions add support for:
 
@@ -54,7 +54,7 @@ See the `packages/extension-api` documentation and existing extensions in the `e
 
 Often issues will be assigned to someone, to be worked on at a later time.
 
-If you are a member of the [Kortex](https://github.com/kortex-hub) organization,
+If you are a member of the [Kaiden](https://github.com/openkaiden) organization,
 self-assign the issue with the `status/in-progress` label.
 
 If you cannot set the label, add a quick comment in the issue asking that
@@ -62,7 +62,7 @@ the `status/in-progress` label be set and a maintainer will label it.
 
 ## Contributing
 
-This section describes how to start a contribution to Kortex.
+This section describes how to start a contribution to Kaiden.
 
 ### Prerequisites: Prepare your environment
 
@@ -89,14 +89,14 @@ On Windows:
 
 - [Microsoft Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#visual-studio-2015-2017-2019-and-2022)
 
-### Step 1. Fork and clone Kortex
+### Step 1. Fork and clone Kaiden
 
 Clone and fork the project.
 
 Fork the repo using GitHub site and then clone the directory:
 
 ```sh
-git clone https://github.com/<you>/kortex && cd kortex
+git clone https://github.com/<you>/kaiden && cd kaiden
 ```
 
 ### Step 2. Install dependencies
@@ -246,7 +246,7 @@ The compiled binaries will be output to the `dist/` folder.
 > pnpm compile:current
 >
 > # Sign the binary
-> codesign --force --deep --sign - "dist/mac-arm64/Kortex.app"
+> codesign --force --deep --sign - "dist/mac-arm64/Kaiden.app"
 > ```
 
 ## Submitting Pull Requests
@@ -281,7 +281,7 @@ Some examples for correct titles would be:
 - `chore: drop support for Node 6`
 - `docs: add quickstart guide`
 
-For Kortex we use the following types:
+For Kaiden we use the following types:
 
 - `fix:` A bug fix
 - `chore:` Very small change / insignificant impact
@@ -361,19 +361,19 @@ All pull requests and branch-merges automatically run:
 - Unit tests
 - E2E tests (triggered by PR checks)
 
-You can follow these jobs in GitHub Actions: https://github.com/kortex-hub/kortex/actions
+You can follow these jobs in GitHub Actions: https://github.com/openkaiden/kaiden/actions
 
 ## Communication
 
-For bugs/feature requests please [file issues](https://github.com/kortex-hub/kortex/issues/new/choose)
+For bugs/feature requests please [file issues](https://github.com/openkaiden/kaiden/issues/new/choose)
 
-Discussions are possible using GitHub Discussions: https://github.com/kortex-hub/kortex/discussions/
+Discussions are possible using GitHub Discussions: https://github.com/openkaiden/kaiden/discussions/
 
 ## Code Architecture
 
 ### Frameworks and tooling
 
-Within Kortex, we use the following frameworks and tools to build the desktop application:
+Within Kaiden, we use the following frameworks and tools to build the desktop application:
 
 - [Electron](https://www.electronjs.org/): Cross-platform desktop application framework
 - [Svelte](https://svelte.dev/): Reactive UI/UX framework for building the interface
@@ -385,7 +385,7 @@ Within Kortex, we use the following frameworks and tools to build the desktop ap
 
 ### Testing
 
-Within Kortex, we use the following for testing:
+Within Kaiden, we use the following for testing:
 
 - [Vitest](https://vitest.dev/): Unit tests - Written as `*.spec.ts` files co-located with source code
 - [Testing Library](https://testing-library.com/): Component tests - Utilities and best practices for writing component tests
@@ -393,11 +393,11 @@ Within Kortex, we use the following for testing:
 
 ### Folders
 
-Below are brief descriptions of Kortex's folder structure and organization:
+Below are brief descriptions of Kaiden's folder structure and organization:
 
 This is a pnpm monorepo with workspaces defined in `pnpm-workspace.yaml`:
 
-- `extensions/`: Extension packages that add functionality to Kortex
+- `extensions/`: Extension packages that add functionality to Kaiden
   - `gemini/`: Google Gemini AI provider integration
   - `goose/`: Goose flow execution provider
   - `mcp-registries/`: MCP server registries
@@ -416,13 +416,13 @@ This is a pnpm monorepo with workspaces defined in `pnpm-workspace.yaml`:
   - `tests/playwright/`: Playwright E2E tests
 - `node_modules/`: Node.js packages and dependencies
 
-> **_NOTE:_** Each extension has its own `package.json` with `main` pointing to `./dist/extension.js` and must declare `engines.kortex` version compatibility.
+> **_NOTE:_** Each extension has its own `package.json` with `main` pointing to `./dist/extension.js` and must declare `engines.kaiden` version compatibility.
 
 ### UI colors
 
-Colors in Kortex are managed by a [`color-registry.ts`](packages/main/src/plugin/color-registry.ts) file to easily switch between light and dark mode.
+Colors in Kaiden are managed by a [`color-registry.ts`](packages/main/src/plugin/color-registry.ts) file to easily switch between light and dark mode.
 
-When contributing a UI component to Kortex that is colorized, you must figure out what color to use and how to reference it:
+When contributing a UI component to Kaiden that is colorized, you must figure out what color to use and how to reference it:
 
 Steps:
 
@@ -453,7 +453,7 @@ Each sprint a new "Triage manager" may be assigned.
 
 Your responsibilities include:
 
-- Reviewing the [status/need-triage](https://github.com/kortex-hub/kortex/issues?q=is%3Aopen+is%3Aissue+label%3Astatus%2Fneed-triage) label on new issues. As a maintainer, you will need to categorize these issues under the correct [area labels](https://github.com/kortex-hub/kortex/labels?q=area%2F). Once categorized, remove the `status/need-triage` label and apply the appropriate area label.
+- Reviewing the [status/need-triage](https://github.com/openkaiden/kaiden/issues?q=is%3Aopen+is%3Aissue+label%3Astatus%2Fneed-triage) label on new issues. As a maintainer, you will need to categorize these issues under the correct [area labels](https://github.com/openkaiden/kaiden/labels?q=area%2F). Once categorized, remove the `status/need-triage` label and apply the appropriate area label.
 - Evaluating the severity of new issues. If an issue is classified as "critical" or "high priority" and requires immediate attention, tag a maintainer in the issue and notify them appropriately.
 - Identifying issues that are simple to resolve and marking them as "good first issue," thereby encouraging newcomers to contribute to the project.
 - Evaluating any stale or lingering pull requests and pinging the respective contributors. If the pull request has been opened for an extensive amount of time, contact the contributor or push any changes required to get it merged. If there is no communication or the pull request is stale, consider closing them.

@@ -75,7 +75,7 @@ test('Check that default value is true if provider autostart setting is not set'
     },
     properties: {
       [`preferences.${extensionId}.engine.autostart`]: {
-        description: `Autostart ${extensionDisplayName} engine when launching Kortex`,
+        description: `Autostart ${extensionDisplayName} engine when launching Kaiden`,
         type: 'boolean',
         default: true,
         scope: [CONFIGURATION_DEFAULT_SCOPE, CONFIGURATION_ONBOARDING_SCOPE],

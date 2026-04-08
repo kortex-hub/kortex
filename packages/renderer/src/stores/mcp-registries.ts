@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type * as kortexAPI from '@kortex-app/api';
+import type * as kaidenAPI from '@kortex-app/api';
 import type { Writable } from 'svelte/store';
 import { writable } from 'svelte/store';
 
@@ -47,9 +47,9 @@ export async function fetchRegistries(): Promise<void> {
   mcpRegistriesSuggestedInfos.set(filteredSuggested);
 }
 
-export const mcpRegistriesInfos: Writable<readonly kortexAPI.MCPRegistry[]> = writable([]);
+export const mcpRegistriesInfos: Writable<readonly kaidenAPI.MCPRegistry[]> = writable([]);
 
-export const mcpRegistriesSuggestedInfos: Writable<readonly kortexAPI.RegistrySuggestedProvider[]> = writable([]);
+export const mcpRegistriesSuggestedInfos: Writable<readonly kaidenAPI.RegistrySuggestedProvider[]> = writable([]);
 
 export const searchPattern = writable('');
 

@@ -60,7 +60,7 @@ export class DoclingExtension {
         try {
           const containers = await endpoint.dockerode.listContainers({ all: true });
           for (const container of containers) {
-            const doclingPort = container.Labels?.['io.kortex.docling.port'];
+            const doclingPort = container.Labels?.['ai.openkaiden.docling.port'];
 
             if (doclingPort !== undefined) {
               console.log(`Found container: (with port ${doclingPort}, state: ${container.State})`);
@@ -105,7 +105,7 @@ export class DoclingExtension {
     const container = await dockerode.createContainer({
       name: CONTAINER_NAME,
       Labels: {
-        'io.kortex.docling.port': `${containerPort}`,
+        'ai.openkaiden.docling.port': `${containerPort}`,
       },
       Image: DOCLING_IMAGE,
       HostConfig: {
@@ -156,14 +156,14 @@ export class DoclingExtension {
     const workspaceFolder = join(this.extensionContext.storagePath, 'docling-workspace');
     await mkdir(workspaceFolder, { recursive: true });
 
-    const KORTEX_CONTAINER_EXTENSION_ID = 'kortex.container';
-    const containerExtension = api.extensions.getExtension<ContainerExtensionAPI>(KORTEX_CONTAINER_EXTENSION_ID);
+    const KAIDEN_CONTAINER_EXTENSION_ID = 'kaiden.container';
+    const containerExtension = api.extensions.getExtension<ContainerExtensionAPI>(KAIDEN_CONTAINER_EXTENSION_ID);
     if (!containerExtension) {
-      throw new Error(`Mandatory extension ${KORTEX_CONTAINER_EXTENSION_ID} is not installed`);
+      throw new Error(`Mandatory extension ${KAIDEN_CONTAINER_EXTENSION_ID} is not installed`);
     }
     const containerExtensionAPI = containerExtension?.exports;
     if (!containerExtensionAPI) {
-      throw new Error(`Missing exports of API in container extension ${KORTEX_CONTAINER_EXTENSION_ID}`);
+      throw new Error(`Missing exports of API in container extension ${KAIDEN_CONTAINER_EXTENSION_ID}`);
     }
 
     const existingContainer = await this.discoverExistingContainer(containerExtensionAPI);

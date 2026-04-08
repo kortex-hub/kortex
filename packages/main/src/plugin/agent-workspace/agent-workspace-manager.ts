@@ -32,7 +32,7 @@ import type {
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 
 /**
- * Manages agent workspaces by delegating to the `kortex-cli` CLI.
+ * Manages agent workspaces by delegating to the `kdn` CLI.
  */
 @injectable()
 export class AgentWorkspaceManager implements Disposable {
@@ -45,18 +45,18 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly exec: Exec,
   ) {}
 
-  private async execKortex<T>(args: string[]): Promise<T> {
-    const result = await this.exec.exec('kortex-cli', ['workspace', ...args, '--output', 'json']);
+  private async execKdn<T>(args: string[]): Promise<T> {
+    const result = await this.exec.exec('kdn', ['workspace', ...args, '--output', 'json']);
     return JSON.parse(result.stdout) as T;
   }
 
   async list(): Promise<AgentWorkspaceSummary[]> {
-    const response = await this.execKortex<{ items: AgentWorkspaceSummary[] }>(['list']);
+    const response = await this.execKdn<{ items: AgentWorkspaceSummary[] }>(['list']);
     return response.items;
   }
 
   async remove(id: string): Promise<AgentWorkspaceId> {
-    const result = await this.execKortex<AgentWorkspaceId>(['remove', id]);
+    const result = await this.execKdn<AgentWorkspaceId>(['remove', id]);
     this.apiSender.send('agent-workspace-update');
     return result;
   }
@@ -72,13 +72,13 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   async start(id: string): Promise<AgentWorkspaceId> {
-    const result = await this.execKortex<AgentWorkspaceId>(['start', id]);
+    const result = await this.execKdn<AgentWorkspaceId>(['start', id]);
     this.apiSender.send('agent-workspace-update');
     return result;
   }
 
   async stop(id: string): Promise<AgentWorkspaceId> {
-    const result = await this.execKortex<AgentWorkspaceId>(['stop', id]);
+    const result = await this.execKdn<AgentWorkspaceId>(['stop', id]);
     this.apiSender.send('agent-workspace-update');
     return result;
   }

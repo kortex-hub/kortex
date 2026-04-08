@@ -25,13 +25,13 @@ export interface FlowParameters {
 }
 
 export const builtInExtensions = [
-  { name: 'Default MCP Registries', locator: 'kortex.mcp-registries' },
-  { name: 'Gemini', locator: 'kortex.gemini' },
-  { name: 'goose', locator: 'kortex.goose' },
-  { name: 'Ollama', locator: 'kortex.ollama' },
-  { name: 'OpenAI Compatible', locator: 'kortex.openai-compatible' },
-  { name: 'RamaLama', locator: 'kortex.ramalama' },
-  { name: 'OpenShift AI', locator: 'kortex.openshift-ai' },
+  { name: 'Default MCP Registries', locator: 'kaiden.mcp-registries' },
+  { name: 'Gemini', locator: 'kaiden.gemini' },
+  { name: 'goose', locator: 'kaiden.goose' },
+  { name: 'Ollama', locator: 'kaiden.ollama' },
+  { name: 'OpenAI Compatible', locator: 'kaiden.openai-compatible' },
+  { name: 'RamaLama', locator: 'kaiden.ramalama' },
+  { name: 'OpenShift AI', locator: 'kaiden.openshift-ai' },
 ] as const;
 
 export type ExtensionLocator = (typeof builtInExtensions)[number]['locator'];
@@ -170,7 +170,7 @@ export const SELECTORS = {
   MAIN_INITIALIZING: 'main.flex.flex-row.w-screen.h-screen.justify-center',
   MAIN_APP_CONTAINER: 'main.flex.flex-col.w-screen.h-screen.overflow-hidden',
   TITLE_BAR: 'header#navbar',
-  WELCOME_PAGE: 'div:has-text("Get started with Kortex")',
+  WELCOME_PAGE: 'div:has-text("Get started with Kaiden")',
   NAVIGATION: { role: 'navigation' as const, name: 'AppNavigation' },
 } as const;
 

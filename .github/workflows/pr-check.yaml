@@ -63,22 +63,22 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: windows-installer-x64
-          path: ./dist/kortex-*-setup-x64.exe
+          path: ./dist/kaiden-*-setup-x64.exe
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: windows-installer-arm64
-          path: ./dist/kortex-*-setup-arm64.exe
+          path: ./dist/kaiden-*-setup-arm64.exe
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: windows-exe-x64
-          path: ./dist/kortex*-next-x64.exe
+          path: ./dist/kaiden*-next-x64.exe
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: windows-exe-arm64
-          path: ./dist/kortex*-next-arm64.exe
+          path: ./dist/kaiden*-next-arm64.exe
 
   linux:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'area/ci') || !github.event.pull_request.draft }}
@@ -122,12 +122,12 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: linux
-          path: ./dist/kortex-*.tar.gz
+          path: ./dist/kaiden-*.tar.gz
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: flatpak
-          path: ./dist/kortex-*.flatpak
+          path: ./dist/kaiden-*.flatpak
 
   darwin:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'area/ci') || !github.event.pull_request.draft }}
@@ -162,15 +162,15 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: macos-x64-dmg
-          path: ./dist/kortex-*x64.dmg
+          path: ./dist/kaiden-*x64.dmg
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: macos-arm64-dmg
-          path: ./dist/kortex-*arm64.dmg
+          path: ./dist/kaiden-*arm64.dmg
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: macos-universal-dmg
-          path: ./dist/kortex-*universal.dmg
+          path: ./dist/kaiden-*universal.dmg
 
   lint-format:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'area/ci') || !github.event.pull_request.draft }}

@@ -76,8 +76,8 @@ vi.mock('node:fs/promises');
 beforeEach(() => {
   vi.clearAllMocks();
 
-  mockRagDirectory = '/mock-kortex-dir/rag';
-  getConfigurationDirectoryMock.mockReturnValue('/mock-kortex-dir/configuration');
+  mockRagDirectory = '/mock-kaiden-dir/rag';
+  getConfigurationDirectoryMock.mockReturnValue('/mock-kaiden-dir/configuration');
 
   // By default, assume directories don't exist initially
   vi.mocked(existsSync).mockReturnValue(false);

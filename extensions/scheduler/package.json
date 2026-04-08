@@ -4,10 +4,10 @@
   "description": "A scheduler implementation using macOS LaunchAgents and Windows Task Scheduler",
   "version": "0.0.1-next",
   "icon": "icon.png",
-  "publisher": "kortex",
+  "publisher": "kaiden",
   "license": "Apache-2.0",
   "engines": {
-    "kortex": "^0.0.1"
+    "kaiden": "^0.0.1"
   },
   "main": "./dist/extension.js",
   "scripts": {

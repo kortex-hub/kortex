@@ -52,7 +52,7 @@ describe('an OnboardingRegistry instance exists', () => {
     const manifest = {
       contributes: {
         onboarding: {
-          title: 'Get started with Kortex',
+          title: 'Get started with Kaiden',
           priority: 1,
           removable: false,
           steps: [
@@ -94,8 +94,8 @@ describe('an OnboardingRegistry instance exists', () => {
   test('Should onboarding for known extension', async () => {
     const onboarding = onboardingRegistry.getOnboarding(extensionId);
     expect(onboarding).toBeDefined();
-    expect(onboarding?.title).toBe('Get started with Kortex');
-    expect(onboarding?.welcomeMessage).toBe('Get started with Kortex');
+    expect(onboarding?.title).toBe('Get started with Kaiden');
+    expect(onboarding?.welcomeMessage).toBe('Get started with Kaiden');
   });
 
   test('Should not find onboarding after dispose', async () => {
@@ -115,7 +115,7 @@ describe('an OnboardingRegistry instance exists', () => {
     expect(onboarding).toBeDefined();
     expectTypeOf(onboarding).toBeArray();
     expect(onboarding.length).toBe(1);
-    expect(onboarding[0]?.title).toBe('Get started with Kortex');
+    expect(onboarding[0]?.title).toBe('Get started with Kaiden');
   });
 
   test('Should update state of step', async () => {

@@ -3,13 +3,13 @@
   "displayName": "Milvus RAG Provider",
   "description": "Provides Milvus vector database for RAG",
   "version": "0.0.1-next",
-  "publisher": "kortex",
+  "publisher": "kaiden",
   "license": "Apache-2.0",
   "engines": {
-    "kortex": "^0.0.1"
+    "kaiden": "^0.0.1"
   },
   "extensionDependencies": [
-    "kortex.container"
+    "kaiden.container"
   ],
   "main": "./dist/extension.js",
   "source": "./src/extension.ts",

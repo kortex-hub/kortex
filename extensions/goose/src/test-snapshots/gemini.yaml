@@ -5,8 +5,8 @@ metadata:
   labels:
     app: goose
   annotations:
-    kortex-hub/version: 1.0.0
-    kortex-hub/flow-id: demo-flow-id
+    kaiden/version: 1.0.0
+    kaiden/flow-id: demo-flow-id
 stringData:
     GOOGLE_API_KEY: dummy
 ---
@@ -17,14 +17,14 @@ metadata:
   labels:
     app: goose
   annotations:
-    kortex-hub/version: 1.0.0
-    kortex-hub/flow-id: demo-flow-id
+    kaiden/version: 1.0.0
+    kaiden/flow-id: demo-flow-id
 spec:
   template:
     metadata:
       annotations:
-        kortex-hub/version: 1.0.0
-        kortex-hub/flow-id: demo-flow-id
+        kaiden/version: 1.0.0
+        kaiden/flow-id: demo-flow-id
     spec:
       containers:
         - name: goose
@@ -56,8 +56,8 @@ metadata:
   labels:
     app: goose
   annotations:
-    kortex-hub/version: 1.0.0
-    kortex-hub/flow-id: demo-flow-id
+    kaiden/version: 1.0.0
+    kaiden/flow-id: demo-flow-id
 data:
   recipe.yaml: |
     title: "Paris Explorer"

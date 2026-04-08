@@ -34,7 +34,7 @@ import type { NativeScheduler } from '/@/api/native-scheduler-api.js';
 import { CronParser } from '/@/helper/cron-parser.js';
 import { ExecutionParser } from '/@/helper/execution-parser.js';
 import { CronXmlParser } from '/@/helper/windows/cron-xml-parser.js';
-import schedulerExecutorScript from '/@/resources/kortex-scheduler-executor.ps1?raw';
+import schedulerExecutorScript from '/@/resources/kaiden-scheduler-executor.ps1?raw';
 
 import { SchtasksXmlGenerator } from '../helper/windows/schtasks-xml-generator.js';
 
@@ -58,7 +58,7 @@ export class SchtasksScheduler implements NativeScheduler {
   private readonly executionParser: ExecutionParser;
 
   constructor() {
-    this.schedulerBaseDir = path.join(homedir(), '.local', 'share', 'kortex', 'scheduler');
+    this.schedulerBaseDir = path.join(homedir(), '.local', 'share', 'kaiden', 'scheduler');
     this.tasksDir = path.join(this.schedulerBaseDir, 'tasks');
     this.scriptsDir = path.join(this.schedulerBaseDir, 'scripts');
   }
@@ -68,8 +68,8 @@ export class SchtasksScheduler implements NativeScheduler {
     await fs.mkdir(this.scriptsDir, { recursive: true });
     await fs.mkdir(this.tasksDir, { recursive: true });
 
-    // Write kortex-scheduler-executor.ps1 all the time to ensure it's up to date
-    const targetScript = path.join(this.scriptsDir, 'kortex-scheduler-executor.ps1');
+    // Write kaiden-scheduler-executor.ps1 all the time to ensure it's up to date
+    const targetScript = path.join(this.scriptsDir, 'kaiden-scheduler-executor.ps1');
     await fs.writeFile(targetScript, schedulerExecutorScript, 'utf-8');
   }
 
@@ -79,7 +79,7 @@ export class SchtasksScheduler implements NativeScheduler {
 
     const flowLogDir = path.join(this.schedulerBaseDir, id);
 
-    const executorScript = path.join(this.scriptsDir, 'kortex-scheduler-executor.ps1');
+    const executorScript = path.join(this.scriptsDir, 'kaiden-scheduler-executor.ps1');
     const outputFile = path.join(flowLogDir, 'latest.log');
 
     const cronComponents = this.cronParser.parse(options.cronExpression);
@@ -97,7 +97,7 @@ export class SchtasksScheduler implements NativeScheduler {
     await fs.writeFile(xmlPath, xmlContent, 'utf-8');
 
     // Create the scheduled task
-    const taskName = `Kortex\\${id}`;
+    const taskName = `Kaiden\\${id}`;
     try {
       const args = ['/Create', '/TN', taskName, '/XML', xmlPath, '/F'];
       await process.exec('schtasks', args);
@@ -113,7 +113,7 @@ export class SchtasksScheduler implements NativeScheduler {
   }
 
   async cancel(id: string): Promise<void> {
-    const taskName = `Kortex\\${id}`;
+    const taskName = `Kaiden\\${id}`;
 
     // Delete the scheduled task
     try {
@@ -143,10 +143,10 @@ export class SchtasksScheduler implements NativeScheduler {
     const flows: ProviderScheduleItem[] = [];
 
     try {
-      // Query all tasks in Kortex folder
+      // Query all tasks in Kaiden folder
       const { stdout } = await process.exec('powershell', [
         '-Command',
-        'Get-ScheduledTask -TaskPath "\\Kortex\\*" | Select-Object -ExpandProperty TaskName',
+        'Get-ScheduledTask -TaskPath "\\Kaiden\\*" | Select-Object -ExpandProperty TaskName',
       ]);
       // Parse output - each line is a task name
       const taskNames = stdout

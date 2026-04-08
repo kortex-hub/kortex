@@ -52,7 +52,7 @@ done
 # Check if storage directory exists
 if [ ! -d "$storage_dir" ]; then
   echo "ERROR: Storage directory does not exist: $storage_dir" >&2
-  echo "Kortex may not be installed or has been removed." >&2
+  echo "Kaiden may not be installed or has been removed." >&2
   exit 1
 fi
 
@@ -64,11 +64,11 @@ start_time=$(date +%s)
 timestamp=$(date +%Y%m%d-%H%M%S)
 log_file="$log_dir/execution-${timestamp}.log"
 
-echo "<<<KORTEX_SCHEDULE_TASK_BEGIN>>>" > "$log_file"
+echo "<<<KAIDEN_SCHEDULE_TASK_BEGIN>>>" > "$log_file"
 begin_json="{\"id\":\"$scheduler_id\",\"timestamp\":$start_time,\"metadata\":{$metadata_json}}"
 
 echo "$begin_json" >> "$log_file"
-echo "<<<KORTEX_SCHEDULE_TASK_BEGIN_DATA>>>" >> "$log_file"
+echo "<<<KAIDEN_SCHEDULE_TASK_BEGIN_DATA>>>" >> "$log_file"
 
 # Disable exit-on-error temporarily to capture the exit code
 set +e
@@ -78,7 +78,7 @@ set -e
 
 end_time=$(date +%s)
 duration=$((end_time - start_time))
-echo "<<<KORTEX_SCHEDULE_TASK_END_DATA>>>" >> "$log_file"
+echo "<<<KAIDEN_SCHEDULE_TASK_END_DATA>>>" >> "$log_file"
 echo "{\"id\":\"$scheduler_id\",\"timestamp\":$end_time,\"duration\":$duration,\"exitCode\":$exit_code}" >> "$log_file"
-echo "<<<KORTEX_SCHEDULE_TASK_END>>>" >> "$log_file"
+echo "<<<KAIDEN_SCHEDULE_TASK_END>>>" >> "$log_file"
 exit $exit_code

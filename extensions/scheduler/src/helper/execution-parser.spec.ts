@@ -37,14 +37,14 @@ test('parses valid output and returns execution info', () => {
   const id = 'flow-123';
   const tsSec = 1737062400; // arbitrary timestamp (seconds)
   const output = [
-    '<<<KORTEX_SCHEDULE_TASK_BEGIN>>>',
+    '<<<KAIDEN_SCHEDULE_TASK_BEGIN>>>',
     `{"id":"${id}","timestamp":${tsSec}}`,
-    '<<<KORTEX_SCHEDULE_TASK_BEGIN_DATA>>>',
+    '<<<KAIDEN_SCHEDULE_TASK_BEGIN_DATA>>>',
     'line1',
     'line2',
-    '<<<KORTEX_SCHEDULE_TASK_END_DATA>>>',
+    '<<<KAIDEN_SCHEDULE_TASK_END_DATA>>>',
     `{"id":"${id}","timestamp":${tsSec},"duration":123,"exitCode":0}`,
-    '<<<KORTEX_SCHEDULE_TASK_END>>>',
+    '<<<KAIDEN_SCHEDULE_TASK_END>>>',
   ].join('\n');
 
   const res = executionParser.parseOutput(id, output);
@@ -60,14 +60,14 @@ test('handles Windows CRLF line endings', () => {
   const id = 'flow-win';
   const tsSec = 1737062401;
   const output =
-    '<<<KORTEX_SCHEDULE_TASK_BEGIN>>>\r\n' +
+    '<<<KAIDEN_SCHEDULE_TASK_BEGIN>>>\r\n' +
     `{"id":"${id}","timestamp":${tsSec}}\r\n` +
-    '<<<KORTEX_SCHEDULE_TASK_BEGIN_DATA>>>\r\n' +
+    '<<<KAIDEN_SCHEDULE_TASK_BEGIN_DATA>>>\r\n' +
     'line1\r\n' +
     'line2\r\n' +
-    '<<<KORTEX_SCHEDULE_TASK_END_DATA>>>\r\n' +
+    '<<<KAIDEN_SCHEDULE_TASK_END_DATA>>>\r\n' +
     `{"id":"${id}","timestamp":${tsSec},"duration":42,"exitCode":1}\r\n` +
-    '<<<KORTEX_SCHEDULE_TASK_END>>>';
+    '<<<KAIDEN_SCHEDULE_TASK_END>>>';
   const res = executionParser.parseOutput(id, output);
   expect(res).toBeDefined();
   // Normalize for assertion
@@ -91,14 +91,14 @@ test('returns undefined and logs error when end JSON is malformed', () => {
   const spyConsoleError = vi.spyOn(console, 'error');
   const id = 'bad-json';
   const output =
-    '<<<KORTEX_SCHEDULE_TASK_BEGIN>>>\n' +
+    '<<<KAIDEN_SCHEDULE_TASK_BEGIN>>>\n' +
     `{"id":"${id}","timestamp":1700000000}\n` +
-    '<<<KORTEX_SCHEDULE_TASK_BEGIN_DATA>>>\n' +
+    '<<<KAIDEN_SCHEDULE_TASK_BEGIN_DATA>>>\n' +
     'payload\n' +
-    '<<<KORTEX_SCHEDULE_TASK_END_DATA>>>\n' +
+    '<<<KAIDEN_SCHEDULE_TASK_END_DATA>>>\n' +
     // malformed JSON here
     'not-a-json\n' +
-    '<<<KORTEX_SCHEDULE_TASK_END>>>';
+    '<<<KAIDEN_SCHEDULE_TASK_END>>>';
 
   const res = executionParser.parseOutput(id, output);
   expect(res).toBeUndefined();
@@ -110,14 +110,14 @@ test('trims output between data markers', () => {
   const id = 'trim-test';
   const tsSec = 1700000100;
   const output =
-    '<<<KORTEX_SCHEDULE_TASK_BEGIN>>>\n' +
+    '<<<KAIDEN_SCHEDULE_TASK_BEGIN>>>\n' +
     `{"id":"${id}","timestamp":${tsSec}}\n` +
-    '<<<KORTEX_SCHEDULE_TASK_BEGIN_DATA>>>\n' +
+    '<<<KAIDEN_SCHEDULE_TASK_BEGIN_DATA>>>\n' +
     '\n  line with spaces  \n' +
     '\n' +
-    '<<<KORTEX_SCHEDULE_TASK_END_DATA>>>\n' +
+    '<<<KAIDEN_SCHEDULE_TASK_END_DATA>>>\n' +
     `{"id":"${id}","timestamp":${tsSec},"duration":1,"exitCode":0}\n` +
-    '<<<KORTEX_SCHEDULE_TASK_END>>>';
+    '<<<KAIDEN_SCHEDULE_TASK_END>>>';
 
   const res = executionParser.parseOutput(id, output);
   expect(res).toBeDefined();

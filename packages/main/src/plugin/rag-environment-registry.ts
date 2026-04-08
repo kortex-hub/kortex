@@ -57,7 +57,7 @@ export class RagEnvironmentRegistry {
     @inject(MCPManager)
     private mcpManager: MCPManager,
   ) {
-    // Create the rag directory inside the kortex home directory
+    // Create the rag directory inside the kaiden home directory
     this.#ragDirectory = resolve(this.directories.getConfigurationDirectory(), '..', 'rag');
     this.apiSender.receive('mcp-manager-update', () => {
       this.refreshEnvironments().catch(console.error);

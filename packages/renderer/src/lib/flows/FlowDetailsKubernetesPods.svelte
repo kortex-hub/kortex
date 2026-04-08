@@ -19,7 +19,7 @@ let { flowId }: Props = $props();
 
 // keep only jobs having the right flow-id
 function filterFlowidPod(job: V1Pod): boolean {
-  return job.metadata?.annotations?.['kortex-hub/flow-id'] === flowId;
+  return job.metadata?.annotations?.['kaiden/flow-id'] === flowId;
 }
 
 const podUtils = new PodUtils();

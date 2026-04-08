@@ -27,8 +27,8 @@ test('should return welcome messages with default product name', () => {
   const welcome = new Welcome();
   const messages = welcome.getWelcomeMessages();
 
-  expect(messages.getStartedMessage).toBe('Get started with Kortex');
-  expect(messages.welcomeMessage).toBe('Welcome to Kortex');
+  expect(messages.getStartedMessage).toBe('Get started with Kaiden');
+  expect(messages.welcomeMessage).toBe('Welcome to Kaiden');
 });
 
 test('should return welcome messages with custom product name', () => {

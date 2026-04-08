@@ -56,7 +56,7 @@ describe('LegacyDirectories', () => {
     });
 
     test('should use default legacy base directory', () => {
-      const expectedBaseDir = path.resolve(os.homedir(), '.local', 'share', 'kortex');
+      const expectedBaseDir = path.resolve(os.homedir(), '.local', 'share', 'kaiden');
       expect(provider.getDataDirectory()).toBe(expectedBaseDir);
     });
 
@@ -75,10 +75,10 @@ describe('LegacyDirectories', () => {
   });
 
   describe('Custom Directory Override', () => {
-    test('should respect KORTEX_HOME_DIR environment variable', () => {
-      const customPath = '/custom/kortex/directory';
-      // biome-ignore lint/complexity/useLiteralKeys: <KORTEX_HOME_DIR comes from an index signature>
-      process.env['KORTEX_HOME_DIR'] = customPath;
+    test('should respect KAIDEN_HOME_DIR environment variable', () => {
+      const customPath = '/custom/kaiden/directory';
+      // biome-ignore lint/complexity/useLiteralKeys: <KAIDEN_HOME_DIR comes from an index signature>
+      process.env['KAIDEN_HOME_DIR'] = customPath;
 
       // Create new instance to pick up environment variable
       provider = new LegacyDirectories();
@@ -90,8 +90,8 @@ describe('LegacyDirectories', () => {
 
     test('should override default path completely when custom env var is set', () => {
       const customPath = '/custom/env/path';
-      // biome-ignore lint/complexity/useLiteralKeys: <KORTEX_HOME_DIR comes from an index signature>
-      process.env['KORTEX_HOME_DIR'] = customPath;
+      // biome-ignore lint/complexity/useLiteralKeys: <KAIDEN_HOME_DIR comes from an index signature>
+      process.env['KAIDEN_HOME_DIR'] = customPath;
 
       provider = new LegacyDirectories();
 
@@ -182,7 +182,7 @@ describe('LegacyDirectories', () => {
       vi.mocked(isWindows).mockReturnValue(false);
       vi.mocked(isLinux).mockReturnValue(true);
       // biome-ignore lint/complexity/useLiteralKeys: FLATPAK_ID comes from an index signature
-      process.env['FLATPAK_ID'] = 'dev.kortex-hub.Kortex';
+      process.env['FLATPAK_ID'] = 'ai.openkaiden.Kaiden';
 
       provider = new LegacyDirectories();
 

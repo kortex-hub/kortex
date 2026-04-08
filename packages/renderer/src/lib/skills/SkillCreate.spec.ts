@@ -29,7 +29,7 @@ const closeMock = vi.fn();
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(window.listSkillFolders).mockResolvedValue([
-    { label: 'Kortex Skills', badge: 'Kortex', baseDirectory: '/test/skills' },
+    { label: 'Kaiden Skills', badge: 'Kaiden', baseDirectory: '/test/skills' },
     { label: 'Claude Skills', badge: 'Claude', baseDirectory: '/home/.claude/skills' },
   ]);
   vi.mocked(window.createSkill).mockResolvedValue({
@@ -52,7 +52,7 @@ test('should render target cards after loading', async () => {
   render(SkillCreate, { onclose: closeMock });
 
   await waitFor(() => {
-    expect(screen.getByText('Kortex Skills')).toBeInTheDocument();
+    expect(screen.getByText('Kaiden Skills')).toBeInTheDocument();
     expect(screen.getByText('Claude Skills')).toBeInTheDocument();
   });
 });
@@ -98,7 +98,7 @@ test('should enable Create button when all fields are filled and target is auto-
   render(SkillCreate, { onclose: closeMock });
 
   await waitFor(() => {
-    expect(screen.getByText('Kortex Skills')).toBeInTheDocument();
+    expect(screen.getByText('Kaiden Skills')).toBeInTheDocument();
   });
 
   const nameInput = screen.getByLabelText('Skill name');
@@ -117,7 +117,7 @@ test('should call createSkill with correct parameters and close on success', asy
   render(SkillCreate, { onclose: closeMock });
 
   await waitFor(() => {
-    expect(screen.getByText('Kortex Skills')).toBeInTheDocument();
+    expect(screen.getByText('Kaiden Skills')).toBeInTheDocument();
   });
 
   const nameInput = screen.getByLabelText('Skill name');
@@ -168,7 +168,7 @@ test('should display error when createSkill fails', async () => {
   render(SkillCreate, { onclose: closeMock });
 
   await waitFor(() => {
-    expect(screen.getByText('Kortex Skills')).toBeInTheDocument();
+    expect(screen.getByText('Kaiden Skills')).toBeInTheDocument();
   });
 
   const nameInput = screen.getByLabelText('Skill name');
@@ -234,7 +234,7 @@ test('should prefill fields from parsed file when browsing', async () => {
   });
 
   await waitFor(() => {
-    expect(screen.getByText('Kortex Skills')).toBeInTheDocument();
+    expect(screen.getByText('Kaiden Skills')).toBeInTheDocument();
   });
 
   const createButton = screen.getByRole('button', { name: 'Create' });

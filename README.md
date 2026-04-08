@@ -1,4 +1,4 @@
-# Kortex
+# Kaiden
 
 ## Demonstration video
 
@@ -15,14 +15,14 @@ Requirements:
 - [Gemini](https://gemini.google.com) An API token for Gemini is required
 - [Goose](https://github.com/block/goose) Can be installed through the CLI panel
 
-### Step 1. Fork and clone Kortex
+### Step 1. Fork and clone Kaiden
 
 Clone and fork the project.
 
 Clone the repo using GitHub site:
 
 ```sh
-git clone https://github.com/kortex-hub/kortex && cd kortex
+git clone https://github.com/openkaiden/kaiden && cd kaiden
 ```
 
 ### Step 2. Install dependencies
@@ -41,7 +41,7 @@ Run the application in watch mode:
 pnpm watch
 ```
 
-## Using Kortex
+## Using Kaiden
 
 ### Configure your Gemini API Key
 
@@ -58,7 +58,7 @@ the `Create` button. If you go the Chat window, you should see the server listed
 
 ### Configure the Goose flow runtime
 
-Kortex uses the Goose as a flow provider. So there are two options here:
+Kaiden uses the Goose as a flow provider. So there are two options here:
 
 - use Goose for the local PATH if you have already installed Goose on your workstation.
 - install Goose locally though the Goose extension. Go to the `Settings > CLI` tab and search for `goose`. If no Goose

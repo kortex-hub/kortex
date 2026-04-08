@@ -10,7 +10,7 @@ import SearchButton from './SearchButton.svelte';
 
 let platform: string = $state('');
 
-const title = 'Kortex';
+const title = 'Kaiden';
 let commandPaletteVisible = $state(false);
 
 onMount(async () => {

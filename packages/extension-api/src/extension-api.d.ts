@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 /**
- * The Kortex API is intended to be consumed by extensions interacting with Kortex.
+ * The Kaiden API is intended to be consumed by extensions interacting with Kaiden.
  *
  * This documentation is automatically generated from typedoc comments
  * in the source code `extension-api.d.ts`
@@ -44,7 +44,7 @@ declare module '@kortex-app/api' {
   import type { components } from '@kortex-hub/mcp-registry-types';
 
   /**
-   * The version of Kortex.
+   * The version of Kaiden.
    */
   export const version: string;
 
@@ -255,7 +255,7 @@ declare module '@kortex-app/api' {
    * and the {@link Extension.exports exports}-property, like below:
    *
    * ```typescript
-   * const fooExtension = extensions.getExtension('kortex.foo');
+   * const fooExtension = extensions.getExtension('kaiden.foo');
    * const fooExtensionAPI = fooExtension.exports;
    *
    * fooExtensionAPI....
@@ -1028,7 +1028,7 @@ declare module '@kortex-app/api' {
   /**
    * The commands module provides functions to register and execute commands
    * Existing commands available for extensions to use:
-   * - `pullImage`: uses Kortex's UI pull image behavior. This command will create a visible task to show the progress of the pullImage action with the option to include a task action.
+   * - `pullImage`: uses Kaiden's UI pull image behavior. This command will create a visible task to show the progress of the pullImage action with the option to include a task action.
    * It uses the same parameters as the original pullImage function, in addition to having `taskActionName: string` and `taskActionCallback: () => void` as parameters to create a task action (optional).
    *
    * @example
@@ -1686,7 +1686,7 @@ declare module '@kortex-app/api' {
      * Show progress bar under app icon in launcher bar.
      *
      * @deprecated This value is deprecated as it does not render equally on various supported platforms. It will be
-     * removed in future versions of Kortex. We strongly encourage to use TASK_WIDGET instead.
+     * removed in future versions of Kaiden. We strongly encourage to use TASK_WIDGET instead.
      * @see TASK_WIDGET
      */
     APP_ICON = 1,
@@ -2603,7 +2603,7 @@ declare module '@kortex-app/api' {
     export function showErrorMessage(message: string, ...items: string[]): Promise<string | undefined>;
 
     /**
-     * Show progress in Kortex. Progress is shown while running the given callback
+     * Show progress in Kaiden. Progress is shown while running the given callback
      * and while the promise it returned isn't resolved nor rejected. The location at which
      * progress should show (and other details) is defined via the passed {@linkcode ProgressOptions}.
      *
@@ -5124,7 +5124,7 @@ declare module '@kortex-app/api' {
   export type CliToolInstallationSource = 'extension' | 'external';
 
   /**
-   * Options to create new CliTool instance and register it in Kortex
+   * Options to create new CliTool instance and register it in Kaiden
    */
 
   export interface CliToolOptions {

@@ -119,17 +119,17 @@ jobs:
           INSTANCE="${{ inputs.instance }}"
           if [[ "$INSTANCE" == *"windows"* ]]; then
             if [[ "$INSTANCE" == *"arm"* ]]; then
-              BINARY_PATH="./dist/win-arm64-unpacked/Kortex.exe"
+              BINARY_PATH="./dist/win-arm64-unpacked/Kaiden.exe"
             else
-              BINARY_PATH="./dist/win-unpacked/Kortex.exe"
+              BINARY_PATH="./dist/win-unpacked/Kaiden.exe"
             fi
           elif [[ "$INSTANCE" == *"ubuntu"* ]] || [[ "$INSTANCE" == *"linux"* ]]; then
-            BINARY_PATH="./dist/linux-unpacked/kortex"
+            BINARY_PATH="./dist/linux-unpacked/kaiden"
           elif [[ "$INSTANCE" == *"macos"* ]]; then
             if [[ "$INSTANCE" == *"intel"* ]]; then
-              BINARY_PATH="./dist/mac/Kortex.app/Contents/MacOS/Kortex"
+              BINARY_PATH="./dist/mac/Kaiden.app/Contents/MacOS/Kaiden"
             else
-              BINARY_PATH="./dist/mac-arm64/Kortex.app/Contents/MacOS/Kortex"
+              BINARY_PATH="./dist/mac-arm64/Kaiden.app/Contents/MacOS/Kaiden"
             fi
           else
             echo "::error::Unknown instance: $INSTANCE. Cannot determine binary path."
@@ -137,13 +137,13 @@ jobs:
           fi
 
           if [ "${{ inputs.mode }}" == "prod" ]; then
-            echo "Compiling Kortex in production mode"
+            echo "Compiling Kaiden in production mode"
             export ELECTRON_ENABLE_INSPECT=true
             pnpm compile:current ${{ inputs.compile_args }}
 
             path=$(realpath "$BINARY_PATH")
-            echo "Kortex built binary: $path"
-            export KORTEX_BINARY="$path"
+            echo "Kaiden built binary: $path"
+            export KAIDEN_BINARY="$path"
           fi
           pnpm test:e2e
 

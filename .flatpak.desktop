@@ -1,10 +1,10 @@
 [Desktop Entry]
-Name=Kortex
+Name=Kaiden
 Exec=run.sh %U
 Terminal=false
 Type=Application
-Icon=dev.kortex_hub.Kortex
-StartupWMClass=Kortex
+Icon=ai.openkaiden.Kaiden
+StartupWMClass=Kaiden
 Categories=Development;
 Keywords=
-X-Flatpak=dev.kortex_hub.Kortex
+X-Flatpak=ai.openkaiden.Kaiden

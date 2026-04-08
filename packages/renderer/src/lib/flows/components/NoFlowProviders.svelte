@@ -5,7 +5,7 @@ import { combinedInstalledExtensions } from '/@/stores/all-installed-extensions'
 
 import GooseCliInstall from './GooseCliInstall.svelte';
 
-let extension = $derived($combinedInstalledExtensions.find(e => e.id === 'kortex.goose'));
+let extension = $derived($combinedInstalledExtensions.find(e => e.id === 'kaiden.goose'));
 </script>
 
 <div class="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
@@ -13,7 +13,7 @@ let extension = $derived($combinedInstalledExtensions.find(e => e.id === 'kortex
   {#if extension}
     <div class="max-w-2xl space-y-4">
       <p class="text-gray-500">To get started with flows, please follow these steps:</p>
-      
+
       <ol class="text-center text-gray-500 space-y-3 list-inside">
         <li>
           <GooseCliInstall/>

@@ -61,8 +61,8 @@ jobs:
             # main branch (or others if you add them)
             CURRENT_DAY=$(date +'%Y%m%d')
             SHORT_SHA1=$(git rev-parse --short HEAD)
-            KORTEX_VERSION=$(jq -r '.version' package.json)
-            STRIPPED_VERSION=${KORTEX_VERSION%-next}
+            KAIDEN_VERSION=$(jq -r '.version' package.json)
+            STRIPPED_VERSION=${KAIDEN_VERSION%-next}
             TAG_PATTERN=${STRIPPED_VERSION}-next.$(date +'%Y%m%d%H%M')-${SHORT_SHA1}
             GITHUB_TAG="v${TAG_PATTERN}"
 

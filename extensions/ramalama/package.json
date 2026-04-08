@@ -1,16 +1,16 @@
 {
   "name": "ramalama",
   "displayName": "RamaLama",
-  "description": "Register RamaLama models to Kortex.",
+  "description": "Register RamaLama models to Kaiden.",
   "version": "0.0.1-next",
   "icon": "icon.png",
-  "publisher": "kortex",
+  "publisher": "kaiden",
   "license": "Apache-2.0",
   "engines": {
-    "kortex": "^0.0.1"
+    "kaiden": "^0.0.1"
   },
   "extensionDependencies": [
-    "kortex.container"
+    "kaiden.container"
   ],
   "main": "./dist/extension.js",
   "source": "./src/extension.ts",

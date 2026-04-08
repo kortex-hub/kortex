@@ -5,7 +5,7 @@ metadata:
   labels:
     app: goose
   annotations:
-    {{& annotations.version }}: {{ kortex.version }}
+    {{& annotations.version }}: {{ kaiden.version }}
     {{& annotations.flowId }}: {{{ recipe.flowId }}}
 stringData:
   {{#provider.credentials.env}}
@@ -19,13 +19,13 @@ metadata:
   labels:
     app: goose
   annotations:
-    {{& annotations.version }}: {{ kortex.version }}
+    {{& annotations.version }}: {{ kaiden.version }}
     {{& annotations.flowId }}: {{{ recipe.flowId }}}
 spec:
   template:
     metadata:
       annotations:
-        {{& annotations.version }}: {{ kortex.version }}
+        {{& annotations.version }}: {{ kaiden.version }}
         {{& annotations.flowId }}: {{{ recipe.flowId }}}
     spec:
       containers:
@@ -62,7 +62,7 @@ metadata:
   labels:
     app: goose
   annotations:
-    {{& annotations.version }}: {{ kortex.version }}
+    {{& annotations.version }}: {{ kaiden.version }}
     {{& annotations.flowId }}: {{{ recipe.flowId }}}
 data:
   recipe.yaml: |

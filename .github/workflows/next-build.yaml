@@ -39,13 +39,13 @@ jobs:
     if: github.event.repository.fork == false
     outputs:
       githubTag: ${{ steps.TAG_UTIL.outputs.githubTag}}
-      kortexVersion: ${{ steps.TAG_UTIL.outputs.kortexVersion}}
+      kaidenVersion: ${{ steps.TAG_UTIL.outputs.kaidenVersion}}
       releaseId: ${{ steps.create_release.outputs.id}}
 
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
-         token: ${{ secrets.KORTEX_BOT_TOKEN }}
+         token: ${{ secrets.KAIDEN_BOT_TOKEN }}
          fetch-depth: 0
       - name: Generate tag utilities
         id: TAG_UTIL
@@ -53,27 +53,27 @@ jobs:
             CURRENT_DAY=$(date +'%Y%m%d')
             SHORT_SHA1=$(git rev-parse --short HEAD)
             # grab the version from the package.json
-            KORTEX_VERSION=$(jq -r '.version' package.json)
+            KAIDEN_VERSION=$(jq -r '.version' package.json)
             # remove the -next from the version
-            STRIPPED_VERSION=${KORTEX_VERSION%-next}
+            STRIPPED_VERSION=${KAIDEN_VERSION%-next}
             TAG_PATTERN=${STRIPPED_VERSION}-next.$(date +'%Y%m%d%H%M')-${SHORT_SHA1}
             echo "githubTag=v$TAG_PATTERN" >> ${GITHUB_OUTPUT}
-            echo "kortexVersion=$TAG_PATTERN" >> ${GITHUB_OUTPUT}
+            echo "kaidenVersion=$TAG_PATTERN" >> ${GITHUB_OUTPUT}
       - name: tag
         run: |
           git config --local user.name ${{ github.actor }}
           git config --local user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
-          sed -i  "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.kortexVersion }}\",#g" package.json
-          find extensions/* -maxdepth 2 -name "package.json" | xargs -I {} sed -i "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.kortexVersion }}\",#g" {}
+          sed -i  "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.kaidenVersion }}\",#g" package.json
+          find extensions/* -maxdepth 2 -name "package.json" | xargs -I {} sed -i "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.kaidenVersion }}\",#g" {}
           # change the repository field to be the prerelease repository in package.json file
-          sed -i "s#\"repository\":\ \"\(.*\)\",#\"repository\":\ \"https://github.com/kortex-hub/prereleases\",#g" package.json
+          sed -i "s#\"repository\":\ \"\(.*\)\",#\"repository\":\ \"https://github.com/openkaiden/prereleases\",#g" package.json
           cat package.json
           git add package.json extensions/*/package.json
           git commit -m "chore: tag ${{ steps.TAG_UTIL.outputs.githubTag }}"
           echo "Tagging with ${{ steps.TAG_UTIL.outputs.githubTag }}"
           git tag ${{ steps.TAG_UTIL.outputs.githubTag }}
           # push tag to the prereleases repository
-          git remote add prereleases https://github.com/kortex-hub/prereleases
+          git remote add prereleases https://github.com/openkaiden/prereleases
           git push prereleases ${{ steps.TAG_UTIL.outputs.githubTag }}
 
       - name: Create Release
@@ -84,9 +84,9 @@ jobs:
           name: ${{ steps.TAG_UTIL.outputs.githubTag }}
           draft: true
           prerelease: true
-          owner: kortex-hub
+          owner: openkaiden
           repo: prereleases
-          token: ${{ secrets.KORTEX_BOT_TOKEN }}
+          token: ${{ secrets.KAIDEN_BOT_TOKEN }}
 
   build:
     name: Build / ${{ matrix.os }}
@@ -100,7 +100,7 @@ jobs:
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
-          repository: kortex-hub/prereleases
+          repository: openkaiden/prereleases
           ref: ${{ needs.tag.outputs.githubTag}}
 
       - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
@@ -157,7 +157,7 @@ jobs:
         timeout-minutes: 40
         run: pnpm compile:next
         env:
-          GITHUB_TOKEN: ${{ secrets.KORTEX_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
 
   release:
     needs: [tag, build]
@@ -170,8 +170,8 @@ jobs:
       - name: Publish release
         uses: StuYarrow/publish-release@01f2a1365bacd77bad861873a7fdf274ab49eefd # v1.1.2
         env:
-          GITHUB_TOKEN: ${{ secrets.KORTEX_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
         with:
           id: ${{ needs.tag.outputs.releaseId}}
           repo: prereleases
-          owner: kortex-hub
+          owner: openkaiden

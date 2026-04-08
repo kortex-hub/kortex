@@ -21,8 +21,8 @@ import { expect, test } from 'vitest';
 import { GITHUB_OWNER, GITHUB_REPOSITORY, REPOSITORY_HOMEPAGE, REPOSITORY_URL } from './repository-infos.js';
 
 test('check constants correctly extracted from package.json', async () => {
-  expect(REPOSITORY_URL).toBe('https://github.com/kortex-hub/kortex');
-  expect(REPOSITORY_HOMEPAGE).toBe('https://github.com/kortex-hub/kortex');
-  expect(GITHUB_OWNER).toBe('kortex-hub');
-  expect(GITHUB_REPOSITORY).toBe('kortex');
+  expect(REPOSITORY_URL).toBe('https://github.com/openkaiden/kaiden');
+  expect(REPOSITORY_HOMEPAGE).toBe('https://www.openkaiden.ai');
+  expect(GITHUB_OWNER).toBe('openkaiden');
+  expect(GITHUB_REPOSITORY).toBe('kaiden');
 });

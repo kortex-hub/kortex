@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <component type="desktop-application">
-  <id>dev.kortex_hub.Kortex</id>
-  <name>Kortex</name>
+  <id>ai.openkaiden.Kaiden</id>
+  <name>Kaiden</name>
   <project_license>Apache-2.0</project_license>
   <developer id="com.redhat">
     <name>Red Hat, Inc.</name>
   </developer>
-  <summary>Kortex</summary>
+  <summary>Kaiden</summary>
   <metadata_license>CC0-1.0</metadata_license>
-  <url type="homepage">https://github.com/kortex-hub/kortex</url>
-  <url type="bugtracker">https://github.com/kortex-hub/kortex/issues</url>
-  <url type="help">https://github.com/kortex-hub/kortex/issues</url>
+  <url type="homepage">https://github.com/openkaiden/kaiden</url>
+  <url type="bugtracker">https://github.com/openkaiden/kaiden/issues</url>
+  <url type="help">https://github.com/openkaiden/kaiden/issues</url>
   <description>
-    Kortex is a tool for launching and managing AI agents with custom configurations. It provides a unified way to start different agents with specific settings including skills, MCP (Model Context Protocol) server connections, and LLM integrations.
+    Kaiden is a tool for launching and managing AI agents with custom configurations. It provides a unified way to start different agents with specific settings including skills, MCP (Model Context Protocol) server connections, and LLM integrations.
   </description>
-  <launchable type="desktop-id">dev.kortex_hub.Kortex</launchable>
+  <launchable type="desktop-id">ai.openkaiden.Kaiden</launchable>
   <screenshots>
   </screenshots>
   <content_rating type="oars-1.1" />

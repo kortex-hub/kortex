@@ -35,14 +35,14 @@ export class MilvusExtension {
   }
 
   async activate(): Promise<void> {
-    const KORTEX_CONTAINER_EXTENSION_ID = 'kortex.container';
-    const containerExtension = api.extensions.getExtension<ContainerExtensionAPI>(KORTEX_CONTAINER_EXTENSION_ID);
+    const KAIDEN_CONTAINER_EXTENSION_ID = 'kaiden.container';
+    const containerExtension = api.extensions.getExtension<ContainerExtensionAPI>(KAIDEN_CONTAINER_EXTENSION_ID);
     if (!containerExtension) {
-      throw new Error(`Mandatory extension ${KORTEX_CONTAINER_EXTENSION_ID} is not installed`);
+      throw new Error(`Mandatory extension ${KAIDEN_CONTAINER_EXTENSION_ID} is not installed`);
     }
     const containerExtensionAPI = containerExtension?.exports;
     if (!containerExtensionAPI) {
-      throw new Error(`Missing exports of API in container extension ${KORTEX_CONTAINER_EXTENSION_ID}`);
+      throw new Error(`Missing exports of API in container extension ${KAIDEN_CONTAINER_EXTENSION_ID}`);
     }
 
     // Create the Milvus provider

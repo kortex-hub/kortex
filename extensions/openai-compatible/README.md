@@ -1,1 +1,1 @@
-# OpenAI extension for Kortex
+# OpenAI extension for Kaiden

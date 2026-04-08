@@ -53,7 +53,7 @@ const EVENT_EMITTER_MOCK = {
   Event: {},
 } as unknown as EventEmitter<unknown>;
 
-const KORTEX_VERSION = '0.1.0';
+const KAIDEN_VERSION = '0.1.0';
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -67,7 +67,7 @@ beforeEach(() => {
 describe('GooseRecipe#init', () => {
   let recipe: GooseRecipe;
   beforeEach(() => {
-    recipe = new GooseRecipe(PROVIDER_API_MOCK, GOOSE_CLI_MOCK, KORTEX_VERSION);
+    recipe = new GooseRecipe(PROVIDER_API_MOCK, GOOSE_CLI_MOCK, KAIDEN_VERSION);
   });
 
   test('constructor should not register any provider', () => {
@@ -104,7 +104,7 @@ describe('cliAPI#onDidChange', () => {
 
   let listener: (e: 'uninstall' | 'update') => void;
   beforeEach(() => {
-    const recipe = new GooseRecipe(PROVIDER_API_MOCK, GOOSE_CLI_MOCK, KORTEX_VERSION);
+    const recipe = new GooseRecipe(PROVIDER_API_MOCK, GOOSE_CLI_MOCK, KAIDEN_VERSION);
     recipe.init();
 
     const call = vi.mocked(GOOSE_CLI_MOCK.event).mock.calls[0];
@@ -181,7 +181,7 @@ describe('cliAPI#onDidChange', () => {
 
 describe('goose recipe secrets hiding', () => {
   test('should hide secrets in headers', async () => {
-    const recipe = new GooseRecipe(PROVIDER_API_MOCK, GOOSE_CLI_MOCK, KORTEX_VERSION);
+    const recipe = new GooseRecipe(PROVIDER_API_MOCK, GOOSE_CLI_MOCK, KAIDEN_VERSION);
     const recipeContent = `
     title: test-flow
     extensions:
@@ -203,7 +203,7 @@ describe('goose recipe secrets hiding', () => {
 describe('GooseRecipe#all', () => {
   let recipe: GooseRecipe;
   beforeEach(() => {
-    recipe = new GooseRecipe(PROVIDER_API_MOCK, GOOSE_CLI_MOCK, KORTEX_VERSION);
+    recipe = new GooseRecipe(PROVIDER_API_MOCK, GOOSE_CLI_MOCK, KAIDEN_VERSION);
   });
 
   test('no recipes are mapped to no flows', async () => {

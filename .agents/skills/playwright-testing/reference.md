@@ -1,4 +1,4 @@
-# Kortex Playwright Testing Reference
+# Kaiden Playwright Testing Reference
 
 ## BasePage API
 
@@ -129,7 +129,7 @@ interface WorkerFixtures {
 
 | Project             | testMatch                                     | Condition              | resource   |
 | ------------------- | --------------------------------------------- | ---------------------- | ---------- |
-| `Kortex-App-Core`   | `**/*.spec.ts` (ignores provider-specs)       | Always                 | —          |
+| `Kaiden-App-Core`   | `**/*.spec.ts` (ignores provider-specs)       | Always                 | —          |
 | `Gemini-Provider`   | `**/provider-specs/*.spec.ts`                 | `GEMINI_API_KEY` set   | `gemini`   |
 | `OpenAI-Provider`   | `**/provider-specs/*.spec.ts`                 | `OPENAI_API_KEY` set   | `openai`   |
 | `Ollama-Provider`   | `**/provider-specs/*.spec.ts` (ignores flows) | `OLLAMA_ENABLED` set   | `ollama`   |
@@ -212,7 +212,7 @@ expect(count).toBeGreaterThan(0);
 pnpm run test:e2e
 
 # Run specific project
-npx playwright test --project="Kortex-App-Core"
+npx playwright test --project="Kaiden-App-Core"
 
 # Run specific file
 npx playwright test tests/playwright/src/specs/extensions-smoke.spec.ts
@@ -243,6 +243,6 @@ npx playwright show-trace path/to/trace.zip
 | `RAMALAMA_ENABLED`   | Enable RamaLama provider tests                       |
 | `OPENSHIFT_AI_TOKEN` | OpenShift AI authentication                          |
 | `GITHUB_TOKEN`       | MCP GitHub server token                              |
-| `KORTEX_BINARY`      | Path to production binary (vs dev mode)              |
+| `KAIDEN_BINARY`      | Path to production binary (vs dev mode)              |
 | `CI`                 | CI environment flag (enables retries, mock keychain) |
-| `KORTEX_HOME_DIR`    | Test config directory (auto-set by fixtures)         |
+| `KAIDEN_HOME_DIR`    | Test config directory (auto-set by fixtures)         |

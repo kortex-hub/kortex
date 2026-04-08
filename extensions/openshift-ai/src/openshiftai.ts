@@ -51,7 +51,7 @@ export class OpenShiftAI implements Disposable {
       status: 'unknown',
       id: 'openshiftai',
       emptyConnectionMarkdownDescription:
-        'Provides OpenShift AI integration. Connects Kortex to models running on OpenShift AI.',
+        'Provides OpenShift AI integration. Connects Kaiden to models running on OpenShift AI.',
       images: {
         icon: './icon.png',
         logo: {

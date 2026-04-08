@@ -4,10 +4,10 @@
   "description": "Integration for OpenShift AI",
   "version": "0.0.1-next",
   "icon": "icon.png",
-  "publisher": "kortex",
+  "publisher": "kaiden",
   "license": "Apache-2.0",
   "engines": {
-    "kortex": "^0.0.1"
+    "kaiden": "^0.0.1"
   },
   "main": "./dist/extension.js",
   "contributes": {

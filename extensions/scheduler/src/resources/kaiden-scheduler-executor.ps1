@@ -1,7 +1,7 @@
 # Script used to launch a flow within a scheduled task on Windows
 # It adds BEGIN/END markers to the output and the execution time
 # It also captures the exit code of the flow and returns it
-# Usage: kortex-scheduler-executor.ps1 -StorageDir <path> -SchedulerId <id> [-Metadata @{key=value}] -Command <command> -Arguments <args>
+# Usage: kaiden-scheduler-executor.ps1 -StorageDir <path> -SchedulerId <id> [-Metadata @{key=value}] -Command <command> -Arguments <args>
 
 param(
     [Parameter(Mandatory=$true)]
@@ -25,7 +25,7 @@ $ErrorActionPreference = "Stop"
 # Check if storage directory exists
 if (-not (Test-Path -Path $StorageDir -PathType Container)) {
     Write-Error "ERROR: Storage directory does not exist: $StorageDir"
-    Write-Error "Kortex may not be installed or has been removed."
+    Write-Error "Kaiden may not be installed or has been removed."
     exit 1
 }
 
@@ -41,9 +41,9 @@ $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $logFile = Join-Path $logDir "execution-$timestamp.log"
 
 # Write BEGIN marker
-"<<<KORTEX_SCHEDULE_TASK_BEGIN>>>" | Out-File -FilePath $logFile -Encoding UTF8
+"<<<KAIDEN_SCHEDULE_TASK_BEGIN>>>" | Out-File -FilePath $logFile -Encoding UTF8
 "{`"id`":`"$SchedulerId`",`"timestamp`":$startTime,`"metadata`":$Metadata}" | Out-File -FilePath $logFile -Append -Encoding UTF8
-"<<<KORTEX_SCHEDULE_TASK_BEGIN_DATA>>>" | Out-File -FilePath $logFile -Append -Encoding UTF8
+"<<<KAIDEN_SCHEDULE_TASK_BEGIN_DATA>>>" | Out-File -FilePath $logFile -Append -Encoding UTF8
 
 # Execute the command and capture output
 $exitCode = 0
@@ -100,8 +100,8 @@ $duration = $endTime - $startTime
 Write-Host "Running command: $command got exit code: $exitCode after $duration seconds"
 
 # Write END marker
-"<<<KORTEX_SCHEDULE_TASK_END_DATA>>>" | Out-File -FilePath $logFile -Append -Encoding UTF8
+"<<<KAIDEN_SCHEDULE_TASK_END_DATA>>>" | Out-File -FilePath $logFile -Append -Encoding UTF8
 "{`"id`":`"$SchedulerId`",`"timestamp`":$endTime,`"duration`":$duration,`"exitCode`":$exitCode}" | Out-File -FilePath $logFile -Append -Encoding UTF8
-"<<<KORTEX_SCHEDULE_TASK_END>>>" | Out-File -FilePath $logFile -Append -Encoding UTF8
+"<<<KAIDEN_SCHEDULE_TASK_END>>>" | Out-File -FilePath $logFile -Append -Encoding UTF8
 
 exit $exitCode

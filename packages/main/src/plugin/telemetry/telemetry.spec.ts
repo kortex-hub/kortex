@@ -396,7 +396,7 @@ describe('aggregateTrack', () => {
 
   test('should return telemetry messages with default product name', async () => {
     const messages = telemetry.getTelemetryMessages();
-    expect(messages.acceptMessage).toBe('Help improve Kortex by allowing Red Hat to collect anonymous usage data.');
+    expect(messages.acceptMessage).toBe('Help improve Kaiden by allowing Red Hat to collect anonymous usage data.');
     expect(messages.infoLink).toBe('Read our privacy statement');
     expect(messages.infoURL).toBe('https://developers.redhat.com/article/tool-data-collection');
   });

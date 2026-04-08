@@ -85,8 +85,8 @@ export class SkillManager {
 
     this.skillFolders = [
       {
-        label: 'Kortex Skills',
-        badge: 'Kortex',
+        label: 'Kaiden Skills',
+        badge: 'Kaiden',
         baseDirectory: this.directories.getSkillsDirectory(),
       },
     ];

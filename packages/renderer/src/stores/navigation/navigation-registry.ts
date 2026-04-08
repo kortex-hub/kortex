@@ -63,7 +63,7 @@ let values: NavigationRegistryEntry[] = [];
 let initialized = false;
 const init = (): void => {
   /*
-  Kortex has no container or kubernetes provider connection creation, so we hide the related navigation items and only keep the ones relevant for MCP, Flows and Extensions for now.
+  Kaiden has no container or kubernetes provider connection creation, so we hide the related navigation items and only keep the ones relevant for MCP, Flows and Extensions for now.
   values.push(createNavigationContainerEntry());
   values.push(createNavigationPodEntry());
   values.push(createNavigationImageEntry());

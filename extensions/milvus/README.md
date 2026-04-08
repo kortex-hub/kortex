@@ -1,6 +1,6 @@
 # Milvus RAG Provider Extension
 
-This extension provides Milvus vector database integration for RAG (Retrieval-Augmented Generation) functionality in Kortex.
+This extension provides Milvus vector database integration for RAG (Retrieval-Augmented Generation) functionality in Kaiden.
 
 ## Features
 
@@ -11,7 +11,7 @@ This extension provides Milvus vector database integration for RAG (Retrieval-Au
 
 ## Usage
 
-1. Navigate to the RAG providers section in Kortex
+1. Navigate to the RAG providers section in Kaiden
 2. Click "Create Milvus Connection"
 3. Provide a name for your connection
 4. The extension will:

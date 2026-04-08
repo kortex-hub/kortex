@@ -38,7 +38,7 @@ import { saveTestArtifacts } from '../utils/test-artifacts';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const DEVTOOLS_URL_PREFIX = 'devtools://';
-const isProductionMode = !!process.env.KORTEX_BINARY;
+const isProductionMode = !!process.env.KAIDEN_BINARY;
 
 export interface ElectronFixtures {
   electronApp: ElectronApplication;
@@ -230,10 +230,10 @@ function prepareElectronEnv(): Record<string, string> {
 }
 
 function setupTestConfigDir(electronEnv: Record<string, string>): void {
-  const testDataDir = mkdtempSync(join(tmpdir(), 'kortex-test-'));
+  const testDataDir = mkdtempSync(join(tmpdir(), 'kaiden-test-'));
   // realpathSync resolves macOS /var → /private/var symlinks so all paths match what the Goose CLI returns.
   const realTestDataDir = realpathSync(testDataDir);
-  electronEnv.KORTEX_HOME_DIR = realTestDataDir;
+  electronEnv.KAIDEN_HOME_DIR = realTestDataDir;
   // Redirect home-dir env vars to the isolated temp dir so homedir() and Goose CLI use it instead of ~/.config/goose.
   electronEnv.HOME = realTestDataDir;
   // Do NOT override USERPROFILE on Windows — Electron uses it to derive AppData paths and
@@ -255,7 +255,7 @@ function setupTestConfigDir(electronEnv: Record<string, string>): void {
 
 function createLaunchConfig(): Parameters<typeof electron.launch>[0] {
   const electronEnv = prepareElectronEnv();
-  const recordVideo = { dir: join(tmpdir(), 'kortex-test-videos') };
+  const recordVideo = { dir: join(tmpdir(), 'kaiden-test-videos') };
 
   setupTestConfigDir(electronEnv);
 
@@ -266,7 +266,7 @@ function createLaunchConfig(): Parameters<typeof electron.launch>[0] {
 
   if (isProductionMode) {
     return {
-      executablePath: process.env.KORTEX_BINARY,
+      executablePath: process.env.KAIDEN_BINARY,
       args,
       env: electronEnv,
       recordVideo,

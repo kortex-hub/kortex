@@ -116,7 +116,7 @@ describe('DoclingExtension', () => {
         {
           Id: 'existing-container-id',
           Labels: {
-            'io.kortex.docling.port': '8080',
+            'ai.openkaiden.docling.port': '8080',
           },
           Status: 'running',
           State: 'running',
@@ -153,7 +153,7 @@ describe('DoclingExtension', () => {
       vi.mocked(extensions.getExtension).mockReturnValue(undefined);
 
       await expect(doclingExtension.activate()).rejects.toThrow(
-        'Mandatory extension kortex.container is not installed',
+        'Mandatory extension kaiden.container is not installed',
       );
     });
 
@@ -162,7 +162,7 @@ describe('DoclingExtension', () => {
       vi.mocked(extensions.getExtension).mockReturnValue(extensionData);
 
       await expect(doclingExtension.activate()).rejects.toThrow(
-        'Missing exports of API in container extension kortex.container',
+        'Missing exports of API in container extension kaiden.container',
       );
     });
 
@@ -182,8 +182,8 @@ describe('DoclingExtension', () => {
         {
           Id: 'stopped-container-id',
           Labels: {
-            'io.kortex.docling.port': '8080',
-            'io.kortex.docling.folder': '/test/workspace',
+            'ai.openkaiden.docling.port': '8080',
+            'ai.openkaiden.docling.folder': '/test/workspace',
           },
           Status: 'exited',
           State: 'exited',
@@ -205,8 +205,8 @@ describe('DoclingExtension', () => {
         {
           Id: 'test-container-id',
           Labels: {
-            'io.kortex.docling.port': '8080',
-            'io.kortex.docling.folder': '/test/workspace',
+            'ai.openkaiden.docling.port': '8080',
+            'ai.openkaiden.docling.folder': '/test/workspace',
           },
           Status: 'running',
           State: 'running',
@@ -253,8 +253,8 @@ describe('DoclingExtension', () => {
         {
           Id: 'test-container-id',
           Labels: {
-            'io.kortex.docling.port': '8080',
-            'io.kortex.docling.folder': '/test/workspace',
+            'ai.openkaiden.docling.port': '8080',
+            'ai.openkaiden.docling.folder': '/test/workspace',
           },
           Status: 'running',
           State: 'running',
@@ -311,7 +311,7 @@ describe('DoclingExtension', () => {
         {
           Id: 'existing-container-id',
           Labels: {
-            'io.kortex.docling.port': '8080',
+            'ai.openkaiden.docling.port': '8080',
           },
           Status: 'running',
           State: 'running',
@@ -331,8 +331,8 @@ describe('DoclingExtension', () => {
         {
           Id: 'stopped-container-id',
           Labels: {
-            'io.kortex.docling.port': '8080',
-            'io.kortex.docling.folder': '/test/workspace',
+            'ai.openkaiden.docling.port': '8080',
+            'ai.openkaiden.docling.folder': '/test/workspace',
           },
           Status: 'exited',
           State: 'exited',
@@ -449,7 +449,7 @@ describe('DoclingExtension', () => {
         {
           Id: 'test-container-id',
           Labels: {
-            'io.kortex.docling.port': '8080',
+            'ai.openkaiden.docling.port': '8080',
           },
           Status: 'running',
           State: 'running',
@@ -475,7 +475,7 @@ describe('DoclingExtension', () => {
         {
           Id: 'test-container-id',
           Labels: {
-            'io.kortex.docling.port': '8080',
+            'ai.openkaiden.docling.port': '8080',
           },
           Status: 'running',
           State: 'running',

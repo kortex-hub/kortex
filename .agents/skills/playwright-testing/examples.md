@@ -1,4 +1,4 @@
-# Kortex Playwright Testing Examples
+# Kaiden Playwright Testing Examples
 
 ## Example 1: Core App Test (Using electron-app fixtures)
 

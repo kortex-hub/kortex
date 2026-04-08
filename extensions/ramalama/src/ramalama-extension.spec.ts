@@ -56,7 +56,7 @@ describe('RamaLamaExtension', () => {
   test('activate fails with extension missing', async () => {
     vi.mocked(extensions.getExtension).mockReturnValue(undefined);
     await expect(ramaLamaExtension.activate()).rejects.toThrowError(
-      'Mandatory extension kortex.container is not installed',
+      'Mandatory extension kaiden.container is not installed',
     );
   });
 
@@ -65,7 +65,7 @@ describe('RamaLamaExtension', () => {
 
     vi.mocked(extensions.getExtension).mockReturnValue(extensionData);
     await expect(ramaLamaExtension.activate()).rejects.toThrowError(
-      'Missing exports of API in container extension kortex.container',
+      'Missing exports of API in container extension kaiden.container',
     );
   });
 

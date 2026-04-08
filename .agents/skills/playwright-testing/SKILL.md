@@ -1,4 +1,4 @@
-# Playwright Test Automation Guide for Kortex
+# Playwright Test Automation Guide for Kaiden
 
 ## Core Principles
 
@@ -204,7 +204,7 @@ Located in `src/utils/app-ready.ts`:
 
 | Project                 | Tests                           | Condition                   |
 | ----------------------- | ------------------------------- | --------------------------- |
-| `Kortex-App-Core`       | All specs except provider-specs | Always runs                 |
+| `Kaiden-App-Core`       | All specs except provider-specs | Always runs                 |
 | `Gemini-Provider`       | provider-specs                  | Requires `GEMINI_API_KEY`   |
 | `OpenAI-Provider`       | provider-specs                  | Requires `OPENAI_API_KEY`   |
 | `Ollama-Provider`       | provider-specs (except flows)   | Requires `OLLAMA_ENABLED`   |
@@ -221,7 +221,7 @@ pnpm run test:e2e
 pnpm run test:e2e:run
 
 # Run specific project
-npx playwright test --project="Kortex-App-Core"
+npx playwright test --project="Kaiden-App-Core"
 
 # Run specific spec
 npx playwright test tests/playwright/src/specs/extensions-smoke.spec.ts

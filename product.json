@@ -1,21 +1,21 @@
 {
   "_comment": "This file is used to define product specific properties. Do not import it directly in renderer package. Only main package should import it.",
-  "name": "Kortex",
-  "appId": "dev.kortex_hub.Kortex",
-  "artifactName": "kortex",
-  "urlProtocol": "kortex",
+  "name": "Kaiden",
+  "appId": "ai.openkaiden.Kaiden",
+  "artifactName": "kaiden",
+  "urlProtocol": "kaiden",
   "paths": {
-    "config": "kortex",
+    "config": "kaiden",
     "managed": {
-      "macOS": "/Library/Application Support/dev.kortex_hub.Kortex",
-      "windows": "%PROGRAMDATA%\\Kortex",
-      "linux": "/usr/share/kortex",
-      "flatpak": "/run/host/usr/share/kortex"
+      "macOS": "/Library/Application Support/ai.openkaiden.Kaiden",
+      "windows": "%PROGRAMDATA%\\Kaiden",
+      "linux": "/usr/share/kaiden",
+      "flatpak": "/run/host/usr/share/kaiden"
     }
   },
   "telemetry": {
     "key": "bM9vFhjiVszj9rvZGyUwYUAh9CmKGU4z",
-    "acceptMessage": "Help improve Kortex by allowing Red Hat to collect anonymous usage data.",
+    "acceptMessage": "Help improve Kaiden by allowing Red Hat to collect anonymous usage data.",
     "infoLink": "Read our privacy statement",
     "infoURL": "https://developers.redhat.com/article/tool-data-collection"
   },
@@ -35,13 +35,13 @@
       },
       {
         "title": "Report a Bug",
-        "tooltip": "Report a bug to help us improve Kortex",
+        "tooltip": "Report a bug to help us improve Kaiden",
         "icon": "fas fa-exclamation-triangle",
-        "link": "https://github.com/kortex/kortex/issues/new/choose"
+        "link": "https://github.com/openkaiden/kaiden/issues/new/choose"
       },
       {
         "title": "Share Your Feedback",
-        "tooltip": "Share your feedback to help us improve Kortex",
+        "tooltip": "Share your feedback to help us improve Kaiden",
         "icon": "far fa-comment",
         "command": "feedback"
       }

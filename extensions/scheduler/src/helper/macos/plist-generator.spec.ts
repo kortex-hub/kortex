@@ -33,7 +33,7 @@ test('generates valid plist with required fields', () => {
     id: 'test-job-123',
     metadata: {},
     executorScript: '/usr/local/bin/executor.sh',
-    storageDir: '/var/lib/kortex/storage',
+    storageDir: '/var/lib/kaiden/storage',
     command: {
       command: 'docker',
       args: ['ps', '-a'],
@@ -55,10 +55,10 @@ test('generates valid plist with required fields', () => {
   expect(result).toContain('<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"');
   expect(result).toContain('<plist version="1.0">');
   expect(result).toContain('<key>Label</key>');
-  expect(result).toContain('<string>io.github.kortex-hub.kortex.schedule.test-job-123</string>');
+  expect(result).toContain('<string>ai.openkaiden.kaiden.schedule.test-job-123</string>');
   expect(result).toContain('<key>ProgramArguments</key>');
   expect(result).toContain('<string>/usr/local/bin/executor.sh</string>');
-  expect(result).toContain('<string>/var/lib/kortex/storage</string>');
+  expect(result).toContain('<string>/var/lib/kaiden/storage</string>');
   expect(result).toContain('<string>test-job-123</string>');
   expect(result).toContain('<string>docker</string>');
   expect(result).toContain('<string>ps</string>');
@@ -77,7 +77,7 @@ test('includes metadata in ProgramArguments', () => {
       hello: 'bar',
     },
     executorScript: '/usr/local/bin/executor.sh',
-    storageDir: '/var/lib/kortex',
+    storageDir: '/var/lib/kaiden',
     command: { command: 'echo', args: ['hello'], env: {} },
     outputFile: '/var/log/job.log',
     cronComponents: { minute: '*', hour: '*', day: '*', month: '*', weekday: '*' },
@@ -99,7 +99,7 @@ test('includes metadata dictionary in plist', () => {
       version: '1.0',
     },
     executorScript: '/usr/local/bin/executor.sh',
-    storageDir: '/var/lib/kortex',
+    storageDir: '/var/lib/kaiden',
     command: { command: 'backup', args: [], env: {} },
     outputFile: '/var/log/backup.log',
     cronComponents: { minute: '0', hour: '2', day: '*', month: '*', weekday: '*' },

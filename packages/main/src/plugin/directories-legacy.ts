@@ -35,7 +35,7 @@ import type { Directories } from './directories.js';
 @injectable()
 export class LegacyDirectories implements Directories {
   static readonly XDG_DATA_DIRECTORY = `.local${path.sep}share${path.sep}${product.paths.config}`;
-  static readonly KORTEX_HOME_DIR = 'KORTEX_HOME_DIR';
+  static readonly KAIDEN_HOME_DIR = 'KAIDEN_HOME_DIR';
 
   private readonly configurationDirectory: string;
   private readonly dataDirectory: string;
@@ -51,7 +51,7 @@ export class LegacyDirectories implements Directories {
   constructor() {
     // Check for custom directory override
     this.desktopAppHomeDir =
-      process.env[LegacyDirectories.KORTEX_HOME_DIR] ??
+      process.env[LegacyDirectories.KAIDEN_HOME_DIR] ??
       path.resolve(os.homedir(), LegacyDirectories.XDG_DATA_DIRECTORY);
 
     // Create the base directory if it doesn't exist

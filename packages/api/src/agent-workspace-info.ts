@@ -20,7 +20,7 @@ import type { components as cliComponents } from '@kortex-hub/kortex-cli-api';
 import type { components as configComponents } from '@kortex-hub/kortex-workspace-configuration';
 
 /**
- * Workspace data from the `kortex workspace list` command.
+ * Workspace data from the `kdn workspace list` command.
  * Matches the CLI contract exactly — fields will be added here
  * as the CLI evolves and publishes them in @kortex-hub/kortex-cli-api.
  */

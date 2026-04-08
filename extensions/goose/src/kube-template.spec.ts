@@ -51,7 +51,7 @@ instructions: |
         env: [{ key: 'GOOGLE_API_KEY', value: 'dummy' }],
       },
     },
-    kortex: {
+    kaiden: {
       version: '1.0.0',
     },
   },
@@ -80,7 +80,7 @@ instructions: |
         env: [{ key: 'GOOGLE_API_KEY', value: 'dummy' }],
       },
     },
-    kortex: {
+    kaiden: {
       version: '1.0.0',
     },
   },

@@ -1,7 +1,7 @@
 name: Task
 description: A specific piece of work
 type: task
-projects: ["kortex-hub/1"]
+projects: ["openkaiden/1"]
 
 body:
   - type: markdown
@@ -15,6 +15,6 @@ body:
     attributes:
       label: Task content
       description: A clear and concise description of the task.
-      placeholder: Kortex should [...]
+      placeholder: Kaiden should [...]
     validations:
       required: true

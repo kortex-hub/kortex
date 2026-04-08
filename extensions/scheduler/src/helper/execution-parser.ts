@@ -25,17 +25,17 @@ import { injectable } from 'inversify';
 export class ExecutionParser {
   parseOutput(id: string, output: string): ProviderScheduleExecution | undefined {
     // Expected format in output file:
-    // <<<KORTEX_SCHEDULE_TASK_BEGIN>>>
+    // <<<KAIDEN_SCHEDULE_TASK_BEGIN>>>
     // {"id":"flow-id","timestamp":1234567890}
-    // <<<KORTEX_SCHEDULE_TASK_BEGIN_DATA>>>
+    // <<<KAIDEN_SCHEDULE_TASK_BEGIN_DATA>>>
     // ...execution output...
-    // <<<KORTEX_SCHEDULE_TASK_END_DATA>>>
+    // <<<KAIDEN_SCHEDULE_TASK_END_DATA>>>
     // {"id":"flow-id","timestamp":1234567890,"duration":123,"exitCode":0}
-    // <<<KORTEX_SCHEDULE_TASK_END>>>
+    // <<<KAIDEN_SCHEDULE_TASK_END>>>
 
-    const beginMatch = /<<<KORTEX_SCHEDULE_TASK_BEGIN_DATA>>>\r?\n/.exec(output);
+    const beginMatch = /<<<KAIDEN_SCHEDULE_TASK_BEGIN_DATA>>>\r?\n/.exec(output);
 
-    const endMatch = /<<<KORTEX_SCHEDULE_TASK_END_DATA>>>\r?\n([\s\S]*?)\r?\n<<<KORTEX_SCHEDULE_TASK_END>>>/.exec(
+    const endMatch = /<<<KAIDEN_SCHEDULE_TASK_END_DATA>>>\r?\n([\s\S]*?)\r?\n<<<KAIDEN_SCHEDULE_TASK_END>>>/.exec(
       output,
     );
 
@@ -47,7 +47,7 @@ export class ExecutionParser {
     try {
       const endData = JSON.parse(endMatch[1]);
 
-      // output is between KORTEX_SCHEDULE_TASK_BEGIN_DATA and KORTEX_SCHEDULE_TASK_END_DATA
+      // output is between KAIDEN_SCHEDULE_TASK_BEGIN_DATA and KAIDEN_SCHEDULE_TASK_END_DATA
       const content = output.slice(beginMatch.index + beginMatch[0].length, endMatch.index).trim();
       return {
         id,

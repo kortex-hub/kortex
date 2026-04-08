@@ -143,8 +143,8 @@ export class ConnectionManager implements Disposable {
       for (const endpoint of this.containerExtensionAPI.getEndpoints()) {
         const containers = await endpoint.dockerode.listContainers({ all: true });
         for (const container of containers) {
-          const milvusName = container.Labels?.['io.kortex.milvus.name'];
-          const milvusPort = container.Labels?.['io.kortex.milvus.port'];
+          const milvusName = container.Labels?.['ai.openkaiden.milvus.name'];
+          const milvusPort = container.Labels?.['ai.openkaiden.milvus.port'];
 
           if (milvusName && milvusPort) {
             this.registerConnection({
@@ -273,7 +273,7 @@ export class ConnectionManager implements Disposable {
           `${userConfigFile}:/milvus/configs/user.yaml:Z`,
         ],
       },
-      Labels: { 'io.kortex.milvus.name': name, 'io.kortex.milvus.port': port.toString() },
+      Labels: { 'ai.openkaiden.milvus.name': name, 'ai.openkaiden.milvus.port': port.toString() },
     };
     const container = await dockerode.createContainer(createContainerOptions);
     await container.start();

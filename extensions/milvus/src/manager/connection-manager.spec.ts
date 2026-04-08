@@ -262,8 +262,8 @@ describe('ConnectionManager', () => {
         Id: 'container123',
         State: 'running',
         Labels: {
-          'io.kortex.milvus.name': 'test-milvus',
-          'io.kortex.milvus.port': '19530',
+          'ai.openkaiden.milvus.name': 'test-milvus',
+          'ai.openkaiden.milvus.port': '19530',
         },
       },
     ];
@@ -317,7 +317,7 @@ describe('ConnectionManager', () => {
         Image: 'docker.io/milvusdb/milvus:v2.6.3',
         Cmd: ['milvus', 'run', 'standalone'],
         Labels: expect.objectContaining({
-          'io.kortex.milvus.name': 'my-milvus',
+          'ai.openkaiden.milvus.name': 'my-milvus',
         }),
       }),
     );

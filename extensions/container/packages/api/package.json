@@ -1,8 +1,8 @@
 {
   "name": "@kortex-app/container-extension-api",
   "version": "0.0.1",
-  "description": "API for Kortex Container extension",
-  "repository": "https://github.com/kortex-hub/kortex",
+  "description": "API for Kaiden Container extension",
+  "repository": "https://github.com/openkaiden/kaiden",
   "publishConfig": {
     "provenance": true,
     "access": "public"

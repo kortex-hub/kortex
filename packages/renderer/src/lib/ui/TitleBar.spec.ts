@@ -62,7 +62,7 @@ describe('macOS', () => {
   test('Expect no title (never shows on macOS) and show search', async () => {
     await waitRender({});
 
-    const title = screen.queryByText('Kortex');
+    const title = screen.queryByText('Kaiden');
     expect(title).not.toBeInTheDocument();
 
     const searchButton = screen.queryByText('Search');
@@ -96,7 +96,7 @@ describe('linux', () => {
       expect(searchButton).toBeInTheDocument();
     });
 
-    const title = screen.queryByText('Kortex');
+    const title = screen.queryByText('Kaiden');
     expect(title).not.toBeInTheDocument();
   });
 });
@@ -122,7 +122,7 @@ describe('Windows', () => {
   test('Expect title and search', async () => {
     await waitRender({});
 
-    const title = screen.queryByText('Kortex');
+    const title = screen.queryByText('Kaiden');
     expect(title).toBeInTheDocument();
 
     const searchButton = screen.queryByText('Search');
