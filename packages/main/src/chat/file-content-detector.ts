@@ -27,7 +27,7 @@ import { isText } from 'istextorbinary';
  */
 export class FileContentDetector {
   private static readonly BINARY_MIME_PREFIXES = ['image/', 'audio/', 'video/'];
-  private static readonly BINARY_MIME_TYPES = new Set(['application/pdf', 'application/octet-stream']);
+  private static readonly BINARY_MIME_TYPES = new Set(['application/pdf']);
 
   /**
    * Determines whether a file should be sent as text content rather than a

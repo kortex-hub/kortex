@@ -290,7 +290,7 @@ async function handleDrop(event: DragEvent): Promise<void> {
     attachments.push({
       url,
       name: file.name,
-      contentType: file.type || 'application/octet-stream',
+      contentType: file.type || (await window.pathMimeType(file.name)),
     });
   }
 }

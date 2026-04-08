@@ -137,7 +137,8 @@ describe('multimodal-input drag and drop', () => {
     expect(attachments[0].url).toContain('data:image/png;base64,');
   });
 
-  test('dropping a file with empty MIME type defaults to application/octet-stream', async () => {
+  test('dropping a file with empty MIME type resolves type from filename', async () => {
+    vi.mocked(window.pathMimeType).mockResolvedValue('application/octet-stream');
     const { dropZone } = renderComponent();
     const file = fakeFile('data.xyz', '', 'some-data');
 
@@ -146,6 +147,7 @@ describe('multimodal-input drag and drop', () => {
     await waitFor(() => {
       expect(attachments).toHaveLength(1);
     });
+    expect(window.pathMimeType).toHaveBeenCalledWith('data.xyz');
     expect(attachments[0].contentType).toBe('application/octet-stream');
   });
 

@@ -38,7 +38,6 @@ test.each([
   'audio/mpeg',
   'video/mp4',
   'application/pdf',
-  'application/octet-stream',
 ])('should detect MIME type %s as binary', mimeType => {
   expect(detector.isTextContent(mimeType, undefined, textBuffer)).toBe(false);
 });
@@ -69,5 +68,10 @@ test('should detect binary content with null bytes', () => {
 
 test('should not apply buffer fallback for known binary MIME types', () => {
   expect(detector.isTextContent('application/pdf', 'doc.pdf', textBuffer)).toBe(false);
-  expect(detector.isTextContent('application/octet-stream', undefined, textBuffer)).toBe(false);
+});
+
+test('should fall through to buffer detection for application/octet-stream', () => {
+  expect(detector.isTextContent('application/octet-stream', undefined, textBuffer)).toBe(true);
+  const binaryBuffer = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  expect(detector.isTextContent('application/octet-stream', undefined, binaryBuffer)).toBe(false);
 });
