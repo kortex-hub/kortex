@@ -101,7 +101,7 @@ test('Expect workspace summary with project is resolved from the store', () => {
 });
 
 test('Expect page shell renders when configuration fetch fails', async () => {
-  vi.mocked(window.getAgentWorkspaceConfiguration).mockRejectedValue(new Error('ENOENT'));
+  vi.mocked(window.getAgentWorkspaceConfiguration).mockRejectedValue(new Error('EACCES: permission denied'));
 
   render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
 

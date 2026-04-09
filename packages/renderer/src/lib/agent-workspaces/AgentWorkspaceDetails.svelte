@@ -34,14 +34,18 @@ const inProgress = $derived(status === 'starting' || status === 'stopping');
 
 $effect(() => {
   configurationError = undefined;
+  let current = true;
   window
     .getAgentWorkspaceConfiguration(workspaceId)
     .then(config => {
-      configuration = config;
+      if (current) configuration = config;
     })
     .catch((err: unknown) => {
-      configurationError = String(err);
+      if (current) configurationError = String(err);
     });
+  return (): void => {
+    current = false;
+  };
 });
 
 async function handleStartStop(): Promise<void> {
