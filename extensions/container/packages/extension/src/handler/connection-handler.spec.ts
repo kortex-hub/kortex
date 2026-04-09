@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { EndpointConnection } from '@kortex-app/container-extension-api';
+import type { EndpointConnection } from '@openkaiden/container-extension-api';
 import type Dockerode from 'dockerode';
 import { Container } from 'inversify';
 import { beforeEach, expect, test, vi } from 'vitest';

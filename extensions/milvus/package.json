@@ -38,7 +38,7 @@
   },
   "devDependencies": {
     "@openkaiden/api": "workspace:*",
-    "@kortex-app/container-extension-api": "workspace:*",
+    "@openkaiden/container-extension-api": "workspace:*",
     "mkdirp": "^3.0.1",
     "vite": "^7.1.2",
     "vitest": "^4.0.10"

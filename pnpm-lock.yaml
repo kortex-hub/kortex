@@ -411,7 +411,7 @@ importers:
       '@openkaiden/api':
         specifier: workspace:*
         version: link:../../../../packages/extension-api
-      '@kortex-app/container-extension-api':
+      '@openkaiden/container-extension-api':
         specifier: workspace:*
         version: link:../api
       '@types/dockerode':
@@ -435,7 +435,7 @@ importers:
       '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
-      '@kortex-app/container-extension-api':
+      '@openkaiden/container-extension-api':
         specifier: workspace:*
         version: link:../container/packages/api
       mkdirp:
@@ -540,7 +540,7 @@ importers:
       '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
-      '@kortex-app/container-extension-api':
+      '@openkaiden/container-extension-api':
         specifier: workspace:*
         version: link:../container/packages/api
       mkdirp:
@@ -631,7 +631,7 @@ importers:
       '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
-      '@kortex-app/container-extension-api':
+      '@openkaiden/container-extension-api':
         specifier: workspace:*
         version: link:../container/packages/api
       adm-zip:

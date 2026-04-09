@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "@openkaiden/api": "workspace:*",
-    "@kortex-app/container-extension-api": "workspace:*",
+    "@openkaiden/container-extension-api": "workspace:*",
     "@types/dockerode": "^3.3.42",
     "adm-zip": "^0.5.16",
     "mkdirp": "^3.0.1",

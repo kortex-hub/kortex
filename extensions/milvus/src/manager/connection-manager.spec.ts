@@ -19,9 +19,9 @@
 import { mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import type { ContainerExtensionAPI, EndpointConnection } from '@kortex-app/container-extension-api';
 import type { Extension, ExtensionContext, LifecycleContext, Provider } from '@openkaiden/api';
 import { extensions } from '@openkaiden/api';
+import type { ContainerExtensionAPI, EndpointConnection } from '@openkaiden/container-extension-api';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import DockerModem from 'docker-modem';
 // eslint-disable-next-line import/no-extraneous-dependencies

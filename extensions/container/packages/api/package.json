@@ -1,5 +1,5 @@
 {
-  "name": "@kortex-app/container-extension-api",
+  "name": "@openkaiden/container-extension-api",
   "version": "0.0.1",
   "description": "API for Kaiden Container extension",
   "repository": "https://github.com/openkaiden/kaiden",

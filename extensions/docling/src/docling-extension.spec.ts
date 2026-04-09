@@ -20,9 +20,9 @@ import { openAsBlob } from 'node:fs';
 import { copyFile, mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import type { ContainerExtensionAPI } from '@kortex-app/container-extension-api';
 import type { ChunkProvider, Extension, ExtensionContext } from '@openkaiden/api';
 import { extensions, process as apiProcess, rag, Uri } from '@openkaiden/api';
+import type { ContainerExtensionAPI } from '@openkaiden/container-extension-api';
 import type Dockerode from 'dockerode';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 

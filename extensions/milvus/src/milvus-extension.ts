@@ -16,9 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ContainerExtensionAPI } from '@kortex-app/container-extension-api';
 import type { ExtensionContext } from '@openkaiden/api';
 import * as api from '@openkaiden/api';
+import type { ContainerExtensionAPI } from '@openkaiden/container-extension-api';
 import type { Container } from 'inversify';
 
 import { InversifyBinding } from '/@/inject/inversify-binding';

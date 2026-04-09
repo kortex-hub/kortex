@@ -21,9 +21,9 @@ import { openAsBlob } from 'node:fs';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 
-import type { ContainerExtensionAPI } from '@kortex-app/container-extension-api';
 import * as api from '@openkaiden/api';
 import { Uri } from '@openkaiden/api';
+import type { ContainerExtensionAPI } from '@openkaiden/container-extension-api';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import type Dockerode from 'dockerode';
 
