@@ -4,6 +4,7 @@ import { ErrorMessage, Spinner, Tab } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
 import AgentWorkspaceDetailsSummary from '/@/lib/agent-workspaces/AgentWorkspaceDetailsSummary.svelte';
+import AgentWorkspaceTerminal from '/@/lib/agent-workspaces/AgentWorkspaceTerminal.svelte';
 import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
 import ListItemButtonIcon from '/@/lib/ui/ListItemButtonIcon.svelte';
@@ -70,10 +71,14 @@ function handleRemove(name: string): void {
     {/snippet}
     {#snippet tabsSnippet()}
       <Tab title="Summary" selected={isTabSelected($router.path, 'summary')} url={getTabUrl($router.path, 'summary')} />
+      <Tab title="Terminal" selected={isTabSelected($router.path, 'terminal')} url={getTabUrl($router.path, 'terminal')} />
     {/snippet}
     {#snippet contentSnippet()}
       <Route path="/summary" breadcrumb="Summary" navigationHint="tab">
         <AgentWorkspaceDetailsSummary {workspaceSummary} {configuration} />
+      </Route>
+      <Route path="/terminal" breadcrumb="Terminal" navigationHint="tab">
+        <AgentWorkspaceTerminal workspaceId={workspaceId} />
       </Route>
     {/snippet}
   </DetailsPage>

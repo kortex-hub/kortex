@@ -16,13 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { type ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 
 import type { Disposable } from '@kortex-app/api';
+import type { WebContents } from 'electron';
 import { inject, injectable, preDestroy } from 'inversify';
 import { parse as parseYAML } from 'yaml';
 
-import { IPCHandle } from '/@/plugin/api.js';
+import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { Exec } from '/@/plugin/util/exec.js';
 import type {
   AgentWorkspaceConfiguration,
@@ -36,6 +38,12 @@ import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
  */
 @injectable()
 export class AgentWorkspaceManager implements Disposable {
+  private readonly terminalCallbacks = new Map<
+    number,
+    { write: (param: string) => void; resize: (w: number, h: number) => void }
+  >();
+  private readonly terminalProcesses = new Map<number, ChildProcessWithoutNullStreams>();
+
   constructor(
     @inject(ApiSenderType)
     private readonly apiSender: ApiSenderType,
@@ -43,6 +51,8 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly ipcHandle: IPCHandle,
     @inject(Exec)
     private readonly exec: Exec,
+    @inject(WebContentsType)
+    private readonly webContents: WebContents,
   ) {}
 
   private async execKdn<T>(args: string[]): Promise<T> {
@@ -83,6 +93,46 @@ export class AgentWorkspaceManager implements Disposable {
     return result;
   }
 
+  shellInAgentWorkspace(
+    name: string,
+    onData: (data: string) => void,
+    onError: (error: string) => void,
+    onEnd: () => void,
+  ): {
+    write: (param: string) => void;
+    resize: (w: number, h: number) => void;
+    process: ChildProcessWithoutNullStreams;
+  } {
+    // eslint-disable-next-line sonarjs/no-os-command-from-path
+    const childProcess = spawn('kdn', ['terminal', name]);
+
+    childProcess.stdout.on('data', (chunk: Buffer) => {
+      onData(chunk.toString('utf-8'));
+    });
+
+    childProcess.stderr.on('data', (chunk: Buffer) => {
+      onData(chunk.toString('utf-8'));
+    });
+
+    childProcess.on('error', (error: Error) => {
+      onError(error.message);
+    });
+
+    childProcess.on('close', () => {
+      onEnd();
+    });
+
+    return {
+      write: (param: string): void => {
+        childProcess.stdin.write(param);
+      },
+      resize: (_w: number, _h: number): void => {
+        // no-op: resize requires a PTY (e.g. node-pty); can be added later
+      },
+      process: childProcess,
+    };
+  }
+
   init(): void {
     this.ipcHandle('agent-workspace:list', async (): Promise<AgentWorkspaceSummary[]> => {
       return this.list();
@@ -106,10 +156,64 @@ export class AgentWorkspaceManager implements Disposable {
     this.ipcHandle('agent-workspace:stop', async (_listener: unknown, id: string): Promise<AgentWorkspaceId> => {
       return this.stop(id);
     });
+
+    this.ipcHandle(
+      'agent-workspace:terminal',
+      async (_listener: unknown, id: string, onDataId: number): Promise<number> => {
+        const workspaces = await this.list();
+        const workspace = workspaces.find(ws => ws.id === id);
+        if (!workspace) {
+          throw new Error(`workspace "${id}" not found. Use "workspace list" to see available workspaces.`);
+        }
+        const invocation = this.shellInAgentWorkspace(
+          workspace.name,
+          (content: string) => {
+            this.webContents.send('agent-workspace:terminal-onData', onDataId, content);
+          },
+          (error: string) => {
+            this.webContents.send('agent-workspace:terminal-onError', onDataId, error);
+          },
+          () => {
+            this.webContents.send('agent-workspace:terminal-onEnd', onDataId);
+            this.terminalCallbacks.delete(onDataId);
+            this.terminalProcesses.delete(onDataId);
+          },
+        );
+        this.terminalCallbacks.set(onDataId, { write: invocation.write, resize: invocation.resize });
+        this.terminalProcesses.set(onDataId, invocation.process);
+        return onDataId;
+      },
+    );
+
+    this.ipcHandle(
+      'agent-workspace:terminalSend',
+      async (_listener: unknown, onDataId: number, content: string): Promise<void> => {
+        const callback = this.terminalCallbacks.get(onDataId);
+        if (callback) {
+          callback.write(content);
+        }
+      },
+    );
+
+    this.ipcHandle(
+      'agent-workspace:terminalResize',
+      async (_listener: unknown, onDataId: number, width: number, height: number): Promise<void> => {
+        const callback = this.terminalCallbacks.get(onDataId);
+        if (callback) {
+          callback.resize(width, height);
+        }
+      },
+    );
   }
 
   @preDestroy()
   dispose(): void {
-    // no-op for now; will clean up CLI process handles if needed
+    for (const proc of this.terminalProcesses.values()) {
+      if (!proc.killed) {
+        proc.kill();
+      }
+    }
+    this.terminalProcesses.clear();
+    this.terminalCallbacks.clear();
   }
 }
