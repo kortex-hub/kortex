@@ -109,12 +109,13 @@ export class ChatPage extends BasePage {
     // newChatButton is in the header only when the sidebar is collapsed; when open it moves into the sidebar
     const isSidebarOpen = await this.sidebarNewChatButton.isVisible();
     await expect(isSidebarOpen ? this.sidebarNewChatButton : this.newChatButton).toBeVisible();
-    await expect(this.modelDropdownSelector).toBeVisible();
   }
 
   async verifyInputAreaVisible(): Promise<void> {
     await expect(this.messageField).toBeVisible();
     await expect(this.sendButton).toBeVisible();
+    await expect(this.modelDropdownSelector).toBeVisible();
+    await expect(this.toolsSelectionButton.or(this.configureMcpServersButton)).toBeVisible();
   }
 
   async verifySuggestedMessagesVisible(minCount = 4): Promise<void> {

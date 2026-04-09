@@ -31,11 +31,13 @@ import {
 let {
   class: c,
   models,
+  menuSide = 'bottom',
   value = $bindable<ModelInfo | undefined>(),
 }: {
-  class: ClassValue;
+  class?: ClassValue;
   value: ModelInfo | undefined;
   models: Array<ModelInfo>;
+  menuSide?: 'top' | 'bottom';
 } = $props();
 
 let groups: Map<string, Array<ModelInfo>> = $derived(groupAndSortModels(models));
@@ -87,7 +89,7 @@ $effect(() => {
 				aria-label="Select model"
 				variant="outline"
 				class={cn(
-					'data-[state=open]:bg-accent data-[state=open]:text-accent-foreground w-fit md:h-[34px] md:px-2',
+					'data-[state=open]:bg-accent data-[state=open]:text-accent-foreground w-fit h-8 px-2',
 					c
 				)}
 			>
@@ -96,7 +98,7 @@ $effect(() => {
 			</Button>
 		{/snippet}
 	</DropdownMenuTrigger>
-	<DropdownMenuContent bind:ref={contentContainer} align="start" class="min-w-[300px] max-h-[400px] overflow-y-auto">
+	<DropdownMenuContent bind:ref={contentContainer} align="start" side={menuSide} class="min-w-[300px] max-h-[400px] overflow-y-auto">
     {#each groups.entries() as [key, mModels] (key)}
 
       <DropdownMenuGroup>

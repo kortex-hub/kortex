@@ -296,15 +296,7 @@ $effect(() => {
 </script>
 
 <div class="bg-background flex h-full min-w-0 flex-col">
-  {#if hasModels}
-	  <ChatHeader
-      bind:mcpSelectorOpen={mcpSelectorOpen}
-      {readonly}
-      models={models}
-      selectedMCPToolsCount={selectedMCPToolsCount}
-      bind:selectedModel={selectedModel}
-    />
-  {/if}
+  <ChatHeader />
   <div class="flex min-h-0 flex-1">
         {#if hasModels}
             <div class="flex flex-col flex-3/4">
@@ -315,7 +307,18 @@ $effect(() => {
                 />
                 <form class="bg-background mx-auto flex w-full gap-2 px-4 pb-4 md:max-w-3xl md:pb-6">
                     {#if !readonly}
-                        <MultimodalInput {attachments} {chatClient} {selectedModel} {selectedMCPTools} {hasActiveStream} {activeStreamOnDataId} class="flex-1" />
+                        <MultimodalInput
+                          {attachments}
+                          {chatClient}
+                          bind:selectedModel={selectedModel}
+                          {selectedMCPTools}
+                          {hasActiveStream}
+                          {activeStreamOnDataId}
+                          {models}
+                          bind:mcpSelectorOpen={mcpSelectorOpen}
+                          selectedMCPToolsCount={selectedMCPToolsCount}
+                          class="flex-1"
+                        />
                     {/if}
                 </form>
             </div>

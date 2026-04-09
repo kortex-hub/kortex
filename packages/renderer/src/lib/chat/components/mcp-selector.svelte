@@ -1,6 +1,6 @@
 <script lang="ts">
 import { faToolbox } from '@fortawesome/free-solid-svg-icons/faToolbox';
-import Fa from 'svelte-fa';
+import { Icon } from '@podman-desktop/ui-svelte/icons';
 
 import { cn } from '/@/lib/chat/utils/shadcn';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
@@ -48,7 +48,7 @@ function onSelect(mcp: MCPRemoteServerInfo, event: Event): void {
         disabled={disabled}
         class={cn('data-[state=open]:bg-accent data-[state=open]:text-accent-foreground w-fit md:h-[34px] md:px-2', className)}
       >
-        <Fa icon={faToolbox} />
+        <Icon icon={faToolbox} />
         {selected.length} selected
         <ChevronDownIcon />
       </Button>

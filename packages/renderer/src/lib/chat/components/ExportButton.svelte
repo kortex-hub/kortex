@@ -76,7 +76,7 @@ const exportAsFlow = async (): Promise<void> => {
 </script>
 
 <Button
-	class="h-fit rounded-2xl p-[5px] mr-1 border"
+	class="h-8 px-2"
 	onclick={async(event): Promise<void> => {
 		event.preventDefault();
 		await exportAsFlow();

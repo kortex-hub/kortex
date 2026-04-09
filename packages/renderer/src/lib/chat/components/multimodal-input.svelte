@@ -1,6 +1,8 @@
 <script lang="ts">
 import type { Chat } from '@ai-sdk/svelte';
 import type { Attachment } from '@ai-sdk/ui-utils';
+import { faToolbox } from '@fortawesome/free-solid-svg-icons';
+import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { onMount, untrack } from 'svelte';
 import type { SvelteMap } from 'svelte/reactivity';
 import { innerWidth } from 'svelte/reactivity/window';
@@ -11,6 +13,7 @@ import { EditState } from '/@/lib/chat/hooks/edit-state.svelte';
 import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
 import { fileUIPart2Attachment } from '/@/lib/chat/utils/chat';
 import { cn } from '/@/lib/chat/utils/shadcn';
+import { mcpRemoteServerInfos, mcpRemoteServerInfosStatus } from '/@/stores/mcp-remote-servers';
 import { ChatSettings } from '/@api/chat/chat-settings';
 
 import ExportButton from './ExportButton.svelte';
@@ -18,6 +21,7 @@ import ArrowUpIcon from './icons/arrow-up.svelte';
 import PaperclipIcon from './icons/paperclip.svelte';
 import StopIcon from './icons/stop.svelte';
 import type { ModelInfo } from './model-info';
+import ModelSelector from './model-selector.svelte';
 import PreviewAttachment from './preview-attachment.svelte';
 import SuggestedActions from './suggested-actions.svelte';
 import { Button } from './ui/button';
@@ -27,16 +31,22 @@ let {
   attachments = $bindable(),
   chatClient,
   class: c,
+  models = [],
   selectedMCPTools,
-  selectedModel,
+  selectedModel = $bindable(),
+  selectedMCPToolsCount = 0,
+  mcpSelectorOpen = $bindable(false),
   hasActiveStream,
   activeStreamOnDataId,
 }: {
   attachments: Attachment[];
   chatClient: Chat;
   class?: string;
+  models?: Array<ModelInfo>;
   selectedMCPTools: SvelteMap<string, Set<string>>;
   selectedModel?: ModelInfo;
+  selectedMCPToolsCount?: number;
+  mcpSelectorOpen?: boolean;
   hasActiveStream?: boolean;
   activeStreamOnDataId?: number;
 } = $props();
@@ -52,6 +62,7 @@ const storedInput = new LocalStorage('input', '');
 const loading = $derived(
   chatClient.status === 'streaming' || chatClient.status === 'submitted' || hasActiveStream === true,
 );
+const noMcps = $derived($mcpRemoteServerInfosStatus === 'loaded' && $mcpRemoteServerInfos.length === 0);
 
 $effect(() => {
   if (editState.editingMessage) {
@@ -483,13 +494,37 @@ $effect((): (() => void) | void => {
         </Button>
       </div>
 
-      <div class="flex flex-row items-center justify-end gap-2">
+      <div class="flex flex-row items-center justify-end gap-1">
         <ExportButton {chatClient} {selectedModel} {loading} {selectedMCPTools} />
+        {#if noMcps}
+          <Button
+            variant="link"
+            class="h-auto p-0 text-xs hover:underline text-muted-foreground"
+            onclick={(): void => router.goto('/mcps')}
+          >
+            Configure MCP servers
+          </Button>
+        {:else}
+          <Button
+            aria-label="Tools Selection"
+            variant="outline"
+            onclick={(): void => { mcpSelectorOpen = true; }}
+            class="w-fit h-8 px-2"
+          >
+            <Icon icon={faToolbox} />
+            Tools ({selectedMCPToolsCount})
+          </Button>
+        {/if}
+        <ModelSelector
+          models={models}
+          menuSide="top"
+          bind:value={selectedModel}
+        />
         {#if loading}
           <Button
             aria-label="Stop generation"
             title="Stop generation"
-            class="h-fit rounded-full border border-[var(--pd-input-field-stroke)] p-1.5"
+            class="h-8 w-8 rounded-full border border-[var(--pd-input-field-stroke)] p-1.5"
             onclick={async (event): Promise<void> => {
               event.preventDefault();
               try {
@@ -507,7 +542,7 @@ $effect((): (() => void) | void => {
           <Button
               aria-label="Send message"
               title="Send message"
-              class="h-fit rounded-full border border-[var(--pd-input-field-stroke)] p-1.5"
+              class="h-8 w-8 rounded-full border border-[var(--pd-input-field-stroke)] p-1.5"
               onclick={async (event): Promise<void> => {
                 event.preventDefault();
                 await submitForm();

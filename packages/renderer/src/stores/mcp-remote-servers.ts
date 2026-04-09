@@ -23,6 +23,7 @@ import { findMatchInLeaves } from '/@/stores/search-util';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 
 export const mcpRemoteServerInfos: Writable<readonly MCPRemoteServerInfo[]> = writable([]);
+export const mcpRemoteServerInfosStatus = writable<'idle' | 'loading' | 'loaded' | 'error'>('idle');
 
 export const mcpRemoteServerInfoSearchPattern = writable('');
 
@@ -36,8 +37,15 @@ export const filteredMcpRemoteServerInfos = derived(
 );
 
 export async function fetchMcpRemoteServers(): Promise<void> {
-  const data = await window.fetchMcpRemoteServers();
-  mcpRemoteServerInfos.set(data);
+  mcpRemoteServerInfosStatus.set('loading');
+  try {
+    const data = await window.fetchMcpRemoteServers();
+    mcpRemoteServerInfos.set(data);
+    mcpRemoteServerInfosStatus.set('loaded');
+  } catch (error) {
+    mcpRemoteServerInfosStatus.set('error');
+    throw error;
+  }
 }
 
 // need to refresh when new registry are updated/deleted

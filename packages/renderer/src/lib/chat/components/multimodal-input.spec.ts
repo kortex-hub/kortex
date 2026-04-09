@@ -129,6 +129,9 @@ describe('multimodal-input drag and drop', () => {
       attachments,
       chatClient: chatClient as never,
       selectedMCPTools: new Map() as never,
+      models: [],
+      selectedMCPToolsCount: 0,
+      mcpSelectorOpen: false,
     });
     // The drop target is the outer div with the border classes
     const dropZone = container.querySelector('.rounded-2xl')!;
@@ -336,6 +339,9 @@ describe('multimodal-input paste handling', () => {
       attachments,
       chatClient: createChatClient() as never,
       selectedMCPTools: new Map() as never,
+      models: [],
+      selectedMCPToolsCount: 0,
+      mcpSelectorOpen: false,
     });
     return screen.getByPlaceholderText('Send a message...');
   }
