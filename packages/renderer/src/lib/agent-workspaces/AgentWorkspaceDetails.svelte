@@ -33,11 +33,11 @@ const isRunning = $derived(status === 'running' || status === 'stopping');
 const inProgress = $derived(status === 'starting' || status === 'stopping');
 
 $effect(() => {
+  configurationError = undefined;
   window
     .getAgentWorkspaceConfiguration(workspaceId)
     .then(config => {
       configuration = config;
-      configurationError = undefined;
     })
     .catch((err: unknown) => {
       configurationError = String(err);
