@@ -2,7 +2,7 @@
   "name": "scheduler-native",
   "displayName": "Scheduler for macOS and Windows",
   "description": "A scheduler implementation using macOS LaunchAgents and Windows Task Scheduler",
-  "version": "0.0.1-next",
+  "version": "0.1.0-next",
   "icon": "icon.png",
   "publisher": "kaiden",
   "license": "Apache-2.0",
