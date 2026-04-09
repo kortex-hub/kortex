@@ -177,6 +177,7 @@ describe('factory', () => {
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledOnce();
     const call = vi.mocked(PROVIDER_MOCK.registerInferenceProviderConnection).mock.calls[0][0];
     expect(call.name).toBe('http://localhost:11434/v1');
+    expect(call.type).toBe('cloud');
     expect(call.sdk).toBe(OPENAI_PROVIDER_MOCK);
     expect(call.status).toEqual(expect.any(Function));
     expect(call.lifecycle).toEqual({ delete: expect.any(Function) });

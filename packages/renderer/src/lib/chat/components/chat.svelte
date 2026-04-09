@@ -57,6 +57,7 @@ let selectedModel = $derived<ModelInfo | undefined>(
         connectionName: config.connectionName,
         label: config.modelId,
         providerId: config.providerId,
+        type: config.type ?? 'cloud',
       }
     : findModel(models, lastUsedModel.value) ?? models[0],
 );

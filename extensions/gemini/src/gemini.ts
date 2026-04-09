@@ -154,6 +154,7 @@ export class Gemini implements Disposable {
 
     const connectionDisposable = this.provider.registerInferenceProviderConnection({
       name: this.maskKey(token),
+      type: 'cloud',
       sdk: google,
       status(): ProviderConnectionStatus {
         return status;

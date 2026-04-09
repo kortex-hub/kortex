@@ -69,6 +69,7 @@ describe('InferenceModelManager', () => {
     expect(vi.mocked(ramaLamaProviderMock.registerInferenceProviderConnection)).toHaveBeenCalledWith(
       expect.objectContaining({
         name: `port/${modelPort}`,
+        type: 'local',
         sdk: sdkInstance,
         models: [{ label: modelName }],
       }),

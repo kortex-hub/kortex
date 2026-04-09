@@ -31,9 +31,9 @@ beforeEach(() => {
 describe('ModelSelector', () => {
   test('should sort models alphabetically within a single group', () => {
     const models: ModelInfo[] = [
-      { providerId: 'provider1', connectionName: 'connection1', label: 'Zebra Model' },
-      { providerId: 'provider1', connectionName: 'connection1', label: 'Alpha Model' },
-      { providerId: 'provider1', connectionName: 'connection1', label: 'Model Beta' },
+      { providerId: 'provider1', connectionName: 'connection1', label: 'Zebra Model', type: 'cloud' },
+      { providerId: 'provider1', connectionName: 'connection1', label: 'Alpha Model', type: 'cloud' },
+      { providerId: 'provider1', connectionName: 'connection1', label: 'Model Beta', type: 'cloud' },
     ];
 
     const groups = groupAndSortModels(models);
@@ -47,10 +47,10 @@ describe('ModelSelector', () => {
 
   test('should sort models alphabetically across multiple groups', () => {
     const models: ModelInfo[] = [
-      { providerId: 'provider1', connectionName: 'connection1', label: 'Zebra' },
-      { providerId: 'provider1', connectionName: 'connection1', label: 'Alpha' },
-      { providerId: 'provider2', connectionName: 'connection2', label: 'Zulu' },
-      { providerId: 'provider2', connectionName: 'connection2', label: 'Bravo' },
+      { providerId: 'provider1', connectionName: 'connection1', label: 'Zebra', type: 'cloud' },
+      { providerId: 'provider1', connectionName: 'connection1', label: 'Alpha', type: 'cloud' },
+      { providerId: 'provider2', connectionName: 'connection2', label: 'Zulu', type: 'cloud' },
+      { providerId: 'provider2', connectionName: 'connection2', label: 'Bravo', type: 'cloud' },
     ];
 
     const groups = groupAndSortModels(models);
@@ -68,9 +68,9 @@ describe('ModelSelector', () => {
 
   test('should handle case-insensitive sorting', () => {
     const models: ModelInfo[] = [
-      { providerId: 'provider1', connectionName: 'connection1', label: 'model-c' },
-      { providerId: 'provider1', connectionName: 'connection1', label: 'Model-B' },
-      { providerId: 'provider1', connectionName: 'connection1', label: 'MODEL-A' },
+      { providerId: 'provider1', connectionName: 'connection1', label: 'model-c', type: 'cloud' },
+      { providerId: 'provider1', connectionName: 'connection1', label: 'Model-B', type: 'cloud' },
+      { providerId: 'provider1', connectionName: 'connection1', label: 'MODEL-A', type: 'cloud' },
     ];
 
     const groups = groupAndSortModels(models);
@@ -84,10 +84,10 @@ describe('ModelSelector', () => {
 
   test('should handle special characters and numbers in model names', () => {
     const models: ModelInfo[] = [
-      { providerId: 'provider1', connectionName: 'connection1', label: 'model-3.5-turbo' },
-      { providerId: 'provider1', connectionName: 'connection1', label: 'model-4' },
-      { providerId: 'provider1', connectionName: 'connection1', label: 'model-4-turbo' },
-      { providerId: 'provider1', connectionName: 'connection1', label: 'model-3' },
+      { providerId: 'provider1', connectionName: 'connection1', label: 'model-3.5-turbo', type: 'cloud' },
+      { providerId: 'provider1', connectionName: 'connection1', label: 'model-4', type: 'cloud' },
+      { providerId: 'provider1', connectionName: 'connection1', label: 'model-4-turbo', type: 'cloud' },
+      { providerId: 'provider1', connectionName: 'connection1', label: 'model-3', type: 'cloud' },
     ];
 
     const groups = groupAndSortModels(models);
@@ -102,10 +102,10 @@ describe('ModelSelector', () => {
 
   test('should maintain separate sorted groups for different providers', () => {
     const models: ModelInfo[] = [
-      { providerId: 'provider1', connectionName: 'connection1', label: 'Model Z' },
-      { providerId: 'provider1', connectionName: 'connection1', label: 'Model A' },
-      { providerId: 'provider2', connectionName: 'connection2', label: 'Model C' },
-      { providerId: 'provider2', connectionName: 'connection2', label: 'Model B' },
+      { providerId: 'provider1', connectionName: 'connection1', label: 'Model Z', type: 'cloud' },
+      { providerId: 'provider1', connectionName: 'connection1', label: 'Model A', type: 'cloud' },
+      { providerId: 'provider2', connectionName: 'connection2', label: 'Model C', type: 'cloud' },
+      { providerId: 'provider2', connectionName: 'connection2', label: 'Model B', type: 'cloud' },
     ];
 
     const groups = groupAndSortModels(models);
