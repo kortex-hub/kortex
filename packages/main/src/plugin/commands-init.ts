@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Uri } from '@kortex-app/api';
+import type { Uri } from '@openkaiden/api';
 import { shell } from 'electron';
 import { inject, injectable } from 'inversify';
 

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Event, Uri, WebviewOptions, WebviewPanel, WebviewPanelOnDidChangeViewStateEvent } from '@kortex-app/api';
+import type { Event, Uri, WebviewOptions, WebviewPanel, WebviewPanelOnDidChangeViewStateEvent } from '@openkaiden/api';
 
 import { Emitter } from '/@/plugin/events/emitter.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';

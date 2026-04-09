@@ -39,7 +39,7 @@ import type {
   ProviderUpdate,
   UpdateVmConnectionEvent,
   VmProviderConnection,
-} from '@kortex-app/api';
+} from '@openkaiden/api';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';

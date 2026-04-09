@@ -18,7 +18,7 @@
 
 import { readdir } from 'node:fs/promises';
 
-import type { ProviderScheduleExecution } from '@kortex-app/api';
+import type { ProviderScheduleExecution } from '@openkaiden/api';
 import { injectable } from 'inversify';
 
 @injectable()

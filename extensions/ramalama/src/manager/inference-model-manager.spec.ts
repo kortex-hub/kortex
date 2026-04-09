@@ -18,7 +18,7 @@
 
 import type { OpenAICompatibleProvider } from '@ai-sdk/openai-compatible';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import type { Provider } from '@kortex-app/api';
+import type { Provider } from '@openkaiden/api';
 import { Container } from 'inversify';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 

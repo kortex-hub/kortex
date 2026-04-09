@@ -24,12 +24,12 @@ import type {
   Provider,
   provider as ProviderAPI,
   SecretStorage,
-} from '@kortex-app/api';
+} from '@openkaiden/api';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { OpenAI, TOKENS_KEY } from './openAI';
 
-vi.mock('@kortex-app/api', () => ({
+vi.mock('@openkaiden/api', () => ({
   Disposable: {
     create: (func: () => void): Disposable => {
       return {

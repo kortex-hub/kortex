@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ImageCheck } from '@kortex-app/api';
+import type { ImageCheck } from '@openkaiden/api';
 
 import type { ImageCheckerInfo } from '/@api/image-checker-info';
 

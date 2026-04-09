@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Event, ProxySettings } from '@kortex-app/api';
+import type { Event, ProxySettings } from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 import { Agent, ProxyAgent } from 'undici';
 

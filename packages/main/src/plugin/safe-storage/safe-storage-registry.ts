@@ -20,7 +20,7 @@ import { cpSync, existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import type { SecretStorage } from '@kortex-app/api';
+import type { SecretStorage } from '@openkaiden/api';
 import { safeStorage } from 'electron';
 import { inject, injectable } from 'inversify';
 

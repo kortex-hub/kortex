@@ -18,7 +18,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import type { ManifestInspectInfo } from '@kortex-app/api';
+import type { ManifestInspectInfo } from '@openkaiden/api';
 import { render, screen, waitFor } from '@testing-library/svelte';
 import { beforeAll, expect, test, vi } from 'vitest';
 

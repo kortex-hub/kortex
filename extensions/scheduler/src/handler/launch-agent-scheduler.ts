@@ -25,8 +25,8 @@ import type {
   ProviderScheduleItem,
   ProviderScheduleResult,
   ProviderSchedulerOptions,
-} from '@kortex-app/api';
-import { process } from '@kortex-app/api';
+} from '@openkaiden/api';
+import { process } from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 
 import type { NativeScheduler } from '/@/api/native-scheduler-api';

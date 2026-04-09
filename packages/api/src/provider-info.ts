@@ -25,7 +25,7 @@ import type {
   ProviderInformation,
   ProviderLinks,
   ProviderStatus,
-} from '@kortex-app/api';
+} from '@openkaiden/api';
 
 export type LifecycleMethod = 'start' | 'stop' | 'delete' | 'edit';
 export interface ProviderContainerConnectionInfo {
@@ -38,7 +38,7 @@ export interface ProviderContainerConnectionInfo {
   };
   lifecycleMethods?: LifecycleMethod[];
   /**
-   * Specify if the corresponding {@link import('@kortex-app/api').ProviderContainerConnection} instance
+   * Specify if the corresponding {@link import('@openkaiden/api').ProviderContainerConnection} instance
    * has a shellAccess available
    */
   shellAccess?: boolean;

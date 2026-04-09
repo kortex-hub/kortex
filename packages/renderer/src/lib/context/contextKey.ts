@@ -28,7 +28,7 @@
 /* eslint-disable sonarjs/single-character-alternation */
 /* eslint-disable sonarjs/updated-loop-counter */
 /* eslint-disable sonarjs/function-return-type */
-import type { Event } from '@kortex-app/api';
+import type { Event } from '@openkaiden/api';
 
 import { CharCode } from '/@api/context/charCode.js';
 import type { ContextKeyValue, IContext } from '/@api/context/context.js';

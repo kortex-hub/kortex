@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Uri as APIUri } from '@kortex-app/api';
+import type { Uri as APIUri } from '@openkaiden/api';
 import { afterEach, expect, test, vi } from 'vitest';
 
 import { Uri } from './Uri.js';

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { process } from '@kortex-app/api';
+import { process } from '@openkaiden/api';
 import { injectable } from 'inversify';
 
 import type { SocketFinder } from '/@/api/socket-finder';

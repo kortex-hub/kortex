@@ -18,8 +18,8 @@
 
 import { readFile } from 'node:fs/promises';
 
-import type { MCPServerDetail, ProviderConnectionLifecycle, ProviderConnectionStatus } from '@kortex-app/api';
-import * as api from '@kortex-app/api';
+import type { MCPServerDetail, ProviderConnectionLifecycle, ProviderConnectionStatus } from '@openkaiden/api';
+import * as api from '@openkaiden/api';
 import { DataType, FunctionType, MilvusClient } from '@zilliz/milvus2-sdk-node';
 
 export class MilvusConnection implements api.RagProviderConnection {

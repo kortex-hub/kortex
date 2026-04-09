@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ConfigurationScope } from '@kortex-app/api';
+import type { ConfigurationScope } from '@openkaiden/api';
 import type { Terminal } from '@xterm/xterm';
 
 import type { ContextUI } from '/@/lib/context/context';

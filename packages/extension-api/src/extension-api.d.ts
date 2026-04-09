@@ -22,24 +22,24 @@
  * This documentation is automatically generated from typedoc comments
  * in the source code `extension-api.d.ts`
  *
- * This type declaration file can be installed from [the npm registry](https://www.npmjs.com/package/@kortex-app/api).
+ * This type declaration file can be installed from [the npm registry](https://www.npmjs.com/package/@openkaiden/api).
  *
  *
  * @example
  * ```shell
- * $ npm install @kortex-app/api
+ * $ npm install @openkaiden/api
  * ```
  *
  * ```typescript
- * import * as api from '@kortex-app/api';
+ * import * as api from '@openkaiden/api';
  *
  * console.log(api.version);
  * ```
  *
- * @module @kortex-app/api
+ * @module @openkaiden/api
  **/
 
-declare module '@kortex-app/api' {
+declare module '@openkaiden/api' {
   import type { ProviderV2 as AISDKInferenceProvider } from '@ai-sdk/provider';
   import type { components } from '@kortex-hub/mcp-registry-types';
 
@@ -131,7 +131,7 @@ declare module '@kortex-app/api' {
    * the `Event` interface.
    *
    * ```typescript
-   * import * as api from '@kortex-app/api';
+   * import * as api from '@openkaiden/api';
    *
    * class MyValueManager {
    *   private value: boolean | undefined = undefined;
@@ -1033,7 +1033,7 @@ declare module '@kortex-app/api' {
    *
    * @example
    * ```typescript
-   * import * as api from '@kortex-app/api';
+   * import * as api from '@openkaiden/api';
    *
    * export async function activate(extensionContext: api.ExtensionContext): Promise<void> {
    *
@@ -1184,7 +1184,7 @@ declare module '@kortex-app/api' {
     /**
      * Opens new session using ProviderConnectionShellAccessImpl class
      * @example
-     * import * as api from '@kortex-app/api';
+     * import * as api from '@openkaiden/api';
      *
      * class ProviderConnectionShellAccessImpl implements ProviderConnectionShellAccess {
      *  open(): ProviderConnectionShellAccessSession {
@@ -1418,7 +1418,7 @@ declare module '@kortex-app/api' {
    * @example
    *
    * ```typescript
-   * import * as api from '@kortex-app/api';
+   * import * as api from '@openkaiden/api';
    *
    * export async function activate(extensionContext: api.ExtensionContext): Promise<void> {
    *   const handleProxyConfiguration = (e: boolean | undefined, s: api.ProxySettings | undefined) => {
@@ -1725,7 +1725,7 @@ declare module '@kortex-app/api' {
      * navigate action that the user can trigger.
      * @example
      * ```ts
-     * import { window, type ProgressLocation } from '@kortex-app/api';
+     * import { window, type ProgressLocation } from '@openkaiden/api';
      *
      * await window.withProgress<string>(
      *     {
@@ -2681,7 +2681,7 @@ declare module '@kortex-app/api' {
      *
      * @example
      * ```typescript
-     * import * as api from '@kortex-app/api';
+     * import * as api from '@openkaiden/api';
      *
      * export async function activate(extensionContext: api.ExtensionContext): Promise<void> {
      *   const statusBarItem = api.window.createStatusBarItem();
@@ -5413,7 +5413,7 @@ declare module '@kortex-app/api' {
      *
      * @example
      * ```ts
-     * import { navigation, commands } from '@kortex-app/api';
+     * import { navigation, commands } from '@openkaiden/api';
      *
      * commands.registerCommand('redirect-download-command', (trackingId: string) => {
      *   // todo: do something with the trackingId

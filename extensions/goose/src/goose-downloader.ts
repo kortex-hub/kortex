@@ -22,6 +22,8 @@ import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import { arch } from 'node:os';
 import { join } from 'node:path';
 
+import type { components as OctokitComponents } from '@octokit/openapi-types';
+import type { Octokit } from '@octokit/rest';
 import type {
   CliTool,
   Disposable,
@@ -29,9 +31,7 @@ import type {
   ExtensionContext,
   QuickPickItem,
   window as WindowAPI,
-} from '@kortex-app/api';
-import type { components as OctokitComponents } from '@octokit/openapi-types';
-import type { Octokit } from '@octokit/rest';
+} from '@openkaiden/api';
 import { Open } from 'unzipper';
 
 const GITHUB_ORG = 'block';

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type * as api from '@kortex-app/api';
+import type * as api from '@openkaiden/api';
 
 import { DoclingExtension } from './docling-extension';
 

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Port } from '@kortex-app/api';
+import type { Port } from '@openkaiden/api';
 import { ContainerIcon } from '@podman-desktop/ui-svelte/icons';
 // eslint-disable-next-line unicorn/prefer-node-protocol
 import { Buffer } from 'buffer';

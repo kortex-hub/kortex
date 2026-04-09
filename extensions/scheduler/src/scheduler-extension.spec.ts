@@ -16,13 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ExtensionContext, Provider } from '@kortex-app/api';
-import { env, provider } from '@kortex-app/api';
+import type { ExtensionContext, Provider } from '@openkaiden/api';
+import { env, provider } from '@openkaiden/api';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { SchedulerExtension } from './scheduler-extension';
 
-vi.mock(import('@kortex-app/api'));
+vi.mock(import('@openkaiden/api'));
 
 // Create a TestSchedulerExtension class to expose protected methods if needed
 class TestSchedulerExtension extends SchedulerExtension {}

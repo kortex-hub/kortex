@@ -26,12 +26,12 @@ import type {
   Provider,
   provider as ProviderAPI,
   SecretStorage,
-} from '@kortex-app/api';
+} from '@openkaiden/api';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { Gemini, TOKENS_KEY } from './gemini';
 
-vi.mock('@kortex-app/api', () => ({
+vi.mock('@openkaiden/api', () => ({
   Disposable: {
     create: (func: () => void): Disposable => {
       return {

@@ -16,8 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ExtensionContext as PodmanDesktopExtensionContext, Provider } from '@kortex-app/api';
 import type { ContainerExtensionAPI } from '@kortex-app/container-extension-api';
+import type { ExtensionContext as PodmanDesktopExtensionContext, Provider } from '@openkaiden/api';
 import { Container } from 'inversify';
 
 import { ContainerExtensionAPISymbol, ExtensionContextSymbol, MilvusProvider } from '/@/inject/symbol';

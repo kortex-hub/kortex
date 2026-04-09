@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { RunResult } from '@kortex-app/api';
+import type { RunResult } from '@openkaiden/api';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { RegistryItem } from 'winreg';
 import WinReg from 'winreg';

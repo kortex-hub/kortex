@@ -1,6 +1,6 @@
 <script lang="ts">
 import { faPlusCircle, faTrash } from '@fortawesome/free-solid-svg-icons';
-import type * as containerDesktopAPI from '@kortex-app/api';
+import type * as containerDesktopAPI from '@openkaiden/api';
 import { Button, ErrorMessage, Input, Link } from '@podman-desktop/ui-svelte';
 
 import IconImage from '/@/lib/appearance/IconImage.svelte';

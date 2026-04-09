@@ -20,7 +20,7 @@ import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 
-import { process } from '@kortex-app/api';
+import { process } from '@openkaiden/api';
 import { injectable } from 'inversify';
 
 import type { SocketFinder } from '/@/api/socket-finder';

@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { OpenDialogOptions } from '@kortex-app/api';
+import type { OpenDialogOptions } from '@openkaiden/api';
 
 import FileInput from '/@/lib/ui/FileInput.svelte';
 import type { IConfigurationPropertyRecordedSchema } from '/@api/configuration/models.js';

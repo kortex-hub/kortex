@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { NavigateToExtensionsCatalogOptions, ProviderContainerConnection } from '@kortex-app/api';
+import type { NavigateToExtensionsCatalogOptions, ProviderContainerConnection } from '@openkaiden/api';
 import { inject, injectable, postConstruct, preDestroy } from 'inversify';
 
 import { CommandRegistry } from '/@/plugin/command-registry.js';

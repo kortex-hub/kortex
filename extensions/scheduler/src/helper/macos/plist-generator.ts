@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ProviderSchedulerCommand } from '@kortex-app/api';
+import type { ProviderSchedulerCommand } from '@openkaiden/api';
 import { injectable } from 'inversify';
 
 import type { CronComponents } from '/@/helper/cron-parser';

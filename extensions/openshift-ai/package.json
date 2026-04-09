@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^2.0.41",
-    "@kortex-app/api": "workspace:*",
+    "@openkaiden/api": "workspace:*",
     "@kubernetes/client-node": "^1.3.0"
   },
   "devDependencies": {

@@ -57,7 +57,7 @@ Available built-in extensions:
 
 ### Extension API
 
-Extensions interact with Kaiden through `@kortex-app/api` (`packages/extension-api`), which provides TypeScript definitions for:
+Extensions interact with Kaiden through `@openkaiden/api` (`packages/extension-api`), which provides TypeScript definitions for:
 
 - Provider registration (inference, container, Kubernetes, VM, flow)
 - Configuration management

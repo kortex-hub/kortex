@@ -18,7 +18,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import type { ImageInfo, ProviderStatus } from '@kortex-app/api';
+import type { ImageInfo, ProviderStatus } from '@openkaiden/api';
 import { render, screen, waitFor, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { tick } from 'svelte';

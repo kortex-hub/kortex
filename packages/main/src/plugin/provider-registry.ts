@@ -67,7 +67,7 @@ import type {
   UpdateRagConnectionEvent,
   UpdateVmConnectionEvent,
   VmProviderConnection,
-} from '@kortex-app/api';
+} from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 
 import { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';

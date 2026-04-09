@@ -18,7 +18,7 @@
 
 import type { IncomingMessage } from 'node:http';
 
-import type { Configuration } from '@kortex-app/api';
+import type { Configuration } from '@openkaiden/api';
 import { app, shell } from 'electron';
 import { type AppUpdater, autoUpdater, type UpdateCheckResult, type UpdateDownloadedEvent } from 'electron-updater';
 import type { AppUpdaterEvents } from 'electron-updater/out/AppUpdater.js';

@@ -26,7 +26,7 @@ import type {
   provider as ProviderAPI,
   ProviderConnectionStatus,
   SecretStorage,
-} from '@kortex-app/api';
+} from '@openkaiden/api';
 
 export const TOKENS_KEY = 'gemini:tokens';
 export const TOKEN_SEPARATOR = ',';

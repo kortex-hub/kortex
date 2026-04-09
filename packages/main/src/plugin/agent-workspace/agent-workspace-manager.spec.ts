@@ -18,7 +18,7 @@
 
 import { readFile } from 'node:fs/promises';
 
-import type { RunResult } from '@kortex-app/api';
+import type { RunResult } from '@openkaiden/api';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { parse as parseYAML } from 'yaml';
 

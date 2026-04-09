@@ -18,7 +18,7 @@
 
 import type { RequestOptions } from 'node:http';
 
-import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '@kortex-app/api';
+import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '@openkaiden/api';
 import type DockerModem from 'docker-modem';
 import type { DialOptions } from 'docker-modem';
 import type { VolumeCreateOptions, VolumeCreateResponse } from 'dockerode';

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type * as extensionApi from '@kortex-app/api';
+import type * as extensionApi from '@openkaiden/api';
 
 import type { AnalyzedExtension } from '/@/plugin/extension/extension-analyzer.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';

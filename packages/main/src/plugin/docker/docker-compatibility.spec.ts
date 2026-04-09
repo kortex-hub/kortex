@@ -19,7 +19,7 @@
 import type { Stats } from 'node:fs';
 import { promises } from 'node:fs';
 
-import type { ProviderContainerConnection } from '@kortex-app/api';
+import type { ProviderContainerConnection } from '@openkaiden/api';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
 
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';

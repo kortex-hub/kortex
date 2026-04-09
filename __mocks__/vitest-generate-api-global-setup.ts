@@ -36,7 +36,7 @@ async function extractNamespacesAndClassesFromAPI(
 
   const visit = (node: typescript.Node): void => {
     if (typescript.isModuleDeclaration(node) && node.name.text) {
-      if (node.name.text === '@kortex-app/api') {
+      if (node.name.text === '@openkaiden/api') {
         typescript.forEachChild(node, visit);
         return;
       }
@@ -98,7 +98,7 @@ export default async function setup(): Promise<void> {
   const __dirname = path.dirname(__filename);
   const repoRoot = path.resolve(__dirname, '..');
   const extensionApiTypePath = path.join(repoRoot, 'packages', 'extension-api', 'src', 'extension-api.d.ts');
-  const podmanDesktopApiMocksDir = path.join(repoRoot, '__mocks__', '@kortex-app');
+  const podmanDesktopApiMocksDir = path.join(repoRoot, '__mocks__', '@openkaiden');
   const apiGeneratedFile = path.join(podmanDesktopApiMocksDir, 'api.ts');
   const templatePath = path.join(repoRoot, '__mocks__', 'api.mustache');
 
@@ -109,11 +109,11 @@ export default async function setup(): Promise<void> {
     const outputStats = await fs.stat(apiGeneratedFile);
     const newestInputMtime = Math.max(extensionApiPathStats.mtimeMs, templatePathStats.mtimeMs);
     if (outputStats.mtimeMs >= newestInputMtime) {
-      console.debug(' 🚀 __mocks__/@kortex-app/api.ts up-to-date; skipping regeneration');
+      console.debug(' 🚀 __mocks__/@openkaiden/api.ts up-to-date; skipping regeneration');
       return;
     }
   } catch {
-    console.debug(' ⚙️ __mocks__/@kortex-app/api.ts does not exist yet; generating it now…');
+    console.debug(' ⚙️ __mocks__/@openkaiden/api.ts does not exist yet; generating it now…');
   }
   const data = await extractNamespacesAndClassesFromAPI(extensionApiTypePath);
   const template = await fs.readFile(templatePath, 'utf-8');
@@ -121,5 +121,5 @@ export default async function setup(): Promise<void> {
 
   await fs.mkdir(podmanDesktopApiMocksDir, { recursive: true });
   await fs.writeFile(apiGeneratedFile, content, 'utf-8');
-  console.debug(' ✅ __mocks__/@kortex-app/api.ts has been generated.');
+  console.debug(' ✅ __mocks__/@openkaiden/api.ts has been generated.');
 }

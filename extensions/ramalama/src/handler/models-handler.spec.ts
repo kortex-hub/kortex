@@ -16,8 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import * as kortexApi from '@kortex-app/api';
 import type { ContainerExtensionAPI, EndpointConnection } from '@kortex-app/container-extension-api';
+import * as kortexApi from '@openkaiden/api';
 import { Container, injectFromBase } from 'inversify';
 import { beforeEach, expect, test, vi } from 'vitest';
 

@@ -17,7 +17,7 @@
  ***********************************************************************/
 import '@testing-library/jest-dom/vitest';
 
-import type { ImageFile } from '@kortex-app/api';
+import type { ImageFile } from '@openkaiden/api';
 import { render } from '@testing-library/svelte';
 import { expect, test } from 'vitest';
 

@@ -27,8 +27,8 @@ import type {
   FlowGenerateCommandLineResult,
   Logger,
   process as ProcessAPI,
-} from '@kortex-app/api';
-import { EventEmitter } from '@kortex-app/api';
+} from '@openkaiden/api';
+import { EventEmitter } from '@openkaiden/api';
 
 import type { GooseDownloader, ReleaseArtifactMetadata } from './goose-downloader';
 import { whereBinary } from './utils/system';

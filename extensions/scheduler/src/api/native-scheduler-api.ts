@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ProviderScheduler } from '@kortex-app/api';
+import type { ProviderScheduler } from '@openkaiden/api';
 
 export const NativeScheduler = Symbol.for('NativeScheduler');
 export interface NativeScheduler extends ProviderScheduler {

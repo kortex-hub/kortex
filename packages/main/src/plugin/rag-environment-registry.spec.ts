@@ -20,7 +20,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-import type { ChunkProvider, ProviderRagConnection } from '@kortex-app/api';
+import type { ChunkProvider, ProviderRagConnection } from '@openkaiden/api';
 import type { MockInstance } from 'vitest';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 

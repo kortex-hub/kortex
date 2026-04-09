@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { CoreV1Api, CustomObjectsApi, KubeConfig } from '@kubernetes/client-node';
 import type {
   Disposable,
   InferenceModel,
@@ -23,8 +24,7 @@ import type {
   provider as ProviderAPI,
   ProviderConnectionStatus,
   SecretStorage,
-} from '@kortex-app/api';
-import { CoreV1Api, CustomObjectsApi, KubeConfig } from '@kubernetes/client-node';
+} from '@openkaiden/api';
 
 export const TOKENS_KEY = 'openshiftai:infos';
 export const TOKEN_SEPARATOR = ',';

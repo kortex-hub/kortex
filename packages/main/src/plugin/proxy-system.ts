@@ -17,7 +17,7 @@
  ***********************************************************************/
 import { promisify } from 'node:util';
 
-import { type ProxySettings } from '@kortex-app/api';
+import { type ProxySettings } from '@openkaiden/api';
 import WinReg from 'winreg';
 
 import { isMac, isUnixLike, isWindows } from '../util.js';

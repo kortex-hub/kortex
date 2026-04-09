@@ -18,7 +18,7 @@
 
 import { randomUUID } from 'node:crypto';
 
-import type { Event, Webview, WebviewOptions } from '@kortex-app/api';
+import type { Event, Webview, WebviewOptions } from '@openkaiden/api';
 
 import { Emitter } from '/@/plugin/events/emitter.js';
 import { Uri } from '/@/plugin/types/uri.js';

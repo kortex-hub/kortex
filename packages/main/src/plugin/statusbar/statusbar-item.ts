@@ -18,7 +18,7 @@
 
 import crypto from 'node:crypto';
 
-import type { StatusBarAlignment, StatusBarItem } from '@kortex-app/api';
+import type { StatusBarAlignment, StatusBarItem } from '@openkaiden/api';
 
 import type { StatusBarRegistry } from './statusbar-registry.js';
 

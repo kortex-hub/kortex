@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Logger as LoggerType } from '@kortex-app/api';
+import type { Logger as LoggerType } from '@openkaiden/api';
 
 import { operationConnectionsInfo } from '/@/stores/operation-connections';
 

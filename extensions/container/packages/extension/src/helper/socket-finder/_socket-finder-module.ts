@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { env } from '@kortex-app/api';
+import { env } from '@openkaiden/api';
 import { ContainerModule } from 'inversify';
 
 import { SocketFinder } from '/@/api/socket-finder';

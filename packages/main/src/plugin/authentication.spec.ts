@@ -22,7 +22,7 @@ import type {
   AuthenticationSession,
   AuthenticationSessionAccountInformation,
   Event,
-} from '@kortex-app/api';
+} from '@openkaiden/api';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';

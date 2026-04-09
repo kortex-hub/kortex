@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import type { Disposable, Provider } from '@kortex-app/api';
+import type { Disposable, Provider } from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 
 import type { ModelInfo } from '/@/api/model-info';

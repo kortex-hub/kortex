@@ -40,7 +40,7 @@ export default defineConfig({
   },
   plugins: [tailwindcss(), svelte({ configFile: '../../svelte.config.js' }), svelteTesting()],
   optimizeDeps: {
-    exclude: ['tinro', '@kortex-app/api'],
+    exclude: ['tinro', '@openkaiden/api'],
   },
   test: {
     retry: 3, // Retries failing tests up to 3 times

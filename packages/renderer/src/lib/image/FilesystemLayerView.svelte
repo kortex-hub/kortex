@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { ImageFile, ImageFileSymlink } from '@kortex-app/api';
+import type { ImageFile, ImageFileSymlink } from '@openkaiden/api';
 import { SvelteMap } from 'svelte/reactivity';
 
 import type { FilesystemNode } from '/@api/filesystem-tree';

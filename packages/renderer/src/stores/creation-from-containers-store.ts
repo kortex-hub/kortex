@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Port } from '@kortex-app/api';
+import type { Port } from '@openkaiden/api';
 import type { Writable } from 'svelte/store';
 import { writable } from 'svelte/store';
 

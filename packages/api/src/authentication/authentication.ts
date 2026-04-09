@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { AuthenticationSessionAccountInformation, ProviderImages } from '@kortex-app/api';
+import type { AuthenticationSessionAccountInformation, ProviderImages } from '@openkaiden/api';
 
 export interface SessionRequestInfo {
   id: string;

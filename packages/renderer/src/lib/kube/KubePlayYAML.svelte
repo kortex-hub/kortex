@@ -1,6 +1,6 @@
 <script lang="ts">
 import { faCircleCheck } from '@fortawesome/free-solid-svg-icons';
-import type { OpenDialogOptions } from '@kortex-app/api';
+import type { OpenDialogOptions } from '@openkaiden/api';
 import { Button, Checkbox, ErrorMessage } from '@podman-desktop/ui-svelte';
 import Fa from 'svelte-fa';
 

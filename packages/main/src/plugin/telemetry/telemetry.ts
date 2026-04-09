@@ -19,7 +19,7 @@
 import * as os from 'node:os';
 import { promisify } from 'node:util';
 
-import type { TelemetryLogger, TelemetryLoggerOptions, TelemetrySender, TelemetryTrustedValue } from '@kortex-app/api';
+import type { TelemetryLogger, TelemetryLoggerOptions, TelemetrySender, TelemetryTrustedValue } from '@openkaiden/api';
 import type { EventProperties } from '@segment/analytics-core';
 import { Analytics, type UserTraits } from '@segment/analytics-node';
 import { app } from 'electron';

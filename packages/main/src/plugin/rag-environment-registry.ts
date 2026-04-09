@@ -20,7 +20,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 
-import { type ChunkProvider, ProviderRagConnection } from '@kortex-app/api';
+import { type ChunkProvider, ProviderRagConnection } from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 
 import { IPCHandle } from '/@/plugin/api.js';

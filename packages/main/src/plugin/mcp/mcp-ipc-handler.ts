@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type containerDesktopAPI from '@kortex-app/api';
+import type containerDesktopAPI from '@openkaiden/api';
 import type { IpcMainInvokeEvent } from 'electron/main';
 import { inject, injectable } from 'inversify';
 

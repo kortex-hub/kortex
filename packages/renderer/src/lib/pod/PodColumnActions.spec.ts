@@ -18,7 +18,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import type { ContainerInfo, Port } from '@kortex-app/api';
+import type { ContainerInfo, Port } from '@openkaiden/api';
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest';
 

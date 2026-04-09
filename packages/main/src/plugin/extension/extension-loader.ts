@@ -19,9 +19,9 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import type * as containerDesktopAPI from '@kortex-app/api';
-import { ChunkProvider, RegisterServerResult } from '@kortex-app/api';
 import { components } from '@kortex-hub/mcp-registry-types';
+import type * as containerDesktopAPI from '@openkaiden/api';
+import { ChunkProvider, RegisterServerResult } from '@openkaiden/api';
 import AdmZip from 'adm-zip';
 import { app, clipboard as electronClipboard } from 'electron';
 import { inject, injectable, preDestroy } from 'inversify';
@@ -350,7 +350,7 @@ export class ExtensionLoader implements IAsyncDisposable {
     }
 
     this.moduleLoader.addOverride(createHttpPatchedModules(this.proxy, this.certificates)); // add patched http and https
-    this.moduleLoader.addOverride({ '@kortex-app/api': ext => ext.api }); // add kaiden API
+    this.moduleLoader.addOverride({ '@openkaiden/api': ext => ext.api }); // add kaiden API
 
     this.moduleLoader.overrideRequire();
     // register configuration for the max activation time

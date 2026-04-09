@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import type { CustomPick, CustomPickItem, Event } from '@kortex-app/api';
+import type { CustomPick, CustomPickItem, Event } from '@openkaiden/api';
 
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IDisposable } from '/@api/disposable.js';

@@ -19,7 +19,7 @@
 import * as fs from 'node:fs';
 import type { FileHandle } from 'node:fs/promises';
 
-import type { RunResult } from '@kortex-app/api';
+import type { RunResult } from '@openkaiden/api';
 import * as jsYaml from 'js-yaml';
 import { EventEmitter } from 'stream-json/Assembler.js';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';

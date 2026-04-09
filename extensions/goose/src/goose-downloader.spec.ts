@@ -18,8 +18,8 @@
 
 import { arch } from 'node:os';
 
-import { env, type ExtensionContext, window } from '@kortex-app/api';
 import type { Octokit, RestEndpointMethodTypes } from '@octokit/rest';
+import { env, type ExtensionContext, window } from '@openkaiden/api';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { GooseDownloader } from './goose-downloader';

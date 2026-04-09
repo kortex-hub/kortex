@@ -18,7 +18,7 @@
 
 import { readFile } from 'node:fs/promises';
 
-import type { Disposable } from '@kortex-app/api';
+import type { Disposable } from '@openkaiden/api';
 import { inject, injectable, preDestroy } from 'inversify';
 import { parse as parseYAML } from 'yaml';
 

@@ -20,7 +20,7 @@ import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 
-import { process } from '@kortex-app/api';
+import { process } from '@openkaiden/api';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import { DockerSocketMacOSFinder } from '/@/helper/socket-finder/docker/docker-macos-finder';
@@ -28,7 +28,7 @@ import { DockerSocketMacOSFinder } from '/@/helper/socket-finder/docker/docker-m
 vi.mock(import('node:fs'));
 vi.mock(import('node:os'));
 vi.mock(import('node:path'));
-vi.mock(import('@kortex-app/api'));
+vi.mock(import('@openkaiden/api'));
 
 beforeEach(() => {
   vi.resetAllMocks();

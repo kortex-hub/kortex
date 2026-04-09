@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { env as EnvAPI, process as ProcessAPI } from '@kortex-app/api';
+import type { env as EnvAPI, process as ProcessAPI } from '@openkaiden/api';
 
 /**
  * Given an executable name will find where it is installed on the system

@@ -18,7 +18,7 @@
 
 import path, { join } from 'node:path';
 
-import type { Uri as APIUri } from '@kortex-app/api';
+import type { Uri as APIUri } from '@openkaiden/api';
 
 import { isWindows } from '/@/util.js';
 

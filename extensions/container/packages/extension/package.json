@@ -24,7 +24,7 @@
     "zod": "^4.1.11"
   },
   "devDependencies": {
-    "@kortex-app/api": "workspace:*",
+    "@openkaiden/api": "workspace:*",
     "@kortex-app/container-extension-api": "workspace:*",
     "@types/dockerode": "^3.3.42",
     "adm-zip": "^0.5.16",

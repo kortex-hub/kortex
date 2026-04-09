@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { ProviderDetectionCheck } from '@kortex-app/api';
+import type { ProviderDetectionCheck } from '@openkaiden/api';
 
 import type { CheckStatus, ProviderInfo } from '/@api/provider-info';
 

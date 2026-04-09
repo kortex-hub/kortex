@@ -16,9 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Disposable, Event } from '@kortex-app/api';
-import { EventEmitter } from '@kortex-app/api';
 import type { EndpointConnection } from '@kortex-app/container-extension-api';
+import type { Disposable, Event } from '@openkaiden/api';
+import { EventEmitter } from '@openkaiden/api';
 import { inject, injectable, preDestroy } from 'inversify';
 import StreamValues from 'stream-json/streamers/StreamValues';
 

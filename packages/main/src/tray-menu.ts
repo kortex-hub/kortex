@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ProviderStatus } from '@kortex-app/api';
+import type { ProviderStatus } from '@openkaiden/api';
 import type { MenuItemConstructorOptions, NativeImage, Tray } from 'electron';
 import { app, ipcMain, Menu, nativeImage } from 'electron';
 

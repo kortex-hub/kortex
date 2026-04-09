@@ -16,13 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { RunResult } from '@kortex-app/api';
-import { process } from '@kortex-app/api';
+import type { RunResult } from '@openkaiden/api';
+import { process } from '@openkaiden/api';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import { PodmanSocketWindowsFinder } from './podman-windows-finder';
 
-vi.mock(import('@kortex-app/api'));
+vi.mock(import('@openkaiden/api'));
 
 beforeEach(() => {
   vi.resetAllMocks();

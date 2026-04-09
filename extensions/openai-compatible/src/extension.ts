@@ -16,8 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ExtensionContext } from '@kortex-app/api';
-import { provider } from '@kortex-app/api';
+import type { ExtensionContext } from '@openkaiden/api';
+import { provider } from '@openkaiden/api';
 
 import { OpenAI } from './openAI';
 

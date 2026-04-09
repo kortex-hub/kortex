@@ -32,8 +32,8 @@ import type {
   Provider,
   provider as ProviderAPI,
   ProviderConnectionStatus,
-} from '@kortex-app/api';
-import { env, EventEmitter } from '@kortex-app/api';
+} from '@openkaiden/api';
+import { env, EventEmitter } from '@openkaiden/api';
 import { generate } from 'random-words';
 import { parse, stringify } from 'yaml';
 

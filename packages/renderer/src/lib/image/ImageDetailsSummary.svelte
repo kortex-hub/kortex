@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { ManifestInspectInfo } from '@kortex-app/api';
+import type { ManifestInspectInfo } from '@openkaiden/api';
 import { onMount } from 'svelte';
 
 import Cell from '/@/lib/details/DetailsCell.svelte';

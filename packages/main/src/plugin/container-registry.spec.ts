@@ -23,7 +23,7 @@ import path from 'node:path';
 import { PassThrough, Readable } from 'node:stream';
 import * as streamPromises from 'node:stream/promises';
 
-import type * as podmanDesktopAPI from '@kortex-app/api';
+import type * as podmanDesktopAPI from '@openkaiden/api';
 import Dockerode from 'dockerode';
 import moment from 'moment';
 import { http, HttpResponse } from 'msw';

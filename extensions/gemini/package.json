@@ -37,7 +37,7 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.60",
     "@google/genai": "^1.25.0",
-    "@kortex-app/api": "workspace:*"
+    "@openkaiden/api": "workspace:*"
   },
   "devDependencies": {
     "mkdirp": "^3.0.1",

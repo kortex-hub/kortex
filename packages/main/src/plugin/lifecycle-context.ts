@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { LifecycleContext, Logger } from '@kortex-app/api';
+import type { LifecycleContext, Logger } from '@openkaiden/api';
 
 export class LifecycleContextImpl implements LifecycleContext {
   log: LoggerImpl;

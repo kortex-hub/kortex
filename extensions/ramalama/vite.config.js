@@ -46,7 +46,7 @@ const config = {
       formats: ['cjs'],
     },
     rollupOptions: {
-      external: ['@kortex-app/api', 'dockerode', ...builtinModules.flatMap(p => [p, `node:${p}`])],
+      external: ['@openkaiden/api', 'dockerode', ...builtinModules.flatMap(p => [p, `node:${p}`])],
       output: {
         entryFileNames: '[name].js',
       },
@@ -60,7 +60,7 @@ const config = {
     include: ['src/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
     globalSetup: [join(PACKAGE_ROOT, '..', '..', '__mocks__', 'vitest-generate-api-global-setup.ts')],
     alias: {
-      '@kortex-app/api': join(PACKAGE_ROOT, '..', '..', '__mocks__/@kortex-app/api.js'),
+      '@openkaiden/api': join(PACKAGE_ROOT, '..', '..', '__mocks__/@openkaiden/api.js'),
     },
   },
 };

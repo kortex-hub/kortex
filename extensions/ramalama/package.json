@@ -25,7 +25,7 @@
     "inversify": "^7.7.1"
   },
   "devDependencies": {
-    "@kortex-app/api": "workspace:*",
+    "@openkaiden/api": "workspace:*",
     "@kortex-app/container-extension-api": "workspace:*",
     "adm-zip": "^0.5.16",
     "mkdirp": "^3.0.1",

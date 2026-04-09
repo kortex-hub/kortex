@@ -20,7 +20,7 @@
     "watch": "vite build --watch"
   },
   "dependencies": {
-    "@kortex-app/api": "workspace:*",
+    "@openkaiden/api": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@octokit/rest": "^21.1.0",
     "mustache": "^4.2.0",

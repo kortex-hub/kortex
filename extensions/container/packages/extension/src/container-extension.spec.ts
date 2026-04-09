@@ -16,14 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ExtensionContext } from '@kortex-app/api';
+import type { ExtensionContext } from '@openkaiden/api';
 import type { Container } from 'inversify';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import { ContainerExtension } from '/@/container-extension';
 import { ContainerEngineManager } from '/@/manager/container-engine-manager';
 
-vi.mock(import('@kortex-app/api'));
+vi.mock(import('@openkaiden/api'));
 vi.mock(import('./manager/container-engine-manager'));
 
 class TestContainerExtension extends ContainerExtension {

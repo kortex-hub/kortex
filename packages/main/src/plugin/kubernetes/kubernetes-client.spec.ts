@@ -21,7 +21,6 @@ import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import type { Readable, Writable } from 'node:stream';
 
-import type { FileSystemWatcher } from '@kortex-app/api';
 import {
   type AppsV1Api,
   BatchV1Api,
@@ -45,6 +44,7 @@ import {
   type Watch,
 } from '@kubernetes/client-node';
 import * as clientNode from '@kubernetes/client-node';
+import type { FileSystemWatcher } from '@openkaiden/api';
 import { beforeEach, describe, expect, type Mock, test, vi } from 'vitest';
 
 import type { KubernetesPortForwardService } from '/@/plugin/kubernetes/kubernetes-port-forward-service.js';

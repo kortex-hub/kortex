@@ -37,7 +37,7 @@
     "inversify": "^7.10.4"
   },
   "devDependencies": {
-    "@kortex-app/api": "workspace:*",
+    "@openkaiden/api": "workspace:*",
     "@kortex-app/container-extension-api": "workspace:*",
     "mkdirp": "^3.0.1",
     "vite": "^7.1.2",

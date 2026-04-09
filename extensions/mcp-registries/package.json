@@ -18,7 +18,7 @@
     "watch": "vite build --watch"
   },
   "devDependencies": {
-    "@kortex-app/api": "workspace:*",
+    "@openkaiden/api": "workspace:*",
     "adm-zip": "^0.5.16",
     "mkdirp": "^3.0.1",
     "vite": "^7.1.2",

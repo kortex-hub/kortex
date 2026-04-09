@@ -15,7 +15,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { type Disposable, type ExtensionContext, type Provider, provider } from '@kortex-app/api';
+import { type Disposable, type ExtensionContext, type Provider, provider } from '@openkaiden/api';
 import { createOllama } from 'ollama-ai-provider-v2';
 
 export class OllamaExtension {

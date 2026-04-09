@@ -16,15 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ExtensionContext, Provider } from '@kortex-app/api';
-import { provider } from '@kortex-app/api';
+import type { ExtensionContext, Provider } from '@openkaiden/api';
+import { provider } from '@openkaiden/api';
 import { http, HttpResponse } from 'msw';
 import { setupServer, type SetupServerApi } from 'msw/node';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { OllamaExtension } from './ollama-extension';
 
-vi.mock(import('@kortex-app/api'));
+vi.mock(import('@openkaiden/api'));
 vi.mock(import('ollama-ai-provider-v2'));
 
 // Create a TestOllamaExtension class to expose protected methods if needed

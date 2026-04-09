@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { ContainerProviderConnection } from '@kortex-app/api';
+import type { ContainerProviderConnection } from '@openkaiden/api';
 import { filesize } from 'filesize';
 
 import Donut from '/@/lib/donut/Donut.svelte';

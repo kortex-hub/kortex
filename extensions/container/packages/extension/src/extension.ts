@@ -15,8 +15,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ExtensionContext } from '@kortex-app/api';
 import type { ContainerExtensionAPI } from '@kortex-app/container-extension-api';
+import type { ExtensionContext } from '@openkaiden/api';
 
 import { ContainerExtension } from './container-extension';
 

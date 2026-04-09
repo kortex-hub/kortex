@@ -17,7 +17,7 @@
  ***********************************************************************/
 import { basename, extname } from 'node:path';
 
-import type { Disposable, Flow, FlowProviderConnection, Logger, ProviderSchedulerOptions } from '@kortex-app/api';
+import type { Disposable, Flow, FlowProviderConnection, Logger, ProviderSchedulerOptions } from '@openkaiden/api';
 import { inject, injectable, preDestroy } from 'inversify';
 
 import { IPCHandle } from '/@/plugin/api.js';

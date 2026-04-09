@@ -1,6 +1,6 @@
 <script lang="ts">
 import { faCircleInfo, faTriangleExclamation, faXmarkCircle } from '@fortawesome/free-solid-svg-icons';
-import type { AuditResult } from '@kortex-app/api';
+import type { AuditResult } from '@openkaiden/api';
 import Fa from 'svelte-fa';
 
 interface Props {

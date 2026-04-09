@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
-import type { Port } from '@kortex-app/api';
+import type { Port } from '@openkaiden/api';
 import type { Component } from 'svelte';
 
 // type of groups

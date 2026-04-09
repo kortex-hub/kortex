@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { FileSystemWatcher, Uri } from '@kortex-app/api';
+import type { FileSystemWatcher, Uri } from '@openkaiden/api';
 import type { FileMatcher } from 'get-tsconfig';
 import { inject, injectable } from 'inversify';
 

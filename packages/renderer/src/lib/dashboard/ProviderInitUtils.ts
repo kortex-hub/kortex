@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 import { faPlay, faWrench } from '@fortawesome/free-solid-svg-icons';
-import type { ProviderDetectionCheck } from '@kortex-app/api';
+import type { ProviderDetectionCheck } from '@openkaiden/api';
 import Fa from 'svelte-fa';
 
 export const DoNothingMode = 'Do nothing';

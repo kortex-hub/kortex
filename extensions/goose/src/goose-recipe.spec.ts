@@ -19,14 +19,14 @@ import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-import type { Disposable, Provider, provider as ProviderAPI } from '@kortex-app/api';
-import { EventEmitter } from '@kortex-app/api';
+import type { Disposable, Provider, provider as ProviderAPI } from '@openkaiden/api';
+import { EventEmitter } from '@openkaiden/api';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { GooseCLI } from './goose-cli';
 import { GooseRecipe } from './goose-recipe';
 
-vi.mock('@kortex-app/api', () => ({
+vi.mock('@openkaiden/api', () => ({
   EventEmitter: vi.fn(),
   env: {
     isWindows: false,

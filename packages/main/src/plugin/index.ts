@@ -24,7 +24,6 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import type * as containerDesktopAPI from '@kortex-app/api';
 import type { components } from '@kortex-hub/mcp-registry-types';
 import type {
   Cluster,
@@ -44,6 +43,7 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
+import type * as containerDesktopAPI from '@openkaiden/api';
 import checkDiskSpacePkg from 'check-disk-space';
 import type Dockerode from 'dockerode';
 import type { IpcMainEvent, WebContents } from 'electron';

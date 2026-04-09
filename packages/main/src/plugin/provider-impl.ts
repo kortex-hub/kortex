@@ -45,7 +45,7 @@ import type {
   RagProviderConnectionFactory,
   VmProviderConnection,
   VmProviderConnectionFactory,
-} from '@kortex-app/api';
+} from '@openkaiden/api';
 
 import type { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
 import type { SkillManager } from '/@/plugin/skill/skill-manager.js';

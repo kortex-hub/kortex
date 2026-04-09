@@ -19,6 +19,7 @@ import { randomInt } from 'node:crypto';
 import { mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 
+import { ContainerExtensionAPI } from '@kortex-app/container-extension-api';
 import {
   Disposable,
   ExtensionContext,
@@ -27,8 +28,7 @@ import {
   Provider,
   ProviderConnectionLifecycle,
   RagProviderConnectionFactory,
-} from '@kortex-app/api';
-import { ContainerExtensionAPI } from '@kortex-app/container-extension-api';
+} from '@openkaiden/api';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import Dockerode from 'dockerode';
 import { inject, injectable } from 'inversify';

@@ -23,7 +23,7 @@ import type {
   ImageFilesystemLayers,
   ImageInfo,
   ProviderResult,
-} from '@kortex-app/api';
+} from '@openkaiden/api';
 import { afterEach, beforeEach, expect, suite, test, vi } from 'vitest';
 
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';

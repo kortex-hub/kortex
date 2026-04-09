@@ -16,12 +16,12 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import * as extensionApi from '@kortex-app/api';
+import * as extensionApi from '@openkaiden/api';
 import { beforeAll, beforeEach, expect, test, vi } from 'vitest';
 
 import { activate } from './extension';
 
-vi.mock('@kortext/api');
+vi.mock('@openkaiden/api');
 
 beforeAll(() => {});
 

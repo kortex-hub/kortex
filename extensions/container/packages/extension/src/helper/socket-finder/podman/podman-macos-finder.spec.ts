@@ -20,8 +20,8 @@ import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 
-import type { RunResult } from '@kortex-app/api';
-import { process } from '@kortex-app/api';
+import type { RunResult } from '@openkaiden/api';
+import { process } from '@openkaiden/api';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import { PodmanSocketMacOSFinder } from './podman-macos-finder';
@@ -29,7 +29,7 @@ import { PodmanSocketMacOSFinder } from './podman-macos-finder';
 vi.mock(import('node:fs'));
 vi.mock(import('node:os'));
 vi.mock(import('node:path'));
-vi.mock(import('@kortex-app/api'));
+vi.mock(import('@openkaiden/api'));
 
 beforeEach(() => {
   vi.resetAllMocks();

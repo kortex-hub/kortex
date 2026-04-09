@@ -28,7 +28,7 @@ import type {
   Disposable,
   Event,
   ProviderImages,
-} from '@kortex-app/api';
+} from '@openkaiden/api';
 
 import type { CliToolExtensionInfo } from '/@api/cli-tool-info.js';
 

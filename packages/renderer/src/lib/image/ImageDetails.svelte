@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { ImageInfo } from '@kortex-app/api';
+import type { ImageInfo } from '@openkaiden/api';
 import { StatusIcon, Tab } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 

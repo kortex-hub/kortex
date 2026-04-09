@@ -408,7 +408,7 @@ This is a pnpm monorepo with workspaces defined in `pnpm-workspace.yaml`:
   - `packages/renderer`: Renderer Electron process - Svelte-based UI running in browser context
   - `packages/preload`: Preload scripts - bridge layer for secure IPC communication between main and renderer
   - `packages/preload-webview`: Preload scripts for webview contexts
-  - `packages/extension-api` (also `@kortex-app/api`): Extension API providing TypeScript definitions for provider registration, configuration, commands, UI components, etc.
+  - `packages/extension-api` (also `@openkaiden/api`): Extension API providing TypeScript definitions for provider registration, configuration, commands, UI components, etc.
   - `packages/api`: Internal API types and interfaces
   - `packages/webview-api`: API for webview components
 - `scripts/`: Build and utility scripts

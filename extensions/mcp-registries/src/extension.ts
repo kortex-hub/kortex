@@ -15,7 +15,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import * as extensionApi from '@kortex-app/api';
+import * as extensionApi from '@openkaiden/api';
 
 import quayIoImage from './images/quay.io.png';
 

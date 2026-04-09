@@ -1,6 +1,6 @@
 <script lang="ts">
 import { faStethoscope } from '@fortawesome/free-solid-svg-icons';
-import type { ImageInfo } from '@kortex-app/api';
+import type { ImageInfo } from '@openkaiden/api';
 import { Button } from '@podman-desktop/ui-svelte';
 import { onDestroy, onMount } from 'svelte';
 import type { Unsubscriber } from 'svelte/store';

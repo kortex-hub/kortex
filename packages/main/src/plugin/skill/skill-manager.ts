@@ -20,7 +20,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, resolve, sep } from 'node:path';
 
-import type { Configuration } from '@kortex-app/api';
+import type { Configuration } from '@openkaiden/api';
 import { inject, injectable, preDestroy } from 'inversify';
 import { dump, load } from 'js-yaml';
 

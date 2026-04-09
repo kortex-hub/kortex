@@ -1,6 +1,6 @@
 <script lang="ts">
 import { faCubes } from '@fortawesome/free-solid-svg-icons';
-import type { AuditRequestItems, AuditResult, ConfigurationScope } from '@kortex-app/api';
+import type { AuditRequestItems, AuditResult, ConfigurationScope } from '@openkaiden/api';
 import { Button, EmptyScreen, ErrorMessage, Spinner } from '@podman-desktop/ui-svelte';
 import type { Terminal } from '@xterm/xterm';
 import { onDestroy, onMount } from 'svelte';

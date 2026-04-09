@@ -15,7 +15,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ExtensionContext } from '@kortex-app/api';
+import type { ExtensionContext } from '@openkaiden/api';
 
 import { SchedulerExtension } from './scheduler-extension';
 

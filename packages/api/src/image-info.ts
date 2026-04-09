@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ContainerProviderConnection } from '@kortex-app/api';
+import type { ContainerProviderConnection } from '@openkaiden/api';
 import type * as Dockerode from 'dockerode';
 
 import type { ProviderContainerConnectionInfo } from './provider-info.js';

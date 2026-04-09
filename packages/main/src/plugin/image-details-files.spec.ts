@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ImageFilesystemLayer } from '@kortex-app/api';
+import type { ImageFilesystemLayer } from '@openkaiden/api';
 import { assert, describe, expect, test } from 'vitest';
 
 import { toImageFilesystemLayerUIs } from './image-details-files.js';

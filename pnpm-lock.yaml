@@ -206,7 +206,7 @@ importers:
       '@eslint/js':
         specifier: ^9.39.2
         version: 9.39.3
-      '@kortex-app/api':
+      '@openkaiden/api':
         specifier: 'workspace:'
         version: link:packages/extension-api
       '@kortex-hub/kortex-cli-api':
@@ -389,7 +389,7 @@ importers:
 
   extensions/container/packages/api:
     dependencies:
-      '@kortex-app/api':
+      '@openkaiden/api':
         specifier: workspace:*
         version: link:../../../../packages/extension-api
 
@@ -408,7 +408,7 @@ importers:
         specifier: ^4.1.11
         version: 4.3.6
     devDependencies:
-      '@kortex-app/api':
+      '@openkaiden/api':
         specifier: workspace:*
         version: link:../../../../packages/extension-api
       '@kortex-app/container-extension-api':
@@ -432,7 +432,7 @@ importers:
 
   extensions/docling:
     devDependencies:
-      '@kortex-app/api':
+      '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
       '@kortex-app/container-extension-api':
@@ -456,7 +456,7 @@ importers:
       '@google/genai':
         specifier: ^1.25.0
         version: 1.43.0(@modelcontextprotocol/sdk@1.29.0(zod@4.3.6))
-      '@kortex-app/api':
+      '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
     devDependencies:
@@ -472,7 +472,7 @@ importers:
 
   extensions/goose:
     dependencies:
-      '@kortex-app/api':
+      '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
       '@modelcontextprotocol/sdk':
@@ -512,7 +512,7 @@ importers:
 
   extensions/mcp-registries:
     devDependencies:
-      '@kortex-app/api':
+      '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
       adm-zip:
@@ -537,7 +537,7 @@ importers:
         specifier: ^7.10.4
         version: 7.11.0(reflect-metadata@0.2.2)
     devDependencies:
-      '@kortex-app/api':
+      '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
       '@kortex-app/container-extension-api':
@@ -559,7 +559,7 @@ importers:
         specifier: ^1.5.5
         version: 1.5.5(zod@4.3.6)
     devDependencies:
-      '@kortex-app/api':
+      '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
       adm-zip:
@@ -583,7 +583,7 @@ importers:
       '@ai-sdk/openai-compatible':
         specifier: ^2.0.41
         version: 2.0.41(zod@4.3.6)
-      '@kortex-app/api':
+      '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
     devDependencies:
@@ -602,7 +602,7 @@ importers:
       '@ai-sdk/openai-compatible':
         specifier: ^2.0.41
         version: 2.0.41(zod@4.3.6)
-      '@kortex-app/api':
+      '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
       '@kubernetes/client-node':
@@ -628,7 +628,7 @@ importers:
         specifier: ^7.7.1
         version: 7.11.0(reflect-metadata@0.2.2)
     devDependencies:
-      '@kortex-app/api':
+      '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
       '@kortex-app/container-extension-api':
@@ -649,7 +649,7 @@ importers:
 
   extensions/scheduler:
     dependencies:
-      '@kortex-app/api':
+      '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
       inversify:

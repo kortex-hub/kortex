@@ -21,7 +21,7 @@ import { promises as fsPromises } from 'node:fs';
 import * as path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 
-import type * as containerDesktopAPI from '@kortex-app/api';
+import type * as containerDesktopAPI from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';

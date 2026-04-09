@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { KubernetesProviderConnection } from '@kortex-app/api';
+import type { KubernetesProviderConnection } from '@openkaiden/api';
 
 import type { IConfigurationPropertyRecordedSchema } from '/@api/configuration/models.js';
 import type { ProviderKubernetesConnectionInfo } from '/@api/provider-info';

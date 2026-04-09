@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ExtensionContext as PodmanDesktopExtensionContext, Provider, TelemetryLogger } from '@kortex-app/api';
+import type { ExtensionContext as PodmanDesktopExtensionContext, Provider, TelemetryLogger } from '@openkaiden/api';
 import { Container } from 'inversify';
 
 import { handlersModule } from '/@/handler/_module';

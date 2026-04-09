@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { env } from '@kortex-app/api';
+import { env } from '@openkaiden/api';
 import type { BindToFluentSyntax, ContainerModuleLoadOptions } from 'inversify';
 import { beforeEach, expect, test, vi } from 'vitest';
 
@@ -25,7 +25,7 @@ import { PodmanSocketLinuxFinder } from '/@/helper/socket-finder/podman/podman-l
 import { PodmanSocketMacOSFinder } from '/@/helper/socket-finder/podman/podman-macos-finder';
 import { PodmanSocketWindowsFinder } from '/@/helper/socket-finder/podman/podman-windows-finder';
 
-vi.mock(import('@kortex-app/api'));
+vi.mock(import('@openkaiden/api'));
 
 const bindMock = {
   toSelf: vi.fn(),

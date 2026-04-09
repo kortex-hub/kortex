@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Disposable, Provider } from '@kortex-app/api';
+import type { Disposable, Provider } from '@openkaiden/api';
 import { inject, injectable, optional } from 'inversify';
 
 import { NativeScheduler } from '/@/api/native-scheduler-api';

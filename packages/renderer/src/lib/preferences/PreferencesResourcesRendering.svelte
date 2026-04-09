@@ -1,6 +1,6 @@
 <script lang="ts">
 import { faCircleInfo, faTerminal } from '@fortawesome/free-solid-svg-icons';
-import type { ContainerProviderConnection } from '@kortex-app/api';
+import type { ContainerProviderConnection } from '@openkaiden/api';
 import { DropdownMenu, EmptyScreen, Tooltip } from '@podman-desktop/ui-svelte';
 import { Buffer } from 'buffer';
 import { filesize } from 'filesize';

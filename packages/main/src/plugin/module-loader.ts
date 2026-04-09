@@ -18,7 +18,7 @@
 
 import * as path from 'node:path';
 
-import type * as api from '@kortex-app/api';
+import type * as api from '@openkaiden/api';
 
 export interface ExtensionModule {
   path: string;

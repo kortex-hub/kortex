@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^2.0.41",
-    "@kortex-app/api": "workspace:*"
+    "@openkaiden/api": "workspace:*"
   },
   "devDependencies": {
     "mkdirp": "^3.0.1",

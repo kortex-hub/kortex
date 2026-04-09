@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import type { RegisterServerResult } from '@kortex-app/api';
+import type { RegisterServerResult } from '@openkaiden/api';
 
 export class RegisterServerResultImpl implements RegisterServerResult {
   serverId: string;

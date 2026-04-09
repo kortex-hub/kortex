@@ -16,10 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ExtensionContext } from '@kortex-app/api';
-import { cli, env, process as processAPI, provider, version, window } from '@kortex-app/api';
 import type { OctokitOptions } from '@octokit/core';
 import { Octokit } from '@octokit/rest';
+import type { ExtensionContext } from '@openkaiden/api';
+import { cli, env, process as processAPI, provider, version, window } from '@openkaiden/api';
 
 import { GooseCLI } from './goose-cli';
 import { GooseDownloader } from './goose-downloader';

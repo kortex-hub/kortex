@@ -20,7 +20,7 @@ import type {
   Configuration,
   ConfigurationChangeEvent,
   ConfigurationScope as PodmanDesktopApiConfigurationScope,
-} from '@kortex-app/api';
+} from '@openkaiden/api';
 
 import type { IDisposable } from '../disposable.js';
 import type { Event } from '../event.js';
