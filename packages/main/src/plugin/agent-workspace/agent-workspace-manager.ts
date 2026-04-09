@@ -22,6 +22,7 @@ import { readFile } from 'node:fs/promises';
 import type { Disposable } from '@kortex-app/api';
 import type { WebContents } from 'electron';
 import { inject, injectable, preDestroy } from 'inversify';
+import { parse as parseYAML } from 'yaml';
 
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { Exec } from '/@/plugin/util/exec.js';
@@ -76,15 +77,8 @@ export class AgentWorkspaceManager implements Disposable {
     if (!workspace) {
       throw new Error(`workspace "${id}" not found. Use "workspace list" to see available workspaces.`);
     }
-    try {
-      const content = await readFile(workspace.paths.configuration, 'utf-8');
-      return JSON.parse(content) as AgentWorkspaceConfiguration;
-    } catch (error: unknown) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        return { name: workspace.name } as AgentWorkspaceConfiguration;
-      }
-      throw error;
-    }
+    const content = await readFile(workspace.paths.configuration, 'utf-8');
+    return parseYAML(content) as AgentWorkspaceConfiguration;
   }
 
   async start(id: string): Promise<AgentWorkspaceId> {
@@ -100,7 +94,7 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   shellInAgentWorkspace(
-    id: string,
+    name: string,
     onData: (data: string) => void,
     onError: (error: string) => void,
     onEnd: () => void,
@@ -110,7 +104,7 @@ export class AgentWorkspaceManager implements Disposable {
     process: ChildProcessWithoutNullStreams;
   } {
     // eslint-disable-next-line sonarjs/no-os-command-from-path
-    const childProcess = spawn('kortex-cli', ['terminal', id]);
+    const childProcess = spawn('kdn', ['terminal', name]);
 
     childProcess.stdout.on('data', (chunk: Buffer) => {
       onData(chunk.toString('utf-8'));
@@ -166,8 +160,13 @@ export class AgentWorkspaceManager implements Disposable {
     this.ipcHandle(
       'agent-workspace:terminal',
       async (_listener: unknown, id: string, onDataId: number): Promise<number> => {
+        const workspaces = await this.list();
+        const workspace = workspaces.find(ws => ws.id === id);
+        if (!workspace) {
+          throw new Error(`workspace "${id}" not found. Use "workspace list" to see available workspaces.`);
+        }
         const invocation = this.shellInAgentWorkspace(
-          id,
+          workspace.name,
           (content: string) => {
             this.webContents.send('agent-workspace:terminal-onData', onDataId, content);
           },
