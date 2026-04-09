@@ -50,7 +50,16 @@ test('replaces existing terminal for the same workspace', () => {
 });
 
 test('removes terminal entries when workspace disappears from agentWorkspaces', () => {
-  agentWorkspaces.set([{ id: 'ws-1', name: 'test', project: 'proj', paths: { source: '/s', configuration: '/c' } }]);
+  agentWorkspaces.set([
+    {
+      id: 'ws-1',
+      name: 'test',
+      project: 'proj',
+      agent: 'agent',
+      state: 'stopped',
+      paths: { source: '/s', configuration: '/c' },
+    },
+  ]);
 
   registerTerminal({ workspaceId: 'ws-1', callbackId: 1, terminal: 'buffer' });
   expect(get(agentWorkspaceTerminals)).toHaveLength(1);
@@ -60,10 +69,28 @@ test('removes terminal entries when workspace disappears from agentWorkspaces', 
 });
 
 test('keeps terminal entries when workspace still exists', () => {
-  agentWorkspaces.set([{ id: 'ws-1', name: 'test', project: 'proj', paths: { source: '/s', configuration: '/c' } }]);
+  agentWorkspaces.set([
+    {
+      id: 'ws-1',
+      name: 'test',
+      project: 'proj',
+      agent: 'agent',
+      state: 'stopped',
+      paths: { source: '/s', configuration: '/c' },
+    },
+  ]);
 
   registerTerminal({ workspaceId: 'ws-1', callbackId: 1, terminal: 'buffer' });
 
-  agentWorkspaces.set([{ id: 'ws-1', name: 'test', project: 'proj', paths: { source: '/s', configuration: '/c' } }]);
+  agentWorkspaces.set([
+    {
+      id: 'ws-1',
+      name: 'test',
+      project: 'proj',
+      agent: 'agent',
+      state: 'stopped',
+      paths: { source: '/s', configuration: '/c' },
+    },
+  ]);
   expect(get(agentWorkspaceTerminals)).toHaveLength(1);
 });
