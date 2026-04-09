@@ -281,14 +281,7 @@ describe('shellInAgentWorkspace', () => {
 
     manager.shellInAgentWorkspace('ws-1', vi.fn(), vi.fn(), vi.fn());
 
-    expect(spawn).toHaveBeenCalledWith('kdn-cli', [
-      'terminal',
-      'ws-1',
-      '--',
-      '/bin/sh',
-      '-c',
-      'if command -v bash >/dev/null 2>&1; then bash; else sh; fi',
-    ]);
+    expect(spawn).toHaveBeenCalledWith('kortex-cli', ['terminal', 'ws-1']);
   });
 
   test('write function forwards data to stdin', () => {

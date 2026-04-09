@@ -110,14 +110,7 @@ export class AgentWorkspaceManager implements Disposable {
     process: ChildProcessWithoutNullStreams;
   } {
     // eslint-disable-next-line sonarjs/no-os-command-from-path
-    const childProcess = spawn('kdn-cli', [
-      'terminal',
-      id,
-      '--',
-      '/bin/sh',
-      '-c',
-      'if command -v bash >/dev/null 2>&1; then bash; else sh; fi',
-    ]);
+    const childProcess = spawn('kortex-cli', ['terminal', id]);
 
     childProcess.stdout.on('data', (chunk: Buffer) => {
       onData(chunk.toString('utf-8'));
