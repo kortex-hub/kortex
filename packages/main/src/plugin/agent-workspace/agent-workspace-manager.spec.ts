@@ -41,7 +41,7 @@ const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
     agent: 'coder-v1',
     state: 'stopped',
     model: 'gpt-4o',
-    paths: { source: '/tmp/ws1', configuration: '/tmp/ws1/.kortex.yaml' },
+    paths: { source: '/tmp/ws1', configuration: '/tmp/ws1/.kaiden.yaml' },
   },
   {
     id: 'ws-2',
@@ -49,7 +49,7 @@ const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
     project: 'project-beta',
     agent: 'coder-v2',
     state: 'running',
-    paths: { source: '/tmp/ws2', configuration: '/tmp/ws2/.kortex.yaml' },
+    paths: { source: '/tmp/ws2', configuration: '/tmp/ws2/.kaiden.yaml' },
   },
 ];
 
