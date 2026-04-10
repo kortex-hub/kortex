@@ -37,7 +37,7 @@ const workspace: AgentWorkspaceSummary = {
   state: 'stopped',
   paths: {
     source: '/home/user/projects/backend',
-    configuration: '/home/user/.config/kortex/workspaces/api-refactor.yaml',
+    configuration: '/home/user/.config/kaiden/workspaces/api-refactor.yaml',
   },
 };
 
@@ -72,7 +72,7 @@ test('Expect card displays source path', () => {
 test('Expect card displays configuration path', () => {
   render(AgentWorkspaceCard, { workspace });
 
-  expect(screen.getByText('/home/user/.config/kortex/workspaces/api-refactor.yaml')).toBeInTheDocument();
+  expect(screen.getByText('/home/user/.config/kaiden/workspaces/api-refactor.yaml')).toBeInTheDocument();
 });
 
 test('Expect card displays model when present', () => {

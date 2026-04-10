@@ -53,7 +53,7 @@ test('Expect workspace cards displayed with total count', () => {
       state: 'stopped',
       paths: {
         source: '/home/user/projects/backend',
-        configuration: '/home/user/.config/kortex/workspaces/api-refactor.yaml',
+        configuration: '/home/user/.config/kaiden/workspaces/api-refactor.yaml',
       },
     },
     {
@@ -64,7 +64,7 @@ test('Expect workspace cards displayed with total count', () => {
       state: 'running',
       paths: {
         source: '/home/user/projects/frontend',
-        configuration: '/home/user/.config/kortex/workspaces/frontend-redesign.yaml',
+        configuration: '/home/user/.config/kaiden/workspaces/frontend-redesign.yaml',
       },
     },
   ];
