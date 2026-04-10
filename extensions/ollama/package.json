@@ -2,7 +2,7 @@
   "name": "ollama",
   "displayName": "Ollama",
   "description": "Register Ollama models to Kaiden.",
-  "version": "0.0.1-next",
+  "version": "0.0.3",
   "icon": "icon.png",
   "publisher": "kaiden",
   "license": "Apache-2.0",
