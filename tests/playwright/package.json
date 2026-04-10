@@ -1,5 +1,5 @@
 {
-  "name": "@kortex/tests-playwright",
+  "name": "@openkaiden/tests-playwright",
   "version": "0.0.1-next",
   "type": "module",
   "private": true,
