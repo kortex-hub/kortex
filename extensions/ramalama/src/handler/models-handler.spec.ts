@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import * as kortexApi from '@openkaiden/api';
+import * as kaidenApi from '@openkaiden/api';
 import type { ContainerExtensionAPI, EndpointConnection } from '@openkaiden/container-extension-api';
 import { Container, injectFromBase } from 'inversify';
 import { beforeEach, expect, test, vi } from 'vitest';
@@ -49,7 +49,7 @@ class TestModelsHandler extends ModelsHandler {
     return super.getModels();
   }
 
-  getModelsChanged(): kortexApi.EventEmitter<readonly ModelInfo[]> {
+  getModelsChanged(): kaidenApi.EventEmitter<readonly ModelInfo[]> {
     return super.getModelsChanged();
   }
 }
