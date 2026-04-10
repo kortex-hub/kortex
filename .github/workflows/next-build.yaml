@@ -117,9 +117,9 @@ jobs:
         with:
           python-version: "3.x"
 
-      #- name: setup telemetry key for production
-      #  run: |
-      #    sed -i -r -e "s/SEGMENT_KEY = '.*'/SEGMENT_KEY = '${{ secrets.SEGMENT_WRITE_KEY }}'/" packages/main/src/plugin/telemetry/telemetry.ts
+      - name: setup telemetry key for production
+        run: |
+          sed -i -r -e "s/SEGMENT_KEY = '.*'/SEGMENT_KEY = '${{ secrets.SEGMENT_WRITE_KEY }}'/" packages/main/src/plugin/telemetry/telemetry.ts
 
       - name: Execute pnpm
         run: pnpm install
