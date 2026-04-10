@@ -42,7 +42,7 @@ export interface KubeTemplateOptions {
 }
 
 // https://github.com/packit/ai-workflows/tree/main/goose-container
-export const GOOSE_IMAGE = 'quay.io/kortex/goose:2025-09-03'; //'quay.io/jotnar/goose:latest';
+export const GOOSE_IMAGE = 'quay.io/openkaiden/goose:2025-09-03'; //'quay.io/jotnar/goose:latest';
 
 export const KAIDEN_VERSION_ANNOTATION = 'kaiden/version';
 export const KAIDEN_FLOW_ID_ANNOTATION = 'kaiden/flow-id';

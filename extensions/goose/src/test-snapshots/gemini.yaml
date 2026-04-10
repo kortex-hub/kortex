@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: goose
-          image: quay.io/kortex/goose:2025-09-03
+          image: quay.io/openkaiden/goose:2025-09-03
           command: ['/usr/local/bin/goose']
           args: [
             'run',
