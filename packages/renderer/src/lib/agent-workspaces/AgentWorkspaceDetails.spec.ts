@@ -51,7 +51,7 @@ const workspaceSummary: AgentWorkspaceSummary = {
   state: 'stopped',
   paths: {
     source: '/home/user/projects/backend',
-    configuration: '/home/user/.config/kortex/workspaces/api-refactor.yaml',
+    configuration: '/home/user/.config/kaiden/workspaces/api-refactor.yaml',
   },
 };
 
