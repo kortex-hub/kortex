@@ -46,8 +46,8 @@ body:
       label: Version
       description: What version of Kaiden are you running?
       options:
-        - "next (development version)"
         - "0.x"
+        - "next (development version)"
     validations:
       required: true
 
