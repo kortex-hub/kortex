@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import type { components } from '@kortex-hub/mcp-registry-types';
+import type { components } from '@openkaiden/mcp-registry-types';
 
 export function formatInputWithVariables(input: components['schemas']['InputWithVariables']): string | undefined {
   let template = input.value ?? input.default;

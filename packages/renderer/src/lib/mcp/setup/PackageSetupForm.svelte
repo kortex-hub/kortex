@@ -2,7 +2,7 @@
 import { faPlay } from '@fortawesome/free-solid-svg-icons/faPlay';
 import { faTableList } from '@fortawesome/free-solid-svg-icons/faTableList';
 import { faWrench } from '@fortawesome/free-solid-svg-icons/faWrench';
-import type { components } from '@kortex-hub/mcp-registry-types';
+import type { components } from '@openkaiden/mcp-registry-types';
 import { Button } from '@podman-desktop/ui-svelte';
 import { SvelteMap } from 'svelte/reactivity';
 

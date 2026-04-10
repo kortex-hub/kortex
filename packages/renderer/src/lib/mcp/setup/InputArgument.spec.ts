@@ -17,7 +17,7 @@
  ***********************************************************************/
 import '@testing-library/jest-dom/vitest';
 
-import type { components } from '@kortex-hub/mcp-registry-types';
+import type { components } from '@openkaiden/mcp-registry-types';
 import { render } from '@testing-library/svelte';
 import { expect, test, vi } from 'vitest';
 

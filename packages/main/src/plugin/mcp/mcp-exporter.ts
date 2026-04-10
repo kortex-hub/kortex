@@ -21,7 +21,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-import type { components } from '@kortex-hub/mcp-registry-types';
+import type { components } from '@openkaiden/mcp-registry-types';
 import { inject, injectable } from 'inversify';
 
 import { MCPRegistry } from '/@/plugin/mcp/mcp-registry.js';

@@ -1,6 +1,6 @@
 <script lang="ts">
 import { faPlug } from '@fortawesome/free-solid-svg-icons/faPlug';
-import type { components } from '@kortex-hub/mcp-registry-types';
+import type { components } from '@openkaiden/mcp-registry-types';
 import { Button } from '@podman-desktop/ui-svelte';
 import { SvelteMap } from 'svelte/reactivity';
 

@@ -18,11 +18,11 @@
 
 import * as crypto from 'node:crypto';
 
-import type { components } from '@kortex-hub/mcp-registry-types';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type * as kaidenAPI from '@openkaiden/api';
 import { SecretStorage } from '@openkaiden/api';
+import type { components } from '@openkaiden/mcp-registry-types';
 import type { HttpsOptions, OptionsOfTextResponseBody } from 'got';
 import { HttpProxyAgent, HttpsProxyAgent } from 'hpagent';
 import { inject, injectable } from 'inversify';

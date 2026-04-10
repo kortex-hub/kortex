@@ -41,7 +41,7 @@
 
 declare module '@openkaiden/api' {
   import type { ProviderV2 as AISDKInferenceProvider } from '@ai-sdk/provider';
-  import type { components } from '@kortex-hub/mcp-registry-types';
+  import type { components } from '@openkaiden/mcp-registry-types';
 
   /**
    * The version of Kaiden.

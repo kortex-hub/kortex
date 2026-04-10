@@ -15,8 +15,8 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import type { components } from '@kortex-hub/mcp-registry-types';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import type { components } from '@openkaiden/mcp-registry-types';
 
 import type { IAsyncDisposable } from '/@api/async-disposable.js';
 

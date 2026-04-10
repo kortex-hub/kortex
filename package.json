@@ -86,7 +86,7 @@
     "@openkaiden/kdn-api": "^0.1.11",
     "@openkaiden/workspace-configuration": "^0.1.11",
     "@openkaiden/api": "workspace:",
-    "@kortex-hub/mcp-registry-types": "^1.4.0-next.20251210140818.04eeb13",
+    "@openkaiden/mcp-registry-types": "^1.3.10",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@sveltejs/opencode": "^0.1.6",

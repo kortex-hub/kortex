@@ -19,9 +19,9 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { components } from '@kortex-hub/mcp-registry-types';
 import type * as containerDesktopAPI from '@openkaiden/api';
 import { ChunkProvider, RegisterServerResult } from '@openkaiden/api';
+import { components } from '@openkaiden/mcp-registry-types';
 import AdmZip from 'adm-zip';
 import { app, clipboard as electronClipboard } from 'electron';
 import { inject, injectable, preDestroy } from 'inversify';

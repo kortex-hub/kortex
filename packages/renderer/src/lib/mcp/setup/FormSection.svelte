@@ -1,7 +1,7 @@
 <script lang="ts" generics="T">
 import type { IconDefinition } from '@fortawesome/fontawesome-common-types';
 import { faKey } from '@fortawesome/free-solid-svg-icons/faKey';
-import type { components } from '@kortex-hub/mcp-registry-types';
+import type { components } from '@openkaiden/mcp-registry-types';
 import Fa from 'svelte-fa';
 
 import InputArgumentWithVariables from '/@/lib/mcp/setup/InputArgumentWithVariables.svelte';

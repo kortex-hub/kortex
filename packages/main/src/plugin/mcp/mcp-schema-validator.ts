@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { type components, createValidator } from '@kortex-hub/mcp-registry-types';
+import { type components, createValidator } from '@openkaiden/mcp-registry-types';
 import { injectable } from 'inversify';
 
 /**

@@ -1,4 +1,4 @@
-import type { components } from '@kortex-hub/mcp-registry-types';
+import type { components } from '@openkaiden/mcp-registry-types';
 
 export type ValidatedServerDetail = components['schemas']['ServerDetail'] & {
   isValidSchema?: boolean;
