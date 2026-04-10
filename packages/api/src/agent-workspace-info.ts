@@ -16,13 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { components as cliComponents } from '@kortex-hub/kortex-cli-api';
-import type { components as configComponents } from '@kortex-hub/kortex-workspace-configuration';
+import type { components as cliComponents } from '@openkaiden/kdn-api';
+import type { components as configComponents } from '@openkaiden/workspace-configuration';
 
 /**
  * Workspace data from the `kdn workspace list` command.
  * Matches the CLI contract exactly — fields will be added here
- * as the CLI evolves and publishes them in @kortex-hub/kortex-cli-api.
+ * as the CLI evolves and publishes them in @openkaiden/kdn-api.
  */
 export type AgentWorkspaceSummary = cliComponents['schemas']['Workspace'];
 
@@ -34,6 +34,6 @@ export type AgentWorkspaceId = cliComponents['schemas']['WorkspaceId'];
 
 /**
  * The schema for a workspace's YAML configuration file
- * Matches the contract in @kortex-hub/kortex-workspace-configuration.
+ * Matches the contract in @openkaiden/workspace-configuration.
  */
 export type AgentWorkspaceConfiguration = configComponents['schemas']['WorkspaceConfiguration'];
