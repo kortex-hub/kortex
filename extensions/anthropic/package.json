@@ -1,0 +1,47 @@
+{
+  "name": "anthropic",
+  "displayName": "Anthropic",
+  "description": "Integration for Anthropic",
+  "version": "0.0.1-next",
+  "icon": "icon.png",
+  "publisher": "kaiden",
+  "license": "Apache-2.0",
+  "engines": {
+    "kaiden": "^0.0.1"
+  },
+  "main": "./dist/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Anthropic",
+      "properties": {
+        "anthropic.factory._description": {
+          "type": "markdown",
+          "scope": "InferenceProviderConnectionFactory",
+          "markdownDescription": "Provide an Anthropic API key\n\n:button[Grab a key]{href=\"https://console.anthropic.com/settings/keys\"}"
+        },
+        "anthropic.factory.apiKey": {
+          "type": "string",
+          "scope": "InferenceProviderConnectionFactory",
+          "description": "Enter your Anthropic API key (ANTHROPIC_API_KEY)",
+          "format": "password"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "vite build && node ./scripts/build.js",
+    "test": "vitest run --coverage --passWithNoTests",
+    "test:watch": "vitest watch --coverage --passWithNoTests",
+    "watch": "vite build --watch"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.69",
+    "@anthropic-ai/sdk": "^0.88.0",
+    "@openkaiden/api": "workspace:*"
+  },
+  "devDependencies": {
+    "mkdirp": "^3.0.1",
+    "vite": "^7.1.2",
+    "vitest": "^4.0.10"
+  }
+}
