@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ExtensionContext } from '@kortex-app/api';
+import type { ExtensionContext } from '@openkaiden/api';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import { ClaudeExtension } from './claude-extension';
