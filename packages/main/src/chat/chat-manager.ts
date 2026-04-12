@@ -376,6 +376,7 @@ export class ChatManager {
         modelId: params.modelId,
         connectionName: params.connectionName,
         providerId: params.providerId,
+        type: this.providerRegistry.getInferenceConnectionType(params.providerId, params.connectionName),
       };
       await this.chatQueries.saveMessages({
         messages: [

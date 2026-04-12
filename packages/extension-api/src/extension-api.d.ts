@@ -648,8 +648,11 @@ declare module '@openkaiden/api' {
     label: string;
   }
 
+  export type InferenceProviderConnectionType = 'cloud' | 'local' | 'self-hosted';
+
   export type InferenceProviderConnection = {
     name: string;
+    type: InferenceProviderConnectionType;
     sdk: AISDKInferenceProvider;
     credentials(): Record<string, string>;
     lifecycle?: ProviderConnectionLifecycle;

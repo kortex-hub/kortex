@@ -57,6 +57,7 @@ export class InferenceModelManager {
       });
       const disposable = this.ramaLamaProvider.registerInferenceProviderConnection({
         name: `port/${modelinfo.port}`,
+        type: 'local',
         sdk,
         status() {
           return 'started';

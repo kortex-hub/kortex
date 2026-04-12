@@ -16,8 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import type { InferenceProviderConnectionType } from '@openkaiden/api';
+
 export interface ModelInfo {
   providerId: string;
   connectionName: string;
+  type: InferenceProviderConnectionType;
   label: string;
 }

@@ -257,6 +257,7 @@ export class OpenShiftAI implements Disposable {
 
       const connectionDisposable = this.provider.registerInferenceProviderConnection({
         name: baseURL,
+        type: 'self-hosted',
         sdk: openai,
         status(): ProviderConnectionStatus {
           return 'unknown'; // if status is not unknown we cannot delete the connection

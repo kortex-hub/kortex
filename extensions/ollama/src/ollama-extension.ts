@@ -100,6 +100,7 @@ export class OllamaExtension {
         const sdk = createOllama();
         const disposable = ollamaProvider.registerInferenceProviderConnection({
           name: 'ollama',
+          type: 'local',
           sdk,
           status() {
             return 'started';

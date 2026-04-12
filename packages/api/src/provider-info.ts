@@ -17,6 +17,7 @@
  ***********************************************************************/
 
 import type {
+  InferenceProviderConnectionType,
   Link,
   ProviderCleanupAction,
   ProviderConnectionStatus,
@@ -72,6 +73,7 @@ export interface ProviderFlowConnectionInfo {
 export interface ProviderInferenceConnectionInfo {
   connectionType: 'inference';
   name: string;
+  type: InferenceProviderConnectionType;
   status: ProviderConnectionStatus;
   lifecycleMethods?: LifecycleMethod[];
   models: Array<{
