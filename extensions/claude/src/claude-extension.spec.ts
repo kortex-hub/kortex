@@ -16,14 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ExtensionContext } from '@kortex-app/api';
+import type { ExtensionContext } from '@openkaiden/api';
 import type { Container } from 'inversify';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { ClaudeExtension } from '/@/claude-extension';
 import { ClaudeSkillsManager } from '/@/manager/claude-skills-manager';
 
-vi.mock(import('@kortex-app/api'));
+vi.mock(import('@openkaiden/api'));
 vi.mock(import('/@/manager/claude-skills-manager'));
 
 class TestClaudeExtension extends ClaudeExtension {

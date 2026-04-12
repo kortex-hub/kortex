@@ -19,7 +19,7 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-import type { Disposable, Provider } from '@kortex-app/api';
+import type { Disposable, Provider } from '@openkaiden/api';
 import { Container } from 'inversify';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 

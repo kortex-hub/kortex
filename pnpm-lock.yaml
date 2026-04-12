@@ -393,7 +393,7 @@ importers:
         specifier: ^7.7.1
         version: 7.11.0(reflect-metadata@0.2.2)
     devDependencies:
-      '@kortex-app/api':
+      '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
       adm-zip:
@@ -404,10 +404,10 @@ importers:
         version: 3.0.1
       vite:
         specifier: ^7.1.2
-        version: 7.3.1(@types/node@24.12.0)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.36.0)(tsx@4.20.3)(yaml@2.8.2)
+        version: 7.3.1(@types/node@24.12.2)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.36.0)(tsx@4.20.3)(yaml@2.8.2)
       vitest:
         specifier: ^4.0.10
-        version: 4.0.18(@opentelemetry/api@1.9.0)(@types/node@24.12.0)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.31.1)(msw@2.12.10(@types/node@24.12.0)(typescript@5.9.3))(terser@5.36.0)(tsx@4.20.3)(yaml@2.8.2)
+        version: 4.0.18(@opentelemetry/api@1.9.0)(@types/node@24.12.2)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.31.1)(msw@2.12.10(@types/node@24.12.2)(typescript@5.9.3))(terser@5.36.0)(tsx@4.20.3)(yaml@2.8.2)
 
   extensions/container/packages/api:
     dependencies:
