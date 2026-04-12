@@ -60,12 +60,13 @@ const row = new TableRow<MCPRemoteServerInfo>({});
     <MCPServerEmptyScreen />
   {/if}
 {:else}
-
-  <Table
-    kind="mcp"
-    data={servers}
-    columns={columns}
-    row={row}
-    defaultSortColumn="Name">
-  </Table>
+  <div class="flex min-h-0 min-w-0 w-full flex-1 overflow-x-auto">
+    <Table
+      kind="mcp"
+      data={servers}
+      columns={columns}
+      row={row}
+      defaultSortColumn="Name">
+    </Table>
+  </div>
 {/if}

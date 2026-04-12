@@ -57,113 +57,93 @@ async function removeExistingRegistry(registry: containerDesktopAPI.MCPRegistry)
   await window.unregisterMCPRegistry(registry);
 }
 </script>
-<div class="flex flex-col min-w-full h-full" role="region">
-  <div class="min-w-full px-5 py-4" role="region" aria-label="Header">
+<div class="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col" role="region">
+  <div class="min-w-0 w-full shrink-0 px-5 py-4" role="region" aria-label="Header">
     <div class="flex flex-row">
       <Button onclick={(): void => setNewRegistryFormVisible(true)} icon={faPlusCircle} disabled={showNewRegistryForm}>
         Add MCP registry
       </Button>
     </div>
   </div>
-  <div class="flex flex-row min-w-full h-full px-5 py-4 overflow-y-auto" role="region" aria-label="Content">
-    <div class="flex flex-col grow max-w-[905px] mx-auto">
-
-      <div class="container bg-[var(--pd-invert-content-card-bg)] rounded-md p-3">
-      <!-- Registries table start -->
-      <div class="w-full border-t border-b border-[var(--pd-content-text)]" role="table" aria-label="Registries">
-        <div
-          class="flex w-full space-x-2 text-sm font-semibold text-[var(--pd-table-header-text)]"
-          role="rowgroup"
-          aria-label="header">
-          <div class="text-left py-4 uppercase w-2/5 pl-5" role="columnheader">Registry Location</div>
-          <div class="text-left py-4 uppercase w-1/5" role="columnheader"></div>
-        </div>
-
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto px-5 py-4" role="region" aria-label="Content">
+    <div class="flex w-full min-w-0 flex-1 flex-col">
+      <div class="w-full min-w-0 rounded-md bg-[var(--pd-invert-content-card-bg)] p-3">
+      <table
+        class="registries-table w-full table-fixed border-collapse border-y border-[var(--pd-content-text)] text-[var(--pd-invert-content-card-text)] text-sm"
+        aria-label="Registries">
+        <colgroup>
+          <col class="w-[32%]" />
+          <col />
+          <col class="w-28" />
+        </colgroup>
+        <thead>
+          <tr class="border-b border-[var(--pd-content-text)] text-xs font-semibold uppercase tracking-wide text-[var(--pd-table-header-text)]">
+            <th class="py-3 pl-5 text-left font-semibold" scope="col">Registry</th>
+            <th class="py-3 pr-3 text-left font-semibold" scope="col">URL</th>
+            <th class="py-3 pr-5 text-right font-semibold" scope="col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
         {#each $mcpRegistriesInfos as registry, index (index)}
-          <!-- containerDesktopAPI.MCPRegistry row start -->
-          <div
-            class="flex flex-col w-full border-t border-[var(--pd-content-text)] text-[var(--pd-invert-content-card-text)]"
-            role="row"
-            aria-label={registry.name ?? registry.serverUrl}>
-            <div class="flex flex-row items-center pt-4 pb-3 space-x-2">
-              <div class="pl-5 w-2/5" role="cell">
-                <div class="flex w-full h-full">
-                  <div class="flex items-center">
-                    <!-- Only show if a "suggested" registry icon has been added -->
-                    {#if registry.icon}
-                      <IconImage image={registry.icon} class="w-6 h-6" alt={registry.name}></IconImage>
-                    {/if}
-                    {#if registry.name}
-                      <span class="ml-2">
-                        {registry.name}
-                      </span>
-                    {:else}
-                      <span class="ml-2">
-                        {registry.serverUrl.replace('https://', '')}
-                      </span>
-                    {/if}
-                  </div>
-                </div>
+          <tr class="border-t border-[var(--pd-content-text)] align-top" aria-label={registry.name ?? registry.serverUrl}>
+            <td class="py-3 pl-5 pr-2">
+              <div class="flex items-start gap-2">
+                <span class="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center" aria-hidden="true">
+                  {#if registry.icon}
+                    <IconImage image={registry.icon} class="h-6 w-6" alt={registry.name ?? ''}></IconImage>
+                  {/if}
+                </span>
+                <span class="min-w-0 break-words font-medium leading-snug">
+                  {#if registry.name}
+                    {registry.name}
+                  {:else}
+                    {registry.serverUrl.replace(/^https:\/\//, '')}
+                  {/if}
+                </span>
               </div>
-                <div class="w-1/5 flex space-x-2" role="cell">
-                {registry.serverUrl}
-              </div>
-              <div class="w-1/5 flex space-x-2 justify-end" role="cell">
-                <!-- Add remove button-->
-                <Button
-                  icon={faTrash}
-                  title="Remove MCP registry"
-                  onclick={(): Promise<void> => removeExistingRegistry(registry)}
-                  disabled={adding || originRegistries.some(r => r.serverUrl === registry.serverUrl)}>Remove</Button>
-              </div>
-            </div>
-          </div>
-          <div class="flex flex-row-reverse w-full pb-3 -mt-2">
-            <span class="w-2/3 pl-4 font-bold">
-              {#if originRegistries.some(r => r.serverUrl === registry.serverUrl)}
+            </td>
+            <td class="py-3 pr-3 align-top break-words">
+              <Link
+                class="leading-snug"
+                on:click={(): Promise<void> => window.openExternal(registry.serverUrl)}>{registry.serverUrl}</Link>
+            </td>
+            <td class="py-3 pr-5 text-right align-top">
+              <Button
+                icon={faTrash}
+                title="Remove MCP registry"
+                onclick={(): Promise<void> => removeExistingRegistry(registry)}
+                disabled={adding || originRegistries.some(r => r.serverUrl === registry.serverUrl)}>Remove</Button>
+            </td>
+          </tr>
+          {#if originRegistries.some(r => r.serverUrl === registry.serverUrl) && errorResponses.find(o => o.serverUrl === registry.serverUrl)?.error}
+            <tr>
+              <td class="pb-3 pl-[calc(1.25rem+1.5rem)] pr-2 text-sm font-semibold text-[var(--pd-state-error)]" colspan="3">
                 {errorResponses.find(o => o.serverUrl === registry.serverUrl)?.error ?? ''}
-              {/if}
-            </span>
-          </div>
-          <!-- containerDesktopAPI.MCPRegistry row end -->
+              </td>
+            </tr>
+          {/if}
         {/each}
 
         {#each $mcpRegistriesSuggestedInfos as registry, i (i)}
-          <!-- Add new registry form start -->
-          <div
-            class="flex flex-col w-full border-t border-[var(--pd-content-text)] text-[var(--pd-invert-content-card-text)]"
-            role="row"
-            aria-label={registry.name ? registry.name : registry.url}>
-            <div class="flex flex-row items-center pt-4 pb-3 space-x-2">
-              <div class="pl-5 w-2/5" role="cell">
-                <div class="flex w-full h-full">
-                  <div class="flex items-center">
-                    {#if registry.icon}
-                      <IconImage image={registry.icon} class="w-6 h-6" alt={registry.name}></IconImage>
-                    {/if}
-                    <!-- By default, just show the name, but if we go to add it, show the full URL including https -->
-                    <span class="ml-2">
-                        {registry.name}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div class="w-3/5" role="cell">
-                    <Link on:click={(): Promise<void> => window.openExternal(registry.url)}>{registry.url}</Link>
-              </div>
-              <div class="w-1/5 flex space-x-2 justify-end" role="cell">
-              </div>
-            </div>
-            <div class="flex flex-row w-full pb-3 -mt-2 pl-10">
-                <span class="font-bold whitespace-pre-line">
-                  {errorResponses.find(o => o.serverUrl === newRegistryRequest.serverUrl)?.error ?? ''}
+          <tr class="border-t border-[var(--pd-content-text)] align-top" aria-label={registry.name ? registry.name : registry.url}>
+            <td class="py-3 pl-5 pr-2">
+              <div class="flex items-start gap-2">
+                <span class="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center" aria-hidden="true">
+                  {#if registry.icon}
+                    <IconImage image={registry.icon} class="h-6 w-6" alt={registry.name ?? ''}></IconImage>
+                  {/if}
                 </span>
-            </div>
-          </div>
-          <!-- Add new registry form end -->
+                <span class="min-w-0 break-words font-medium leading-snug">{registry.name}</span>
+              </div>
+            </td>
+            <td class="py-3 pr-3 align-top break-words">
+              <Link class="leading-snug" on:click={(): Promise<void> => window.openExternal(registry.url)}>{registry.url}</Link>
+            </td>
+            <td class="py-3 pr-5 align-top"></td>
+          </tr>
         {/each}
-      </div>
-      <!-- Registries table end -->
+        </tbody>
+      </table>
       </div>
     </div>
   </div>

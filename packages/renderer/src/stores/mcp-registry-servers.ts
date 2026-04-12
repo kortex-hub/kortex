@@ -24,6 +24,15 @@ import type { MCPServerDetail } from '/@api/mcp/mcp-server-info';
 
 export const mcpRegistriesServerInfos: Writable<readonly MCPServerDetail[]> = writable([]);
 
+/**
+ * True while the main process is fetching the full MCP catalog.
+ * Starts as `true` so the Install tab shows loading until the first `fetchMcpRegistryServers()`
+ * run completes—avoids a flash of the wrong empty state.
+ * Fetch is always scheduled from this module (`system-ready` listener and `extensions-started` IPC);
+ * `fetchMcpRegistryServers` uses `finally` so the flag clears even when the request fails.
+ */
+export const mcpRegistryServersLoading: Writable<boolean> = writable(true);
+
 export const mcpRegistriesServerInfosSearchPattern = writable('');
 
 export const filteredMcpRegistriesServerInfos = derived(
@@ -38,8 +47,13 @@ export const filteredMcpRegistriesServerInfos = derived(
 );
 
 export async function fetchMcpRegistryServers(): Promise<void> {
-  const registries = await window.getMcpRegistryServers();
-  mcpRegistriesServerInfos.set(registries);
+  mcpRegistryServersLoading.set(true);
+  try {
+    const registries = await window.getMcpRegistryServers();
+    mcpRegistriesServerInfos.set(registries);
+  } finally {
+    mcpRegistryServersLoading.set(false);
+  }
 }
 
 // need to refresh when new registry are updated/deleted

@@ -1,12 +1,14 @@
 <script lang="ts">
-import { FilteredEmptyScreen, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
+import { FilteredEmptyScreen, Spinner, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 import SimpleColumn from '@podman-desktop/ui-svelte/TableSimpleColumn';
 
 import MCPValidServerIndicatorIcon from '/@/lib/images/MCPValidServerIndicatorIcon.svelte';
 import PreviousNext from '/@/lib/ui/PreviousNext.svelte';
 import {
   filteredMcpRegistriesServerInfos,
+  mcpRegistriesServerInfos,
   mcpRegistriesServerInfosSearchPattern,
+  mcpRegistryServersLoading,
 } from '/@/stores/mcp-registry-servers';
 import type { MCPServerDetail } from '/@api/mcp/mcp-server-info';
 
@@ -96,31 +98,55 @@ const columns = [
 const row = new TableRow<MCPServerDetail>({});
 </script>
 
-{#if servers.length === 0}
+{#if servers.length === 0 && !$mcpRegistryServersLoading}
   {#if filter}
     <FilteredEmptyScreen icon={McpIcon} kind="MCP Servers" bind:searchTerm={filter}/>
   {:else}
     <McpEmptyScreen />
   {/if}
 {:else}
-  <div class="flex flex-col h-full w-full">
-    {#if totalPages > 1}
-      <PreviousNext onPrevious={previousPage} onNext={nextPage} currentPage={currentPage} totalPages={totalPages}></PreviousNext>
+  <div class="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col">
+    {#if $mcpRegistryServersLoading}
+      <div
+        class="flex shrink-0 items-center gap-2 border-b border-[var(--pd-card-border)] px-3 py-2 text-sm text-[var(--pd-details-empty-sub-header)]"
+        aria-busy="true"
+        aria-live="polite">
+        <Spinner size="12" />
+        <span
+          >{$mcpRegistriesServerInfos.length === 0
+            ? 'Loading catalog…'
+            : 'Refreshing catalog…'}</span>
+      </div>
     {/if}
+    {#if servers.length === 0}
+      {#if filter}
+        <FilteredEmptyScreen icon={McpIcon} kind="MCP Servers" bind:searchTerm={filter}/>
+      {:else}
+        <div class="flex min-h-0 flex-1 flex-col px-3 pt-3" aria-live="polite">
+          <p class="text-pretty text-sm text-[var(--pd-details-empty-sub-header)]">
+            Fetching entries from your registries. Large catalogs may take a few minutes.
+          </p>
+        </div>
+      {/if}
+    {:else}
+      {#if totalPages > 1}
+        <PreviousNext onPrevious={previousPage} onNext={nextPage} currentPage={currentPage} totalPages={totalPages}></PreviousNext>
+      {/if}
 
-    <div class="flex">
-      <Table
-        kind="mcpServer"
-        bind:this={table}
-        data={paginatedServers}
-        columns={columns}
-        row={row}
-        defaultSortColumn="Name">
-      </Table>
-     </div>
+      <div class="flex min-h-0 min-w-0 w-full flex-1 overflow-x-auto">
+        <Table
+          kind="mcpServer"
+          bind:this={table}
+          data={paginatedServers}
+          columns={columns}
+          row={row}
+          defaultSortColumn="Name">
+        </Table>
+      </div>
 
-    {#if totalPages > 1}
-      <PreviousNext onPrevious={previousPage} onNext={nextPage} currentPage={currentPage} totalPages={totalPages}></PreviousNext>
+      {#if totalPages > 1}
+        <PreviousNext onPrevious={previousPage} onNext={nextPage} currentPage={currentPage} totalPages={totalPages}></PreviousNext>
+      {/if}
     {/if}
   </div>
 {/if}

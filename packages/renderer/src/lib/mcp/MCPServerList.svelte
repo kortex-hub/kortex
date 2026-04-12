@@ -31,7 +31,7 @@ let searchTerm = $state('');
   {/snippet}
 
   {#snippet content()}
-  <div class="flex min-w-full h-full">
+  <div class="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col">
       {#if selectedTab === 'READY'}
         <McpServerListRemoteReady bind:filter={searchTerm}/>
       {:else if selectedTab === 'INSTALLABLE'}

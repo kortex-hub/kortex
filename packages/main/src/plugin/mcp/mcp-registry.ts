@@ -46,6 +46,28 @@ import { Disposable } from '../types/disposable.js';
 import { MCPManager } from './mcp-manager.js';
 import { MCPSchemaValidator } from './mcp-schema-validator.js';
 
+/**
+ * Returns an absolute registry base URL for HTTP requests. Host-only input (e.g.
+ * `registry.modelcontextprotocol.io`) is prefixed with `https://` so `new URL()` and `fetch` work.
+ */
+export function normalizeMcpRegistryServerUrl(serverUrl: string): string {
+  const trimmed = serverUrl.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+  let result = trimmed;
+  if (!/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(result)) {
+    result = `https://${result}`;
+  }
+  // Strip trailing slashes so `/v0/servers` is appended cleanly.
+  // Uses a loop instead of regex to avoid sonarjs/slow-regex on `/\/+$/`.
+  let end = result.length;
+  while (end > 0 && result.charCodeAt(end - 1) === 47 /* / */) {
+    end--;
+  }
+  return end < result.length ? result.slice(0, end) : result;
+}
+
 interface RemoteStorageConfigFormat {
   serverId: string;
   remoteId: number;
@@ -271,6 +293,18 @@ export class MCPRegistry {
   }
 
   registerMCPRegistry(registry: kaidenAPI.MCPRegistry, save: boolean): Disposable {
+    const normalized: kaidenAPI.MCPRegistry = {
+      ...registry,
+      serverUrl: normalizeMcpRegistryServerUrl(registry.serverUrl),
+    };
+    return this.registerMCPRegistryNormalized(normalized, save);
+  }
+
+  /**
+   * Registers using an already-normalized `serverUrl` (e.g. after {@link createRegistry} normalized once).
+   * Public {@link registerMCPRegistry} normalizes then delegates here.
+   */
+  private registerMCPRegistryNormalized(registry: kaidenAPI.MCPRegistry, save: boolean): Disposable {
     console.log(`[MCPRegistry] registerMCPRegistry ${registry.serverUrl}`);
     const found = this.registries.find(reg => reg.serverUrl === registry.serverUrl);
     if (found) {
@@ -294,53 +328,65 @@ export class MCPRegistry {
   }
 
   suggestMCPRegistry(registry: kaidenAPI.MCPRegistrySuggestedProvider): Disposable {
+    const normalized: kaidenAPI.MCPRegistrySuggestedProvider = {
+      ...registry,
+      url: normalizeMcpRegistryServerUrl(registry.url),
+    };
     // Do not add it to the list if it's already been suggested by name & URL
     // this may have been done by another extension.
-    if (this.suggestedRegistries.find(reg => reg.url === registry.url && reg.name === registry.name)) {
+    if (this.suggestedRegistries.find(reg => reg.url === normalized.url && reg.name === normalized.name)) {
       // Ignore and don't register
-      console.log(`Registry already registered: ${registry.url}`);
+      console.log(`Registry already registered: ${normalized.url}`);
       return Disposable.noop();
     }
 
-    this.suggestedRegistries.push(registry);
-    this.apiSender.send('mcp-registry-update', registry);
+    this.suggestedRegistries.push(normalized);
+    this.apiSender.send('mcp-registry-update', normalized);
 
     this._onDidRegisterRegistry.fire({
-      name: registry.name,
-      serverUrl: registry.url,
-      icon: registry.icon,
+      name: normalized.name,
+      serverUrl: normalized.url,
+      icon: normalized.icon,
       alias: undefined,
     });
 
     // Create a disposable to remove the registry from the list
     return Disposable.create(() => {
-      this.unsuggestMCPRegistry(registry);
+      this.unsuggestMCPRegistry(normalized);
     });
   }
 
   unsuggestMCPRegistry(registry: kaidenAPI.MCPRegistrySuggestedProvider): void {
+    const normalized: kaidenAPI.MCPRegistrySuggestedProvider = {
+      ...registry,
+      url: normalizeMcpRegistryServerUrl(registry.url),
+    };
     // Find the registry within this.suggestedRegistries[] and remove it
-    const index = this.suggestedRegistries.findIndex(reg => reg.url === registry.url && reg.name === registry.name);
+    const index = this.suggestedRegistries.findIndex(reg => reg.url === normalized.url && reg.name === normalized.name);
     if (index > -1) {
       this.suggestedRegistries.splice(index, 1);
     }
 
     // Fire an update to the UI to remove the suggested registry
-    this.apiSender.send('mcp-registry-update', registry);
+    this.apiSender.send('mcp-registry-update', normalized);
   }
 
   unregisterMCPRegistry(registry: kaidenAPI.MCPRegistry, save: boolean): void {
-    const filtered = this.registries.filter(registryItem => registryItem.serverUrl !== registry.serverUrl);
+    const normalized: kaidenAPI.MCPRegistry = {
+      ...registry,
+      serverUrl: normalizeMcpRegistryServerUrl(registry.serverUrl),
+    };
+    const filtered = this.registries.filter(registryItem => registryItem.serverUrl !== normalized.serverUrl);
     if (filtered.length !== this.registries.length) {
-      this._onDidUnregisterRegistry.fire(Object.freeze({ ...registry }));
+      this._onDidUnregisterRegistry.fire(Object.freeze({ ...normalized }));
       this.registries = filtered;
       if (save) {
         this.saveRegistriesToConfig();
       }
-      this.apiSender.send('mcp-registry-unregister', registry);
+      this.apiSender.send('mcp-registry-unregister', normalized);
     }
     this.telemetryService.track('unregisterMCPRegistry', {
-      serverUrl: this.getRegistryHash(registry),
+      serverUrl: this.getRegistryHash(normalized),
       total: this.registries.length,
     });
   }
@@ -366,19 +412,25 @@ export class MCPRegistry {
 
   async createRegistry(registryCreateOptions: kaidenAPI.MCPRegistryCreateOptions): Promise<Disposable> {
     let telemetryOptions = {};
+    const normalized: kaidenAPI.MCPRegistryCreateOptions = {
+      ...registryCreateOptions,
+      serverUrl: normalizeMcpRegistryServerUrl(registryCreateOptions.serverUrl),
+    };
     try {
-      const exists = this.registries.find(registry => registry.serverUrl === registryCreateOptions.serverUrl);
+      const exists = this.registries.find(registry => registry.serverUrl === normalized.serverUrl);
       if (exists) {
-        throw new Error(`Registry ${registryCreateOptions.serverUrl} already exists`);
+        throw new Error(`Registry ${normalized.serverUrl} already exists`);
       }
 
-      return this.registerMCPRegistry(registryCreateOptions, true);
+      // `MCPRegistry` extends `MCPRegistryCreateOptions` with only optional fields (`name`, `icon`);
+      // create flow only supplies create-options, which is structurally valid for registration.
+      return this.registerMCPRegistryNormalized(normalized, true);
     } catch (error) {
       telemetryOptions = { error: error };
       throw error;
     } finally {
       this.telemetryService.track('createMCPRegistry', {
-        serverUrlHash: this.getRegistryHash(registryCreateOptions),
+        serverUrlHash: this.getRegistryHash(normalized),
         total: this.registries.length,
         ...telemetryOptions,
       });
@@ -589,7 +641,8 @@ export class MCPRegistry {
     registryEntry?: MCPRegistryEntry,
     cursor?: string, // optional param for recursion
   ): Promise<ValidatedServerList> {
-    const url = new URL(`${registryURL}/v0/servers`);
+    const baseUrl = normalizeMcpRegistryServerUrl(registryURL);
+    const url = new URL(`${baseUrl}/v0/servers`);
     if (cursor) {
       url.searchParams.set('cursor', cursor);
     }
@@ -607,7 +660,7 @@ export class MCPRegistry {
     });
 
     if (!content.ok) {
-      throw new Error(`Failed to fetch MCP servers from ${registryURL}: ${content.statusText}`);
+      throw new Error(`Failed to fetch MCP servers from ${baseUrl}: ${content.statusText}`);
     }
 
     const data: components['schemas']['ServerList'] = await content.json();
@@ -617,7 +670,7 @@ export class MCPRegistry {
       const validationResult = this.schemaValidator.validateSchemaData(
         serverResponse,
         'ServerResponse',
-        registryURL,
+        baseUrl,
         false,
       );
       return {
@@ -631,7 +684,7 @@ export class MCPRegistry {
 
     // If pagination info exists, fetch the next page recursively
     if (data.metadata?.nextCursor) {
-      const nextPage = await this.fetchMCPServersFromRegistry(registryURL, registryEntry, data.metadata.nextCursor);
+      const nextPage = await this.fetchMCPServersFromRegistry(baseUrl, registryEntry, data.metadata.nextCursor);
       return {
         ...data,
         servers: [...validatedServers, ...nextPage.servers],
@@ -684,18 +737,22 @@ export class MCPRegistry {
   }
 
   async updateMCPRegistry(registry: kaidenAPI.MCPRegistry): Promise<void> {
+    const normalized: kaidenAPI.MCPRegistry = {
+      ...registry,
+      serverUrl: normalizeMcpRegistryServerUrl(registry.serverUrl),
+    };
     const matchingRegistry = this.registries.find(
-      existingRegistry => registry.serverUrl === existingRegistry.serverUrl,
+      existingRegistry => normalized.serverUrl === existingRegistry.serverUrl,
     );
     if (!matchingRegistry) {
-      throw new Error(`MCP Registry ${registry.serverUrl} was not found`);
+      throw new Error(`MCP Registry ${normalized.serverUrl} was not found`);
     }
     this.telemetryService.track('updateMCPRegistry', {
       serverUrl: this.getRegistryHash(matchingRegistry),
       total: this.registries.length,
     });
-    this.apiSender.send('mcp-registry-update', registry);
-    this._onDidUpdateRegistry.fire(Object.freeze(registry));
+    this.apiSender.send('mcp-registry-update', normalized);
+    this._onDidUpdateRegistry.fire(Object.freeze(normalized));
   }
 
   getOptions(insecure?: boolean): OptionsOfTextResponseBody {
@@ -754,6 +811,7 @@ export class MCPRegistry {
   private loadRegistriesFromConfig(): void {
     this.registries = (this.configuration.get<kaidenAPI.MCPRegistry[]>(MCP_REGISTRIES) ?? []).map(registry => ({
       ...registry,
+      serverUrl: normalizeMcpRegistryServerUrl(registry.serverUrl),
       save: true,
     }));
   }
