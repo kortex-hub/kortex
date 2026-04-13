@@ -21,9 +21,12 @@ export interface SkillMetadata {
   description: string;
 }
 
+export type SkillType = 'pre-built' | 'custom';
+
 export interface SkillInfo extends SkillMetadata {
   path: string;
   enabled: boolean;
+  type: SkillType;
 }
 
 export interface SkillFolderInfo {

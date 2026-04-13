@@ -39,6 +39,7 @@ import {
   type SkillFolderInfo,
   type SkillInfo,
   type SkillMetadata,
+  type SkillType,
 } from '/@api/skill/skill-info.js';
 
 const RESERVED_WORDS = ['anthropic', 'claude'];
@@ -231,6 +232,7 @@ export class SkillManager {
       ...metadata,
       path: resolvedPath,
       enabled: true,
+      type: 'custom',
     };
 
     this.skills = [...this.skills, skill];
@@ -271,6 +273,7 @@ export class SkillManager {
       ...metadata,
       path: skillDir,
       enabled: true,
+      type: 'custom',
     };
     this.skills = [...this.skills, skill];
     this.saveAndNotifySkills();
@@ -284,7 +287,7 @@ export class SkillManager {
     this.skillFolders = [...this.skillFolders, folder];
     this.apiSender.send('skill-folders-update');
 
-    this.discoverSkillsInDirectory(folder.baseDirectory).catch(console.error);
+    this.discoverSkillsInDirectory(folder).catch(console.error);
 
     return {
       dispose: (): void => {
@@ -356,10 +359,11 @@ export class SkillManager {
     return { name: metadata.name, description: metadata.description, content: body };
   }
 
-  /** Lists all file/directory names inside the skill's folder. */
+  /** Lists all file/directory names inside the skill's folder. Directories have a trailing slash. */
   async listSkillFolderContent(name: string): Promise<string[]> {
     const skill = this.findSkillByName(name);
-    return readdir(skill.path);
+    const entries = await readdir(skill.path, { withFileTypes: true });
+    return entries.map(entry => (entry.isDirectory() ? `${entry.name}/` : entry.name));
   }
 
   private findSkillByName(name: string): SkillInfo {
@@ -403,10 +407,10 @@ export class SkillManager {
    */
   private async discoverSkills(): Promise<void> {
     for (const folder of this.skillFolders) {
-      await this.discoverSkillsInDirectory(folder.baseDirectory);
+      await this.discoverSkillsInDirectory(folder);
     }
     const externalPaths: string[] = this.configuration?.get<string[]>(SKILL_REGISTERED) ?? [];
-    await this.processDiscoveredPaths(externalPaths);
+    await this.processDiscoveredPaths(externalPaths, 'custom');
   }
 
   /**
@@ -414,23 +418,25 @@ export class SkillManager {
    * {@link registerSkillFolder} so that each new folder triggers
    * discovery only for its own base directory.
    */
-  private async discoverSkillsInDirectory(directory: string): Promise<void> {
-    if (!existsSync(directory)) return;
+  private async discoverSkillsInDirectory(folder: SkillFolderInfo): Promise<void> {
+    if (!existsSync(folder.baseDirectory)) return;
     const folderPaths: string[] = [];
     try {
-      const entries = await readdir(directory, { withFileTypes: true });
+      const entries = await readdir(folder.baseDirectory, { withFileTypes: true });
       for (const entry of entries) {
         if (entry.isDirectory()) {
-          folderPaths.push(join(directory, entry.name));
+          folderPaths.push(join(folder.baseDirectory, entry.name));
         }
       }
     } catch {
       return;
     }
-    await this.processDiscoveredPaths(folderPaths);
+    // Skills from the default Kaiden folder are 'custom', skills from extension folders are 'pre-built'
+    const skillType = folder.badge === 'Kaiden' ? 'custom' : 'pre-built';
+    await this.processDiscoveredPaths(folderPaths, skillType);
   }
 
-  private async processDiscoveredPaths(folderPaths: string[]): Promise<void> {
+  private async processDiscoveredPaths(folderPaths: string[], skillType: SkillType): Promise<void> {
     const enabledNames = new Set<string>(this.configuration?.get<string[]>(SKILL_ENABLED) ?? []);
     const discovered: SkillInfo[] = [];
 
@@ -449,6 +455,7 @@ export class SkillManager {
           ...metadata,
           path: folderPath,
           enabled: enabledNames.has(metadata.name) || !enabledNames.size,
+          type: skillType,
         });
       } catch (error: unknown) {
         console.warn(`[SkillManager] Skipping invalid skill at ${folderPath}: ${error}`);
