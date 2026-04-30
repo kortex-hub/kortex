@@ -28,24 +28,30 @@ function getStatusBadge(status: string): BadgeInfo {
     case 'started':
       return {
         label: 'Connected',
-        style: 'text-[var(--pd-status-running)] bg-[color-mix(in_srgb,var(--pd-status-running)_12%,transparent)]',
+        style:
+          'text-[var(--pd-status-running)] bg-[color-mix(in_srgb,var(--pd-status-running)_12%,transparent)] border border-[color-mix(in_srgb,var(--pd-status-running)_25%,transparent)]',
       };
     case 'stopped':
       return {
         label: 'Disconnected',
-        style: 'text-[var(--pd-status-stopped)] bg-[color-mix(in_srgb,var(--pd-status-stopped)_12%,transparent)]',
+        style:
+          'text-[var(--pd-status-stopped)] bg-[color-mix(in_srgb,var(--pd-status-stopped)_12%,transparent)] border border-[color-mix(in_srgb,var(--pd-status-stopped)_20%,transparent)]',
       };
     case 'not-configured':
-      return { label: 'Not configured', style: 'bg-[var(--pd-label-bg)] text-[var(--pd-label-text)]' };
+      return {
+        label: 'Not configured',
+        style: 'bg-[var(--pd-label-bg)] text-[var(--pd-label-text)] border border-[var(--pd-content-card-border)]',
+      };
     case 'failed':
       return {
         label: 'Error',
-        style: 'text-[var(--pd-status-terminated)] bg-[color-mix(in_srgb,var(--pd-status-terminated)_12%,transparent)]',
+        style:
+          'text-[var(--pd-status-terminated)] bg-[color-mix(in_srgb,var(--pd-status-terminated)_10%,transparent)] border border-[color-mix(in_srgb,var(--pd-status-terminated)_20%,transparent)]',
       };
     default:
       return {
         label: status.charAt(0).toUpperCase() + status.slice(1),
-        style: 'bg-[var(--pd-label-bg)] text-[var(--pd-label-text)]',
+        style: 'bg-[var(--pd-label-bg)] text-[var(--pd-label-text)] border border-[var(--pd-content-card-border)]',
       };
   }
 }
@@ -53,9 +59,15 @@ function getStatusBadge(status: string): BadgeInfo {
 function getSecondBadge(status: string): BadgeInfo | undefined {
   switch (status) {
     case 'started':
-      return { label: 'Verified', style: 'bg-[var(--pd-label-bg)] text-[var(--pd-label-text)]' };
+      return {
+        label: 'Verified',
+        style: 'bg-[var(--pd-label-bg)] text-[var(--pd-label-text)] border border-[var(--pd-content-card-border)]',
+      };
     case 'failed':
-      return { label: 'Check failed', style: 'bg-[var(--pd-label-bg)] text-[var(--pd-label-text)]' };
+      return {
+        label: 'Check failed',
+        style: 'bg-[var(--pd-label-bg)] text-[var(--pd-label-text)] border border-[var(--pd-content-card-border)]',
+      };
     default:
       return undefined;
   }
@@ -68,7 +80,7 @@ function getSecondBadge(status: string): BadgeInfo | undefined {
     {@const primaryBadge = getStatusBadge(status)}
     {@const secondaryBadge = getSecondBadge(status)}
     <div
-      class="flex flex-col gap-2 p-4 rounded-lg border border-[var(--pd-content-card-border)] bg-[var(--pd-content-card-bg)] flex-1 min-w-40 max-w-48">
+      class="provider-tile flex flex-col gap-2 p-4 rounded-lg border border-[var(--pd-content-card-border)] bg-[var(--pd-content-card-bg)] flex-1 min-w-40 max-w-48">
       <span class="text-base font-semibold text-[var(--pd-content-card-header-text)]">
         {connection.providerName}
       </span>
@@ -91,3 +103,16 @@ function getSecondBadge(status: string): BadgeInfo | undefined {
     </div>
   {/each}
 </div>
+
+<style>
+  .provider-tile {
+    box-shadow:
+      0 1px 2px color-mix(in srgb, var(--pd-content-bg) 6%, transparent),
+      0 8px 24px color-mix(in srgb, var(--pd-content-bg) 7%, transparent);
+  }
+
+  :global(.dark) .provider-tile {
+    background: linear-gradient(145deg, var(--pd-content-card-bg) 0%, var(--pd-content-bg) 100%);
+    box-shadow: none;
+  }
+</style>

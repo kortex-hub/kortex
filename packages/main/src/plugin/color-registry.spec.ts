@@ -223,7 +223,7 @@ describe('initTitlebar', () => {
 
     // check the first call
     expect(spyOnRegisterColor.mock.calls[0]?.[0]).toStrictEqual('titlebar-bg');
-    expect(spyOnRegisterColor.mock.calls[0]?.[1].light).toBe('#f9fafb');
+    expect(spyOnRegisterColor.mock.calls[0]?.[1].light).toBe(tailwindColorPalette.navy[50]);
     expect(spyOnRegisterColor.mock.calls[0]?.[1].dark).toBe('#202020');
   });
 
@@ -244,8 +244,8 @@ describe('initTitlebar', () => {
 
     // check the first call
     expect(spyOnRegisterColor.mock.calls[0]?.[0]).toStrictEqual('titlebar-bg');
-    expect(spyOnRegisterColor.mock.calls[0]?.[1].light).toBe('#f9fafb');
-    expect(spyOnRegisterColor.mock.calls[0]?.[1].dark).toBe('#0f0f11');
+    expect(spyOnRegisterColor.mock.calls[0]?.[1].light).toBe(tailwindColorPalette.navy[50]);
+    expect(spyOnRegisterColor.mock.calls[0]?.[1].dark).toBe(tailwindColorPalette.navy[900]);
   });
 });
 
@@ -263,14 +263,16 @@ test('initCardContent', async () => {
 
   // check the first call
   expect(spyOnRegisterColor.mock.calls[0]?.[0]).toStrictEqual('card-bg');
-  expect(spyOnRegisterColor.mock.calls[0]?.[1].light).toBe(tailwindColorPalette.gray[300]);
-  expect(spyOnRegisterColor.mock.calls[0]?.[1].dark).toBe(tailwindColorPalette.charcoal[800]);
+  expect(spyOnRegisterColor.mock.calls[0]?.[1].light).toBe('#fff');
+  expect(spyOnRegisterColor.mock.calls[0]?.[1].dark).toBe(tailwindColorPalette.navy[700]);
 });
 
 test('initContent', async () => {
   // mock the registerColor
   const spyOnRegisterColor = vi.spyOn(colorRegistry, 'registerColor');
   spyOnRegisterColor.mockReturnValue(undefined);
+  const spyOnRegisterColorDefinition = vi.spyOn(colorRegistry, 'registerColorDefinition');
+  spyOnRegisterColorDefinition.mockReturnValue(undefined);
 
   colorRegistry.initContent();
 
@@ -281,8 +283,15 @@ test('initContent', async () => {
 
   // check the first call
   expect(spyOnRegisterColor.mock.calls[0]?.[0]).toStrictEqual('content-breadcrumb');
-  expect(spyOnRegisterColor.mock.calls[0]?.[1].light).toBe(tailwindColorPalette.purple[900]);
-  expect(spyOnRegisterColor.mock.calls[0]?.[1].dark).toBe(tailwindColorPalette.gray[600]);
+  expect(spyOnRegisterColor.mock.calls[0]?.[1].light).toBe(tailwindColorPalette.navy[800]);
+  expect(spyOnRegisterColor.mock.calls[0]?.[1].dark).toBe(tailwindColorPalette.navy[350]);
+
+  const hoverBg = spyOnRegisterColorDefinition.mock.calls
+    .map(([definition]) => definition)
+    .find(definition => definition.id === 'content-card-hover-bg');
+  expect(hoverBg).toBeDefined();
+  expect(hoverBg?.light).toContain('0.06');
+  expect(hoverBg?.dark).toContain('0.06');
 });
 
 describe('registerColor', () => {
@@ -435,7 +444,7 @@ describe('registerExtensionThemes', () => {
     // now check for a color not defined in 'dark-theme1'
     const titlebarTextColor = colors.find(c => c.id === 'titlebar-text');
     expect(titlebarTextColor).toBeDefined();
-    expect(titlebarTextColor?.value).toBe('#fff');
+    expect(titlebarTextColor?.value).toBe(tailwindColorPalette.navy[25]);
 
     // now ask for the a color defined in 'light-theme1'
     const colorsLight = colorRegistry.listColors('light-theme1');
@@ -447,7 +456,7 @@ describe('registerExtensionThemes', () => {
     // now check for a color not defined in 'light-theme1'
     const titlebarTextColorLight = colorsLight.find(c => c.id === 'titlebar-text');
     expect(titlebarTextColorLight).toBeDefined();
-    expect(titlebarTextColorLight?.value).toBe('#0d2c52');
+    expect(titlebarTextColorLight?.value).toBe(tailwindColorPalette.navy[800]);
   });
 
   test('check dispose on Windows', async () => {
@@ -523,7 +532,7 @@ describe('registerExtensionThemes', () => {
     expect(colors).toBeDefined();
     titlebarBg = colors.find(c => c.id === 'titlebar-bg');
     expect(titlebarBg).toBeDefined();
-    expect(titlebarBg?.value).toBe('#0f0f11');
+    expect(titlebarBg?.value).toBe(tailwindColorPalette.navy[900]);
   });
 
   test('invalid theme (undefined) should return noop disposable', async () => {
@@ -609,12 +618,12 @@ describe('initLabel', () => {
 
     // check the first call
     expect(spyOnRegisterColor.mock.calls[2]?.[0]).toStrictEqual('label-primary-bg');
-    expect(spyOnRegisterColor.mock.calls[2]?.[1].light).toBe(tailwindColorPalette.purple[300]);
-    expect(spyOnRegisterColor.mock.calls[2]?.[1].dark).toBe(tailwindColorPalette.purple[700]);
+    expect(spyOnRegisterColor.mock.calls[2]?.[1].light).toBe(tailwindColorPalette.accent1[100]);
+    expect(spyOnRegisterColor.mock.calls[2]?.[1].dark).toBe(tailwindColorPalette.accent1[800]);
 
     expect(spyOnRegisterColor.mock.calls[3]?.[0]).toStrictEqual('label-primary-text');
-    expect(spyOnRegisterColor.mock.calls[3]?.[1].light).toBe(tailwindColorPalette.purple[700]);
-    expect(spyOnRegisterColor.mock.calls[3]?.[1].dark).toBe(tailwindColorPalette.purple[300]);
+    expect(spyOnRegisterColor.mock.calls[3]?.[1].light).toBe(tailwindColorPalette.accent1[700]);
+    expect(spyOnRegisterColor.mock.calls[3]?.[1].dark).toBe(tailwindColorPalette.accent1[300]);
   });
 
   test('secondary color', () => {
@@ -677,8 +686,8 @@ describe('badge', () => {
 
     // check the call
     expect(spyOnRegisterColor).toBeCalledWith('badge-devmode-extension-bg', {
-      dark: tailwindColorPalette.dustypurple[600],
-      light: tailwindColorPalette.dustypurple[600],
+      dark: tailwindColorPalette.navy[500],
+      light: tailwindColorPalette.navy[500],
     });
   });
 });
