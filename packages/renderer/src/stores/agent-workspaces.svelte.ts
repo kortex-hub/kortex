@@ -31,7 +31,7 @@ export type AgentWorkspaceSummaryUI = Omit<AgentWorkspaceSummary, 'state'> & { s
 let readyToUpdate = false;
 
 export async function checkForUpdate(eventName: string): Promise<boolean> {
-  if ('system-ready' === eventName) {
+  if ('extensions-already-started' === eventName) {
     readyToUpdate = true;
   }
   return readyToUpdate;
@@ -46,7 +46,7 @@ export const agentWorkspacesEventStore = new EventStore<AgentWorkspaceSummaryUI[
   agentWorkspaces,
   checkForUpdate,
   ['agent-workspace-update'],
-  ['system-ready'],
+  ['extensions-already-started'],
   listWorkspaces,
 );
 agentWorkspacesEventStore.setup();
