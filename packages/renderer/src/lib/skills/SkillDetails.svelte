@@ -24,11 +24,11 @@ let { name }: Props = $props();
 let skillInfo: SkillInfo | undefined = $derived($skillInfos.find(s => s.name === name));
 let skillContent: string | undefined = $state(undefined);
 let folderContents: SkillResourceEntry[] = $state([]);
+let detailsPage = $state<DetailsPage | undefined>();
 
 $effect(() => {
   if (!skillInfo) {
-    skillContent = undefined;
-    folderContents = [];
+    detailsPage?.close();
     return;
   }
   const currentName = name;
@@ -67,7 +67,7 @@ function onToggle(): void {
 }
 </script>
 
-<DetailsPage title={name}>
+<DetailsPage title={name} bind:this={detailsPage}>
   {#snippet subtitleSnippet()}
     <div class="flex items-center gap-3">
       <span
