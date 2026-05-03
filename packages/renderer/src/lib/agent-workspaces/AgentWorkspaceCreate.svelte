@@ -2,6 +2,7 @@
 import { faCode, faLock, faO, faRobot, faWrench } from '@fortawesome/free-solid-svg-icons';
 import { Button } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
+import { onMount } from 'svelte';
 import { toast } from 'svelte-sonner';
 
 import AgentWorkspaceCreateStepAgentModel from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepAgentModel.svelte';
@@ -152,6 +153,13 @@ let sourcePath = $state('');
 let sessionName = $state('');
 let description = $state('');
 let selectedAgent = $state('opencode');
+
+onMount(async () => {
+  const defaultAgent = await window.getConfigurationValue<string>('onboarding.defaultAgent');
+  if (defaultAgent && agentOptions.some(opt => opt.value === defaultAgent)) {
+    selectedAgent = defaultAgent;
+  }
+});
 let selectedFileAccess = $state('workspace');
 let selectedNetwork = $state('registries');
 let selectedSkillIds = $derived(skillItems.map(s => s.id));

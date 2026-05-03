@@ -547,4 +547,56 @@ test('Expect selecting a different network option updates the radio', async () =
   expect(screen.getByRole('radio', { name: 'Use Developer Preset' })).not.toBeChecked();
 });
 
+test('Expect default agent from onboarding.defaultAgent setting when valid', async () => {
+  vi.mocked(window.getConfigurationValue).mockResolvedValue('claude');
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.getConfigurationValue).toHaveBeenCalledWith('onboarding.defaultAgent');
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      agent: 'claude',
+    }),
+  );
+});
+
+test('Expect default agent falls back to opencode when setting is empty', async () => {
+  vi.mocked(window.getConfigurationValue).mockResolvedValue('');
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      agent: 'opencode',
+    }),
+  );
+});
+
+test('Expect default agent falls back to opencode when setting is unknown value', async () => {
+  vi.mocked(window.getConfigurationValue).mockResolvedValue('unknown-agent');
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      agent: 'opencode',
+    }),
+  );
+});
+
 const wizardStepCount = 5;
