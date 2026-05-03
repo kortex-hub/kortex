@@ -169,6 +169,9 @@ describe('factory', () => {
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith({
       name: 'dum*****',
       type: 'cloud',
+      llmMetadata: {
+        name: 'anthropic',
+      },
       status: expect.any(Function),
       lifecycle: {
         delete: expect.any(Function),
