@@ -13,17 +13,20 @@ import AgentWorkspaceCreateStepNetworking from '/@/lib/agent-workspaces/AgentWor
 import AgentWorkspaceCreateStepToolsSecrets from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepToolsSecrets.svelte';
 import AgentWorkspaceCreateStepWorkspace from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepWorkspace.svelte';
 import { agentDefinitions } from '/@/lib/guided-setup/agent-registry';
+import { getCatalogModels } from '/@/lib/models/models-utils';
 import type { ChecklistItem } from '/@/lib/ui/ChecklistPanel.svelte';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 import WizardStepper from '/@/lib/ui/WizardStepper.svelte';
 import { handleNavigation } from '/@/navigation';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import { disabledModels, isModelEnabled, modelKey } from '/@/stores/model-catalog';
 import { providerInfos } from '/@/stores/providers';
 import { ragEnvironments } from '/@/stores/rag-environments';
 import { secretVaultInfos } from '/@/stores/secret-vault';
 import { skillInfos } from '/@/stores/skills';
 import type { NetworkConfiguration } from '/@api/agent-workspace-info';
 import { NavigationPage } from '/@api/navigation-page';
+import type { DefaultWorkspaceSettings } from '/@api/onboarding-settings-info';
 
 const fileAccessOptions: FileAccessOption[] = [
   {
@@ -151,6 +154,19 @@ onMount(async () => {
   if (defaultAgent && agentDefinitions.some(d => d.cliName === defaultAgent)) {
     selectedAgent = defaultAgent;
   }
+
+  const defaultSettings = await window.getConfigurationValue<DefaultWorkspaceSettings>(
+    'onboarding.defaultWorkspaceSettings',
+  );
+  if (defaultSettings?.model?.providerId && defaultSettings.model.label) {
+    selectedModel = `${defaultSettings.model.providerId}::${defaultSettings.model.label}`;
+  }
+  if (!selectedModel) {
+    const firstModel = getFirstCompatibleModelKey();
+    if (firstModel) {
+      selectedModel = firstModel;
+    }
+  }
 });
 let selectedFileAccess = $state('workspace');
 let selectedNetwork = $state('registries');
@@ -244,6 +260,22 @@ function cancel(): void {
   handleNavigation({ page: NavigationPage.AGENT_WORKSPACES });
 }
 
+function getFirstCompatibleModelKey(): string {
+  const agentDef = agentDefinitions.find(d => d.cliName === selectedAgent);
+  const enabled = getCatalogModels($providerInfos).filter(m => isModelEnabled($disabledModels, m.providerId, m.label));
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity
+  const seen = new Set<string>();
+  const unique = enabled.filter(m => {
+    const key = modelKey(m.providerId, m.label);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  const compatible = agentDef?.modelFilter ? unique.filter(m => m.llmMetadata?.name === agentDef.modelFilter) : unique;
+  const first = compatible[0];
+  return first ? modelKey(first.providerId, first.label) : '';
+}
+
 async function startWorkspace(): Promise<void> {
   if (!sessionName.trim() || !sourcePath.trim()) return;
 
@@ -257,7 +289,7 @@ async function startWorkspace(): Promise<void> {
     await window.createAgentWorkspace({
       sourcePath,
       agent: agentDef?.cliAgent ?? selectedAgent,
-      model: selectedModel || undefined,
+      model: selectedModel,
       name: sessionName,
       skills: selectedSkillPaths.length > 0 ? selectedSkillPaths : undefined,
       network,

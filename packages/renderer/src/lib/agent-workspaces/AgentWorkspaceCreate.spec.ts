@@ -23,6 +23,7 @@ import { writable } from 'svelte/store';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import * as mcpStore from '/@/stores/mcp-remote-servers';
+import * as modelCatalogStore from '/@/stores/model-catalog';
 import * as providerStore from '/@/stores/providers';
 import * as ragStore from '/@/stores/rag-environments';
 import * as secretVaultStore from '/@/stores/secret-vault';
@@ -41,6 +42,7 @@ vi.mock(import('/@/stores/mcp-remote-servers'));
 vi.mock(import('/@/stores/secret-vault'));
 vi.mock(import('/@/stores/providers'));
 vi.mock(import('/@/stores/rag-environments'));
+vi.mock(import('/@/stores/model-catalog'));
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -54,6 +56,13 @@ beforeEach(() => {
   vi.mocked(secretVaultStore).secretVaultInfos = writable<readonly SecretVaultInfo[]>([]);
   vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([]);
   vi.mocked(ragStore).ragEnvironments = writable<RagEnvironment[]>([]);
+  vi.mocked(modelCatalogStore).disabledModels = writable<Set<string>>(new Set());
+  vi.mocked(modelCatalogStore.isModelEnabled).mockImplementation(
+    (disabled: Set<string>, providerId: string, label: string): boolean => !disabled.has(`${providerId}::${label}`),
+  );
+  vi.mocked(modelCatalogStore.modelKey).mockImplementation(
+    (providerId: string, label: string): string => `${providerId}::${label}`,
+  );
 });
 
 test('Expect page title displayed', () => {
@@ -672,6 +681,130 @@ test('Expect createAgentWorkspace called without network when agent_mode selecte
   expect(window.createAgentWorkspace).toHaveBeenCalledWith(
     expect.objectContaining({
       network: undefined,
+    }));
+});
+
+const mockAnthropicProvider: ProviderInfo = {
+  id: 'claude',
+  name: 'Anthropic',
+  internalId: 'claude-internal',
+  status: 'started',
+  inferenceConnections: [
+    {
+      name: 'Anthropic Cloud',
+      type: 'cloud',
+      status: 'started',
+      llmMetadata: { name: 'anthropic' },
+      models: [{ label: 'claude-sonnet-4' }, { label: 'claude-opus-4' }],
+    },
+  ],
+  inferenceProviderConnectionCreation: false,
+} as unknown as ProviderInfo;
+
+const mockOllamaProvider: ProviderInfo = {
+  id: 'ollama',
+  name: 'Ollama',
+  internalId: 'ollama-internal',
+  status: 'started',
+  inferenceConnections: [
+    {
+      name: 'Ollama Local',
+      type: 'local',
+      status: 'started',
+      llmMetadata: { name: 'ollama' },
+      models: [{ label: 'llama3.2:3b' }],
+    },
+  ],
+  inferenceProviderConnectionCreation: false,
+} as unknown as ProviderInfo;
+
+test('Expect default model from onboarding.defaultWorkspaceSettings when valid', async () => {
+  vi.mocked(window.getConfigurationValue).mockImplementation(async (key: string) => {
+    if (key === 'onboarding.defaultAgent') return 'opencode';
+    if (key === 'onboarding.defaultWorkspaceSettings')
+      return { model: { providerId: 'claude', connectionName: 'Anthropic Cloud', label: 'claude-sonnet-4' } };
+    return undefined;
+  });
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.getConfigurationValue).toHaveBeenCalledWith('onboarding.defaultWorkspaceSettings');
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      model: 'claude::claude-sonnet-4',
+    }),
+  );
+});
+
+test('Expect first compatible model used when defaultWorkspaceSettings has no model and providers exist', async () => {
+  vi.mocked(window.getConfigurationValue).mockImplementation(async (key: string) => {
+    if (key === 'onboarding.defaultAgent') return 'opencode';
+    if (key === 'onboarding.defaultWorkspaceSettings') return {};
+    return undefined;
+  });
+  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider, mockOllamaProvider]);
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      model: 'claude::claude-sonnet-4',
+    }),
+  );
+});
+
+test('Expect model undefined when no setting and no providers', async () => {
+  vi.mocked(window.getConfigurationValue).mockImplementation(async (key: string) => {
+    if (key === 'onboarding.defaultAgent') return 'opencode';
+    if (key === 'onboarding.defaultWorkspaceSettings') return {};
+    return undefined;
+  });
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      model: '',
+      agent: 'opencode',
+      name: 'my-repo',
+      skills: undefined,
+    }),
+  );
+});
+
+test('Expect first compatible model used when defaultWorkspaceSettings is undefined and providers exist', async () => {
+  vi.mocked(window.getConfigurationValue).mockImplementation(async (key: string) => {
+    if (key === 'onboarding.defaultAgent') return 'opencode';
+    if (key === 'onboarding.defaultWorkspaceSettings') return undefined;
+    return undefined;
+  });
+  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockOllamaProvider]);
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      model: 'ollama::llama3.2:3b',
     }),
   );
 });

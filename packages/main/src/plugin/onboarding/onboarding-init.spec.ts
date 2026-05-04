@@ -49,3 +49,13 @@ test('registers onboarding configuration with hidden properties', () => {
     expect.objectContaining({ type: 'string', default: '', hidden: true }),
   );
 });
+
+test('registers defaultWorkspaceSettings as hidden object property', () => {
+  const init = new OnboardingInit(configurationRegistry);
+  init.init();
+
+  const config = registeredConfigs.at(0);
+  expect(config?.properties?.['onboarding.defaultWorkspaceSettings']).toEqual(
+    expect.objectContaining({ type: 'object', hidden: true }),
+  );
+});

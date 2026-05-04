@@ -38,6 +38,12 @@ export class OnboardingInit {
           default: '',
           hidden: true,
         },
+        [`${OnboardingSettings.SectionName}.${OnboardingSettings.DefaultWorkspaceSettings}`]: {
+          description: 'Default workspace settings selected during onboarding',
+          type: 'object',
+          default: {},
+          hidden: true,
+        },
         [`${OnboardingSettings.SectionName}.${OnboardingSettings.VertexProjectId}`]: {
           description: 'Google Cloud project ID for Claude on Vertex AI',
           type: 'string',
