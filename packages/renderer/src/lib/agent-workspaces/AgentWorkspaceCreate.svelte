@@ -159,7 +159,7 @@ onMount(async () => {
     'onboarding.defaultWorkspaceSettings',
   );
   if (defaultSettings?.model?.providerId && defaultSettings.model.label) {
-    selectedModel = `${defaultSettings.model.providerId}::${defaultSettings.model.label}`;
+    selectedModel = modelKey(defaultSettings.model.providerId, defaultSettings.model.label);
   }
   if (!selectedModel) {
     const firstModel = getFirstCompatibleModelKey();

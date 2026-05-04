@@ -681,7 +681,8 @@ test('Expect createAgentWorkspace called without network when agent_mode selecte
   expect(window.createAgentWorkspace).toHaveBeenCalledWith(
     expect.objectContaining({
       network: undefined,
-    }));
+    }),
+  );
 });
 
 const mockAnthropicProvider: ProviderInfo = {
@@ -763,7 +764,7 @@ test('Expect first compatible model used when defaultWorkspaceSettings has no mo
   );
 });
 
-test('Expect model undefined when no setting and no providers', async () => {
+test('Expect model empty when no setting and no providers', async () => {
   vi.mocked(window.getConfigurationValue).mockImplementation(async (key: string) => {
     if (key === 'onboarding.defaultAgent') return 'opencode';
     if (key === 'onboarding.defaultWorkspaceSettings') return {};

@@ -56,6 +56,6 @@ test('registers defaultWorkspaceSettings as hidden object property', () => {
 
   const config = registeredConfigs.at(0);
   expect(config?.properties?.['onboarding.defaultWorkspaceSettings']).toEqual(
-    expect.objectContaining({ type: 'object', hidden: true }),
+    expect.objectContaining({ type: 'object', default: {}, hidden: true }),
   );
 });
