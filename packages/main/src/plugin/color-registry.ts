@@ -381,6 +381,11 @@ export class ColorRegistry {
         .withLight(colorPaletteHelper(accent1[400]).withAlpha(0.14))
         .build(),
     );
+    // Pre-blended accent1[400] @ 14% over nav bg — alpha borders don't composite against the element background
+    this.registerColor(`${glNav}icon-hover-border`, {
+      dark: '#1a354e',
+      light: '#e6f7fe',
+    });
     this.registerColor(`${glNav}icon-inset-bg`, {
       dark: navy[800],
       light: navy[200],
@@ -395,6 +400,11 @@ export class ColorRegistry {
         .withLight(colorPaletteHelper(accent1[400]).withAlpha(0.12))
         .build(),
     );
+    // Pre-blended accent1[400] @ 12% over nav bg — see icon-hover-border comment
+    this.registerColor(`${glNav}icon-selected-border`, {
+      dark: '#18324b',
+      light: '#eaf8fe',
+    });
     this.registerColor(`${glNav}icon-selected-highlight`, {
       dark: accent1[400],
       light: accent1[500],

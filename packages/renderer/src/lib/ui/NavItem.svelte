@@ -48,11 +48,11 @@ onDestroy(() => {
     class:text-[color:var(--pd-global-nav-icon-selected)]={selected}
     class:border-l-[var(--pd-global-nav-icon-selected-highlight)]={selected && !inSection}
     class:bg-[var(--pd-global-nav-icon-selected-bg)]={selected && !inSection}
-    class:border-r-[var(--pd-global-nav-icon-selected-bg)]={selected && !inSection}
+    class:border-r-[var(--pd-global-nav-icon-selected-border)]={selected && !inSection}
     class:border-l-[var(--pd-global-nav-bg)]={!selected && !inSection}
     class:hover:text-[color:var(--pd-global-nav-icon-hover)]={!selected || inSection}
     class:hover:bg-[var(--pd-global-nav-icon-hover-bg)]={!selected || inSection}
-    class:hover:border-[var(--pd-global-nav-icon-hover-bg)]={!selected && !inSection}>
+    class:hover:border-[var(--pd-global-nav-icon-hover-border)]={!selected && !inSection}>
     <Tooltip right tip={tooltipText} class="flex flex-col items-center">
       <slot />
     </Tooltip>
