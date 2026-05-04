@@ -165,7 +165,8 @@ export interface DialogOptions {
 
 export const CODING_AGENT = {
   OPENCODE: 'OpenCode',
-  CLAUDE: 'Claude',
+  CLAUDE: 'Claude Code',
+  CLAUDE_VERTEX: 'Claude on Vertex AI',
   CURSOR: 'Cursor',
   GOOSE: 'Goose',
 } as const;

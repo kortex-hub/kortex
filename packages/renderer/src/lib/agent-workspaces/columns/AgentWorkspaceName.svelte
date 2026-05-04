@@ -21,9 +21,13 @@ function openDetails(): void {
 </script>
 
 <div class="flex items-center gap-3 overflow-hidden max-w-full">
-  <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 {agentDef.colorClass}">
-    <Icon icon={agentDef.icon} size="1.5x" class="text-white" />
-  </div>
+  {#if agentDef.iconComponent}
+    <agentDef.iconComponent size={36} />
+  {:else}
+    <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 {agentDef.colorClass}">
+      <Icon icon={agentDef.icon} size="1.5x" class="text-white" />
+    </div>
+  {/if}
   <div class="flex flex-col gap-1 overflow-hidden min-w-0">
     <button class="items-start" onclick={openDetails}>
       <span

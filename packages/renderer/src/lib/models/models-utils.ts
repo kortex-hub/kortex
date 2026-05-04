@@ -45,13 +45,14 @@ export function getModels(providerInfos: ProviderInfo[]): ModelInfo[] {
 export function getCatalogModels(providerInfos: ProviderInfo[]): CatalogModelInfo[] {
   const result: CatalogModelInfo[] = [];
   for (const provider of providerInfos) {
-    for (const connection of provider.inferenceConnections) {
+    for (const connection of provider.inferenceConnections ?? []) {
       for (const model of connection.models) {
         result.push({
           providerId: provider.id,
           providerName: provider.name,
           connectionName: connection.name,
           type: connection.type,
+          llmMetadata: connection.llmMetadata,
           label: model.label,
           connectionStatus: connection.status,
         });

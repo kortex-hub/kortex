@@ -22,7 +22,7 @@ import type { Component } from 'svelte';
 
 import CodingAgentStep from './CodingAgentStep.svelte';
 
-export type CliAgent = 'opencode' | 'claude' | 'claude-vertex';
+export type CliAgent = 'opencode' | 'claude' | 'claude-vertex' | 'cursor' | 'goose';
 
 export interface VertexConfig {
   projectId: string;

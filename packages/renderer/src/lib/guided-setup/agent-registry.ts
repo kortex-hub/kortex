@@ -18,8 +18,14 @@
 
 import type { IconDefinition } from '@fortawesome/fontawesome-common-types';
 import { faClaude, faGoogle } from '@fortawesome/free-brands-svg-icons';
-import { faDesktop, faRobot } from '@fortawesome/free-solid-svg-icons';
+import { faCode, faDesktop, faRobot, faWrench } from '@fortawesome/free-solid-svg-icons';
 import type { Component } from 'svelte';
+
+import ClaudeCodeIcon from '/@/lib/images/agents/ClaudeCodeIcon.svelte';
+import CursorIcon from '/@/lib/images/agents/CursorIcon.svelte';
+import GooseIcon from '/@/lib/images/agents/GooseIcon.svelte';
+import OpenCodeIcon from '/@/lib/images/agents/OpenCodeIcon.svelte';
+import VertexAIIcon from '/@/lib/images/agents/VertexAIIcon.svelte';
 
 import type { CliAgent } from './guided-setup-steps';
 import ClaudePanel from './panels/ClaudePanel.svelte';
@@ -36,10 +42,13 @@ export interface AgentDefinition {
   cliAgent?: string;
   title: string;
   icon: IconDefinition;
+  iconComponent?: Component;
   colorClass: string;
   description?: string;
   badge?: string;
   panel?: Component;
+  /** When set, only models whose `llmMetadata.name` matches this value are shown for this agent. */
+  modelFilter?: string;
   /** Compound selector in the form `extensionId:providerId` (e.g. `kaiden.claude:claude`). */
   providerSelector?: string;
   secretType?: string;
@@ -55,19 +64,22 @@ export const agentDefinitions: AgentDefinition[] = [
     cliName: 'opencode',
     title: 'OpenCode',
     icon: faDesktop,
+    iconComponent: OpenCodeIcon,
     colorClass: 'bg-gradient-to-br from-green-500 to-green-600',
     description:
-      'Open-source agent on your machine - local models via Ollama or Ramalama, or cloud APIs (OpenAI, Gemini, and other providers OpenCode supports).',
+      'Open-source agent on your machine — local models via Ollama or Ramalama, or cloud APIs (OpenAI, Gemini, and other providers OpenCode supports).',
     badge: 'Recommended',
     panel: OpenCodePanel,
   },
   {
     cliName: 'claude',
     title: 'Claude Code',
-    description: 'Anthropic\u2019s cloud agent \u2014 connect with an API key to access Claude models.',
+    description: 'Anthropic cloud agent — connect with an API key to access Claude models.',
     badge: 'Cloud',
     icon: faClaude,
+    iconComponent: ClaudeCodeIcon,
     colorClass: 'bg-gradient-to-br from-amber-600 to-amber-500',
+    modelFilter: 'anthropic',
     panel: ClaudePanel,
     providerSelector: 'kaiden.claude:claude',
     secretType: 'anthropic',
@@ -79,8 +91,26 @@ export const agentDefinitions: AgentDefinition[] = [
     description: 'Run Claude Code through Google Cloud Vertex AI using your GCP project credentials.',
     badge: 'Vertex AI',
     icon: faGoogle,
+    iconComponent: VertexAIIcon,
     colorClass: 'bg-gradient-to-br from-blue-500 to-blue-600',
+    modelFilter: 'anthropic',
     panel: ClaudeVertexPanel,
+  },
+  {
+    cliName: 'cursor',
+    title: 'Cursor',
+    description: 'AI-powered code editor agent with deep IDE integration.',
+    icon: faCode,
+    iconComponent: CursorIcon,
+    colorClass: 'bg-gradient-to-br from-indigo-500 to-indigo-600',
+  },
+  {
+    cliName: 'goose',
+    title: 'Goose',
+    description: 'Open-source autonomous coding agent by Block.',
+    icon: faWrench,
+    iconComponent: GooseIcon,
+    colorClass: 'bg-gradient-to-br from-emerald-600 to-emerald-700',
   },
 ];
 
