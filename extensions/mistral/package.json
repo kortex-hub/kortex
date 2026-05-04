@@ -36,7 +36,7 @@
     "watch": "vite build --watch"
   },
   "dependencies": {
-    "@ai-sdk/mistral": "^3.0.30",
+    "@ai-sdk/mistral": "^3.0.33",
     "@mistralai/mistralai": "^2.2.0",
     "inversify": "^7.7.1",
     "smol-toml": "^1.6.1"
