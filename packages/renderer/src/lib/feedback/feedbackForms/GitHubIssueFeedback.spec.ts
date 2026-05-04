@@ -158,11 +158,11 @@ test.each([
 test.each([
   {
     category: 'bug',
-    link: 'https://github.com/podman-desktop/podman-desktop/issues?q=label%3A%22kind%2Fbug%20%F0%9F%90%9E%22',
+    link: 'https://github.com/openkaiden/kaiden/issues?q=label%3A%22bug%22',
   },
   {
     category: 'feature',
-    link: 'https://github.com/podman-desktop/podman-desktop/issues?q=label%3A%22kind%2Ffeature%20%F0%9F%92%A1%22',
+    link: 'https://github.com/openkaiden/kaiden/issues?q=label%3A%22enhancement%22',
   },
 ])('$category should have specific issues link', async ({ category, link }) => {
   const { getByLabelText } = renderGitHubIssueFeedback({

@@ -72,7 +72,7 @@ async function sendFeedback(): Promise<void> {
 async function openGitHub(): Promise<void> {
   onCloseForm(false);
   await window.telemetryTrack('feedback.openGitHub');
-  await window.openExternal('https://github.com/containers/podman-desktop');
+  await window.openExternal('https://github.com/openkaiden/kaiden');
 }
 </script>
 

@@ -50,7 +50,7 @@ export class FeedbackHandler {
     }
 
     const urlSearchParams = new URLSearchParams(this.toQueryParameters(issueProperties, additionalContent)).toString();
-    const link = `https://github.com/containers/podman-desktop/issues/new?${urlSearchParams}`;
+    const link = `https://github.com/openkaiden/kaiden/issues/new?${urlSearchParams}`;
     await shell.openExternal(link);
   }
 
