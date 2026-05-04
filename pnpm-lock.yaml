@@ -628,8 +628,8 @@ importers:
   extensions/openai-compatible:
     dependencies:
       '@ai-sdk/openai-compatible':
-        specifier: ^2.0.42
-        version: 2.0.42(zod@4.4.3)
+        specifier: ^2.0.45
+        version: 2.0.45(zod@4.4.3)
       '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
@@ -647,8 +647,8 @@ importers:
   extensions/openshift-ai:
     dependencies:
       '@ai-sdk/openai-compatible':
-        specifier: ^2.0.42
-        version: 2.0.42(zod@4.4.3)
+        specifier: ^2.0.45
+        version: 2.0.45(zod@4.4.3)
       '@kubernetes/client-node':
         specifier: ^1.3.0
         version: 1.4.0(encoding@0.1.13)
@@ -669,8 +669,8 @@ importers:
   extensions/ramalama:
     dependencies:
       '@ai-sdk/openai-compatible':
-        specifier: ^2.0.42
-        version: 2.0.42(zod@4.4.3)
+        specifier: ^2.0.45
+        version: 2.0.45(zod@4.4.3)
       inversify:
         specifier: ^7.7.1
         version: 7.11.0(reflect-metadata@0.2.2)
@@ -966,8 +966,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/openai-compatible@2.0.42':
-    resolution: {integrity: sha512-hjq485U/dpi6Hvjzw5+F1vohCrB1kibGHlUFknYGa4nOoCnSvFM1lTXEIyTAkjK1uXgTbNk8vw66lbEyWT12jg==}
+  '@ai-sdk/openai-compatible@2.0.45':
+    resolution: {integrity: sha512-5YBvurNL7Oj7mT3srws4Rh4cQidoorfEGObAOb5jV40eld8IC7EkXWARZjnWYqgYzabUs6Sn6muiXfQVkgOyOQ==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -7872,10 +7872,10 @@ snapshots:
       '@ai-sdk/provider-utils': 4.0.23(zod@4.4.3)
       zod: 4.4.3
 
-  '@ai-sdk/openai-compatible@2.0.42(zod@4.4.3)':
+  '@ai-sdk/openai-compatible@2.0.45(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/provider': 3.0.9
-      '@ai-sdk/provider-utils': 4.0.24(zod@4.4.3)
+      '@ai-sdk/provider': 3.0.10
+      '@ai-sdk/provider-utils': 4.0.26(zod@4.4.3)
       zod: 4.4.3
 
   '@ai-sdk/provider-utils@2.2.8(zod@4.3.6)':
@@ -7898,13 +7898,6 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.0.8
       zod: 4.3.6
-
-  '@ai-sdk/provider-utils@4.0.24(zod@4.4.3)':
-    dependencies:
-      '@ai-sdk/provider': 3.0.9
-      '@standard-schema/spec': 1.1.0
-      eventsource-parser: 3.0.8
-      zod: 4.4.3
 
   '@ai-sdk/provider-utils@4.0.25(zod@4.4.3)':
     dependencies:
@@ -11817,7 +11810,7 @@ snapshots:
 
   eventsource@3.0.7:
     dependencies:
-      eventsource-parser: 3.0.6
+      eventsource-parser: 3.0.8
 
   expand-template@2.0.3: {}
 
