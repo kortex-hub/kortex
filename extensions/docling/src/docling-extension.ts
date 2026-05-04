@@ -125,7 +125,7 @@ export class DoclingExtension {
     // Wait for the service to be healthy
     let started = false;
     let retries = 0;
-    while (!started && retries++ < 20) {
+    while (!started && retries++ < 60) {
       try {
         const response = await fetch(`http://localhost:${containerPort}/health`);
         if (response.ok) {
