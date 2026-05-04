@@ -62,7 +62,7 @@ export class ExtensionsUpdater {
       properties: {
         [autoCheckUpdatesKey]: {
           description:
-            'When enabled, automatically checks extensions for updates. The updates are fetched from registry.podman-desktop.io.',
+            'When enabled, automatically checks extensions for updates. The updates are fetched from registry.openkaiden.ai.',
           type: 'boolean',
           default: true,
         },
