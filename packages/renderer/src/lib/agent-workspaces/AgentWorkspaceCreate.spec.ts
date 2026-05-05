@@ -726,6 +726,7 @@ test('Expect default model from onboarding.defaultWorkspaceSettings when valid',
       return { model: { providerId: 'claude', connectionName: 'Anthropic Cloud', label: 'claude-sonnet-4' } };
     return undefined;
   });
+  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider]);
 
   render(AgentWorkspaceCreate);
 
@@ -737,7 +738,7 @@ test('Expect default model from onboarding.defaultWorkspaceSettings when valid',
   expect(window.getConfigurationValue).toHaveBeenCalledWith('onboarding.defaultWorkspaceSettings');
   expect(window.createAgentWorkspace).toHaveBeenCalledWith(
     expect.objectContaining({
-      model: 'claude::claude-sonnet-4',
+      model: 'anthropic::claude-sonnet-4::',
     }),
   );
 });
@@ -759,7 +760,7 @@ test('Expect first compatible model used when defaultWorkspaceSettings has no mo
 
   expect(window.createAgentWorkspace).toHaveBeenCalledWith(
     expect.objectContaining({
-      model: 'claude::claude-sonnet-4',
+      model: 'anthropic::claude-sonnet-4::',
     }),
   );
 });
@@ -780,7 +781,7 @@ test('Expect model empty when no setting and no providers', async () => {
 
   expect(window.createAgentWorkspace).toHaveBeenCalledWith(
     expect.objectContaining({
-      model: '',
+      model: undefined,
       agent: 'opencode',
       name: 'my-repo',
       skills: undefined,
@@ -805,7 +806,7 @@ test('Expect first compatible model used when defaultWorkspaceSettings is undefi
 
   expect(window.createAgentWorkspace).toHaveBeenCalledWith(
     expect.objectContaining({
-      model: 'ollama::llama3.2:3b',
+      model: 'ollama::llama3.2:3b::',
     }),
   );
 });

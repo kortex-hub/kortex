@@ -194,7 +194,7 @@ test('switching agent keeps model if still compatible', async () => {
 
   render(AgentWorkspaceCreateStepAgentModel, {
     selectedAgent: 'opencode',
-    selectedModel: 'claude::claude-opus-4',
+    selectedModel: { providerId: 'claude', connectionName: 'Anthropic Cloud', type: 'cloud', label: 'claude-sonnet-4' },
   });
 
   const initiallySelected = screen.getByRole('radio', { name: 'Use claude-opus-4' });
