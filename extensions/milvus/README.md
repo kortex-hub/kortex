@@ -1,6 +1,6 @@
 # Milvus Knowledges Provider Extension
 
-This extension provides Milvus vector database integration to create Knowledges environment in Kaiden using the RAG methodology (Retrieval-Augmented Generation).
+This extension provides Milvus vector database integration to create a Knowledges environment in Kaiden using the RAG methodology (Retrieval-Augmented Generation).
 
 ## Features
 
