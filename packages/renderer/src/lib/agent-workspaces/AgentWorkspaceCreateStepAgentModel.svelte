@@ -92,14 +92,15 @@ function selectModel(model: CatalogModelInfo): void {
 function selectAgent(value: string): void {
   if (selectedAgent === value) return;
   selectedAgent = value;
-  selectedModel = undefined;
 }
 
 $effect(() => {
   const models = agentFilteredModels;
   const current = untrack(() => selectedModel);
   if (current) {
-    const stillEligible = models.some(m => modelKey(m.providerId, m.label) === current);
+    const stillEligible = models.some(
+      m => modelKey(m.providerId, m.label) === modelKey(current.providerId, current.label),
+    );
     if (stillEligible) return;
   }
   if (models.length > 0) {
