@@ -243,6 +243,7 @@ export class ExtensionLoader implements IAsyncDisposable {
   @preDestroy()
   async asyncDispose(): Promise<void> {
     await this.stopAllExtensions();
+    await this.fileSystemMonitoring.disposeAll();
 
     // clear maps
     this.activatedExtensions.clear();

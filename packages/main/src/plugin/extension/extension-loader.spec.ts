@@ -181,7 +181,9 @@ const kubernetesClient: KubernetesClient = {
   dispose: vi.fn(),
 } as unknown as KubernetesClient;
 
-const fileSystemMonitoring: FilesystemMonitoring = {} as unknown as FilesystemMonitoring;
+const fileSystemMonitoring: FilesystemMonitoring = {
+  disposeAll: vi.fn().mockResolvedValue(undefined),
+} as unknown as FilesystemMonitoring;
 
 const proxy: Proxy = {} as unknown as Proxy;
 
@@ -2916,6 +2918,13 @@ test('ExtensionLoader async dispose should stop all extensions', async () => {
   await extensionLoader.asyncDispose();
 
   expect(deactivateMock).toHaveBeenCalledOnce();
+  expect(fileSystemMonitoring.disposeAll).toHaveBeenCalledOnce();
+});
+
+test('asyncDispose should call fileSystemMonitoring.disposeAll', async () => {
+  await extensionLoader.asyncDispose();
+
+  expect(fileSystemMonitoring.disposeAll).toHaveBeenCalledOnce();
 });
 
 describe('env API', () => {
