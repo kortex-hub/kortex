@@ -2,6 +2,7 @@
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
 import { StatusIcon } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
+import { untrack } from 'svelte';
 
 import { agentDefinitions } from '/@/lib/guided-setup/agent-registry';
 import { type CatalogModelInfo, getCatalogModels } from '/@/lib/models/models-utils';
@@ -90,13 +91,20 @@ function selectModel(model: CatalogModelInfo): void {
 function selectAgent(value: string): void {
   if (selectedAgent === value) return;
   selectedAgent = value;
-  selectedModel = '';
 }
 
 $effect(() => {
-  if (!selectedModel) return;
-  const stillEligible = agentFilteredModels.some(m => modelKey(m.providerId, m.label) === selectedModel);
-  if (!stillEligible) selectedModel = '';
+  const models = agentFilteredModels;
+  const current = untrack(() => selectedModel);
+  if (current) {
+    const stillEligible = models.some(m => modelKey(m.providerId, m.label) === current);
+    if (stillEligible) return;
+  }
+  if (models.length > 0) {
+    selectedModel = modelKey(models[0].providerId, models[0].label);
+  } else if (current) {
+    selectedModel = '';
+  }
 });
 
 function navigateToModels(): void {

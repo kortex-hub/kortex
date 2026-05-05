@@ -189,24 +189,48 @@ test('search filters model list', async () => {
   expect(screen.queryByText('claude-opus-4')).not.toBeInTheDocument();
 });
 
-test('selecting agent clears model selection', async () => {
+test('switching agent keeps model if still compatible', async () => {
   vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider]);
 
   render(AgentWorkspaceCreateStepAgentModel, {
     selectedAgent: 'opencode',
-    selectedModel: 'claude::claude-sonnet-4',
+    selectedModel: 'claude::claude-opus-4',
   });
 
-  const initiallySelected = screen.getByRole('radio', { name: 'Use claude-sonnet-4' });
+  const initiallySelected = screen.getByRole('radio', { name: 'Use claude-opus-4' });
   expect(initiallySelected).toBeChecked();
 
-  // Switching agent resets model selection — all radios unchecked
+  // Switching to Claude Code — claude-opus-4 is Anthropic, still compatible
   await fireEvent.click(screen.getByText('Claude Code'));
 
-  const radios = screen.queryAllByRole('radio');
-  for (const r of radios) {
-    expect(r).not.toBeChecked();
-  }
+  expect(screen.getByRole('radio', { name: 'Use claude-opus-4' })).toBeChecked();
+});
+
+test('auto-selects first model when no model pre-selected', async () => {
+  vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider]);
+
+  render(AgentWorkspaceCreateStepAgentModel, {
+    selectedAgent: 'opencode',
+    selectedModel: '',
+  });
+
+  const firstRadio = screen.getByRole('radio', { name: 'Use claude-sonnet-4' });
+  expect(firstRadio).toBeChecked();
+});
+
+test('auto-selects first model when agent filters remove current selection', async () => {
+  vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider, mockOllamaProvider]);
+
+  render(AgentWorkspaceCreateStepAgentModel, {
+    selectedAgent: 'opencode',
+    selectedModel: 'ollama::llama3.2:3b',
+  });
+
+  // Switching to Claude filters out Ollama models, should auto-select first Anthropic model
+  await fireEvent.click(screen.getByText('Claude Code'));
+
+  const firstRadio = screen.getByRole('radio', { name: 'Use claude-sonnet-4' });
+  expect(firstRadio).toBeChecked();
 });
 
 test('disabled models are hidden from selection list', async () => {
