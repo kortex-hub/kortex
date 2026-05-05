@@ -34,6 +34,7 @@ import type { Task } from '/@/plugin/tasks/tasks.js';
 import type { Exec } from '/@/plugin/util/exec.js';
 import type { AgentWorkspaceCreateOptions, AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
+import type { IConfigurationRegistry } from '/@api/configuration/models.js';
 import type { TaskState, TaskStatus } from '/@api/taskInfo.js';
 
 import { AgentWorkspaceManager } from './agent-workspace-manager.js';
@@ -105,6 +106,13 @@ const webContents = {
   receive: vi.fn(),
 } as unknown as WebContents;
 
+const configurationRegistry = {
+  registerConfigurations: vi.fn(),
+  getConfiguration: vi.fn().mockReturnValue({
+    get: vi.fn().mockReturnValue(undefined),
+  }),
+} as unknown as IConfigurationRegistry;
+
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(taskManager.createTask).mockReturnValue(mockTask);
@@ -112,7 +120,18 @@ beforeEach(() => {
   mockTask.status = '' as TaskStatus;
   mockTask.error = '';
   vi.mocked(filesystemMonitoring.createFileSystemWatcher).mockReturnValue(mockWatcher);
-  manager = new AgentWorkspaceManager(apiSender, ipcHandle, kdnCli, taskManager, filesystemMonitoring, webContents);
+  vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
+    get: vi.fn().mockReturnValue(undefined),
+  } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
+  manager = new AgentWorkspaceManager(
+    apiSender,
+    ipcHandle,
+    kdnCli,
+    taskManager,
+    filesystemMonitoring,
+    webContents,
+    configurationRegistry,
+  );
   manager.init();
 });
 
@@ -143,6 +162,20 @@ describe('init', () => {
 
   test('registers IPC handler for getCliInfo', () => {
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:getCliInfo', expect.any(Function));
+  });
+
+  test('registers hidden runtime configuration', () => {
+    expect(configurationRegistry.registerConfigurations).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: 'agentWorkspace.runtime',
+        properties: expect.objectContaining({
+          'agentWorkspace.runtime': expect.objectContaining({
+            type: 'string',
+            hidden: true,
+          }),
+        }),
+      }),
+    ]);
   });
 });
 

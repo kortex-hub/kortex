@@ -9,6 +9,7 @@ export interface NetworkAccessOption {
   access: string;
   notes: string;
   badge?: string;
+  disabled?: boolean;
 }
 
 interface Props {
@@ -35,10 +36,11 @@ let { networkOptions, selectedNetwork = $bindable() }: Props = $props();
       <div class="mx-3 border-t border-[var(--pd-content-card-border)] opacity-30"></div>
     {/if}
     <label
-      class="w-full flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors text-left
+      class="w-full flex items-center gap-3 px-4 py-3 transition-colors text-left
+        {option.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
         {selectedNetwork === option.value
           ? 'bg-[var(--pd-content-card-hover-inset-bg)]'
-          : 'hover:bg-[var(--pd-content-card-hover-inset-bg)]'}"
+          : option.disabled ? '' : 'hover:bg-[var(--pd-content-card-hover-inset-bg)]'}"
       aria-label={option.name}>
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2">
@@ -57,8 +59,9 @@ let { networkOptions, selectedNetwork = $bindable() }: Props = $props();
           name="networkAccess"
           value={option.value}
           bind:group={selectedNetwork}
+          disabled={option.disabled}
           aria-label="Use {option.name}"
-          class="accent-[var(--pd-button-primary-bg)] w-4 h-4 cursor-pointer" />
+          class="accent-[var(--pd-button-primary-bg)] w-4 h-4 {option.disabled ? 'cursor-not-allowed' : 'cursor-pointer'}" />
       </div>
     </label>
   {/each}

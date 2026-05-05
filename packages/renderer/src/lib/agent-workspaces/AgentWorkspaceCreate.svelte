@@ -67,6 +67,7 @@ const networkOptions: NetworkAccessOption[] = [
     description: 'No outbound HTTP/HTTPS from the sandbox.',
     access: 'None',
     notes: 'Strict',
+    disabled: false,
   },
   {
     value: 'registries',
@@ -75,6 +76,7 @@ const networkOptions: NetworkAccessOption[] = [
     access: 'Registries',
     notes: 'Balanced default',
     badge: 'Recommended',
+    disabled: false,
   },
   {
     value: 'agent_mode',
@@ -82,6 +84,7 @@ const networkOptions: NetworkAccessOption[] = [
     description: 'The agent requests each outbound access; you approve before traffic leaves the sandbox.',
     access: 'Per request',
     notes: 'Human in the loop',
+    disabled: true,
   },
   {
     value: 'open',
@@ -89,6 +92,7 @@ const networkOptions: NetworkAccessOption[] = [
     description: 'Permit all outbound traffic. Best for trusted dev setups.',
     access: 'All hosts',
     notes: 'Trusted setups',
+    disabled: false,
   },
 ];
 

@@ -38,6 +38,10 @@ import type {
   CliInfo,
 } from '/@api/agent-workspace-info.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
+import type { IConfigurationNode } from '/@api/configuration/models.js';
+import { IConfigurationRegistry } from '/@api/configuration/models.js';
+
+import { AgentWorkspaceSettings } from './agent-workspace-settings.js';
 
 /**
  * Manages agent workspaces by delegating to the `kdn` CLI.
@@ -64,6 +68,8 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly filesystemMonitoring: FilesystemMonitoring,
     @inject(WebContentsType)
     private readonly webContents: WebContents,
+    @inject(IConfigurationRegistry)
+    private readonly configurationRegistry: IConfigurationRegistry,
   ) {}
 
   async getCliInfo(): Promise<CliInfo> {
@@ -164,6 +170,20 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   init(): void {
+    const runtimeConfiguration: IConfigurationNode = {
+      id: `${AgentWorkspaceSettings.SectionName}.${AgentWorkspaceSettings.Runtime}`,
+      title: 'Agent Workspace',
+      type: 'object',
+      properties: {
+        [`${AgentWorkspaceSettings.SectionName}.${AgentWorkspaceSettings.Runtime}`]: {
+          description: 'Override the container runtime used when creating agent workspaces.',
+          type: 'string',
+          hidden: true,
+        },
+      },
+    };
+    this.configurationRegistry.registerConfigurations([runtimeConfiguration]);
+
     this.ipcHandle('agent-workspace:getCliInfo', async (): Promise<CliInfo> => {
       return this.getCliInfo();
     });

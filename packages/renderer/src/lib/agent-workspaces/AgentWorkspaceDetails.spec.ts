@@ -368,3 +368,19 @@ test('Expect no navigation when removal fails', async () => {
 
   expect(router.goto).not.toHaveBeenCalled();
 });
+
+test('Expect files tab is not present', async () => {
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.queryByText('Files')).not.toBeInTheDocument();
+  });
+});
+
+test('Expect settings tab is not present', async () => {
+  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
+
+  await waitFor(() => {
+    expect(screen.queryByText('Settings')).not.toBeInTheDocument();
+  });
+});

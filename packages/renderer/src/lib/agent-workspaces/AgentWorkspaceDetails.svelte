@@ -3,9 +3,7 @@ import { faPlay, faStop, faTerminal, faTrash } from '@fortawesome/free-solid-svg
 import { ErrorMessage, Tab } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
-import AgentWorkspaceDetailsFiles from '/@/lib/agent-workspaces/AgentWorkspaceDetailsFiles.svelte';
 import AgentWorkspaceDetailsOverview from '/@/lib/agent-workspaces/AgentWorkspaceDetailsOverview.svelte';
-import AgentWorkspaceDetailsSettings from '/@/lib/agent-workspaces/AgentWorkspaceDetailsSettings.svelte';
 import AgentWorkspaceTerminal from '/@/lib/agent-workspaces/AgentWorkspaceTerminal.svelte';
 import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
@@ -106,8 +104,8 @@ function handleRemove(): void {
   {#snippet tabsSnippet()}
     <Tab title="Overview" selected={isTabSelected($router.path, 'overview')} url={getTabUrl($router.path, 'overview')} />
     <Tab title="Terminal" selected={isTabSelected($router.path, 'terminal')} url={getTabUrl($router.path, 'terminal')} />
-    <Tab title="Files" selected={isTabSelected($router.path, 'files')} url={getTabUrl($router.path, 'files')} />
-    <Tab title="Settings" selected={isTabSelected($router.path, 'settings')} url={getTabUrl($router.path, 'settings')} />
+    <!-- <Tab title="Files" selected={isTabSelected($router.path, 'files')} url={getTabUrl($router.path, 'files')} /> -->
+    <!-- <Tab title="Settings" selected={isTabSelected($router.path, 'settings')} url={getTabUrl($router.path, 'settings')} /> -->
   {/snippet}
   {#snippet contentSnippet()}
     <Route path="/overview" breadcrumb="Overview" navigationHint="tab">
@@ -119,11 +117,11 @@ function handleRemove(): void {
     <Route path="/terminal" breadcrumb="Terminal" navigationHint="tab">
       <AgentWorkspaceTerminal workspaceId={workspaceId} />
     </Route>
-    <Route path="/files" breadcrumb="Files" navigationHint="tab">
+    <!-- <Route path="/files" breadcrumb="Files" navigationHint="tab">
       <AgentWorkspaceDetailsFiles />
     </Route>
     <Route path="/settings" breadcrumb="Settings" navigationHint="tab">
       <AgentWorkspaceDetailsSettings />
-    </Route>
+    </Route> -->
   {/snippet}
 </DetailsPage>

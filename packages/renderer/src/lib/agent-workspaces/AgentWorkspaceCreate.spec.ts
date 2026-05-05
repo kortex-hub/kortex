@@ -19,6 +19,7 @@
 import '@testing-library/jest-dom/vitest';
 
 import { fireEvent, render, screen } from '@testing-library/svelte';
+import userEvent from '@testing-library/user-event';
 import { writable } from 'svelte/store';
 import { beforeEach, expect, test, vi } from 'vitest';
 
@@ -562,7 +563,7 @@ test('Expect networking step shows Network Policy heading', async () => {
   expect(screen.getByText('Outbound network for this workspace sandbox')).toBeInTheDocument();
 });
 
-test('Expect all four network options rendered', async () => {
+test('Expect all four network options rendered with Agent mode disabled', async () => {
   render(AgentWorkspaceCreate);
 
   await navigateToNetworkingStep();
@@ -570,7 +571,19 @@ test('Expect all four network options rendered', async () => {
   expect(screen.getByRole('radio', { name: 'Use Deny All' })).toBeInTheDocument();
   expect(screen.getByRole('radio', { name: 'Use Developer Preset' })).toBeInTheDocument();
   expect(screen.getByRole('radio', { name: 'Use Agent mode' })).toBeInTheDocument();
+  expect(screen.getByRole('radio', { name: 'Use Agent mode' })).toBeDisabled();
   expect(screen.getByRole('radio', { name: 'Use Unrestricted' })).toBeInTheDocument();
+});
+
+test('Expect clicking disabled Agent mode does not change selection', async () => {
+  render(AgentWorkspaceCreate);
+
+  await navigateToNetworkingStep();
+
+  await userEvent.click(screen.getByRole('radio', { name: 'Use Agent mode' }));
+
+  expect(screen.getByRole('radio', { name: 'Use Developer Preset' })).toBeChecked();
+  expect(screen.getByRole('radio', { name: 'Use Agent mode' })).not.toBeChecked();
 });
 
 test('Expect Developer Preset selected by default on networking step', async () => {
