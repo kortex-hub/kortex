@@ -19,7 +19,7 @@
 import '@testing-library/jest-dom/vitest';
 
 import { render } from '@testing-library/svelte';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import ChatHeader from './chat-header.svelte';
 import { useSidebar } from './ui/sidebar/context.svelte';
@@ -31,6 +31,7 @@ vi.mock(import('./ui/sidebar/context.svelte'));
 vi.mock(import('./ui/tooltip'));
 
 beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.resetAllMocks();
   vi.mocked(useSidebar).mockReturnValue({
     open: false,
@@ -42,6 +43,10 @@ beforeEach(() => {
     toggle: vi.fn(),
     handleShortcutKeydown: vi.fn(),
   } as never);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('ChatHeader', () => {
