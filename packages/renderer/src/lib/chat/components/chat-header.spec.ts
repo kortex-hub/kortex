@@ -27,10 +27,7 @@ import { Tooltip } from './ui/tooltip';
 
 vi.mock(import('tinro'));
 vi.mock(import('./sidebar-toggle.svelte'));
-vi.mock(import('./ui/sidebar/context.svelte'), () => ({
-  useSidebar: vi.fn(),
-  setSidebar: vi.fn(),
-}));
+vi.mock(import('./ui/sidebar/context.svelte'));
 vi.mock(import('./ui/tooltip'));
 
 beforeEach(() => {
