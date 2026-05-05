@@ -167,7 +167,7 @@ describe('init', () => {
   test('registers hidden runtime configuration', () => {
     expect(configurationRegistry.registerConfigurations).toHaveBeenCalledWith([
       expect.objectContaining({
-        id: 'preferences.agentWorkspace',
+        id: 'agentWorkspace.runtime',
         properties: expect.objectContaining({
           'agentWorkspace.runtime': expect.objectContaining({
             type: 'string',

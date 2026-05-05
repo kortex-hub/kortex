@@ -171,7 +171,7 @@ export class AgentWorkspaceManager implements Disposable {
 
   init(): void {
     const runtimeConfiguration: IConfigurationNode = {
-      id: 'preferences.agentWorkspace',
+      id: `${AgentWorkspaceSettings.SectionName}.${AgentWorkspaceSettings.Runtime}`,
       title: 'Agent Workspace',
       type: 'object',
       properties: {
