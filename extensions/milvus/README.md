@@ -1,17 +1,17 @@
-# Milvus RAG Provider Extension
+# Milvus Knowledges Provider Extension
 
-This extension provides Milvus vector database integration for RAG (Retrieval-Augmented Generation) functionality in Kaiden.
+This extension provides Milvus vector database integration to create a Knowledges environment in Kaiden using the RAG methodology (Retrieval-Augmented Generation).
 
 ## Features
 
-- **RAG Connection Factory**: Creates Milvus vector database instances
+- **Knowledges Connection Factory**: Creates Milvus vector database instances
 - **Container-based**: Runs Milvus in containers for easy management
 - **Persistent Storage**: Each Milvus instance uses a dedicated folder in extension storage
 - **Port Exposure**: Exposes Milvus API (19530)
 
 ## Usage
 
-1. Navigate to the RAG providers section in Kaiden
+1. Navigate to the Knowledges section in Kaiden
 2. Click "Create Milvus Connection"
 3. Provide a name for your connection
 4. The extension will:
@@ -20,13 +20,13 @@ This extension provides Milvus vector database integration for RAG (Retrieval-Au
    - Create and start a Milvus container with:
      - Volume mount to the storage folder at `/var/lib/milvus`
      - Port 19530 exposed for Milvus API
-   - Register the connection for use with RAG
+   - Register the connection for use with Knowledges
 
 ## Configuration
 
 The extension supports the following configuration parameter:
 
-- **name**: (Required) The name of the Milvus RAG connection
+- **name**: (Required) The name of the Milvus Knowledges connection
 
 ## License
 

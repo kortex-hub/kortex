@@ -572,8 +572,8 @@ importers:
   extensions/mistral:
     dependencies:
       '@ai-sdk/mistral':
-        specifier: ^3.0.33
-        version: 3.0.33(zod@4.4.3)
+        specifier: ^3.0.34
+        version: 3.0.34(zod@4.4.3)
       '@mistralai/mistralai':
         specifier: ^2.2.0
         version: 2.2.0
@@ -960,8 +960,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/mistral@3.0.33':
-    resolution: {integrity: sha512-8KnayIx/jelUcbNdvsM7YEAEa0PdGtbc3xyqFbY1mQX479nYeQizVIqM3SY2hQ5kG3GcMRVHAmU136UeEelsew==}
+  '@ai-sdk/mistral@3.0.34':
+    resolution: {integrity: sha512-HpK28sWGdIfg1vTSScJNtzVdvNRfA4mfCmPmPR+j/MGJ0oAuEJMqxWkL96ZnGPdhZt5KdW09aKovdIe+q2zQ7A==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -7856,7 +7856,7 @@ snapshots:
       pkce-challenge: 5.0.1
       zod: 4.3.6
 
-  '@ai-sdk/mistral@3.0.33(zod@4.4.3)':
+  '@ai-sdk/mistral@3.0.34(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
       '@ai-sdk/provider-utils': 4.0.26(zod@4.4.3)
