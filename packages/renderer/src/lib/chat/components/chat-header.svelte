@@ -12,13 +12,18 @@ import { Button } from './ui/button';
 import { useSidebar } from './ui/sidebar';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
+interface Props {
+  hasModels?: boolean;
+}
+let { hasModels = false }: Props = $props();
+
 const sidebar = useSidebar();
 </script>
 
 <header class="bg-background sticky top-0 flex items-start gap-2 p-2">
 	<SidebarToggle />
 
-	{#if !sidebar.open || (innerWidth.current ?? 768) < 768}
+	{#if hasModels && (!sidebar.open || (innerWidth.current ?? 768) < 768)}
 		<Tooltip>
 			<TooltipTrigger>
 				{#snippet child({ props })}

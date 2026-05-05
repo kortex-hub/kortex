@@ -11,6 +11,7 @@ import { currentChatId } from '/@/lib/chat/state/current-chat-id.svelte';
 import { sidebarCollapsed } from '/@/lib/chat/state/sidebar-collapsed.svelte';
 import { getModels } from '/@/lib/models/models-utils';
 import { isDark } from '/@/stores/appearance';
+import { disabledModels, isModelEnabled } from '/@/stores/model-catalog';
 import { providerInfos } from '/@/stores/providers';
 
 interface Props {
@@ -30,7 +31,9 @@ const chatMessagesPromise = $derived(
 
 onDestroy(() => chatHistory.dispose());
 
-const hasModels = $derived(getModels($providerInfos).length > 0);
+const hasModels = $derived(
+  getModels($providerInfos).filter(m => isModelEnabled($disabledModels, m.providerId, m.label)).length > 0,
+);
 
 // Sync the chat's ThemeProvider with the app's appearance setting
 const forcedTheme = $derived($isDark ? 'dark' : 'light');
