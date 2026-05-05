@@ -113,3 +113,7 @@ export function getInferenceConnectionSummaries(providerInfos: ProviderInfo[]): 
   }
   return result;
 }
+
+export function getModelId(model: ModelInfo): string {
+  return `${model.llmMetadata?.name ?? ''}::${model.label}::${model.endpoint ?? ''}`;
+}

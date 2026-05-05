@@ -194,10 +194,11 @@ test('switching agent keeps model if still compatible', async () => {
 
   render(AgentWorkspaceCreateStepAgentModel, {
     selectedAgent: 'opencode',
-    selectedModel: 'claude::claude-opus-4',
+    selectedModel: { providerId: 'claude', connectionName: 'Anthropic Cloud', type: 'cloud', label: 'claude-opus-4' },
   });
 
   const initiallySelected = screen.getByRole('radio', { name: 'Use claude-opus-4' });
+  screen.debug(undefined, 16384);
   expect(initiallySelected).toBeChecked();
 
   // Switching to Claude Code — claude-opus-4 is Anthropic, still compatible
@@ -211,7 +212,7 @@ test('auto-selects first model when no model pre-selected', async () => {
 
   render(AgentWorkspaceCreateStepAgentModel, {
     selectedAgent: 'opencode',
-    selectedModel: '',
+    selectedModel: undefined,
   });
 
   const firstRadio = screen.getByRole('radio', { name: 'Use claude-sonnet-4' });
@@ -223,7 +224,7 @@ test('auto-selects first model when agent filters remove current selection', asy
 
   render(AgentWorkspaceCreateStepAgentModel, {
     selectedAgent: 'opencode',
-    selectedModel: 'ollama::llama3.2:3b',
+    selectedModel: { providerId: 'ollama', connectionName: 'Ollama', type: 'local', label: 'llama3.2:3b' },
   });
 
   // Switching to Claude filters out Ollama models, should auto-select first Anthropic model

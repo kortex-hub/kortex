@@ -4,6 +4,7 @@ import { StatusIcon } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { untrack } from 'svelte';
 
+import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { agentDefinitions } from '/@/lib/guided-setup/agent-registry';
 import { type CatalogModelInfo, getCatalogModels } from '/@/lib/models/models-utils';
 import { handleNavigation } from '/@/navigation';
@@ -13,10 +14,10 @@ import { NavigationPage } from '/@api/navigation-page';
 
 interface Props {
   selectedAgent?: string;
-  selectedModel?: string;
+  selectedModel?: ModelInfo;
 }
 
-let { selectedAgent = $bindable(''), selectedModel = $bindable('') }: Props = $props();
+let { selectedAgent = $bindable(''), selectedModel = $bindable() }: Props = $props();
 
 type ModelCategory = 'cloud' | 'corporate' | 'local';
 
@@ -85,7 +86,7 @@ function getModelStatus(model: CatalogModelInfo): string {
 }
 
 function selectModel(model: CatalogModelInfo): void {
-  selectedModel = modelKey(model.providerId, model.label);
+  selectedModel = model;
 }
 
 function selectAgent(value: string): void {
@@ -97,13 +98,15 @@ $effect(() => {
   const models = agentFilteredModels;
   const current = untrack(() => selectedModel);
   if (current) {
-    const stillEligible = models.some(m => modelKey(m.providerId, m.label) === current);
+    const stillEligible = models.some(
+      m => modelKey(m.providerId, m.label) === modelKey(current.providerId, current.label),
+    );
     if (stillEligible) return;
   }
   if (models.length > 0) {
-    selectedModel = modelKey(models[0].providerId, models[0].label);
+    selectedModel = models[0];
   } else if (current) {
-    selectedModel = '';
+    selectedModel = undefined;
   }
 });
 
@@ -210,7 +213,7 @@ function navigateToModels(): void {
                     <tbody>
                       {#each models as model (modelKey(model.providerId, model.label))}
                         {@const key = modelKey(model.providerId, model.label)}
-                        {@const isSelected = selectedModel === key}
+                        {@const isSelected = selectedModel ? modelKey(selectedModel.providerId, selectedModel.label) === key : false}
                         <tr
                           role="button"
                           tabindex="0"

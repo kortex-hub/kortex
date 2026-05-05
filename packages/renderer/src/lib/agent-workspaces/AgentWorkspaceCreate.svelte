@@ -12,8 +12,9 @@ import type { NetworkAccessOption } from '/@/lib/agent-workspaces/AgentWorkspace
 import AgentWorkspaceCreateStepNetworking from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepNetworking.svelte';
 import AgentWorkspaceCreateStepToolsSecrets from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepToolsSecrets.svelte';
 import AgentWorkspaceCreateStepWorkspace from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepWorkspace.svelte';
+import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { agentDefinitions } from '/@/lib/guided-setup/agent-registry';
-import { getCatalogModels } from '/@/lib/models/models-utils';
+import { getCatalogModels, getModelId } from '/@/lib/models/models-utils';
 import type { ChecklistItem } from '/@/lib/ui/ChecklistPanel.svelte';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 import WizardStepper from '/@/lib/ui/WizardStepper.svelte';
@@ -151,7 +152,7 @@ let sourcePath = $state('');
 let sessionName = $state('');
 let description = $state('');
 let selectedAgent = $state('opencode');
-let selectedModel = $state('');
+let selectedModel = $state<ModelInfo | undefined>(undefined);
 
 onMount(async () => {
   const defaultAgent = await window.getConfigurationValue<string>('onboarding.defaultAgent');
@@ -163,10 +164,16 @@ onMount(async () => {
     'onboarding.defaultWorkspaceSettings',
   );
   if (defaultSettings?.model?.providerId && defaultSettings.model.label) {
-    selectedModel = modelKey(defaultSettings.model.providerId, defaultSettings.model.label);
+    const allModels = getCatalogModels($providerInfos);
+    const match = allModels.find(
+      m => m.providerId === defaultSettings.model!.providerId && m.label === defaultSettings.model!.label,
+    );
+    if (match) {
+      selectedModel = match;
+    }
   }
   if (!selectedModel) {
-    const firstModel = getFirstCompatibleModelKey();
+    const firstModel = getFirstCompatibleModel();
     if (firstModel) {
       selectedModel = firstModel;
     }
@@ -264,7 +271,7 @@ function cancel(): void {
   handleNavigation({ page: NavigationPage.AGENT_WORKSPACES });
 }
 
-function getFirstCompatibleModelKey(): string {
+function getFirstCompatibleModel(): ModelInfo | undefined {
   const agentDef = agentDefinitions.find(d => d.cliName === selectedAgent);
   const enabled = getCatalogModels($providerInfos).filter(m => isModelEnabled($disabledModels, m.providerId, m.label));
   // eslint-disable-next-line svelte/prefer-svelte-reactivity
@@ -276,8 +283,7 @@ function getFirstCompatibleModelKey(): string {
     return true;
   });
   const compatible = agentDef?.modelFilter ? unique.filter(m => m.llmMetadata?.name === agentDef.modelFilter) : unique;
-  const first = compatible[0];
-  return first ? modelKey(first.providerId, first.label) : '';
+  return compatible[0];
 }
 
 async function startWorkspace(): Promise<void> {
@@ -293,7 +299,7 @@ async function startWorkspace(): Promise<void> {
     await window.createAgentWorkspace({
       sourcePath,
       agent: agentDef?.cliAgent ?? selectedAgent,
-      model: selectedModel,
+      model: selectedModel ? getModelId(selectedModel) : undefined,
       name: sessionName,
       skills: selectedSkillPaths.length > 0 ? selectedSkillPaths : undefined,
       network,
