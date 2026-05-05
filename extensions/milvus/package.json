@@ -1,7 +1,7 @@
 {
   "name": "milvus",
-  "displayName": "Milvus RAG Provider",
-  "description": "Provides Milvus vector database for RAG",
+  "displayName": "Milvus Knowledges Provider",
+  "description": "Provides Milvus vector database for Knowledges",
   "version": "0.1.0-next",
   "publisher": "kaiden",
   "license": "Apache-2.0",
