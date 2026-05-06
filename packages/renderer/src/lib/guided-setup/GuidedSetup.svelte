@@ -4,6 +4,8 @@ import { Button } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { SvelteSet } from 'svelte/reactivity';
 
+import type { AgentWorkspaceConfiguration } from '/@api/agent-workspace-info';
+
 import { getAgentDefinition } from './agent-registry';
 import { createDefaultOnboardingState, guidedSetupSteps } from './guided-setup-steps';
 
@@ -30,35 +32,28 @@ function getStepState(index: number): 'completed' | 'active' | 'upcoming' {
   return 'upcoming';
 }
 
-interface WorkspaceEnvVar {
-  name: string;
-  value?: string;
-  secret?: string;
-}
-
-function buildWorkspaceConfig(): { environment: WorkspaceEnvVar[] } {
+function buildWorkspaceConfig(): AgentWorkspaceConfiguration {
   const resolved = getAgentDefinition(onboardingState.agent).cliAgent ?? onboardingState.agent;
 
   if (resolved === 'claude' && onboardingState.secretName) {
     return {
-      environment: [{ name: 'ANTHROPIC_API_KEY', secret: onboardingState.secretName }],
+      secrets: [onboardingState.secretName],
     };
   }
 
-  return { environment: [] };
+  return {};
 }
 
 async function persistOnboardingDefaults(): Promise<void> {
   const resolvedAgent = getAgentDefinition(onboardingState.agent).cliAgent ?? onboardingState.agent;
+  onboardingState.workspaceSetting.defaultAgent = resolvedAgent;
   await window.updateConfigurationValue('onboarding.defaultAgent', resolvedAgent);
 
-  const settings = {
-    model: onboardingState.model ?? undefined,
-    workspaceConfig: buildWorkspaceConfig(),
-  };
+  const agentSettings = onboardingState.workspaceSetting.defaultAgentSettings?.[resolvedAgent] ?? {};
+  agentSettings.defaultModel = onboardingState.model;
+  agentSettings.workspaceConfiguration = buildWorkspaceConfig();
 
-  const plain = JSON.parse(JSON.stringify(settings));
-  await window.updateConfigurationValue('onboarding.defaultWorkspaceSettings', plain);
+  await window.updateConfigurationValue('onboarding.defaultWorkspaceSettings', onboardingState.workspaceSetting);
 }
 
 async function advance(): Promise<void> {

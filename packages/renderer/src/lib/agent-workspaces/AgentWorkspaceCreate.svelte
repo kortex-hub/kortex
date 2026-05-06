@@ -163,10 +163,16 @@ onMount(async () => {
   const defaultSettings = await window.getConfigurationValue<DefaultWorkspaceSettings>(
     'onboarding.defaultWorkspaceSettings',
   );
-  if (defaultSettings?.model?.providerId && defaultSettings.model.label) {
+  if (
+    defaultAgent &&
+    defaultSettings?.defaultAgentSettings?.[defaultAgent].defaultModel?.providerId &&
+    defaultSettings?.defaultAgentSettings?.[defaultAgent].defaultModel?.label
+  ) {
     const allModels = getCatalogModels($providerInfos);
     const match = allModels.find(
-      m => m.providerId === defaultSettings.model!.providerId && m.label === defaultSettings.model!.label,
+      m =>
+        m.providerId === defaultSettings?.defaultAgentSettings?.[defaultAgent].defaultModel?.providerId &&
+        m.label === defaultSettings?.defaultAgentSettings?.[defaultAgent].defaultModel?.label,
     );
     if (match) {
       selectedModel = match;

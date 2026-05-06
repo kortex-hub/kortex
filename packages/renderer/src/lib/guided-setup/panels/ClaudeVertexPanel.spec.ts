@@ -30,7 +30,7 @@ let onboarding: OnboardingState;
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.resetAllMocks();
-  onboarding = { agent: 'claude-vertex' };
+  onboarding = { agent: 'claude-vertex', workspaceSetting: {} };
   vi.stubGlobal('openExternal', vi.fn().mockResolvedValue(undefined));
   vi.stubGlobal('openDialog', vi.fn().mockResolvedValue(undefined));
 });

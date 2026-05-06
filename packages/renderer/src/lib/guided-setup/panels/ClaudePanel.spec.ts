@@ -71,7 +71,7 @@ let onboarding: OnboardingState;
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.resetAllMocks();
-  onboarding = { agent: 'claude' };
+  onboarding = { agent: 'claude', workspaceSetting: {} };
   vi.stubGlobal('createSecret', vi.fn().mockResolvedValue({ name: 'anthropic' }));
   vi.stubGlobal('createInferenceProviderConnection', vi.fn().mockResolvedValue(undefined));
   stubClaudeProvider();

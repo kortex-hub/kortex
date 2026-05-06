@@ -16,12 +16,20 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import type { AgentWorkspaceConfiguration } from './agent-workspace-info.js';
+
 export interface DefaultWorkspaceModelSettings {
   providerId: string;
   connectionName: string;
   label: string;
 }
 
+export interface DefaultPerAgentWorkspaceSettings {
+  defaultModel?: DefaultWorkspaceModelSettings;
+  workspaceConfiguration?: AgentWorkspaceConfiguration;
+}
+
 export interface DefaultWorkspaceSettings {
-  model?: DefaultWorkspaceModelSettings;
+  defaultAgent?: string;
+  defaultAgentSettings?: Record<string, DefaultPerAgentWorkspaceSettings>;
 }

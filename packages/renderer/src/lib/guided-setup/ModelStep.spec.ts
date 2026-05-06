@@ -201,7 +201,7 @@ describe('model selection', () => {
     stubProviders(OPENCODE_PROVIDERS);
     renderStep({
       agent: 'opencode',
-      model: { providerId: 'ollama', label: 'codellama:7b' },
+      model: { providerId: 'ollama', connectionName: 'ollama', label: 'codellama:7b' },
     });
 
     await waitFor(() => {
@@ -213,7 +213,7 @@ describe('model selection', () => {
   });
 
   test('preserves model when catalog is empty (loading)', async () => {
-    const seeded = { providerId: 'claude', label: 'claude-sonnet-4-20250514' };
+    const seeded = { providerId: 'claude', connectionName: 'claude', label: 'claude-sonnet-4-20250514' };
     stubProviders([]);
     renderStep({ agent: 'claude', model: seeded });
 

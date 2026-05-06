@@ -20,6 +20,8 @@ import type { IconDefinition } from '@fortawesome/fontawesome-common-types';
 import { faCube, faRobot } from '@fortawesome/free-solid-svg-icons';
 import type { Component } from 'svelte';
 
+import type { DefaultWorkspaceModelSettings, DefaultWorkspaceSettings } from '/@api/onboarding-settings-info';
+
 import CodingAgentStep from './CodingAgentStep.svelte';
 import ModelStep from './ModelStep.svelte';
 
@@ -33,16 +35,12 @@ export interface VertexConfig {
   mountClaudeConfig?: boolean;
 }
 
-export interface OnboardingModelSelection {
-  providerId: string;
-  label: string;
-}
-
 export interface OnboardingState {
   agent: CliAgent;
   secretName?: string;
-  model?: OnboardingModelSelection;
+  model?: DefaultWorkspaceModelSettings;
   vertexConfig?: VertexConfig;
+  workspaceSetting: DefaultWorkspaceSettings;
   beforeAdvance?: () => Promise<boolean>;
 }
 
@@ -66,6 +64,7 @@ export interface GuidedSetupStep {
 export function createDefaultOnboardingState(): OnboardingState {
   return {
     agent: 'opencode',
+    workspaceSetting: {},
   };
 }
 

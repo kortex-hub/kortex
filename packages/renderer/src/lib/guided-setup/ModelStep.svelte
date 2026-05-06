@@ -1,3 +1,4 @@
+
 <script lang="ts">
 import { untrack } from 'svelte';
 import { SvelteSet } from 'svelte/reactivity';
@@ -8,8 +9,9 @@ import { getCatalogModels } from '/@/lib/models/models-utils';
 import ModelSelectionTable from '/@/lib/models/ModelSelectionTable.svelte';
 import { disabledModels, isModelEnabled, modelKey } from '/@/stores/model-catalog';
 import { providerInfos } from '/@/stores/providers';
+import type { DefaultWorkspaceModelSettings } from '/@api/onboarding-settings-info';
 
-import type { GuidedSetupStepProps, OnboardingModelSelection } from './guided-setup-steps';
+import type { GuidedSetupStepProps } from './guided-setup-steps';
 
 let { onboarding }: GuidedSetupStepProps = $props();
 
@@ -47,8 +49,9 @@ let effectiveModel: CatalogModelInfo | undefined = $derived.by(() => {
 $effect(() => {
   if (agentFilteredModels.length === 0) return;
   if (effectiveModel) {
-    const sel: OnboardingModelSelection = {
+    const sel: DefaultWorkspaceModelSettings = {
       providerId: effectiveModel.providerId,
+      connectionName: effectiveModel.connectionName,
       label: effectiveModel.label,
     };
     onboarding.model = sel;
