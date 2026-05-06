@@ -50,10 +50,15 @@ async function persistOnboardingDefaults(): Promise<void> {
   await window.updateConfigurationValue('onboarding.defaultAgent', resolvedAgent);
 
   const agentSettings = onboardingState.workspaceSetting.defaultAgentSettings?.[resolvedAgent] ?? {};
+  onboardingState.workspaceSetting.defaultAgentSettings ??= {};
+  onboardingState.workspaceSetting.defaultAgentSettings[resolvedAgent] = agentSettings;
   agentSettings.defaultModel = onboardingState.model;
   agentSettings.workspaceConfiguration = buildWorkspaceConfig();
 
-  await window.updateConfigurationValue('onboarding.defaultWorkspaceSettings', onboardingState.workspaceSetting);
+  await window.updateConfigurationValue(
+    'onboarding.defaultWorkspaceSettings',
+    $state.snapshot(onboardingState.workspaceSetting),
+  );
 }
 
 async function advance(): Promise<void> {
