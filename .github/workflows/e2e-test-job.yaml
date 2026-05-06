@@ -126,11 +126,7 @@ jobs:
           elif [[ "$INSTANCE" == *"ubuntu"* ]] || [[ "$INSTANCE" == *"linux"* ]]; then
             BINARY_PATH="./dist/linux-unpacked/kaiden"
           elif [[ "$INSTANCE" == *"macos"* ]]; then
-            if [[ "$INSTANCE" == *"intel"* ]]; then
-              BINARY_PATH="./dist/mac/Kaiden.app/Contents/MacOS/Kaiden"
-            else
-              BINARY_PATH="./dist/mac-arm64/Kaiden.app/Contents/MacOS/Kaiden"
-            fi
+            BINARY_PATH="./dist/mac-arm64/Kaiden.app/Contents/MacOS/Kaiden"
           else
             echo "::error::Unknown instance: $INSTANCE. Cannot determine binary path."
             exit 1

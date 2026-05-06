@@ -34,12 +34,10 @@ if (process.env.VITE_APP_VERSION === undefined) {
   }`;
 }
 
-let macosArches = ['x64', 'arm64', 'universal'];
+const macosArches = ['arm64'];
 let artifactNameSuffix = '';
 if (process.env.AIRGAP_DOWNLOAD) {
   artifactNameSuffix = '-airgap';
-  // Create dedicated but not universal builds for airgap as it's > 2GB for macOS
-  macosArches = ['x64', 'arm64'];
 }
 
 async function addElectronFuses(context) {
@@ -182,27 +180,9 @@ const config = {
       to: 'product.json',
     });
 
-    // universal build, add both pkg files
-    // this is hack to avoid issue https://github.com/electron/universal/issues/36
-    if (
-      context.appOutDir.endsWith('mac-universal-x64-temp') ||
-      context.appOutDir.endsWith('mac-universal-arm64-temp')
-    ) {
-      // Reset to defaults only — the universal temp dirs are copies of the
-      // platform-specific builds which already contain product.json and kdn.
-      context.packager.config.extraResources = DEFAULT_ASSETS;
-      context.packager.config.extraResources.push(`${PODMAN_EXTENSION_ASSETS}/podman-installer-macos-universal*.pkg`);
-      return;
-    }
-
     if (context.arch === Arch.arm64 && context.electronPlatformName === 'darwin') {
       context.packager.config.extraResources.push(`${PODMAN_EXTENSION_ASSETS}/podman-installer-macos-aarch64-*.pkg`);
       context.packager.config.extraResources.push(`${PODMAN_EXTENSION_ASSETS}/podman-image-arm64.zst`);
-    }
-
-    if (context.arch === Arch.x64 && context.electronPlatformName === 'darwin') {
-      context.packager.config.extraResources.push(`${PODMAN_EXTENSION_ASSETS}/podman-installer-macos-amd64-*.pkg`);
-      context.packager.config.extraResources.push(`${PODMAN_EXTENSION_ASSETS}/podman-image-x64.zst`);
     }
 
     if (context.electronPlatformName === 'win32') {
