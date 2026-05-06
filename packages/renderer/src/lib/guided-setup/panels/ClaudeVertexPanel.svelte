@@ -47,7 +47,7 @@ let alreadyConnected = $derived(!!existingConnection);
 
 async function browseCredentialsFile(): Promise<void> {
   const result = await window.openDialog({
-    title: 'Select gcloud credentials file',
+    title: 'Select Google Cloud credentials file',
     selectors: ['openFile'],
   });
   if (result?.[0]) {
@@ -97,16 +97,46 @@ async function validate(): Promise<boolean> {
       undefined,
       undefined,
     );
+    if (onboarding !== undefined) {
+      const agentSettings = onboarding.workspaceSetting.defaultAgentSettings?.[onboarding.agent] ?? {};
+      onboarding.workspaceSetting.defaultAgentSettings ??= {};
+      onboarding.workspaceSetting.defaultAgentSettings[onboarding.agent] = agentSettings;
+      agentSettings.workspaceConfiguration ??= {};
+      agentSettings.workspaceConfiguration.environment ??= [];
+      agentSettings.workspaceConfiguration.environment = agentSettings.workspaceConfiguration.environment.filter(
+        e => e.name !== 'CLAUDE_CODE_USE_VERTEX',
+      );
+      agentSettings.workspaceConfiguration.environment.push({
+        name: 'CLAUDE_CODE_USE_VERTEX',
+        value: '1',
+      });
+      agentSettings.workspaceConfiguration.environment = agentSettings.workspaceConfiguration.environment.filter(
+        e => e.name !== 'CLOUD_ML_REGION',
+      );
+      agentSettings.workspaceConfiguration.environment.push({
+        name: 'CLOUD_ML_REGION',
+        value: region.trim(),
+      });
+      agentSettings.workspaceConfiguration.environment = agentSettings.workspaceConfiguration.environment.filter(
+        e => e.name !== 'ANTHROPIC_VERTEX_PROJECT_ID',
+      );
+      agentSettings.workspaceConfiguration.environment.push({
+        name: 'ANTHROPIC_VERTEX_PROJECT_ID',
+        value: projectId.trim(),
+      });
+      agentSettings.workspaceConfiguration.mounts ??= [];
+      agentSettings.workspaceConfiguration.mounts = agentSettings.workspaceConfiguration.mounts.filter(
+        e => e.target !== '$HOME/.config/gcloud/application_default_credentials.json',
+      );
+      agentSettings.workspaceConfiguration.mounts.push({
+        host: credentialsFile.trim(),
+        target: '$HOME/.config/gcloud/application_default_credentials.json',
+        ro: true,
+      });
+    }
 
     await fetchProviders();
 
-    if (onboarding) {
-      onboarding.vertexConfig = {
-        projectId: projectId.trim(),
-        region: region.trim(),
-        credentialsPath: credentialsFile.trim(),
-      };
-    }
     return true;
   } catch (err: unknown) {
     errorMessage = err instanceof Error ? err.message : String(err);

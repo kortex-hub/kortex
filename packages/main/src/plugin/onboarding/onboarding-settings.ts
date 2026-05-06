@@ -19,7 +19,4 @@
 export enum OnboardingSettings {
   SectionName = 'onboarding',
   DefaultWorkspaceSettings = 'defaultWorkspaceSettings',
-  VertexProjectId = 'vertexProjectId',
-  VertexRegion = 'vertexRegion',
-  VertexCredentialsPath = 'vertexCredentialsPath',
 }

@@ -38,24 +38,6 @@ export class OnboardingInit {
           default: {},
           hidden: true,
         },
-        [`${OnboardingSettings.SectionName}.${OnboardingSettings.VertexProjectId}`]: {
-          description: 'Google Cloud project ID for Claude on Vertex AI',
-          type: 'string',
-          default: '',
-          hidden: true,
-        },
-        [`${OnboardingSettings.SectionName}.${OnboardingSettings.VertexRegion}`]: {
-          description: 'Google Cloud region for Claude on Vertex AI',
-          type: 'string',
-          default: '',
-          hidden: true,
-        },
-        [`${OnboardingSettings.SectionName}.${OnboardingSettings.VertexCredentialsPath}`]: {
-          description: 'Path to Google Cloud credentials directory for Claude on Vertex AI',
-          type: 'string',
-          default: '',
-          hidden: true,
-        },
       },
     };
 

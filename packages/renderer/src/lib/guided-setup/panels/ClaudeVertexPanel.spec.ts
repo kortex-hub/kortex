@@ -239,10 +239,34 @@ describe('beforeAdvance callback', () => {
 
     await onboarding.beforeAdvance!();
 
-    expect(onboarding.vertexConfig).toEqual({
-      projectId: 'my-gcp-project',
-      region: 'us-east5',
-      credentialsPath: '/home/user/.config/gcloud/application_default_credentials.json',
+    expect(onboarding.workspaceSetting).toEqual({
+      defaultAgentSettings: {
+        'claude-vertex': {
+          workspaceConfiguration: {
+            environment: [
+              {
+                name: 'CLAUDE_CODE_USE_VERTEX',
+                value: '1',
+              },
+              {
+                name: 'CLOUD_ML_REGION',
+                value: 'us-east5',
+              },
+              {
+                name: 'ANTHROPIC_VERTEX_PROJECT_ID',
+                value: 'my-gcp-project',
+              },
+            ],
+            mounts: [
+              {
+                host: '/home/user/.config/gcloud/application_default_credentials.json',
+                ro: true,
+                target: '$HOME/.config/gcloud/application_default_credentials.json',
+              },
+            ],
+          },
+        },
+      },
     });
   });
 
@@ -258,6 +282,7 @@ describe('beforeAdvance callback', () => {
 
     expect(result).toBe(false);
     expect(screen.getByText('Credentials file not found')).toBeInTheDocument();
+    expect(onboarding.workspaceSetting).toEqual({});
   });
 
   test('trims whitespace from inputs', async () => {
@@ -336,6 +361,7 @@ describe('already connected', () => {
 
     expect(result).toBe(true);
     expect(window.createInferenceProviderConnection).not.toHaveBeenCalled();
+    expect(onboarding.workspaceSetting).toEqual({});
   });
 });
 
@@ -347,7 +373,7 @@ describe('credentials browse', () => {
     await fireEvent.click(screen.getByLabelText('Browse credentials file'));
 
     expect(window.openDialog).toHaveBeenCalledWith({
-      title: 'Select gcloud credentials file',
+      title: 'Select Google Cloud credentials file',
       selectors: ['openFile'],
     });
   });

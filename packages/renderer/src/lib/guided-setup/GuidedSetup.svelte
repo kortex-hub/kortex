@@ -41,20 +41,6 @@ function buildWorkspaceConfig(): AgentWorkspaceConfiguration {
     };
   }
 
-  const vertex = onboardingState.vertexConfig;
-  if (onboardingState.agent === 'claude-vertex' && vertex) {
-    return {
-      environment: [
-        { name: 'ANTHROPIC_VERTEX_PROJECT_ID', value: vertex.projectId },
-        { name: 'CLOUD_ML_REGION', value: vertex.region },
-        { name: 'CLAUDE_CODE_USE_VERTEX', value: '1' },
-      ],
-      mounts: [
-        { host: vertex.credentialsPath, target: '$HOME/.config/gcloud/application_default_credentials.json', ro: true },
-      ],
-    };
-  }
-
   return {};
 }
 

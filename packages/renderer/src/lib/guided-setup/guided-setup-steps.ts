@@ -27,19 +27,10 @@ import ModelStep from './ModelStep.svelte';
 
 export type CliAgent = 'opencode' | 'claude' | 'claude-vertex' | 'cursor' | 'goose';
 
-// TODO: Remove VertexConfig once the Vertex AI extension is added and handles its own config.
-export interface VertexConfig {
-  projectId: string;
-  region: string;
-  credentialsPath: string;
-  mountClaudeConfig?: boolean;
-}
-
 export interface OnboardingState {
   agent: CliAgent;
   secretName?: string;
   model?: DefaultWorkspaceModelSettings;
-  vertexConfig?: VertexConfig;
   workspaceSetting: DefaultWorkspaceSettings;
   beforeAdvance?: () => Promise<boolean>;
 }
