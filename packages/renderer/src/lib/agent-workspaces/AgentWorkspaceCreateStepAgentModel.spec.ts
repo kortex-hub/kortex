@@ -22,6 +22,7 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { writable } from 'svelte/store';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
+import * as agentWorkspaceRuntimeStore from '/@/stores/agentworkspace-runtime';
 import * as modelCatalogStore from '/@/stores/model-catalog';
 import * as providersStore from '/@/stores/providers';
 import type { ProviderInfo } from '/@api/provider-info';
@@ -31,6 +32,7 @@ import AgentWorkspaceCreateStepAgentModel from './AgentWorkspaceCreateStepAgentM
 vi.mock(import('/@/navigation'));
 vi.mock(import('/@/stores/providers'));
 vi.mock(import('/@/stores/model-catalog'));
+vi.mock(import('/@/stores/agentworkspace-runtime'));
 vi.mock('/@/lib/guided-setup/agent-registry', () => ({
   agentDefinitions: [
     { cliName: 'opencode', title: 'OpenCode', description: 'Open-source agent.', badge: 'Recommended' },
@@ -48,7 +50,7 @@ vi.mock('/@/lib/guided-setup/agent-registry', () => ({
       modelFilter: 'anthropic',
     },
     { cliName: 'cursor', title: 'Cursor', description: 'AI code editor.' },
-    { cliName: 'goose', title: 'Goose', description: 'Autonomous coding agent.' },
+    { cliName: 'goose', title: 'Goose', description: 'Autonomous coding agent.', runtimes: ['podman'] },
   ],
 }));
 
@@ -90,6 +92,7 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.resetAllMocks();
   vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>([]);
+  vi.mocked(agentWorkspaceRuntimeStore).agentWorkspaceRuntime = writable<string>('podman');
   vi.mocked(modelCatalogStore).disabledModels = writable<Set<string>>(new Set());
   vi.mocked(modelCatalogStore.isModelEnabled).mockImplementation(
     (disabled: Set<string>, providerId: string, label: string): boolean => !disabled.has(`${providerId}::${label}`),
@@ -252,4 +255,30 @@ test('Open Models catalog link visible when agent selected', async () => {
   await fireEvent.click(screen.getByText('OpenCode'));
 
   expect(screen.getByText('Open Models catalog')).toBeInTheDocument();
+});
+
+test('agents without runtimes field are always shown', () => {
+  vi.mocked(agentWorkspaceRuntimeStore).agentWorkspaceRuntime = writable<string>('docker');
+
+  render(AgentWorkspaceCreateStepAgentModel);
+
+  expect(screen.getByText('OpenCode')).toBeInTheDocument();
+  expect(screen.getByText('Claude Code')).toBeInTheDocument();
+  expect(screen.getByText('Cursor')).toBeInTheDocument();
+});
+
+test('agent with matching runtime is shown', () => {
+  vi.mocked(agentWorkspaceRuntimeStore).agentWorkspaceRuntime = writable<string>('podman');
+
+  render(AgentWorkspaceCreateStepAgentModel);
+
+  expect(screen.getByText('Goose')).toBeInTheDocument();
+});
+
+test('agent with non-matching runtime is hidden', () => {
+  vi.mocked(agentWorkspaceRuntimeStore).agentWorkspaceRuntime = writable<string>('docker');
+
+  render(AgentWorkspaceCreateStepAgentModel);
+
+  expect(screen.queryByText('Goose')).not.toBeInTheDocument();
 });

@@ -3,9 +3,9 @@ import { untrack } from 'svelte';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { agentDefinitions } from '/@/lib/guided-setup/agent-registry';
-import type { CatalogModelInfo } from '/@/lib/models/models-utils';
-import { getCatalogModels } from '/@/lib/models/models-utils';
+import { type CatalogModelInfo, getCatalogModels } from '/@/lib/models/models-utils';
 import ModelSelectionTable from '/@/lib/models/ModelSelectionTable.svelte';
+import { agentWorkspaceRuntime } from '/@/stores/agentworkspace-runtime';
 import { disabledModels, isModelEnabled, modelKey } from '/@/stores/model-catalog';
 import { providerInfos } from '/@/stores/providers';
 
@@ -15,6 +15,8 @@ interface Props {
 }
 
 let { selectedAgent = $bindable(''), selectedModel = $bindable() }: Props = $props();
+
+let filteredAgents = $derived(agentDefinitions.filter(a => !a.runtimes || a.runtimes.includes($agentWorkspaceRuntime)));
 
 let allModels: CatalogModelInfo[] = $derived.by(() => {
   const enabled = getCatalogModels($providerInfos).filter(m => isModelEnabled($disabledModels, m.providerId, m.label));
@@ -79,7 +81,7 @@ $effect(() => {
     </p>
 
     <div class="grid grid-cols-4 gap-3" role="listbox" aria-label="Coding agent">
-      {#each agentDefinitions as agent (agent.cliName)}
+      {#each filteredAgents as agent (agent.cliName)}
         {@const isSelected = selectedAgent === agent.cliName}
         <button
           type="button"

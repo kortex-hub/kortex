@@ -21,6 +21,7 @@ import { faClaude } from '@fortawesome/free-brands-svg-icons';
 import { faCode, faDesktop, faRobot, faWrench } from '@fortawesome/free-solid-svg-icons';
 import type { Component } from 'svelte';
 
+import ClaudeVertexPanel from '/@/lib/guided-setup/panels/ClaudeVertexPanel.svelte';
 import ClaudeCodeIcon from '/@/lib/images/agents/ClaudeCodeIcon.svelte';
 import CursorIcon from '/@/lib/images/agents/CursorIcon.svelte';
 import GooseIcon from '/@/lib/images/agents/GooseIcon.svelte';
@@ -50,6 +51,7 @@ export interface AgentDefinition {
   /** Compound selector in the form `extensionId:providerId` (e.g. `kaiden.claude:claude`). */
   providerSelector?: string;
   secretType?: string;
+  runtimes?: string[];
 }
 
 const DEFAULT_DEFINITION: Omit<AgentDefinition, 'cliName' | 'title'> = {
@@ -93,6 +95,8 @@ export const agentDefinitions: AgentDefinition[] = [
     iconComponent: ClaudeCodeIcon,
     colorClass: 'bg-gradient-to-br from-amber-600 to-amber-500',
     modelFilter: 'anthropic',
+    panel: ClaudeVertexPanel,
+    runtimes: ['podman'],
   },
   {
     cliName: 'cursor',
@@ -101,6 +105,7 @@ export const agentDefinitions: AgentDefinition[] = [
     icon: faCode,
     iconComponent: CursorIcon,
     colorClass: 'bg-gradient-to-br from-indigo-500 to-indigo-600',
+    runtimes: ['podman'],
   },
   {
     cliName: 'goose',
@@ -109,6 +114,7 @@ export const agentDefinitions: AgentDefinition[] = [
     icon: faWrench,
     iconComponent: GooseIcon,
     colorClass: 'bg-gradient-to-br from-emerald-600 to-emerald-700',
+    runtimes: ['podman'],
   },
 ];
 

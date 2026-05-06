@@ -30,6 +30,7 @@ import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
+import { AgentWorkspaceSettings } from '/@api/agent-workspace/agent-workspace-settings.js';
 import type {
   AgentWorkspaceConfiguration,
   AgentWorkspaceCreateOptions,
@@ -40,8 +41,6 @@ import type {
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IConfigurationNode } from '/@api/configuration/models.js';
 import { IConfigurationRegistry } from '/@api/configuration/models.js';
-
-import { AgentWorkspaceSettings } from './agent-workspace-settings.js';
 
 /**
  * Manages agent workspaces by delegating to the `kdn` CLI.
