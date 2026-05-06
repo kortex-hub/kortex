@@ -34,7 +34,7 @@
     "watch": "vite build --watch"
   },
   "dependencies": {
-    "@ai-sdk/openai-compatible": "^2.0.45",
+    "@ai-sdk/openai-compatible": "^2.0.46",
     "@openkaiden/api": "workspace:*"
   },
   "devDependencies": {
