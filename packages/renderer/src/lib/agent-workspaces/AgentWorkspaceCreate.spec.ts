@@ -615,8 +615,8 @@ test('Expect selecting a different network option updates the radio', async () =
   expect(screen.getByRole('radio', { name: 'Use Developer Preset' })).not.toBeChecked();
 });
 
-test('Expect default agent from onboarding.defaultAgent setting when valid', async () => {
-  vi.mocked(window.getConfigurationValue).mockResolvedValue('claude');
+test('Expect default agent from onboarding.defaultWorkspaceSettings when valid', async () => {
+  vi.mocked(window.getConfigurationValue).mockResolvedValue({ defaultAgent: 'claude' });
 
   render(AgentWorkspaceCreate);
 
@@ -625,7 +625,7 @@ test('Expect default agent from onboarding.defaultAgent setting when valid', asy
   });
   await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
 
-  expect(window.getConfigurationValue).toHaveBeenCalledWith('onboarding.defaultAgent');
+  expect(window.getConfigurationValue).toHaveBeenCalledWith('onboarding.defaultWorkspaceSettings');
   expect(window.createAgentWorkspace).toHaveBeenCalledWith(
     expect.objectContaining({
       agent: 'claude',
@@ -634,7 +634,7 @@ test('Expect default agent from onboarding.defaultAgent setting when valid', asy
 });
 
 test('Expect default agent falls back to opencode when setting is empty', async () => {
-  vi.mocked(window.getConfigurationValue).mockResolvedValue('');
+  vi.mocked(window.getConfigurationValue).mockResolvedValue({ defaultAgent: '' });
 
   render(AgentWorkspaceCreate);
 
@@ -655,7 +655,7 @@ test('Expect default agent falls back to opencode when setting is empty', async 
 });
 
 test('Expect default agent falls back to opencode when setting is unknown value', async () => {
-  vi.mocked(window.getConfigurationValue).mockResolvedValue('unknown-agent');
+  vi.mocked(window.getConfigurationValue).mockResolvedValue({ defaultAgent: 'unknown-agent' });
 
   render(AgentWorkspaceCreate);
 
@@ -734,11 +734,13 @@ const mockOllamaProvider: ProviderInfo = {
 } as unknown as ProviderInfo;
 
 test('Expect default model from onboarding.defaultWorkspaceSettings when valid', async () => {
-  vi.mocked(window.getConfigurationValue).mockImplementation(async (key: string) => {
-    if (key === 'onboarding.defaultAgent') return 'opencode';
-    if (key === 'onboarding.defaultWorkspaceSettings')
-      return { model: { providerId: 'claude', connectionName: 'Anthropic Cloud', label: 'claude-sonnet-4' } };
-    return undefined;
+  vi.mocked(window.getConfigurationValue).mockResolvedValue({
+    defaultAgent: 'opencode',
+    defaultAgentSettings: {
+      opencode: {
+        defaultModel: { providerId: 'claude', connectionName: 'Anthropic Cloud', label: 'claude-sonnet-4' },
+      },
+    },
   });
   vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider]);
 
@@ -758,11 +760,7 @@ test('Expect default model from onboarding.defaultWorkspaceSettings when valid',
 });
 
 test('Expect first compatible model used when defaultWorkspaceSettings has no model and providers exist', async () => {
-  vi.mocked(window.getConfigurationValue).mockImplementation(async (key: string) => {
-    if (key === 'onboarding.defaultAgent') return 'opencode';
-    if (key === 'onboarding.defaultWorkspaceSettings') return {};
-    return undefined;
-  });
+  vi.mocked(window.getConfigurationValue).mockResolvedValue({ defaultAgent: 'opencode' });
   vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider, mockOllamaProvider]);
 
   render(AgentWorkspaceCreate);
@@ -780,11 +778,7 @@ test('Expect first compatible model used when defaultWorkspaceSettings has no mo
 });
 
 test('Expect model empty when no setting and no providers', async () => {
-  vi.mocked(window.getConfigurationValue).mockImplementation(async (key: string) => {
-    if (key === 'onboarding.defaultAgent') return 'opencode';
-    if (key === 'onboarding.defaultWorkspaceSettings') return {};
-    return undefined;
-  });
+  vi.mocked(window.getConfigurationValue).mockResolvedValue({ defaultAgent: 'opencode' });
 
   render(AgentWorkspaceCreate);
 
@@ -804,11 +798,7 @@ test('Expect model empty when no setting and no providers', async () => {
 });
 
 test('Expect first compatible model used when defaultWorkspaceSettings is undefined and providers exist', async () => {
-  vi.mocked(window.getConfigurationValue).mockImplementation(async (key: string) => {
-    if (key === 'onboarding.defaultAgent') return 'opencode';
-    if (key === 'onboarding.defaultWorkspaceSettings') return undefined;
-    return undefined;
-  });
+  vi.mocked(window.getConfigurationValue).mockResolvedValue(undefined);
   vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockOllamaProvider]);
 
   render(AgentWorkspaceCreate);

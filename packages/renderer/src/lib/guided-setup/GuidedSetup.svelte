@@ -47,7 +47,6 @@ function buildWorkspaceConfig(): AgentWorkspaceConfiguration {
 async function persistOnboardingDefaults(): Promise<void> {
   const resolvedAgent = getAgentDefinition(onboardingState.agent).cliAgent ?? onboardingState.agent;
   onboardingState.workspaceSetting.defaultAgent = resolvedAgent;
-  await window.updateConfigurationValue('onboarding.defaultAgent', resolvedAgent);
 
   const agentSettings = onboardingState.workspaceSetting.defaultAgentSettings?.[resolvedAgent] ?? {};
   onboardingState.workspaceSetting.defaultAgentSettings ??= {};

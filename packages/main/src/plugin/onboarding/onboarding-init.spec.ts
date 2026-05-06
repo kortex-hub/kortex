@@ -18,6 +18,7 @@
 
 import { beforeEach, expect, test, vi } from 'vitest';
 
+import { OnboardingSettings } from '/@/plugin/onboarding/onboarding-settings.js';
 import type { IConfigurationNode, IConfigurationRegistry } from '/@api/configuration/models.js';
 
 import { OnboardingInit } from './onboarding-init.js';
@@ -45,9 +46,9 @@ test('registers onboarding configuration with hidden properties', () => {
   const config = registeredConfigs.at(0);
   expect(config).toBeDefined();
   expect(config?.id).toBe('preferences.onboarding');
-  expect(config?.properties?.['onboarding.defaultAgent']).toEqual(
-    expect.objectContaining({ type: 'string', default: '', hidden: true }),
-  );
+  expect(
+    config?.properties?.[`${OnboardingSettings.SectionName}.${OnboardingSettings.DefaultWorkspaceSettings}`],
+  ).toBeDefined();
 });
 
 test('registers defaultWorkspaceSettings as hidden object property', () => {

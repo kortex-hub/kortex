@@ -32,12 +32,6 @@ export class OnboardingInit {
       title: 'Onboarding',
       type: 'object',
       properties: {
-        [`${OnboardingSettings.SectionName}.${OnboardingSettings.DefaultAgent}`]: {
-          description: 'Default coding agent selected during onboarding',
-          type: 'string',
-          default: '',
-          hidden: true,
-        },
         [`${OnboardingSettings.SectionName}.${OnboardingSettings.DefaultWorkspaceSettings}`]: {
           description: 'Default workspace settings selected during onboarding',
           type: 'object',

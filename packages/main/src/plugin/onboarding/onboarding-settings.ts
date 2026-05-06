@@ -18,7 +18,6 @@
 
 export enum OnboardingSettings {
   SectionName = 'onboarding',
-  DefaultAgent = 'defaultAgent',
   DefaultWorkspaceSettings = 'defaultWorkspaceSettings',
   VertexProjectId = 'vertexProjectId',
   VertexRegion = 'vertexRegion',

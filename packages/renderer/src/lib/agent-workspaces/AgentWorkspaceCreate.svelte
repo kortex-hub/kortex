@@ -155,24 +155,25 @@ let selectedAgent = $state('opencode');
 let selectedModel = $state<ModelInfo | undefined>(undefined);
 
 onMount(async () => {
-  const defaultAgent = await window.getConfigurationValue<string>('onboarding.defaultAgent');
+  const defaultSettings = await window.getConfigurationValue<DefaultWorkspaceSettings>(
+    'onboarding.defaultWorkspaceSettings',
+  );
+
+  const defaultAgent = defaultSettings?.defaultAgent;
   if (defaultAgent && agentDefinitions.some(d => d.cliName === defaultAgent)) {
     selectedAgent = defaultAgent;
   }
 
-  const defaultSettings = await window.getConfigurationValue<DefaultWorkspaceSettings>(
-    'onboarding.defaultWorkspaceSettings',
-  );
   if (
     defaultAgent &&
-    defaultSettings?.defaultAgentSettings?.[defaultAgent].defaultModel?.providerId &&
-    defaultSettings?.defaultAgentSettings?.[defaultAgent].defaultModel?.label
+    defaultSettings?.defaultAgentSettings?.[defaultAgent]?.defaultModel?.providerId &&
+    defaultSettings?.defaultAgentSettings?.[defaultAgent]?.defaultModel?.label
   ) {
     const allModels = getCatalogModels($providerInfos);
     const match = allModels.find(
       m =>
-        m.providerId === defaultSettings?.defaultAgentSettings?.[defaultAgent].defaultModel?.providerId &&
-        m.label === defaultSettings?.defaultAgentSettings?.[defaultAgent].defaultModel?.label,
+        m.providerId === defaultSettings?.defaultAgentSettings?.[defaultAgent]?.defaultModel?.providerId &&
+        m.label === defaultSettings?.defaultAgentSettings?.[defaultAgent]?.defaultModel?.label,
     );
     if (match) {
       selectedModel = match;

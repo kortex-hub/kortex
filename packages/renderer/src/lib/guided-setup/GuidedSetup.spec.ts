@@ -202,18 +202,6 @@ test('Skip button is not shown for non-skippable steps', async () => {
   expect(screen.queryByRole('button', { name: 'Skip' })).not.toBeInTheDocument();
 });
 
-test('persists default agent to settings.json when wizard completes', async () => {
-  render(GuidedSetup, { onclose: closeMock });
-
-  await fireEvent.click(screen.getByRole('button', { name: /Continue/ }));
-  await fireEvent.click(screen.getByRole('button', { name: /Continue/ }));
-  await fireEvent.click(screen.getByRole('button', { name: /Go to Dashboard/ }));
-
-  await waitFor(() => {
-    expect(window.updateConfigurationValue).toHaveBeenCalledWith('onboarding.defaultAgent', 'opencode');
-  });
-});
-
 test('Skip closes without persisting any settings', async () => {
   render(GuidedSetup, { onclose: closeMock });
 
