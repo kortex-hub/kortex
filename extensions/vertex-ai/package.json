@@ -2,7 +2,7 @@
   "name": "vertex-ai",
   "displayName": "Vertex AI",
   "description": "Integration for Google Cloud Vertex AI (Anthropic models)",
-  "version": "0.0.1-next",
+  "version": "0.2.0-next",
   "icon": "icon.png",
   "publisher": "kaiden",
   "license": "Apache-2.0",
