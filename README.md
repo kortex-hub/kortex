@@ -40,6 +40,8 @@ See [`AGENTS.md`](./AGENTS.md) for a deeper walkthrough of the plugin system, IP
 
 Kaiden is at version `0.1.0-next`. APIs, configuration formats, and the extension surface may change between releases.
 
+Pre-built binaries for Windows, macOS, and Linux are available at [openkaiden/prereleases](https://github.com/openkaiden/prereleases/releases). These are development snapshots built from the `main` branch and published automatically on each merge.
+
 ## Prerequisites: Prepare your environment
 
 You can develop on either: `Windows`, `macOS` or `Linux`.
