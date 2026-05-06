@@ -144,6 +144,7 @@ describe('opencode agent models', () => {
     await waitFor(() => {
       expect(onboarding.model).toEqual({
         providerId: 'ollama',
+        connectionName: 'default',
         label: 'llama3.2:3b',
       });
     });
@@ -175,6 +176,7 @@ describe('claude agent models', () => {
     await waitFor(() => {
       expect(onboarding.model).toEqual({
         providerId: 'claude',
+        connectionName: 'api-key',
         label: 'claude-sonnet-4-20250514',
       });
     });
@@ -192,6 +194,7 @@ describe('model selection', () => {
     await waitFor(() => {
       expect(onboarding.model).toEqual({
         providerId: 'ollama',
+        connectionName: 'default',
         label: 'codellama:7b',
       });
     });

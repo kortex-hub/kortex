@@ -232,7 +232,13 @@ test('persists default workspace settings when wizard completes', async () => {
 
   await waitFor(() => {
     expect(window.updateConfigurationValue).toHaveBeenCalledWith('onboarding.defaultWorkspaceSettings', {
-      workspaceConfiguration: {},
+      defaultAgent: 'opencode',
+      defaultAgentSettings: {
+        opencode: {
+          defaultModel: undefined,
+          workspaceConfiguration: {},
+        },
+      },
     });
   });
 });
@@ -309,7 +315,13 @@ test('persists defaultWorkspaceSettings with workspaceConfig when wizard complet
 
   await waitFor(() => {
     expect(window.updateConfigurationValue).toHaveBeenCalledWith('onboarding.defaultWorkspaceSettings', {
-      workspaceConfig: { environment: [] },
+      defaultAgent: 'opencode',
+      defaultAgentSettings: {
+        opencode: {
+          defaultModel: undefined,
+          workspaceConfiguration: {},
+        },
+      },
     });
   });
 });
