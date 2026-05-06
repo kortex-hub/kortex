@@ -572,8 +572,8 @@ importers:
   extensions/mistral:
     dependencies:
       '@ai-sdk/mistral':
-        specifier: ^3.0.34
-        version: 3.0.34(zod@4.4.3)
+        specifier: ^3.0.35
+        version: 3.0.35(zod@4.4.3)
       '@mistralai/mistralai':
         specifier: ^2.2.0
         version: 2.2.0
@@ -954,8 +954,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/mistral@3.0.34':
-    resolution: {integrity: sha512-HpK28sWGdIfg1vTSScJNtzVdvNRfA4mfCmPmPR+j/MGJ0oAuEJMqxWkL96ZnGPdhZt5KdW09aKovdIe+q2zQ7A==}
+  '@ai-sdk/mistral@3.0.35':
+    resolution: {integrity: sha512-8BCt8pOWjvfIFZOVFz+koFcbydVv7Q8WM24J0gVJWDw1eOEn3Muugw4py+TuaQc8KdjP7d1HR9E4gIMN55zBgQ==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -5940,8 +5940,8 @@ packages:
     resolution: {integrity: sha512-6u9UwL0HlAl21+agMN3YAMXcKByMqwGx+pq+P76vii5f7hTPtKDp08/H9py6DY+cfDw7kQNTGEj/rly3IgbNQA==}
     engines: {node: '>=10'}
 
-  node-abi@3.90.0:
-    resolution: {integrity: sha512-pZNQT7UnYlMwMBy5N1lV5X/YLTbZM5ncytN3xL7CHEzhDN8uVe0u55yaPUJICIJjaCW8NrM5BFdqr7HLweStNA==}
+  node-abi@3.91.0:
+    resolution: {integrity: sha512-B+S7X/GS3Un6wMICtnsNjQD7oSpVBQrZftHE6GZ1Fe9/k3XOOoqbM5DZZ0GO4x3YiSCQfrM28yj1ppplwgIsfg==}
     engines: {node: '>=10'}
 
   node-abi@4.26.0:
@@ -7135,6 +7135,10 @@ packages:
     resolution: {integrity: sha512-tOG/7GyXpFevhXVh8jOPJrmtRpOTsYqUIkVdVooZYJS/z8WhfQUX8RJILmeuJNinGAMSu1veBr4asSHFt5/hng==}
     engines: {node: '>=18'}
 
+  tar@7.5.14:
+    resolution: {integrity: sha512-/7sHKgQO3JLP9ESlwTYUUftHUadOURUqq23xs1vjcnp8Vss6k0wCfzulyEtk5g91pjvnuriimGlyG7k6msrzRw==}
+    engines: {node: '>=18'}
+
   teex@1.0.1:
     resolution: {integrity: sha512-eYE6iEI62Ni1H8oIa7KlDU6uQBtqr4Eajni3wX7rpfXD8ysFx8z0+dri+KWEPWpBsxXfxu58x/0jvTVT1ekOSg==}
 
@@ -7831,7 +7835,7 @@ snapshots:
       pkce-challenge: 5.0.1
       zod: 4.3.6
 
-  '@ai-sdk/mistral@3.0.34(zod@4.4.3)':
+  '@ai-sdk/mistral@3.0.35(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
       '@ai-sdk/provider-utils': 4.0.26(zod@4.4.3)
@@ -8174,7 +8178,7 @@ snapshots:
       nopt: 6.0.0
       proc-log: 2.0.1
       semver: 7.7.4
-      tar: 7.5.13
+      tar: 7.5.14
       which: 2.0.2
     transitivePeerDependencies:
       - bluebird
@@ -8207,13 +8211,13 @@ snapshots:
       detect-libc: 2.1.2
       fs-extra: 10.1.0
       got: 11.8.6
-      node-abi: 3.90.0
+      node-abi: 3.91.0
       node-api-version: 0.2.1
       node-gyp: 9.4.1
       ora: 5.4.1
       read-binary-file-arch: 1.0.6
       semver: 7.7.4
-      tar: 7.5.13
+      tar: 7.5.14
       yargs: 17.7.2
     transitivePeerDependencies:
       - bluebird
@@ -10064,7 +10068,7 @@ snapshots:
       resedit: 1.7.2
       sanitize-filename: 1.6.4
       semver: 7.7.4
-      tar: 7.5.13
+      tar: 7.5.14
       temp-file: 3.4.0
     transitivePeerDependencies:
       - bluebird
@@ -10559,7 +10563,7 @@ snapshots:
       promise-inflight: 1.0.1
       rimraf: 3.0.2
       ssri: 9.0.1
-      tar: 7.5.13
+      tar: 7.5.14
       unique-filename: 2.0.1
     transitivePeerDependencies:
       - bluebird
@@ -13622,7 +13626,7 @@ snapshots:
     dependencies:
       semver: 7.7.4
 
-  node-abi@3.90.0:
+  node-abi@3.91.0:
     dependencies:
       semver: 7.7.4
 
@@ -13681,7 +13685,7 @@ snapshots:
       npmlog: 6.0.2
       rimraf: 3.0.2
       semver: 7.7.4
-      tar: 7.5.13
+      tar: 7.5.14
       which: 2.0.2
     transitivePeerDependencies:
       - bluebird
@@ -15002,6 +15006,14 @@ snapshots:
       yallist: 5.0.0
 
   tar@7.5.13:
+    dependencies:
+      '@isaacs/fs-minipass': 4.0.1
+      chownr: 3.0.0
+      minipass: 7.1.3
+      minizlib: 3.1.0
+      yallist: 5.0.0
+
+  tar@7.5.14:
     dependencies:
       '@isaacs/fs-minipass': 4.0.1
       chownr: 3.0.0
