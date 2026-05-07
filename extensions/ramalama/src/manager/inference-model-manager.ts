@@ -58,7 +58,7 @@ export class InferenceModelManager {
       const disposable = this.ramaLamaProvider.registerInferenceProviderConnection({
         name: `port/${modelinfo.port}`,
         type: 'local',
-        llmMetadata: { name: 'openai' },
+        llmMetadata: { name: 'ramalama' },
         endpoint: `http://localhost:${modelinfo.port}`,
         sdk,
         status() {

@@ -70,7 +70,7 @@ describe('InferenceModelManager', () => {
       expect.objectContaining({
         name: `port/${modelPort}`,
         type: 'local',
-        llmMetadata: { name: 'openai' },
+        llmMetadata: { name: 'ramalama' },
         endpoint: `http://localhost:${modelPort}`,
         sdk: sdkInstance,
         models: [{ label: modelName }],
