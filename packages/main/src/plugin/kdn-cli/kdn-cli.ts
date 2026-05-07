@@ -228,7 +228,7 @@ export class KdnCli {
   }
 
   async removeWorkspaces(id: string): Promise<AgentWorkspaceId> {
-    return this.execCLI<AgentWorkspaceId>(['workspace', 'remove', id]);
+    return this.execCLI<AgentWorkspaceId>(['workspace', 'remove', id, '--force']);
   }
 
   async startWorkspace(id: string): Promise<AgentWorkspaceId> {

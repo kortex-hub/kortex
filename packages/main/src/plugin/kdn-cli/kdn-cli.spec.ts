@@ -507,7 +507,7 @@ describe('remove', () => {
 
     expect(exec.exec).toHaveBeenCalledWith(
       KAIDEN_CLI_PATH,
-      ['workspace', 'remove', 'ws-1', '--output', 'json'],
+      ['workspace', 'remove', 'ws-1', '--force', '--output', 'json'],
       undefined,
     );
     expect(result).toEqual({ id: 'ws-1' });
