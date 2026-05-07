@@ -183,6 +183,7 @@ describe('create', () => {
       'podman',
       '--agent',
       'claude',
+      '--start',
       '--output',
       'json',
     ]);
