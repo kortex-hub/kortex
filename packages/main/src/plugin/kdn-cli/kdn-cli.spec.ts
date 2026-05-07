@@ -509,6 +509,58 @@ describe('create', () => {
     ]);
   });
 
+  test('deduplicates environment entries by name keeping first occurrence', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(readFile).mockResolvedValue(
+      JSON.stringify({ environment: [{ name: 'CLOUD_ML_REGION', value: 'existing-region' }] }),
+    );
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-new' })));
+
+    await kdnCli.createWorkspace({
+      ...defaultOptions,
+      workspaceConfiguration: {
+        environment: [
+          { name: 'CLOUD_ML_REGION', value: 'new-region' },
+          { name: 'NEW_VAR', value: 'added' },
+        ],
+      },
+    });
+
+    const writtenContent = vi.mocked(writeFile).mock.calls[0]![1] as string;
+    const parsed = JSON.parse(writtenContent);
+    expect(parsed.environment).toEqual([
+      { name: 'CLOUD_ML_REGION', value: 'existing-region' },
+      { name: 'NEW_VAR', value: 'added' },
+    ]);
+  });
+
+  test('deduplicates mounts by host and target keeping first occurrence', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(readFile).mockResolvedValue(
+      JSON.stringify({
+        mounts: [{ host: '$HOME/.config/gcloud/adc.json', target: '$HOME/.config/gcloud/adc.json', ro: true }],
+      }),
+    );
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-new' })));
+
+    await kdnCli.createWorkspace({
+      ...defaultOptions,
+      workspaceConfiguration: {
+        mounts: [
+          { host: '$HOME/.config/gcloud/adc.json', target: '$HOME/.config/gcloud/adc.json', ro: false },
+          { host: '$HOME/.ssh/config', target: '$HOME/.ssh/config', ro: true },
+        ],
+      },
+    });
+
+    const writtenContent = vi.mocked(writeFile).mock.calls[0]![1] as string;
+    const parsed = JSON.parse(writtenContent);
+    expect(parsed.mounts).toEqual([
+      { host: '$HOME/.config/gcloud/adc.json', target: '$HOME/.config/gcloud/adc.json', ro: true },
+      { host: '$HOME/.ssh/config', target: '$HOME/.ssh/config', ro: true },
+    ]);
+  });
+
   test('merges workspaceConfiguration secrets with explicit secrets deduplicating', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.mocked(readFile).mockRejectedValue(mockEnoent());

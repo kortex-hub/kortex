@@ -167,10 +167,23 @@ export class KdnCli {
     if (hasWsConfig) {
       const wc = options.workspaceConfiguration!;
       if (wc.environment?.length) {
-        existing.environment = [...(existing.environment ?? []), ...wc.environment];
+        const merged = [...(existing.environment ?? []), ...wc.environment];
+        const seen = new Set<string>();
+        existing.environment = merged.filter(e => {
+          if (seen.has(e.name)) return false;
+          seen.add(e.name);
+          return true;
+        });
       }
       if (wc.mounts?.length) {
-        existing.mounts = [...(existing.mounts ?? []), ...wc.mounts];
+        const merged = [...(existing.mounts ?? []), ...wc.mounts];
+        const seen = new Set<string>();
+        existing.mounts = merged.filter(m => {
+          const key = `${m.host}::${m.target}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
       }
     }
 
