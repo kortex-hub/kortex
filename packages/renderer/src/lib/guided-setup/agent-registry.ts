@@ -107,6 +107,7 @@ export const agentDefinitions: AgentDefinition[] = [
     iconComponent: CursorIcon,
     colorClass: 'bg-gradient-to-br from-indigo-500 to-indigo-600',
     runtimes: ['podman'],
+    modelFilter: 'anthropic',
   },
   {
     cliName: 'goose',
