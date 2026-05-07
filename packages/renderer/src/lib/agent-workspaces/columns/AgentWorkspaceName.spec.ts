@@ -19,25 +19,25 @@ import '@testing-library/jest-dom/vitest';
 
 import { faRobot } from '@fortawesome/free-solid-svg-icons';
 import { fireEvent, render, screen } from '@testing-library/svelte';
-import { expect, test, vi } from 'vitest';
+import { beforeEach, expect, test, vi } from 'vitest';
 
+import { getAgentDefinition } from '/@/lib/guided-setup/agent-registry';
 import type { AgentWorkspaceSummaryUI } from '/@/stores/agent-workspaces.svelte';
 
 import AgentWorkspaceName from './AgentWorkspaceName.svelte';
 
-vi.mock('/@/lib/guided-setup/agent-registry', () => ({
-  getAgentDefinition: vi.fn(() => ({
+vi.mock(import('/@/lib/guided-setup/agent-registry'));
+
+vi.mock(import('tinro'));
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.mocked(getAgentDefinition).mockReturnValue({
     title: 'Test Agent',
     icon: faRobot,
     colorClass: 'bg-blue-500',
-  })),
-}));
-
-vi.mock('tinro', () => ({
-  router: {
-    goto: vi.fn(),
-  },
-}));
+  } as ReturnType<typeof getAgentDefinition>);
+});
 
 test('Button has correct classes', async () => {
   const workspace: AgentWorkspaceSummaryUI = {
