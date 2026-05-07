@@ -369,6 +369,7 @@ async function startWorkspace(): Promise<void> {
 
     await window.createAgentWorkspace({
       sourcePath,
+      runtime: $agentWorkspaceRuntime,
       agent: agentDef?.cliAgent ?? selectedAgent,
       model: selectedModel ? getModelId(selectedModel) : undefined,
       name: sessionName,

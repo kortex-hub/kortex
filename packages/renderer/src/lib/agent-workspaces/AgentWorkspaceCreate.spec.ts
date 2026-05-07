@@ -1005,6 +1005,38 @@ test('Expect Unrestricted network option enabled when runtime is podman', async 
   expect(screen.getByRole('radio', { name: 'Use Unrestricted' })).toBeEnabled();
 });
 
+test('Expect createAgentWorkspace called with runtime from agentWorkspaceRuntime store', async () => {
+  vi.mocked(agentWorkspaceRuntimeStore).agentWorkspaceRuntime = writable<string>('openshell');
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      runtime: 'openshell',
+    }),
+  );
+});
+
+test('Expect createAgentWorkspace called with podman runtime by default', async () => {
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      runtime: 'podman',
+    }),
+  );
+});
+
 test('Expect createAgentWorkspace called with workspaceConfiguration from settings for selected agent', async () => {
   vi.mocked(window.getConfigurationValue).mockResolvedValue({
     defaultAgent: 'claude',
