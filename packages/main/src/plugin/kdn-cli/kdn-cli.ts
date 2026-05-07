@@ -181,8 +181,10 @@ export class KdnCli {
 
     const wsConfigSecrets = options.workspaceConfiguration?.secrets ?? [];
     const explicitSecrets = options.secrets ?? [];
-    const mergedSecrets = [...new Set([...explicitSecrets, ...wsConfigSecrets])];
-    existing.secrets = mergedSecrets.length > 0 ? mergedSecrets : undefined;
+    if (explicitSecrets.length > 0 || wsConfigSecrets.length > 0) {
+      const mergedSecrets = [...new Set([...explicitSecrets, ...wsConfigSecrets])];
+      existing.secrets = mergedSecrets;
+    }
 
     if (hasMcp) {
       const reqsByCommand = new Map<string, WorkspaceRequirements | undefined>();

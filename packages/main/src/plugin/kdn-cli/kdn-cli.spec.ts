@@ -569,6 +569,23 @@ describe('create', () => {
       { host: '$HOME/.config/gcloud/adc.json', target: '$HOME/.config/gcloud/adc.json', ro: true },
     ]);
   });
+
+  test('preserves existing workspace.json secrets when no secrets provided', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(readFile).mockResolvedValue(
+      JSON.stringify({ secrets: ['existing-secret'], skills: ['/home/user/.kaiden/skills/k8s'] }),
+    );
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-new' })));
+
+    await kdnCli.createWorkspace({
+      ...defaultOptions,
+      skills: ['/home/user/.kaiden/skills/kubernetes'],
+    });
+
+    const writtenContent = vi.mocked(writeFile).mock.calls[0]![1] as string;
+    const parsed = JSON.parse(writtenContent);
+    expect(parsed.secrets).toEqual(['existing-secret']);
+  });
 });
 
 describe('list', () => {

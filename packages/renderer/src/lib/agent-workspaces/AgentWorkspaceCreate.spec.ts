@@ -49,6 +49,7 @@ vi.mock(import('/@/stores/model-catalog'));
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.useFakeTimers({ shouldAdvanceTime: true });
   HTMLElement.prototype.animate = vi.fn().mockReturnValue({
     finished: Promise.resolve(),
     cancel: vi.fn(),
