@@ -12,11 +12,9 @@
   <url type="bugtracker">https://github.com/openkaiden/kaiden/issues</url>
   <url type="help">https://github.com/openkaiden/kaiden/issues</url>
   <description>
-    Kaiden is a tool for launching and managing AI agents with custom configurations. It provides a unified way to start different agents with specific settings including skills, MCP (Model Context Protocol) server connections, and LLM integrations.
+    <p>Kaiden is a tool for launching and managing AI agents with custom configurations. It provides a unified way to start different agents with specific settings including skills, MCP (Model Context Protocol) server connections, and LLM integrations.</p>
   </description>
-  <launchable type="desktop-id">ai.openkaiden.Kaiden</launchable>
-  <screenshots>
-  </screenshots>
+  <launchable type="desktop-id">ai.openkaiden.Kaiden.desktop</launchable>
   <content_rating type="oars-1.1" />
   <update_contact>fbenoit_at_redhat_com</update_contact>
   <releases>

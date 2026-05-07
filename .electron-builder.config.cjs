@@ -273,8 +273,8 @@ const config = {
     runtimeVersion: '25.08',
     branch: 'main',
     files: [
-      ['.flatpak-appdata.xml', '/share/metainfo/io.podman_desktop.PodmanDesktop.metainfo.xml'],
-      ['buildResources/icon-1024x1024.png', '/share/icons/hicolor/1024x1024/apps/io.podman_desktop.PodmanDesktop.png'],
+      ['.flatpak-appdata.xml', '/share/metainfo/ai.openkaiden.Kaiden.metainfo.xml'],
+      ['buildResources/icon-512x512.png', '/share/icons/hicolor/512x512/apps/ai.openkaiden.Kaiden.png'],
     ],
   },
   linux: {
