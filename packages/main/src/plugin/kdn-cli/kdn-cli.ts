@@ -109,7 +109,17 @@ export class KdnCli {
 
     const cliPath = this.getCliPath();
     const runtime = options.runtime ?? 'podman';
-    const args = ['init', options.sourcePath, '--runtime', runtime, '--agent', options.agent, '--output', 'json'];
+    const args = [
+      'init',
+      options.sourcePath,
+      '--runtime',
+      runtime,
+      '--agent',
+      options.agent,
+      '--start',
+      '--output',
+      'json',
+    ];
     if (options.model) {
       args.push('--model', options.model);
     }
