@@ -198,6 +198,16 @@ export interface ProviderInfo {
   };
 }
 
+/**
+ * Credential metadata resolved from an inference connection, used to
+ * create a matching kdn vault secret during workspace creation.
+ */
+export interface InferenceConnectionCredentials {
+  credentials: Record<string, string>;
+  llmMetadataName?: string;
+  endpoint?: string;
+}
+
 export interface PreflightChecksCallback {
   startCheck: (status: CheckStatus) => void;
   endCheck: (status: CheckStatus) => void;

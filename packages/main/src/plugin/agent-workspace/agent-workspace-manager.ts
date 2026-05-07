@@ -29,6 +29,8 @@ import { spawn } from 'node-pty';
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
+import { ProviderRegistry } from '/@/plugin/provider-registry.js';
+import { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import { AgentWorkspaceSettings } from '/@api/agent-workspace/agent-workspace-settings.js';
 import type {
@@ -41,6 +43,8 @@ import type {
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IConfigurationNode } from '/@api/configuration/models.js';
 import { IConfigurationRegistry } from '/@api/configuration/models.js';
+import type { InferenceConnectionCredentials } from '/@api/provider-info.js';
+import type { SecretCreateOptions } from '/@api/secret-info.js';
 
 /**
  * Manages agent workspaces by delegating to the `kdn` CLI.
@@ -69,6 +73,10 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly webContents: WebContents,
     @inject(IConfigurationRegistry)
     private readonly configurationRegistry: IConfigurationRegistry,
+    @inject(ProviderRegistry)
+    private readonly providerRegistry: ProviderRegistry,
+    @inject(SecretManager)
+    private readonly secretManager: SecretManager,
   ) {}
 
   async getCliInfo(): Promise<CliInfo> {
@@ -81,6 +89,7 @@ export class AgentWorkspaceManager implements Disposable {
     task.state = 'running';
     task.status = 'in-progress';
     try {
+      await this.ensureModelSecret(options);
       const workspaceId = await this.kdnCli.createWorkspace(options);
       this.apiSender.send('agent-workspace-update');
       task.status = 'success';
@@ -92,6 +101,98 @@ export class AgentWorkspaceManager implements Disposable {
       throw new Error(detail);
     } finally {
       task.state = 'completed';
+    }
+  }
+
+  /**
+   * If the selected model's provider connection holds a single credential
+   * entry (assumed to be an API key), create a matching kdn vault secret
+   * and attach it to the workspace options so the CLI can inject it at
+   * runtime.
+   *
+   * Silently skips when: no model is selected, the connection cannot be
+   * resolved, credentials are empty or multi-valued (e.g. Vertex AI ADC),
+   * the provider type is unknown, or secrets were already explicitly
+   * configured (e.g. by the onboarding flow via workspaceConfiguration).
+   */
+  async ensureModelSecret(options: AgentWorkspaceCreateOptions): Promise<void> {
+    if (!options.model) return;
+
+    if (options.workspaceConfiguration?.secrets?.length) return;
+
+    const connectionInfo = this.providerRegistry.getInferenceConnectionCredentials(options.model);
+    if (!connectionInfo) return;
+
+    const entries = Object.entries(connectionInfo.credentials);
+    if (entries.length !== 1) return;
+
+    const secretOptions = this.buildSecretOptions(connectionInfo, options.name ?? 'workspace');
+    if (!secretOptions) return;
+
+    try {
+      await this.secretManager.create(secretOptions);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes('already exists')) throw err;
+    }
+
+    options.secrets = [...new Set([...(options.secrets ?? []), secretOptions.name])];
+  }
+
+  /**
+   * Maps provider metadata to the kdn secret create options.
+   *
+   * - `anthropic` / `gemini`: builtin secret types (header + hosts preconfigured in the CLI).
+   * - `openai`: `other` type; host derived from the connection endpoint or defaulting to
+   *    `api.openai.com`.
+   * - `mistral`: `other` type; host `api.mistral.ai`.
+   */
+  buildSecretOptions(
+    connectionInfo: InferenceConnectionCredentials,
+    workspaceName: string,
+  ): SecretCreateOptions | undefined {
+    const apiKey = Object.values(connectionInfo.credentials)[0];
+    if (!apiKey) return undefined;
+
+    const provider = connectionInfo.llmMetadataName;
+    const secretName = `${workspaceName}-${provider ?? 'secret'}`;
+
+    switch (provider) {
+      case 'anthropic':
+        return { name: secretName, type: 'anthropic', value: apiKey };
+      case 'gemini':
+        return { name: secretName, type: 'gemini', value: apiKey };
+      case 'openai': {
+        const host = this.extractHost(connectionInfo.endpoint) ?? 'api.openai.com';
+        return {
+          name: secretName,
+          type: 'other',
+          value: apiKey,
+          hosts: [host],
+          header: 'Authorization',
+          headerTemplate: 'Bearer ${value}',
+        };
+      }
+      case 'mistral':
+        return {
+          name: secretName,
+          type: 'other',
+          value: apiKey,
+          hosts: ['api.mistral.ai'],
+          header: 'Authorization',
+          headerTemplate: 'Bearer ${value}',
+        };
+      default:
+        return undefined;
+    }
+  }
+
+  private extractHost(endpoint?: string): string | undefined {
+    if (!endpoint) return undefined;
+    try {
+      return new URL(endpoint).host;
+    } catch {
+      return undefined;
     }
   }
 

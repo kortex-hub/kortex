@@ -75,6 +75,7 @@ import { SkillManager } from '/@/plugin/skill/skill-manager.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { Event } from '/@api/event.js';
 import type {
+  InferenceConnectionCredentials,
   LifecycleMethod,
   PreflightChecksCallback,
   ProviderCleanupActionInfo,
@@ -2067,6 +2068,36 @@ export class ProviderRegistry {
       throw new Error('No inference connection found');
     }
     return connections[0].sdk;
+  }
+
+  /**
+   * Finds the inference connection owning a model (identified by the composite
+   * model-id string `llmMetadataName::label::endpoint`) and returns credentials
+   * together with provider metadata needed to derive a kdn vault secret.
+   *
+   * Returns `undefined` when no matching connection is found.
+   */
+  getInferenceConnectionCredentials(modelId: string): InferenceConnectionCredentials | undefined {
+    const [metadataName = '', modelLabel = '', endpoint = ''] = modelId.split('::');
+
+    for (const provider of this.providers.values()) {
+      for (const connection of provider.inferenceConnections) {
+        const connMetadataName = connection.llmMetadata?.name ?? '';
+        const connEndpoint = connection.endpoint ?? '';
+        if (
+          connMetadataName === metadataName &&
+          connEndpoint === endpoint &&
+          connection.models.some(m => m.label === modelLabel)
+        ) {
+          return {
+            credentials: connection.credentials(),
+            llmMetadataName: connection.llmMetadata?.name,
+            endpoint: connection.endpoint,
+          };
+        }
+      }
+    }
+    return undefined;
   }
 
   getFlowProviderConnection(internalProviderId: string): Array<FlowProviderConnection> {

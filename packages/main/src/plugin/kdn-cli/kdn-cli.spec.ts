@@ -819,7 +819,7 @@ describe('createSecret', () => {
     );
   });
 
-  test('includes optional header-template flag when provided', async () => {
+  test('includes optional headerTemplate flag when provided', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify({ name: 'my-secret' })));
 
@@ -827,7 +827,7 @@ describe('createSecret', () => {
 
     expect(exec.exec).toHaveBeenCalledWith(
       KAIDEN_CLI_PATH,
-      expect.arrayContaining(['--header-template', 'Bearer ${value}']),
+      expect.arrayContaining(['--headerTemplate', 'Bearer ${value}']),
       undefined,
     );
   });

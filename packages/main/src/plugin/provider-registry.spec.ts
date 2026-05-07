@@ -2654,3 +2654,110 @@ test('getConnectionFactories should return the connection factories', async () =
     images: provider2Images,
   });
 });
+
+describe('getInferenceConnectionCredentials', () => {
+  function registerProvider(
+    id: string,
+    connections: Array<{
+      name: string;
+      llmMetadataName: string;
+      endpoint?: string;
+      models: string[];
+      credentials: Record<string, string>;
+    }>,
+  ): void {
+    const provider = providerRegistry.createProvider(id, id, {
+      id,
+      name: id,
+      status: 'installed',
+    });
+    for (const conn of connections) {
+      provider.registerInferenceProviderConnection({
+        name: conn.name,
+        type: 'cloud',
+        llmMetadata: { name: conn.llmMetadataName },
+        endpoint: conn.endpoint,
+        sdk: {} as never,
+        credentials: () => conn.credentials,
+        status: () => 'started',
+        models: conn.models.map(label => ({ label })),
+      });
+    }
+  }
+
+  test('returns credentials for matching anthropic connection', () => {
+    registerProvider('claude', [
+      {
+        name: 'sk-a*****',
+        llmMetadataName: 'anthropic',
+        models: ['claude-sonnet-4-20250514'],
+        credentials: { 'claude:tokens': 'sk-ant-secret' },
+      },
+    ]);
+
+    const result = providerRegistry.getInferenceConnectionCredentials('anthropic::claude-sonnet-4-20250514::');
+
+    expect(result).toEqual({
+      credentials: { 'claude:tokens': 'sk-ant-secret' },
+      llmMetadataName: 'anthropic',
+      endpoint: undefined,
+    });
+  });
+
+  test('returns credentials for openai connection with endpoint', () => {
+    registerProvider('openai', [
+      {
+        name: 'https://api.openai.com/v1',
+        llmMetadataName: 'openai',
+        endpoint: 'https://api.openai.com/v1',
+        models: ['gpt-4o', 'gpt-4.1'],
+        credentials: { 'openai:tokens': 'sk-openai-key' },
+      },
+    ]);
+
+    const result = providerRegistry.getInferenceConnectionCredentials('openai::gpt-4o::https://api.openai.com/v1');
+
+    expect(result).toEqual({
+      credentials: { 'openai:tokens': 'sk-openai-key' },
+      llmMetadataName: 'openai',
+      endpoint: 'https://api.openai.com/v1',
+    });
+  });
+
+  test('returns undefined when no connection matches the model', () => {
+    registerProvider('claude', [
+      {
+        name: 'sk-a*****',
+        llmMetadataName: 'anthropic',
+        models: ['claude-sonnet-4-20250514'],
+        credentials: { 'claude:tokens': 'sk-ant-secret' },
+      },
+    ]);
+
+    const result = providerRegistry.getInferenceConnectionCredentials('anthropic::nonexistent-model::');
+
+    expect(result).toBeUndefined();
+  });
+
+  test('returns undefined when no providers are registered', () => {
+    const result = providerRegistry.getInferenceConnectionCredentials('anthropic::claude-sonnet-4-20250514::');
+
+    expect(result).toBeUndefined();
+  });
+
+  test('returns undefined for mismatched endpoint', () => {
+    registerProvider('openai', [
+      {
+        name: 'custom',
+        llmMetadataName: 'openai',
+        endpoint: 'https://custom.api.com',
+        models: ['gpt-4o'],
+        credentials: { 'openai:tokens': 'sk-key' },
+      },
+    ]);
+
+    const result = providerRegistry.getInferenceConnectionCredentials('openai::gpt-4o::https://other.api.com');
+
+    expect(result).toBeUndefined();
+  });
+});

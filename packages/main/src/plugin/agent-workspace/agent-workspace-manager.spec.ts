@@ -29,6 +29,8 @@ import type { IPCHandle } from '/@/plugin/api.js';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
+import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
+import type { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
 import type { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import type { Task } from '/@/plugin/tasks/tasks.js';
 import type { Exec } from '/@/plugin/util/exec.js';
@@ -113,6 +115,15 @@ const configurationRegistry = {
   }),
 } as unknown as IConfigurationRegistry;
 
+const providerRegistry = {
+  getInferenceConnectionCredentials: vi.fn(),
+} as unknown as ProviderRegistry;
+
+const secretManager = {
+  create: vi.fn(),
+  init: vi.fn(),
+} as unknown as SecretManager;
+
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(taskManager.createTask).mockReturnValue(mockTask);
@@ -131,6 +142,8 @@ beforeEach(() => {
     filesystemMonitoring,
     webContents,
     configurationRegistry,
+    providerRegistry,
+    secretManager,
   );
   manager.init();
 });
@@ -289,6 +302,264 @@ describe('create', () => {
     await manager.create(defaultOptions);
 
     expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
+  });
+});
+
+describe('ensureModelSecret', () => {
+  const baseOptions: AgentWorkspaceCreateOptions = {
+    sourcePath: '/tmp/my-project',
+    agent: 'claude',
+    name: 'my-workspace',
+  };
+
+  test('creates an anthropic secret when connection has single credential entry', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { 'claude:tokens': 'sk-ant-secret' },
+      llmMetadataName: 'anthropic',
+      endpoint: undefined,
+    });
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-anthropic' });
+
+    const options = { ...baseOptions, model: 'anthropic::claude-sonnet-4-20250514::' };
+    await manager.ensureModelSecret(options);
+
+    expect(secretManager.create).toHaveBeenCalledWith({
+      name: 'my-workspace-anthropic',
+      type: 'anthropic',
+      value: 'sk-ant-secret',
+    });
+    expect(options.secrets).toContain('my-workspace-anthropic');
+  });
+
+  test('creates a gemini secret for gemini provider', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { 'gemini:tokens': 'gemini-key' },
+      llmMetadataName: 'gemini',
+      endpoint: undefined,
+    });
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-gemini' });
+
+    const options = { ...baseOptions, model: 'gemini::gemini-2.5-pro::' };
+    await manager.ensureModelSecret(options);
+
+    expect(secretManager.create).toHaveBeenCalledWith({
+      name: 'my-workspace-gemini',
+      type: 'gemini',
+      value: 'gemini-key',
+    });
+    expect(options.secrets).toContain('my-workspace-gemini');
+  });
+
+  test('creates an openai secret with host from endpoint', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { 'openai:tokens': 'sk-openai-key' },
+      llmMetadataName: 'openai',
+      endpoint: 'https://api.openai.com/v1',
+    });
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-openai' });
+
+    const options = { ...baseOptions, model: 'openai::gpt-4o::https://api.openai.com/v1' };
+    await manager.ensureModelSecret(options);
+
+    expect(secretManager.create).toHaveBeenCalledWith({
+      name: 'my-workspace-openai',
+      type: 'other',
+      value: 'sk-openai-key',
+      hosts: ['api.openai.com'],
+      header: 'Authorization',
+      headerTemplate: 'Bearer ${value}',
+    });
+  });
+
+  test('defaults openai host when no endpoint', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { 'openai:tokens': 'sk-key' },
+      llmMetadataName: 'openai',
+      endpoint: undefined,
+    });
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-openai' });
+
+    const options = { ...baseOptions, model: 'openai::gpt-4o::' };
+    await manager.ensureModelSecret(options);
+
+    expect(secretManager.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hosts: ['api.openai.com'],
+      }),
+    );
+  });
+
+  test('creates a mistral secret with correct host', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { 'mistral:tokens': 'mistral-key' },
+      llmMetadataName: 'mistral',
+      endpoint: undefined,
+    });
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-mistral' });
+
+    const options = { ...baseOptions, model: 'mistral::mistral-large::' };
+    await manager.ensureModelSecret(options);
+
+    expect(secretManager.create).toHaveBeenCalledWith({
+      name: 'my-workspace-mistral',
+      type: 'other',
+      value: 'mistral-key',
+      hosts: ['api.mistral.ai'],
+      header: 'Authorization',
+      headerTemplate: 'Bearer ${value}',
+    });
+  });
+
+  test('skips when no model is provided', async () => {
+    const options = { ...baseOptions, model: undefined };
+    await manager.ensureModelSecret(options);
+
+    expect(providerRegistry.getInferenceConnectionCredentials).not.toHaveBeenCalled();
+    expect(secretManager.create).not.toHaveBeenCalled();
+  });
+
+  test('skips when workspaceConfiguration already has secrets (e.g. onboarding)', async () => {
+    const options = {
+      ...baseOptions,
+      model: 'anthropic::claude-sonnet-4-20250514::',
+      workspaceConfiguration: { secrets: ['anthropic'] },
+    } as AgentWorkspaceCreateOptions;
+    await manager.ensureModelSecret(options);
+
+    expect(providerRegistry.getInferenceConnectionCredentials).not.toHaveBeenCalled();
+    expect(secretManager.create).not.toHaveBeenCalled();
+  });
+
+  test('skips when connection cannot be resolved', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue(undefined);
+
+    const options = { ...baseOptions, model: 'unknown::model::' };
+    await manager.ensureModelSecret(options);
+
+    expect(secretManager.create).not.toHaveBeenCalled();
+  });
+
+  test('skips when credentials map is empty (local provider)', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: {},
+      llmMetadataName: 'ollama',
+      endpoint: 'http://localhost:11434/v1',
+    });
+
+    const options = { ...baseOptions, model: 'ollama::llama3::http://localhost:11434/v1' };
+    await manager.ensureModelSecret(options);
+
+    expect(secretManager.create).not.toHaveBeenCalled();
+  });
+
+  test('skips when credentials map has multiple entries (Vertex AI)', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { projectId: 'my-project', region: 'us-east5', credentialsFile: '/path/to/creds.json' },
+      llmMetadataName: 'vertexai',
+      endpoint: undefined,
+    });
+
+    const options = { ...baseOptions, model: 'vertexai::claude-sonnet-4-20250514::' };
+    await manager.ensureModelSecret(options);
+
+    expect(secretManager.create).not.toHaveBeenCalled();
+  });
+
+  test('skips when llmMetadataName is unknown', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { token: 'some-key' },
+      llmMetadataName: 'unknown-provider',
+      endpoint: undefined,
+    });
+
+    const options = { ...baseOptions, model: 'unknown-provider::model::' };
+    await manager.ensureModelSecret(options);
+
+    expect(secretManager.create).not.toHaveBeenCalled();
+  });
+
+  test('tolerates "already exists" error from secret creation', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { 'claude:tokens': 'sk-ant-secret' },
+      llmMetadataName: 'anthropic',
+      endpoint: undefined,
+    });
+    vi.mocked(secretManager.create).mockRejectedValue(new Error('secret already exists: my-workspace-anthropic'));
+
+    const options = { ...baseOptions, model: 'anthropic::claude-sonnet-4-20250514::' };
+    await manager.ensureModelSecret(options);
+
+    expect(options.secrets).toContain('my-workspace-anthropic');
+  });
+
+  test('rethrows non-"already exists" errors from secret creation', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { 'claude:tokens': 'sk-ant-secret' },
+      llmMetadataName: 'anthropic',
+      endpoint: undefined,
+    });
+    vi.mocked(secretManager.create).mockRejectedValue(new Error('keychain unavailable'));
+
+    const options = { ...baseOptions, model: 'anthropic::claude-sonnet-4-20250514::' };
+    await expect(manager.ensureModelSecret(options)).rejects.toThrow('keychain unavailable');
+  });
+
+  test('merges secret name with existing secrets', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { 'claude:tokens': 'sk-ant-secret' },
+      llmMetadataName: 'anthropic',
+      endpoint: undefined,
+    });
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-anthropic' });
+
+    const options = { ...baseOptions, model: 'anthropic::claude-sonnet-4-20250514::', secrets: ['github-token'] };
+    await manager.ensureModelSecret(options);
+
+    expect(options.secrets).toEqual(['github-token', 'my-workspace-anthropic']);
+  });
+
+  test('does not duplicate secret name if already present', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { 'claude:tokens': 'sk-ant-secret' },
+      llmMetadataName: 'anthropic',
+      endpoint: undefined,
+    });
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-anthropic' });
+
+    const options = {
+      ...baseOptions,
+      model: 'anthropic::claude-sonnet-4-20250514::',
+      secrets: ['my-workspace-anthropic'],
+    };
+    await manager.ensureModelSecret(options);
+
+    expect(options.secrets).toEqual(['my-workspace-anthropic']);
+  });
+});
+
+describe('buildSecretOptions', () => {
+  test('returns undefined when credentials value is empty', () => {
+    const result = manager.buildSecretOptions(
+      { credentials: { key: '' }, llmMetadataName: 'anthropic', endpoint: undefined },
+      'ws',
+    );
+    expect(result).toBeUndefined();
+  });
+
+  test('returns undefined for unknown provider', () => {
+    const result = manager.buildSecretOptions(
+      { credentials: { key: 'value' }, llmMetadataName: 'somethingElse', endpoint: undefined },
+      'ws',
+    );
+    expect(result).toBeUndefined();
+  });
+
+  test('derives secret name from workspace name and provider', () => {
+    const result = manager.buildSecretOptions(
+      { credentials: { key: 'value' }, llmMetadataName: 'anthropic', endpoint: undefined },
+      'my-project',
+    );
+    expect(result?.name).toBe('my-project-anthropic');
   });
 });
 
