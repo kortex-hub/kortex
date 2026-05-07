@@ -100,9 +100,22 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   async remove(id: string): Promise<AgentWorkspaceId> {
-    const result = await this.kdnCli.removeWorkspaces(id);
-    this.apiSender.send('agent-workspace-update');
-    return result;
+    const task = this.taskManager.createTask({ title: `Deleting workspace ${id}` });
+    task.state = 'running';
+    task.status = 'in-progress';
+    try {
+      const result = await this.kdnCli.removeWorkspaces(id);
+      this.apiSender.send('agent-workspace-update');
+      task.status = 'success';
+      return result;
+    } catch (err: unknown) {
+      const detail = err instanceof Error ? err.message : String(err);
+      task.status = 'failure';
+      task.error = `Failed to delete workspace: ${detail}`;
+      throw new Error(detail);
+    } finally {
+      task.state = 'completed';
+    }
   }
 
   async getConfiguration(id: string): Promise<AgentWorkspaceConfiguration> {
