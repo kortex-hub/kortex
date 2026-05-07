@@ -306,7 +306,7 @@ export class KdnCli {
       args.push('--header', options.header);
     }
     if (options.headerTemplate) {
-      args.push('--header-template', options.headerTemplate);
+      args.push('--headerTemplate', options.headerTemplate);
     }
     if (options.path) {
       args.push('--path', options.path);
