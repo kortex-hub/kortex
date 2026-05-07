@@ -173,6 +173,24 @@ test('submits Other secret with injection settings', async () => {
   expect(handleNavigation).toHaveBeenCalledWith({ page: 'secret-vault' });
 });
 
+test('does not double-prefix ${value} when user types it directly in value format', async () => {
+  render(SecretVaultCreate);
+
+  await waitFor(() => {
+    expect(screen.getByLabelText('Other')).toBeInTheDocument();
+  });
+
+  await fireEvent.input(screen.getByLabelText('Name'), { target: { value: 'my-api-key' } });
+  await fireEvent.input(screen.getByLabelText('Secret value'), { target: { value: 'sk-123' } });
+  await fireEvent.input(screen.getByLabelText('Host pattern'), { target: { value: 'api.example.com' } });
+  await fireEvent.input(screen.getByLabelText('Header name'), { target: { value: 'Authorization' } });
+  await fireEvent.input(screen.getByLabelText('Value format'), { target: { value: 'Bearer ${value}' } });
+
+  await fireEvent.click(screen.getByRole('button', { name: 'Add Secret' }));
+
+  expect(window.createSecret).toHaveBeenCalledWith(expect.objectContaining({ headerTemplate: 'Bearer ${value}' }));
+});
+
 test('submits Other secret using default Authorization header when header name is not changed', async () => {
   const { handleNavigation } = await import('/@/navigation');
 

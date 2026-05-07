@@ -109,7 +109,7 @@ async function addSecret(): Promise<void> {
         options.path = pathPattern.trim();
       }
       if (valueFormat.trim()) {
-        options.headerTemplate = valueFormat.trim().replaceAll('{value}', '${value}');
+        options.headerTemplate = valueFormat.trim().replace(/(?<!\$)\{value\}/g, '${value}');
       }
     }
 
