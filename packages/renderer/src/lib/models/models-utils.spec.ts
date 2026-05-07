@@ -69,6 +69,34 @@ test('getCatalogModels includes connectionStatus and providerName', () => {
   });
 });
 
+test('getCatalogModels includes endpoint when connection provides one', () => {
+  const provider = {
+    id: 'openai-compatible',
+    name: 'OpenAI Compatible',
+    inferenceConnections: [
+      {
+        name: 'https://my-custom-api.example.com/v1',
+        type: 'cloud',
+        status: 'started',
+        endpoint: 'https://my-custom-api.example.com/v1',
+        models: [{ label: 'gpt-4o' }],
+      },
+    ],
+  } as unknown as ProviderInfo;
+
+  const result = getCatalogModels([provider]);
+  expect(result).toHaveLength(1);
+  expect(result[0]).toEqual({
+    providerId: 'openai-compatible',
+    providerName: 'OpenAI Compatible',
+    connectionName: 'https://my-custom-api.example.com/v1',
+    type: 'cloud',
+    endpoint: 'https://my-custom-api.example.com/v1',
+    label: 'gpt-4o',
+    connectionStatus: 'started',
+  });
+});
+
 test('getCatalogModels returns empty array when no providers', () => {
   expect(getCatalogModels([])).toEqual([]);
 });

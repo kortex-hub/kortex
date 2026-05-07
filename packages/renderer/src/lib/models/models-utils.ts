@@ -65,6 +65,7 @@ export function getCatalogModels(providerInfos: ProviderInfo[]): CatalogModelInf
           connectionName: connection.name,
           type: connection.type,
           llmMetadata: connection.llmMetadata,
+          endpoint: connection.endpoint,
           label: model.label,
           connectionStatus: connection.status,
         });
