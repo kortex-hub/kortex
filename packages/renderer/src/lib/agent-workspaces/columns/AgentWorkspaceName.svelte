@@ -29,7 +29,7 @@ function openDetails(): void {
     </div>
   {/if}
   <div class="flex flex-col gap-1 overflow-hidden min-w-0">
-    <button class="items-start" onclick={openDetails}>
+    <button class="flex items-start" onclick={openDetails}>
       <span
         class="text-(--pd-table-body-text-highlight) text-[14px] font-semibold leading-normal overflow-hidden text-ellipsis whitespace-nowrap"
         title={object.name}>
