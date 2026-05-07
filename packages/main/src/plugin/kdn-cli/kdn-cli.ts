@@ -145,7 +145,8 @@ export class KdnCli {
     const mcpCommands = options.mcp?.commands;
     const hasSkills = !!options.skills?.length;
     const hasMcp = !!mcpServers?.length || !!mcpCommands?.length;
-    if (!hasSkills && !options.secrets?.length && !options.network && !hasMcp) {
+    const hasWsConfig = !!options.workspaceConfiguration;
+    if (!hasSkills && !options.secrets?.length && !options.network && !hasMcp && !hasWsConfig) {
       return;
     }
 
@@ -163,11 +164,25 @@ export class KdnCli {
       }
     }
 
+    if (hasWsConfig) {
+      const wc = options.workspaceConfiguration!;
+      if (wc.environment?.length) {
+        existing.environment = [...(existing.environment ?? []), ...wc.environment];
+      }
+      if (wc.mounts?.length) {
+        existing.mounts = [...(existing.mounts ?? []), ...wc.mounts];
+      }
+    }
+
     if (hasSkills) {
       existing.skills = options.skills;
     }
     existing.network = options.network;
-    existing.secrets = options.secrets;
+
+    const wsConfigSecrets = options.workspaceConfiguration?.secrets ?? [];
+    const explicitSecrets = options.secrets ?? [];
+    const mergedSecrets = [...new Set([...explicitSecrets, ...wsConfigSecrets])];
+    existing.secrets = mergedSecrets.length > 0 ? mergedSecrets : undefined;
 
     if (hasMcp) {
       const reqsByCommand = new Map<string, WorkspaceRequirements | undefined>();

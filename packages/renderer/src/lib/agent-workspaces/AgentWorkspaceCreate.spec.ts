@@ -1004,4 +1004,194 @@ test('Expect Unrestricted network option enabled when runtime is podman', async 
   expect(screen.getByRole('radio', { name: 'Use Unrestricted' })).toBeEnabled();
 });
 
+test('Expect createAgentWorkspace called with workspaceConfiguration from settings for selected agent', async () => {
+  vi.mocked(window.getConfigurationValue).mockResolvedValue({
+    defaultAgent: 'claude',
+    defaultAgentSettings: {
+      claude: {
+        defaultModel: { providerId: 'claude', connectionName: 'Anthropic Cloud', label: 'claude-sonnet-4' },
+        workspaceConfiguration: {
+          environment: [
+            { name: 'CLAUDE_CODE_USE_VERTEX', value: '1' },
+            { name: 'CLOUD_ML_REGION', value: 'us-east5' },
+          ],
+          mounts: [
+            {
+              host: '$HOME/.config/gcloud/application_default_credentials.json',
+              target: '$HOME/.config/gcloud/application_default_credentials.json',
+              ro: true,
+            },
+          ],
+        },
+      },
+    },
+  });
+  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider]);
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      agent: 'claude',
+      workspaceConfiguration: {
+        environment: [
+          { name: 'CLAUDE_CODE_USE_VERTEX', value: '1' },
+          { name: 'CLOUD_ML_REGION', value: 'us-east5' },
+        ],
+        mounts: [
+          {
+            host: '$HOME/.config/gcloud/application_default_credentials.json',
+            target: '$HOME/.config/gcloud/application_default_credentials.json',
+            ro: true,
+          },
+        ],
+      },
+    }),
+  );
+});
+
+test('Expect workspaceConfiguration undefined when no settings for selected agent', async () => {
+  vi.mocked(window.getConfigurationValue).mockResolvedValue({
+    defaultAgent: 'opencode',
+    defaultAgentSettings: {
+      opencode: {
+        defaultModel: { providerId: 'claude', connectionName: 'Anthropic Cloud', label: 'claude-sonnet-4' },
+      },
+    },
+  });
+  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider]);
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      agent: 'opencode',
+      workspaceConfiguration: undefined,
+    }),
+  );
+});
+
+test('Expect workspaceConfiguration resolved via cliAgent for variant agents like claude-vertex', async () => {
+  vi.mocked(window.getConfigurationValue).mockResolvedValue({
+    defaultAgent: 'claude-vertex',
+    defaultAgentSettings: {
+      claude: {
+        workspaceConfiguration: {
+          environment: [{ name: 'CLAUDE_CODE_USE_VERTEX', value: '1' }],
+        },
+      },
+    },
+  });
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      agent: 'claude',
+      workspaceConfiguration: {
+        environment: [{ name: 'CLAUDE_CODE_USE_VERTEX', value: '1' }],
+      },
+    }),
+  );
+});
+
+test('Expect workspaceConfiguration falls back to raw agent key when resolved key has no config', async () => {
+  vi.mocked(window.getConfigurationValue).mockResolvedValue({
+    defaultAgent: 'claude-vertex',
+    defaultAgentSettings: {
+      'claude-vertex': {
+        workspaceConfiguration: {
+          environment: [{ name: 'CLOUD_ML_REGION', value: 'us-east5' }],
+          mounts: [
+            {
+              host: '$HOME/.config/gcloud/application_default_credentials.json',
+              target: '$HOME/.config/gcloud/application_default_credentials.json',
+              ro: true,
+            },
+          ],
+        },
+      },
+    },
+  });
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      agent: 'claude',
+      workspaceConfiguration: {
+        environment: [{ name: 'CLOUD_ML_REGION', value: 'us-east5' }],
+        mounts: [
+          {
+            host: '$HOME/.config/gcloud/application_default_credentials.json',
+            target: '$HOME/.config/gcloud/application_default_credentials.json',
+            ro: true,
+          },
+        ],
+      },
+    }),
+  );
+});
+
+test('Expect tilde mount paths normalized to $HOME in workspaceConfiguration', async () => {
+  vi.mocked(window.getConfigurationValue).mockResolvedValue({
+    defaultAgent: 'claude',
+    defaultAgentSettings: {
+      claude: {
+        workspaceConfiguration: {
+          mounts: [
+            {
+              host: '~/.config/gcloud/application_default_credentials.json',
+              target: '~/.config/gcloud/application_default_credentials.json',
+              ro: true,
+            },
+          ],
+        },
+      },
+    },
+  });
+  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider]);
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      workspaceConfiguration: {
+        mounts: [
+          {
+            host: '$HOME/.config/gcloud/application_default_credentials.json',
+            target: '$HOME/.config/gcloud/application_default_credentials.json',
+            ro: true,
+          },
+        ],
+      },
+    }),
+  );
+});
+
 const wizardStepCount = 5;

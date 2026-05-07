@@ -26,7 +26,7 @@ import { providerInfos } from '/@/stores/providers';
 import { ragEnvironments } from '/@/stores/rag-environments';
 import { secretVaultInfos } from '/@/stores/secret-vault';
 import { skillInfos } from '/@/stores/skills';
-import type { NetworkConfiguration } from '/@api/agent-workspace-info';
+import type { AgentWorkspaceConfiguration, NetworkConfiguration } from '/@api/agent-workspace-info';
 import { NavigationPage } from '/@api/navigation-page';
 import type { DefaultWorkspaceSettings } from '/@api/onboarding-settings-info';
 
@@ -161,11 +161,10 @@ let sessionName = $state('');
 let description = $state('');
 let selectedAgent = $state('opencode');
 let selectedModel = $state<ModelInfo | undefined>(undefined);
+let defaultSettings = $state<DefaultWorkspaceSettings | undefined>(undefined);
 
 onMount(async () => {
-  const defaultSettings = await window.getConfigurationValue<DefaultWorkspaceSettings>(
-    'onboarding.defaultWorkspaceSettings',
-  );
+  defaultSettings = await window.getConfigurationValue<DefaultWorkspaceSettings>('onboarding.defaultWorkspaceSettings');
 
   const defaultAgent = defaultSettings?.defaultAgent;
   if (defaultAgent && agentDefinitions.some(d => d.cliName === defaultAgent)) {
@@ -307,6 +306,27 @@ function cancel(): void {
   handleNavigation({ page: NavigationPage.AGENT_WORKSPACES });
 }
 
+function normalizeTildeToHome(p: string): string {
+  return p.startsWith('~/') ? `$HOME/${p.slice(2)}` : p;
+}
+
+function getAgentWorkspaceConfiguration(agent: string): AgentWorkspaceConfiguration | undefined {
+  const resolvedAgent = agentDefinitions.find(d => d.cliName === agent)?.cliAgent ?? agent;
+  const config =
+    defaultSettings?.defaultAgentSettings?.[resolvedAgent]?.workspaceConfiguration ??
+    defaultSettings?.defaultAgentSettings?.[agent]?.workspaceConfiguration;
+  if (!config) return undefined;
+  const snapshot = $state.snapshot(config);
+  if (snapshot.mounts) {
+    snapshot.mounts = snapshot.mounts.map(m => ({
+      ...m,
+      host: normalizeTildeToHome(m.host),
+      target: normalizeTildeToHome(m.target),
+    }));
+  }
+  return snapshot;
+}
+
 function getFirstCompatibleModel(): ModelInfo | undefined {
   const agentDef = agentDefinitions.find(d => d.cliName === selectedAgent);
   const enabled = getCatalogModels($providerInfos).filter(m => isModelEnabled($disabledModels, m.providerId, m.label));
@@ -361,6 +381,7 @@ async function startWorkspace(): Promise<void> {
             ...(commandServers.length > 0 ? { commands: commandServers } : {}),
           }
         : undefined,
+      workspaceConfiguration: getAgentWorkspaceConfiguration(selectedAgent),
     });
   } catch (err: unknown) {
     console.error('Failed to create agent workspace', err);

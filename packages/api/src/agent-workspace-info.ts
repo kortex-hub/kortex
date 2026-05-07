@@ -70,4 +70,5 @@ export interface AgentWorkspaceCreateOptions {
   network?: NetworkConfiguration;
   secrets?: string[];
   mcp?: AgentWorkspaceMcpConfig;
+  workspaceConfiguration?: AgentWorkspaceConfiguration;
 }

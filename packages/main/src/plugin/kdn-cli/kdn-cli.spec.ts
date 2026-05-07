@@ -290,7 +290,7 @@ describe('create', () => {
     expect(exec.exec).toHaveBeenCalled();
   });
 
-  test('does not write workspace.json when no skills, network, secrets, or mcp provided', async () => {
+  test('does not write workspace.json when no skills, network, secrets, mcp, or workspaceConfiguration provided', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-new' })));
 
@@ -449,6 +449,125 @@ describe('create', () => {
     const configCall = calls.find(c => String(c[0]).endsWith('workspace.json'));
     const parsed = JSON.parse(configCall![1] as string);
     expect(parsed.features).toEqual({ './uv-feature': { version: '3.12' } });
+  });
+
+  test('writes workspace.json with environment and mounts from workspaceConfiguration', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(readFile).mockRejectedValue(mockEnoent());
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-new' })));
+
+    await kdnCli.createWorkspace({
+      ...defaultOptions,
+      workspaceConfiguration: {
+        environment: [
+          { name: 'CLAUDE_CODE_USE_VERTEX', value: '1' },
+          { name: 'CLOUD_ML_REGION', value: 'us-east5' },
+        ],
+        mounts: [
+          {
+            host: '$HOME/.config/gcloud/application_default_credentials.json',
+            target: '$HOME/.config/gcloud/application_default_credentials.json',
+            ro: true,
+          },
+        ],
+      },
+    });
+
+    expect(mkdir).toHaveBeenCalledWith(join('/tmp/my-project', '.kaiden'), { recursive: true });
+    const writtenContent = vi.mocked(writeFile).mock.calls[0]![1] as string;
+    const parsed = JSON.parse(writtenContent);
+    expect(parsed.environment).toEqual([
+      { name: 'CLAUDE_CODE_USE_VERTEX', value: '1' },
+      { name: 'CLOUD_ML_REGION', value: 'us-east5' },
+    ]);
+    expect(parsed.mounts).toEqual([
+      {
+        host: '$HOME/.config/gcloud/application_default_credentials.json',
+        target: '$HOME/.config/gcloud/application_default_credentials.json',
+        ro: true,
+      },
+    ]);
+  });
+
+  test('merges workspaceConfiguration environment into existing workspace.json', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(readFile).mockResolvedValue(JSON.stringify({ environment: [{ name: 'EXISTING_VAR', value: 'keep' }] }));
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-new' })));
+
+    await kdnCli.createWorkspace({
+      ...defaultOptions,
+      workspaceConfiguration: {
+        environment: [{ name: 'NEW_VAR', value: 'added' }],
+      },
+    });
+
+    const writtenContent = vi.mocked(writeFile).mock.calls[0]![1] as string;
+    const parsed = JSON.parse(writtenContent);
+    expect(parsed.environment).toEqual([
+      { name: 'EXISTING_VAR', value: 'keep' },
+      { name: 'NEW_VAR', value: 'added' },
+    ]);
+  });
+
+  test('merges workspaceConfiguration secrets with explicit secrets deduplicating', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(readFile).mockRejectedValue(mockEnoent());
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-new' })));
+
+    await kdnCli.createWorkspace({
+      ...defaultOptions,
+      secrets: ['github-token', 'shared-secret'],
+      workspaceConfiguration: {
+        secrets: ['vertex-creds', 'shared-secret'],
+      },
+    });
+
+    const writtenContent = vi.mocked(writeFile).mock.calls[0]![1] as string;
+    const parsed = JSON.parse(writtenContent);
+    expect(parsed.secrets).toEqual(['github-token', 'shared-secret', 'vertex-creds']);
+  });
+
+  test('writes workspace.json with workspaceConfiguration alone when no other options set', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(readFile).mockRejectedValue(mockEnoent());
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-new' })));
+
+    await kdnCli.createWorkspace({
+      ...defaultOptions,
+      workspaceConfiguration: {
+        environment: [{ name: 'FOO', value: 'bar' }],
+      },
+    });
+
+    expect(writeFile).toHaveBeenCalled();
+    const writtenContent = vi.mocked(writeFile).mock.calls[0]![1] as string;
+    const parsed = JSON.parse(writtenContent);
+    expect(parsed.environment).toEqual([{ name: 'FOO', value: 'bar' }]);
+  });
+
+  test('writes workspace.json combining workspaceConfiguration with explicit skills and network', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(readFile).mockRejectedValue(mockEnoent());
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify({ id: 'ws-new' })));
+
+    await kdnCli.createWorkspace({
+      ...defaultOptions,
+      skills: ['/home/user/.kaiden/skills/kubernetes'],
+      network: { mode: 'deny', hosts: ['registry.npmjs.org'] },
+      workspaceConfiguration: {
+        environment: [{ name: 'CLAUDE_CODE_USE_VERTEX', value: '1' }],
+        mounts: [{ host: '$HOME/.config/gcloud/adc.json', target: '$HOME/.config/gcloud/adc.json', ro: true }],
+      },
+    });
+
+    const writtenContent = vi.mocked(writeFile).mock.calls[0]![1] as string;
+    const parsed = JSON.parse(writtenContent);
+    expect(parsed.skills).toEqual(['/home/user/.kaiden/skills/kubernetes']);
+    expect(parsed.network).toEqual({ mode: 'deny', hosts: ['registry.npmjs.org'] });
+    expect(parsed.environment).toEqual([{ name: 'CLAUDE_CODE_USE_VERTEX', value: '1' }]);
+    expect(parsed.mounts).toEqual([
+      { host: '$HOME/.config/gcloud/adc.json', target: '$HOME/.config/gcloud/adc.json', ro: true },
+    ]);
   });
 });
 
