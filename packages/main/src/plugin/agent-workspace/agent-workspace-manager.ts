@@ -18,7 +18,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 
 import type { Disposable, FileSystemWatcher } from '@openkaiden/api';
 import type { WebContents } from 'electron';
@@ -126,7 +126,8 @@ export class AgentWorkspaceManager implements Disposable {
     const entries = Object.entries(connectionInfo.credentials);
     if (entries.length !== 1) return;
 
-    const secretOptions = this.buildSecretOptions(connectionInfo, options.name ?? 'workspace');
+    const workspaceSecretPrefix = options.name ?? basename(options.sourcePath);
+    const secretOptions = this.buildSecretOptions(connectionInfo, workspaceSecretPrefix);
     if (!secretOptions) return;
 
     try {

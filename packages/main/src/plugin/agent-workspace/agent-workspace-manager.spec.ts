@@ -518,6 +518,25 @@ describe('ensureModelSecret', () => {
     expect(options.secrets).toEqual(['github-token', 'my-workspace-anthropic']);
   });
 
+  test('derives secret name from sourcePath when name is omitted', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { 'claude:tokens': 'sk-ant-secret' },
+      llmMetadataName: 'anthropic',
+      endpoint: undefined,
+    });
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-project-anthropic' });
+
+    const options: AgentWorkspaceCreateOptions = {
+      sourcePath: '/tmp/my-project',
+      agent: 'claude',
+      model: 'anthropic::claude-sonnet-4-20250514::',
+    };
+    await manager.ensureModelSecret(options);
+
+    expect(secretManager.create).toHaveBeenCalledWith(expect.objectContaining({ name: 'my-project-anthropic' }));
+    expect(options.secrets).toContain('my-project-anthropic');
+  });
+
   test('does not duplicate secret name if already present', async () => {
     vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
       credentials: { 'claude:tokens': 'sk-ant-secret' },
