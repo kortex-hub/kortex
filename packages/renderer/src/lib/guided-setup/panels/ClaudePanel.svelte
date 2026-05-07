@@ -33,17 +33,8 @@ let existingConnection = $derived(
 );
 let alreadyConnected = $derived(!!existingConnection);
 
-$effect(() => {
-  if (alreadyConnected && onboarding) {
-    onboarding.secretName = secretType;
-  }
-});
-
 async function validate(): Promise<boolean> {
   if (alreadyConnected) {
-    if (onboarding) {
-      onboarding.secretName = secretType;
-    }
     return true;
   }
 
@@ -88,7 +79,15 @@ async function validate(): Promise<boolean> {
     await fetchProviders();
 
     if (onboarding) {
-      onboarding.secretName = secretType;
+      const agentSettings = onboarding.workspaceSetting.defaultAgentSettings?.[onboarding.agent] ?? {};
+      onboarding.workspaceSetting.defaultAgentSettings ??= {};
+      onboarding.workspaceSetting.defaultAgentSettings[onboarding.agent] = agentSettings;
+      agentSettings.workspaceConfiguration ??= {};
+      agentSettings.workspaceConfiguration.secrets ??= [];
+      agentSettings.workspaceConfiguration.secrets = agentSettings.workspaceConfiguration.secrets.filter(
+        secret => secret !== secretType,
+      );
+      agentSettings.workspaceConfiguration.secrets.push(secretType);
     }
     return true;
   } catch (err: unknown) {

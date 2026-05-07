@@ -29,7 +29,6 @@ export type CliAgent = 'opencode' | 'claude' | 'claude-vertex' | 'cursor' | 'goo
 
 export interface OnboardingState {
   agent: CliAgent;
-  secretName?: string;
   model?: DefaultWorkspaceModelSettings;
   workspaceSetting: DefaultWorkspaceSettings;
   beforeAdvance?: () => Promise<boolean>;

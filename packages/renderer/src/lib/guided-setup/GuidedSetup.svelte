@@ -4,8 +4,6 @@ import { Button } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { SvelteSet } from 'svelte/reactivity';
 
-import type { AgentWorkspaceConfiguration } from '/@api/agent-workspace-info';
-
 import { getAgentDefinition } from './agent-registry';
 import { createDefaultOnboardingState, guidedSetupSteps } from './guided-setup-steps';
 
@@ -32,27 +30,14 @@ function getStepState(index: number): 'completed' | 'active' | 'upcoming' {
   return 'upcoming';
 }
 
-function buildWorkspaceConfig(): AgentWorkspaceConfiguration {
-  const resolved = getAgentDefinition(onboardingState.agent).cliAgent ?? onboardingState.agent;
-
-  if (resolved === 'claude' && onboardingState.secretName) {
-    return {
-      secrets: [onboardingState.secretName],
-    };
-  }
-
-  return {};
-}
-
 async function persistOnboardingDefaults(): Promise<void> {
-  const resolvedAgent = getAgentDefinition(onboardingState.agent).cliAgent ?? onboardingState.agent;
+  const resolvedAgent = getAgentDefinition(onboardingState.agent).cliName ?? onboardingState.agent;
   onboardingState.workspaceSetting.defaultAgent = resolvedAgent;
 
   const agentSettings = onboardingState.workspaceSetting.defaultAgentSettings?.[resolvedAgent] ?? {};
   onboardingState.workspaceSetting.defaultAgentSettings ??= {};
   onboardingState.workspaceSetting.defaultAgentSettings[resolvedAgent] = agentSettings;
   agentSettings.defaultModel = onboardingState.model;
-  agentSettings.workspaceConfiguration = buildWorkspaceConfig();
 
   await window.updateConfigurationValue(
     'onboarding.defaultWorkspaceSettings',

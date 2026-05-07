@@ -229,7 +229,6 @@ test('persists default workspace settings when wizard completes', async () => {
       defaultAgentSettings: {
         opencode: {
           defaultModel: undefined,
-          workspaceConfiguration: {},
         },
       },
     });
@@ -312,7 +311,6 @@ test('persists defaultWorkspaceSettings with workspaceConfig when wizard complet
       defaultAgentSettings: {
         opencode: {
           defaultModel: undefined,
-          workspaceConfiguration: {},
         },
       },
     });

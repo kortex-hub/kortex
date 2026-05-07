@@ -265,13 +265,6 @@ describe('already connected', () => {
     expect(window.createInferenceProviderConnection).not.toHaveBeenCalled();
   });
 
-  test('sets onboarding.secretName when already connected', () => {
-    stubConnectedProvider();
-    renderPanel();
-
-    expect(onboarding.secretName).toBe('anthropic');
-  });
-
   test('does not treat a stopped connection as already connected', () => {
     const providers = [
       {
