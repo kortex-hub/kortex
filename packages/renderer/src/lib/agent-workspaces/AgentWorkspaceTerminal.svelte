@@ -15,12 +15,21 @@ import { getExistingTerminal, registerTerminal } from '/@/stores/agent-workspace
 import { agentWorkspaces } from '/@/stores/agent-workspaces.svelte';
 import { TerminalSettings } from '/@api/terminal/terminal-settings';
 
+const MAX_RECONNECT_ATTEMPTS = 30;
+
 interface Props {
   workspaceId: string;
   screenReaderMode?: boolean;
+  reconnectExhausted?: boolean;
+  reconnect?: () => void;
 }
 
-let { workspaceId, screenReaderMode = false }: Props = $props();
+let {
+  workspaceId,
+  screenReaderMode = false,
+  reconnectExhausted = $bindable(false),
+  reconnect = $bindable(),
+}: Props = $props();
 let terminalXtermDiv: HTMLDivElement;
 let shellTerminal: Terminal;
 let currentRouterPath: string;
@@ -30,6 +39,7 @@ let handleResize: (() => void) | undefined;
 let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
 let onDataDisposable: IDisposable | undefined;
 let reconnecting = false;
+let reconnectCount = 0;
 
 const workspaceSummary = $derived($agentWorkspaces.find(ws => ws.id === workspaceId));
 const status = $derived(workspaceSummary?.state ?? 'stopped');
@@ -52,6 +62,10 @@ function clearReconnectTimer(): void {
 
 function scheduleReconnect(): void {
   if (reconnectTimer) return;
+  if (reconnectCount >= MAX_RECONNECT_ATTEMPTS) {
+    reconnectExhausted = true;
+    return;
+  }
   reconnectTimer = setTimeout(() => {
     reconnectTimer = undefined;
     if (isRunning) {
@@ -65,6 +79,11 @@ function scheduleReconnect(): void {
 
 async function restartTerminal(): Promise<void> {
   if (reconnecting) return;
+  if (reconnectCount >= MAX_RECONNECT_ATTEMPTS) {
+    reconnectExhausted = true;
+    return;
+  }
+  reconnectCount++;
   reconnecting = true;
   try {
     clearReconnectTimer();
@@ -74,8 +93,19 @@ async function restartTerminal(): Promise<void> {
   }
 }
 
+function manualReconnect(): void {
+  reconnectCount = 0;
+  reconnectExhausted = false;
+  restartTerminal().catch((err: unknown) => {
+    console.error(`Error reconnecting terminal for workspace ${workspaceId}`, err);
+    scheduleReconnect();
+  });
+}
+
 $effect(() => {
   if (lastStatus !== '' && lastStatus !== 'running' && status === 'running') {
+    reconnectCount = 0;
+    reconnectExhausted = false;
     restartTerminal().catch((err: unknown) => {
       console.error(`Error starting terminal for workspace ${workspaceId}`, err);
       scheduleReconnect();
@@ -192,6 +222,7 @@ async function refreshTerminal(): Promise<void> {
 }
 
 onMount(async () => {
+  reconnect = manualReconnect;
   await refreshTerminal();
   await executeShellInWorkspace();
 });

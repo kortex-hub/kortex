@@ -387,3 +387,152 @@ test('$effect schedules reconnect when restartTerminal fails', async () => {
 
   await waitFor(() => expect(shellInAgentWorkspaceMock).toHaveBeenCalledTimes(3), { timeout: 5000 });
 });
+
+async function drainReconnectAttempts(mock: ReturnType<typeof vi.fn>, fromCall: number, toCall: number): Promise<void> {
+  for (let i = fromCall; i <= toCall; i++) {
+    await vi.advanceTimersByTimeAsync(2000);
+    await vi.waitFor(() => expect(mock).toHaveBeenCalledTimes(i));
+  }
+}
+
+test('restartTerminal stops reconnecting after MAX_RECONNECT_ATTEMPTS failures', async () => {
+  vi.useFakeTimers();
+  agentWorkspaces.set([{ ...workspace, state: 'running' }]);
+
+  let onEndCallback: () => void = () => {};
+  const sendCallbackId = 42;
+
+  shellInAgentWorkspaceMock.mockImplementation(
+    async (_id: string, _onData: (data: string) => void, _onError: (error: string) => void, onEnd: () => void) => {
+      onEndCallback = onEnd;
+      return sendCallbackId;
+    },
+  );
+
+  const renderObject = render(AgentWorkspaceTerminal, { workspaceId: 'ws-1', screenReaderMode: true });
+  await vi.waitFor(() => expect(shellInAgentWorkspaceMock).toHaveBeenCalledTimes(1));
+
+  shellInAgentWorkspaceMock.mockRejectedValue(new Error('connection refused'));
+
+  onEndCallback();
+  await vi.waitFor(() => expect(shellInAgentWorkspaceMock).toHaveBeenCalledTimes(2));
+
+  await drainReconnectAttempts(shellInAgentWorkspaceMock, 3, 31);
+
+  await vi.advanceTimersByTimeAsync(4000);
+  expect(shellInAgentWorkspaceMock).toHaveBeenCalledTimes(31);
+
+  renderObject.unmount();
+  vi.useRealTimers();
+});
+
+test('$effect resets reconnect counter when workspace transitions to running after exhaustion', async () => {
+  vi.useFakeTimers();
+  agentWorkspaces.set([{ ...workspace, state: 'running' }]);
+
+  let onEndCallback: () => void = () => {};
+  const sendCallbackId = 42;
+
+  shellInAgentWorkspaceMock.mockImplementation(
+    async (_id: string, _onData: (data: string) => void, _onError: (error: string) => void, onEnd: () => void) => {
+      onEndCallback = onEnd;
+      return sendCallbackId;
+    },
+  );
+
+  const renderObject = render(AgentWorkspaceTerminal, { workspaceId: 'ws-1', screenReaderMode: true });
+  await vi.waitFor(() => expect(shellInAgentWorkspaceMock).toHaveBeenCalledTimes(1));
+
+  shellInAgentWorkspaceMock.mockRejectedValue(new Error('connection refused'));
+  onEndCallback();
+  await vi.waitFor(() => expect(shellInAgentWorkspaceMock).toHaveBeenCalledTimes(2));
+
+  await drainReconnectAttempts(shellInAgentWorkspaceMock, 3, 31);
+
+  await vi.advanceTimersByTimeAsync(4000);
+  expect(shellInAgentWorkspaceMock).toHaveBeenCalledTimes(31);
+
+  vi.useRealTimers();
+
+  shellInAgentWorkspaceMock.mockImplementation(
+    async (_id: string, _onData: (data: string) => void, _onError: (error: string) => void, onEnd: () => void) => {
+      onEndCallback = onEnd;
+      return sendCallbackId;
+    },
+  );
+
+  agentWorkspaces.set([{ ...workspace, state: 'stopped' }]);
+  await tick();
+  agentWorkspaces.set([{ ...workspace, state: 'running' }]);
+
+  await waitFor(() => expect(shellInAgentWorkspaceMock).toHaveBeenCalledTimes(32));
+
+  renderObject.unmount();
+});
+
+test('reconnect timer is cleared on unmount during retry loop', async () => {
+  vi.useFakeTimers();
+  agentWorkspaces.set([{ ...workspace, state: 'running' }]);
+
+  let onEndCallback: () => void = () => {};
+  const sendCallbackId = 42;
+
+  shellInAgentWorkspaceMock.mockImplementation(
+    async (_id: string, _onData: (data: string) => void, _onError: (error: string) => void, onEnd: () => void) => {
+      onEndCallback = onEnd;
+      return sendCallbackId;
+    },
+  );
+
+  const renderObject = render(AgentWorkspaceTerminal, { workspaceId: 'ws-1', screenReaderMode: true });
+  await vi.waitFor(() => expect(shellInAgentWorkspaceMock).toHaveBeenCalledTimes(1));
+
+  shellInAgentWorkspaceMock.mockRejectedValueOnce(new Error('connection refused'));
+  onEndCallback();
+  await vi.waitFor(() => expect(shellInAgentWorkspaceMock).toHaveBeenCalledTimes(2));
+  await vi.advanceTimersByTimeAsync(100);
+
+  renderObject.unmount();
+
+  await vi.advanceTimersByTimeAsync(4000);
+  expect(shellInAgentWorkspaceMock).toHaveBeenCalledTimes(2);
+
+  vi.useRealTimers();
+});
+
+test('reconnectExhausted remains false while reconnect count is below MAX_RECONNECT_ATTEMPTS', async () => {
+  vi.useFakeTimers();
+  agentWorkspaces.set([{ ...workspace, state: 'running' }]);
+
+  let onEndCallback: () => void = () => {};
+  const sendCallbackId = 42;
+
+  shellInAgentWorkspaceMock.mockImplementation(
+    async (_id: string, _onData: (data: string) => void, _onError: (error: string) => void, onEnd: () => void) => {
+      onEndCallback = onEnd;
+      return sendCallbackId;
+    },
+  );
+
+  const renderObject = render(AgentWorkspaceTerminal, { workspaceId: 'ws-1', screenReaderMode: true });
+  await vi.waitFor(() => expect(shellInAgentWorkspaceMock).toHaveBeenCalledTimes(1));
+
+  shellInAgentWorkspaceMock.mockRejectedValue(new Error('connection refused'));
+  onEndCallback();
+  await vi.waitFor(() => expect(shellInAgentWorkspaceMock).toHaveBeenCalledTimes(2));
+
+  await drainReconnectAttempts(shellInAgentWorkspaceMock, 3, 6);
+
+  shellInAgentWorkspaceMock.mockImplementation(
+    async (_id: string, _onData: (data: string) => void, _onError: (error: string) => void, onEnd: () => void) => {
+      onEndCallback = onEnd;
+      return sendCallbackId;
+    },
+  );
+
+  await vi.advanceTimersByTimeAsync(2000);
+  await vi.waitFor(() => expect(shellInAgentWorkspaceMock).toHaveBeenCalledTimes(7));
+
+  renderObject.unmount();
+  vi.useRealTimers();
+});

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { faPlay, faStop, faTerminal, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faArrowsRotate, faPlay, faStop, faTerminal, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { ErrorMessage, Tab } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
@@ -26,6 +26,10 @@ const workspaceSummary = $derived($agentWorkspaces.find(ws => ws.id === workspac
 const status = $derived(workspaceSummary?.state ?? 'stopped');
 const isRunning = $derived(status === 'running' || status === 'stopping');
 const inProgress = $derived(status === 'starting' || status === 'stopping');
+
+let terminalReconnectExhausted = $state(false);
+let terminalReconnect: (() => void) | undefined = $state(undefined);
+const isOnTerminalTab = $derived(isTabSelected($router.path, 'terminal'));
 
 $effect(() => {
   configurationError = undefined;
@@ -87,6 +91,12 @@ function handleRemove(): void {
 
 <DetailsPage title={workspaceSummary?.name ?? ''}>
   {#snippet actionsSnippet()}
+    {#if isOnTerminalTab && terminalReconnectExhausted && terminalReconnect}
+      <ListItemButtonIcon
+        title="Reconnect"
+        onClick={terminalReconnect}
+        icon={faArrowsRotate} />
+    {/if}
     <ListItemButtonIcon
       title={isRunning ? 'Stop Workspace' : 'Start Workspace'}
       onClick={handleStartStop}
@@ -115,7 +125,10 @@ function handleRemove(): void {
       <AgentWorkspaceDetailsOverview {workspaceSummary} {configuration} />
     </Route>
     <Route path="/terminal" breadcrumb="Terminal" navigationHint="tab">
-      <AgentWorkspaceTerminal workspaceId={workspaceId} />
+      <AgentWorkspaceTerminal
+        workspaceId={workspaceId}
+        bind:reconnectExhausted={terminalReconnectExhausted}
+        bind:reconnect={terminalReconnect} />
     </Route>
     <!-- <Route path="/files" breadcrumb="Files" navigationHint="tab">
       <AgentWorkspaceDetailsFiles />
