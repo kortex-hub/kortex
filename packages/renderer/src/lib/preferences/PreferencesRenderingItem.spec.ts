@@ -40,6 +40,7 @@ const EXPERIMENTAL_RECORD: IConfigurationPropertyRecordedSchema = {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(window.openExternal).mockResolvedValue(undefined);
+  (window as unknown as Record<string, unknown>).getUrlProtocol = vi.fn().mockResolvedValue('podman-desktop');
 });
 
 test('experimental record should have clickable GitHub link', async () => {
@@ -135,4 +136,24 @@ test('locked record should not show reset to default button', async () => {
   // Verify reset button is not present
   const resetButton = queryByRole('button', { name: 'Reset to default value' });
   expect(resetButton).not.toBeInTheDocument();
+});
+
+test('type markdown record with markdownDescription should render markdown content only once', async () => {
+  const record: IConfigurationPropertyRecordedSchema = {
+    id: 'ext.markdown.info',
+    title: 'Info',
+    parentId: 'ext',
+    description: 'plain description text',
+    markdownDescription: 'Some **markdown** content',
+    type: 'markdown',
+  };
+
+  const { getAllByLabelText, getByText } = render(PreferencesRenderingItem, { record });
+
+  await vi.waitFor(() => {
+    const markdownSections = getAllByLabelText('markdown-content');
+    expect(markdownSections).toHaveLength(1);
+  });
+
+  expect(getByText('plain description text')).toBeInTheDocument();
 });
