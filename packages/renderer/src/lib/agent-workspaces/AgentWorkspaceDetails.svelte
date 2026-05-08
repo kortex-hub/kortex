@@ -91,7 +91,7 @@ function handleRemove(): void {
 
 <DetailsPage title={workspaceSummary?.name ?? ''}>
   {#snippet actionsSnippet()}
-    {#if isOnTerminalTab && terminalReconnectExhausted && terminalReconnect}
+    {#if isOnTerminalTab && isRunning && terminalReconnectExhausted && terminalReconnect}
       <ListItemButtonIcon
         title="Reconnect"
         onClick={terminalReconnect}

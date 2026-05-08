@@ -223,6 +223,8 @@ async function refreshTerminal(): Promise<void> {
 
 onMount(async () => {
   reconnect = manualReconnect;
+  reconnectExhausted = false;
+  reconnectCount = 0;
   await refreshTerminal();
   await executeShellInWorkspace();
 });
