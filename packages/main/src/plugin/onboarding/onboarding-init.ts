@@ -18,13 +18,26 @@
 
 import { inject, injectable } from 'inversify';
 
+import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
+import { CONFIGURATION_DEFAULT_SCOPE } from '/@api/configuration/constants.js';
 import { type IConfigurationNode, IConfigurationRegistry } from '/@api/configuration/models.js';
+import type { IDisposable } from '/@api/disposable.js';
+import { WelcomeSettings } from '/@api/welcome/welcome-settings.js';
 
+import { CommandRegistry } from '../command-registry.js';
+import { OnboardingRegistry } from '../onboarding-registry.js';
 import { OnboardingSettings } from './onboarding-settings.js';
 
 @injectable()
-export class OnboardingInit {
-  constructor(@inject(IConfigurationRegistry) private configurationRegistry: IConfigurationRegistry) {}
+export class OnboardingInit implements IDisposable {
+  #disposables: IDisposable[] = [];
+
+  constructor(
+    @inject(IConfigurationRegistry) private configurationRegistry: IConfigurationRegistry,
+    @inject(CommandRegistry) private commandRegistry: CommandRegistry,
+    @inject(OnboardingRegistry) private onboardingRegistry: OnboardingRegistry,
+    @inject(ApiSenderType) private apiSender: ApiSenderType,
+  ) {}
 
   init(): void {
     const onboardingConfiguration: IConfigurationNode = {
@@ -38,9 +51,35 @@ export class OnboardingInit {
           default: {},
           hidden: true,
         },
+        [`${OnboardingSettings.SectionName}.${OnboardingSettings.OnboardAgain}`]: {
+          description: 'Restart the onboarding process',
+          markdownDescription:
+            ':button[Onboard again]{command=onboarding.resetAndRestart title="Restart the onboarding process"}',
+          type: 'markdown',
+        },
       },
     };
 
     this.configurationRegistry.registerConfigurations([onboardingConfiguration]);
+
+    this.#disposables.push(
+      this.commandRegistry.registerCommand('onboarding.resetAndRestart', async () => {
+        const onboardings = this.onboardingRegistry.listOnboarding();
+        const extensions = onboardings.map(o => o.extension);
+        if (extensions.length > 0) {
+          this.onboardingRegistry.resetOnboarding(extensions);
+        }
+        await this.configurationRegistry.updateConfigurationValue(
+          `${WelcomeSettings.SectionName}.${WelcomeSettings.Version}`,
+          undefined,
+          CONFIGURATION_DEFAULT_SCOPE,
+        );
+        this.apiSender.send('onboarding:restart');
+      }),
+    );
+  }
+
+  dispose(): void {
+    this.#disposables.forEach(d => d.dispose());
   }
 }

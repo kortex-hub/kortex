@@ -19,4 +19,5 @@
 export enum OnboardingSettings {
   SectionName = 'onboarding',
   DefaultWorkspaceSettings = 'defaultWorkspaceSettings',
+  OnboardAgain = 'onboardAgain',
 }

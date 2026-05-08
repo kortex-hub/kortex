@@ -74,6 +74,10 @@ onMount(async () => {
   if (showWelcome) {
     await window.updateConfigurationValue(`releaseNotesBanner.show`, podmanDesktopVersion);
   }
+
+  window.events?.receive('onboarding:restart', () => {
+    showWelcome = true;
+  });
 });
 
 async function closeWelcome(): Promise<void> {
