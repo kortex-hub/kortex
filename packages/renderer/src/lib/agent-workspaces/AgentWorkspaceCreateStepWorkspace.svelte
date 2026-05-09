@@ -1,5 +1,5 @@
 <script lang="ts">
-import { faChevronDown, faFolderOpen } from '@fortawesome/free-solid-svg-icons';
+import { faChevronDown, faFolderOpen, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { Button, Input } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
@@ -12,6 +12,9 @@ interface Props {
   nameManuallyEdited: boolean;
   descriptionOpen: boolean;
   onBrowseSource: () => Promise<void>;
+  configExists?: boolean;
+  configAction?: 'merge' | 'replace';
+  onStartAsIs?: () => Promise<void>;
 }
 
 let {
@@ -21,6 +24,9 @@ let {
   nameManuallyEdited = $bindable(),
   descriptionOpen = $bindable(),
   onBrowseSource,
+  configExists = false,
+  configAction = $bindable('merge'),
+  onStartAsIs,
 }: Props = $props();
 
 function markNameEdited(): void {
@@ -55,6 +61,50 @@ function toggleDescription(): void {
       Select a local directory to use as the workspace source.
     </p>
   </div>
+
+  {#if configExists}
+    <div class="rounded-lg border border-blue-500/30 bg-blue-500/10 p-4 space-y-3" role="status">
+      <div class="flex items-start gap-2">
+        <Icon icon={faInfoCircle} size="sm" class="text-blue-400 mt-0.5 shrink-0" />
+        <p class="text-sm text-[var(--pd-modal-text)]">
+          An existing workspace configuration was found in this folder.
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-3 pl-6">
+        <Button type="secondary" onclick={onStartAsIs} aria-label="Start workspace as-is">
+          Start workspace as-is
+        </Button>
+
+        <p class="text-xs text-[var(--pd-content-card-text)] opacity-60">
+          Or continue below to configure a new workspace:
+        </p>
+
+        <div class="flex items-center gap-4">
+          <label class="flex items-center gap-1.5 text-sm text-[var(--pd-modal-text)] cursor-pointer">
+            <input
+              type="radio"
+              name="config-action"
+              value="merge"
+              checked={configAction === 'merge'}
+              onchange={(): void => { configAction = 'merge'; }}
+              class="accent-blue-500" />
+            Merge with existing
+          </label>
+          <label class="flex items-center gap-1.5 text-sm text-[var(--pd-modal-text)] cursor-pointer">
+            <input
+              type="radio"
+              name="config-action"
+              value="replace"
+              checked={configAction === 'replace'}
+              onchange={(): void => { configAction = 'replace'; }}
+              class="accent-blue-500" />
+            Replace existing
+          </label>
+        </div>
+      </div>
+    </div>
+  {/if}
 
   <div>
     <label for="workspace-name" class="block text-sm font-semibold text-[var(--pd-modal-text)] mb-2">

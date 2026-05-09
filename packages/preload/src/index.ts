@@ -326,6 +326,10 @@ export function initExposure(): void {
   });
 
   // Agent Workspaces
+  contextBridge.exposeInMainWorld('checkAgentWorkspaceConfigExists', async (sourcePath: string): Promise<boolean> => {
+    return ipcInvoke('agent-workspace:checkConfigExists', sourcePath);
+  });
+
   contextBridge.exposeInMainWorld(
     'createAgentWorkspace',
     async (options: AgentWorkspaceCreateOptions): Promise<AgentWorkspaceId> => {

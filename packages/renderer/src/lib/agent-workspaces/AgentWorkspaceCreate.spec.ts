@@ -68,6 +68,7 @@ beforeEach(() => {
   vi.mocked(modelCatalogStore.modelKey).mockImplementation(
     (providerId: string, label: string): string => `${providerId}::${label}`,
   );
+  vi.mocked(window.checkAgentWorkspaceConfigExists).mockResolvedValue(false);
 });
 
 test('Expect page title displayed', () => {
@@ -1343,6 +1344,125 @@ test('Expect custom mount defaults target to host path when target is empty', as
   expect(window.createAgentWorkspace).toHaveBeenCalledWith(
     expect.objectContaining({
       mounts: [{ host: '/home/user/configs', target: '/home/user/configs', ro: false }],
+    }),
+  );
+});
+
+test('Expect checkAgentWorkspaceConfigExists called when source path is entered', async () => {
+  vi.mocked(window.checkAgentWorkspaceConfigExists).mockResolvedValue(false);
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+
+  await vi.waitFor(() => {
+    expect(window.checkAgentWorkspaceConfigExists).toHaveBeenCalledWith('/home/user/my-repo');
+  });
+});
+
+test('Expect config-exists notification shown when existing config detected', async () => {
+  vi.mocked(window.checkAgentWorkspaceConfigExists).mockResolvedValue(true);
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/existing-project' },
+  });
+
+  await vi.waitFor(() => {
+    expect(screen.getByText(/existing workspace configuration was found/)).toBeInTheDocument();
+  });
+  expect(screen.getByRole('button', { name: 'Start workspace as-is' })).toBeInTheDocument();
+});
+
+test('Expect config-exists notification not shown when no existing config', async () => {
+  vi.mocked(window.checkAgentWorkspaceConfigExists).mockResolvedValue(false);
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/new-project' },
+  });
+
+  await vi.waitFor(() => {
+    expect(window.checkAgentWorkspaceConfigExists).toHaveBeenCalled();
+  });
+  expect(screen.queryByText(/existing workspace configuration was found/)).not.toBeInTheDocument();
+});
+
+test('Expect Start workspace as-is calls createAgentWorkspace with minimal options', async () => {
+  vi.mocked(window.checkAgentWorkspaceConfigExists).mockResolvedValue(true);
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/existing-project' },
+  });
+
+  await vi.waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Start workspace as-is' })).toBeInTheDocument();
+  });
+
+  await fireEvent.click(screen.getByRole('button', { name: 'Start workspace as-is' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      sourcePath: '/home/user/existing-project',
+      runtime: 'podman',
+      agent: 'opencode',
+      name: 'existing-project',
+    }),
+  );
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.not.objectContaining({
+      replaceConfig: expect.anything(),
+    }),
+  );
+});
+
+test('Expect startWorkspace passes replaceConfig when configAction is replace and config exists', async () => {
+  vi.mocked(window.checkAgentWorkspaceConfigExists).mockResolvedValue(true);
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/existing-project' },
+  });
+
+  await vi.waitFor(() => {
+    expect(screen.getByLabelText('Replace existing')).toBeInTheDocument();
+  });
+
+  await fireEvent.click(screen.getByLabelText('Replace existing'));
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      replaceConfig: true,
+    }),
+  );
+});
+
+test('Expect startWorkspace does not pass replaceConfig when configAction is merge', async () => {
+  vi.mocked(window.checkAgentWorkspaceConfigExists).mockResolvedValue(true);
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/existing-project' },
+  });
+
+  await vi.waitFor(() => {
+    expect(screen.getByLabelText('Merge with existing')).toBeInTheDocument();
+  });
+
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      replaceConfig: undefined,
     }),
   );
 });

@@ -29,7 +29,6 @@ import { spawn } from 'node-pty';
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
-import { MessageBox } from '/@/plugin/message-box.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
@@ -46,8 +45,6 @@ import type { IConfigurationNode } from '/@api/configuration/models.js';
 import { IConfigurationRegistry } from '/@api/configuration/models.js';
 import type { InferenceConnectionCredentials } from '/@api/provider-info.js';
 import type { SecretCreateOptions } from '/@api/secret-info.js';
-
-type ActionType = 'cancel' | 'replace' | 'merge';
 
 /**
  * Manages agent workspaces by delegating to the `kdn` CLI.
@@ -80,8 +77,6 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly providerRegistry: ProviderRegistry,
     @inject(SecretManager)
     private readonly secretManager: SecretManager,
-    @inject(MessageBox)
-    private readonly messageBox: MessageBox,
   ) {}
 
   async getCliInfo(): Promise<CliInfo> {
@@ -94,14 +89,7 @@ export class AgentWorkspaceManager implements Disposable {
     task.state = 'running';
     task.status = 'in-progress';
     try {
-      const action = await this.promptIfWorkspaceConfigExists(options.sourcePath);
-
-      if (action === 'cancel') {
-        task.status = 'canceled';
-        return { id: '' };
-      }
-
-      if (action === 'replace') {
+      if (options.replaceConfig) {
         const configPath = join(options.sourcePath, '.kaiden', 'workspace.json');
         await rm(configPath, { force: true });
       }
@@ -121,31 +109,12 @@ export class AgentWorkspaceManager implements Disposable {
     }
   }
 
-  private async promptIfWorkspaceConfigExists(sourcePath: string): Promise<ActionType> {
-    const configPath = join(sourcePath, '.kaiden', 'workspace.json');
-
+  async checkWorkspaceConfigExists(sourcePath: string): Promise<boolean> {
     try {
-      await access(configPath);
+      await access(join(sourcePath, '.kaiden', 'workspace.json'));
+      return true;
     } catch {
-      return 'merge';
-    }
-
-    const result = await this.messageBox.showMessageBox({
-      title: 'Workspace Configuration Already Exists',
-      message: `A workspace configuration file already exists at this location: ${configPath}.\n\nWhat action do you want to take ?`,
-      buttons: ['Cancel', 'Replace', 'Merge'],
-      type: 'question',
-      defaultId: 2,
-      cancelId: 0,
-    });
-
-    switch (result.response) {
-      case 1:
-        return 'replace';
-      case 2:
-        return 'merge';
-      default:
-        return 'cancel';
+      return false;
     }
   }
 
@@ -347,6 +316,13 @@ export class AgentWorkspaceManager implements Disposable {
     this.ipcHandle('agent-workspace:getCliInfo', async (): Promise<CliInfo> => {
       return this.getCliInfo();
     });
+
+    this.ipcHandle(
+      'agent-workspace:checkConfigExists',
+      async (_listener: unknown, sourcePath: string): Promise<boolean> => {
+        return this.checkWorkspaceConfigExists(sourcePath);
+      },
+    );
 
     this.ipcHandle(
       'agent-workspace:create',

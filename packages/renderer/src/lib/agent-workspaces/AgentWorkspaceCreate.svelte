@@ -163,6 +163,8 @@ let knowledgeItems: ChecklistItem[] = $derived(
 let sourcePath = $state('');
 let sessionName = $state('');
 let description = $state('');
+let configExists = $state(false);
+let configAction = $state<'merge' | 'replace'>('merge');
 let selectedAgent = $state('opencode');
 let selectedModel = $state<ModelInfo | undefined>(undefined);
 let defaultSettings = $state<DefaultWorkspaceSettings | undefined>(undefined);
@@ -223,6 +225,22 @@ $effect(() => {
   if (nameManuallyEdited) return;
   const last = getDefaultSessionName(sourcePath);
   if (last) sessionName = last;
+});
+
+$effect(() => {
+  const trimmed = sourcePath.trim();
+  if (trimmed) {
+    window
+      .checkAgentWorkspaceConfigExists(trimmed)
+      .then(exists => {
+        configExists = exists;
+      })
+      .catch(() => {
+        configExists = false;
+      });
+  } else {
+    configExists = false;
+  }
 });
 
 // --- Wizard navigation ---
@@ -368,6 +386,24 @@ function buildMounts(): AgentWorkspaceMount[] | undefined {
   }
 }
 
+async function startAsIs(): Promise<void> {
+  if (!sourcePath.trim()) return;
+
+  handleNavigation({ page: NavigationPage.AGENT_WORKSPACES });
+
+  try {
+    const agentDef = agentDefinitions.find(d => d.cliName === selectedAgent);
+    await window.createAgentWorkspace({
+      sourcePath,
+      runtime: $agentWorkspaceRuntime,
+      agent: agentDef?.cliAgent ?? selectedAgent,
+      name: sessionName || getDefaultSessionName(sourcePath),
+    });
+  } catch (err: unknown) {
+    console.error('Failed to create agent workspace (as-is)', err);
+  }
+}
+
 async function startWorkspace(): Promise<void> {
   if (!sessionName.trim() || !sourcePath.trim()) return;
 
@@ -411,6 +447,7 @@ async function startWorkspace(): Promise<void> {
           }
         : undefined,
       workspaceConfiguration: getAgentWorkspaceConfiguration(selectedAgent),
+      replaceConfig: configExists && configAction === 'replace' ? true : undefined,
     });
   } catch (err: unknown) {
     console.error('Failed to create agent workspace', err);
@@ -447,7 +484,10 @@ async function startWorkspace(): Promise<void> {
                 bind:description
                 bind:nameManuallyEdited
                 bind:descriptionOpen
-                onBrowseSource={handleBrowseSource} />
+                onBrowseSource={handleBrowseSource}
+                {configExists}
+                bind:configAction
+                onStartAsIs={startAsIs} />
             {:else if currentStepId === 'agent-model'}
               <AgentWorkspaceCreateStepAgentModel bind:selectedAgent bind:selectedModel />
             {:else if currentStepId === 'tools-secrets'}

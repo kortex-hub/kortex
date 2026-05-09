@@ -74,4 +74,5 @@ export interface AgentWorkspaceCreateOptions {
   mcp?: AgentWorkspaceMcpConfig;
   workspaceConfiguration?: AgentWorkspaceConfiguration;
   mounts?: AgentWorkspaceMount[];
+  replaceConfig?: boolean;
 }

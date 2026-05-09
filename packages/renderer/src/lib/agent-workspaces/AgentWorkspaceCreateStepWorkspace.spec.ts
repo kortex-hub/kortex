@@ -101,3 +101,56 @@ test('Expect workspace name input renders initial value', () => {
 
   expect((screen.getByPlaceholderText('e.g., Frontend Refactoring') as HTMLInputElement).value).toBe('my-workspace');
 });
+
+test('shows config-exists notification when configExists is true', () => {
+  render(AgentWorkspaceCreateStepWorkspace, {
+    ...defaultProps,
+    configExists: true,
+    onStartAsIs: vi.fn(),
+  });
+
+  expect(screen.getByText(/existing workspace configuration was found/)).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Start workspace as-is' })).toBeInTheDocument();
+});
+
+test('hides config-exists notification when configExists is false', () => {
+  render(AgentWorkspaceCreateStepWorkspace, defaultProps);
+
+  expect(screen.queryByText(/existing workspace configuration was found/)).not.toBeInTheDocument();
+});
+
+test('calls onStartAsIs when Start workspace as-is button is clicked', async () => {
+  const onStartAsIs = vi.fn();
+  render(AgentWorkspaceCreateStepWorkspace, {
+    ...defaultProps,
+    configExists: true,
+    onStartAsIs,
+  });
+
+  await fireEvent.click(screen.getByRole('button', { name: 'Start workspace as-is' }));
+
+  expect(onStartAsIs).toHaveBeenCalledOnce();
+});
+
+test('shows merge/replace radio buttons when configExists is true', () => {
+  render(AgentWorkspaceCreateStepWorkspace, {
+    ...defaultProps,
+    configExists: true,
+    configAction: 'merge',
+  });
+
+  expect(screen.getByLabelText('Merge with existing')).toBeInTheDocument();
+  expect(screen.getByLabelText('Replace existing')).toBeInTheDocument();
+});
+
+test('selects replace radio when clicked', async () => {
+  render(AgentWorkspaceCreateStepWorkspace, {
+    ...defaultProps,
+    configExists: true,
+    configAction: 'merge',
+  });
+
+  await fireEvent.click(screen.getByLabelText('Replace existing'));
+
+  expect(screen.getByLabelText('Replace existing')).toBeChecked();
+});
