@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { readFile } from 'node:fs/promises';
+import { access, readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import type { FileSystemWatcher } from '@openkaiden/api';
@@ -29,6 +29,7 @@ import type { IPCHandle } from '/@/plugin/api.js';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
+import { MessageBox } from '/@/plugin/message-box.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
 import type { TaskManager } from '/@/plugin/tasks/task-manager.js';
@@ -46,6 +47,7 @@ vi.mock(import('yaml'));
 vi.mock(import('node-pty'));
 
 vi.mock(import('/@/plugin/kdn-cli/kdn-cli.js'));
+vi.mock(import('/@/plugin/message-box.js'));
 
 const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
   {
@@ -124,6 +126,8 @@ const secretManager = {
   init: vi.fn(),
 } as unknown as SecretManager;
 
+const messageBox = new MessageBox(apiSender);
+
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(taskManager.createTask).mockReturnValue(mockTask);
@@ -134,6 +138,7 @@ beforeEach(() => {
   vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
     get: vi.fn().mockReturnValue(undefined),
   } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
+  vi.mocked(access).mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
   manager = new AgentWorkspaceManager(
     apiSender,
     ipcHandle,
@@ -144,6 +149,7 @@ beforeEach(() => {
     configurationRegistry,
     providerRegistry,
     secretManager,
+    messageBox,
   );
   manager.init();
 });
@@ -302,6 +308,78 @@ describe('create', () => {
     await manager.create(defaultOptions);
 
     expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
+  });
+
+  test('does not show confirmation dialog when workspace.json does not exist', async () => {
+    vi.mocked(kdnCli.createWorkspace).mockResolvedValue({ id: 'ws-new' });
+
+    await manager.create(defaultOptions);
+
+    expect(messageBox.showMessageBox).not.toHaveBeenCalled();
+  });
+
+  test('shows confirmation dialog when workspace.json already exists', async () => {
+    vi.mocked(access).mockResolvedValue(undefined);
+    vi.mocked(messageBox.showMessageBox).mockResolvedValue({ response: 2 });
+    vi.mocked(kdnCli.createWorkspace).mockResolvedValue({ id: 'ws-new' });
+
+    await manager.create(defaultOptions);
+
+    expect(messageBox.showMessageBox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Workspace Configuration Already Exists',
+        buttons: ['Cancel', 'Replace', 'Merge'],
+        defaultId: 2,
+        cancelId: 0,
+        type: 'question',
+      }),
+    );
+  });
+
+  test('cancels creation when user selects Cancel', async () => {
+    vi.mocked(access).mockResolvedValue(undefined);
+    vi.mocked(messageBox.showMessageBox).mockResolvedValue({ response: 0 });
+
+    const result = await manager.create(defaultOptions);
+
+    expect(result).toEqual({ id: '' });
+    expect(mockTask.status).toBe('canceled');
+    expect(mockTask.state).toBe('completed');
+    expect(kdnCli.createWorkspace).not.toHaveBeenCalled();
+  });
+
+  test('deletes existing workspace.json when user selects Replace', async () => {
+    vi.mocked(access).mockResolvedValue(undefined);
+    vi.mocked(messageBox.showMessageBox).mockResolvedValue({ response: 1 });
+    vi.mocked(rm).mockResolvedValue(undefined);
+    vi.mocked(kdnCli.createWorkspace).mockResolvedValue({ id: 'ws-new' });
+
+    await manager.create(defaultOptions);
+
+    expect(rm).toHaveBeenCalledWith(join(defaultOptions.sourcePath, '.kaiden', 'workspace.json'), { force: true });
+    expect(kdnCli.createWorkspace).toHaveBeenCalled();
+  });
+
+  test('proceeds without deletion when user selects Merge', async () => {
+    vi.mocked(access).mockResolvedValue(undefined);
+    vi.mocked(messageBox.showMessageBox).mockResolvedValue({ response: 2 });
+    vi.mocked(kdnCli.createWorkspace).mockResolvedValue({ id: 'ws-new' });
+
+    await manager.create(defaultOptions);
+
+    expect(rm).not.toHaveBeenCalled();
+    expect(kdnCli.createWorkspace).toHaveBeenCalled();
+  });
+
+  test('treats dismissed dialog as cancel', async () => {
+    vi.mocked(access).mockResolvedValue(undefined);
+    vi.mocked(messageBox.showMessageBox).mockResolvedValue({ response: undefined });
+
+    const result = await manager.create(defaultOptions);
+
+    expect(result).toEqual({ id: '' });
+    expect(mockTask.status).toBe('canceled');
+    expect(kdnCli.createWorkspace).not.toHaveBeenCalled();
   });
 });
 
