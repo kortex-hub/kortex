@@ -177,7 +177,8 @@ export class AgentWorkspaceManager implements Disposable {
         return { name: secretName, type: 'anthropic', value: apiKey };
       case 'gemini':
         return { name: secretName, type: 'gemini', value: apiKey };
-      case 'openai': {
+      case 'openai':
+      case undefined: {
         const host = this.extractHost(connectionInfo.endpoint) ?? 'api.openai.com';
         return {
           name: secretName,

@@ -622,6 +622,36 @@ describe('buildSecretOptions', () => {
     );
     expect(result?.name).toBe('my-project-anthropic');
   });
+
+  test('treats undefined provider as openai-compatible with endpoint host', () => {
+    const result = manager.buildSecretOptions(
+      { credentials: { key: 'sk-key' }, llmMetadataName: undefined, endpoint: 'https://my-llm.example.com/v1' },
+      'ws',
+    );
+    expect(result).toEqual({
+      name: 'ws-secret',
+      type: 'other',
+      value: 'sk-key',
+      hosts: ['my-llm.example.com'],
+      header: 'Authorization',
+      headerTemplate: 'Bearer ${value}',
+    });
+  });
+
+  test('treats undefined provider as openai-compatible defaulting host to api.openai.com', () => {
+    const result = manager.buildSecretOptions(
+      { credentials: { key: 'sk-key' }, llmMetadataName: undefined, endpoint: undefined },
+      'ws',
+    );
+    expect(result).toEqual({
+      name: 'ws-secret',
+      type: 'other',
+      value: 'sk-key',
+      hosts: ['api.openai.com'],
+      header: 'Authorization',
+      headerTemplate: 'Bearer ${value}',
+    });
+  });
 });
 
 describe('list', () => {
