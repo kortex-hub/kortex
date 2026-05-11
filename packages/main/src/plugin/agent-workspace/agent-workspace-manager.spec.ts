@@ -34,6 +34,7 @@ import type { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
 import type { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import type { Task } from '/@/plugin/tasks/tasks.js';
 import type { Exec } from '/@/plugin/util/exec.js';
+import { getInstallationPath } from '/@/plugin/util/exec.js';
 import type { AgentWorkspaceCreateOptions, AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IConfigurationRegistry } from '/@api/configuration/models.js';
@@ -46,6 +47,7 @@ vi.mock(import('yaml'));
 vi.mock(import('node-pty'));
 
 vi.mock(import('/@/plugin/kdn-cli/kdn-cli.js'));
+vi.mock(import('/@/plugin/util/exec.js'));
 
 const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
   {
@@ -126,6 +128,7 @@ const secretManager = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(getInstallationPath).mockReturnValue('/augmented/path:/usr/bin');
   vi.mocked(taskManager.createTask).mockReturnValue(mockTask);
   mockTask.state = '' as TaskState;
   mockTask.status = '' as TaskStatus;
@@ -848,13 +851,30 @@ describe('shellInAgentWorkspace', () => {
     expect(result).toHaveProperty('ptyProcess');
   });
 
-  test('spawns kdn terminal with workspace name', () => {
+  test('spawns kdn terminal with workspace name and augmented PATH', () => {
     vi.mocked(spawn).mockReturnValue(createMockPty());
-    vi.mocked(kdnCli.getCliPath).mockReturnValue('kdn');
+    vi.mocked(kdnCli.getCliPath).mockReturnValue('/usr/local/bin/kdn');
 
     manager.shellInAgentWorkspace('test-workspace-1', vi.fn(), vi.fn(), vi.fn());
 
-    expect(spawn).toHaveBeenCalledWith('kdn', ['terminal', 'test-workspace-1'], expect.any(Object));
+    expect(spawn).toHaveBeenCalledWith('/usr/local/bin/kdn', ['terminal', 'test-workspace-1'], {
+      name: 'xterm-256color',
+      env: expect.objectContaining({ PATH: '/augmented/path:/usr/bin' }),
+    });
+  });
+
+  test('calls onError and onEnd then throws when spawn fails', () => {
+    vi.mocked(spawn).mockImplementation(() => {
+      throw new Error('File not found');
+    });
+    vi.mocked(kdnCli.getCliPath).mockReturnValue('/missing/kdn');
+
+    const onError = vi.fn();
+    const onEnd = vi.fn();
+
+    expect(() => manager.shellInAgentWorkspace('test-workspace-1', vi.fn(), onError, onEnd)).toThrow('File not found');
+    expect(onError).toHaveBeenCalledWith('Failed to open terminal: File not found');
+    expect(onEnd).toHaveBeenCalled();
   });
 
   test('write function forwards data to pty', () => {

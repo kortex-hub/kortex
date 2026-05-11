@@ -32,6 +32,7 @@ import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
+import { getInstallationPath } from '/@/plugin/util/exec.js';
 import { AgentWorkspaceSettings } from '/@api/agent-workspace/agent-workspace-settings.js';
 import type {
   AgentWorkspaceConfiguration,
@@ -267,17 +268,29 @@ export class AgentWorkspaceManager implements Disposable {
   shellInAgentWorkspace(
     name: string,
     onData: (data: string) => void,
-    _onError: (error: string) => void,
+    onError: (error: string) => void,
     onEnd: () => void,
   ): {
     write: (param: string) => void;
     resize: (w: number, h: number) => void;
     ptyProcess: IPty;
   } {
-    const ptyProcess = spawn(this.kdnCli.getCliPath(), ['terminal', name], {
-      name: 'xterm-256color',
-      env: process.env as Record<string, string>,
-    });
+    const cliPath = this.kdnCli.getCliPath();
+    const env = { ...process.env, PATH: getInstallationPath() } as Record<string, string>;
+
+    let ptyProcess: IPty;
+    try {
+      ptyProcess = spawn(cliPath, ['terminal', name], {
+        name: 'xterm-256color',
+        env,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Failed to spawn terminal for workspace "${name}": ${msg}`);
+      onError(`Failed to open terminal: ${msg}`);
+      onEnd();
+      throw err;
+    }
 
     ptyProcess.onData((data: string) => {
       onData(data);
