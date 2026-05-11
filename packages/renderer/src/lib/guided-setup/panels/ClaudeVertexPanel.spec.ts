@@ -256,6 +256,10 @@ describe('beforeAdvance callback', () => {
                 name: 'ANTHROPIC_VERTEX_PROJECT_ID',
                 value: 'my-gcp-project',
               },
+              {
+                name: 'GOOGLE_CLOUD_PROJECT',
+                value: 'my-gcp-project',
+              },
             ],
             mounts: [
               {

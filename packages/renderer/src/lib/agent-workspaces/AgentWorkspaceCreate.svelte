@@ -332,13 +332,36 @@ function normalizeTildeToHome(p: string): string {
   return p.startsWith('~/') ? `$HOME/${p.slice(2)}` : p;
 }
 
-function getAgentWorkspaceConfiguration(agent: string): AgentWorkspaceConfiguration | undefined {
-  const resolvedAgent = agentDefinitions.find(d => d.cliName === agent)?.cliAgent ?? agent;
-  const config =
+function getAgentWorkspaceConfiguration(agent: string, model?: ModelInfo): AgentWorkspaceConfiguration | undefined {
+  const agentDef = agentDefinitions.find(d => d.cliName === agent);
+  const resolvedAgent = agentDef?.cliAgent ?? agent;
+  const agentConfig =
     defaultSettings?.defaultAgentSettings?.[resolvedAgent]?.workspaceConfiguration ??
     defaultSettings?.defaultAgentSettings?.[agent]?.workspaceConfiguration;
+
+  let providerConfig: AgentWorkspaceConfiguration | undefined;
+  const modelProvider = model?.llmMetadata?.name;
+  if (modelProvider) {
+    const providerAgent = agentDefinitions.find(
+      d => d.modelFilter === modelProvider && d.cliName !== agent && d.cliName !== resolvedAgent,
+    );
+    if (providerAgent) {
+      const providerResolved = providerAgent.cliAgent ?? providerAgent.cliName;
+      providerConfig =
+        defaultSettings?.defaultAgentSettings?.[providerResolved]?.workspaceConfiguration ??
+        defaultSettings?.defaultAgentSettings?.[providerAgent.cliName]?.workspaceConfiguration;
+    }
+  }
+
+  const config = mergeWorkspaceConfigs(providerConfig, agentConfig);
   if (!config) return undefined;
   const snapshot = $state.snapshot(config);
+  if (snapshot.environment) {
+    const vertexProject = snapshot.environment.find(e => e.name === 'ANTHROPIC_VERTEX_PROJECT_ID');
+    if (vertexProject && !snapshot.environment.some(e => e.name === 'GOOGLE_CLOUD_PROJECT')) {
+      snapshot.environment = [...snapshot.environment, { name: 'GOOGLE_CLOUD_PROJECT', value: vertexProject.value }];
+    }
+  }
   if (snapshot.mounts) {
     snapshot.mounts = snapshot.mounts.map(m => ({
       ...m,
@@ -347,6 +370,40 @@ function getAgentWorkspaceConfiguration(agent: string): AgentWorkspaceConfigurat
     }));
   }
   return snapshot;
+}
+
+function mergeWorkspaceConfigs(
+  base: AgentWorkspaceConfiguration | undefined,
+  override: AgentWorkspaceConfiguration | undefined,
+): AgentWorkspaceConfiguration | undefined {
+  if (!base) return override;
+  if (!override) return base;
+
+  const envEntries = [...(override.environment ?? []), ...(base.environment ?? [])];
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity
+  const seenEnv = new Set<string>();
+  const mergedEnv = envEntries.filter(e => {
+    if (seenEnv.has(e.name)) return false;
+    seenEnv.add(e.name);
+    return true;
+  });
+
+  const mountEntries = [...(override.mounts ?? []), ...(base.mounts ?? [])];
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity
+  const seenMounts = new Set<string>();
+  const mergedMounts = mountEntries.filter(m => {
+    const key = `${m.host}::${m.target}`;
+    if (seenMounts.has(key)) return false;
+    seenMounts.add(key);
+    return true;
+  });
+
+  return {
+    ...base,
+    ...override,
+    environment: mergedEnv.length > 0 ? mergedEnv : undefined,
+    mounts: mergedMounts.length > 0 ? mergedMounts : undefined,
+  };
 }
 
 function getFirstCompatibleModel(): ModelInfo | undefined {
@@ -446,7 +503,7 @@ async function startWorkspace(): Promise<void> {
             ...(commandServers.length > 0 ? { commands: commandServers } : {}),
           }
         : undefined,
-      workspaceConfiguration: getAgentWorkspaceConfiguration(selectedAgent),
+      workspaceConfiguration: getAgentWorkspaceConfiguration(selectedAgent, selectedModel),
       replaceConfig: configExists && configAction === 'replace' ? true : undefined,
     });
   } catch (err: unknown) {

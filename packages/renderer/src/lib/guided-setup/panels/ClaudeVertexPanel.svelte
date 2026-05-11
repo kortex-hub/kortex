@@ -124,6 +124,13 @@ async function validate(): Promise<boolean> {
         name: 'ANTHROPIC_VERTEX_PROJECT_ID',
         value: projectId.trim(),
       });
+      agentSettings.workspaceConfiguration.environment = agentSettings.workspaceConfiguration.environment.filter(
+        e => e.name !== 'GOOGLE_CLOUD_PROJECT',
+      );
+      agentSettings.workspaceConfiguration.environment.push({
+        name: 'GOOGLE_CLOUD_PROJECT',
+        value: projectId.trim(),
+      });
       agentSettings.workspaceConfiguration.mounts ??= [];
       agentSettings.workspaceConfiguration.mounts = agentSettings.workspaceConfiguration.mounts.filter(
         e => e.target !== '$HOME/.config/gcloud/application_default_credentials.json',

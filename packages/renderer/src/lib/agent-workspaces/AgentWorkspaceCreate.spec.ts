@@ -722,6 +722,23 @@ const mockAnthropicProvider: ProviderInfo = {
   inferenceProviderConnectionCreation: false,
 } as unknown as ProviderInfo;
 
+const mockVertexProvider: ProviderInfo = {
+  id: 'vertex-ai',
+  name: 'Vertex AI',
+  internalId: 'vertex-ai-internal',
+  status: 'started',
+  inferenceConnections: [
+    {
+      name: 'Vertex AI Cloud',
+      type: 'cloud',
+      status: 'started',
+      llmMetadata: { name: 'vertexai' },
+      models: [{ label: 'claude-sonnet-4' }],
+    },
+  ],
+  inferenceProviderConnectionCreation: false,
+} as unknown as ProviderInfo;
+
 const mockOllamaProvider: ProviderInfo = {
   id: 'ollama',
   name: 'Ollama',
@@ -1217,6 +1234,161 @@ test('Expect tilde mount paths normalized to $HOME in workspaceConfiguration', a
   expect(window.createAgentWorkspace).toHaveBeenCalledWith(
     expect.objectContaining({
       workspaceConfiguration: {
+        mounts: [
+          {
+            host: '$HOME/.config/gcloud/application_default_credentials.json',
+            target: '$HOME/.config/gcloud/application_default_credentials.json',
+            ro: true,
+          },
+        ],
+      },
+    }),
+  );
+});
+
+test('Expect opencode agent with vertex-ai model gets vertex workspace configuration', async () => {
+  vi.mocked(window.getConfigurationValue).mockResolvedValue({
+    defaultAgent: 'opencode',
+    defaultAgentSettings: {
+      opencode: {
+        defaultModel: { providerId: 'vertex-ai', connectionName: 'Vertex AI Cloud', label: 'claude-sonnet-4' },
+      },
+      'claude-vertex': {
+        workspaceConfiguration: {
+          environment: [
+            { name: 'CLAUDE_CODE_USE_VERTEX', value: '1' },
+            { name: 'CLOUD_ML_REGION', value: 'us-east5' },
+            { name: 'ANTHROPIC_VERTEX_PROJECT_ID', value: 'my-project' },
+            { name: 'GOOGLE_CLOUD_PROJECT', value: 'my-project' },
+          ],
+          mounts: [
+            {
+              host: '$HOME/.config/gcloud/application_default_credentials.json',
+              target: '$HOME/.config/gcloud/application_default_credentials.json',
+              ro: true,
+            },
+          ],
+        },
+      },
+    },
+  });
+  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockVertexProvider]);
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      agent: 'opencode',
+      workspaceConfiguration: {
+        environment: [
+          { name: 'CLAUDE_CODE_USE_VERTEX', value: '1' },
+          { name: 'CLOUD_ML_REGION', value: 'us-east5' },
+          { name: 'ANTHROPIC_VERTEX_PROJECT_ID', value: 'my-project' },
+          { name: 'GOOGLE_CLOUD_PROJECT', value: 'my-project' },
+        ],
+        mounts: [
+          {
+            host: '$HOME/.config/gcloud/application_default_credentials.json',
+            target: '$HOME/.config/gcloud/application_default_credentials.json',
+            ro: true,
+          },
+        ],
+      },
+    }),
+  );
+});
+
+test('Expect GOOGLE_CLOUD_PROJECT auto-derived from ANTHROPIC_VERTEX_PROJECT_ID when absent', async () => {
+  vi.mocked(window.getConfigurationValue).mockResolvedValue({
+    defaultAgent: 'opencode',
+    defaultAgentSettings: {
+      opencode: {
+        defaultModel: { providerId: 'vertex-ai', connectionName: 'Vertex AI Cloud', label: 'claude-sonnet-4' },
+      },
+      'claude-vertex': {
+        workspaceConfiguration: {
+          environment: [
+            { name: 'CLAUDE_CODE_USE_VERTEX', value: '1' },
+            { name: 'ANTHROPIC_VERTEX_PROJECT_ID', value: 'my-project' },
+          ],
+        },
+      },
+    },
+  });
+  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockVertexProvider]);
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      agent: 'opencode',
+      workspaceConfiguration: {
+        environment: [
+          { name: 'CLAUDE_CODE_USE_VERTEX', value: '1' },
+          { name: 'ANTHROPIC_VERTEX_PROJECT_ID', value: 'my-project' },
+          { name: 'GOOGLE_CLOUD_PROJECT', value: 'my-project' },
+        ],
+      },
+    }),
+  );
+});
+
+test('Expect agent-specific workspace config overrides provider config on merge', async () => {
+  vi.mocked(window.getConfigurationValue).mockResolvedValue({
+    defaultAgent: 'opencode',
+    defaultAgentSettings: {
+      opencode: {
+        defaultModel: { providerId: 'vertex-ai', connectionName: 'Vertex AI Cloud', label: 'claude-sonnet-4' },
+        workspaceConfiguration: {
+          environment: [{ name: 'CLOUD_ML_REGION', value: 'europe-west1' }],
+        },
+      },
+      'claude-vertex': {
+        workspaceConfiguration: {
+          environment: [
+            { name: 'CLAUDE_CODE_USE_VERTEX', value: '1' },
+            { name: 'CLOUD_ML_REGION', value: 'us-east5' },
+            { name: 'GOOGLE_CLOUD_PROJECT', value: 'my-project' },
+          ],
+          mounts: [
+            {
+              host: '$HOME/.config/gcloud/application_default_credentials.json',
+              target: '$HOME/.config/gcloud/application_default_credentials.json',
+              ro: true,
+            },
+          ],
+        },
+      },
+    },
+  });
+  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockVertexProvider]);
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      agent: 'opencode',
+      workspaceConfiguration: {
+        environment: [
+          { name: 'CLOUD_ML_REGION', value: 'europe-west1' },
+          { name: 'CLAUDE_CODE_USE_VERTEX', value: '1' },
+          { name: 'GOOGLE_CLOUD_PROJECT', value: 'my-project' },
+        ],
         mounts: [
           {
             host: '$HOME/.config/gcloud/application_default_credentials.json',
