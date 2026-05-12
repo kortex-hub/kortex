@@ -141,17 +141,26 @@ export class AgentWorkspaceManager implements Disposable {
     if (entries.length !== 1) return;
 
     const workspaceSecretPrefix = options.name ?? basename(options.sourcePath);
-    const secretOptions = this.buildSecretOptions(connectionInfo, workspaceSecretPrefix);
-    if (!secretOptions) return;
+    const result = this.buildSecretOptions(connectionInfo, workspaceSecretPrefix);
+    if (!result) return;
 
     try {
-      await this.secretManager.create(secretOptions);
+      await this.secretManager.create(result.secret);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (!msg.includes('already exists')) throw err;
     }
 
-    options.secrets = [...new Set([...(options.secrets ?? []), secretOptions.name])];
+    options.secrets = [...new Set([...(options.secrets ?? []), result.secret.name])];
+
+    if (result.environmentVariable) {
+      options.workspaceConfiguration ??= {};
+      options.workspaceConfiguration.environment ??= [];
+      options.workspaceConfiguration.environment = options.workspaceConfiguration.environment.filter(
+        e => e.name !== result.environmentVariable!.name,
+      );
+      options.workspaceConfiguration.environment.push(result.environmentVariable);
+    }
   }
 
   /**
@@ -165,7 +174,7 @@ export class AgentWorkspaceManager implements Disposable {
   buildSecretOptions(
     connectionInfo: InferenceConnectionCredentials,
     workspaceName: string,
-  ): SecretCreateOptions | undefined {
+  ): { secret: SecretCreateOptions; environmentVariable?: { name: string; value: string } } | undefined {
     const apiKey = Object.values(connectionInfo.credentials)[0];
     if (!apiKey) return undefined;
 
@@ -174,29 +183,35 @@ export class AgentWorkspaceManager implements Disposable {
 
     switch (provider) {
       case 'anthropic':
-        return { name: secretName, type: 'anthropic', value: apiKey };
+        return { secret: { name: secretName, type: 'anthropic', value: apiKey } };
       case 'gemini':
-        return { name: secretName, type: 'gemini', value: apiKey };
+        return { secret: { name: secretName, type: 'gemini', value: apiKey } };
       case 'openai':
       case undefined: {
         const host = this.extractHost(connectionInfo.endpoint) ?? 'api.openai.com';
         return {
-          name: secretName,
-          type: 'other',
-          value: apiKey,
-          hosts: [host],
-          header: 'Authorization',
-          headerTemplate: 'Bearer ${value}',
+          secret: {
+            name: secretName,
+            type: 'other',
+            value: apiKey,
+            hosts: [host],
+            header: 'Authorization',
+            headerTemplate: 'Bearer ${value}',
+          },
+          environmentVariable: { name: 'OPENAI_API_KEY', value: 'provided' },
         };
       }
       case 'mistral':
         return {
-          name: secretName,
-          type: 'other',
-          value: apiKey,
-          hosts: ['api.mistral.ai'],
-          header: 'Authorization',
-          headerTemplate: 'Bearer ${value}',
+          secret: {
+            name: secretName,
+            type: 'other',
+            value: apiKey,
+            hosts: ['api.mistral.ai'],
+            header: 'Authorization',
+            headerTemplate: 'Bearer ${value}',
+          },
+          environmentVariable: { name: 'MISTRAL_API_KEY', value: 'provided' },
         };
       default:
         return undefined;

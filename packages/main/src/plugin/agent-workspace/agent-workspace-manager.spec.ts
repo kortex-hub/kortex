@@ -411,6 +411,7 @@ describe('ensureModelSecret', () => {
       header: 'Authorization',
       headerTemplate: 'Bearer ${value}',
     });
+    expect(options.workspaceConfiguration?.environment).toEqual([{ name: 'OPENAI_API_KEY', value: 'provided' }]);
   });
 
   test('defaults openai host when no endpoint', async () => {
@@ -450,6 +451,39 @@ describe('ensureModelSecret', () => {
       header: 'Authorization',
       headerTemplate: 'Bearer ${value}',
     });
+    expect(options.workspaceConfiguration?.environment).toEqual([{ name: 'MISTRAL_API_KEY', value: 'provided' }]);
+  });
+
+  test('does not add env var for anthropic provider', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { 'claude:tokens': 'sk-ant-key' },
+      llmMetadataName: 'anthropic',
+      endpoint: undefined,
+    });
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-anthropic' });
+
+    const options = { ...baseOptions, model: 'anthropic::claude-sonnet-4-20250514::' };
+    await manager.ensureModelSecret(options);
+
+    expect(options.workspaceConfiguration).toBeUndefined();
+  });
+
+  test('deduplicates env var if already present in workspaceConfiguration', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { 'mistral:tokens': 'mistral-key' },
+      llmMetadataName: 'mistral',
+      endpoint: undefined,
+    });
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-mistral' });
+
+    const options = {
+      ...baseOptions,
+      model: 'mistral::mistral-large::',
+      workspaceConfiguration: { environment: [{ name: 'MISTRAL_API_KEY', value: 'old' }] },
+    } as AgentWorkspaceCreateOptions;
+    await manager.ensureModelSecret(options);
+
+    expect(options.workspaceConfiguration?.environment).toEqual([{ name: 'MISTRAL_API_KEY', value: 'provided' }]);
   });
 
   test('skips when no model is provided', async () => {
@@ -620,7 +654,15 @@ describe('buildSecretOptions', () => {
       { credentials: { key: 'value' }, llmMetadataName: 'anthropic', endpoint: undefined },
       'my-project',
     );
-    expect(result?.name).toBe('my-project-anthropic');
+    expect(result?.secret.name).toBe('my-project-anthropic');
+  });
+
+  test('does not include environmentVariable for anthropic', () => {
+    const result = manager.buildSecretOptions(
+      { credentials: { key: 'value' }, llmMetadataName: 'anthropic', endpoint: undefined },
+      'ws',
+    );
+    expect(result?.environmentVariable).toBeUndefined();
   });
 
   test('treats undefined provider as openai-compatible with endpoint host', () => {
@@ -629,12 +671,15 @@ describe('buildSecretOptions', () => {
       'ws',
     );
     expect(result).toEqual({
-      name: 'ws-secret',
-      type: 'other',
-      value: 'sk-key',
-      hosts: ['my-llm.example.com'],
-      header: 'Authorization',
-      headerTemplate: 'Bearer ${value}',
+      secret: {
+        name: 'ws-secret',
+        type: 'other',
+        value: 'sk-key',
+        hosts: ['my-llm.example.com'],
+        header: 'Authorization',
+        headerTemplate: 'Bearer ${value}',
+      },
+      environmentVariable: { name: 'OPENAI_API_KEY', value: 'provided' },
     });
   });
 
@@ -644,13 +689,24 @@ describe('buildSecretOptions', () => {
       'ws',
     );
     expect(result).toEqual({
-      name: 'ws-secret',
-      type: 'other',
-      value: 'sk-key',
-      hosts: ['api.openai.com'],
-      header: 'Authorization',
-      headerTemplate: 'Bearer ${value}',
+      secret: {
+        name: 'ws-secret',
+        type: 'other',
+        value: 'sk-key',
+        hosts: ['api.openai.com'],
+        header: 'Authorization',
+        headerTemplate: 'Bearer ${value}',
+      },
+      environmentVariable: { name: 'OPENAI_API_KEY', value: 'provided' },
     });
+  });
+
+  test('includes MISTRAL_API_KEY env var for mistral provider', () => {
+    const result = manager.buildSecretOptions(
+      { credentials: { key: 'mistral-key' }, llmMetadataName: 'mistral', endpoint: undefined },
+      'ws',
+    );
+    expect(result?.environmentVariable).toEqual({ name: 'MISTRAL_API_KEY', value: 'provided' });
   });
 });
 
