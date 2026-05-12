@@ -21,6 +21,7 @@ import AgentWorkspaceStatCards from './AgentWorkspaceStatCards.svelte';
 import AgentWorkspaceActions from './columns/AgentWorkspaceActions.svelte';
 import AgentWorkspaceContext from './columns/AgentWorkspaceContext.svelte';
 import AgentWorkspaceName from './columns/AgentWorkspaceName.svelte';
+import AgentWorkspaceRuntime from './columns/AgentWorkspaceRuntime.svelte';
 import { ACTIVE_GROUP_LABEL, getReferenceTime, isActiveWorkspace, STOPPED_GROUP_LABEL } from './workspace-utils';
 
 type WorkspaceSelectable = AgentWorkspaceSummaryUI & { selected: boolean };
@@ -62,6 +63,12 @@ const contextColumn = new TableColumn<WorkspaceSelectable>('Context', {
   renderer: AgentWorkspaceContext,
 });
 
+const runtimeColumn = new TableColumn<WorkspaceSelectable>('Runtime', {
+  width: '1fr',
+  renderer: AgentWorkspaceRuntime,
+  comparator: (a, b): number => a.runtime.localeCompare(b.runtime),
+});
+
 const timeColumn = new TableColumn<WorkspaceSelectable, Date | undefined>('Time', {
   renderer: TableDurationColumn,
   renderMapping: (ws): Date | undefined => {
@@ -80,7 +87,7 @@ const actionsColumn = new TableColumn<WorkspaceSelectable>('', {
   overflow: true,
 });
 
-const columns = [nameColumn, contextColumn, timeColumn, actionsColumn];
+const columns = [nameColumn, contextColumn, runtimeColumn, timeColumn, actionsColumn];
 </script>
 
 <NavPage bind:searchTerm={searchTerm} searchEnabled={false} title="Agentic Workspaces">

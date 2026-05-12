@@ -32,11 +32,13 @@ const workspaceSummary: AgentWorkspaceSummary = {
   agent: 'coder-v1',
   state: 'stopped',
   model: 'gpt-4o',
+  runtime: 'podman',
   paths: {
     source: '/home/user/projects/backend',
     configuration: '/home/user/.config/kaiden/workspaces/api-refactor.yaml',
   },
   timestamps: { created: 1700000000000 },
+  forwards: [],
 };
 
 const configuration: AgentWorkspaceConfiguration = {
@@ -158,6 +160,20 @@ test('Expect no MCP servers message when configuration has no MCP', () => {
   render(AgentWorkspaceDetailsOverview, { workspaceSummary, configuration: {} });
 
   expect(screen.getByText('No MCP servers configured')).toBeInTheDocument();
+});
+
+test('Expect runtime label is displayed', () => {
+  render(AgentWorkspaceDetailsOverview, { workspaceSummary, configuration });
+
+  expect(screen.getByText('Runtime')).toBeInTheDocument();
+  expect(screen.getByText('podman')).toBeInTheDocument();
+});
+
+test('Expect runtime shows dash when workspace is undefined', () => {
+  render(AgentWorkspaceDetailsOverview, { workspaceSummary: undefined, configuration });
+
+  expect(screen.getByText('Runtime')).toBeInTheDocument();
+  expect(screen.getByText('—')).toBeInTheDocument();
 });
 
 test('Expect component renders without error when workspace is undefined', () => {

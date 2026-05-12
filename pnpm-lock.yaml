@@ -213,8 +213,8 @@ importers:
         specifier: 'workspace:'
         version: link:packages/extension-api
       '@openkaiden/kdn-api':
-        specifier: ^0.9.0
-        version: 0.9.0
+        specifier: ^0.12.0
+        version: 0.12.0
       '@openkaiden/mcp-registry-types':
         specifier: ^1.3.10
         version: 1.3.10
@@ -1867,8 +1867,8 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openkaiden/kdn-api@0.9.0':
-    resolution: {integrity: sha512-Tc0btrG95VrdGjHQDTIFPYhdwsMhQfjbQur3qeheze78FQJVBydTeEkCsa+ilcp5L/JlmPZ875MdT39APS04Vg==}
+  '@openkaiden/kdn-api@0.12.0':
+    resolution: {integrity: sha512-VkBzkBaRyTQ9xyNCAlWSHkm7e+F7I1X///MAalMrsh7uPJPgZ2Sub7/kD7xGCSKQWsvKKpN+QWAW3fTHEcrDdA==}
 
   '@openkaiden/mcp-registry-types@1.3.10':
     resolution: {integrity: sha512-3DJ7Pi+FtnkBC5ynYPDqK0jP9l9KkUS4GLgC/+uv0vTYRXXn/NrjOnqXqPqCmlyLTTYtwEegIR4X5vKUU2dDaw==}
@@ -8972,7 +8972,7 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openkaiden/kdn-api@0.9.0': {}
+  '@openkaiden/kdn-api@0.12.0': {}
 
   '@openkaiden/mcp-registry-types@1.3.10':
     dependencies:
