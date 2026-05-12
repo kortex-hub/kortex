@@ -18,11 +18,10 @@
 
 import type { IconDefinition } from '@fortawesome/fontawesome-common-types';
 import { faClaude, faGoogle } from '@fortawesome/free-brands-svg-icons';
-import { faCode, faDesktop, faRobot, faWrench } from '@fortawesome/free-solid-svg-icons';
+import { faDesktop, faRobot, faWrench } from '@fortawesome/free-solid-svg-icons';
 import type { Component } from 'svelte';
 
 import ClaudeCodeIcon from '/@/lib/images/agents/ClaudeCodeIcon.svelte';
-import CursorIcon from '/@/lib/images/agents/CursorIcon.svelte';
 import GooseIcon from '/@/lib/images/agents/GooseIcon.svelte';
 import OpenClawIcon from '/@/lib/images/agents/OpenClawIcon.svelte';
 import OpenCodeIcon from '/@/lib/images/agents/OpenCodeIcon.svelte';
@@ -108,16 +107,6 @@ export const agentDefinitions: AgentDefinition[] = [
     iconComponent: OpenClawIcon,
     colorClass: 'bg-gradient-to-br from-red-600 to-red-700',
     panel: OpenRuntimePanel,
-  },
-  {
-    cliName: 'cursor',
-    title: 'Cursor',
-    description: 'AI-powered code editor agent with deep IDE integration.',
-    icon: faCode,
-    iconComponent: CursorIcon,
-    colorClass: 'bg-gradient-to-br from-indigo-500 to-indigo-600',
-    runtimes: ['podman'],
-    modelFilter: 'anthropic',
   },
   {
     cliName: 'goose',
