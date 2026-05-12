@@ -13,7 +13,7 @@ import AgentWorkspaceCreateStepNetworking from '/@/lib/agent-workspaces/AgentWor
 import AgentWorkspaceCreateStepToolsSecrets from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepToolsSecrets.svelte';
 import AgentWorkspaceCreateStepWorkspace from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepWorkspace.svelte';
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
-import { agentDefinitions } from '/@/lib/guided-setup/agent-registry';
+import { agentDefinitions, matchesModelFilter } from '/@/lib/guided-setup/agent-registry';
 import { getCatalogModels, getModelId } from '/@/lib/models/models-utils';
 import type { ChecklistItem } from '/@/lib/ui/ChecklistPanel.svelte';
 import FormPage from '/@/lib/ui/FormPage.svelte';
@@ -362,7 +362,9 @@ function getFirstCompatibleModel(): ModelInfo | undefined {
     seen.add(key);
     return true;
   });
-  const compatible = agentDef?.modelFilter ? unique.filter(m => m.llmMetadata?.name === agentDef.modelFilter) : unique;
+  const compatible = agentDef?.modelFilter
+    ? unique.filter(m => matchesModelFilter(agentDef.modelFilter!, m.llmMetadata?.name))
+    : unique;
   return compatible[0];
 }
 

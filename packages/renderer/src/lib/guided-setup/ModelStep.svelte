@@ -3,7 +3,7 @@
 import { untrack } from 'svelte';
 import { SvelteSet } from 'svelte/reactivity';
 
-import { agentDefinitions } from '/@/lib/guided-setup/agent-registry';
+import { agentDefinitions, matchesModelFilter } from '/@/lib/guided-setup/agent-registry';
 import type { CatalogModelInfo } from '/@/lib/models/models-utils';
 import { getCatalogModels } from '/@/lib/models/models-utils';
 import ModelSelectionTable from '/@/lib/models/ModelSelectionTable.svelte';
@@ -35,7 +35,7 @@ let allModels: CatalogModelInfo[] = $derived.by(() => {
 
 let agentFilteredModels: CatalogModelInfo[] = $derived.by(() => {
   if (!agentDef?.modelFilter) return allModels;
-  return allModels.filter(m => m.llmMetadata?.name === agentDef!.modelFilter);
+  return allModels.filter(m => matchesModelFilter(agentDef!.modelFilter!, m.llmMetadata?.name));
 });
 
 let effectiveModel: CatalogModelInfo | undefined = $derived.by(() => {
@@ -75,7 +75,7 @@ function selectModel(model: CatalogModelInfo): void {
 
   <div class="rounded-xl border border-(--pd-content-card-border) bg-(--pd-content-card-inset-bg) p-6">
     <p class="text-xs text-(--pd-content-card-text) opacity-70 mb-4">
-      {#if agentDef?.modelFilter}
+      {#if agentDef?.modelFilter && !agentDef.modelFilter.startsWith('!')}
         Cloud catalog on <strong class="text-(--pd-modal-text)">Models</strong> — {selectedAgentLabel} rows (enabled). Click a row to choose.
       {:else}
         Same rows as <strong class="text-(--pd-modal-text)">Models</strong>. Click a line or use the <strong class="text-(--pd-modal-text)">Use</strong> control to pick your default for <strong class="text-(--pd-modal-text)">local</strong> models.

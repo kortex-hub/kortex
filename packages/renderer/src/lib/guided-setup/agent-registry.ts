@@ -47,7 +47,7 @@ export interface AgentDefinition {
   description?: string;
   badge?: string;
   panel?: Component;
-  /** When set, only models whose `llmMetadata.name` matches this value are shown for this agent. */
+  /** When set, filters models by `llmMetadata.name`. Prefix with `!` to exclude instead (e.g. `'!vertexai'`). */
   modelFilter?: string;
   /** Compound selector in the form `extensionId:providerId` (e.g. `kaiden.claude:claude`). */
   providerSelector?: string;
@@ -71,6 +71,7 @@ export const agentDefinitions: AgentDefinition[] = [
       'Open-source agent on your machine — local models via Ollama or Ramalama, or cloud APIs (OpenAI, Gemini, and other providers OpenCode supports).',
     badge: 'Recommended',
     panel: OpenRuntimePanel,
+    modelFilter: '!vertexai',
   },
   {
     cliName: 'claude',
@@ -107,6 +108,7 @@ export const agentDefinitions: AgentDefinition[] = [
     iconComponent: OpenClawIcon,
     colorClass: 'bg-gradient-to-br from-red-600 to-red-700',
     panel: OpenRuntimePanel,
+    modelFilter: '!vertexai',
   },
   {
     cliName: 'goose',
@@ -116,6 +118,7 @@ export const agentDefinitions: AgentDefinition[] = [
     iconComponent: GooseIcon,
     colorClass: 'bg-gradient-to-br from-emerald-600 to-emerald-700',
     runtimes: ['podman'],
+    modelFilter: '!vertexai',
   },
 ];
 
@@ -125,4 +128,11 @@ const agentMap = new Map<string, AgentDefinition>(agentDefinitions.map(d => [d.c
 
 export function getAgentDefinition(name: string): ResolvedAgentDefinition {
   return agentMap.get(name) ?? { ...DEFAULT_DEFINITION, cliName: name, title: name };
+}
+
+export function matchesModelFilter(filter: string, llmMetadataName: string | undefined): boolean {
+  if (filter.startsWith('!')) {
+    return llmMetadataName !== filter.slice(1);
+  }
+  return llmMetadataName === filter;
 }

@@ -33,26 +33,42 @@ vi.mock(import('/@/navigation'));
 vi.mock(import('/@/stores/providers'));
 vi.mock(import('/@/stores/model-catalog'));
 vi.mock(import('/@/stores/agentworkspace-runtime'));
-vi.mock('/@/lib/guided-setup/agent-registry', () => ({
-  agentDefinitions: [
-    { cliName: 'opencode', title: 'OpenCode', description: 'Open-source agent.', badge: 'Recommended' },
-    {
-      cliName: 'claude',
-      title: 'Claude Code',
-      description: 'Anthropic Claude.',
-      badge: 'Cloud',
-      modelFilter: 'anthropic',
-    },
-    {
-      cliName: 'claude-vertex',
-      title: 'Claude on Vertex AI',
-      description: 'Claude via Vertex AI.',
-      modelFilter: 'vertexai',
-    },
-    { cliName: 'cursor', title: 'Cursor', description: 'AI code editor.' },
-    { cliName: 'goose', title: 'Goose', description: 'Autonomous coding agent.', runtimes: ['podman'] },
-  ],
-}));
+vi.mock(import('/@/lib/guided-setup/agent-registry'), async importOriginal => {
+  const actual = await importOriginal();
+  return {
+    matchesModelFilter: actual.matchesModelFilter,
+    agentDefinitions: [
+      {
+        cliName: 'opencode',
+        title: 'OpenCode',
+        description: 'Open-source agent.',
+        badge: 'Recommended',
+        modelFilter: '!vertexai',
+      },
+      {
+        cliName: 'claude',
+        title: 'Claude Code',
+        description: 'Anthropic Claude.',
+        badge: 'Cloud',
+        modelFilter: 'anthropic',
+      },
+      {
+        cliName: 'claude-vertex',
+        title: 'Claude on Vertex AI',
+        description: 'Claude via Vertex AI.',
+        modelFilter: 'vertexai',
+      },
+      { cliName: 'cursor', title: 'Cursor', description: 'AI code editor.', modelFilter: '!vertexai' },
+      {
+        cliName: 'goose',
+        title: 'Goose',
+        description: 'Autonomous coding agent.',
+        runtimes: ['podman'],
+        modelFilter: '!vertexai',
+      },
+    ] as unknown as typeof actual.agentDefinitions,
+  };
+});
 
 const mockAnthropicProvider: ProviderInfo = {
   id: 'claude',
@@ -66,6 +82,23 @@ const mockAnthropicProvider: ProviderInfo = {
       status: 'started',
       llmMetadata: { name: 'anthropic' },
       models: [{ label: 'claude-sonnet-4' }, { label: 'claude-opus-4' }],
+    },
+  ],
+  inferenceProviderConnectionCreation: false,
+} as unknown as ProviderInfo;
+
+const mockVertexProvider: ProviderInfo = {
+  id: 'vertex-ai',
+  name: 'Vertex AI',
+  internalId: 'vertex-ai-internal',
+  status: 'started',
+  inferenceConnections: [
+    {
+      name: 'Vertex AI',
+      type: 'cloud',
+      status: 'started',
+      llmMetadata: { name: 'vertexai' },
+      models: [{ label: 'claude-sonnet-4' }],
     },
   ],
   inferenceProviderConnectionCreation: false,
@@ -273,6 +306,43 @@ test('agent with matching runtime is shown', () => {
   render(AgentWorkspaceCreateStepAgentModel);
 
   expect(screen.getByText('Goose')).toBeInTheDocument();
+});
+
+test('OpenCode excludes Vertex AI models', async () => {
+  vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>([
+    mockAnthropicProvider,
+    mockVertexProvider,
+    mockOllamaProvider,
+  ]);
+
+  render(AgentWorkspaceCreateStepAgentModel);
+
+  await fireEvent.click(screen.getByText('OpenCode'));
+
+  expect(screen.getByText('llama3.2:3b')).toBeInTheDocument();
+  expect(screen.getByText('claude-opus-4')).toBeInTheDocument();
+  // Vertex AI claude-sonnet-4 excluded, only Anthropic claude-sonnet-4 shown
+  expect(screen.getAllByText('claude-sonnet-4')).toHaveLength(1);
+  // No Vertex AI provider column
+  const providerCells = screen.getAllByText('Anthropic');
+  expect(providerCells.length).toBeGreaterThan(0);
+  expect(screen.queryAllByText('Vertex AI').filter(el => el.tagName === 'TD')).toHaveLength(0);
+});
+
+test('Claude on Vertex AI shows only Vertex AI models', async () => {
+  vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>([
+    mockAnthropicProvider,
+    mockVertexProvider,
+    mockOllamaProvider,
+  ]);
+
+  render(AgentWorkspaceCreateStepAgentModel);
+
+  await fireEvent.click(screen.getByText('Claude on Vertex AI'));
+
+  expect(screen.getByText('claude-sonnet-4')).toBeInTheDocument();
+  expect(screen.queryByText('llama3.2:3b')).not.toBeInTheDocument();
+  expect(screen.queryByText('claude-opus-4')).not.toBeInTheDocument();
 });
 
 test('agent with non-matching runtime is hidden', () => {

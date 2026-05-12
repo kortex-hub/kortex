@@ -2,7 +2,7 @@
 import { untrack } from 'svelte';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
-import { agentDefinitions } from '/@/lib/guided-setup/agent-registry';
+import { agentDefinitions, matchesModelFilter } from '/@/lib/guided-setup/agent-registry';
 import { type CatalogModelInfo, getCatalogModels } from '/@/lib/models/models-utils';
 import ModelSelectionTable from '/@/lib/models/ModelSelectionTable.svelte';
 import { agentWorkspaceRuntime } from '/@/stores/agentworkspace-runtime';
@@ -41,7 +41,7 @@ function filterByAgent(models: CatalogModelInfo[], agent: string): CatalogModelI
   if (!agent) return models;
   const def = agentDefinitions.find(d => d.cliName === agent);
   if (!def?.modelFilter) return models;
-  return models.filter(m => m.llmMetadata?.name === def.modelFilter);
+  return models.filter(m => matchesModelFilter(def.modelFilter!, m.llmMetadata?.name));
 }
 
 function handleModelSelect(model: CatalogModelInfo): void {
