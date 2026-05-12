@@ -286,3 +286,4 @@ const task = taskManager.createTask({
 - Safe storage for credentials via `SafeStorageRegistry`
 - Configuration scopes limit exposure of sensitive data
 - Preload scripts enforce security boundaries between processes
+- Extension configuration properties for API keys, tokens, or secrets must use `"format": "password"` to ensure input masking in the UI

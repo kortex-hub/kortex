@@ -22,7 +22,8 @@
         "openai.factory.apiKey": {
           "type": "string",
           "scope": "InferenceProviderConnectionFactory",
-          "description": "apiKey"
+          "description": "apiKey",
+          "format": "password"
         }
       }
     }
