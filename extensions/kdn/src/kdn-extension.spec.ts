@@ -52,12 +52,62 @@ beforeEach(() => {
     configurable: true,
   });
 
+  vi.mocked(extensionApi.configuration.getConfiguration).mockReturnValue({
+    get: vi.fn().mockReturnValue(''),
+  } as unknown as ReturnType<typeof extensionApi.configuration.getConfiguration>);
+
   extensionContext = {
     storagePath: '/storage',
     subscriptions: [],
   } as unknown as ExtensionContext;
 
   kdnExtension = new KdnExtension(extensionContext);
+});
+
+test('registers from custom binary path setting when configured', async () => {
+  vi.mocked(extensionApi.configuration.getConfiguration).mockReturnValue({
+    get: vi.fn().mockReturnValue('/custom/path/kdn'),
+  } as unknown as ReturnType<typeof extensionApi.configuration.getConfiguration>);
+  vi.mocked(existsSync).mockImplementation(p => String(p) === '/custom/path/kdn');
+  vi.mocked(extensionApi.process.exec).mockResolvedValue({
+    command: 'kdn',
+    stdout: '',
+    stderr: 'kdn version 2.0.0',
+  });
+  vi.mocked(extensionApi.cli.createCliTool).mockReturnValue({ dispose: vi.fn() } as never);
+
+  await kdnExtension.activate();
+
+  expect(extensionApi.cli.createCliTool).toHaveBeenCalledWith(
+    expect.objectContaining({
+      name: 'kdn',
+      version: '2.0.0',
+      path: '/custom/path/kdn',
+      installationSource: 'external',
+    }),
+  );
+});
+
+test('falls through when custom binary path is configured but file does not exist', async () => {
+  vi.mocked(extensionApi.configuration.getConfiguration).mockReturnValue({
+    get: vi.fn().mockReturnValue('/nonexistent/kdn'),
+  } as unknown as ReturnType<typeof extensionApi.configuration.getConfiguration>);
+  vi.mocked(existsSync).mockImplementation(p => String(p) === join('/storage', 'bin', 'kdn'));
+  vi.mocked(extensionApi.process.exec).mockResolvedValue({
+    command: 'kdn',
+    stdout: '',
+    stderr: 'kdn version 0.5.0',
+  });
+  vi.mocked(extensionApi.cli.createCliTool).mockReturnValue({ dispose: vi.fn() } as never);
+
+  await kdnExtension.activate();
+
+  expect(extensionApi.cli.createCliTool).toHaveBeenCalledWith(
+    expect.objectContaining({
+      path: join('/storage', 'bin', 'kdn'),
+      installationSource: 'extension',
+    }),
+  );
 });
 
 test('registers from extension storage when binary exists', async () => {
@@ -134,7 +184,7 @@ test('throws when not found anywhere', async () => {
   vi.mocked(extensionApi.process.exec).mockRejectedValue(new Error('not found'));
 
   await expect(kdnExtension.activate()).rejects.toThrow(
-    'kdn CLI not found in extension storage, PATH, or bundled resources',
+    'kdn CLI not found in custom path, extension storage, PATH, or bundled resources',
   );
   expect(extensionApi.cli.createCliTool).not.toHaveBeenCalled();
 });

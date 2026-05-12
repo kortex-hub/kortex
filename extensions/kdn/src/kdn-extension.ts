@@ -34,14 +34,26 @@ export class KdnExtension {
     let version: string | undefined;
     let installationSource: CliToolInstallationSource = 'external';
 
-    if (existsSync(localBinaryPath)) {
+    const customPath = this.getCustomBinaryPath();
+    if (customPath && existsSync(customPath)) {
+      version = await this.getVersion(customPath);
+      if (version) {
+        binaryPath = customPath;
+        installationSource = 'external';
+        console.log(`[kdn] using custom binary path: ${customPath}`);
+      } else {
+        console.warn(`[kdn] custom binary at ${customPath} failed to report a version`);
+      }
+    }
+
+    if (!binaryPath && existsSync(localBinaryPath)) {
       version = await this.getVersion(localBinaryPath);
       if (version) {
         binaryPath = localBinaryPath;
         installationSource = 'extension';
-        console.log('binary found in extension storage');
+        console.log('[kdn] binary found in extension storage');
       } else {
-        console.warn(`binary exists at ${localBinaryPath} but failed to report a version`);
+        console.warn(`[kdn] binary exists at ${localBinaryPath} but failed to report a version`);
       }
     }
 
@@ -51,9 +63,9 @@ export class KdnExtension {
         binaryPath = systemResult.path;
         version = systemResult.version;
         installationSource = 'external';
-        console.log('kdn binary found in system PATH');
+        console.log('[kdn] binary found in system PATH');
       } else {
-        console.warn('kdn not found in system PATH');
+        console.warn('[kdn] not found in system PATH');
       }
     }
 
@@ -66,18 +78,18 @@ export class KdnExtension {
           if (version) {
             binaryPath = bundledBinaryPath;
             installationSource = 'extension';
-            console.log('binary found in bundled resources');
+            console.log('[kdn] binary found in bundled resources');
           } else {
-            console.warn(`bundled binary at ${bundledBinaryPath} failed to report a version`);
+            console.warn(`[kdn] bundled binary at ${bundledBinaryPath} failed to report a version`);
           }
         } else {
-          console.warn(`bundled binary not found at ${bundledBinaryPath}`);
+          console.warn(`[kdn] bundled binary not found at ${bundledBinaryPath}`);
         }
       }
     }
 
     if (!binaryPath) {
-      throw new Error('kdn CLI not found in extension storage, PATH, or bundled resources');
+      throw new Error('kdn CLI not found in custom path, extension storage, PATH, or bundled resources');
     }
 
     const cliTool = extensionApi.cli.createCliTool({
@@ -93,6 +105,10 @@ export class KdnExtension {
   }
 
   async deactivate(): Promise<void> {}
+
+  private getCustomBinaryPath(): string | undefined {
+    return extensionApi.configuration.getConfiguration('kdn').get<string>('binary.path') ?? undefined;
+  }
 
   private parseVersion(output: string): string | undefined {
     const parts = output.trim().split(/\s+/);
