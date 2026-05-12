@@ -167,7 +167,6 @@ export const CODING_AGENT = {
   OPENCODE: 'OpenCode',
   CLAUDE: 'Claude Code',
   CLAUDE_VERTEX: 'Claude on Vertex AI',
-  CURSOR: 'Cursor',
   GOOSE: 'Goose',
 } as const;
 export const CODING_AGENTS = Object.values(CODING_AGENT);
