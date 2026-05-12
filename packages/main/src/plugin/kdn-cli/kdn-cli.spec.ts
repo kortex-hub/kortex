@@ -44,8 +44,10 @@ const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
     agent: 'coder-v1',
     state: 'stopped',
     model: 'gpt-4o',
+    runtime: 'podman',
     paths: { source: '/tmp/ws1', configuration: '/tmp/ws1/.kaiden' },
     timestamps: { created: 1700000000 },
+    forwards: [],
   },
   {
     id: 'ws-2',
@@ -53,8 +55,10 @@ const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
     project: 'project-beta',
     agent: 'coder-v2',
     state: 'running',
+    runtime: 'podman',
     paths: { source: '/tmp/ws2', configuration: '/tmp/ws2/.kaiden' },
     timestamps: { created: 1700000001, started: 1700000002 },
+    forwards: [],
   },
 ];
 

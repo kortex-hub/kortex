@@ -35,6 +35,7 @@ const workspace: AgentWorkspaceSummaryUI = {
   project: 'test-project',
   agent: 'test-agent',
   state: 'stopped',
+  runtime: 'podman',
   paths: {
     source: '/home/user/projects/test',
     configuration: '/home/user/.config/kaiden/workspaces/test.yaml',
@@ -42,6 +43,7 @@ const workspace: AgentWorkspaceSummaryUI = {
   timestamps: {
     created: Date.now(),
   },
+  forwards: [],
 };
 
 vi.mock(import('tinro'));

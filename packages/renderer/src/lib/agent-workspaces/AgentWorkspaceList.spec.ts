@@ -57,11 +57,13 @@ test('Expect stat cards show correct counts with workspaces', () => {
       project: 'backend',
       agent: 'coder-v1',
       state: 'stopped',
+      runtime: 'podman',
       paths: {
         source: '/home/user/projects/backend',
         configuration: '/home/user/.config/kaiden/workspaces/api-refactor.yaml',
       },
       timestamps: { created: 1700000000 },
+      forwards: [],
     },
     {
       id: 'ws-2',
@@ -69,11 +71,13 @@ test('Expect stat cards show correct counts with workspaces', () => {
       project: 'frontend',
       agent: 'coder-v2',
       state: 'running',
+      runtime: 'podman',
       paths: {
         source: '/home/user/projects/frontend',
         configuration: '/home/user/.config/kaiden/workspaces/frontend-redesign.yaml',
       },
       timestamps: { created: 1700000001, started: 1700000002 },
+      forwards: [],
     },
   ];
   agentWorkspaces.set(workspaces);

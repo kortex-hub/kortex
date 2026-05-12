@@ -57,10 +57,12 @@ test('removes terminal entries when workspace disappears from agentWorkspaces', 
       project: 'proj',
       agent: 'agent',
       state: 'stopped',
+      runtime: 'podman',
       paths: { source: '/s', configuration: '/c' },
       timestamps: {
         created: Date.now(),
       },
+      forwards: [],
     },
   ]);
 
@@ -79,10 +81,12 @@ test('keeps terminal entries when workspace still exists', () => {
       project: 'proj',
       agent: 'agent',
       state: 'stopped',
+      runtime: 'podman',
       paths: { source: '/s', configuration: '/c' },
       timestamps: {
         created: Date.now(),
       },
+      forwards: [],
     },
   ]);
 
@@ -95,10 +99,12 @@ test('keeps terminal entries when workspace still exists', () => {
       project: 'proj',
       agent: 'agent',
       state: 'stopped',
+      runtime: 'podman',
       paths: { source: '/s', configuration: '/c' },
       timestamps: {
         created: Date.now(),
       },
+      forwards: [],
     },
   ]);
   expect(get(agentWorkspaceTerminals)).toHaveLength(1);

@@ -49,11 +49,13 @@ const workspaceSummary: AgentWorkspaceSummary = {
   project: 'backend',
   agent: 'coder-v1',
   state: 'stopped',
+  runtime: 'podman',
   paths: {
     source: '/home/user/projects/backend',
     configuration: '/home/user/.config/kaiden/workspaces/api-refactor.yaml',
   },
   timestamps: { created: 1700000000 },
+  forwards: [],
 };
 
 beforeEach(() => {
