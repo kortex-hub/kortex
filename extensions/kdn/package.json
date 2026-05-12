@@ -18,6 +18,7 @@
         "kdn.binary.path": {
           "type": "string",
           "format": "file",
+          "scope": "DEFAULT",
           "default": "",
           "description": "Custom path to kdn binary (Default is blank)"
         }
