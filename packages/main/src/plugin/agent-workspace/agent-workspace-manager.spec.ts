@@ -532,7 +532,7 @@ describe('ensureModelSecret', () => {
     expect(secretManager.create).not.toHaveBeenCalled();
   });
 
-  test('skips when credentials map has multiple entries (Vertex AI)', async () => {
+  test('applies Vertex AI workspace configuration instead of creating a secret', async () => {
     vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
       credentials: { projectId: 'my-project', region: 'us-east5', credentialsFile: '/path/to/creds.json' },
       llmMetadataName: 'vertexai',
@@ -543,6 +543,83 @@ describe('ensureModelSecret', () => {
     await manager.ensureModelSecret(options);
 
     expect(secretManager.create).not.toHaveBeenCalled();
+    expect(options.workspaceConfiguration?.environment).toEqual([
+      { name: 'CLAUDE_CODE_USE_VERTEX', value: '1' },
+      { name: 'CLOUD_ML_REGION', value: 'us-east5' },
+      { name: 'ANTHROPIC_VERTEX_PROJECT_ID', value: 'my-project' },
+    ]);
+    expect(options.workspaceConfiguration?.mounts).toEqual([
+      { host: '/path/to/creds.json', target: '$HOME/.config/gcloud/application_default_credentials.json', ro: true },
+    ]);
+  });
+
+  test('deduplicates Vertex AI env vars when workspaceConfiguration already has entries', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { projectId: 'my-project', region: 'us-east5', credentialsFile: '/path/to/creds.json' },
+      llmMetadataName: 'vertexai',
+      endpoint: undefined,
+    });
+
+    const options = {
+      ...baseOptions,
+      model: 'vertexai::claude-sonnet-4-20250514::',
+      workspaceConfiguration: {
+        environment: [
+          { name: 'CLOUD_ML_REGION', value: 'old-region' },
+          { name: 'OTHER_VAR', value: 'keep' },
+        ],
+        mounts: [
+          { host: '/old/creds.json', target: '$HOME/.config/gcloud/application_default_credentials.json', ro: true },
+        ],
+      },
+    } as AgentWorkspaceCreateOptions;
+    await manager.ensureModelSecret(options);
+
+    expect(options.workspaceConfiguration?.environment).toEqual([
+      { name: 'OTHER_VAR', value: 'keep' },
+      { name: 'CLAUDE_CODE_USE_VERTEX', value: '1' },
+      { name: 'CLOUD_ML_REGION', value: 'us-east5' },
+      { name: 'ANTHROPIC_VERTEX_PROJECT_ID', value: 'my-project' },
+    ]);
+    expect(options.workspaceConfiguration?.mounts).toEqual([
+      { host: '/path/to/creds.json', target: '$HOME/.config/gcloud/application_default_credentials.json', ro: true },
+    ]);
+  });
+
+  test('replaces tilde with $HOME in Vertex AI credentials file path', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: {
+        projectId: 'my-project',
+        region: 'us-east5',
+        credentialsFile: '~/.config/gcloud/application_default_credentials.json',
+      },
+      llmMetadataName: 'vertexai',
+      endpoint: undefined,
+    });
+
+    const options = { ...baseOptions, model: 'vertexai::claude-sonnet-4-20250514::' };
+    await manager.ensureModelSecret(options);
+
+    expect(options.workspaceConfiguration?.mounts).toEqual([
+      {
+        host: '$HOME/.config/gcloud/application_default_credentials.json',
+        target: '$HOME/.config/gcloud/application_default_credentials.json',
+        ro: true,
+      },
+    ]);
+  });
+
+  test('skips Vertex AI config when credentials are incomplete', async () => {
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { projectId: 'my-project', region: '', credentialsFile: '' },
+      llmMetadataName: 'vertexai',
+      endpoint: undefined,
+    });
+
+    const options = { ...baseOptions, model: 'vertexai::claude-sonnet-4-20250514::' };
+    await manager.ensureModelSecret(options);
+
+    expect(options.workspaceConfiguration).toBeUndefined();
   });
 
   test('skips when llmMetadataName is unknown', async () => {

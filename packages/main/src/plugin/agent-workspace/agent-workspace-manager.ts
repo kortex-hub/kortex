@@ -137,6 +137,11 @@ export class AgentWorkspaceManager implements Disposable {
     const connectionInfo = this.providerRegistry.getInferenceConnectionCredentials(options.model);
     if (!connectionInfo) return;
 
+    if (connectionInfo.llmMetadataName === 'vertexai') {
+      this.applyVertexAiConfiguration(options, connectionInfo.credentials);
+      return;
+    }
+
     const entries = Object.entries(connectionInfo.credentials);
     if (entries.length !== 1) return;
 
@@ -161,6 +166,32 @@ export class AgentWorkspaceManager implements Disposable {
       );
       options.workspaceConfiguration.environment.push(result.environmentVariable);
     }
+  }
+
+  private applyVertexAiConfiguration(options: AgentWorkspaceCreateOptions, credentials: Record<string, string>): void {
+    const { projectId, region, credentialsFile } = credentials;
+    if (!projectId || !region || !credentialsFile) return;
+
+    options.workspaceConfiguration ??= {};
+    options.workspaceConfiguration.environment ??= [];
+    options.workspaceConfiguration.mounts ??= [];
+
+    const envVars: Array<{ name: string; value: string }> = [
+      { name: 'CLAUDE_CODE_USE_VERTEX', value: '1' },
+      { name: 'CLOUD_ML_REGION', value: region },
+      { name: 'ANTHROPIC_VERTEX_PROJECT_ID', value: projectId },
+    ];
+    for (const env of envVars) {
+      options.workspaceConfiguration.environment = options.workspaceConfiguration.environment.filter(
+        e => e.name !== env.name,
+      );
+      options.workspaceConfiguration.environment.push(env);
+    }
+
+    const adcTarget = '$HOME/.config/gcloud/application_default_credentials.json';
+    const hostPath = credentialsFile.startsWith('~/') ? `$HOME/${credentialsFile.slice(2)}` : credentialsFile;
+    options.workspaceConfiguration.mounts = options.workspaceConfiguration.mounts.filter(m => m.target !== adcTarget);
+    options.workspaceConfiguration.mounts.push({ host: hostPath, target: adcTarget, ro: true });
   }
 
   /**
