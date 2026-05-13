@@ -9,6 +9,7 @@ import { NavigationPage } from '/@api/navigation-page';
 import type { SecretVaultInfo } from '/@api/secret-vault/secret-vault-info';
 
 import SecretVaultAccount from './columns/SecretVaultAccount.svelte';
+import SecretVaultActions from './columns/SecretVaultActions.svelte';
 import SecretVaultIntegration from './columns/SecretVaultIntegration.svelte';
 import SecretVaultMaskedSecret from './columns/SecretVaultMaskedSecret.svelte';
 import { isKnownService, KNOWN_GROUP_LABEL, OTHER_GROUP_LABEL } from './secret-vault-utils';
@@ -41,7 +42,14 @@ const secretColumn = new TableColumn<SecretVaultSelectable>('Secret', {
   renderer: SecretVaultMaskedSecret,
 });
 
-const columns = [integrationColumn, accountColumn, secretColumn];
+const actionsColumn = new TableColumn<SecretVaultSelectable>('', {
+  align: 'right',
+  width: '40px',
+  renderer: SecretVaultActions,
+  overflow: true,
+});
+
+const columns = [integrationColumn, accountColumn, secretColumn, actionsColumn];
 
 const secrets: SecretVaultSelectable[] = $derived(
   $filteredSecretVaultInfos.map(secret => ({ ...secret, selected: false })),
