@@ -98,7 +98,7 @@ export const agentDefinitions: AgentDefinition[] = [
     modelFilter: 'vertexai',
     panel: ClaudeVertexPanel,
     providerSelector: 'kaiden.vertex-ai:vertex-ai',
-    runtimes: ['podman'],
+    runtimes: ['podman', 'openshell'],
   },
   {
     cliName: 'openclaw',
