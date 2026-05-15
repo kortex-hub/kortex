@@ -122,6 +122,7 @@ import type { MCPExportTarget } from '/@api/mcp/mcp-export';
 import type { MCPRemoteServerInfo, MCPServerDetail } from '/@api/mcp/mcp-server-info';
 import type { MCPSetupOptions } from '/@api/mcp/mcp-setup';
 import type { Menu } from '/@api/menu.js';
+import type { CatalogModelInfo, InferenceConnectionSummary } from '/@api/model-registry-info';
 import { NavigationPage } from '/@api/navigation-page';
 import type { NavigationRequest } from '/@api/navigation-request';
 import type { NetworkInspectInfo } from '/@api/network-info';
@@ -1957,6 +1958,17 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld('getProviderInfos', async (): Promise<ProviderInfo[]> => {
     return ipcInvoke('provider-registry:getProviderInfos');
   });
+
+  contextBridge.exposeInMainWorld('getCatalogModels', async (): Promise<CatalogModelInfo[]> => {
+    return ipcInvoke('model-registry:getCatalogModels');
+  });
+
+  contextBridge.exposeInMainWorld(
+    'getInferenceConnectionSummaries',
+    async (): Promise<InferenceConnectionSummary[]> => {
+      return ipcInvoke('inference-connection-summary-registry:getInferenceConnectionSummaries');
+    },
+  );
 
   contextBridge.exposeInMainWorld('getRagEnvironments', async (): Promise<RagEnvironment[]> => {
     return ipcInvoke('rag-environment-registry:getRagEnvironments');

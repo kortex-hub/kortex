@@ -22,7 +22,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import type { Writable } from 'svelte/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
+import { catalogModels } from '/@/stores/models';
 import { providerInfos } from '/@/stores/providers';
+import type { CatalogModelInfo } from '/@api/model-registry-info';
 import type { ProviderInfo } from '/@api/provider-info';
 
 import type { OnboardingState } from './guided-setup-steps';
@@ -39,6 +41,13 @@ vi.mock(import('/@/stores/providers'), async () => {
   };
 });
 
+vi.mock(import('/@/stores/models'), async () => {
+  const { writable } = await import('svelte/store');
+  return {
+    catalogModels: writable<CatalogModelInfo[]>([]),
+  };
+});
+
 vi.mock(import('/@/stores/model-catalog'), async () => {
   const { writable } = await import('svelte/store');
   return {
@@ -51,8 +60,30 @@ vi.mock(import('/@/stores/model-catalog'), async () => {
 
 let onboarding: OnboardingState;
 
+function buildCatalogModels(providers: Partial<ProviderInfo>[]): CatalogModelInfo[] {
+  const result: CatalogModelInfo[] = [];
+  for (const provider of providers) {
+    for (const connection of (provider as ProviderInfo).inferenceConnections ?? []) {
+      for (const model of connection.models) {
+        result.push({
+          providerId: provider.id,
+          providerName: provider.name,
+          connectionName: connection.name,
+          type: connection.type,
+          llmMetadata: connection.llmMetadata,
+          endpoint: connection.endpoint,
+          label: model.label,
+          connectionStatus: connection.status,
+        } as CatalogModelInfo);
+      }
+    }
+  }
+  return result;
+}
+
 function stubProviders(providers: Partial<ProviderInfo>[]): void {
   (providerInfos as Writable<ProviderInfo[]>).set(providers as unknown as ProviderInfo[]);
+  (catalogModels as Writable<CatalogModelInfo[]>).set(buildCatalogModels(providers));
 }
 
 const OPENCODE_PROVIDERS: Partial<ProviderInfo>[] = [

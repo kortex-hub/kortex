@@ -27,11 +27,13 @@ import { resetDraft, wizard } from '/@/stores/agent-workspace-create-draft.svelt
 import * as agentWorkspaceRuntimeStore from '/@/stores/agentworkspace-runtime';
 import * as mcpStore from '/@/stores/mcp-remote-servers';
 import * as modelCatalogStore from '/@/stores/model-catalog';
+import * as modelsStore from '/@/stores/models';
 import * as providerStore from '/@/stores/providers';
 import * as ragStore from '/@/stores/rag-environments';
 import * as secretVaultStore from '/@/stores/secret-vault';
 import * as skillsStore from '/@/stores/skills';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
+import type { CatalogModelInfo } from '/@api/model-registry-info';
 import type { ProviderInfo } from '/@api/provider-info';
 import type { RagEnvironment } from '/@api/rag/rag-environment';
 import type { SecretVaultInfo } from '/@api/secret-vault/secret-vault-info';
@@ -47,6 +49,33 @@ vi.mock(import('/@/stores/secret-vault'));
 vi.mock(import('/@/stores/providers'));
 vi.mock(import('/@/stores/rag-environments'));
 vi.mock(import('/@/stores/model-catalog'));
+vi.mock(import('/@/stores/models'));
+
+function buildCatalogModels(providers: ProviderInfo[]): CatalogModelInfo[] {
+  const result: CatalogModelInfo[] = [];
+  for (const provider of providers) {
+    for (const connection of provider.inferenceConnections ?? []) {
+      for (const model of connection.models) {
+        result.push({
+          providerId: provider.id,
+          providerName: provider.name,
+          connectionName: connection.name,
+          type: connection.type,
+          llmMetadata: connection.llmMetadata,
+          endpoint: connection.endpoint,
+          label: model.label,
+          connectionStatus: connection.status,
+        } as CatalogModelInfo);
+      }
+    }
+  }
+  return result;
+}
+
+function setProviders(providers: ProviderInfo[]): void {
+  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>(providers);
+  vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(buildCatalogModels(providers));
+}
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -60,7 +89,7 @@ beforeEach(() => {
   vi.mocked(skillsStore).skillInfos = writable<SkillInfo[]>([]);
   vi.mocked(mcpStore).mcpRemoteServerInfos = writable<MCPRemoteServerInfo[]>([]);
   vi.mocked(secretVaultStore).secretVaultInfos = writable<readonly SecretVaultInfo[]>([]);
-  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([]);
+  setProviders([]);
   vi.mocked(ragStore).ragEnvironments = writable<RagEnvironment[]>([]);
   vi.mocked(modelCatalogStore).disabledModels = writable<Set<string>>(new Set());
   vi.mocked(modelCatalogStore.isModelEnabled).mockImplementation(
@@ -579,7 +608,7 @@ test('Expect Knowledges empty state shown when no knowledge bases available', as
 });
 
 test('Expect knowledge bases listed with provider display name and source count', async () => {
-  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([{ id: 'milvus', name: 'Milvus' } as ProviderInfo]);
+  setProviders([{ id: 'milvus', name: 'Milvus' } as ProviderInfo]);
   vi.mocked(ragStore).ragEnvironments = writable<RagEnvironment[]>([
     {
       name: 'kubernetes-knowledges',
@@ -813,7 +842,7 @@ test('Expect default model from onboarding.defaultWorkspaceSettings when valid',
       },
     },
   });
-  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider]);
+  setProviders([mockAnthropicProvider]);
 
   render(AgentWorkspaceCreate);
 
@@ -832,7 +861,7 @@ test('Expect default model from onboarding.defaultWorkspaceSettings when valid',
 
 test('Expect first compatible model used when defaultWorkspaceSettings has no model and providers exist', async () => {
   vi.mocked(window.getConfigurationValue).mockResolvedValue({ defaultAgent: 'opencode' });
-  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider, mockOllamaProvider]);
+  setProviders([mockAnthropicProvider, mockOllamaProvider]);
 
   render(AgentWorkspaceCreate);
 
@@ -870,7 +899,7 @@ test('Expect model empty when no setting and no providers', async () => {
 
 test('Expect first compatible model used when defaultWorkspaceSettings is undefined and providers exist', async () => {
   vi.mocked(window.getConfigurationValue).mockResolvedValue(undefined);
-  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockOllamaProvider]);
+  setProviders([mockOllamaProvider]);
 
   render(AgentWorkspaceCreate);
 
@@ -1127,7 +1156,7 @@ test('Expect createAgentWorkspace called with workspaceConfiguration from settin
       },
     },
   });
-  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider]);
+  setProviders([mockAnthropicProvider]);
 
   render(AgentWorkspaceCreate);
 
@@ -1165,7 +1194,7 @@ test('Expect workspaceConfiguration undefined when no settings for selected agen
       },
     },
   });
-  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider]);
+  setProviders([mockAnthropicProvider]);
 
   render(AgentWorkspaceCreate);
 
@@ -1271,7 +1300,7 @@ test('Expect tilde mount paths normalized to $HOME in workspaceConfiguration', a
       },
     },
   });
-  vi.mocked(providerStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider]);
+  setProviders([mockAnthropicProvider]);
 
   render(AgentWorkspaceCreate);
 

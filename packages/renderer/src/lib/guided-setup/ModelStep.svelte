@@ -5,10 +5,9 @@ import { SvelteSet } from 'svelte/reactivity';
 
 import { agentDefinitions, matchesModelFilter } from '/@/lib/guided-setup/agent-registry';
 import type { CatalogModelInfo } from '/@/lib/models/models-utils';
-import { getCatalogModels } from '/@/lib/models/models-utils';
 import ModelSelectionTable from '/@/lib/models/ModelSelectionTable.svelte';
 import { disabledModels, isModelEnabled, modelKey } from '/@/stores/model-catalog';
-import { providerInfos } from '/@/stores/providers';
+import { catalogModels } from '/@/stores/models';
 import type { DefaultWorkspaceModelSettings } from '/@api/onboarding-settings-info';
 
 import type { GuidedSetupStepProps } from './guided-setup-steps';
@@ -23,7 +22,7 @@ let agentDef = $derived(agentDefinitions.find(d => d.cliName === onboarding.agen
 let selectedAgentLabel = $derived(agentDef?.title ?? 'the selected agent');
 
 let allModels: CatalogModelInfo[] = $derived.by(() => {
-  const enabled = getCatalogModels($providerInfos).filter(m => isModelEnabled($disabledModels, m.providerId, m.label));
+  const enabled = $catalogModels.filter(m => isModelEnabled($disabledModels, m.providerId, m.label));
   const seen = new SvelteSet<string>();
   return enabled.filter(m => {
     const key = modelKey(m.providerId, m.label);

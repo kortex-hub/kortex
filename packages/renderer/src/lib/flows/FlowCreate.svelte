@@ -8,11 +8,11 @@ import MCPSelector from '/@/lib/chat/components/mcp-selector.svelte';
 import ModelSelector from '/@/lib/chat/components/model-selector.svelte';
 import { Textarea } from '/@/lib/chat/components/ui/textarea';
 import { flowCreationData } from '/@/lib/chat/state/flow-creation-data.svelte';
-import { getModels } from '/@/lib/models/models-utils';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 import { handleNavigation } from '/@/navigation';
 import { isFlowConnectionAvailable } from '/@/stores/flow-provider';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import { allModels as allModelsStore } from '/@/stores/models';
 import { providerInfos } from '/@/stores/providers';
 import { FlowGenerationParametersSchema } from '/@api/chat/flow-generation-parameters-schema';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
@@ -35,7 +35,7 @@ let selectedMCP = $state<MCPRemoteServerInfo[]>(
     return accumulator;
   }, [] as MCPRemoteServerInfo[]),
 );
-let models: Array<ModelInfo> = $derived(getModels($providerInfos));
+let models: Array<ModelInfo> = $derived($allModelsStore);
 let flowCreationDataModel = $state<ModelInfo | undefined>(flowCreationData.value?.model);
 let selectedModel = $derived<ModelInfo | undefined>(flowCreationDataModel ?? models[0]);
 

@@ -210,6 +210,7 @@ import { IconRegistry } from './icon-registry.js';
 import { ImageCheckerImpl } from './image-checker.js';
 import { ImageFilesRegistry } from './image-files-registry.js';
 import { ImageRegistry } from './image-registry.js';
+import { InferenceConnectionSummaryRegistry } from './inference-connection-summary-registry.js';
 import { InputQuickPickRegistry } from './input-quickpick/input-quickpick-registry.js';
 import { ExtensionInstaller } from './install/extension-installer.js';
 import { KubernetesClient } from './kubernetes/kubernetes-client.js';
@@ -221,6 +222,7 @@ import { INTERNAL_PROVIDER_ID, MCPRegistry } from './mcp/mcp-registry.js';
 import { MCPSchemaValidator } from './mcp/mcp-schema-validator.js';
 import { MessageBox } from './message-box.js';
 import { ModelCatalogInit } from './model-catalog-init.js';
+import { ModelRegistry } from './model-registry.js';
 import { NavigationItemsInit } from './navigation-items-init.js';
 import { OnboardingInit } from './onboarding/onboarding-init.js';
 import { OnboardingRegistry } from './onboarding-registry.js';
@@ -596,6 +598,8 @@ export class PluginSystem {
     container.bind<OnboardingInit>(OnboardingInit).toSelf().inSingletonScope();
     container.bind<KubernetesClient>(KubernetesClient).toSelf().inSingletonScope();
     container.bind<ChatManager>(ChatManager).toSelf().inSingletonScope();
+    container.bind<ModelRegistry>(ModelRegistry).toSelf().inSingletonScope();
+    container.bind<InferenceConnectionSummaryRegistry>(InferenceConnectionSummaryRegistry).toSelf().inSingletonScope();
     container.bind<SchedulerRegistry>(SchedulerRegistry).toSelf().inSingletonScope();
     container.bind<RagEnvironmentRegistry>(RagEnvironmentRegistry).toSelf().inSingletonScope();
 
@@ -664,6 +668,14 @@ export class PluginSystem {
 
     const providerRegistry = container.get<ProviderRegistry>(ProviderRegistry);
     providerRegistry.registerAutostartEngine(autoStartEngine);
+
+    const modelRegistry = container.get<ModelRegistry>(ModelRegistry);
+    modelRegistry.init();
+
+    const inferenceConnectionSummaryRegistry = container.get<InferenceConnectionSummaryRegistry>(
+      InferenceConnectionSummaryRegistry,
+    );
+    inferenceConnectionSummaryRegistry.init();
 
     const mcpManager = container.get<MCPManager>(MCPManager);
     mcpManager.init();

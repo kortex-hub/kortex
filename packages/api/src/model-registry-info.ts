@@ -16,32 +16,30 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { expect, test } from 'vitest';
+import type { InferenceProviderConnectionType, LLMMetadata, ProviderConnectionStatus } from '@openkaiden/api';
 
-import type { ModelInfo } from '/@api/model-registry-info';
+export interface ModelInfo {
+  providerId: string;
+  connectionName: string;
+  type: InferenceProviderConnectionType;
+  llmMetadata?: LLMMetadata;
+  endpoint?: string;
+  label: string;
+}
 
-import { getModelId } from './models-utils';
+export interface CatalogModelInfo extends ModelInfo {
+  connectionStatus: ProviderConnectionStatus;
+  providerName: string;
+}
 
-test('getModelId builds id from llmMetadata.name, label and endpoint', () => {
-  const model: ModelInfo = {
-    providerId: 'p',
-    connectionName: 'c',
-    type: 'cloud',
-    llmMetadata: { name: 'claude' },
-    endpoint: 'https://api.example.com',
-    label: 'claude-3',
-  } as ModelInfo;
-
-  expect(getModelId(model)).toBe('claude::claude-3::https://api.example.com');
-});
-
-test('getModelId handles missing llmMetadata and endpoint', () => {
-  const model: ModelInfo = {
-    providerId: 'p',
-    connectionName: 'c',
-    type: 'cloud',
-    label: 'gpt-4',
-  };
-
-  expect(getModelId(model)).toBe('::gpt-4::');
-});
+export interface InferenceConnectionSummary {
+  providerName: string;
+  providerId: string;
+  providerInternalId: string;
+  connectionName: string;
+  connectionType?: InferenceProviderConnectionType;
+  status: ProviderConnectionStatus | 'not-configured';
+  modelCount: number;
+  creationDisplayName: string;
+  configurable: boolean;
+}

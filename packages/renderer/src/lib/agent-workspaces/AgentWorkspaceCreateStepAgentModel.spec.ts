@@ -24,7 +24,9 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import * as agentWorkspaceRuntimeStore from '/@/stores/agentworkspace-runtime';
 import * as modelCatalogStore from '/@/stores/model-catalog';
+import * as modelsStore from '/@/stores/models';
 import * as providersStore from '/@/stores/providers';
+import type { CatalogModelInfo } from '/@api/model-registry-info';
 import type { ProviderInfo } from '/@api/provider-info';
 
 import AgentWorkspaceCreateStepAgentModel from './AgentWorkspaceCreateStepAgentModel.svelte';
@@ -32,7 +34,34 @@ import AgentWorkspaceCreateStepAgentModel from './AgentWorkspaceCreateStepAgentM
 vi.mock(import('/@/navigation'));
 vi.mock(import('/@/stores/providers'));
 vi.mock(import('/@/stores/model-catalog'));
+vi.mock(import('/@/stores/models'));
 vi.mock(import('/@/stores/agentworkspace-runtime'));
+
+function buildCatalogModels(providers: ProviderInfo[]): CatalogModelInfo[] {
+  const result: CatalogModelInfo[] = [];
+  for (const provider of providers) {
+    for (const connection of provider.inferenceConnections ?? []) {
+      for (const model of connection.models) {
+        result.push({
+          providerId: provider.id,
+          providerName: provider.name,
+          connectionName: connection.name,
+          type: connection.type,
+          llmMetadata: connection.llmMetadata,
+          endpoint: connection.endpoint,
+          label: model.label,
+          connectionStatus: connection.status,
+        } as CatalogModelInfo);
+      }
+    }
+  }
+  return result;
+}
+
+function setProviders(providers: ProviderInfo[]): void {
+  vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>(providers);
+  vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(buildCatalogModels(providers));
+}
 vi.mock(import('/@/lib/guided-setup/agent-registry'), async importOriginal => {
   const actual = await importOriginal();
   return {
@@ -125,6 +154,7 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.resetAllMocks();
   vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>([]);
+  vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>([]);
   vi.mocked(agentWorkspaceRuntimeStore).agentWorkspaceRuntime = writable<string>('podman');
   vi.mocked(modelCatalogStore).disabledModels = writable<Set<string>>(new Set());
   vi.mocked(modelCatalogStore.isModelEnabled).mockImplementation(
@@ -178,7 +208,7 @@ test('shows empty state when no providers configured', async () => {
 });
 
 test('shows cloud models under Cloud category', async () => {
-  vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider]);
+  setProviders([mockAnthropicProvider]);
 
   render(AgentWorkspaceCreateStepAgentModel);
 
@@ -190,7 +220,7 @@ test('shows cloud models under Cloud category', async () => {
 });
 
 test('shows local models under Local category', async () => {
-  vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>([mockOllamaProvider]);
+  setProviders([mockOllamaProvider]);
 
   render(AgentWorkspaceCreateStepAgentModel);
 
@@ -201,7 +231,7 @@ test('shows local models under Local category', async () => {
 });
 
 test('Claude agent filters to Anthropic models only', async () => {
-  vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider, mockOllamaProvider]);
+  setProviders([mockAnthropicProvider, mockOllamaProvider]);
 
   render(AgentWorkspaceCreateStepAgentModel);
 
@@ -212,7 +242,7 @@ test('Claude agent filters to Anthropic models only', async () => {
 });
 
 test('search filters model list', async () => {
-  vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider]);
+  setProviders([mockAnthropicProvider]);
 
   render(AgentWorkspaceCreateStepAgentModel);
 
@@ -226,7 +256,7 @@ test('search filters model list', async () => {
 });
 
 test('switching agent keeps model if still compatible', async () => {
-  vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider]);
+  setProviders([mockAnthropicProvider]);
 
   render(AgentWorkspaceCreateStepAgentModel, {
     selectedAgent: 'opencode',
@@ -244,7 +274,7 @@ test('switching agent keeps model if still compatible', async () => {
 });
 
 test('auto-selects first model when no model pre-selected', async () => {
-  vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider]);
+  setProviders([mockAnthropicProvider]);
 
   render(AgentWorkspaceCreateStepAgentModel, {
     selectedAgent: 'opencode',
@@ -256,7 +286,7 @@ test('auto-selects first model when no model pre-selected', async () => {
 });
 
 test('auto-selects first model when agent filters remove current selection', async () => {
-  vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider, mockOllamaProvider]);
+  setProviders([mockAnthropicProvider, mockOllamaProvider]);
 
   render(AgentWorkspaceCreateStepAgentModel, {
     selectedAgent: 'opencode',
@@ -271,7 +301,7 @@ test('auto-selects first model when agent filters remove current selection', asy
 });
 
 test('disabled models are hidden from selection list', async () => {
-  vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>([mockAnthropicProvider]);
+  setProviders([mockAnthropicProvider]);
   vi.mocked(modelCatalogStore).disabledModels = writable<Set<string>>(new Set(['claude::claude-opus-4']));
 
   render(AgentWorkspaceCreateStepAgentModel);
@@ -309,11 +339,7 @@ test('agent with matching runtime is shown', () => {
 });
 
 test('OpenCode excludes Vertex AI models', async () => {
-  vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>([
-    mockAnthropicProvider,
-    mockVertexProvider,
-    mockOllamaProvider,
-  ]);
+  setProviders([mockAnthropicProvider, mockVertexProvider, mockOllamaProvider]);
 
   render(AgentWorkspaceCreateStepAgentModel);
 
@@ -330,11 +356,7 @@ test('OpenCode excludes Vertex AI models', async () => {
 });
 
 test('Claude on Vertex AI shows only Vertex AI models', async () => {
-  vi.mocked(providersStore).providerInfos = writable<ProviderInfo[]>([
-    mockAnthropicProvider,
-    mockVertexProvider,
-    mockOllamaProvider,
-  ]);
+  setProviders([mockAnthropicProvider, mockVertexProvider, mockOllamaProvider]);
 
   render(AgentWorkspaceCreateStepAgentModel);
 

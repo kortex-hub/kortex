@@ -9,10 +9,9 @@ import { Toaster } from '/@/lib/chat/components/ui/sonner';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte.js';
 import { currentChatId } from '/@/lib/chat/state/current-chat-id.svelte';
 import { sidebarCollapsed } from '/@/lib/chat/state/sidebar-collapsed.svelte';
-import { getModels } from '/@/lib/models/models-utils';
 import { isDark } from '/@/stores/appearance';
 import { disabledModels, isModelEnabled } from '/@/stores/model-catalog';
-import { providerInfos } from '/@/stores/providers';
+import { allModels as allModelsStore } from '/@/stores/models';
 
 interface Props {
   chatId?: string;
@@ -32,7 +31,7 @@ const chatMessagesPromise = $derived(
 onDestroy(() => chatHistory.dispose());
 
 const hasModels = $derived(
-  getModels($providerInfos).filter(m => isModelEnabled($disabledModels, m.providerId, m.label)).length > 0,
+  $allModelsStore.filter(m => isModelEnabled($disabledModels, m.providerId, m.label)).length > 0,
 );
 
 // Sync the chat's ThemeProvider with the app's appearance setting

@@ -16,20 +16,16 @@ import ModelRuntimeColumn from '/@/lib/models/columns/ModelRuntimeColumn.svelte'
 import ModelSizeColumn from '/@/lib/models/columns/ModelSizeColumn.svelte';
 import ModelStatusColumn from '/@/lib/models/columns/ModelStatusColumn.svelte';
 import LocalRuntimeTiles from '/@/lib/models/LocalRuntimeTiles.svelte';
-import {
-  type CatalogModelInfo,
-  getCloudCatalogModels,
-  getCloudConnectionSummaries,
-  getInHouseCatalogModels,
-  getInHouseConnectionSummaries,
-  getLocalCatalogModels,
-  getLocalConnectionSummaries,
-  type InferenceConnectionSummary,
-} from '/@/lib/models/models-utils';
+import type { CatalogModelInfo, InferenceConnectionSummary } from '/@/lib/models/models-utils';
 import ModelsCatalogEmptyScreen from '/@/lib/models/ModelsCatalogEmptyScreen.svelte';
 import ProviderConnectionTiles from '/@/lib/models/ProviderConnectionTiles.svelte';
 import NoLogIcon from '/@/lib/ui/NoLogIcon.svelte';
-import { providerInfos } from '/@/stores/providers';
+import {
+  cloudConnectionSummaries as cloudConnectionSummariesStore,
+  inHouseConnectionSummaries as inHouseConnectionSummariesStore,
+  localConnectionSummaries as localConnectionSummariesStore,
+} from '/@/stores/inference-connection-summaries';
+import { cloudCatalogModels, inHouseCatalogModels, localCatalogModels } from '/@/stores/models';
 
 type ModelSelectable = CatalogModelInfo & { selected: boolean };
 type Category = 'cloud' | 'corporate' | 'local';
@@ -50,12 +46,12 @@ const categories: CategoryInfo[] = [
 let activeCategory: Category = $state('cloud');
 let searchTerm = $state('');
 
-let cloudModels: CatalogModelInfo[] = $derived(getCloudCatalogModels($providerInfos));
-let cloudConnections: InferenceConnectionSummary[] = $derived(getCloudConnectionSummaries($providerInfos));
-let inHouseModels: CatalogModelInfo[] = $derived(getInHouseCatalogModels($providerInfos));
-let inHouseConnections: InferenceConnectionSummary[] = $derived(getInHouseConnectionSummaries($providerInfos));
-let localModels: CatalogModelInfo[] = $derived(getLocalCatalogModels($providerInfos));
-let localConnections: InferenceConnectionSummary[] = $derived(getLocalConnectionSummaries($providerInfos));
+let cloudModels: CatalogModelInfo[] = $derived($cloudCatalogModels);
+let cloudConnections: InferenceConnectionSummary[] = $derived($cloudConnectionSummariesStore);
+let inHouseModels: CatalogModelInfo[] = $derived($inHouseCatalogModels);
+let inHouseConnections: InferenceConnectionSummary[] = $derived($inHouseConnectionSummariesStore);
+let localModels: CatalogModelInfo[] = $derived($localCatalogModels);
+let localConnections: InferenceConnectionSummary[] = $derived($localConnectionSummariesStore);
 
 let filteredCloudModels: ModelSelectable[] = $derived(
   filterBySearch(cloudModels, searchTerm).map(m => ({ ...m, selected: false })),

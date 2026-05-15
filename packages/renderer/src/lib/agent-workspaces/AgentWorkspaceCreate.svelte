@@ -14,7 +14,7 @@ import AgentWorkspaceCreateStepToolsSecrets from '/@/lib/agent-workspaces/AgentW
 import AgentWorkspaceCreateStepWorkspace from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepWorkspace.svelte';
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { agentDefinitions, matchesModelFilter } from '/@/lib/guided-setup/agent-registry';
-import { getCatalogModels, getModelId } from '/@/lib/models/models-utils';
+import { getModelId } from '/@/lib/models/models-utils';
 import type { ChecklistItem } from '/@/lib/ui/ChecklistPanel.svelte';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 import WizardStepper from '/@/lib/ui/WizardStepper.svelte';
@@ -23,6 +23,7 @@ import { resetDraft, wizard } from '/@/stores/agent-workspace-create-draft.svelt
 import { agentWorkspaceRuntime } from '/@/stores/agentworkspace-runtime';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import { disabledModels, isModelEnabled, modelKey } from '/@/stores/model-catalog';
+import { catalogModels } from '/@/stores/models';
 import { providerInfos } from '/@/stores/providers';
 import { ragEnvironments } from '/@/stores/rag-environments';
 import { skillInfos } from '/@/stores/skills';
@@ -176,7 +177,7 @@ onMount(async () => {
       defaultSettings?.defaultAgentSettings?.[defaultAgent]?.defaultModel?.providerId &&
       defaultSettings?.defaultAgentSettings?.[defaultAgent]?.defaultModel?.label
     ) {
-      const allModels = getCatalogModels($providerInfos);
+      const allModels = $catalogModels;
       const match = allModels.find(
         m =>
           m.providerId === defaultSettings?.defaultAgentSettings?.[defaultAgent]?.defaultModel?.providerId &&
@@ -349,7 +350,7 @@ function getAgentWorkspaceConfiguration(agent: string): AgentWorkspaceConfigurat
 
 function getFirstCompatibleModel(): ModelInfo | undefined {
   const agentDef = agentDefinitions.find(d => d.cliName === wizard.draft.selectedAgent);
-  const enabled = getCatalogModels($providerInfos).filter(m => isModelEnabled($disabledModels, m.providerId, m.label));
+  const enabled = $catalogModels.filter(m => isModelEnabled($disabledModels, m.providerId, m.label));
   // eslint-disable-next-line svelte/prefer-svelte-reactivity
   const seen = new Set<string>();
   const unique = enabled.filter(m => {

@@ -3,11 +3,11 @@ import { untrack } from 'svelte';
 
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { agentDefinitions, matchesModelFilter } from '/@/lib/guided-setup/agent-registry';
-import { type CatalogModelInfo, getCatalogModels } from '/@/lib/models/models-utils';
+import type { CatalogModelInfo } from '/@/lib/models/models-utils';
 import ModelSelectionTable from '/@/lib/models/ModelSelectionTable.svelte';
 import { agentWorkspaceRuntime } from '/@/stores/agentworkspace-runtime';
 import { disabledModels, isModelEnabled, modelKey } from '/@/stores/model-catalog';
-import { providerInfos } from '/@/stores/providers';
+import { catalogModels } from '/@/stores/models';
 
 interface Props {
   selectedAgent?: string;
@@ -19,7 +19,7 @@ let { selectedAgent = $bindable(''), selectedModel = $bindable() }: Props = $pro
 let filteredAgents = $derived(agentDefinitions.filter(a => !a.runtimes || a.runtimes.includes($agentWorkspaceRuntime)));
 
 let allModels: CatalogModelInfo[] = $derived.by(() => {
-  const enabled = getCatalogModels($providerInfos).filter(m => isModelEnabled($disabledModels, m.providerId, m.label));
+  const enabled = $catalogModels.filter(m => isModelEnabled($disabledModels, m.providerId, m.label));
   const seen: Record<string, boolean> = {};
   return enabled.filter(m => {
     const key = modelKey(m.providerId, m.label);
