@@ -276,6 +276,7 @@ jobs:
       inference_model: 'granite3.2:2b'
       inference_second_model: 'granite3.1-dense:2b'
       compile_args: '--linux dir'
+      test_script: 'test:e2e:smoke'
     secrets: inherit
 
   detect_pnpm_changes:

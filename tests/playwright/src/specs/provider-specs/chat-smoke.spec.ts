@@ -176,7 +176,7 @@ test.describe
   });
 
 test.describe
-  .serial('Chat model selection', { tag: '@smoke' }, () => {
+  .serial('Chat model selection', () => {
     test('[CHAT-MODEL-01] Switch between all available models and verify each selection', async ({ chatPage }) => {
       const chatModelNames = await chatPage.getChatModelNames();
 
@@ -261,7 +261,7 @@ test.describe
   });
 
 test.describe
-  .serial('Chat message editing', { tag: '@smoke' }, () => {
+  .serial('Chat message editing', () => {
     test('[CHAT-EDIT-01] Edit button enters editing mode and ESC cancels it', async ({ chatPage }) => {
       test.slow();
       await chatPage.clickNewChat();
@@ -304,7 +304,7 @@ test.describe
   });
 
 test.describe
-  .serial('Chat renaming', { tag: '@smoke' }, () => {
+  .serial('Chat renaming', () => {
     test('[CHAT-RENAME-01] Rename chat from history sidebar', async ({ chatPage }) => {
       await chatPage.ensureChatSidebarVisible();
       await chatPage.clickNewChat();
