@@ -17,7 +17,14 @@
  ***********************************************************************/
 
 import { expect, type Locator, type Page } from '@playwright/test';
-import { type CodingAgent, type FileAccessLevel, TIMEOUTS, WIZARD_STEPS, type WizardStep } from 'src/model/core/types';
+import {
+  type CodingAgent,
+  type FileAccessLevel,
+  TIMEOUTS,
+  WIZARD_STEP,
+  WIZARD_STEPS,
+  type WizardStep,
+} from 'src/model/core/types';
 
 import { BasePage } from './base-page';
 
@@ -70,6 +77,12 @@ export class AgentWorkspaceCreatePage extends BasePage {
 
   async waitForLoad(): Promise<void> {
     await expect(this.heading).toBeVisible({ timeout: TIMEOUTS.SHORT });
+    // The wizard draft store persists currentStepIndex across mounts, so
+    // re-opening the wizard may land on a non-first step. Reset to Workspace.
+    if (!(await this.workingDirInput.isVisible())) {
+      await this.getStepButton(WIZARD_STEP.WORKSPACE).click();
+    }
+    await expect(this.workingDirInput).toBeVisible({ timeout: TIMEOUTS.SHORT });
   }
 
   getStepButton(step: WizardStep): Locator {
