@@ -46,6 +46,7 @@ import type { WebviewInfo } from '/@api/webview-info.js';
 import product from '/@product.json' with { type: 'json' };
 
 import { getBase64Image } from '../../util.js';
+import type { AgentRegistry } from '../agent-registry.js';
 import type { AuthenticationImpl } from '../authentication.js';
 import type { CliToolRegistry } from '../cli-tool-registry.js';
 import type { ColorRegistry } from '../color-registry.js';
@@ -230,6 +231,10 @@ const cliToolRegistry: CliToolRegistry = {
   createCliTool: vi.fn(),
 } as unknown as CliToolRegistry;
 
+const agentRegistry: AgentRegistry = {
+  registerAgent: vi.fn(),
+} as unknown as AgentRegistry;
+
 const safeStorageRegistry: SafeStorageRegistry = {
   getExtensionStorage: vi.fn(),
 } as unknown as SafeStorageRegistry;
@@ -382,6 +387,7 @@ beforeEach(() => {
     exec,
     kubernetesGeneratorRegistry,
     cliToolRegistry,
+    agentRegistry,
     notificationRegistry,
     imageCheckerImpl,
     imageFilesImpl,
@@ -2097,6 +2103,28 @@ test('createCliTool ', async () => {
 
   expect(cliToolRegistry.createCliTool).toBeCalledWith(expect.objectContaining({ extensionPath: '/path' }), options);
   expect(newCliTool).toStrictEqual({ id: 'created' });
+});
+
+test('registerAgent', async () => {
+  const disposables: IDisposable[] = [];
+
+  const api = createApi(disposables);
+
+  expect(api).toBeDefined();
+  expect(disposables.length).toBe(0);
+
+  const agent: containerDesktopAPI.Agent = {
+    id: 'my-agent',
+    name: 'My Agent',
+    description: 'An agent for testing',
+  };
+
+  vi.mocked(agentRegistry.registerAgent).mockReturnValue(Disposable.create(() => {}));
+
+  api.agents.registerAgent(agent);
+  expect(disposables.length).toBe(1);
+
+  expect(agentRegistry.registerAgent).toHaveBeenCalledWith(agent);
 });
 
 test('registerImageCheckerProvider ', async () => {

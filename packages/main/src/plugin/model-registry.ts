@@ -19,6 +19,7 @@
 import { inject, injectable, preDestroy } from 'inversify';
 
 import { IPCHandle } from '/@/plugin/api.js';
+import { Emitter } from '/@/plugin/events/emitter.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IDisposable } from '/@api/disposable.js';
 import type { CatalogModelInfo } from '/@api/model-registry-info.js';
@@ -30,6 +31,8 @@ import { ProviderRegistry } from './provider-registry.js';
 export class ModelRegistry {
   private cachedData: Readonly<CatalogModelInfo[]> = [];
   private disposables: IDisposable[] = [];
+  private _onChange = new Emitter<void>();
+  readonly onChange = this._onChange.event;
 
   constructor(
     @inject(ProviderRegistry)
@@ -63,6 +66,7 @@ export class ModelRegistry {
   private invalidate(): void {
     this.rebuild();
     this.apiSender.send('model-registry:update');
+    this._onChange.fire();
   }
 
   private rebuild(): void {

@@ -52,6 +52,7 @@ import type { IpcMainInvokeEvent } from 'electron/main';
 import { Container } from 'inversify';
 import { lookup } from 'mime-types';
 
+import { AgentRegistry } from '/@/plugin/agent-registry.js';
 import { AgentWorkspaceManager } from '/@/plugin/agent-workspace/agent-workspace-manager.js';
 import { IPCHandle, IPCMainOn, WebContentsType } from '/@/plugin/api.js';
 import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
@@ -78,6 +79,7 @@ import { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import { Uri } from '/@/plugin/types/uri.js';
 import { Updater } from '/@/plugin/updater.js';
 import { Welcome } from '/@/plugin/welcome.js';
+import type { AgentInfo } from '/@api/agent-info.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { AuthenticationProviderInfo } from '/@api/authentication/authentication.js';
 import type { CliToolInfo } from '/@api/cli-tool-info.js';
@@ -585,6 +587,7 @@ export class PluginSystem {
     container.bind<ProviderRegistry>(ProviderRegistry).toSelf().inSingletonScope();
     container.bind<MCPManager>(MCPManager).toSelf().inSingletonScope();
     container.bind<CliToolRegistry>(CliToolRegistry).toSelf().inSingletonScope();
+    container.bind<AgentRegistry>(AgentRegistry).toSelf().inSingletonScope();
     container.bind<KdnCli>(KdnCli).toSelf().inSingletonScope();
     container.bind<AgentWorkspaceManager>(AgentWorkspaceManager).toSelf().inSingletonScope();
     container.bind<SecretManager>(SecretManager).toSelf().inSingletonScope();
@@ -879,6 +882,7 @@ export class PluginSystem {
     const feedback = container.get<FeedbackHandler>(FeedbackHandler);
     const cancellationTokenRegistry = container.get<CancellationTokenRegistry>(CancellationTokenRegistry);
     const cliToolRegistry = container.get<CliToolRegistry>(CliToolRegistry);
+    const agentRegistry = container.get<AgentRegistry>(AgentRegistry);
     const troubleshooting = container.get<Troubleshooting>(Troubleshooting);
     const menuRegistry = container.get<MenuRegistry>(MenuRegistry);
     const contributionManager = container.get<ContributionManager>(ContributionManager);
@@ -1963,6 +1967,10 @@ export class PluginSystem {
 
     this.ipcHandle('cli-tool-registry:getCliToolInfos', async (): Promise<CliToolInfo[]> => {
       return cliToolRegistry.getCliToolInfos();
+    });
+
+    this.ipcHandle('agent-registry:getAgentInfos', async (): Promise<ReadonlyArray<AgentInfo>> => {
+      return agentRegistry.getAgentInfos();
     });
 
     this.ipcHandle(

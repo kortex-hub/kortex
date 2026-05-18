@@ -51,6 +51,7 @@ import product from '/@product.json' with { type: 'json' };
 
 import { securityRestrictionCurrentHandler } from '../../security-restrictions-handler.js';
 import { getBase64Image, isLinux, isMac, isWindows } from '../../util.js';
+import { AgentRegistry } from '../agent-registry.js';
 import { AuthenticationImpl } from '../authentication.js';
 import { CancellationTokenSource } from '../cancellation-token.js';
 import { Certificates } from '../certificates.js';
@@ -200,6 +201,8 @@ export class ExtensionLoader implements IAsyncDisposable {
     private kubeGeneratorRegistry: KubeGeneratorRegistry,
     @inject(CliToolRegistry)
     private cliToolRegistry: CliToolRegistry,
+    @inject(AgentRegistry)
+    private agentRegistry: AgentRegistry,
     @inject(NotificationRegistry)
     private notificationRegistry: NotificationRegistry,
     @inject(ImageCheckerImpl)
@@ -1690,6 +1693,23 @@ export class ExtensionLoader implements IAsyncDisposable {
 
     const version = app.getVersion();
 
+    const agents: typeof containerDesktopAPI.agents = {
+      registerAgent(agent: containerDesktopAPI.Agent): containerDesktopAPI.Disposable {
+        const resolvedAgent = agent.icon
+          ? {
+              ...agent,
+              icon: {
+                icon: instance.updateImage(agent.icon.icon, extensionPath),
+                logo: instance.updateImage(agent.icon.logo, extensionPath),
+              },
+            }
+          : agent;
+        const disposable = instance.agentRegistry.registerAgent(resolvedAgent);
+        disposables.push(disposable);
+        return disposable;
+      },
+    };
+
     const rag: typeof containerDesktopAPI.rag = {
       registerChunkProvider: (provider: ChunkProvider): containerDesktopAPI.Disposable => {
         const disposable = this.chunkProviderRegistry.registerChunkProvider(extensionInfo.id, provider);
@@ -1734,6 +1754,7 @@ export class ExtensionLoader implements IAsyncDisposable {
       RepositoryInfoParser,
       net,
       mcpRegistry,
+      agents,
       rag,
     };
   }

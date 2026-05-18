@@ -5517,6 +5517,34 @@ declare module '@openkaiden/api' {
     constructor(url: string);
   }
 
+  export type Runtime = 'openshell' | 'podman';
+
+  export interface ModelType {
+    readonly name: string;
+  }
+
+  export interface Agent {
+    readonly id: string;
+    readonly name: string;
+    readonly description: string;
+    readonly icon?: ProviderImages;
+    readonly tags?: ReadonlyArray<string>;
+    isSupportedModelType?(type: ModelType): boolean | Promise<boolean>;
+    isSupportedRuntime?(runtime: Runtime): boolean | Promise<boolean>;
+  }
+
+  export interface AgentRegisteredEvent {
+    readonly agent: Agent;
+  }
+
+  export interface AgentUnregisteredEvent {
+    readonly id: string;
+  }
+
+  export namespace agents {
+    export function registerAgent(agent: Agent): Disposable;
+  }
+
   export namespace rag {
     export function registerChunkProvider(provider: ChunkProvider): Disposable;
   }

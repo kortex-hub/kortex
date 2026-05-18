@@ -44,6 +44,7 @@ import type * as containerDesktopAPI from '@openkaiden/api';
 import type { DynamicToolUIPart, UIMessageChunk } from 'ai';
 import { contextBridge, ipcRenderer } from 'electron';
 
+import type { AgentInfo } from '/@api/agent-info';
 import type {
   AgentWorkspaceConfiguration,
   AgentWorkspaceCreateOptions,
@@ -2002,6 +2003,10 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld('getCliToolInfos', async (): Promise<CliToolInfo[]> => {
     return ipcInvoke('cli-tool-registry:getCliToolInfos');
+  });
+
+  contextBridge.exposeInMainWorld('getAgentInfos', async (): Promise<AgentInfo[]> => {
+    return ipcInvoke('agent-registry:getAgentInfos');
   });
 
   contextBridge.exposeInMainWorld('selectCliToolVersionToUpdate', async (id: string): Promise<string> => {
