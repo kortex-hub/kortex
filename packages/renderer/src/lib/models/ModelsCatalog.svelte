@@ -105,7 +105,8 @@ const actionsColumn = new TableColumn<ModelSelectable>('Actions', {
   overflow: true,
 });
 
-const columns = [statusColumn, nameColumn, sizeColumn, runtimeColumn, actionsColumn];
+const columns = [statusColumn, nameColumn, sizeColumn, runtimeColumn];
+const columnsWithActions = [statusColumn, nameColumn, sizeColumn, runtimeColumn, actionsColumn];
 
 function filterBySearch(models: CatalogModelInfo[], term: string): CatalogModelInfo[] {
   if (!term.trim()) return models;
@@ -196,7 +197,7 @@ function selectCategory(cat: Category): void {
               {/if}
 
               <div class="flex min-w-full">
-                <Table kind="models" data={filteredCloudModels} columns={columns} row={row} defaultSortColumn="Name" />
+                <Table kind="models" data={filteredCloudModels} columns={columnsWithActions} row={row} defaultSortColumn="Name" />
               </div>
             {/if}
           </div>
@@ -228,7 +229,7 @@ function selectCategory(cat: Category): void {
 
               {#if filteredInHouseModels.length > 0}
                 <div class="flex min-w-full">
-                  <Table kind="models" data={filteredInHouseModels} columns={columns} row={row} defaultSortColumn="Name" />
+                  <Table kind="models" data={filteredInHouseModels} columns={columnsWithActions} row={row} defaultSortColumn="Name" />
                 </div>
               {/if}
             {/if}
