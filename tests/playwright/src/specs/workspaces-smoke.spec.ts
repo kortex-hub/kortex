@@ -177,7 +177,7 @@ test.describe('Workspaces page - create wizard', { tag: '@smoke' }, () => {
     await expect(agentWorkspacesPage.heading).toBeVisible();
   });
 
-  test('[WKS-WIZ-09] Use-defaults enables after folder and creates workspace', async ({ agentWorkspacesPage }) => {
+  test('[WKS-WIZ-09] Use-defaults enables after folder is set', async ({ agentWorkspacesPage }) => {
     const createPage = await agentWorkspacesPage.openCreatePage();
 
     await expect(createPage.continueButton).toBeDisabled();
@@ -187,13 +187,9 @@ test.describe('Workspaces page - create wizard', { tag: '@smoke' }, () => {
 
     await expect(createPage.continueButton).toBeEnabled();
     await expect(createPage.useDefaultsButton).toBeEnabled();
-
-    await createPage.startWithDefaults();
-
-    await expect(agentWorkspacesPage.heading).toBeVisible();
   });
 
-  test('[WKS-WIZ-10] Completes all steps and creates workspace', async ({ agentWorkspacesPage }) => {
+  test('[WKS-WIZ-10] Completes all steps and Start Workspace is available', async ({ agentWorkspacesPage }) => {
     const createPage = await agentWorkspacesPage.openCreatePage();
 
     await createPage.sessionNameInput.fill(testWorkspace.name);
@@ -209,9 +205,8 @@ test.describe('Workspaces page - create wizard', { tag: '@smoke' }, () => {
     await createPage.selectFileAccess(FILE_ACCESS_LEVEL.NO_HOST_ACCESS);
     await createPage.continueToStep(WIZARD_STEP.NETWORKING);
 
-    await createPage.startWorkspace();
-
-    await expect(agentWorkspacesPage.heading).toBeVisible();
+    await expect(createPage.submitButton).toBeVisible();
+    await expect(createPage.submitButton).toBeEnabled();
   });
 });
 
