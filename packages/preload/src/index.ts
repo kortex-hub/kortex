@@ -1959,13 +1959,13 @@ export function initExposure(): void {
     return ipcInvoke('provider-registry:getProviderInfos');
   });
 
-  contextBridge.exposeInMainWorld('getCatalogModels', async (): Promise<CatalogModelInfo[]> => {
+  contextBridge.exposeInMainWorld('getCatalogModels', async (): Promise<Readonly<CatalogModelInfo[]>> => {
     return ipcInvoke('model-registry:getCatalogModels');
   });
 
   contextBridge.exposeInMainWorld(
     'getInferenceConnectionSummaries',
-    async (): Promise<InferenceConnectionSummary[]> => {
+    async (): Promise<Readonly<InferenceConnectionSummary[]>> => {
       return ipcInvoke('inference-connection-summary-registry:getInferenceConnectionSummaries');
     },
   );

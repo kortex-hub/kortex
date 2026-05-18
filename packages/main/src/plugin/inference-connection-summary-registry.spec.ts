@@ -161,28 +161,6 @@ test('invalidate sends inference-connection-summary-registry:update event when d
   expect(apiSenderSendMock).toHaveBeenCalledWith('inference-connection-summary-registry:update');
 });
 
-test('invalidate does not send event when data is unchanged', () => {
-  const providers = [
-    {
-      id: 'stable',
-      name: 'Stable',
-      internalId: 'stable-1',
-      inferenceConnections: [{ name: 'conn', type: 'cloud', status: 'started', models: [{ label: 'model' }] }],
-      inferenceProviderConnectionCreation: false,
-      inferenceProviderConnectionCreationTypes: [],
-    },
-  ] as unknown as ProviderInfo[];
-
-  getProviderInfosMock.mockReturnValue(providers);
-  registry.init();
-  apiSenderSendMock.mockClear();
-
-  const callback = onDidUpdateProviderMock.mock.calls[0]?.[0] as () => void;
-  callback();
-
-  expect(apiSenderSendMock).not.toHaveBeenCalledWith('inference-connection-summary-registry:update');
-});
-
 test('dispose cleans up subscriptions', () => {
   const disposeMocks = [vi.fn(), vi.fn(), vi.fn()];
   onDidRegisterInferenceConnectionMock.mockReturnValue({ dispose: disposeMocks[0] });

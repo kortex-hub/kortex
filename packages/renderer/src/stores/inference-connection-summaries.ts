@@ -35,15 +35,15 @@ export async function checkForUpdate(): Promise<boolean> {
   return true;
 }
 
-export const inferenceConnectionSummariesData: Writable<InferenceConnectionSummary[]> = writable([]);
+export const inferenceConnectionSummariesData: Writable<Readonly<InferenceConnectionSummary[]>> = writable([]);
 
-export async function fetchInferenceConnectionSummaries(): Promise<InferenceConnectionSummary[]> {
+export async function fetchInferenceConnectionSummaries(): Promise<Readonly<InferenceConnectionSummary[]>> {
   const result = await window.getInferenceConnectionSummaries();
   inferenceConnectionSummariesData.set(result);
   return result;
 }
 
-export const inferenceConnectionSummariesEventStore = new EventStore<InferenceConnectionSummary[]>(
+export const inferenceConnectionSummariesEventStore = new EventStore<Readonly<InferenceConnectionSummary[]>>(
   'inference-connection-summaries',
   inferenceConnectionSummariesData,
   checkForUpdate,

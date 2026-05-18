@@ -30,15 +30,15 @@ export async function checkForUpdate(): Promise<boolean> {
   return true;
 }
 
-export const catalogModelsData: Writable<CatalogModelInfo[]> = writable([]);
+export const catalogModelsData: Writable<Readonly<CatalogModelInfo[]>> = writable([]);
 
-export async function fetchCatalogModels(): Promise<CatalogModelInfo[]> {
+export async function fetchCatalogModels(): Promise<Readonly<CatalogModelInfo[]>> {
   const result = await window.getCatalogModels();
   catalogModelsData.set(result);
   return result;
 }
 
-export const modelRegistryEventStore = new EventStore<CatalogModelInfo[]>(
+export const modelRegistryEventStore = new EventStore<Readonly<CatalogModelInfo[]>>(
   'models',
   catalogModelsData,
   checkForUpdate,
@@ -50,7 +50,7 @@ modelRegistryEventStore.setup();
 
 export const catalogModels = derived(catalogModelsData, $data => $data);
 
-export const allModels = derived<Writable<CatalogModelInfo[]>, ModelInfo[]>(catalogModelsData, $data =>
+export const allModels = derived<Writable<Readonly<CatalogModelInfo[]>>, ModelInfo[]>(catalogModelsData, $data =>
   $data.map(({ connectionStatus: _, providerName: __, ...model }) => model),
 );
 

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { inject, injectable } from 'inversify';
+import { inject, injectable, preDestroy } from 'inversify';
 
 import { IPCHandle } from '/@/plugin/api.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
@@ -28,8 +28,7 @@ import { ProviderRegistry } from './provider-registry.js';
 
 @injectable()
 export class ModelRegistry {
-  private cachedData: CatalogModelInfo[] = [];
-  private cachedJson = '';
+  private cachedData: Readonly<CatalogModelInfo[]> = [];
   private disposables: IDisposable[] = [];
 
   constructor(
@@ -50,25 +49,20 @@ export class ModelRegistry {
     this.disposables.push(this.apiSender.receive('provider-delete', () => this.invalidate()));
     this.disposables.push(this.apiSender.receive('provider-change', () => this.invalidate()));
 
-    this.ipcHandle('model-registry:getCatalogModels', async (): Promise<CatalogModelInfo[]> => {
+    this.ipcHandle('model-registry:getCatalogModels', async (): Promise<Readonly<CatalogModelInfo[]>> => {
       return this.getCatalogModels();
     });
 
     this.rebuild();
-    this.cachedJson = JSON.stringify(this.cachedData);
   }
 
-  getCatalogModels(): CatalogModelInfo[] {
+  getCatalogModels(): Readonly<CatalogModelInfo[]> {
     return this.cachedData;
   }
 
   private invalidate(): void {
     this.rebuild();
-    const newJson = JSON.stringify(this.cachedData);
-    if (newJson !== this.cachedJson) {
-      this.cachedJson = newJson;
-      this.apiSender.send('model-registry:update');
-    }
+    this.apiSender.send('model-registry:update');
   }
 
   private rebuild(): void {
@@ -97,6 +91,7 @@ export class ModelRegistry {
     return result;
   }
 
+  @preDestroy()
   dispose(): void {
     for (const disposable of this.disposables) {
       disposable.dispose();

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { inject, injectable } from 'inversify';
+import { inject, injectable, preDestroy } from 'inversify';
 
 import { IPCHandle } from '/@/plugin/api.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
@@ -28,8 +28,7 @@ import { ProviderRegistry } from './provider-registry.js';
 
 @injectable()
 export class InferenceConnectionSummaryRegistry {
-  private cachedData: InferenceConnectionSummary[] = [];
-  private cachedJson = '';
+  private cachedData: Readonly<InferenceConnectionSummary[]> = [];
   private disposables: IDisposable[] = [];
 
   constructor(
@@ -52,26 +51,21 @@ export class InferenceConnectionSummaryRegistry {
 
     this.ipcHandle(
       'inference-connection-summary-registry:getInferenceConnectionSummaries',
-      async (): Promise<InferenceConnectionSummary[]> => {
+      async (): Promise<Readonly<InferenceConnectionSummary[]>> => {
         return this.getInferenceConnectionSummaries();
       },
     );
 
     this.rebuild();
-    this.cachedJson = JSON.stringify(this.cachedData);
   }
 
-  getInferenceConnectionSummaries(): InferenceConnectionSummary[] {
+  getInferenceConnectionSummaries(): Readonly<InferenceConnectionSummary[]> {
     return this.cachedData;
   }
 
   private invalidate(): void {
     this.rebuild();
-    const newJson = JSON.stringify(this.cachedData);
-    if (newJson !== this.cachedJson) {
-      this.cachedJson = newJson;
-      this.apiSender.send('inference-connection-summary-registry:update');
-    }
+    this.apiSender.send('inference-connection-summary-registry:update');
   }
 
   private rebuild(): void {
@@ -121,6 +115,7 @@ export class InferenceConnectionSummaryRegistry {
     return result;
   }
 
+  @preDestroy()
   dispose(): void {
     for (const disposable of this.disposables) {
       disposable.dispose();
