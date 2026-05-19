@@ -22,7 +22,12 @@ import type { AgentInfo } from '/@api/agent-info';
 
 import { EventStore } from './event-store';
 
-const windowEvents: string[] = ['extensions-started', 'agent-registry:create', 'agent-registry:remove'];
+const windowEvents: string[] = [
+  'extensions-started',
+  'agent-registry:create',
+  'agent-registry:remove',
+  'agent-registry:updated',
+];
 const windowListeners = ['system-ready', 'extensions-already-started'];
 
 export async function checkForUpdate(): Promise<boolean> {

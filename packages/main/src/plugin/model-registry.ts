@@ -97,6 +97,7 @@ export class ModelRegistry {
 
   @preDestroy()
   dispose(): void {
+    this._onChange.dispose();
     for (const disposable of this.disposables) {
       disposable.dispose();
     }

@@ -66,7 +66,10 @@ export class AgentRegistry {
   }
 
   invalidate(): void {
-    this.agentRegistrations.values().forEach(agentRegistration => (agentRegistration.agentInfo = undefined));
+    this.agentRegistrations.values().forEach(agentRegistration => {
+      agentRegistration.agentInfo = undefined;
+    });
+    this.apiSender.send('agent-registry:updated');
   }
 
   async getRuntimes(isSupportedRuntime: (runtime: Runtime) => boolean | Promise<boolean>): Promise<Runtime[]> {
@@ -117,7 +120,7 @@ export class AgentRegistry {
     for (const agentRegistration of agentRegistrations) {
       agentRegistration.agentInfo ??= await this.toAgentInfo(agentRegistration.agent);
     }
-    return Array.from(this.agentRegistrations.values().map(agentRegistration => agentRegistration.agentInfo!));
+    return Array.from(this.agentRegistrations.values(), agentRegistration => agentRegistration.agentInfo!);
   }
 
   async getAgent(id: string): Promise<Readonly<AgentInfo> | undefined> {
