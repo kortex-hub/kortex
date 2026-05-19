@@ -113,8 +113,14 @@ import SubmenuNavigation from './SubmenuNavigation.svelte';
 
 router.mode.memory();
 
+const LAST_ROUTE_KEY = 'last-route';
+const SETTINGS_PAGE_KEY = 'settings-page';
+
+const savedRoute = sessionStorage.getItem(LAST_ROUTE_KEY);
+const savedSettingsPage = sessionStorage.getItem(SETTINGS_PAGE_KEY);
+
 //remember from where we come to preference pages
-let nonSettingsPage = '/';
+let nonSettingsPage = savedRoute ?? '/';
 
 function isChatRoute(url: string): boolean {
   return url === '/' || url.startsWith('/chat');
@@ -137,18 +143,43 @@ const unsubscribeShowChatWindow = showChatWindow.subscribe(value => {
 
 onDestroy(unsubscribeShowChatWindow);
 
+// tinro fires router.subscribe synchronously with the current state on setup,
+// and WelcomePage always calls router.goto('/') in its onMount (even on reload).
+// We use that guaranteed '/' event as the trigger to restore the pre-reload
+// route on top of Dashboard.  subscribeReady skips the synchronous initial
+// fire so savedRoute is still available when the real '/' event arrives.
+let subscribeReady = false;
 router.subscribe(function (navigation) {
-  if (navigation.url !== undefined) {
-    currentUrl = navigation.url;
-    if (!navigation.url.startsWith('/preferences')) {
-      nonSettingsPage = navigation.url;
-    }
+  if (!subscribeReady) return;
+  if (navigation.url === undefined || navigation.url.includes('.html')) return;
+  if (!navigation.url.startsWith('/')) return;
+
+  currentUrl = navigation.url;
+
+  if ((savedRoute !== null || savedSettingsPage !== null) && navigation.url === '/') {
+    if (savedRoute) router.goto(savedRoute);
+    if (savedSettingsPage) router.goto(savedSettingsPage);
+    return;
   }
+
+  if (navigation.url === '/') {
+    sessionStorage.removeItem(LAST_ROUTE_KEY);
+    sessionStorage.removeItem(SETTINGS_PAGE_KEY);
+    nonSettingsPage = '/';
+  } else if (navigation.url.startsWith('/preferences')) {
+    sessionStorage.setItem(SETTINGS_PAGE_KEY, navigation.url);
+  } else {
+    sessionStorage.setItem(LAST_ROUTE_KEY, navigation.url);
+    sessionStorage.removeItem(SETTINGS_PAGE_KEY);
+    nonSettingsPage = navigation.url;
+  }
+
   // Guard: redirect away from chat routes when chat is disabled
-  if (navigation.url !== undefined && $showChatWindow === false && isChatRoute(navigation.url)) {
+  if ($showChatWindow === false && isChatRoute(navigation.url)) {
     router.goto('/agent-workspaces');
   }
 });
+subscribeReady = true;
 
 window.events?.receive('context-menu:visible', visible => {
   if (visible) {
