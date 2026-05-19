@@ -90,7 +90,7 @@ describe('AgentRegistry', () => {
       const agent = createAgent();
       agentRegistry.registerAgent(agent);
 
-      expect(() => agentRegistry.registerAgent(agent)).toThrow("Agent with id 'test-agent' is already registered");
+      expect(() => agentRegistry.registerAgent(agent)).toThrow(`Agent with id 'test-agent' is already registered`);
     });
 
     test('returns a Disposable that removes the agent', async () => {
