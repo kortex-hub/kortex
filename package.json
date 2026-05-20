@@ -119,7 +119,7 @@
     "@openkaiden/api": "workspace:",
     "@openkaiden/kdn-api": "^0.12.0",
     "@openkaiden/mcp-registry-types": "^1.3.10",
-    "@openkaiden/workspace-configuration": "^0.13.0",
+    "@openkaiden/workspace-configuration": "^0.14.0",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@sveltejs/opencode": "^0.1.6",
