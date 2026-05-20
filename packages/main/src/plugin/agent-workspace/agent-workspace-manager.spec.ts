@@ -110,6 +110,7 @@ const filesystemMonitoring = {
 const webContents = {
   send: vi.fn(),
   receive: vi.fn(),
+  isDestroyed: vi.fn().mockReturnValue(false),
 } as unknown as WebContents;
 
 const configurationRegistry = {
@@ -1164,5 +1165,44 @@ describe('dispose', () => {
     await expect(terminalHandler({}, 'unknown-id', 1)).rejects.toThrow(
       'workspace "unknown-id" not found. Use "workspace list" to see available workspaces.',
     );
+  });
+
+  test('does not send terminal data when webContents is destroyed', async () => {
+    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
+
+    let onDataCallback: ((data: string) => void) | undefined;
+    let onExitCallback: (() => void) | undefined;
+    const mockPty = {
+      onData: vi.fn((cb: (data: string) => void) => {
+        onDataCallback = cb;
+        return { dispose: vi.fn() };
+      }),
+      onExit: vi.fn((cb: () => void) => {
+        onExitCallback = cb;
+        return { dispose: vi.fn() };
+      }),
+      write: vi.fn(),
+      resize: vi.fn(),
+      kill: vi.fn(),
+      pid: 123,
+    } as unknown as IPty;
+    vi.mocked(spawn).mockReturnValue(mockPty);
+
+    const terminalHandler = vi
+      .mocked(ipcHandle)
+      .mock.calls.find(call => call[0] === 'agent-workspace:terminal')?.[1] as (
+      _listener: unknown,
+      id: string,
+      onDataId: number,
+    ) => Promise<number>;
+
+    await terminalHandler({}, 'ws-1', 1);
+
+    vi.mocked(webContents.isDestroyed).mockReturnValue(true);
+
+    onDataCallback!('some output');
+    onExitCallback!();
+
+    expect(webContents.send).not.toHaveBeenCalled();
   });
 });

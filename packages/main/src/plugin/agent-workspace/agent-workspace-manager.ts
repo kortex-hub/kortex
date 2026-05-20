@@ -453,13 +453,19 @@ export class AgentWorkspaceManager implements Disposable {
         const invocation = this.shellInAgentWorkspace(
           workspace.name,
           (content: string) => {
-            this.webContents.send('agent-workspace:terminal-onData', onDataId, content);
+            if (!this.webContents.isDestroyed()) {
+              this.webContents.send('agent-workspace:terminal-onData', onDataId, content);
+            }
           },
           (error: string) => {
-            this.webContents.send('agent-workspace:terminal-onError', onDataId, error);
+            if (!this.webContents.isDestroyed()) {
+              this.webContents.send('agent-workspace:terminal-onError', onDataId, error);
+            }
           },
           () => {
-            this.webContents.send('agent-workspace:terminal-onEnd', onDataId);
+            if (!this.webContents.isDestroyed()) {
+              this.webContents.send('agent-workspace:terminal-onEnd', onDataId);
+            }
             this.terminalCallbacks.delete(onDataId);
             this.terminalProcesses.delete(onDataId);
           },
