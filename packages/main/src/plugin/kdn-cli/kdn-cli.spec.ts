@@ -961,6 +961,20 @@ describe('createSecret', () => {
 
     await expect(kdnCli.createSecret(defaultOptions)).rejects.toThrow('Error: secret already exists: my-secret');
   });
+
+  test('redacts secret value from error logs', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const runError = mockRunError({
+      stdout: JSON.stringify({ error: 'secret already exists' }),
+    });
+    vi.mocked(exec.exec).mockRejectedValue(runError);
+
+    await expect(kdnCli.createSecret(defaultOptions)).rejects.toThrow();
+
+    const loggedMessage = errorSpy.mock.calls[0]![0] as string;
+    expect(loggedMessage).toContain('--value ***');
+    expect(loggedMessage).not.toContain(defaultOptions.value);
+  });
 });
 
 describe('listSecrets', () => {
