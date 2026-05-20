@@ -53,10 +53,13 @@ export class OllamaExtension {
       status: 'unknown',
       id: 'ollama',
       images: {
-        icon: './icon.png',
+        icon: {
+          dark: './icon_dark.png',
+          light: './icon_light.png',
+        },
         logo: {
-          dark: './icon.png',
-          light: './icon.png',
+          dark: './icon_dark.png',
+          light: './icon_light.png',
         },
       },
       links: [{ title: 'Website', url: 'https://ollama.com' }],

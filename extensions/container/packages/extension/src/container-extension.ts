@@ -41,10 +41,13 @@ export class ContainerExtension {
       status: 'unknown',
       id: 'container',
       images: {
-        icon: './icon.png',
+        icon: {
+          light: './icon_light.png',
+          dark: './icon_dark.png',
+        },
         logo: {
-          dark: './icon.png',
-          light: './icon.png',
+          light: './icon_light.png',
+          dark: './icon_dark.png',
         },
       },
     });

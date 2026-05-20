@@ -54,10 +54,13 @@ export class OpenShiftAI implements Disposable {
       emptyConnectionMarkdownDescription:
         'Provides OpenShift AI integration. Connects Kaiden to models running on OpenShift AI.',
       images: {
-        icon: './icon.png',
+        icon: {
+          light: './icon_light.png',
+          dark: './icon_dark.png',
+        },
         logo: {
-          dark: './icon.png',
-          light: './icon.png',
+          light: './icon_light.png',
+          dark: './icon_dark.png',
         },
       },
     });
