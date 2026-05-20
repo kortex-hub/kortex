@@ -149,12 +149,7 @@ export class AgentWorkspaceManager implements Disposable {
     const result = this.buildSecretOptions(connectionInfo, workspaceSecretPrefix);
     if (!result) return;
 
-    try {
-      await this.secretManager.create(result.secret);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (!msg.includes('already exists')) throw err;
-    }
+    await this.secretManager.create(result.secret);
 
     options.secrets = [...new Set([...(options.secrets ?? []), result.secret.name])];
 

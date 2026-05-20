@@ -864,60 +864,49 @@ describe('createSecret', () => {
   };
 
   test('executes kdn secret create with required flags and returns the secret name', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify({ name: 'my-secret' })));
 
     const result = await kdnCli.createSecret(defaultOptions);
 
-    expect(exec.exec).toHaveBeenCalledWith(
-      KAIDEN_CLI_PATH,
-      ['secret', 'create', 'my-secret', '--type', 'github', '--value', 'ghp_abc123', '--output', 'json'],
-      undefined,
-    );
+    expect(exec.exec).toHaveBeenCalledWith(KAIDEN_CLI_PATH, [
+      'secret',
+      'create',
+      'my-secret',
+      '--type',
+      'github',
+      '--value',
+      'ghp_abc123',
+      '--output',
+      'json',
+    ]);
     expect(result).toEqual({ name: 'my-secret' });
   });
 
   test('includes optional description flag when provided', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify({ name: 'my-secret' })));
 
     await kdnCli.createSecret({ ...defaultOptions, description: 'GitHub token' });
 
-    expect(exec.exec).toHaveBeenCalledWith(
-      KAIDEN_CLI_PATH,
-      expect.arrayContaining(['--description', 'GitHub token']),
-      undefined,
-    );
+    expect(exec.exec).toHaveBeenCalledWith(KAIDEN_CLI_PATH, expect.arrayContaining(['--description', 'GitHub token']));
   });
 
   test('includes optional host flag when provided', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify({ name: 'my-secret' })));
 
     await kdnCli.createSecret({ ...defaultOptions, type: 'other', hosts: ['api.example.com'] });
 
-    expect(exec.exec).toHaveBeenCalledWith(
-      KAIDEN_CLI_PATH,
-      expect.arrayContaining(['--host', 'api.example.com']),
-      undefined,
-    );
+    expect(exec.exec).toHaveBeenCalledWith(KAIDEN_CLI_PATH, expect.arrayContaining(['--host', 'api.example.com']));
   });
 
   test('includes optional header flag when provided', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify({ name: 'my-secret' })));
 
     await kdnCli.createSecret({ ...defaultOptions, type: 'other', header: 'Authorization' });
 
-    expect(exec.exec).toHaveBeenCalledWith(
-      KAIDEN_CLI_PATH,
-      expect.arrayContaining(['--header', 'Authorization']),
-      undefined,
-    );
+    expect(exec.exec).toHaveBeenCalledWith(KAIDEN_CLI_PATH, expect.arrayContaining(['--header', 'Authorization']));
   });
 
   test('includes optional headerTemplate flag when provided', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify({ name: 'my-secret' })));
 
     await kdnCli.createSecret({ ...defaultOptions, type: 'other', headerTemplate: 'Bearer ${value}' });
@@ -925,21 +914,18 @@ describe('createSecret', () => {
     expect(exec.exec).toHaveBeenCalledWith(
       KAIDEN_CLI_PATH,
       expect.arrayContaining(['--headerTemplate', 'Bearer ${value}']),
-      undefined,
     );
   });
 
   test('includes optional path flag when provided', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify({ name: 'my-secret' })));
 
     await kdnCli.createSecret({ ...defaultOptions, type: 'other', path: '/api/v1' });
 
-    expect(exec.exec).toHaveBeenCalledWith(KAIDEN_CLI_PATH, expect.arrayContaining(['--path', '/api/v1']), undefined);
+    expect(exec.exec).toHaveBeenCalledWith(KAIDEN_CLI_PATH, expect.arrayContaining(['--path', '/api/v1']));
   });
 
   test('repeats env flag for each entry in the array', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify({ name: 'my-secret' })));
 
     await kdnCli.createSecret({ ...defaultOptions, type: 'other', envs: ['API_KEY', 'SECRET_KEY'] });
@@ -947,25 +933,47 @@ describe('createSecret', () => {
     expect(exec.exec).toHaveBeenCalledWith(
       KAIDEN_CLI_PATH,
       expect.arrayContaining(['--env', 'API_KEY', '--env', 'SECRET_KEY']),
-      undefined,
     );
   });
 
-  test('extracts kdn JSON error from stdout on failure', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  test('returns secret name silently when secret already exists', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const runError = mockRunError({
-      stdout: JSON.stringify({ error: 'Error: secret already exists: my-secret' }),
+      stdout: JSON.stringify({ error: 'secret "my-secret": secret already exists' }),
     });
-    vi.spyOn(exec, 'exec').mockRejectedValue(runError);
+    vi.mocked(exec.exec).mockRejectedValue(runError);
 
-    await expect(kdnCli.createSecret(defaultOptions)).rejects.toThrow('Error: secret already exists: my-secret');
+    const result = await kdnCli.createSecret(defaultOptions);
+
+    expect(result).toEqual({ name: 'my-secret' });
   });
 
-  test('redacts secret value from error logs', async () => {
+  test('does not log error when secret already exists', async () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const runError = mockRunError({
-      stdout: JSON.stringify({ error: 'secret already exists' }),
+      stdout: JSON.stringify({ error: 'secret "my-secret": secret already exists' }),
+    });
+    vi.mocked(exec.exec).mockRejectedValue(runError);
+
+    await kdnCli.createSecret(defaultOptions);
+
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  test('rethrows non-"already exists" errors', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const runError = mockRunError({
+      stdout: JSON.stringify({ error: 'keychain unavailable' }),
+    });
+    vi.mocked(exec.exec).mockRejectedValue(runError);
+
+    await expect(kdnCli.createSecret(defaultOptions)).rejects.toThrow('keychain unavailable');
+  });
+
+  test('redacts secret value from error logs on non-"already exists" failure', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const runError = mockRunError({
+      stdout: JSON.stringify({ error: 'keychain unavailable' }),
     });
     vi.mocked(exec.exec).mockRejectedValue(runError);
 

@@ -335,6 +335,7 @@ export class KdnCli {
   }
 
   async createSecret(options: SecretCreateOptions): Promise<SecretName> {
+    const cliPath = this.getCliPath();
     const args = ['secret', 'create', options.name, '--type', options.type, '--value', options.value];
     if (options.description) {
       args.push('--description', options.description);
@@ -358,7 +359,19 @@ export class KdnCli {
         args.push('--env', e);
       }
     }
-    return this.execCLI<SecretName>(args);
+    const fullArgs = [...args, '--output', 'json'];
+    try {
+      const result = await this.exec.exec(cliPath, fullArgs);
+      return JSON.parse(result.stdout) as SecretName;
+    } catch (err: unknown) {
+      const detail = this.extractCliError(err);
+      if (detail.includes('already exists')) {
+        return { name: options.name };
+      }
+      const safeArgs = this.redactSensitiveArgs(fullArgs);
+      console.error(`kdn failed: ${cliPath} ${safeArgs.join(' ')} — ${detail}`);
+      throw new Error(detail);
+    }
   }
 
   async listSecrets(): Promise<SecretInfo[]> {

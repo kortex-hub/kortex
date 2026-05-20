@@ -640,13 +640,13 @@ describe('ensureModelSecret', () => {
     expect(secretManager.create).not.toHaveBeenCalled();
   });
 
-  test('tolerates "already exists" error from secret creation', async () => {
+  test('proceeds normally when secret already exists (handled by KdnCli)', async () => {
     vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
       credentials: { 'claude:tokens': 'sk-ant-secret' },
       llmMetadataName: 'anthropic',
       endpoint: undefined,
     });
-    vi.mocked(secretManager.create).mockRejectedValue(new Error('secret already exists: my-workspace-anthropic'));
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-anthropic' });
 
     const options = { ...baseOptions, model: 'anthropic::claude-sonnet-4-20250514::' };
     await manager.ensureModelSecret(options);
@@ -654,7 +654,7 @@ describe('ensureModelSecret', () => {
     expect(options.secrets).toContain('my-workspace-anthropic');
   });
 
-  test('rethrows non-"already exists" errors from secret creation', async () => {
+  test('rethrows errors from secret creation', async () => {
     vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
       credentials: { 'claude:tokens': 'sk-ant-secret' },
       llmMetadataName: 'anthropic',
