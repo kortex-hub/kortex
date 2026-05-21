@@ -473,6 +473,18 @@ $effect(() => {
     providerElementMap[focus].scrollIntoView({ behavior: 'auto', block: 'start' });
   }
 });
+
+function hasConnections(provider: ProviderInfo): boolean {
+  return (
+    provider.containerConnections.length > 0 ||
+    provider.kubernetesConnections.length > 0 ||
+    provider.vmConnections.length > 0 ||
+    provider.inferenceConnections.length > 0 ||
+    provider.ragConnections.length > 0 ||
+    provider.flowConnections.length > 0 ||
+    provider.chunkConnections.length > 0
+  );
+}
 </script>
 
 <SettingsPage title="Resources">
@@ -534,7 +546,7 @@ $effect(() => {
           aria-label="Provider Connections">
           <PreferencesConnectionsEmptyRendering
             message={provider.emptyConnectionMarkdownDescription}
-            hidden={provider.containerConnections.length > 0 || provider.kubernetesConnections.length > 0 || provider.vmConnections.length > 0  || provider.inferenceConnections.length > 0 || provider.ragConnections.length > 0  || provider.flowConnections.length > 0  || provider.chunkConnections.length > 0} />
+            hidden={hasConnections(provider)} />
           {#each provider.containerConnections as container, index (index)}
             {@const peerProperties = new PeerProperties()}
             {@const rootfulInfo = getRootfulDisplayInfo(provider, container)}
