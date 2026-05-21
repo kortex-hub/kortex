@@ -104,31 +104,32 @@ const filesystemBadge = $derived.by(() => {
 <div class="px-5 py-4 h-full overflow-auto">
   <div class="flex flex-col gap-4 max-w-[1400px] mx-auto">
     <!-- Agent Profile Card -->
-    <div class="bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] rounded-lg p-5">
+    <div class="bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] rounded-lg p-5" aria-label="Agent profile">
       <div class="flex items-center gap-3.5 mb-3">
         <div
           class="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 {agentDef.colorClass}">
           <Icon icon={agentDef.icon} size="1.5x" class="text-white" />
         </div>
         <div class="flex-1 min-w-0">
-          <h2 class="text-[15px] font-semibold text-[var(--pd-content-card-header-text)] m-0 mb-0.5">
+          <h2 class="text-[15px] font-semibold text-[var(--pd-content-card-header-text)] m-0 mb-0.5" aria-label="Agent name">
             {agentDef.title}
           </h2>
           {#if workspaceSummary?.model}
-            <p class="text-xs text-[var(--pd-link)] m-0">
+            <p class="text-xs text-[var(--pd-link)] m-0" aria-label="Model">
               {workspaceSummary.model}
             </p>
           {/if}
         </div>
         <div
           class="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg border shrink-0"
+          aria-label="Sandbox status"
           style="background: color-mix(in srgb, {statusStyle.sandboxColor} 10%, transparent); border-color: color-mix(in srgb, {statusStyle.sandboxColor} 20%, transparent);">
           <span style="color: {statusStyle.sandboxColor}"><Icon icon={faShieldHalved} size="sm" /></span>
           <span class="text-[11px] font-medium" style="color: {statusStyle.sandboxColor}">{statusStyle.sandboxLabel}</span>
         </div>
       </div>
       {#if workspaceSummary?.project}
-        <p class="text-[13px] text-[var(--pd-content-text)] leading-relaxed m-0">
+        <p class="text-[13px] text-[var(--pd-content-text)] leading-relaxed m-0" aria-label="Project">
           Project: {workspaceSummary.project}
         </p>
       {/if}
@@ -140,25 +141,25 @@ const filesystemBadge = $derived.by(() => {
         Details
       </h3>
       <div class="flex gap-6">
-        <div class="flex flex-col gap-0.5">
+        <div class="flex flex-col gap-0.5" aria-label="Status">
           <div class="text-[10px] text-[var(--pd-content-text)] opacity-60 uppercase tracking-wider">Status</div>
           <div class="text-[13px] font-semibold {statusStyle.stateColor}">
             {workspaceSummary?.state ?? 'unknown'}
           </div>
         </div>
-        <div class="flex flex-col gap-0.5">
+        <div class="flex flex-col gap-0.5" aria-label="Started">
           <div class="text-[10px] text-[var(--pd-content-text)] opacity-60 uppercase tracking-wider">{timeLabel}</div>
           <div class="text-[13px] font-semibold text-[var(--pd-content-card-header-text)]">
             {formatRelativeTime(referenceTime)}
           </div>
         </div>
-        <div class="flex flex-col gap-0.5">
+        <div class="flex flex-col gap-0.5" aria-label="Runtime">
           <div class="text-[10px] text-(--pd-content-text) opacity-60 uppercase tracking-wider">Runtime</div>
           <div class="text-[13px] font-semibold text-(--pd-content-card-header-text)">
             {runtimeLabel}
           </div>
         </div>
-        <div class="flex flex-col gap-0.5">
+        <div class="flex flex-col gap-0.5" aria-label="Network">
           <div class="text-[10px] text-[var(--pd-content-text)] opacity-60 uppercase tracking-wider">Network</div>
           <div class="text-[13px] font-semibold text-[var(--pd-content-card-header-text)]">
             {networkLabel}
@@ -170,14 +171,15 @@ const filesystemBadge = $derived.by(() => {
     <!-- Resources Strip -->
     <div class="flex flex-wrap gap-3">
       <!-- Skills Card -->
-      <div class="flex-1 min-w-[300px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] rounded-lg p-5">
+      <div class="flex-1 min-w-[300px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] rounded-lg p-5" aria-label="Skills card">
         <div class="flex justify-between items-center mb-3.5">
           <h3 class="text-[13px] font-semibold text-[var(--pd-content-card-header-text)] flex items-center gap-2">
             <Icon icon={faCode} size="sm" class="text-[var(--pd-link)]" />
             Skills
           </h3>
           <span
-            class="text-[11px] font-semibold py-0.5 px-2 rounded-[10px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] text-[var(--pd-link)]">
+            class="text-[11px] font-semibold py-0.5 px-2 rounded-[10px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] text-[var(--pd-link)]"
+            aria-label="Skills count">
             {skillsList.length}
           </span>
         </div>
@@ -201,14 +203,15 @@ const filesystemBadge = $derived.by(() => {
       </div>
 
       <!-- MCP Servers Card -->
-      <div class="flex-1 min-w-[300px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] rounded-lg p-5">
+      <div class="flex-1 min-w-[300px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] rounded-lg p-5" aria-label="MCP Servers card">
         <div class="flex justify-between items-center mb-3.5">
           <h3 class="text-[13px] font-semibold text-[var(--pd-content-card-header-text)] flex items-center gap-2">
             <Icon icon={faTableCellsLarge} size="sm" class="text-[var(--pd-link)]" />
             MCP Servers
           </h3>
           <span
-            class="text-[11px] font-semibold py-0.5 px-2 rounded-[10px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] text-[var(--pd-link)]">
+            class="text-[11px] font-semibold py-0.5 px-2 rounded-[10px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] text-[var(--pd-link)]"
+            aria-label="MCP Servers count">
             {mcpServersList.length}
           </span>
         </div>
@@ -232,14 +235,15 @@ const filesystemBadge = $derived.by(() => {
       </div>
 
       <!-- Filesystem Card -->
-      <div class="flex-1 min-w-[300px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] rounded-lg p-5">
+      <div class="flex-1 min-w-[300px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] rounded-lg p-5" aria-label="Filesystem card">
         <div class="flex justify-between items-center mb-3.5">
           <h3 class="text-[13px] font-semibold text-[var(--pd-content-card-header-text)] flex items-center gap-2">
             <Icon icon={faFolder} size="sm" class="text-[var(--pd-link)]" />
             Filesystem
           </h3>
           <span
-            class="text-[11px] font-semibold py-0.5 px-2 rounded-[10px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] text-[var(--pd-link)]">
+            class="text-[11px] font-semibold py-0.5 px-2 rounded-[10px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] text-[var(--pd-link)]"
+            aria-label="Filesystem mode">
             {filesystemBadge}
           </span>
         </div>

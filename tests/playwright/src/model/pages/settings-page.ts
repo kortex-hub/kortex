@@ -94,6 +94,16 @@ export class SettingsPage extends BasePage {
         await createOpenAIPage.createAndGoBack(PROVIDERS.openai.baseURL, value);
         break;
       }
+      case 'claude': {
+        const createClaudePage = await resourcesPage.openCreateClaudePage();
+        await createClaudePage.createAndGoBack(value);
+        break;
+      }
+      case 'mistral': {
+        const createMistralPage = await resourcesPage.openCreateMistralPage();
+        await createMistralPage.createAndGoBack(value);
+        break;
+      }
       case 'milvus': {
         const createMilvusPage = await resourcesPage.openCreateMilvusPage();
         await createMilvusPage.createAndGoBack(value);
