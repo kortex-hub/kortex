@@ -198,6 +198,21 @@ onMount(async () => {
           });
         }
       });
+
+      provider.chunkConnections.forEach(connection => {
+        const chunkConnectionName = getProviderConnectionName(provider, connection);
+        connectionNames.push(chunkConnectionName);
+        if (
+          !containerConnectionStatus.has(chunkConnectionName) ||
+          containerConnectionStatus.get(chunkConnectionName)?.status !== connection.status
+        ) {
+          containerConnectionStatus.set(chunkConnectionName, {
+            inProgress: false,
+            action: undefined,
+            status: connection.status,
+          });
+        }
+      });
     });
     // if a machine has been deleted we need to clean its old stored status
     containerConnectionStatus.forEach((v, k) => {
@@ -758,6 +773,20 @@ $effect(() => {
               provider={provider}
               connection={flowConnection}
               connectionStatus={containerConnectionStatus.get(getProviderConnectionName(provider, flowConnection))}
+              updateConnectionStatus={updateContainerStatus}
+              addConnectionToRestartingQueue={addConnectionToRestartingQueue}>
+            </PreferencesConnectionActions>
+          </div>
+          {/each}
+          {#each provider.chunkConnections as chunkConnection, index (index)}
+          <div class="px-5 py-2 w-[240px] border-r border-[var(--pd-content-divider)]" role="region" aria-label={chunkConnection.name}>
+            <div class="font-semibold">
+              {chunkConnection.name} (Chunk)
+            </div>
+            <PreferencesConnectionActions
+              provider={provider}
+              connection={chunkConnection}
+              connectionStatus={containerConnectionStatus.get(getProviderConnectionName(provider, chunkConnection))}
               updateConnectionStatus={updateContainerStatus}
               addConnectionToRestartingQueue={addConnectionToRestartingQueue}>
             </PreferencesConnectionActions>

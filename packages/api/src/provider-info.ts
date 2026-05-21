@@ -71,6 +71,14 @@ export interface ProviderFlowConnectionInfo {
   connectionType: 'flow';
 }
 
+export interface ProviderChunkProviderConnectionInfo {
+  id: string;
+  name: string;
+  status: ProviderConnectionStatus;
+  lifecycleMethods?: LifecycleMethod[];
+  connectionType: 'chunk';
+}
+
 export interface ProviderInferenceConnectionInfo {
   connectionType: 'inference';
   name: string;
@@ -97,7 +105,8 @@ export type ProviderConnectionInfo =
   | ProviderVmConnectionInfo
   | ProviderInferenceConnectionInfo
   | ProviderRagConnectionInfo
-  | ProviderFlowConnectionInfo;
+  | ProviderFlowConnectionInfo
+  | ProviderChunkProviderConnectionInfo;
 
 export interface ProviderInfo {
   internalId: string;
@@ -112,6 +121,7 @@ export interface ProviderInfo {
   inferenceConnections: ProviderInferenceConnectionInfo[];
   ragConnections: ProviderRagConnectionInfo[];
   flowConnections: ProviderFlowConnectionInfo[];
+  chunkConnections: ProviderChunkProviderConnectionInfo[];
 
   status: ProviderStatus;
   lifecycleMethods?: LifecycleMethod[];
@@ -172,6 +182,14 @@ export interface ProviderInfo {
   ragProviderConnectionCreationDisplayName?: string;
   // optional creation button title (if defined)
   ragProviderConnectionCreationButtonTitle?: string;
+
+  /**
+   * Chunk Provider connection
+   */
+  chunkProviderConnectionCreation: boolean;
+  chunkProviderConnectionInitialization: boolean;
+  chunkProviderConnectionCreationDisplayName?: string;
+  chunkProviderConnectionCreationButtonTitle?: string;
 
   // other
   emptyConnectionMarkdownDescription?: string;

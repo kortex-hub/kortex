@@ -18,6 +18,8 @@
 
 import type {
   Auditor,
+  ChunkProviderConnection,
+  ChunkProviderConnectionFactory,
   ContainerProviderConnection,
   ContainerProviderConnectionFactory,
   CreateSkillParams,
@@ -64,6 +66,7 @@ export class ProviderImpl implements Provider, IDisposable {
   private inferenceProviderConnections: Set<InferenceProviderConnection>;
   private ragProviderConnections: Set<RagProviderConnection>;
   private flowProviderConnections: Set<FlowProviderConnection>;
+  private chunkProviderConnections: Set<ChunkProviderConnection>;
 
   // optional factory
   private _containerProviderConnectionFactory: ContainerProviderConnectionFactory | undefined = undefined;
@@ -71,6 +74,7 @@ export class ProviderImpl implements Provider, IDisposable {
   private _vmProviderConnectionFactory: VmProviderConnectionFactory | undefined = undefined;
   private _inferenceProviderConnectionFactory: InferenceProviderConnectionFactory | undefined = undefined;
   private _ragProviderConnectionFactory: RagProviderConnectionFactory | undefined = undefined;
+  private _chunkProviderConnectionFactory: ChunkProviderConnectionFactory | undefined = undefined;
 
   private _connectionAuditor: Auditor | undefined = undefined;
 
@@ -111,6 +115,7 @@ export class ProviderImpl implements Provider, IDisposable {
     this.inferenceProviderConnections = new Set();
     this.ragProviderConnections = new Set();
     this.flowProviderConnections = new Set();
+    this.chunkProviderConnections = new Set();
     this._status = providerOptions.status;
     this._version = providerOptions.version;
 
@@ -151,6 +156,10 @@ export class ProviderImpl implements Provider, IDisposable {
 
   get ragProviderConnectionFactory(): RagProviderConnectionFactory | undefined {
     return this._ragProviderConnectionFactory;
+  }
+
+  get chunkProviderConnectionFactory(): ChunkProviderConnectionFactory | undefined {
+    return this._chunkProviderConnectionFactory;
   }
 
   get connectionAuditor(): Auditor | undefined {
@@ -244,6 +253,10 @@ export class ProviderImpl implements Provider, IDisposable {
     return Array.from(this.flowProviderConnections.values());
   }
 
+  get chunkConnections(): ChunkProviderConnection[] {
+    return Array.from(this.chunkProviderConnections.values());
+  }
+
   dispose(): void {
     this.providerRegistry.disposeProvider(this);
   }
@@ -333,6 +346,18 @@ export class ProviderImpl implements Provider, IDisposable {
     });
   }
 
+  setChunkProviderConnectionFactory(
+    chunkProviderConnectionFactory: ChunkProviderConnectionFactory,
+    connectionAuditor?: Auditor,
+  ): Disposable {
+    this._chunkProviderConnectionFactory = chunkProviderConnectionFactory;
+    this._connectionAuditor = connectionAuditor;
+    return Disposable.create(() => {
+      this._chunkProviderConnectionFactory = undefined;
+      this._connectionAuditor = undefined;
+    });
+  }
+
   registerFlowProviderConnection(connection: FlowProviderConnection): Disposable {
     this.flowProviderConnections.add(connection);
     const disposable = this.providerRegistry.registerFlowConnection(this, connection);
@@ -341,6 +366,17 @@ export class ProviderImpl implements Provider, IDisposable {
       this.flowProviderConnections.delete(connection);
       disposable.dispose();
       this.providerRegistry.onDidUnregisterFlowConnectionCallback(this, connection);
+    });
+  }
+
+  registerChunkProviderConnection(connection: ChunkProviderConnection): Disposable {
+    this.chunkProviderConnections.add(connection);
+    const disposable = this.providerRegistry.registerChunkConnection(this, connection);
+    this.providerRegistry.onDidRegisterChunkConnectionCallback(this, connection);
+    return Disposable.create(() => {
+      this.chunkProviderConnections.delete(connection);
+      disposable.dispose();
+      this.providerRegistry.onDidUnregisterChunkConnectionCallback(this, connection);
     });
   }
 

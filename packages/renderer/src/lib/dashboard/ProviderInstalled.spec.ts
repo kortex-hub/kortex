@@ -87,11 +87,14 @@ test('Expect installed provider shows button', async () => {
     cleanupSupport: false,
     inferenceConnections: [],
     ragConnections: [],
+    chunkConnections: [],
     flowConnections: [],
     inferenceProviderConnectionCreation: false,
     inferenceProviderConnectionInitialization: false,
     ragProviderConnectionCreation: false,
     ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
 
   const initializationContext: InitializationContext = new InitializationContextImpl(
@@ -147,11 +150,14 @@ test('Expect to see the initialize context error if provider installation fails'
     cleanupSupport: false,
     inferenceConnections: [],
     ragConnections: [],
+    chunkConnections: [],
     flowConnections: [],
     inferenceProviderConnectionCreation: false,
     inferenceProviderConnectionInitialization: false,
     ragProviderConnectionCreation: false,
     ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
 
   const initializationContext: InitializationContext = new InitializationContextImpl(

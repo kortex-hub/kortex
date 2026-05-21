@@ -62,8 +62,11 @@ const baseProviderInfo: ProviderInfo = {
   inferenceProviderConnectionInitialization: false,
   flowConnections: [],
   ragConnections: [],
+  chunkConnections: [],
   ragProviderConnectionCreation: false,
   ragProviderConnectionInitialization: false,
+  chunkProviderConnectionCreation: false,
+  chunkProviderConnectionInitialization: false,
 };
 
 const mockGlobalContext: ContextUI = {

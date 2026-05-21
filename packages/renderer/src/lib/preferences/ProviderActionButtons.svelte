@@ -47,7 +47,9 @@ const providerDisplayName = $derived(
           ? provider.inferenceProviderConnectionCreationDisplayName
           : provider.ragProviderConnectionCreation
             ? provider.ragProviderConnectionCreationDisplayName
-            : undefined) ?? provider.name,
+            : provider.chunkProviderConnectionCreation
+              ? provider.chunkProviderConnectionCreationDisplayName
+              : undefined) ?? provider.name,
 );
 
 const buttonTitle = $derived(
@@ -61,7 +63,9 @@ const buttonTitle = $derived(
           ? provider.inferenceProviderConnectionCreationButtonTitle
           : provider.ragProviderConnectionCreation
             ? provider.ragProviderConnectionCreationButtonTitle
-            : undefined) ?? 'Create new',
+            : provider.chunkProviderConnectionCreation
+              ? provider.chunkProviderConnectionCreationButtonTitle
+              : undefined) ?? 'Create new',
 );
 
 const showCreateNewButton = $derived(
@@ -69,7 +73,8 @@ const showCreateNewButton = $derived(
     provider.kubernetesProviderConnectionCreation ||
     provider.vmProviderConnectionCreation ||
     provider.inferenceProviderConnectionCreation ||
-    provider.ragProviderConnectionCreation,
+    provider.ragProviderConnectionCreation ||
+    provider.chunkProviderConnectionCreation,
 );
 
 const showSetupButton = $derived(

@@ -713,9 +713,20 @@ declare module '@openkaiden/api' {
     text: Uri;
   };
 
+  /**
+   * @deprecated Use {@link ChunkProviderConnection} instead.
+   */
   export type ChunkProvider = {
     name: string;
     chunk(doc: Uri): Promise<Chunk[]>;
+  };
+
+  export type ChunkProviderConnection = {
+    id: string;
+    name: string;
+    chunk(doc: Uri): Promise<Chunk[]>;
+    status(): ProviderConnectionStatus;
+    lifecycle?: ProviderConnectionLifecycle;
   };
 
   export interface ProviderInferenceConnection {
@@ -728,9 +739,17 @@ declare module '@openkaiden/api' {
     connection: RagProviderConnection;
   }
 
+  /**
+   * @deprecated Use {@link ProviderChunkProviderConnection} instead.
+   */
   export interface ProviderChunkerConnection {
     providerId: string;
     connection: ChunkProvider;
+  }
+
+  export interface ProviderChunkProviderConnection {
+    providerId: string;
+    connection: ChunkProviderConnection;
   }
 
   export type ProviderConnection =
@@ -739,7 +758,8 @@ declare module '@openkaiden/api' {
     | VmProviderConnection
     | InferenceProviderConnection
     | RagProviderConnection
-    | FlowProviderConnection;
+    | FlowProviderConnection
+    | ChunkProviderConnection;
 
   // common set of options for creating a provider
   export interface ProviderConnectionFactory {
@@ -768,6 +788,11 @@ declare module '@openkaiden/api' {
 
   // create programmatically a RagProviderConnection
   export interface RagProviderConnectionFactory extends ProviderConnectionFactory {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    create(params: { [key: string]: any }, logger?: Logger, token?: CancellationToken): Promise<void>;
+  }
+
+  export interface ChunkProviderConnectionFactory extends ProviderConnectionFactory {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     create(params: { [key: string]: any }, logger?: Logger, token?: CancellationToken): Promise<void>;
   }
@@ -979,6 +1004,11 @@ declare module '@openkaiden/api' {
       connectionAuditor?: Auditor,
     ): Disposable;
 
+    setChunkProviderConnectionFactory(
+      chunkProviderConnectionFactory: ChunkProviderConnectionFactory,
+      connectionAuditor?: Auditor,
+    ): Disposable;
+
     registerContainerProviderConnection(connection: ContainerProviderConnection): Disposable;
     registerKubernetesProviderConnection(connection: KubernetesProviderConnection): Disposable;
     registerVmProviderConnection(connection: VmProviderConnection): Disposable;
@@ -986,6 +1016,8 @@ declare module '@openkaiden/api' {
     registerRagProviderConnection(connection: RagProviderConnection): Disposable;
 
     registerFlowProviderConnection(connection: FlowProviderConnection): Disposable;
+
+    registerChunkProviderConnection(connection: ChunkProviderConnection): Disposable;
 
     registerSkill(skill: CreateSkillParams): Disposable;
 
@@ -1150,11 +1182,31 @@ declare module '@openkaiden/api' {
     providerId: string;
     connection: RagProviderConnection;
   }
+  /**
+   * @deprecated Use {@link RegisterChunkProviderConnectionEvent} instead.
+   */
   export interface RegisterChunkerConnectionEvent {
     providerId: string;
   }
+  /**
+   * @deprecated Use {@link UnregisterChunkProviderConnectionEvent} instead.
+   */
   export interface UnregisterChunkerConnectionEvent {
     providerId: string;
+  }
+
+  export interface RegisterChunkProviderConnectionEvent {
+    providerId: string;
+    connection: ChunkProviderConnection;
+  }
+  export interface UpdateChunkProviderConnectionEvent {
+    providerId: string;
+    connection: ChunkProviderConnection;
+    status: ProviderConnectionStatus;
+  }
+  export interface UnregisterChunkProviderConnectionEvent {
+    providerId: string;
+    connection: ChunkProviderConnection;
   }
 
   export interface RegisterFlowConnectionEvent {
@@ -5546,6 +5598,9 @@ declare module '@openkaiden/api' {
   }
 
   export namespace rag {
+    /**
+     * @deprecated Use {@link provider.registerChunkProviderConnection} instead.
+     */
     export function registerChunkProvider(provider: ChunkProvider): Disposable;
   }
 }

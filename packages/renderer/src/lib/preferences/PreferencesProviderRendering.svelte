@@ -61,7 +61,9 @@ let providerDisplayName: string = $derived(
           ? providerInfo?.inferenceProviderConnectionCreationDisplayName
           : providerInfo?.ragProviderConnectionCreation
             ? providerInfo?.ragProviderConnectionCreationDisplayName
-            : undefined) ?? providerInfo?.name,
+            : providerInfo?.chunkProviderConnectionCreation
+              ? providerInfo?.chunkProviderConnectionCreationDisplayName
+              : undefined) ?? providerInfo?.name,
 );
 
 let title: string = $derived(
@@ -188,6 +190,16 @@ async function stopReceivingLogs(providerInternalId: string): Promise<void> {
             properties={properties}
             propertyScope="RagProviderConnectionFactory"
             callback={window.createRagProviderConnection}
+            taskId={taskId}
+            bind:inProgress={inProgress} />
+        {/if}
+
+        {#if providerInfo?.chunkProviderConnectionCreation === true}
+          <PreferencesConnectionCreationRendering
+            providerInfo={providerInfo}
+            properties={properties}
+            propertyScope="ChunkProviderConnectionFactory"
+            callback={window.createChunkProviderConnection}
             taskId={taskId}
             bind:inProgress={inProgress} />
         {/if}
