@@ -45,7 +45,7 @@
     "watch": "vite build --watch"
   },
   "dependencies": {
-    "@ai-sdk/google-vertex": "^4.0.128",
+    "@ai-sdk/google-vertex": "^4.0.134",
     "@openkaiden/api": "workspace:*"
   },
   "devDependencies": {
