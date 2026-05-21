@@ -39,7 +39,7 @@
     "watch": "vite build --watch"
   },
   "dependencies": {
-    "ai": "^6.0.185",
+    "ai": "^6.0.188",
     "inversify": "^7.7.1"
   },
   "devDependencies": {
