@@ -534,7 +534,7 @@ $effect(() => {
           aria-label="Provider Connections">
           <PreferencesConnectionsEmptyRendering
             message={provider.emptyConnectionMarkdownDescription}
-            hidden={provider.containerConnections.length > 0 || provider.kubernetesConnections.length > 0 || provider.vmConnections.length > 0} />
+            hidden={provider.containerConnections.length > 0 || provider.kubernetesConnections.length > 0 || provider.vmConnections.length > 0  || provider.inferenceConnections.length > 0 || provider.ragConnections.length > 0  || provider.flowConnections.length > 0  || provider.chunkConnections.length > 0} />
           {#each provider.containerConnections as container, index (index)}
             {@const peerProperties = new PeerProperties()}
             {@const rootfulInfo = getRootfulDisplayInfo(provider, container)}
