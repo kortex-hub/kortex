@@ -41,12 +41,14 @@ export class OllamaExtension {
   #currentModels: string[] = [];
   #connectionDisposable: Disposable | undefined;
   #interval: NodeJS.Timeout | undefined;
+  #deactivated = false;
 
   constructor(extensionContext: ExtensionContext) {
     this.#extensionContext = extensionContext;
   }
 
   async activate(): Promise<void> {
+    this.#deactivated = false;
     const ollamaProvider = provider.createProvider({
       name: 'Ollama',
       status: 'unknown',
@@ -71,6 +73,8 @@ export class OllamaExtension {
   }
 
   protected async updateModelsAndStatus(ollamaProvider: Provider): Promise<void> {
+    if (this.#deactivated) return;
+
     let models: Array<{ name: string }> = [];
     let running = true;
     try {
@@ -108,6 +112,8 @@ export class OllamaExtension {
     const modelsChanged =
       newModelNames.length !== oldModelNames.length || newModelNames.some((v, i) => v !== oldModelNames[i]);
 
+    if (this.#deactivated) return;
+
     if (modelsChanged) {
       // Unregister previous connection if exists
       if (this.#connectionDisposable) {
@@ -138,7 +144,12 @@ export class OllamaExtension {
   }
 
   async deactivate(): Promise<void> {
+    this.#deactivated = true;
     clearInterval(this.#interval);
+    if (this.#connectionDisposable) {
+      this.#connectionDisposable.dispose();
+      this.#connectionDisposable = undefined;
+    }
     this.#currentModels = [];
   }
 }

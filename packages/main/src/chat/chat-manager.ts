@@ -302,9 +302,11 @@ export class ChatManager {
     userMessage: UIMessage,
     chatId: string,
     placeholderTitle: string,
+    abortSignal?: AbortSignal,
   ): void {
     generateText({
       model,
+      abortSignal,
       prompt: userMessage.parts
         .filter(isTextUIPart)
         .map(p => p.text)
@@ -365,7 +367,7 @@ export class ChatManager {
         const internalProviderId = this.providerRegistry.getMatchingProviderInternalId(params.providerId);
         const sdk = this.providerRegistry.getInferenceSDK(internalProviderId, params.connectionName);
         const model = sdk.languageModel(params.modelId);
-        this.generateTitleInBackground(model, userMessage, chatId, placeholderTitle);
+        this.generateTitleInBackground(model, userMessage, chatId, placeholderTitle, abortController.signal);
       }
 
       const inferenceComponents = await this.getInferenceComponents(params);
@@ -426,16 +428,22 @@ export class ChatManager {
         })
         .getReader();
 
-      // loop to wait for the stream to finish
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          break;
+      let streamDone = false;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            streamDone = true;
+            break;
+          }
+          this.webContents.send('inference:streamText-onChunk', params.onDataId, value);
         }
-        this.webContents.send('inference:streamText-onChunk', params.onDataId, value);
+      } finally {
+        if (!streamDone) {
+          reader.cancel().catch(() => {});
+        }
       }
 
-      // Wait for onFinish message save to complete before signaling stream end
       if (onFinishSavePromise) {
         await onFinishSavePromise;
       }

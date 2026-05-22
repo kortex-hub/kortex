@@ -21,11 +21,12 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
   ): Promise<ReadableStream<UIMessageChunk>> {
     const uiMessages = JSON.parse(JSON.stringify(options.messages));
     const model = this.dependencies.getModel();
-    console.log('Selected model', model);
 
     const tools = this.dependencies.getMCPTools();
 
     const abortSignal = options.abortSignal;
+
+    let streamOnDataId: number | undefined;
 
     return new ReadableStream<UIMessageChunk>({
       start(controller): void {
@@ -40,7 +41,6 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
             messages: uiMessages,
           },
           (chunk: UIMessageChunk) => {
-            console.log('IPCChatTransport->chunk:', chunk);
             controller.enqueue(chunk);
           },
           (error: unknown) => {
@@ -48,10 +48,11 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
             controller.error(error);
           },
           () => {
-            console.log('IPCChatTransport: Stream completed');
             controller.close();
           },
         );
+
+        streamOnDataId = onDataId;
 
         if (abortSignal) {
           if (abortSignal.aborted) {
@@ -67,6 +68,11 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
           }
         }
       },
+      cancel(): void {
+        if (streamOnDataId !== undefined) {
+          window.inferenceStopStream(streamOnDataId).catch(console.error);
+        }
+      },
     });
   }
 
@@ -79,13 +85,13 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
       return null;
     }
 
+    let reconnectedOnDataId: number | undefined;
+
     return new ReadableStream<UIMessageChunk>({
       start(controller): void {
-        // Reconnect to the existing stream
         const result = window.inferenceReconnectToStream(
           options.chatId,
           (chunk: UIMessageChunk) => {
-            console.log('IPCChatTransport->reconnect->chunk:', chunk);
             controller.enqueue(chunk);
           },
           (error: unknown) => {
@@ -93,21 +99,24 @@ export class IPCChatTransport<T extends UIMessage> implements ChatTransport<T> {
             controller.error(error);
           },
           () => {
-            console.log('IPCChatTransport: Reconnected stream completed');
             controller.close();
           },
         );
 
         if (!result) {
-          console.log('IPCChatTransport: Stream no longer active');
           controller.close();
           return;
         }
 
-        // First, replay all buffered chunks
+        reconnectedOnDataId = result.onDataId;
+
         for (const chunk of result.bufferedChunks) {
-          console.log('IPCChatTransport->reconnect->buffered chunk:', chunk);
           controller.enqueue(chunk);
+        }
+      },
+      cancel(): void {
+        if (reconnectedOnDataId !== undefined) {
+          window.inferenceStopStream(reconnectedOnDataId).catch(console.error);
         }
       },
     });

@@ -262,7 +262,11 @@ export class AgentWorkspaceManager implements Disposable {
     task.state = 'running';
     task.status = 'in-progress';
     try {
+      const modelToUnload = await this.getOllamaModelToUnload(id);
       const result = await this.kdnCli.removeWorkspaces(id);
+      if (modelToUnload) {
+        await this.unloadOllamaModel(modelToUnload.modelName, modelToUnload.endpoint);
+      }
       this.apiSender.send('agent-workspace-update');
       task.status = 'success';
       return result;
@@ -327,9 +331,65 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   async stop(id: string): Promise<AgentWorkspaceId> {
+    const modelToUnload = await this.getOllamaModelToUnload(id);
     const result = await this.kdnCli.stopWorkspace(id);
+    if (modelToUnload) {
+      await this.unloadOllamaModel(modelToUnload.modelName, modelToUnload.endpoint);
+    }
     this.apiSender.send('agent-workspace-update');
     return result;
+  }
+
+  /**
+   * Determines whether an Ollama model should be unloaded when a workspace is
+   * stopped or removed. Returns the model name and endpoint only if:
+   * - the workspace uses an Ollama model (`ollama` metadata name)
+   * - no other running workspace is using the same model
+   */
+  private async getOllamaModelToUnload(id: string): Promise<{ modelName: string; endpoint: string } | undefined> {
+    try {
+      const workspaces = await this.list();
+      const workspace = workspaces.find(ws => ws.id === id);
+      if (!workspace?.model) return undefined;
+
+      const parts = workspace.model.split('::');
+      if (parts.length !== 3 || parts[0] !== 'ollama') return undefined;
+      const modelName = parts[1]!;
+      const endpoint = parts[2]!;
+
+      const otherRunning = workspaces.some(
+        ws => ws.id !== id && ws.state === 'running' && ws.model === workspace.model,
+      );
+      if (otherRunning) return undefined;
+
+      return { modelName, endpoint };
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Sends a request to Ollama to immediately unload a model by setting
+   * `keep_alive` to 0. Extracts the port from the workspace endpoint
+   * (which may use a container-reachable hostname like
+   * `host.containers.internal`) and targets `localhost` since Kaiden
+   * runs on the host.
+   */
+  private async unloadOllamaModel(modelName: string, endpoint: string): Promise<void> {
+    try {
+      const port = new URL(endpoint).port || '11434';
+      const response = await fetch(`http://localhost:${port}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: modelName, keep_alive: 0 }),
+      });
+      if (!response.ok) {
+        console.warn(`Failed to unload Ollama model ${modelName} (endpoint ${endpoint}): HTTP ${response.status}`);
+      }
+      await response.body?.cancel();
+    } catch (err: unknown) {
+      console.warn(`Failed to unload Ollama model ${modelName} (endpoint ${endpoint}):`, err);
+    }
   }
 
   shellInAgentWorkspace(

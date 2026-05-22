@@ -1024,6 +1024,226 @@ describe('stop', () => {
 
     await expect(manager.stop('unknown-id')).rejects.toThrow('workspace not found: unknown-id');
   });
+
+  test('unloads Ollama model when stopping the only workspace using it', async () => {
+    const ollamaWorkspaces: AgentWorkspaceSummary[] = [
+      {
+        id: 'ws-ollama',
+        name: 'ollama-ws',
+        project: 'proj',
+        agent: 'coder',
+        state: 'running',
+        model: 'ollama::llama3::http://host.containers.internal:11434',
+        runtime: 'podman',
+        paths: { source: '/tmp/ws-ollama', configuration: '/tmp/ws-ollama/.kaiden' },
+        timestamps: { created: 1700000000 },
+        forwards: [],
+      },
+    ];
+    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(ollamaWorkspaces);
+    vi.mocked(kdnCli.stopWorkspace).mockResolvedValue({ id: 'ws-ollama' });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      body: { cancel: vi.fn().mockResolvedValue(undefined) },
+    } as unknown as Response);
+
+    await manager.stop('ws-ollama');
+
+    expect(fetchSpy).toHaveBeenCalledWith('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'llama3', keep_alive: 0 }),
+    });
+    fetchSpy.mockRestore();
+  });
+
+  test('does not unload Ollama model when another workspace uses the same model', async () => {
+    const ollamaWorkspaces: AgentWorkspaceSummary[] = [
+      {
+        id: 'ws-ollama-1',
+        name: 'ollama-ws-1',
+        project: 'proj',
+        agent: 'coder',
+        state: 'running',
+        model: 'ollama::llama3::http://host.containers.internal:11434',
+        runtime: 'podman',
+        paths: { source: '/tmp/ws1', configuration: '/tmp/ws1/.kaiden' },
+        timestamps: { created: 1700000000 },
+        forwards: [],
+      },
+      {
+        id: 'ws-ollama-2',
+        name: 'ollama-ws-2',
+        project: 'proj',
+        agent: 'coder',
+        state: 'running',
+        model: 'ollama::llama3::http://host.containers.internal:11434',
+        runtime: 'podman',
+        paths: { source: '/tmp/ws2', configuration: '/tmp/ws2/.kaiden' },
+        timestamps: { created: 1700000001 },
+        forwards: [],
+      },
+    ];
+    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(ollamaWorkspaces);
+    vi.mocked(kdnCli.stopWorkspace).mockResolvedValue({ id: 'ws-ollama-1' });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    await manager.stop('ws-ollama-1');
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  test('does not unload model for non-Ollama workspaces', async () => {
+    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(kdnCli.stopWorkspace).mockResolvedValue({ id: 'ws-1' });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    await manager.stop('ws-1');
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  test('does not unload model when model field has wrong number of :: segments', async () => {
+    const badModelWorkspaces: AgentWorkspaceSummary[] = [
+      {
+        id: 'ws-bad',
+        name: 'bad-ws',
+        project: 'proj',
+        agent: 'coder',
+        state: 'running',
+        model: 'ollama::llama3::http://localhost:11434::extra',
+        runtime: 'podman',
+        paths: { source: '/tmp/ws-bad', configuration: '/tmp/ws-bad/.kaiden' },
+        timestamps: { created: 1700000000 },
+        forwards: [],
+      },
+    ];
+    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(badModelWorkspaces);
+    vi.mocked(kdnCli.stopWorkspace).mockResolvedValue({ id: 'ws-bad' });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    await manager.stop('ws-bad');
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  test('still stops workspace when Ollama unload fails', async () => {
+    const ollamaWorkspaces: AgentWorkspaceSummary[] = [
+      {
+        id: 'ws-ollama',
+        name: 'ollama-ws',
+        project: 'proj',
+        agent: 'coder',
+        state: 'running',
+        model: 'ollama::llama3::http://host.containers.internal:11434',
+        runtime: 'podman',
+        paths: { source: '/tmp/ws-ollama', configuration: '/tmp/ws-ollama/.kaiden' },
+        timestamps: { created: 1700000000 },
+        forwards: [],
+      },
+    ];
+    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(ollamaWorkspaces);
+    vi.mocked(kdnCli.stopWorkspace).mockResolvedValue({ id: 'ws-ollama' });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('connection refused'));
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const result = await manager.stop('ws-ollama');
+
+    expect(result).toEqual({ id: 'ws-ollama' });
+    expect(warnSpy).toHaveBeenCalled();
+    fetchSpy.mockRestore();
+    warnSpy.mockRestore();
+  });
+
+  test('uses default port 11434 when endpoint has no explicit port', async () => {
+    const ollamaWorkspaces: AgentWorkspaceSummary[] = [
+      {
+        id: 'ws-ollama',
+        name: 'ollama-ws',
+        project: 'proj',
+        agent: 'coder',
+        state: 'running',
+        model: 'ollama::llama3::http://host.containers.internal',
+        runtime: 'podman',
+        paths: { source: '/tmp/ws-ollama', configuration: '/tmp/ws-ollama/.kaiden' },
+        timestamps: { created: 1700000000 },
+        forwards: [],
+      },
+    ];
+    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(ollamaWorkspaces);
+    vi.mocked(kdnCli.stopWorkspace).mockResolvedValue({ id: 'ws-ollama' });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      body: { cancel: vi.fn().mockResolvedValue(undefined) },
+    } as unknown as Response);
+
+    await manager.stop('ws-ollama');
+
+    expect(fetchSpy).toHaveBeenCalledWith('http://localhost:11434/api/generate', expect.any(Object));
+    fetchSpy.mockRestore();
+  });
+});
+
+describe('remove with Ollama model unload', () => {
+  test('unloads Ollama model when removing the only workspace using it', async () => {
+    const ollamaWorkspaces: AgentWorkspaceSummary[] = [
+      {
+        id: 'ws-ollama',
+        name: 'ollama-ws',
+        project: 'proj',
+        agent: 'coder',
+        state: 'running',
+        model: 'ollama::llama3::http://host.containers.internal:11434',
+        runtime: 'podman',
+        paths: { source: '/tmp/ws-ollama', configuration: '/tmp/ws-ollama/.kaiden' },
+        timestamps: { created: 1700000000 },
+        forwards: [],
+      },
+    ];
+    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(ollamaWorkspaces);
+    vi.mocked(kdnCli.removeWorkspaces).mockResolvedValue({ id: 'ws-ollama' });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      body: { cancel: vi.fn().mockResolvedValue(undefined) },
+    } as unknown as Response);
+
+    await manager.remove('ws-ollama');
+
+    expect(fetchSpy).toHaveBeenCalledWith('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'llama3', keep_alive: 0 }),
+    });
+    fetchSpy.mockRestore();
+  });
+
+  test('does not unload model when remove fails', async () => {
+    const ollamaWorkspaces: AgentWorkspaceSummary[] = [
+      {
+        id: 'ws-ollama',
+        name: 'ollama-ws',
+        project: 'proj',
+        agent: 'coder',
+        state: 'running',
+        model: 'ollama::llama3::http://host.containers.internal:11434',
+        runtime: 'podman',
+        paths: { source: '/tmp/ws-ollama', configuration: '/tmp/ws-ollama/.kaiden' },
+        timestamps: { created: 1700000000 },
+        forwards: [],
+      },
+    ];
+    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(ollamaWorkspaces);
+    vi.mocked(kdnCli.removeWorkspaces).mockRejectedValue(new Error('remove failed'));
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    await expect(manager.remove('ws-ollama')).rejects.toThrow('remove failed');
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
 });
 
 describe('shellInAgentWorkspace', () => {

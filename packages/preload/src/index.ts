@@ -1567,11 +1567,19 @@ export function initExposure(): void {
             callback.onEnd();
           }
         }
-        // Track error in stream state
         const streamState = activeStreamsByChatId.get(params.chatId);
-        if (streamState) {
+        if (streamState?.onDataId === id) {
           streamState.error = String(err);
           streamState.isComplete = true;
+          if (callback) {
+            streamState.bufferedChunks = [];
+          }
+          const failedOnDataId = id;
+          setTimeout(() => {
+            if (activeStreamsByChatId.get(params.chatId)?.onDataId === failedOnDataId) {
+              activeStreamsByChatId.delete(params.chatId);
+            }
+          }, STREAM_BUFFER_TTL_MS);
         }
       });
       return id;
@@ -1667,20 +1675,20 @@ export function initExposure(): void {
   });
 
   ipcRenderer.on('inference:streamText-onEnd', (_, callbackId: number) => {
-    // grab callback from the map
     const callback = onDataCallbacksStreamText.get(callbackId);
     if (callback) {
       callback.onEnd();
-      // remove callback from the map
       onDataCallbacksStreamText.delete(callbackId);
     }
 
-    // Mark stream as complete and keep buffered chunks for potential reconnection
     for (const [chatId, streamState] of activeStreamsByChatId.entries()) {
       if (streamState.onDataId === callbackId) {
         streamState.isComplete = true;
-        // Clean up after a delay to allow reconnection, but only if the
-        // entry hasn't been replaced by a newer stream for the same chat.
+        // Release chunk references immediately if a consumer already drained them.
+        // The entry itself stays for TTL so reconnection can detect "completed".
+        if (callback) {
+          streamState.bufferedChunks = [];
+        }
         const completedOnDataId = callbackId;
         setTimeout(() => {
           if (activeStreamsByChatId.get(chatId)?.onDataId === completedOnDataId) {
