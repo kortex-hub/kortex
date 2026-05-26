@@ -26,16 +26,17 @@ import type { ContainerExtensionAPI } from '@openkaiden/container-extension-api'
 import type Dockerode from 'dockerode';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
+import { InversifyBinding } from '/@/inject/inversify-binding';
+import type { ConnectionManager } from '/@/manager/connection-manager';
+
 import { DoclingExtension } from './docling-extension';
-import { InversifyBinding } from './inject/inversify-binding';
-import type { ConnectionManager } from './manager/connection-manager';
 import { generateRandomFolderName } from './util';
 
 vi.mock(import('node:fs'));
 vi.mock(import('node:fs/promises'));
 vi.mock(import('./util'));
-vi.mock(import('./inject/inversify-binding'));
-vi.mock(import('./manager/connection-manager'));
+vi.mock(import('/@/inject/inversify-binding'));
+vi.mock(import('/@/manager/connection-manager'));
 
 describe('DoclingExtension', () => {
   let extensionContext: ExtensionContext;
