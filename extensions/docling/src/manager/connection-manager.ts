@@ -73,11 +73,16 @@ export class ConnectionManager {
   private doclingProvider!: Provider;
 
   #connections: Map<string, DoclingConnectionEntry> = new Map();
+  #subscriptions: Disposable[] = [];
 
   async init(): Promise<void> {
     await this.discoverExistingConnections();
-    this.containerExtensionAPI.onContainersChanged(this.discoverExistingConnections.bind(this));
-    this.containerExtensionAPI.onEndpointsChanged(this.discoverExistingConnections.bind(this));
+    this.#subscriptions.push(
+      this.containerExtensionAPI.onContainersChanged(this.discoverExistingConnections.bind(this)),
+    );
+    this.#subscriptions.push(
+      this.containerExtensionAPI.onEndpointsChanged(this.discoverExistingConnections.bind(this)),
+    );
 
     const chunkFactory: ChunkProviderConnectionFactory = {
       creationDisplayName: 'Docling Chunk Provider',
@@ -89,6 +94,7 @@ export class ConnectionManager {
 
   dispose(): void {
     this.#connections.forEach((entry, _key) => entry.disposable.dispose());
+    this.#subscriptions.forEach(subscription => subscription.dispose());
     this.#connections.clear();
   }
 
