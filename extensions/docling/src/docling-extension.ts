@@ -26,10 +26,16 @@ import { Uri } from '@openkaiden/api';
 import type { ContainerExtensionAPI } from '@openkaiden/container-extension-api';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import type Dockerode from 'dockerode';
+import type { Container } from 'inversify';
+
+import { InversifyBinding } from '/@/inject/inversify-binding';
+import { ConnectionManager } from '/@/manager/connection-manager';
 
 const DOCLING_IMAGE = `quay.io/docling-project/docling-serve:v1.9.0`;
 const DOCLING_PORT = 5001;
 const CONTAINER_NAME = 'docling-chunker';
+const DOCLING_PORT_LABEL = 'ai.openkaiden.docling.port';
+const DOCLING_NAME_LABEL = 'ai.openkaiden.docling.name';
 
 type DoclingContainerInfo = {
   dockerode: Dockerode;
@@ -41,11 +47,16 @@ export class DoclingExtension {
   private containerInfo: DoclingContainerInfo | undefined = undefined;
   private processedDocuments: number = 0;
 
+  #inversifyBinding: InversifyBinding | undefined;
+  #container: Container | undefined;
+  #connectionManager: ConnectionManager | undefined;
+
   constructor(private extensionContext: api.ExtensionContext) {}
 
-  /**
-   * Get a random port for the container
-   */
+  protected getContainer(): Container | undefined {
+    return this.#container;
+  }
+
   private getRandomPort(): number {
     return randomInt(1024, 65536);
   }
@@ -60,9 +71,9 @@ export class DoclingExtension {
         try {
           const containers = await endpoint.dockerode.listContainers({ all: true });
           for (const container of containers) {
-            const doclingPort = container.Labels?.['ai.openkaiden.docling.port'];
+            const doclingPort = container.Labels?.[DOCLING_PORT_LABEL];
 
-            if (doclingPort !== undefined) {
+            if (doclingPort !== undefined && container.Labels?.[DOCLING_NAME_LABEL] === undefined) {
               console.log(`Found container: (with port ${doclingPort}, state: ${container.State})`);
               if (container.State !== 'running') {
                 console.log('Container is not running, restarting...');
@@ -93,10 +104,8 @@ export class DoclingExtension {
       throw new Error('No container engine endpoint found');
     }
 
-    // Get a random port for the container
     const containerPort = this.getRandomPort();
 
-    // Start the container
     const isImageAvailable = await this.checkDoclingImage(dockerode);
     if (!isImageAvailable) {
       await this.pullDoclingImage(dockerode);
@@ -105,7 +114,7 @@ export class DoclingExtension {
     const container = await dockerode.createContainer({
       name: CONTAINER_NAME,
       Labels: {
-        'ai.openkaiden.docling.port': `${containerPort}`,
+        [DOCLING_PORT_LABEL]: `${containerPort}`,
       },
       Image: DOCLING_IMAGE,
       // Single worker required: LocalOrchestrator stores tasks in per-worker memory.
@@ -122,7 +131,6 @@ export class DoclingExtension {
     await container.start();
     console.log(`Container started with ID: ${container.id}`);
 
-    // Wait for the service to be healthy
     let started = false;
     let retries = 0;
     while (!started && retries++ < 60) {
@@ -143,7 +151,6 @@ export class DoclingExtension {
         console.warn(`Health check failed: ${err}`);
       } finally {
         if (!started) {
-          // Wait a bit before retrying
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
@@ -151,14 +158,8 @@ export class DoclingExtension {
     throw new Error('Failed to start Docling container');
   }
 
-  /**
-   * Initialize the Docling chunker by starting the container
-   */
   async activate(): Promise<void> {
-    console.log('Starting Docling container...');
-
-    const workspaceFolder = join(this.extensionContext.storagePath, 'docling-workspace');
-    await mkdir(workspaceFolder, { recursive: true });
+    console.log('Starting Docling extension...');
 
     const KAIDEN_CONTAINER_EXTENSION_ID = 'kaiden.container';
     const containerExtension = api.extensions.getExtension<ContainerExtensionAPI>(KAIDEN_CONTAINER_EXTENSION_ID);
@@ -169,6 +170,23 @@ export class DoclingExtension {
     if (!containerExtensionAPI) {
       throw new Error(`Missing exports of API in container extension ${KAIDEN_CONTAINER_EXTENSION_ID}`);
     }
+
+    // New ChunkProviderConnection-based setup via Inversify DI
+    const provider = api.provider.createProvider({
+      id: 'docling',
+      name: 'Docling',
+      status: 'ready',
+      emptyConnectionMarkdownDescription: 'Provides Docling-based document chunking for Knowledges',
+    });
+
+    this.#inversifyBinding = new InversifyBinding(provider, containerExtensionAPI, this.extensionContext);
+    this.#container = await this.#inversifyBinding.initBindings();
+    this.#connectionManager = this.getContainer()?.get(ConnectionManager);
+    await this.#connectionManager?.init();
+
+    // Legacy backward-compatible flow: start a single unnamed container and register the deprecated ChunkProvider
+    const workspaceFolder = join(this.extensionContext.storagePath, 'docling-workspace');
+    await mkdir(workspaceFolder, { recursive: true });
 
     const existingContainer = await this.discoverExistingContainer(containerExtensionAPI);
 
@@ -185,7 +203,6 @@ export class DoclingExtension {
 
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
-    // Create the Docling chunk provider
     const doclingChunkProvider: api.ChunkProvider = {
       name: 'docling',
       async chunk(doc: api.Uri): Promise<api.Chunk[]> {
@@ -198,56 +215,47 @@ export class DoclingExtension {
       },
     };
 
-    // Register the chunk provider
     const disposable = api.rag.registerChunkProvider(doclingChunkProvider);
-
-    // Add to subscriptions for proper cleanup
     this.extensionContext.subscriptions.push(disposable);
   }
 
-  /**
-   * Shutdown the Docling chunker by stopping and removing the container
-   */
   async deactivate(): Promise<void> {
-    if (!this.containerInfo) {
-      return;
+    // Clean up named connections via ConnectionManager
+    this.#connectionManager?.dispose();
+    await this.#inversifyBinding?.dispose();
+
+    // Legacy container cleanup
+    if (this.containerInfo) {
+      console.log('Stopping Docling container...');
+
+      try {
+        console.log('Container removed');
+        await this.containerInfo.dockerode.getContainer(this.containerInfo.containerId).stop();
+      } catch (err: unknown) {
+        console.error('Failed to stop container:', err);
+      }
+
+      try {
+        await rm(join(this.extensionContext.storagePath, 'docling-workspace'), { recursive: true, force: true });
+      } catch (err: unknown) {
+        console.error('Failed to remove workspace folder:', err);
+      }
+
+      this.containerInfo = undefined;
     }
-
-    console.log('Stopping Docling container...');
-
-    try {
-      // Stop the container
-      console.log('Container removed');
-      await this.containerInfo.dockerode.getContainer(this.containerInfo.containerId).stop();
-    } catch (err: unknown) {
-      console.error('Failed to stop container:', err);
-    }
-
-    try {
-      await rm(join(this.extensionContext.storagePath, 'docling-workspace'), { recursive: true, force: true });
-    } catch (err: unknown) {
-      console.error('Failed to remove workspace folder:', err);
-    }
-
-    this.containerInfo = undefined;
   }
 
-  /**
-   * Convert a document to chunks using the Docling service
-   */
   async convertDocument(docUri: api.Uri): Promise<api.Chunk[]> {
     if (!this.containerInfo) {
       throw new Error('Docling container is not running');
     }
 
-    // Copy the document to the folder
     const docPath = docUri.fsPath;
     const docFileName = basename(docPath);
 
     const data = new FormData();
     const blob = await openAsBlob(docPath);
     data.set('files', blob, docFileName);
-    // Send conversion request to the service
     const response = await fetch(`http://localhost:${this.containerInfo.port}/v1/chunk/hierarchical/file`, {
       method: 'POST',
       body: data,
@@ -261,7 +269,6 @@ export class DoclingExtension {
     const res = await response.json();
     console.log(res);
 
-    // Read the chunk files
     const chunks: api.Chunk[] = [];
     const documentNumber = this.processedDocuments++;
     if (typeof res === 'object' && res && 'chunks' in res && Array.isArray(res.chunks)) {

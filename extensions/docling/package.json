@@ -13,11 +13,27 @@
   ],
   "main": "./dist/extension.js",
   "source": "./src/extension.ts",
+  "contributes": {
+    "configuration": {
+      "title": "Docling",
+      "properties": {
+        "docling.name": {
+          "type": "string",
+          "default": "",
+          "description": "Name for the Docling chunk provider connection",
+          "scope": "ChunkProviderConnectionFactory"
+        }
+      }
+    }
+  },
   "scripts": {
     "build": "vite build && node ./scripts/build.js",
     "test": "vitest run --coverage",
     "test:watch": "vitest watch --coverage",
     "watch": "vite build --watch"
+  },
+  "dependencies": {
+    "inversify": "^7.10.4"
   },
   "devDependencies": {
     "@openkaiden/api": "workspace:*",
