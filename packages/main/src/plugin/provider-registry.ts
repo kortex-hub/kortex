@@ -1465,7 +1465,7 @@ export class ProviderRegistry {
   }
 
   isChunkConnection(connection: ProviderConnection): connection is ChunkProviderConnection {
-    return 'chunk' in connection && typeof (connection as ChunkProviderConnection).chunk === 'function';
+    return 'chunk' in connection;
   }
 
   async startProviderConnection(
