@@ -490,6 +490,10 @@ importers:
         version: 4.0.18(@opentelemetry/api@1.9.1)(@types/node@24.12.4)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.31.1)(msw@2.12.10(@types/node@24.12.4)(typescript@5.9.3))(terser@5.36.0)(tsx@4.20.3)(yaml@2.8.2)
 
   extensions/docling:
+    dependencies:
+      inversify:
+        specifier: ^7.10.4
+        version: 7.11.0(reflect-metadata@0.2.2)
     devDependencies:
       '@openkaiden/api':
         specifier: workspace:*
