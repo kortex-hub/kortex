@@ -66,11 +66,14 @@ const providerInfo: ProviderInfo = {
   vmProviderConnectionInitialization: false,
   inferenceConnections: [],
   ragConnections: [],
+  chunkConnections: [],
   flowConnections: [],
   inferenceProviderConnectionCreation: false,
   inferenceProviderConnectionInitialization: false,
   ragProviderConnectionCreation: false,
   ragProviderConnectionInitialization: false,
+  chunkProviderConnectionCreation: false,
+  chunkProviderConnectionInitialization: false,
 };
 
 const podCreation: PodCreation = {

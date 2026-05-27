@@ -198,6 +198,21 @@ onMount(async () => {
           });
         }
       });
+
+      provider.chunkConnections.forEach(connection => {
+        const chunkConnectionName = getProviderConnectionName(provider, connection);
+        connectionNames.push(chunkConnectionName);
+        if (
+          !containerConnectionStatus.has(chunkConnectionName) ||
+          containerConnectionStatus.get(chunkConnectionName)?.status !== connection.status
+        ) {
+          containerConnectionStatus.set(chunkConnectionName, {
+            inProgress: false,
+            action: undefined,
+            status: connection.status,
+          });
+        }
+      });
     });
     // if a machine has been deleted we need to clean its old stored status
     containerConnectionStatus.forEach((v, k) => {
@@ -458,6 +473,18 @@ $effect(() => {
     providerElementMap[focus].scrollIntoView({ behavior: 'auto', block: 'start' });
   }
 });
+
+function hasConnections(provider: ProviderInfo): boolean {
+  return (
+    provider.containerConnections.length > 0 ||
+    provider.kubernetesConnections.length > 0 ||
+    provider.vmConnections.length > 0 ||
+    provider.inferenceConnections.length > 0 ||
+    provider.ragConnections.length > 0 ||
+    provider.flowConnections.length > 0 ||
+    provider.chunkConnections.length > 0
+  );
+}
 </script>
 
 <SettingsPage title="Resources">
@@ -519,7 +546,7 @@ $effect(() => {
           aria-label="Provider Connections">
           <PreferencesConnectionsEmptyRendering
             message={provider.emptyConnectionMarkdownDescription}
-            hidden={provider.containerConnections.length > 0 || provider.kubernetesConnections.length > 0 || provider.vmConnections.length > 0} />
+            hidden={hasConnections(provider)} />
           {#each provider.containerConnections as container, index (index)}
             {@const peerProperties = new PeerProperties()}
             {@const rootfulInfo = getRootfulDisplayInfo(provider, container)}
@@ -758,6 +785,20 @@ $effect(() => {
               provider={provider}
               connection={flowConnection}
               connectionStatus={containerConnectionStatus.get(getProviderConnectionName(provider, flowConnection))}
+              updateConnectionStatus={updateContainerStatus}
+              addConnectionToRestartingQueue={addConnectionToRestartingQueue}>
+            </PreferencesConnectionActions>
+          </div>
+          {/each}
+          {#each provider.chunkConnections as chunkConnection, index (index)}
+          <div class="px-5 py-2 w-[240px] border-r border-[var(--pd-content-divider)]" role="region" aria-label={chunkConnection.name}>
+            <div class="font-semibold">
+              {chunkConnection.name} (Chunk)
+            </div>
+            <PreferencesConnectionActions
+              provider={provider}
+              connection={chunkConnection}
+              connectionStatus={containerConnectionStatus.get(getProviderConnectionName(provider, chunkConnection))}
               updateConnectionStatus={updateContainerStatus}
               addConnectionToRestartingQueue={addConnectionToRestartingQueue}>
             </PreferencesConnectionActions>

@@ -133,8 +133,11 @@ const providerInfoMock: ProviderInfo = {
   cleanupSupport: false,
   flowConnections: [],
   ragConnections: [],
+  chunkConnections: [],
   ragProviderConnectionCreation: false,
   ragProviderConnectionInitialization: false,
+  chunkProviderConnectionCreation: false,
+  chunkProviderConnectionInitialization: false,
 };
 
 const extensionInfoMock: ExtensionInfo = {

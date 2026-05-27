@@ -22,6 +22,7 @@ import type {
   AutostartContext,
   CancellationToken,
   CheckResult,
+  ChunkProviderConnection,
   ConnectionFactory,
   ConnectionFactoryDetails,
   ContainerProviderConnection,
@@ -2759,5 +2760,104 @@ describe('getInferenceConnectionCredentials', () => {
     const result = providerRegistry.getInferenceConnectionCredentials('openai::gpt-4o::https://other.api.com');
 
     expect(result).toBeUndefined();
+  });
+});
+
+describe('registerChunkProviderConnection is called on ProviderImpl', async () => {
+  let provider: ProviderImpl;
+  let connection: ChunkProviderConnection;
+  let disposable: Disposable;
+
+  beforeEach(() => {
+    provider = providerRegistry.createProvider('id', 'name', {
+      id: 'internal',
+      name: 'internal',
+      status: 'installed',
+    }) as ProviderImpl;
+
+    connection = {
+      id: 'internal.chunk-test',
+      name: 'chunk-test',
+      chunk: vi.fn(),
+      status: (): ProviderConnectionStatus => 'started',
+    };
+
+    vi.spyOn(providerRegistry, 'registerChunkConnection');
+    vi.spyOn(providerRegistry, 'onDidRegisterChunkConnectionCallback');
+    vi.spyOn(providerRegistry, 'onDidUnregisterChunkConnectionCallback');
+    disposable = provider.registerChunkProviderConnection(connection);
+  });
+
+  test('registerChunkConnection is called on registry and provider added to set', async () => {
+    expect(providerRegistry.registerChunkConnection).toHaveBeenCalled();
+    expect(providerRegistry.onDidRegisterChunkConnectionCallback).toHaveBeenCalled();
+    expect(provider.chunkConnections).toHaveLength(1);
+  });
+
+  test('should be removed from set when disposed', async () => {
+    disposable.dispose();
+    expect(provider.chunkConnections).toHaveLength(0);
+    expect(providerRegistry.onDidUnregisterChunkConnectionCallback).toHaveBeenCalled();
+  });
+});
+
+describe('a chunk provider connection is registered', async () => {
+  let provider: Provider;
+  let disposable: Disposable;
+  let connection: ChunkProviderConnection;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    provider = providerRegistry.createProvider('id', 'name', {
+      id: 'internal',
+      name: 'internal',
+      status: 'installed',
+    });
+    connection = {
+      id: 'internal.chunk-conn',
+      name: 'chunk-conn',
+      chunk: vi.fn(),
+      status: (): ProviderConnectionStatus => 'started',
+    };
+
+    disposable = providerRegistry.registerChunkConnection(provider, connection);
+  });
+
+  test('should send telemetry and be added to registry', async () => {
+    expect(telemetry.track).toHaveBeenLastCalledWith('registerChunkProviderConnection', {
+      name: 'chunk-conn',
+      total: 1,
+    });
+  });
+
+  test('should be removed from registry when disposed', async () => {
+    disposable.dispose();
+    expect(providerRegistry.getChunkConnections()).toHaveLength(0);
+  });
+
+  test('should send provider-change when status changes', async () => {
+    vi.advanceTimersByTime(2005);
+    expect(apiSenderSendMock).not.toHaveBeenCalledWith('provider-change', expect.anything());
+
+    connection.status = (): ProviderConnectionStatus => 'stopped';
+
+    vi.advanceTimersByTime(2005);
+    expect(apiSenderSendMock).toHaveBeenCalledWith('provider-change', {});
+  });
+
+  test('should fire update event when status changes', async () => {
+    const listener = vi.fn();
+    providerRegistry.onDidUpdateChunkConnection(listener);
+
+    connection.status = (): ProviderConnectionStatus => 'stopped';
+    vi.advanceTimersByTime(2005);
+
+    expect(listener).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerId: provider.id,
+        connection,
+        status: 'stopped',
+      }),
+    );
   });
 });

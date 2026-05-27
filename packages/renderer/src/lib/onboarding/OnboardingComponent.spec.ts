@@ -65,11 +65,14 @@ const providerInfo: ProviderInfo = {
   cleanupSupport: false,
   inferenceConnections: [],
   ragConnections: [],
+  chunkConnections: [],
   flowConnections: [],
   inferenceProviderConnectionCreation: false,
   inferenceProviderConnectionInitialization: false,
   ragProviderConnectionCreation: false,
   ragProviderConnectionInitialization: false,
+  chunkProviderConnectionCreation: false,
+  chunkProviderConnectionInitialization: false,
 };
 
 async function waitRender(customProperties: object): Promise<void> {

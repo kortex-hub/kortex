@@ -35,6 +35,7 @@ const PROVIDER_MOCK = {
   vmConnections: [],
   inferenceConnections: [],
   ragConnections: [],
+  chunkConnections: [],
   mcpConnections: [],
   status: 'ready' as ProviderStatus,
   images: {

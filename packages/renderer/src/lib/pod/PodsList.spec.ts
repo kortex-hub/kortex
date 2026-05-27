@@ -74,11 +74,14 @@ const provider: ProviderInfo = {
   cleanupSupport: false,
   inferenceConnections: [],
   ragConnections: [],
+  chunkConnections: [],
   flowConnections: [],
   inferenceProviderConnectionCreation: false,
   inferenceProviderConnectionInitialization: false,
   ragProviderConnectionCreation: false,
   ragProviderConnectionInitialization: false,
+  chunkProviderConnectionCreation: false,
+  chunkProviderConnectionInitialization: false,
 };
 
 const pod1: PodInfo = {

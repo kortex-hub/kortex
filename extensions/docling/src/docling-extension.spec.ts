@@ -20,11 +20,14 @@ import { openAsBlob } from 'node:fs';
 import { copyFile, mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import type { ChunkProvider, Extension, ExtensionContext } from '@openkaiden/api';
-import { extensions, process as apiProcess, rag, Uri } from '@openkaiden/api';
+import type { ChunkProvider, Extension, ExtensionContext, Provider } from '@openkaiden/api';
+import { extensions, process as apiProcess, provider as providerApi, rag, Uri } from '@openkaiden/api';
 import type { ContainerExtensionAPI } from '@openkaiden/container-extension-api';
 import type Dockerode from 'dockerode';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+
+import { InversifyBinding } from '/@/inject/inversify-binding';
+import type { ConnectionManager } from '/@/manager/connection-manager';
 
 import { DoclingExtension } from './docling-extension';
 import { generateRandomFolderName } from './util';
@@ -32,6 +35,8 @@ import { generateRandomFolderName } from './util';
 vi.mock(import('node:fs'));
 vi.mock(import('node:fs/promises'));
 vi.mock(import('./util'));
+vi.mock(import('/@/inject/inversify-binding'));
+vi.mock(import('/@/manager/connection-manager'));
 
 describe('DoclingExtension', () => {
   let extensionContext: ExtensionContext;
@@ -40,6 +45,9 @@ describe('DoclingExtension', () => {
   let dockerodeMock: Dockerode;
   let containerMock: Dockerode.Container;
   let imageMock: Dockerode.Image;
+  let providerMock: Provider;
+  let connectionManagerMock: ConnectionManager;
+  let inversifyBindingMock: InversifyBinding;
 
   const originalConsoleError = console.error;
 
@@ -49,13 +57,11 @@ describe('DoclingExtension', () => {
 
     console.error = vi.fn();
 
-    // Mock extension context
     extensionContext = {
       subscriptions: [],
       storagePath: '/test/storage',
     } as unknown as ExtensionContext;
 
-    // Mock container
     containerMock = {
       id: 'test-container-id',
       start: vi.fn().mockResolvedValue(undefined),
@@ -63,12 +69,10 @@ describe('DoclingExtension', () => {
       remove: vi.fn().mockResolvedValue(undefined),
     } as unknown as Dockerode.Container;
 
-    // Mock image
     imageMock = {
       inspect: vi.fn().mockResolvedValue({}),
     } as unknown as Dockerode.Image;
 
-    // Mock dockerode
     dockerodeMock = {
       listContainers: vi.fn().mockResolvedValue([]),
       createContainer: vi.fn().mockResolvedValue(containerMock),
@@ -80,9 +84,18 @@ describe('DoclingExtension', () => {
       },
     } as unknown as Dockerode;
 
-    // Mock container extension API
+    providerMock = {
+      setChunkProviderConnectionFactory: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+      registerChunkProviderConnection: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+      dispose: vi.fn(),
+    } as unknown as Provider;
+
+    vi.mocked(providerApi.createProvider).mockReturnValue(providerMock);
+
     containerExtensionAPI = {
-      getEndpoints: vi.fn().mockReturnValue([{ dockerode: dockerodeMock }]),
+      getEndpoints: vi.fn().mockReturnValue([{ dockerode: dockerodeMock, path: '/test/endpoint' }]),
+      onContainersChanged: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+      onEndpointsChanged: vi.fn().mockReturnValue({ dispose: vi.fn() }),
     } as unknown as ContainerExtensionAPI;
 
     const extensionData = {
@@ -91,17 +104,30 @@ describe('DoclingExtension', () => {
 
     vi.mocked(extensions.getExtension).mockReturnValue(extensionData);
 
+    connectionManagerMock = {
+      init: vi.fn().mockResolvedValue(undefined),
+      dispose: vi.fn().mockResolvedValue(undefined),
+    } as unknown as ConnectionManager;
+
+    inversifyBindingMock = {
+      initBindings: vi.fn().mockResolvedValue({
+        get: vi.fn().mockReturnValue(connectionManagerMock),
+      }),
+      dispose: vi.fn().mockResolvedValue(undefined),
+    } as unknown as InversifyBinding;
+
+    vi.mocked(InversifyBinding).mockImplementation(function () {
+      return inversifyBindingMock;
+    } as unknown as typeof InversifyBinding);
+
     doclingExtension = new DoclingExtension(extensionContext);
 
-    // Mock global fetch
     global.fetch = vi.fn();
 
-    // Mock file system operations
     vi.mocked(mkdir).mockResolvedValue(undefined);
     vi.mocked(rm).mockResolvedValue(undefined);
     vi.mocked(copyFile).mockResolvedValue(undefined);
 
-    // Mock util function
     vi.mocked(generateRandomFolderName).mockReturnValue('randomfolder');
   });
 
@@ -110,8 +136,45 @@ describe('DoclingExtension', () => {
   });
 
   describe('activate', () => {
+    test('should create provider and initialize InversifyBinding', async () => {
+      vi.mocked(dockerodeMock.listContainers).mockResolvedValue([
+        {
+          Id: 'existing-container-id',
+          Labels: {
+            'ai.openkaiden.docling.port': '8080',
+          },
+          State: 'running',
+        },
+      ] as unknown as Dockerode.ContainerInfo[]);
+
+      await doclingExtension.activate();
+
+      expect(providerApi.createProvider).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'docling',
+          name: 'Docling',
+          status: 'ready',
+        }),
+      );
+      expect(InversifyBinding).toHaveBeenCalledWith(providerMock, containerExtensionAPI, extensionContext);
+      expect(inversifyBindingMock.initBindings).toHaveBeenCalled();
+    });
+
+    test('should initialize ConnectionManager', async () => {
+      vi.mocked(dockerodeMock.listContainers).mockResolvedValue([
+        {
+          Id: 'existing-container-id',
+          Labels: { 'ai.openkaiden.docling.port': '8080' },
+          State: 'running',
+        },
+      ] as unknown as Dockerode.ContainerInfo[]);
+
+      await doclingExtension.activate();
+
+      expect(connectionManagerMock.init).toHaveBeenCalled();
+    });
+
     test('should activate successfully with existing container', async () => {
-      // Mock existing container
       vi.mocked(dockerodeMock.listContainers).mockResolvedValue([
         {
           Id: 'existing-container-id',
@@ -126,23 +189,19 @@ describe('DoclingExtension', () => {
 
       await doclingExtension.activate();
 
-      // Verify chunk provider was registered
       expect(rag.registerChunkProvider).toHaveBeenCalled();
       expect(spy).toHaveBeenCalled();
     });
 
     test('should activate successfully by launching new container', async () => {
-      // Mock no existing containers
       vi.mocked(dockerodeMock.listContainers).mockResolvedValue([]);
 
-      // Mock health check
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
       } as Response);
 
       await doclingExtension.activate();
 
-      // Verify container was created
       expect(mkdir).toHaveBeenCalledWith(join('/test', 'storage', 'docling-workspace'), { recursive: true });
       expect(dockerodeMock.createContainer).toHaveBeenCalled();
       expect(containerMock.start).toHaveBeenCalled();
@@ -167,17 +226,14 @@ describe('DoclingExtension', () => {
     });
 
     test('should fail when container launch fails', async () => {
-      // Mock no existing containers
       vi.mocked(dockerodeMock.listContainers).mockResolvedValue([]);
 
-      // Mock container creation failure
       vi.mocked(dockerodeMock.createContainer).mockRejectedValue(new Error('Container creation failed'));
 
       await expect(doclingExtension.activate()).rejects.toThrow('Container creation failed');
     });
 
     test('should restart stopped container', async () => {
-      // Mock existing but stopped container
       vi.mocked(dockerodeMock.listContainers).mockResolvedValue([
         {
           Id: 'stopped-container-id',
@@ -192,7 +248,6 @@ describe('DoclingExtension', () => {
 
       await doclingExtension.activate();
 
-      // Verify container was started
       expect(containerMock.start).toHaveBeenCalled();
       expect(rag.registerChunkProvider).toHaveBeenCalled();
     });
@@ -200,7 +255,6 @@ describe('DoclingExtension', () => {
 
   describe('deactivate', () => {
     beforeEach(async () => {
-      // Set up container info
       vi.mocked(dockerodeMock.listContainers).mockResolvedValue([
         {
           Id: 'test-container-id',
@@ -219,8 +273,14 @@ describe('DoclingExtension', () => {
     test('should stop container', async () => {
       await doclingExtension.deactivate();
 
-      // Verify container was stopped and removed
       expect(containerMock.stop).toHaveBeenCalled();
+    });
+
+    test('should dispose ConnectionManager and InversifyBinding on deactivate', async () => {
+      await doclingExtension.deactivate();
+
+      expect(connectionManagerMock.dispose).toHaveBeenCalled();
+      expect(inversifyBindingMock.dispose).toHaveBeenCalled();
     });
 
     test('should handle errors when stopping container', async () => {
@@ -237,7 +297,7 @@ describe('DoclingExtension', () => {
       expect(console.error).toHaveBeenCalled();
     });
 
-    test('should do nothing if container info is not set', async () => {
+    test('should do nothing for legacy container if container info is not set', async () => {
       const freshExtension = new DoclingExtension(extensionContext);
       await freshExtension.deactivate();
 
@@ -248,7 +308,6 @@ describe('DoclingExtension', () => {
 
   describe('convertDocument', () => {
     beforeEach(async () => {
-      // Set up container info
       vi.mocked(dockerodeMock.listContainers).mockResolvedValue([
         {
           Id: 'test-container-id',
@@ -269,7 +328,6 @@ describe('DoclingExtension', () => {
       vi.mocked(Uri.file).mockReturnValue({ fsPath: '/path/to/document.pdf' } as unknown as Uri);
       const docUri = Uri.file('/path/to/document.pdf');
 
-      // Mock fetch response
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: vi.fn().mockResolvedValue({
@@ -294,7 +352,6 @@ describe('DoclingExtension', () => {
       vi.mocked(Uri.file).mockReturnValue({ fsPath: '/path/to/document.pdf' } as unknown as Uri);
       const docUri = Uri.file('/path/to/document.pdf');
 
-      // Mock fetch response with error
       vi.mocked(global.fetch).mockResolvedValue({
         ok: false,
         status: 500,
@@ -324,6 +381,24 @@ describe('DoclingExtension', () => {
         containerId: 'existing-container-id',
         port: 8080,
       });
+    });
+
+    test('should skip containers with name label (named connections)', async () => {
+      vi.mocked(dockerodeMock.listContainers).mockResolvedValue([
+        {
+          Id: 'named-container-id',
+          Labels: {
+            'ai.openkaiden.docling.port': '9090',
+            'ai.openkaiden.docling.name': 'my-connection',
+          },
+          Status: 'running',
+          State: 'running',
+        },
+      ] as unknown as Dockerode.ContainerInfo[]);
+
+      const result = await doclingExtension.discoverExistingContainer(containerExtensionAPI);
+
+      expect(result).toBeUndefined();
     });
 
     test('should restart stopped container', async () => {
@@ -376,7 +451,6 @@ describe('DoclingExtension', () => {
 
   describe('launchContainer', () => {
     test('should launch container successfully when image exists', async () => {
-      // Mock health check
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
       } as Response);
@@ -405,10 +479,8 @@ describe('DoclingExtension', () => {
     });
 
     test('should pull image if not available', async () => {
-      // Mock image not found
       vi.mocked(imageMock.inspect).mockRejectedValue(new Error('Image not found'));
 
-      // Mock health check
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
       } as Response);

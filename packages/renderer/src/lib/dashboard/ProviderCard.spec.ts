@@ -51,11 +51,14 @@ test('Expect provider region', async () => {
     cleanupSupport: false,
     inferenceConnections: [],
     ragConnections: [],
+    chunkConnections: [],
     flowConnections: [],
     inferenceProviderConnectionCreation: false,
     inferenceProviderConnectionInitialization: false,
     ragProviderConnectionCreation: false,
     ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
   render(ProviderCard, { provider });
 
@@ -87,11 +90,14 @@ test('Expect provider name', async () => {
     cleanupSupport: false,
     inferenceConnections: [],
     ragConnections: [],
+    chunkConnections: [],
     flowConnections: [],
     inferenceProviderConnectionCreation: false,
     inferenceProviderConnectionInitialization: false,
     ragProviderConnectionCreation: false,
     ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
   render(ProviderCard, { provider });
 
@@ -124,11 +130,14 @@ test('Expect provider icon', async () => {
     cleanupSupport: false,
     inferenceConnections: [],
     ragConnections: [],
+    chunkConnections: [],
     flowConnections: [],
     inferenceProviderConnectionCreation: false,
     inferenceProviderConnectionInitialization: false,
     ragProviderConnectionCreation: false,
     ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
 
   render(ProviderCard, { provider });
@@ -165,11 +174,14 @@ test('Expect no provider version', async () => {
     cleanupSupport: false,
     inferenceConnections: [],
     ragConnections: [],
+    chunkConnections: [],
     flowConnections: [],
     inferenceProviderConnectionCreation: false,
     inferenceProviderConnectionInitialization: false,
     ragProviderConnectionCreation: false,
     ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
   render(ProviderCard, { provider });
 
@@ -202,11 +214,14 @@ test('Expect provider version', async () => {
     cleanupSupport: false,
     inferenceConnections: [],
     ragConnections: [],
+    chunkConnections: [],
     flowConnections: [],
     inferenceProviderConnectionCreation: false,
     inferenceProviderConnectionInitialization: false,
     ragProviderConnectionCreation: false,
     ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
   render(ProviderCard, { provider });
 
@@ -239,11 +254,14 @@ test('Expect provider state', async () => {
     cleanupSupport: false,
     inferenceConnections: [],
     ragConnections: [],
+    chunkConnections: [],
     flowConnections: [],
     inferenceProviderConnectionCreation: false,
     inferenceProviderConnectionInitialization: false,
     ragProviderConnectionCreation: false,
     ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
   render(ProviderCard, { provider });
 

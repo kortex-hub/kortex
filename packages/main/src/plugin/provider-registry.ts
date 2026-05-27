@@ -20,6 +20,7 @@ import type {
   AuditRequestItems,
   AuditResult,
   CancellationToken,
+  ChunkProviderConnection,
   ConnectionFactory,
   ConnectionFactoryDetails,
   ContainerProviderConnection,
@@ -29,6 +30,7 @@ import type {
   Logger,
   Provider,
   ProviderAutostart,
+  ProviderChunkProviderConnection,
   ProviderCleanup,
   ProviderCleanupAction,
   ProviderCleanupExecuteOptions,
@@ -50,18 +52,21 @@ import type {
   ProviderStatus,
   ProviderUpdate,
   RagProviderConnection,
+  RegisterChunkProviderConnectionEvent,
   RegisterContainerConnectionEvent,
   RegisterFlowConnectionEvent,
   RegisterInferenceConnectionEvent,
   RegisterKubernetesConnectionEvent,
   RegisterRagConnectionEvent,
   RegisterVmConnectionEvent,
+  UnregisterChunkProviderConnectionEvent,
   UnregisterContainerConnectionEvent,
   UnregisterFlowConnectionEvent,
   UnregisterInferenceConnectionEvent,
   UnregisterKubernetesConnectionEvent,
   UnregisterRagConnectionEvent,
   UnregisterVmConnectionEvent,
+  UpdateChunkProviderConnectionEvent,
   UpdateContainerConnectionEvent,
   UpdateKubernetesConnectionEvent,
   UpdateRagConnectionEvent,
@@ -78,6 +83,7 @@ import type {
   InferenceConnectionCredentials,
   LifecycleMethod,
   PreflightChecksCallback,
+  ProviderChunkProviderConnectionInfo,
   ProviderCleanupActionInfo,
   ProviderConnectionInfo,
   ProviderContainerConnectionInfo,
@@ -138,6 +144,7 @@ export class ProviderRegistry {
   protected inferenceProviders: Map<string, InferenceProviderConnection> = new Map();
   protected ragProviders: Map<string, RagProviderConnection> = new Map();
   protected flowProviders: Map<string, FlowProviderConnection> = new Map();
+  protected chunkProviders: Map<string, ChunkProviderConnection> = new Map();
 
   private readonly _onDidUpdateProvider = new Emitter<ProviderEvent>();
   readonly onDidUpdateProvider: Event<ProviderEvent> = this._onDidUpdateProvider.event;
@@ -200,6 +207,18 @@ export class ProviderRegistry {
   private readonly _onDidUnregisterFlowConnection = new Emitter<UnregisterFlowConnectionEvent>();
   readonly onDidUnregisterFlowConnection: Event<UnregisterFlowConnectionEvent> =
     this._onDidUnregisterFlowConnection.event;
+
+  private readonly _onDidRegisterChunkConnection = new Emitter<RegisterChunkProviderConnectionEvent>();
+  readonly onDidRegisterChunkConnection: Event<RegisterChunkProviderConnectionEvent> =
+    this._onDidRegisterChunkConnection.event;
+
+  private readonly _onDidUpdateChunkConnection = new Emitter<UpdateChunkProviderConnectionEvent>();
+  readonly onDidUpdateChunkConnection: Event<UpdateChunkProviderConnectionEvent> =
+    this._onDidUpdateChunkConnection.event;
+
+  private readonly _onDidUnregisterChunkConnection = new Emitter<UnregisterChunkProviderConnectionEvent>();
+  readonly onDidUnregisterChunkConnection: Event<UnregisterChunkProviderConnectionEvent> =
+    this._onDidUnregisterChunkConnection.event;
 
   private readonly _onDidRegisterContainerConnection = new Emitter<RegisterContainerConnectionEvent>();
   readonly onDidRegisterContainerConnection: Event<RegisterContainerConnectionEvent> =
@@ -759,6 +778,10 @@ export class ProviderRegistry {
     return this.getProviderConnectionInfo(connection) as ProviderFlowConnectionInfo;
   }
 
+  public getProviderChunkConnectionInfo(connection: ChunkProviderConnection): ProviderChunkProviderConnectionInfo {
+    return this.getProviderConnectionInfo(connection) as ProviderChunkProviderConnectionInfo;
+  }
+
   private getProviderConnectionInfo(connection: ProviderConnection): ProviderConnectionInfo {
     let providerConnection: ProviderConnectionInfo;
     if (this.isContainerConnection(connection)) {
@@ -810,6 +833,13 @@ export class ProviderRegistry {
         status: connection.status(),
         connectionType: 'flow',
       };
+    } else if (this.isChunkConnection(connection)) {
+      providerConnection = {
+        id: connection.id,
+        name: connection.name,
+        status: connection.status(),
+        connectionType: 'chunk',
+      };
     } else {
       providerConnection = {
         connectionType: 'vm',
@@ -856,6 +886,9 @@ export class ProviderRegistry {
     });
     const flowConnections: ProviderFlowConnectionInfo[] = provider.flowConnections.map(connection => {
       return this.getProviderFlowConnectionInfo(connection);
+    });
+    const chunkConnections: ProviderChunkProviderConnectionInfo[] = provider.chunkConnections.map(connection => {
+      return this.getProviderChunkConnectionInfo(connection);
     });
 
     // container connection factory ?
@@ -933,6 +966,18 @@ export class ProviderRegistry {
       ragProviderConnectionInitialization = true;
     }
 
+    // Chunk connection factory ?
+    let chunkProviderConnectionCreation = false;
+    let chunkProviderConnectionInitialization = false;
+    const chunkProviderConnectionCreationDisplayName = provider.chunkProviderConnectionFactory?.creationDisplayName;
+    const chunkProviderConnectionCreationButtonTitle = provider.chunkProviderConnectionFactory?.creationButtonTitle;
+    if (provider.chunkProviderConnectionFactory) {
+      chunkProviderConnectionCreation = true;
+    }
+    if (provider?.chunkProviderConnectionFactory?.initialize) {
+      chunkProviderConnectionInitialization = true;
+    }
+
     const emptyConnectionMarkdownDescription = provider.emptyConnectionMarkdownDescription;
 
     // handle installation
@@ -958,6 +1003,7 @@ export class ProviderRegistry {
       inferenceConnections,
       ragConnections,
       flowConnections,
+      chunkConnections,
       status: provider.status,
       containerProviderConnectionCreation,
       kubernetesProviderConnectionCreation,
@@ -985,6 +1031,11 @@ export class ProviderRegistry {
       ragProviderConnectionInitialization,
       ragProviderConnectionCreationDisplayName,
       ragProviderConnectionCreationButtonTitle,
+      // Chunk
+      chunkProviderConnectionCreation,
+      chunkProviderConnectionInitialization,
+      chunkProviderConnectionCreationDisplayName,
+      chunkProviderConnectionCreationButtonTitle,
       // other
       emptyConnectionMarkdownDescription,
       links: provider.links,
@@ -1189,6 +1240,20 @@ export class ProviderRegistry {
     return provider.ragProviderConnectionFactory.create(params, logHandler, token);
   }
 
+  async createChunkProviderConnection(
+    internalProviderId: string,
+    params: { [key: string]: unknown },
+    logHandler: Logger,
+    token?: CancellationToken,
+  ): Promise<void> {
+    const provider = this.getMatchingProvider(internalProviderId);
+
+    if (!provider.chunkProviderConnectionFactory?.create) {
+      throw new Error('The provider does not support Chunk connection creation');
+    }
+    return provider.chunkProviderConnectionFactory.create(params, logHandler, token);
+  }
+
   // helper method
   protected getMatchingContainerConnectionFromProvider(
     internalProviderId: string,
@@ -1297,6 +1362,21 @@ export class ProviderRegistry {
     return connection;
   }
 
+  protected getMatchingChunkConnectionFromProvider(
+    internalProviderId: string,
+    providerChunkConnectionInfo: ProviderChunkProviderConnectionInfo,
+  ): ChunkProviderConnection {
+    const provider = this.getMatchingProvider(internalProviderId);
+
+    const connection = provider.chunkConnections.find(
+      connection => connection.name === providerChunkConnectionInfo.name,
+    );
+    if (!connection) {
+      throw new Error(`no chunk connection matching provider id ${internalProviderId}`);
+    }
+    return connection;
+  }
+
   getMatchingConnectionFromProvider(
     internalProviderId: string,
     providerContainerConnectionInfo:
@@ -1318,6 +1398,8 @@ export class ProviderRegistry {
       return this.getMatchingFlowConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
     } else if (this.isRagConnectionInfo(providerContainerConnectionInfo)) {
       return this.getMatchingRagConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
+    } else if (this.isChunkConnectionInfo(providerContainerConnectionInfo)) {
+      return this.getMatchingChunkConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
     }
     throw new Error('Unknown connection type');
   }
@@ -1355,6 +1437,10 @@ export class ProviderRegistry {
     return (connection as ProviderFlowConnectionInfo).connectionType === 'flow';
   }
 
+  isChunkConnectionInfo(connection: ProviderConnectionInfo): connection is ProviderChunkProviderConnectionInfo {
+    return (connection as ProviderChunkProviderConnectionInfo).connectionType === 'chunk';
+  }
+
   isContainerConnection(connection: ProviderConnection): connection is ContainerProviderConnection {
     return (connection as ContainerProviderConnection).endpoint?.socketPath !== undefined;
   }
@@ -1376,6 +1462,10 @@ export class ProviderRegistry {
 
   isFlowConnection(connection: ProviderConnection): connection is FlowProviderConnection {
     return 'flow' in connection;
+  }
+
+  isChunkConnection(connection: ProviderConnection): connection is ChunkProviderConnection {
+    return 'chunk' in connection;
   }
 
   async startProviderConnection(
@@ -1422,6 +1512,15 @@ export class ProviderRegistry {
         const connection = this.ragProviders.get(provider.id + '.' + providerConnectionInfo.name);
         if (connection !== undefined) {
           this._onDidUpdateRagConnection.fire({
+            providerId: provider.id,
+            connection,
+            status: 'started',
+          });
+        }
+      } else if (this.isChunkConnectionInfo(providerConnectionInfo)) {
+        const connection = this.chunkProviders.get(provider.id + '.' + providerConnectionInfo.name);
+        if (connection !== undefined) {
+          this._onDidUpdateChunkConnection.fire({
             providerId: provider.id,
             connection,
             status: 'started',
@@ -1546,6 +1645,15 @@ export class ProviderRegistry {
         const connection = this.ragProviders.get(provider.id + '.' + providerConnectionInfo.name);
         if (connection !== undefined) {
           this._onDidUpdateRagConnection.fire({
+            providerId: provider.id,
+            connection,
+            status: 'stopped',
+          });
+        }
+      } else if (this.isChunkConnectionInfo(providerConnectionInfo)) {
+        const connection = this.chunkProviders.get(provider.id + '.' + providerConnectionInfo.name);
+        if (connection !== undefined) {
+          this._onDidUpdateChunkConnection.fire({
             providerId: provider.id,
             connection,
             status: 'stopped',
@@ -1696,6 +1804,12 @@ export class ProviderRegistry {
     this._onDidRegisterFlowConnection.fire({ providerId: provider.id, connection: connection });
   }
 
+  onDidRegisterChunkConnectionCallback(provider: ProviderImpl, connection: ChunkProviderConnection): void {
+    this.connectionLifecycleContexts.set(connection, new LifecycleContextImpl());
+    this.apiSender.send('provider-register-chunk-connection', { name: connection.name });
+    this._onDidRegisterChunkConnection.fire({ providerId: provider.id, connection });
+  }
+
   onDidChangeContainerProviderConnectionStatus(
     provider: ProviderImpl,
     containerConnection: ContainerProviderConnection,
@@ -1755,6 +1869,11 @@ export class ProviderRegistry {
   onDidUnregisterFlowConnectionCallback(provider: ProviderImpl, connection: FlowProviderConnection): void {
     this.apiSender.send('provider-unregister-flow-connection', { name: connection.name });
     this._onDidUnregisterFlowConnection.fire({ providerId: provider.id, connectionName: connection.name });
+  }
+
+  onDidUnregisterChunkConnectionCallback(provider: ProviderImpl, connection: ChunkProviderConnection): void {
+    this.apiSender.send('provider-unregister-chunk-connection', { name: connection.name });
+    this._onDidUnregisterChunkConnection.fire({ providerId: provider.id, connection });
   }
 
   onDidUnregisterVmConnectionCallback(provider: ProviderImpl, vmProviderConnection: VmProviderConnection): void {
@@ -1958,6 +2077,50 @@ export class ProviderRegistry {
     });
   }
 
+  registerChunkConnection(provider: Provider, connection: ChunkProviderConnection): Disposable {
+    const providerName = connection.name;
+    const id = `${provider.id}.${providerName}`;
+    this.chunkProviders.set(id, connection);
+    this.telemetryService.track('registerChunkProviderConnection', {
+      name: connection.name,
+      total: this.chunkProviders.size,
+    });
+
+    let previousStatus = connection.status();
+
+    const timer = setInterval(() => {
+      const newStatus = connection.status();
+      if (newStatus !== previousStatus) {
+        this._onDidUpdateChunkConnection.fire({
+          providerId: provider.id,
+          connection,
+          status: newStatus,
+        });
+        this.apiSender.send('provider-change', {});
+        previousStatus = newStatus;
+      }
+    }, 2000);
+
+    return Disposable.create(() => {
+      clearInterval(timer);
+      this.chunkProviders.delete(id);
+      this.apiSender.send('provider-change', {});
+    });
+  }
+
+  getChunkConnections(): ProviderChunkProviderConnection[] {
+    const connections: ProviderChunkProviderConnection[] = [];
+    this.providers.forEach(provider => {
+      provider.chunkConnections.forEach(connection => {
+        connections.push({
+          providerId: provider.id,
+          connection,
+        });
+      });
+    });
+    return connections;
+  }
+
   async shellInProviderConnection(
     internalProviderId: string,
     providerConnectionInfo: ProviderConnectionInfo,
@@ -1979,6 +2142,7 @@ export class ProviderRegistry {
         !this.isInferenceConnection(containerConnection) &&
         !this.isFlowConnection(containerConnection) &&
         !this.isRagConnection(containerConnection) &&
+        !this.isChunkConnection(containerConnection) &&
         providerConnectionInfo.status === 'started'
       ) {
         shellAccess = containerConnection.shellAccess;
@@ -2105,6 +2269,13 @@ export class ProviderRegistry {
     if (!provider) throw new Error('Provider not found');
 
     return provider.flowConnections;
+  }
+
+  getChunkProviderConnection(internalProviderId: string): Array<ChunkProviderConnection> {
+    const provider = this.providers.get(internalProviderId);
+    if (!provider) throw new Error('Provider not found');
+
+    return provider.chunkConnections;
   }
 
   protected fireUpdateContainerConnectionEvents(
