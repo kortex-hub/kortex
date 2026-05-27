@@ -111,11 +111,11 @@ const filesystemBadge = $derived.by(() => {
           <Icon icon={agentDef.icon} size="1.5x" class="text-white" />
         </div>
         <div class="flex-1 min-w-0">
-          <h2 class="text-[15px] font-semibold text-[var(--pd-content-card-header-text)] m-0 mb-0.5" aria-label="Agent name">
+          <h2 class="text-[15px] font-semibold text-[var(--pd-content-card-header-text)] m-0 mb-0.5">
             {agentDef.title}
           </h2>
           {#if workspaceSummary?.model}
-            <p class="text-xs text-[var(--pd-link)] m-0" aria-label="Model">
+            <p class="text-xs text-[var(--pd-link)] m-0">
               {workspaceSummary.model}
             </p>
           {/if}
@@ -129,7 +129,7 @@ const filesystemBadge = $derived.by(() => {
         </div>
       </div>
       {#if workspaceSummary?.project}
-        <p class="text-[13px] text-[var(--pd-content-text)] leading-relaxed m-0" aria-label="Project">
+        <p class="text-[13px] text-[var(--pd-content-text)] leading-relaxed m-0">
           Project: {workspaceSummary.project}
         </p>
       {/if}
@@ -178,8 +178,7 @@ const filesystemBadge = $derived.by(() => {
             Skills
           </h3>
           <span
-            class="text-[11px] font-semibold py-0.5 px-2 rounded-[10px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] text-[var(--pd-link)]"
-            aria-label="Skills count">
+            class="text-[11px] font-semibold py-0.5 px-2 rounded-[10px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] text-[var(--pd-link)]">
             {skillsList.length}
           </span>
         </div>
@@ -210,8 +209,7 @@ const filesystemBadge = $derived.by(() => {
             MCP Servers
           </h3>
           <span
-            class="text-[11px] font-semibold py-0.5 px-2 rounded-[10px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] text-[var(--pd-link)]"
-            aria-label="MCP Servers count">
+            class="text-[11px] font-semibold py-0.5 px-2 rounded-[10px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] text-[var(--pd-link)]">
             {mcpServersList.length}
           </span>
         </div>
@@ -242,8 +240,7 @@ const filesystemBadge = $derived.by(() => {
             Filesystem
           </h3>
           <span
-            class="text-[11px] font-semibold py-0.5 px-2 rounded-[10px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] text-[var(--pd-link)]"
-            aria-label="Filesystem mode">
+            class="text-[11px] font-semibold py-0.5 px-2 rounded-[10px] bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] text-[var(--pd-link)]">
             {filesystemBadge}
           </span>
         </div>

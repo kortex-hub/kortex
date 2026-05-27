@@ -215,13 +215,12 @@ export class AgentWorkspaceCreatePage extends BasePage {
     return this.selectModelByRuntime(runtime);
   }
 
-  async searchAndSelectDefault(searchTerm: string, verifyRuntime?: string): Promise<string | undefined> {
+  async searchAndSelectDefault(searchTerm: string, verifyRuntime?: string): Promise<string> {
     await this.searchModel(searchTerm);
     if (verifyRuntime) {
       await this.verifyModelRuntimes(verifyRuntime);
     }
-    await this.selectDefaultModel();
-    return undefined;
+    return this.selectDefaultModel();
   }
 
   private async selectRadio(radio: Locator): Promise<string> {

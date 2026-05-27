@@ -66,7 +66,7 @@ export function registerWorkspaceLifecycleTests(
     test.skip(!process.env[envVar], `${envVar} not set`);
   }
 
-  let workingDir: string;
+  let workingDir: string | undefined;
   let countsBefore: { activeSessions: number; totalSessions: number; configuredAgents: number };
 
   test.beforeAll(async ({ navigationBar }) => {
@@ -81,7 +81,9 @@ export function registerWorkspaceLifecycleTests(
   });
 
   test.afterAll(async ({ navigationBar }) => {
-    rmSync(workingDir, { recursive: true, force: true });
+    if (workingDir) {
+      rmSync(workingDir, { recursive: true, force: true });
+    }
     if (config.requiredResource) {
       const provider = PROVIDERS[config.requiredResource];
       if (!('autoDetected' in provider && provider.autoDetected)) {
@@ -105,7 +107,7 @@ export function registerWorkspaceLifecycleTests(
     const createPage = await agentWorkspacesPage.openCreatePage();
 
     await createPage.sessionNameInput.fill(config.workspaceName);
-    await createPage.workingDirInput.fill(workingDir);
+    await createPage.workingDirInput.fill(workingDir!);
     await createPage.continueToStep(WIZARD_STEP.AGENT_MODEL);
 
     await createPage.selectAgent(config.agent);

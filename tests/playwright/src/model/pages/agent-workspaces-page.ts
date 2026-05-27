@@ -57,7 +57,7 @@ export class AgentWorkspacesPage extends BaseTablePage {
     const valueSpan = this.getStatCardValue(label);
     await expect(valueSpan).toBeVisible();
     const text = await valueSpan.textContent();
-    return parseInt(text ?? '0', 10);
+    return Number.parseInt(text ?? '0', 10);
   }
 
   async getStatCounts(): Promise<{ activeSessions: number; totalSessions: number; configuredAgents: number }> {

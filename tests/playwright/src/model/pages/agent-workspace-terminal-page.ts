@@ -73,7 +73,7 @@ export class AgentWorkspaceTerminalPage extends BasePage {
       await expect
         .poll(() => this.getTerminalText(), {
           timeout,
-          message: `Terminal content did not change after pressing Enter`,
+          message: 'Terminal content did not change after pressing Enter',
         })
         .not.toBe(contentAfterSubmit);
       await this.waitForTerminalContent(expectedResponse, timeout);
