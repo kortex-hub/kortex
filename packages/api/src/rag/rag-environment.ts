@@ -27,7 +27,10 @@ export interface RagEnvironment {
     name: string;
     providerId: string;
   };
-  chunkerId: string;
+  chunkerConnection: {
+    id: string;
+    providerId: string;
+  };
   files: FileInfo[];
   mcpServer?: MCPRemoteServerInfo;
 }

@@ -1,9 +1,7 @@
 import type { ProviderInfo } from '/@api/provider-info';
-import type { ChunkProviderInfo } from '/@api/rag/chunk-provider-info';
 import type { RagEnvironment } from '/@api/rag/rag-environment';
 
 export function getDatabaseName(providerInfos: ProviderInfo[], ragEnvironment: RagEnvironment | undefined): string {
-  // Extract database name from connection ID or show the ID
   const ragProvider = providerInfos.find(provider => provider.id === ragEnvironment?.ragConnection.providerId);
   const ragConnection = ragProvider?.ragConnections.find(
     connection => connection.name === ragEnvironment?.ragConnection.name,
@@ -12,9 +10,11 @@ export function getDatabaseName(providerInfos: ProviderInfo[], ragEnvironment: R
 }
 
 export function getChunkProviderName(
-  chunkProviders: ChunkProviderInfo[],
+  providerInfos: ProviderInfo[],
   ragEnvironment: RagEnvironment | undefined,
 ): string {
-  const chunkProvider = chunkProviders.find(provider => provider.id === ragEnvironment?.chunkerId);
-  return chunkProvider?.name ?? 'N/A';
+  if (!ragEnvironment) return 'N/A';
+  const provider = providerInfos.find(p => p.id === ragEnvironment.chunkerConnection.providerId);
+  const connection = provider?.chunkConnections.find(c => c.id === ragEnvironment.chunkerConnection.id);
+  return connection ? `${connection.name} (${provider?.name})` : 'N/A';
 }

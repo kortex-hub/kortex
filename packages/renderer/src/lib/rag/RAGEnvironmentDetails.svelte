@@ -9,7 +9,6 @@ import { getChunkProviderName, getDatabaseName } from '/@/lib/rag/rag-environmen
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
-import { chunkProviders } from '/@/stores/chunk-providers';
 import { providerInfos } from '/@/stores/providers';
 import { ragEnvironments } from '/@/stores/rag-environments';
 
@@ -29,7 +28,7 @@ const files = $derived.by(() => {
 });
 
 const databaseName = $derived(getDatabaseName($providerInfos, ragEnvironment));
-const chunkProviderName = $derived(getChunkProviderName($chunkProviders, ragEnvironment));
+const chunkProviderName = $derived(getChunkProviderName($providerInfos, ragEnvironment));
 
 async function handleAddFile(): Promise<void> {
   if (!ragEnvironment) return;

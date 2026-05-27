@@ -2033,8 +2033,12 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld(
     'createRagEnvironment',
-    async (name: string, ragConnection: { name: string; providerId: string }, chunkerId: string): Promise<void> => {
-      return ipcInvoke('rag-environment-registry:createRagEnvironment', name, ragConnection, chunkerId);
+    async (
+      name: string,
+      ragConnection: { name: string; providerId: string },
+      chunkerConnection: { id: string; providerId: string },
+    ): Promise<void> => {
+      return ipcInvoke('rag-environment-registry:createRagEnvironment', name, ragConnection, chunkerConnection);
     },
   );
 

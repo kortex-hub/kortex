@@ -20,11 +20,10 @@ import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 
-import { type ChunkProvider, ProviderRagConnection } from '@openkaiden/api';
+import type { ChunkProviderConnection, ProviderChunkProviderConnection, ProviderRagConnection } from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 
 import { IPCHandle } from '/@/plugin/api.js';
-import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
 import { INTERNAL_PROVIDER_ID } from '/@/plugin/mcp/mcp-registry.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
@@ -48,8 +47,6 @@ export class RagEnvironmentRegistry {
     private ipcHandle: IPCHandle,
     @inject(Directories)
     private directories: Directories,
-    @inject(ChunkProviderRegistry)
-    private chunkProviderRegistry: ChunkProviderRegistry,
     @inject(ProviderRegistry)
     private providerRegistry: ProviderRegistry,
     @inject(TaskManager)
@@ -77,15 +74,15 @@ export class RagEnvironmentRegistry {
         _listener,
         name: string,
         ragConnection: { name: string; providerId: string },
-        chunkerId: string,
+        chunkerConnection: { id: string; providerId: string },
       ): Promise<void> => {
         const ragEnvironment: RagEnvironment = {
           name,
           ragConnection,
-          chunkerId,
+          chunkerConnection,
           files: [],
         };
-        await this.createEnvironment(name, ragConnection, chunkerId);
+        await this.createEnvironment(name, ragConnection, chunkerConnection);
         this.apiSender.send('rag-environment-created', ragEnvironment);
       },
     );
@@ -271,9 +268,11 @@ export class RagEnvironmentRegistry {
       return false;
     }
 
-    const chunkProvider = this.chunkProviderRegistry.findProviderById(ragEnvironment.chunkerId);
-    if (!chunkProvider) {
-      console.error(`Chunk provider with ID ${ragEnvironment.chunkerId} not found`);
+    const chunkConnection = this.getChunkConnection(ragEnvironment);
+    if (!chunkConnection) {
+      console.error(
+        `Chunk connection with ID ${ragEnvironment.chunkerConnection.id} for provider ${ragEnvironment.chunkerConnection.providerId} not found`,
+      );
       return false;
     }
 
@@ -300,7 +299,7 @@ export class RagEnvironmentRegistry {
       return false;
     }
 
-    this.indexFile(ragEnvironment, fileInfo, chunkProvider, ragConnection).catch((err: unknown) =>
+    this.indexFile(ragEnvironment, fileInfo, chunkConnection.connection, ragConnection).catch((err: unknown) =>
       console.error(`Error indexing file: ${filePath}`, err),
     );
 
@@ -371,10 +370,20 @@ export class RagEnvironmentRegistry {
       );
   }
 
+  private getChunkConnection(ragEnvironment: RagEnvironment): ProviderChunkProviderConnection | undefined {
+    return this.providerRegistry
+      .getChunkConnections()
+      .find(
+        connection =>
+          connection.providerId === ragEnvironment.chunkerConnection.providerId &&
+          connection.connection.id === ragEnvironment.chunkerConnection.id,
+      );
+  }
+
   private async indexFile(
     ragEnvironment: RagEnvironment,
     fileInfo: FileInfo,
-    chunkProvider: ChunkProvider,
+    chunkProvider: ChunkProviderConnection,
     ragConnection: ProviderRagConnection,
   ): Promise<void> {
     const chunkTask = this.taskManager.createTask({
@@ -423,12 +432,12 @@ export class RagEnvironmentRegistry {
   async createEnvironment(
     name: string,
     ragConnection: { name: string; providerId: string },
-    chunkerId: string,
+    chunkerConnection: { id: string; providerId: string },
   ): Promise<void> {
     const ragEnvironment: RagEnvironment = {
       name,
       ragConnection,
-      chunkerId,
+      chunkerConnection,
       files: [],
       mcpServer: undefined,
     };

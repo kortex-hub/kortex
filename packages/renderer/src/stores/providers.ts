@@ -40,8 +40,10 @@ const windowEvents = [
   'provider-register-flow-connection',
   'provider-register-inference-connection',
   'provider-register-mcp-connection',
+  'provider-register-chunk-connection',
   'provider-unregister-vm-connection',
   'provider-unregister-flow-connection',
+  'provider-unregister-chunk-connection',
   'extensions-started',
 ];
 const windowListeners = ['system-ready', 'provider-lifecycle-change'];

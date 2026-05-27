@@ -613,7 +613,7 @@ test('Expect knowledge bases listed with provider display name and source count'
     {
       name: 'kubernetes-knowledges',
       ragConnection: { name: 'my-connection', providerId: 'milvus' },
-      chunkerId: 'docling',
+      chunkerConnection: { id: 'docling', providerId: 'milvus' },
       mcpServer: { id: 'kb-mcp', name: 'kb-mcp' } as MCPRemoteServerInfo,
       files: [
         { path: '/docs/k8s.md', status: 'indexed' },

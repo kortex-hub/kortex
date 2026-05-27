@@ -3,7 +3,6 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { Button, NavPage, Table, TableColumn, TableRow } from '@podman-desktop/ui-svelte';
 
 import RAGEnvironmentCreateModal from '/@/lib/rag/RAGEnvironmentCreateModal.svelte';
-import { chunkProviders } from '/@/stores/chunk-providers';
 import { providerInfos } from '/@/stores/providers';
 import { ragEnvironments } from '/@/stores/rag-environments';
 import type { RagEnvironment } from '/@api/rag/rag-environment';
@@ -71,10 +70,10 @@ function closeCreateModal(): void {
 async function handleCreateEnvironment(
   name: string,
   ragConnection: { name: string; providerId: string },
-  chunkerId: string,
+  chunkerConnection: { id: string; providerId: string },
 ): Promise<void> {
   try {
-    await window.createRagEnvironment(name, ragConnection, chunkerId);
+    await window.createRagEnvironment(name, ragConnection, chunkerConnection);
     closeCreateModal();
   } catch (error: unknown) {
     console.error('Failed to create knowledge database:', error);
@@ -113,7 +112,6 @@ async function handleCreateEnvironment(
 {#if showCreateModal}
   <RAGEnvironmentCreateModal
     providers={$providerInfos}
-    chunkProviders={$chunkProviders}
     closeCallback={closeCreateModal}
     onCreate={handleCreateEnvironment}
   />
