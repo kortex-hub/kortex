@@ -141,9 +141,9 @@ describe('ConnectionManager', () => {
     });
   });
 
-  describe('dispose', () => {
+  describe('dispose', async () => {
     test('should clean up all connections', async () => {
-      connectionManager.registerConnection({
+      await connectionManager.registerConnection({
         path: '/test/endpoint',
         containerId: 'container1',
         name: 'test-1',
@@ -151,7 +151,7 @@ describe('ConnectionManager', () => {
         running: true,
       });
 
-      connectionManager.registerConnection({
+      await connectionManager.registerConnection({
         path: '/test/endpoint',
         containerId: 'container2',
         name: 'test-2',
@@ -165,7 +165,7 @@ describe('ConnectionManager', () => {
     });
 
     test('should not stop already-stopped containers', async () => {
-      connectionManager.registerConnection({
+      await connectionManager.registerConnection({
         path: '/test/endpoint',
         containerId: 'container1',
         name: 'test-1',
@@ -280,8 +280,8 @@ describe('ConnectionManager', () => {
   });
 
   describe('registerConnection', () => {
-    test('should register a new connection', () => {
-      connectionManager.registerConnection({
+    test('should register a new connection', async () => {
+      await connectionManager.registerConnection({
         path: '/test/endpoint',
         containerId: 'conn-container-id',
         name: 'test-conn',
@@ -297,8 +297,8 @@ describe('ConnectionManager', () => {
       );
     });
 
-    test('should update status for existing connection', () => {
-      connectionManager.registerConnection({
+    test('should update status for existing connection', async () => {
+      await connectionManager.registerConnection({
         path: '/test/endpoint',
         containerId: 'conn-container-id',
         name: 'test-conn',
@@ -308,7 +308,7 @@ describe('ConnectionManager', () => {
 
       vi.mocked(doclingProviderMock.registerChunkProviderConnection).mockClear();
 
-      connectionManager.registerConnection({
+      await connectionManager.registerConnection({
         path: '/test/endpoint',
         containerId: 'conn-container-id',
         name: 'test-conn',
@@ -319,14 +319,14 @@ describe('ConnectionManager', () => {
       expect(doclingProviderMock.registerChunkProviderConnection).not.toHaveBeenCalled();
     });
 
-    test('should set connection status based on running state', () => {
+    test('should set connection status based on running state', async () => {
       let registeredConnection: ChunkProviderConnection;
       vi.mocked(doclingProviderMock.registerChunkProviderConnection).mockImplementation(conn => {
         registeredConnection = conn;
         return { dispose: vi.fn() };
       });
 
-      connectionManager.registerConnection({
+      await connectionManager.registerConnection({
         path: '/test/endpoint',
         containerId: 'conn-container-id',
         name: 'test-conn',
@@ -341,13 +341,13 @@ describe('ConnectionManager', () => {
   describe('connection lifecycle', () => {
     let registeredConnection: ChunkProviderConnection;
 
-    beforeEach(() => {
+    beforeEach(async () => {
       vi.mocked(doclingProviderMock.registerChunkProviderConnection).mockImplementation(conn => {
         registeredConnection = conn;
         return registerChunkConnectionDisposable;
       });
 
-      connectionManager.registerConnection({
+      await connectionManager.registerConnection({
         path: '/test/endpoint',
         containerId: 'lifecycle-container-id',
         name: 'lifecycle-test',
@@ -463,7 +463,7 @@ describe('ConnectionManager', () => {
         return { dispose: vi.fn() };
       });
 
-      connectionManager.registerConnection({
+      await connectionManager.registerConnection({
         path: '/test/endpoint',
         containerId: 'chunk-container-id',
         name: 'chunk-test',
@@ -498,7 +498,7 @@ describe('ConnectionManager', () => {
         return { dispose: vi.fn() };
       });
 
-      connectionManager.registerConnection({
+      await connectionManager.registerConnection({
         path: '/test/endpoint',
         containerId: 'stopped-chunk-container',
         name: 'stopped-test',

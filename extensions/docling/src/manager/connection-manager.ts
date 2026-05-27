@@ -98,7 +98,13 @@ export class ConnectionManager {
     this.#connections.clear();
   }
 
-  registerConnection(info: { path: string; containerId: string; name: string; port: number; running: boolean }): void {
+  async registerConnection(info: {
+    path: string;
+    containerId: string;
+    name: string;
+    port: number;
+    running: boolean;
+  }): Promise<void> {
     const key = `${info.path}::${info.containerId}`;
     const existingEntry = this.#connections.get(key);
 
@@ -108,6 +114,7 @@ export class ConnectionManager {
     }
 
     const workspacePath = join(this.extensionContext.storagePath, info.name);
+    await mkdir(workspacePath, { recursive: true });
     const dockerode = this.containerExtensionAPI.getEndpoints().find(ep => ep.path === info.path)!.dockerode;
     const containerInfo: DoclingContainerInfo = {
       dockerode,
@@ -164,7 +171,7 @@ export class ConnectionManager {
           const doclingPort = container.Labels?.[DOCLING_PORT_LABEL];
 
           if (doclingName && doclingPort) {
-            this.registerConnection({
+            await this.registerConnection({
               path: endpoint.path,
               containerId: container.Id,
               name: doclingName,
@@ -320,7 +327,7 @@ export class ConnectionManager {
       throw new Error('Failed to start Docling container');
     }
 
-    this.registerConnection({
+    await this.registerConnection({
       path: endpoint.path,
       containerId: container.id,
       name,
