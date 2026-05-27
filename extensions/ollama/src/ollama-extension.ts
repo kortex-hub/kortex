@@ -17,7 +17,7 @@
 
 import { networkInterfaces } from 'node:os';
 
-import { type Disposable, env, type ExtensionContext, type Provider, provider } from '@openkaiden/api';
+import { agentWorkspace, type Disposable, env, type ExtensionContext, type Provider, provider } from '@openkaiden/api';
 import { createOllama } from 'ollama-ai-provider-v2';
 
 function getContainerReachableHost(): string {
@@ -41,14 +41,15 @@ export class OllamaExtension {
   #currentModels: string[] = [];
   #connectionDisposable: Disposable | undefined;
   #interval: NodeJS.Timeout | undefined;
-  #deactivated = false;
+  #abortController: AbortController | undefined;
 
   constructor(extensionContext: ExtensionContext) {
     this.#extensionContext = extensionContext;
   }
 
   async activate(): Promise<void> {
-    this.#deactivated = false;
+    this.#abortController = new AbortController();
+
     const ollamaProvider = provider.createProvider({
       name: 'Ollama',
       status: 'unknown',
@@ -70,15 +71,26 @@ export class OllamaExtension {
         console.error('Error updating Ollama models and status:', error);
       });
     }, 30000);
+
+    const stopSub = agentWorkspace.onDidStopWorkspace(event => {
+      this.handleWorkspaceTeardown(event.workspace.id, event.workspace.model).catch(console.error);
+    });
+    this.#extensionContext.subscriptions.push(stopSub);
+
+    const removeSub = agentWorkspace.onDidRemoveWorkspace(event => {
+      this.handleWorkspaceTeardown(event.workspace.id, event.workspace.model).catch(console.error);
+    });
+    this.#extensionContext.subscriptions.push(removeSub);
   }
 
   protected async updateModelsAndStatus(ollamaProvider: Provider): Promise<void> {
-    if (this.#deactivated) return;
+    const signal = this.#abortController?.signal;
+    if (signal?.aborted) return;
 
     let models: Array<{ name: string }> = [];
     let running = true;
     try {
-      const res = await fetch('http://localhost:11434/api/tags');
+      const res = await fetch('http://localhost:11434/api/tags', { signal });
       if (!res.ok) {
         throw new Error(`HTTP error, status: ${res.status}`);
       }
@@ -89,15 +101,16 @@ export class OllamaExtension {
             ? data.models
             : []
           : [];
-    } catch (_err: unknown) {
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       running = false;
       models = [];
     }
 
-    // Update provider status
+    if (signal?.aborted) return;
+
     if (!running) {
       ollamaProvider.updateStatus('stopped');
-      // deregister previous connection if exists
       if (this.#connectionDisposable) {
         this.#connectionDisposable.dispose();
         this.#connectionDisposable = undefined;
@@ -112,10 +125,9 @@ export class OllamaExtension {
     const modelsChanged =
       newModelNames.length !== oldModelNames.length || newModelNames.some((v, i) => v !== oldModelNames[i]);
 
-    if (this.#deactivated) return;
+    if (signal?.aborted) return;
 
     if (modelsChanged) {
-      // Unregister previous connection if exists
       if (this.#connectionDisposable) {
         this.#connectionDisposable.dispose();
         this.#connectionDisposable = undefined;
@@ -143,8 +155,51 @@ export class OllamaExtension {
     }
   }
 
+  protected async handleWorkspaceTeardown(workspaceId: string, model?: string): Promise<void> {
+    if (!model) return;
+
+    const separatorIndex = model.indexOf('::');
+    if (separatorIndex === -1) return;
+    const providerName = model.substring(0, separatorIndex);
+    if (providerName !== 'ollama') return;
+
+    const rest = model.substring(separatorIndex + 2);
+    const lastSep = rest.lastIndexOf('::');
+    if (lastSep === -1) return;
+    const modelName = rest.substring(0, lastSep);
+    const endpoint = rest.substring(lastSep + 2);
+
+    try {
+      const workspaces = await agentWorkspace.list();
+      const otherRunning = workspaces.some(ws => ws.id !== workspaceId && ws.state === 'running' && ws.model === model);
+      if (otherRunning) return;
+    } catch {
+      return;
+    }
+
+    await this.unloadModel(modelName, endpoint);
+  }
+
+  private async unloadModel(modelName: string, endpoint: string): Promise<void> {
+    try {
+      const port = new URL(endpoint).port || '11434';
+      const response = await fetch(`http://localhost:${port}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: modelName, keep_alive: 0 }),
+      });
+      if (!response.ok) {
+        console.warn(`Failed to unload Ollama model ${modelName}: HTTP ${response.status}`);
+      }
+      await response.body?.cancel();
+    } catch (err: unknown) {
+      console.warn(`Failed to unload Ollama model ${modelName}:`, err);
+    }
+  }
+
   async deactivate(): Promise<void> {
-    this.#deactivated = true;
+    this.#abortController?.abort();
+    this.#abortController = undefined;
     clearInterval(this.#interval);
     if (this.#connectionDisposable) {
       this.#connectionDisposable.dispose();

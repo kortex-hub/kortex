@@ -19,8 +19,8 @@
 import type { NetworkInterfaceInfo } from 'node:os';
 import { networkInterfaces } from 'node:os';
 
-import type { ExtensionContext, Provider } from '@openkaiden/api';
-import { env, provider } from '@openkaiden/api';
+import type { AgentWorkspaceInfo, ExtensionContext, Provider } from '@openkaiden/api';
+import { agentWorkspace, env, provider } from '@openkaiden/api';
 import { http, HttpResponse } from 'msw';
 import { setupServer, type SetupServerApi } from 'msw/node';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
@@ -31,10 +31,13 @@ vi.mock(import('node:os'));
 vi.mock(import('@openkaiden/api'));
 vi.mock(import('ollama-ai-provider-v2'));
 
-// Create a TestOllamaExtension class to expose protected methods if needed
 class TestOllamaExtension extends OllamaExtension {
   public async updateModelsAndStatus(provider: Provider): Promise<void> {
     return super.updateModelsAndStatus(provider);
+  }
+
+  public async handleWorkspaceTeardown(workspaceId: string, model?: string): Promise<void> {
+    return super.handleWorkspaceTeardown(workspaceId, model);
   }
 }
 
@@ -126,5 +129,110 @@ describe('OllamaExtension', () => {
     models.push({ name: 'm2' });
     await extension.updateModelsAndStatus(ollamaProvider);
     expect(ollamaProvider.registerInferenceProviderConnection).toHaveBeenCalledTimes(2);
+  });
+
+  test('registers workspace lifecycle listeners on activate', async () => {
+    const handlers = [http.get('http://localhost:11434/api/tags', () => HttpResponse.json({ models: [] }))];
+    server = setupServer(...handlers);
+    server.listen({ onUnhandledRequest: 'error' });
+
+    await extension.activate();
+
+    expect(agentWorkspace.onDidStopWorkspace).toHaveBeenCalled();
+    expect(agentWorkspace.onDidRemoveWorkspace).toHaveBeenCalled();
+  });
+});
+
+describe('handleWorkspaceTeardown', () => {
+  let extension: TestOllamaExtension;
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+    const extensionContext = { subscriptions: [] } as unknown as ExtensionContext;
+    extension = new TestOllamaExtension(extensionContext);
+  });
+
+  test('unloads Ollama model when stopping the only workspace using it', async () => {
+    const workspaces: AgentWorkspaceInfo[] = [
+      { id: 'ws-ollama', model: 'ollama::llama3::http://host.containers.internal:11434', state: 'running' },
+    ];
+    vi.mocked(agentWorkspace.list).mockResolvedValue(workspaces);
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      body: { cancel: vi.fn().mockResolvedValue(undefined) },
+    } as unknown as Response);
+
+    await extension.handleWorkspaceTeardown('ws-ollama', 'ollama::llama3::http://host.containers.internal:11434');
+
+    expect(fetchSpy).toHaveBeenCalledWith('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'llama3', keep_alive: 0 }),
+    });
+    fetchSpy.mockRestore();
+  });
+
+  test('does not unload when another workspace uses the same model', async () => {
+    const workspaces: AgentWorkspaceInfo[] = [
+      { id: 'ws-1', model: 'ollama::llama3::http://host.containers.internal:11434', state: 'running' },
+      { id: 'ws-2', model: 'ollama::llama3::http://host.containers.internal:11434', state: 'running' },
+    ];
+    vi.mocked(agentWorkspace.list).mockResolvedValue(workspaces);
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    await extension.handleWorkspaceTeardown('ws-1', 'ollama::llama3::http://host.containers.internal:11434');
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  test('does not unload for non-Ollama models', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    await extension.handleWorkspaceTeardown('ws-1', 'openai::gpt-4::https://api.openai.com');
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(agentWorkspace.list).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  test('does not unload when model is undefined', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    await extension.handleWorkspaceTeardown('ws-1');
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  test('uses default port when endpoint has no explicit port', async () => {
+    const workspaces: AgentWorkspaceInfo[] = [
+      { id: 'ws-ollama', model: 'ollama::llama3::http://host.containers.internal', state: 'running' },
+    ];
+    vi.mocked(agentWorkspace.list).mockResolvedValue(workspaces);
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      body: { cancel: vi.fn().mockResolvedValue(undefined) },
+    } as unknown as Response);
+
+    await extension.handleWorkspaceTeardown('ws-ollama', 'ollama::llama3::http://host.containers.internal');
+
+    expect(fetchSpy).toHaveBeenCalledWith('http://localhost:11434/api/generate', expect.any(Object));
+    fetchSpy.mockRestore();
+  });
+
+  test('handles unload failure gracefully', async () => {
+    const workspaces: AgentWorkspaceInfo[] = [
+      { id: 'ws-ollama', model: 'ollama::llama3::http://host.containers.internal:11434', state: 'running' },
+    ];
+    vi.mocked(agentWorkspace.list).mockResolvedValue(workspaces);
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('connection refused'));
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await extension.handleWorkspaceTeardown('ws-ollama', 'ollama::llama3::http://host.containers.internal:11434');
+
+    expect(warnSpy).toHaveBeenCalled();
+    fetchSpy.mockRestore();
+    warnSpy.mockRestore();
   });
 });

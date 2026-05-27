@@ -20,13 +20,14 @@ import { access, readFile, rm, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 
-import type { Disposable, FileSystemWatcher } from '@openkaiden/api';
+import type { AgentWorkspaceLifecycleEvent, Disposable, FileSystemWatcher } from '@openkaiden/api';
 import type { WebContents } from 'electron';
 import { inject, injectable, preDestroy } from 'inversify';
 import type { IPty } from 'node-pty';
 import { spawn } from 'node-pty';
 
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
+import { Emitter } from '/@/plugin/events/emitter.js';
 import { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
@@ -57,6 +58,12 @@ export class AgentWorkspaceManager implements Disposable {
     { write: (param: string) => void; resize: (w: number, h: number) => void }
   >();
   private readonly terminalProcesses = new Map<number, IPty>();
+
+  private readonly _onDidStopWorkspace = new Emitter<AgentWorkspaceLifecycleEvent>();
+  readonly onDidStopWorkspace = this._onDidStopWorkspace.event;
+
+  private readonly _onDidRemoveWorkspace = new Emitter<AgentWorkspaceLifecycleEvent>();
+  readonly onDidRemoveWorkspace = this._onDidRemoveWorkspace.event;
 
   constructor(
     @inject(ApiSenderType)
@@ -262,10 +269,10 @@ export class AgentWorkspaceManager implements Disposable {
     task.state = 'running';
     task.status = 'in-progress';
     try {
-      const modelToUnload = await this.getOllamaModelToUnload(id);
+      const workspaceInfo = await this.getWorkspaceInfo(id);
       const result = await this.kdnCli.removeWorkspaces(id);
-      if (modelToUnload) {
-        await this.unloadOllamaModel(modelToUnload.modelName, modelToUnload.endpoint);
+      if (workspaceInfo) {
+        this._onDidRemoveWorkspace.fire({ workspace: workspaceInfo });
       }
       this.apiSender.send('agent-workspace-update');
       task.status = 'success';
@@ -331,64 +338,23 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   async stop(id: string): Promise<AgentWorkspaceId> {
-    const modelToUnload = await this.getOllamaModelToUnload(id);
+    const workspaceInfo = await this.getWorkspaceInfo(id);
     const result = await this.kdnCli.stopWorkspace(id);
-    if (modelToUnload) {
-      await this.unloadOllamaModel(modelToUnload.modelName, modelToUnload.endpoint);
+    if (workspaceInfo) {
+      this._onDidStopWorkspace.fire({ workspace: workspaceInfo });
     }
     this.apiSender.send('agent-workspace-update');
     return result;
   }
 
-  /**
-   * Determines whether an Ollama model should be unloaded when a workspace is
-   * stopped or removed. Returns the model name and endpoint only if:
-   * - the workspace uses an Ollama model (`ollama` metadata name)
-   * - no other running workspace is using the same model
-   */
-  private async getOllamaModelToUnload(id: string): Promise<{ modelName: string; endpoint: string } | undefined> {
+  private async getWorkspaceInfo(id: string): Promise<{ id: string; model?: string; state?: string } | undefined> {
     try {
       const workspaces = await this.list();
       const workspace = workspaces.find(ws => ws.id === id);
-      if (!workspace?.model) return undefined;
-
-      const parts = workspace.model.split('::');
-      if (parts.length !== 3 || parts[0] !== 'ollama') return undefined;
-      const modelName = parts[1]!;
-      const endpoint = parts[2]!;
-
-      const otherRunning = workspaces.some(
-        ws => ws.id !== id && ws.state === 'running' && ws.model === workspace.model,
-      );
-      if (otherRunning) return undefined;
-
-      return { modelName, endpoint };
+      if (!workspace) return undefined;
+      return { id: workspace.id, model: workspace.model, state: workspace.state };
     } catch {
       return undefined;
-    }
-  }
-
-  /**
-   * Sends a request to Ollama to immediately unload a model by setting
-   * `keep_alive` to 0. Extracts the port from the workspace endpoint
-   * (which may use a container-reachable hostname like
-   * `host.containers.internal`) and targets `localhost` since Kaiden
-   * runs on the host.
-   */
-  private async unloadOllamaModel(modelName: string, endpoint: string): Promise<void> {
-    try {
-      const port = new URL(endpoint).port || '11434';
-      const response = await fetch(`http://localhost:${port}/api/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: modelName, keep_alive: 0 }),
-      });
-      if (!response.ok) {
-        console.warn(`Failed to unload Ollama model ${modelName} (endpoint ${endpoint}): HTTP ${response.status}`);
-      }
-      await response.body?.cancel();
-    } catch (err: unknown) {
-      console.warn(`Failed to unload Ollama model ${modelName} (endpoint ${endpoint}):`, err);
     }
   }
 
