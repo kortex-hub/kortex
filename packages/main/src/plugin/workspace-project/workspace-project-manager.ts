@@ -18,7 +18,7 @@
 
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 
 import { inject, injectable, preDestroy } from 'inversify';
 
@@ -114,7 +114,11 @@ export class WorkspaceProjectManager {
   async create(options: WorkspaceProjectCreateOptions): Promise<WorkspaceProjectInfo> {
     await this.validateReferences(options);
 
-    const project: WorkspaceProjectInfo = { id: options.name, ...options };
+    const id = this.getSafeId(options.name);
+    const project: WorkspaceProjectInfo = { ...options, id };
+    if (this.projects.has(project.id)) {
+      throw new Error(`Workspace project "${project.id}" already exists`);
+    }
     await this.saveToDisk(project);
     this.projects.set(project.id, project);
     this.apiSender.send('workspace-project-update');
@@ -190,12 +194,16 @@ export class WorkspaceProjectManager {
       if (!entry.endsWith('.json')) {
         continue;
       }
-      const raw = await readFile(join(dir, entry), 'utf-8');
-      const project = JSON.parse(raw) as WorkspaceProjectInfo;
-      const sanitized = await this.sanitizeReferences(project);
-      this.projects.set(sanitized.id, sanitized);
-      if (sanitized !== project) {
-        await this.saveToDisk(sanitized);
+      try {
+        const raw = await readFile(join(dir, entry), 'utf-8');
+        const project = JSON.parse(raw) as WorkspaceProjectInfo;
+        const sanitized = await this.sanitizeReferences(project);
+        this.projects.set(sanitized.id, sanitized);
+        if (sanitized !== project) {
+          await this.saveToDisk(sanitized);
+        }
+      } catch (e: unknown) {
+        console.error(`Failed to load workspace project file "${entry}"`, e);
       }
     }
   }
@@ -241,8 +249,17 @@ export class WorkspaceProjectManager {
     await writeFile(this.getFilePath(project.id), JSON.stringify(project, undefined, 2) + '\n', 'utf-8');
   }
 
+  private getSafeId(input: string): string {
+    const normalized = input.trim().replace(/[\\/]/g, '-');
+    if (!normalized || normalized === '.' || normalized === '..' || basename(normalized) !== normalized) {
+      throw new Error('Invalid workspace project id');
+    }
+    return normalized;
+  }
+
   private getFilePath(id: string): string {
-    return join(this.directories.getWorkspaceProjectsDirectory(), `${id}.json`);
+    const safeId = this.getSafeId(id);
+    return join(this.directories.getWorkspaceProjectsDirectory(), `${safeId}.json`);
   }
 
   @preDestroy()
