@@ -23,9 +23,11 @@ import { writable } from 'svelte/store';
 import { router } from 'tinro';
 import { beforeEach, expect, test, vi } from 'vitest';
 
+import * as mcpStore from '/@/stores/mcp-remote-servers';
 import * as ragStore from '/@/stores/rag-environments';
 import * as skillsStore from '/@/stores/skills';
 import type { AgentWorkspaceConfiguration, AgentWorkspaceSummary } from '/@api/agent-workspace-info';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import type { RagEnvironment } from '/@api/rag/rag-environment';
 import type { SkillInfo } from '/@api/skill/skill-info';
 
@@ -35,6 +37,7 @@ vi.mock(import('tinro'));
 vi.mock(import('/@/stores/skills'));
 vi.mock(import('/@/stores/rag-environments'));
 vi.mock(import('/@/navigation'));
+vi.mock(import('/@/stores/mcp-remote-servers'));
 
 const routerStore = writable({
   path: '/agent-workspaces/ws-1/settings',
@@ -73,6 +76,7 @@ beforeEach(() => {
   vi.mocked(window.updateAgentWorkspaceConfiguration).mockResolvedValue(undefined);
   vi.mocked(skillsStore).skillInfos = writable<readonly SkillInfo[]>([]);
   vi.mocked(ragStore).ragEnvironments = writable<RagEnvironment[]>([]);
+  vi.mocked(mcpStore).mcpRemoteServerInfos = writable<readonly MCPRemoteServerInfo[]>([]);
 });
 
 test('Expect General section is active by default with workspace info', () => {
@@ -347,14 +351,6 @@ test('Expect skills save failure rolls back skill selection', async () => {
 
   expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
   expect(screen.getByText('0 of 1 selected')).toBeInTheDocument();
-});
-
-test('Expect switching to a placeholder section shows future update message', async () => {
-  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
-
-  await fireEvent.click(screen.getByRole('link', { name: 'MCP Servers' }));
-
-  expect(screen.getByText('MCP Servers settings will be available in a future update.')).toBeInTheDocument();
 });
 
 // --- File Access section tests ---
@@ -720,4 +716,163 @@ test('Expect Knowledge section has Manage Knowledges button', async () => {
   await fireEvent.click(knowledgeNav);
 
   expect(screen.getByRole('button', { name: 'Manage Knowledges' })).toBeInTheDocument();
+});
+
+test('Expect MCP section shows checklist with available servers', async () => {
+  vi.mocked(mcpStore).mcpRemoteServerInfos = writable<readonly MCPRemoteServerInfo[]>([
+    {
+      id: 'mcp-1',
+      name: 'GitHub MCP',
+      description: 'Repos & PRs',
+      url: 'https://mcp.github.com/sse',
+      infos: { internalProviderId: 'p1', serverId: 's1', remoteId: 1 },
+      tools: {},
+    },
+    {
+      id: 'mcp-2',
+      name: 'Slack MCP',
+      description: 'Messaging',
+      url: 'https://mcp.slack.com/sse',
+      infos: { internalProviderId: 'p2', serverId: 's2', remoteId: 2 },
+      tools: {},
+    },
+  ]);
+
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
+
+  const mcpNav = screen.getByRole('link', { name: 'MCP Servers' });
+  await fireEvent.click(mcpNav);
+
+  expect(screen.getByText('GitHub MCP')).toBeInTheDocument();
+  expect(screen.getByText('Slack MCP')).toBeInTheDocument();
+  expect(screen.getByText('Repos & PRs')).toBeInTheDocument();
+});
+
+test('Expect MCP section shows empty message when no servers available', async () => {
+  vi.mocked(mcpStore).mcpRemoteServerInfos = writable<readonly MCPRemoteServerInfo[]>([]);
+
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
+
+  const mcpNav = screen.getByRole('link', { name: 'MCP Servers' });
+  await fireEvent.click(mcpNav);
+
+  expect(screen.getByText('No MCP servers available yet.')).toBeInTheDocument();
+});
+
+test('Expect MCP section pre-selects servers matching workspace configuration', async () => {
+  vi.mocked(mcpStore).mcpRemoteServerInfos = writable<readonly MCPRemoteServerInfo[]>([
+    {
+      id: 'mcp-1',
+      name: 'GitHub MCP',
+      description: 'Repos & PRs',
+      url: 'https://mcp.github.com/sse',
+      infos: { internalProviderId: 'p1', serverId: 's1', remoteId: 1 },
+      tools: {},
+    },
+    {
+      id: 'mcp-2',
+      name: 'Slack MCP',
+      description: 'Messaging',
+      url: 'https://mcp.slack.com/sse',
+      infos: { internalProviderId: 'p2', serverId: 's2', remoteId: 2 },
+      tools: {},
+    },
+  ]);
+
+  const configWithMcp: AgentWorkspaceConfiguration = {
+    ...configuration,
+    mcp: { servers: [{ name: 'GitHub MCP', url: 'https://mcp.github.com/sse' }] },
+  };
+
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: configWithMcp });
+
+  const mcpNav = screen.getByRole('link', { name: 'MCP Servers' });
+  await fireEvent.click(mcpNav);
+
+  expect(screen.getByText('1 of 2 selected')).toBeInTheDocument();
+});
+
+test('Expect toggling MCP server shows unsaved changes', async () => {
+  vi.mocked(mcpStore).mcpRemoteServerInfos = writable<readonly MCPRemoteServerInfo[]>([
+    {
+      id: 'mcp-1',
+      name: 'GitHub MCP',
+      description: 'Repos & PRs',
+      url: 'https://mcp.github.com/sse',
+      infos: { internalProviderId: 'p1', serverId: 's1', remoteId: 1 },
+      tools: {},
+    },
+  ]);
+
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
+
+  const mcpNav = screen.getByRole('link', { name: 'MCP Servers' });
+  await fireEvent.click(mcpNav);
+
+  const serverButton = screen.getByRole('button', { name: 'GitHub MCP' });
+  await fireEvent.click(serverButton);
+
+  expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+});
+
+test('Expect saving MCP changes calls updateAgentWorkspaceConfiguration', async () => {
+  vi.mocked(mcpStore).mcpRemoteServerInfos = writable<readonly MCPRemoteServerInfo[]>([
+    {
+      id: 'mcp-1',
+      name: 'GitHub MCP',
+      description: 'Repos & PRs',
+      url: 'https://mcp.github.com/sse',
+      infos: { internalProviderId: 'p1', serverId: 's1', remoteId: 1 },
+      tools: {},
+    },
+  ]);
+
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
+
+  const mcpNav = screen.getByRole('link', { name: 'MCP Servers' });
+  await fireEvent.click(mcpNav);
+
+  const serverButton = screen.getByRole('button', { name: 'GitHub MCP' });
+  await fireEvent.click(serverButton);
+  await fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+  expect(window.updateAgentWorkspaceConfiguration).toHaveBeenCalledWith('ws-1', {
+    mcp: { servers: [{ name: 'GitHub MCP', url: 'https://mcp.github.com/sse' }] },
+  });
+});
+
+test('Expect discarding MCP changes resets selection', async () => {
+  vi.mocked(mcpStore).mcpRemoteServerInfos = writable<readonly MCPRemoteServerInfo[]>([
+    {
+      id: 'mcp-1',
+      name: 'GitHub MCP',
+      description: 'Repos & PRs',
+      url: 'https://mcp.github.com/sse',
+      infos: { internalProviderId: 'p1', serverId: 's1', remoteId: 1 },
+      tools: {},
+    },
+  ]);
+
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
+
+  const mcpNav = screen.getByRole('link', { name: 'MCP Servers' });
+  await fireEvent.click(mcpNav);
+
+  const serverButton = screen.getByRole('button', { name: 'GitHub MCP' });
+  await fireEvent.click(serverButton);
+  await fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }));
+
+  expect(screen.getByText('No changes to save')).toBeInTheDocument();
+  expect(window.updateAgentWorkspaceConfiguration).not.toHaveBeenCalled();
+});
+
+test('Expect MCP section has Manage Servers button', async () => {
+  vi.mocked(mcpStore).mcpRemoteServerInfos = writable<readonly MCPRemoteServerInfo[]>([]);
+
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
+
+  const mcpNav = screen.getByRole('link', { name: 'MCP Servers' });
+  await fireEvent.click(mcpNav);
+
+  expect(screen.getByRole('button', { name: 'Manage Servers' })).toBeInTheDocument();
 });

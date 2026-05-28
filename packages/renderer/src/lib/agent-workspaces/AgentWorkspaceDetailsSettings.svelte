@@ -1,5 +1,5 @@
 <script lang="ts">
-import { faBook, faWrench } from '@fortawesome/free-solid-svg-icons';
+import { faBook, faServer, faWrench } from '@fortawesome/free-solid-svg-icons';
 import { Button, Input, SettingsNavItem } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
@@ -10,6 +10,7 @@ import type { ChecklistItem } from '/@/lib/ui/ChecklistPanel.svelte';
 import ChecklistPanel from '/@/lib/ui/ChecklistPanel.svelte';
 import { handleNavigation } from '/@/navigation';
 import type { AgentWorkspaceSummaryUI } from '/@/stores/agent-workspaces.svelte';
+import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import { ragEnvironments } from '/@/stores/rag-environments';
 import { skillInfos } from '/@/stores/skills';
 import type {
@@ -157,8 +158,43 @@ function onKnowledgeSelectionChange(selected: string[]): void {
   pendingKnowledgeIds = selected;
 }
 
+// --- MCP section state ---
+let mcpItems: ChecklistItem[] = $derived(
+  $mcpRemoteServerInfos.map(m => ({ id: m.id, name: m.name, description: m.description })),
+);
+
+const originalMcpIds: string[] = $derived(computeSelectedMcpIds(configuration, $mcpRemoteServerInfos));
+
+let pendingMcpIds: string[] = $state([...originalMcpIds]);
+
+function computeSelectedMcpIds(
+  config: AgentWorkspaceConfiguration,
+  servers: readonly { id: string; name: string; url: string; setupType?: string; commandSpec?: { command: string } }[],
+): string[] {
+  const configServers = config.mcp?.servers ?? [];
+  const configCommands = config.mcp?.commands ?? [];
+  return servers
+    .filter(s => {
+      if (s.setupType === 'package' && s.commandSpec) {
+        return configCommands.some(c => c.name === s.name && c.command === s.commandSpec?.command);
+      }
+      return configServers.some(cs => cs.name === s.name && cs.url === s.url);
+    })
+    .map(s => s.id);
+}
+
+const hasMcpChanges: boolean = $derived(
+  pendingMcpIds.length !== originalMcpIds.length || pendingMcpIds.some(id => !originalMcpIds.includes(id)),
+);
+
+function onMcpSelectionChange(selected: string[]): void {
+  pendingMcpIds = selected;
+}
+
 // --- Combined dirty state ---
-const hasChanges = $derived(hasNameChanges || hasMountChanges || hasSkillChanges || hasKnowledgeChanges);
+const hasChanges = $derived(
+  hasNameChanges || hasMountChanges || hasSkillChanges || hasKnowledgeChanges || hasMcpChanges,
+);
 
 // --- Save / Discard ---
 async function saveChanges(): Promise<void> {
@@ -181,10 +217,21 @@ async function saveChanges(): Promise<void> {
       await window.updateAgentWorkspaceConfiguration(workspaceId, { skills: newSkills });
       configuration = { ...configuration, skills: newSkills };
     }
-    if (hasKnowledgeChanges) {
-      const mcpConfig = buildMcpConfigWithKnowledge(pendingKnowledgeIds);
-      await window.updateAgentWorkspaceConfiguration(workspaceId, { mcp: mcpConfig });
-      configuration = { ...configuration, mcp: mcpConfig };
+    if (hasKnowledgeChanges || hasMcpChanges) {
+      const knowledgeConfig = buildMcpConfigWithKnowledge(pendingKnowledgeIds);
+      const mcpConfig = buildMcpConfig(pendingMcpIds);
+      const unmanagedConfig = buildUnmanagedMcpConfig();
+      const allServers = [
+        ...(unmanagedConfig.servers ?? []),
+        ...(knowledgeConfig.servers ?? []),
+        ...(mcpConfig.servers ?? []),
+      ];
+      const allCommands = [...(unmanagedConfig.commands ?? []), ...(mcpConfig.commands ?? [])];
+      const newMcpConfig: AgentWorkspaceMcpConfig = {};
+      if (allServers.length > 0) newMcpConfig.servers = allServers;
+      if (allCommands.length > 0) newMcpConfig.commands = allCommands;
+      await window.updateAgentWorkspaceConfiguration(workspaceId, { mcp: newMcpConfig });
+      configuration = { ...configuration, mcp: newMcpConfig };
     }
   } catch (err: unknown) {
     await window.showMessageBox({
@@ -198,17 +245,58 @@ async function saveChanges(): Promise<void> {
 }
 
 function buildMcpConfigWithKnowledge(selectedIds: string[]): AgentWorkspaceMcpConfig {
-  const knowledgeUrls = new Set($ragEnvironments.filter(r => r.mcpServer).map(r => r.mcpServer!.url));
-  const nonKnowledgeServers = (configuration.mcp?.servers ?? []).filter(s => !knowledgeUrls.has(s.url));
   const selectedServers = selectedIds
     .map(name => $ragEnvironments.find(r => r.name === name)?.mcpServer)
     .filter((s): s is NonNullable<typeof s> => s !== undefined)
     .map(s => ({ name: s.name, url: s.url }));
 
-  const servers = [...nonKnowledgeServers, ...selectedServers];
   return {
-    ...(configuration.mcp?.commands ? { commands: configuration.mcp.commands } : {}),
+    ...(selectedServers.length > 0 ? { servers: selectedServers } : {}),
+  };
+}
+
+function buildMcpConfig(ids: string[]): AgentWorkspaceMcpConfig {
+  const servers: AgentWorkspaceMcpConfig['servers'] = [];
+  const commands: AgentWorkspaceMcpConfig['commands'] = [];
+
+  for (const id of ids) {
+    const info = $mcpRemoteServerInfos.find(m => m.id === id);
+    if (!info) continue;
+    if (info.setupType === 'package' && info.commandSpec) {
+      commands.push({
+        name: info.name,
+        command: info.commandSpec.command,
+        args: info.commandSpec.args,
+        env: info.commandSpec.env,
+      });
+    } else {
+      servers.push({ name: info.name, url: info.url });
+    }
+  }
+
+  return {
     ...(servers.length > 0 ? { servers } : {}),
+    ...(commands.length > 0 ? { commands } : {}),
+  };
+}
+
+function buildUnmanagedMcpConfig(): AgentWorkspaceMcpConfig {
+  const knowledgeUrls = new Set($ragEnvironments.filter(r => r.mcpServer).map(r => r.mcpServer!.url));
+  const mcpServerUrls = new Set(
+    $mcpRemoteServerInfos.filter(m => !m.setupType || m.setupType !== 'package').map(m => m.url),
+  );
+  const mcpCommandNames = new Set(
+    $mcpRemoteServerInfos.filter(m => m.setupType === 'package' && m.commandSpec).map(m => m.name),
+  );
+
+  const servers = (configuration.mcp?.servers ?? []).filter(
+    s => !knowledgeUrls.has(s.url) && !mcpServerUrls.has(s.url),
+  );
+  const commands = (configuration.mcp?.commands ?? []).filter(c => !mcpCommandNames.has(c.name));
+
+  return {
+    ...(servers.length > 0 ? { servers } : {}),
+    ...(commands.length > 0 ? { commands } : {}),
   };
 }
 
@@ -218,6 +306,7 @@ function discardChanges(): void {
   pendingCustomMounts = originalCustomMounts.map(m => ({ ...m }));
   pendingSkillIds = [...originalSkillIds];
   pendingKnowledgeIds = [...originalKnowledgeIds];
+  pendingMcpIds = [...originalMcpIds];
 }
 
 function addCustomMount(): void {
@@ -253,6 +342,10 @@ function navigateToKnowledges(): void {
 
 function navigateToSkills(): void {
   handleNavigation({ page: NavigationPage.SKILLS });
+}
+
+function navigateToMcp(): void {
+  router.goto('/mcps');
 }
 </script>
 
@@ -361,6 +454,23 @@ function navigateToSkills(): void {
             emptyMessage="No knowledge bases available yet.">
             {#snippet headerAction()}
               <Button type="secondary" onclick={navigateToKnowledges}>Manage Knowledges</Button>
+            {/snippet}
+          </ChecklistPanel>
+        {:else if activeSection === 'mcp'}
+          <p class="text-sm text-[var(--pd-content-text)] mb-7">
+            Select which MCP servers are available in this workspace.
+          </p>
+
+          <ChecklistPanel
+            title="MCP Servers"
+            subtitle="Connect to Model Context Protocol servers for extended capabilities"
+            icon={faServer}
+            items={mcpItems}
+            selected={pendingMcpIds}
+            onchange={onMcpSelectionChange}
+            emptyMessage="No MCP servers available yet.">
+            {#snippet headerAction()}
+              <Button type="secondary" onclick={navigateToMcp}>Manage Servers</Button>
             {/snippet}
           </ChecklistPanel>
 
