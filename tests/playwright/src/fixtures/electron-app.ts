@@ -17,8 +17,8 @@
  ***********************************************************************/
 
 /** biome-ignore-all lint/correctness/noEmptyPattern: Playwright fixture pattern requires empty object when no dependencies are needed */
-import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -243,8 +243,63 @@ function prepareElectronEnv(): Record<string, string> {
   return electronEnv;
 }
 
+/**
+ * On macOS with HOME overridden to a temp dir, the Podman container extension
+ * builds the socket path as `$HOME/.local/share/containers/podman/machine/podman.sock`.
+ * Two things must hold for this to work:
+ *
+ *  1. The socket file must exist at that path (symlink to the real one).
+ *  2. The full path must be ≤104 bytes (Unix domain socket limit on macOS).
+ *
+ * Additionally, `podman machine ls` must find its machine config, which lives
+ * under `$HOME/.config/containers`.
+ *
+ * We satisfy both by:
+ *  - Using `/tmp` (short prefix) instead of `tmpdir()` on macOS so the total
+ *    socket path stays ~79 bytes after realpathSync.
+ *  - Symlinking `.local/share/containers` and `.config/containers` from the
+ *    real HOME into the short temp dir.
+ *  - Symlinking `Library/Keychains` so the kdn CLI can store secrets via the
+ *    macOS Security framework (which locates keychains under ~/Library/).
+ */
+function createMacOSTempDir(): string {
+  return mkdtempSync(join('/tmp', 'kdn-test-'));
+}
+
+function bridgePaths(testHome: string, relPaths: string[]): void {
+  const realHome = homedir();
+  for (const relPath of relPaths) {
+    const src = join(realHome, relPath);
+    if (!existsSync(src)) continue;
+    const dest = join(testHome, relPath);
+    try {
+      mkdirSync(dirname(dest), { recursive: true });
+      symlinkSync(src, dest, 'dir');
+    } catch {
+      // Symlink already present — safe to skip
+    }
+  }
+}
+
+const MAC_BRIDGE_PATHS = [
+  join('.local', 'share', 'containers'),
+  join('.config', 'containers'),
+  join('Library', 'Keychains'),
+];
+
+const LINUX_BRIDGE_PATHS = [
+  join('.local', 'share', 'containers'),
+  join('.config', 'containers'),
+  join('.local', 'share', 'keyrings'),
+];
+
 function setupTestConfigDir(electronEnv: Record<string, string>): void {
-  const testDataDir = mkdtempSync(join(tmpdir(), 'kaiden-test-'));
+  // On macOS, use /tmp (short prefix) so the Podman socket path derived from HOME
+  // stays under the 104-byte Unix domain socket limit. The default tmpdir() on macOS
+  // returns /var/folders/<hash>/T/ which is ~56 chars and causes the socket path to
+  // exceed the limit (~130 bytes vs 104 max).
+  const testDataDir =
+    process.platform === 'darwin' ? createMacOSTempDir() : mkdtempSync(join(tmpdir(), 'kaiden-test-'));
   // realpathSync resolves macOS /var → /private/var symlinks so all paths match what the Goose CLI returns.
   const realTestDataDir = realpathSync(testDataDir);
   electronEnv.KAIDEN_HOME_DIR = realTestDataDir;
@@ -259,6 +314,10 @@ function setupTestConfigDir(electronEnv: Record<string, string>): void {
   if (process.platform === 'linux') {
     electronEnv.XDG_CONFIG_HOME = join(realTestDataDir, '.config');
     electronEnv.XDG_DATA_HOME = join(realTestDataDir, '.local', 'share');
+    bridgePaths(realTestDataDir, LINUX_BRIDGE_PATHS);
+  }
+  if (process.platform === 'darwin') {
+    bridgePaths(realTestDataDir, MAC_BRIDGE_PATHS);
   }
 
   const configDir = join(realTestDataDir, 'configuration');

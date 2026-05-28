@@ -337,6 +337,7 @@ export default [
       'sonarjs/no-clear-text-protocols': 'off',
       'sonarjs/slow-regex': 'off',
       'sonarjs/publicly-writable-directories': 'off',
+      'sonarjs/no-empty-test-file': 'off',
     },
   },
 

@@ -166,4 +166,70 @@ export class AgentWorkspaceCreatePage extends BasePage {
     await expect(this.submitButton).toBeEnabled();
     await this.submitButton.click();
   }
+
+  get modelList(): Locator {
+    return this.page.getByRole('table', { name: /models/ });
+  }
+
+  get modelSearchInput(): Locator {
+    return this.page.getByRole('searchbox', { name: 'Filter catalog models' });
+  }
+
+  async searchModel(term: string): Promise<void> {
+    await expect(this.modelSearchInput).toBeVisible();
+    await this.modelSearchInput.fill(term);
+    await expect(this.getModelTableRows().first()).toBeVisible();
+  }
+
+  getModelTableRows(): Locator {
+    return this.page.locator('[data-testid^="model-row-"]');
+  }
+
+  getModelRowRuntime(row: Locator): Locator {
+    return row.locator('td').nth(3);
+  }
+
+  async selectDefaultModel(): Promise<string> {
+    return this.selectRadio(this.page.locator('input[name="modelSelection"]').first());
+  }
+
+  async selectModelByRuntime(runtime: string): Promise<string> {
+    const row = this.getModelTableRows()
+      .filter({ has: this.page.getByRole('cell', { name: runtime, exact: true }) })
+      .first();
+    return this.selectRadio(row.locator('input[name="modelSelection"]'));
+  }
+
+  async verifyModelRuntimes(expectedRuntime: string): Promise<void> {
+    const rows = this.getModelTableRows();
+    const count = await rows.count();
+    expect(count, 'Expected at least one model row').toBeGreaterThan(0);
+    for (let i = 0; i < count; i++) {
+      const runtimeCell = this.getModelRowRuntime(rows.nth(i));
+      await expect(runtimeCell).toHaveText(expectedRuntime);
+    }
+  }
+
+  async searchAndSelectByRuntime(searchTerm: string, runtime: string): Promise<string> {
+    await this.searchModel(searchTerm);
+    return this.selectModelByRuntime(runtime);
+  }
+
+  async searchAndSelectDefault(searchTerm: string, verifyRuntime?: string): Promise<string> {
+    await this.searchModel(searchTerm);
+    if (verifyRuntime) {
+      await this.verifyModelRuntimes(verifyRuntime);
+    }
+    return this.selectDefaultModel();
+  }
+
+  private async selectRadio(radio: Locator): Promise<string> {
+    await expect(radio).toBeVisible();
+    if (!(await radio.isChecked())) {
+      await radio.click();
+    }
+    await expect(radio).toBeChecked();
+    const ariaLabel = await radio.getAttribute('aria-label');
+    return ariaLabel?.replace(/^Use\s+/, '') ?? '';
+  }
 }

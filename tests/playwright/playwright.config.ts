@@ -33,7 +33,7 @@ if (ramaLamaAvailable) {
 }
 
 if (podmanAvailable) {
-  console.log('Podman enabled - running Knowledge Database tests');
+  console.log('Podman enabled - running container-dependent tests');
 }
 
 const config: PlaywrightTestConfig & {
@@ -81,7 +81,16 @@ const config: PlaywrightTestConfig & {
       use: {
         resource: 'openai',
       },
-      testIgnore: process.env.OPENAI_API_KEY ? [] : ['**/*'], // Skip if OPENAI_API_KEY is not set
+      testIgnore: process.env.OPENAI_API_KEY ? ['**/provider-specs/chat-smoke.spec.ts'] : ['**/*'],
+    },
+    {
+      name: 'Workspace-Provider',
+      testMatch: ['**/provider-specs/workspaces/*.spec.ts'],
+      use: {
+        // Auto-detected provider makes resourceSetup a no-op; workspace tests manage their own providers
+        resource: 'ollama',
+      },
+      testIgnore: podmanAvailable && !process.env.CI ? [] : ['**/*'],
     },
     {
       name: 'OpenShift-AI-Provider',

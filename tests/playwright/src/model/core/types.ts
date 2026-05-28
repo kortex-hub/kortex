@@ -86,8 +86,10 @@ export const resources = {
   openshiftai: { displayName: 'OpenShift AI', hasCreateButton: true },
   openai: { displayName: 'OpenAI', hasCreateButton: true },
   gemini: { displayName: 'Gemini', hasCreateButton: true },
+  claude: { displayName: 'Claude', hasCreateButton: true },
   ollama: { displayName: 'Ollama', hasCreateButton: false },
   ramalama: { displayName: 'RamaLama', hasCreateButton: false },
+  mistral: { displayName: 'Mistral', hasCreateButton: true },
   milvus: { displayName: 'Milvus Vector Database', hasCreateButton: true },
 } as const;
 
@@ -142,6 +144,14 @@ export const PROVIDERS = {
     resourceId: 'ramalama',
     autoDetected: true,
   },
+  claude: {
+    envVarName: 'ANTHROPIC_API_KEY',
+    resourceId: 'claude',
+  },
+  mistral: {
+    envVarName: 'MISTRAL_API_KEY',
+    resourceId: 'mistral',
+  },
   'openshift-ai': {
     envVarName: 'OPENSHIFT_AI_TOKEN',
     resourceId: 'openshiftai',
@@ -165,6 +175,7 @@ export interface DialogOptions {
 
 export const CODING_AGENT = {
   OPENCODE: 'OpenCode',
+  OPENCLAW: 'OpenClaw',
   CLAUDE: 'Claude Code',
   CLAUDE_VERTEX: 'Claude on Vertex AI',
   GOOSE: 'Goose',
@@ -200,6 +211,13 @@ export const SELECTORS = {
   NAVIGATION: { role: 'navigation' as const, name: 'AppNavigation' },
 } as const;
 
+export const WORKSPACE_STATUS = {
+  RUNNING: 'running',
+  STOPPED: 'stopped',
+  STARTING: 'starting',
+  STOPPING: 'stopping',
+} as const;
+
 export const TIMEOUTS = {
   PAGE_LOAD: 90_000,
   NON_DEVTOOLS_WINDOW: 60_000,
@@ -209,5 +227,6 @@ export const TIMEOUTS = {
   INITIALIZING_SCREEN: 180_000,
   STANDARD: 30_000,
   SHORT: 10_000,
-  MODEL_RESPONSE: 90_000, // Longer timeout for LLM responses (especially local models like Ollama on slower runners)
+  MODEL_RESPONSE: 90_000,
+  WORKSPACE_READY: 180_000,
 } as const;
