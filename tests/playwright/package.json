@@ -9,8 +9,7 @@
     "test:debug": "playwright test --debug",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
-    "report": "playwright show-report ./output/tests",
-    "postinstall": "playwright install chromium"
+    "report": "playwright show-report ./output/tests"
   },
   "devDependencies": {
     "@playwright/test": "^1.54.2",
