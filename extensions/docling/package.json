@@ -11,6 +11,7 @@
   "extensionDependencies": [
     "kaiden.container"
   ],
+  "icon": "icon.png",
   "main": "./dist/extension.js",
   "source": "./src/extension.ts",
   "contributes": {

@@ -177,6 +177,13 @@ export class DoclingExtension {
       name: 'Docling',
       status: 'ready',
       emptyConnectionMarkdownDescription: 'Provides Docling-based document chunking for Knowledges',
+      images: {
+        icon: './icon.png',
+        logo: {
+          dark: './icon.png',
+          light: './icon.png',
+        },
+      },
     });
 
     this.#inversifyBinding = new InversifyBinding(provider, containerExtensionAPI, this.extensionContext);
