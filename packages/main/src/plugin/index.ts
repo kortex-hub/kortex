@@ -79,6 +79,7 @@ import { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import { Uri } from '/@/plugin/types/uri.js';
 import { Updater } from '/@/plugin/updater.js';
 import { Welcome } from '/@/plugin/welcome.js';
+import { WorkspaceProjectManager } from '/@/plugin/workspace-project/workspace-project-manager.js';
 import type { AgentInfo } from '/@api/agent-info.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { AuthenticationProviderInfo } from '/@api/authentication/authentication.js';
@@ -593,6 +594,7 @@ export class PluginSystem {
     container.bind<SecretManager>(SecretManager).toSelf().inSingletonScope();
     container.bind<FlowManager>(FlowManager).toSelf().inSingletonScope();
     container.bind<SkillManager>(SkillManager).toSelf().inSingletonScope();
+    container.bind<WorkspaceProjectManager>(WorkspaceProjectManager).toSelf().inSingletonScope();
     container.bind<TrayMenuRegistry>(TrayMenuRegistry).toSelf().inSingletonScope();
     container.bind<InputQuickPickRegistry>(InputQuickPickRegistry).toSelf().inSingletonScope();
     container.bind<FilesystemMonitoring>(FilesystemMonitoring).toSelf().inSingletonScope();
@@ -907,6 +909,9 @@ export class PluginSystem {
 
     const ragEnvironmentRegistry = container.get<RagEnvironmentRegistry>(RagEnvironmentRegistry);
     await ragEnvironmentRegistry.init();
+
+    const workspaceProjectManager = container.get<WorkspaceProjectManager>(WorkspaceProjectManager);
+    await workspaceProjectManager.init();
 
     const chunkProviderRegistry = container.get<ChunkProviderRegistry>(ChunkProviderRegistry);
     chunkProviderRegistry.init();

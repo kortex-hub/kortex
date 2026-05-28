@@ -47,6 +47,7 @@ export class LegacyDirectories implements Directories {
   private readonly desktopAppHomeDir: string;
   private readonly chatPersistenceDirectory: string;
   private readonly skillsDirectory: string;
+  private readonly workspaceProjectsDirectory: string;
 
   constructor() {
     // Check for custom directory override
@@ -69,6 +70,7 @@ export class LegacyDirectories implements Directories {
     this.safeStorageDirectory = path.resolve(this.desktopAppHomeDir, 'safe-storage');
     this.chatPersistenceDirectory = path.resolve(this.desktopAppHomeDir, 'chat-persistence');
     this.skillsDirectory = path.resolve(this.desktopAppHomeDir, 'skills');
+    this.workspaceProjectsDirectory = path.resolve(this.desktopAppHomeDir, 'workspace-projects');
   }
 
   getConfigurationDirectory(): string {
@@ -123,5 +125,9 @@ export class LegacyDirectories implements Directories {
 
   getSkillsDirectory(): string {
     return this.skillsDirectory;
+  }
+
+  getWorkspaceProjectsDirectory(): string {
+    return this.workspaceProjectsDirectory;
   }
 }

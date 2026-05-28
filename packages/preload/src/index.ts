@@ -154,6 +154,11 @@ import type { ViewInfoUI } from '/@api/view-info';
 import type { VolumeInspectInfo, VolumeListInfo } from '/@api/volume-info';
 import type { WebviewInfo } from '/@api/webview-info';
 import type { WelcomeMessages } from '/@api/welcome-info';
+import type {
+  WorkspaceProjectCreateOptions,
+  WorkspaceProjectInfo,
+  WorkspaceProjectUpdateOptions,
+} from '/@api/workspace-project-info';
 
 export type DialogResultCallback = (openDialogReturnValue: Electron.OpenDialogReturnValue) => void;
 export type OpenSaveDialogResultCallback = (result: string | string[] | undefined) => void;
@@ -529,6 +534,33 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld('getSkillFileContent', async (filePath: string): Promise<SkillFileContent> => {
     return ipcInvoke('skill-manager:getSkillFileContent', filePath);
   });
+
+  // Workspace Projects
+  contextBridge.exposeInMainWorld('listWorkspaceProjects', async (): Promise<WorkspaceProjectInfo[]> => {
+    return ipcInvoke('workspace-project-manager:list');
+  });
+
+  contextBridge.exposeInMainWorld('getWorkspaceProject', async (id: string): Promise<WorkspaceProjectInfo> => {
+    return ipcInvoke('workspace-project-manager:get', id);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'createWorkspaceProject',
+    async (options: WorkspaceProjectCreateOptions): Promise<WorkspaceProjectInfo> => {
+      return ipcInvoke('workspace-project-manager:create', options);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('removeWorkspaceProject', async (id: string): Promise<void> => {
+    return ipcInvoke('workspace-project-manager:remove', id);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'updateWorkspaceProject',
+    async (id: string, options: WorkspaceProjectUpdateOptions): Promise<WorkspaceProjectInfo> => {
+      return ipcInvoke('workspace-project-manager:update', id, options);
+    },
+  );
 
   contextBridge.exposeInMainWorld(
     'deleteSchedule',
