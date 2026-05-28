@@ -24,7 +24,7 @@ import { registerWorkspaceLifecycleTests } from './workspace-lifecycle-helper';
 test.describe
   .serial('OpenClaw agent workspace with Ollama model', { tag: '@smoke' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
-      testIdPrefix: 'WKS-OPENCLAW-OLLAMA',
+      testIdPrefix: 'WKS-OLLAMA',
       workspaceName: 'openclaw-ollama-e2e-smoke',
       agent: CODING_AGENT.OPENCLAW,
       requiredResource: 'ollama',
@@ -42,7 +42,7 @@ test.describe
 test.describe
   .serial('OpenClaw agent workspace with OpenAI model', { tag: '@smoke' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
-      testIdPrefix: 'WKS-OPENCLAW-OPENAI',
+      testIdPrefix: 'WKS-OPENAI',
       workspaceName: 'openclaw-openai-e2e-smoke',
       agent: CODING_AGENT.OPENCLAW,
       requiredResource: 'openai',
@@ -59,7 +59,7 @@ test.describe
 test.describe
   .serial('OpenClaw agent workspace with Anthropic model', { tag: '@smoke' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
-      testIdPrefix: 'WKS-OPENCLAW-ANTHROPIC',
+      testIdPrefix: 'WKS-ANTHROPIC',
       workspaceName: 'openclaw-anthropic-e2e-smoke',
       agent: CODING_AGENT.OPENCLAW,
       requiredResource: 'claude',
@@ -76,7 +76,7 @@ test.describe
 test.describe
   .serial('OpenClaw agent workspace with Gemini model', { tag: '@smoke' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
-      testIdPrefix: 'WKS-OPENCLAW-GEMINI',
+      testIdPrefix: 'WKS-GEMINI',
       workspaceName: 'openclaw-gemini-e2e-smoke',
       agent: CODING_AGENT.OPENCLAW,
       requiredResource: 'gemini',
@@ -93,7 +93,7 @@ test.describe
 test.describe
   .serial('OpenClaw agent workspace with Mistral model', { tag: '@smoke' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
-      testIdPrefix: 'WKS-OPENCLAW-MISTRAL',
+      testIdPrefix: 'WKS-MISTRAL',
       workspaceName: 'openclaw-mistral-e2e-smoke',
       agent: CODING_AGENT.OPENCLAW,
       requiredResource: 'mistral',
