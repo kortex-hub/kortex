@@ -1,6 +1,7 @@
 <script lang="ts">
 import { router } from 'tinro';
 
+import Card from '/@/lib/components/Card.svelte';
 import type { InferenceConnectionSummary } from '/@/lib/models/models-utils';
 
 interface Props {
@@ -79,8 +80,7 @@ function getSecondBadge(status: string): BadgeInfo | undefined {
     {@const status = effectiveStatus(connection)}
     {@const primaryBadge = getStatusBadge(status)}
     {@const secondaryBadge = getSecondBadge(status)}
-    <div
-      class="provider-tile flex flex-col gap-2 p-4 rounded-lg border border-[var(--pd-content-card-border)] bg-[var(--pd-content-card-bg)] flex-1 min-w-40 max-w-48">
+    <Card class="provider-tile flex flex-col gap-2 p-4 flex-1 min-w-40 max-w-48">
       <span class="text-base font-semibold text-[var(--pd-content-card-header-text)]">
         {connection.providerName}
       </span>
@@ -102,19 +102,7 @@ function getSecondBadge(status: string): BadgeInfo | undefined {
           Configure
         </button>
       {/if}
-    </div>
+    </Card>
   {/each}
 </div>
 
-<style>
-  .provider-tile {
-    box-shadow:
-      0 1px 2px color-mix(in srgb, var(--pd-content-bg) 6%, transparent),
-      0 8px 24px color-mix(in srgb, var(--pd-content-bg) 7%, transparent);
-  }
-
-  :global(.dark) .provider-tile {
-    background: linear-gradient(145deg, var(--pd-content-card-bg) 0%, var(--pd-content-bg) 100%);
-    box-shadow: none;
-  }
-</style>

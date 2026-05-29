@@ -3,6 +3,7 @@ import { faCirclePlay, faRobot, faTableCells } from '@fortawesome/free-solid-svg
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { SvelteSet } from 'svelte/reactivity';
 
+import Card from '/@/lib/components/Card.svelte';
 import type { AgentWorkspaceSummaryUI } from '/@/stores/agent-workspaces.svelte';
 
 import { isActiveWorkspace } from './workspace-utils';
@@ -19,7 +20,7 @@ const agentCount = $derived(new SvelteSet(workspaces.map(ws => ws.agent)).size);
 </script>
 
 <div class="grid grid-cols-3 gap-3.5 mb-5">
-  <div class="flex items-center gap-3.5 py-[18px] px-5 bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] rounded-xl">
+  <Card class="flex items-center gap-3.5 py-[18px] px-5">
     <div class="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 bg-[color-mix(in_srgb,var(--pd-status-running)_15%,transparent)] text-[var(--pd-status-running)]">
       <Icon icon={faCirclePlay} size="1.1x" />
     </div>
@@ -27,9 +28,9 @@ const agentCount = $derived(new SvelteSet(workspaces.map(ws => ws.agent)).size);
       <span class="text-4xl font-bold text-[var(--pd-content-text)]">{activeCount}</span>
       <span class="text-base text-[var(--pd-content-text)] opacity-60">Active Sessions</span>
     </div>
-  </div>
+  </Card>
 
-  <div class="flex items-center gap-3.5 py-[18px] px-5 bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] rounded-xl">
+  <Card class="flex items-center gap-3.5 py-[18px] px-5">
     <div class="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 bg-[color-mix(in_srgb,var(--pd-status-waiting)_15%,transparent)] text-[var(--pd-status-waiting)]">
       <Icon icon={faTableCells} size="1.1x" />
     </div>
@@ -37,9 +38,9 @@ const agentCount = $derived(new SvelteSet(workspaces.map(ws => ws.agent)).size);
       <span class="text-4xl font-bold text-[var(--pd-content-text)]">{totalCount}</span>
       <span class="text-base text-[var(--pd-content-text)] opacity-60">Total Sessions</span>
     </div>
-  </div>
+  </Card>
 
-  <div class="flex items-center gap-3.5 py-[18px] px-5 bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] rounded-xl">
+  <Card class="flex items-center gap-3.5 py-[18px] px-5">
     <div class="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 bg-[color-mix(in_srgb,var(--pd-link)_15%,transparent)] text-[var(--pd-link)]">
       <Icon icon={faRobot} size="1.1x" />
     </div>
@@ -47,5 +48,5 @@ const agentCount = $derived(new SvelteSet(workspaces.map(ws => ws.agent)).size);
       <span class="text-4xl font-bold text-[var(--pd-content-text)]">{agentCount}</span>
       <span class="text-base text-[var(--pd-content-text)] opacity-60">Configured Agents</span>
     </div>
-  </div>
+  </Card>
 </div>

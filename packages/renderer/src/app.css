@@ -130,3 +130,18 @@ a {
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 }
+
+/* Card component styles */
+.content-card {
+  background: linear-gradient(180deg, var(--pd-content-card-bg) 0%, var(--pd-content-card-inset-bg) 100%);
+  border: 1px solid var(--pd-content-table-border);
+  border-radius: 0.5rem;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--pd-content-bg) 6%, transparent),
+    0 8px 24px color-mix(in srgb, var(--pd-content-bg) 7%, transparent);
+}
+
+.dark .content-card {
+  background: linear-gradient(160deg, var(--pd-content-card-bg) 0%, var(--pd-content-bg) 100%);
+  box-shadow: none;
+}
