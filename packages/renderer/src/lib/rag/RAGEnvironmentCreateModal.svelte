@@ -43,18 +43,19 @@ let chunkConnectionOptions = $derived(
   ),
 );
 
+const selectedRagOption = $derived(ragConnectionOptions.find(option => option.key === selectedRagConnectionKey));
+const selectedChunkOption = $derived(
+  chunkConnectionOptions.find(option => option.key === selectedChunkerConnectionKey),
+);
+
 let isFormValid = $derived(
-  environmentName.trim() !== '' && selectedRagConnectionKey !== '' && selectedChunkerConnectionKey !== '',
+  environmentName.trim() !== '' && selectedRagOption !== undefined && selectedChunkOption !== undefined,
 );
 
 function handleCreate(): void {
   if (!isFormValid) return;
 
-  const selectedRagOption = ragConnectionOptions.find(option => option.key === selectedRagConnectionKey);
-  if (!selectedRagOption) return;
-
-  const selectedChunkOption = chunkConnectionOptions.find(option => option.key === selectedChunkerConnectionKey);
-  if (!selectedChunkOption) return;
+  if (!selectedRagOption || !selectedChunkOption) return;
 
   onCreate(
     environmentName.trim(),
