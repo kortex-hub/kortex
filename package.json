@@ -199,6 +199,7 @@
     "xvfb-maybe": "^0.2.1"
   },
   "dependencies": {
+    "@agentclientprotocol/sdk": "^0.22.1",
     "@ai-sdk/mcp": "^1.0.45",
     "@docker/extension-api-client-types": "0.4.2",
     "@expo/sudo-prompt": "^9.3.2",

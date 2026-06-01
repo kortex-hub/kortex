@@ -33,6 +33,8 @@ updates:
     allow:
         - dependency-name: "@ai-sdk/*"
           dependency-type: "all"
+        - dependency-name: "@agentclientprotocol/sdk"
+          dependency-type: "all"
         - dependency-name: "@modelcontextprotocol/sdk"
           dependency-type: "all"
         - dependency-name: "@openkaiden/*"
