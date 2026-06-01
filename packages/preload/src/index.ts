@@ -141,7 +141,6 @@ import type {
 } from '/@api/provider-info';
 import type { ProxyState } from '/@api/proxy';
 import type { PullEvent } from '/@api/pull-event';
-import type { ChunkProviderInfo } from '/@api/rag/chunk-provider-info';
 import type { RagEnvironment } from '/@api/rag/rag-environment';
 import type { ExtensionBanner, RecommendedRegistry } from '/@api/recommendations/recommendations';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info';
@@ -2055,10 +2054,6 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld('deleteRagEnvironment', async (name: string): Promise<void> => {
     return ipcInvoke('rag-environment-registry:deleteRagEnvironment', name);
-  });
-
-  contextBridge.exposeInMainWorld('getChunkProviders', async (): Promise<ChunkProviderInfo[]> => {
-    return ipcInvoke('chunk-provider-registry:getChunkProviders');
   });
 
   contextBridge.exposeInMainWorld('getCliToolInfos', async (): Promise<CliToolInfo[]> => {

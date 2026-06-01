@@ -55,7 +55,6 @@ import { lookup } from 'mime-types';
 import { AgentRegistry } from '/@/plugin/agent-registry.js';
 import { AgentWorkspaceManager } from '/@/plugin/agent-workspace/agent-workspace-manager.js';
 import { IPCHandle, IPCMainOn, WebContentsType } from '/@/plugin/api.js';
-import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import { ContainerfileParser } from '/@/plugin/containerfile-parser.js';
 import { ExtensionApiVersion } from '/@/plugin/extension/extension-api-version.js';
 import { ExtensionLoader } from '/@/plugin/extension/extension-loader.js';
@@ -578,7 +577,6 @@ export class PluginSystem {
     container.bind<MCPRegistry>(MCPRegistry).toSelf().inSingletonScope();
     container.bind<MCPExporter>(MCPExporter).toSelf().inSingletonScope();
     container.bind<MCPIPCHandler>(MCPIPCHandler).toSelf().inSingletonScope();
-    container.bind<ChunkProviderRegistry>(ChunkProviderRegistry).toSelf().inSingletonScope();
     container.bind<ViewRegistry>(ViewRegistry).toSelf().inSingletonScope();
     container.bind<Context>(Context).toSelf().inSingletonScope();
     container.bind<ContainerProviderRegistry>(ContainerProviderRegistry).toSelf().inSingletonScope();
@@ -912,9 +910,6 @@ export class PluginSystem {
 
     const workspaceProjectManager = container.get<WorkspaceProjectManager>(WorkspaceProjectManager);
     await workspaceProjectManager.init();
-
-    const chunkProviderRegistry = container.get<ChunkProviderRegistry>(ChunkProviderRegistry);
-    chunkProviderRegistry.init();
 
     const mcpIPCHandler = container.get<MCPIPCHandler>(MCPIPCHandler);
     mcpIPCHandler.init();
