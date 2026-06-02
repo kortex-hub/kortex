@@ -29,7 +29,7 @@ const TEST_FILE_PATH = resolve(__dirname, '../../../../resources/test-doc.pdf');
 const VECTOR_STORE_NAME = 'e2e-milvus';
 const EMBEDDING_MODEL_NAME = 'docling';
 
-test.use({ milvusConnectionName: VECTOR_STORE_NAME });
+test.use({ milvusConnectionName: VECTOR_STORE_NAME, doclingConnectionName: EMBEDDING_MODEL_NAME });
 
 test.describe('Knowledge Database provider tests', () => {
   test.skip(
@@ -47,6 +47,7 @@ test.describe('Knowledge Database provider tests', () => {
 
       test('[KDB-02] Create knowledge database via UI and verify row appears', async ({
         milvusSetup: vectorStoreName,
+        doclingSetup: _doclingSetup,
         workerNavigationBar,
       }) => {
         const knowledgePage = await workerNavigationBar.navigateToKnowledgePage();
@@ -117,6 +118,7 @@ test.describe('Knowledge Database provider tests', () => {
 
       test('[KDB-07] Create knowledge database via UI and verify it appears', async ({
         milvusSetup: vectorStoreName,
+        doclingSetup: _doclingSetup,
         workerNavigationBar,
       }) => {
         const knowledgePage = await workerNavigationBar.navigateToKnowledgePage();

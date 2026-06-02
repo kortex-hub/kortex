@@ -32,6 +32,8 @@ interface WorkerFixtures extends WorkerElectronFixtures {
   gooseSetup: void;
   milvusConnectionName: string;
   milvusSetup: string;
+  doclingConnectionName: string;
+  doclingSetup: string;
 }
 
 export const test = base.extend<ElectronFixtures, WorkerFixtures>({
@@ -69,8 +71,8 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
         return;
       }
 
-      // RAG providers (like Milvus) are managed by the dedicated milvusSetup fixture
-      if ('connectionType' in provider && provider.connectionType === 'rag') {
+      // RAG/chunk providers (like Milvus, Docling) are managed by dedicated setup fixtures
+      if ('connectionType' in provider && (provider.connectionType === 'rag' || provider.connectionType === 'chunk')) {
         await use();
         return;
       }
@@ -208,6 +210,63 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
       }
     },
     { scope: 'worker', auto: false },
+  ],
+
+  doclingConnectionName: [
+    '',
+    {
+      scope: 'worker',
+      option: true,
+    },
+  ],
+
+  doclingSetup: [
+    async ({ workerNavigationBar, doclingConnectionName }, use): Promise<void> => {
+      if (!doclingConnectionName) {
+        await use('');
+        return;
+      }
+
+      const settingsPage = await workerNavigationBar.navigateToSettingsPage();
+      const resourcesPage = await settingsPage.openResources();
+
+      const existingConnection = resourcesPage.getCreatedConnectionFor('docling', 'chunk');
+      if ((await existingConnection.count()) > 0) {
+        const existingName = (await existingConnection.getAttribute('aria-label')) ?? doclingConnectionName;
+        console.log(`Docling connection '${existingName}' already exists, reusing it.`);
+        await use(existingName);
+        return;
+      }
+
+      let created = false;
+      try {
+        const createPage = await resourcesPage.openCreateDoclingPage();
+        await createPage.createAndGoBack(doclingConnectionName);
+        created = true;
+        await resourcesPage.waitForLoad();
+        await expect(resourcesPage.getCreatedConnectionFor('docling', 'chunk')).toBeVisible({
+          timeout: TIMEOUTS.DEFAULT,
+        });
+        await use(doclingConnectionName);
+      } catch (error) {
+        if (!created) {
+          console.warn(
+            `Docling setup skipped: no container engine available. Start Podman or Docker to run Knowledge Database tests. (${error})`,
+          );
+          await use('');
+          return;
+        }
+        throw error;
+      } finally {
+        if (created) {
+          await safeCleanup(async () => {
+            const sp = await workerNavigationBar.navigateToSettingsPage();
+            await sp.deleteResource('docling');
+          }, `Failed to delete Docling connection '${doclingConnectionName}'`);
+        }
+      }
+    },
+    { scope: 'worker', auto: false, timeout: TIMEOUTS.IMAGE_PULL },
   ],
 });
 

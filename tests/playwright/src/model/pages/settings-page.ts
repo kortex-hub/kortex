@@ -109,6 +109,11 @@ export class SettingsPage extends BasePage {
         await createMilvusPage.createAndGoBack(value);
         break;
       }
+      case 'docling': {
+        const createDoclingPage = await resourcesPage.openCreateDoclingPage();
+        await createDoclingPage.createAndGoBack(value);
+        break;
+      }
       case 'openshift-ai':
         throw new Error('OpenShift AI resource creation not yet implemented');
       default:
@@ -127,9 +132,6 @@ export class SettingsPage extends BasePage {
 
     await resourcesPage.waitForLoad();
     await resourcesPage.deleteCreatedConnectionFor(provider.resourceId, connectionType);
-
-    const resource = resourcesPage.getCreatedConnectionFor(provider.resourceId, connectionType);
-    await expect(resource).not.toBeVisible();
   }
 
   async installGoose(): Promise<void> {

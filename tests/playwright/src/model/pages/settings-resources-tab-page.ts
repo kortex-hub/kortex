@@ -21,6 +21,7 @@ import { type ConnectionType, featuredResources, resources, TIMEOUTS } from 'src
 
 import { BasePage } from './base-page';
 import { SettingsCreateClaudePage } from './settings-create-claude-page';
+import { SettingsCreateDoclingPage } from './settings-create-docling-page';
 import { SettingsCreateGeminiPage } from './settings-create-gemini-page';
 import { SettingsCreateMilvusPage } from './settings-create-milvus-page';
 import { SettingsCreateMistralPage } from './settings-create-mistral-page';
@@ -71,10 +72,20 @@ export class SettingsResourcesPage extends BasePage {
     );
   }
 
+  async openCreateDoclingPage(): Promise<SettingsCreateDoclingPage> {
+    return this.openTab(
+      this.getResourceCreateButton(resources.docling.displayName),
+      SettingsCreateDoclingPage,
+      TIMEOUTS.DEFAULT,
+    );
+  }
+
   private getConnectionTypeLabel(connectionType: ConnectionType): string {
     switch (connectionType) {
       case 'rag':
         return '(Knowledge Database)';
+      case 'chunk':
+        return '(Chunk)';
       default:
         return '(Inference)';
     }
@@ -107,10 +118,19 @@ export class SettingsResourcesPage extends BasePage {
     const resource = this.getCreatedConnectionFor(resourceId, connectionType);
     const stopButton = this.getStopButtonForCreatedResource(resource);
     if (await stopButton.isVisible({ timeout: TIMEOUTS.SHORT })) {
-      await stopButton.click();
+      if (await stopButton.isEnabled()) {
+        await stopButton.click();
+      }
     }
+
     const deleteButton = this.getDeleteButtonForCreatedResource(resource);
     await expect(deleteButton).toBeEnabled({ timeout: TIMEOUTS.STANDARD });
-    await deleteButton.click();
+
+    await expect(async () => {
+      if (await deleteButton.isVisible()) {
+        await deleteButton.click();
+      }
+      await expect(resource).not.toBeVisible();
+    }).toPass({ intervals: [1_000, 2_000, 5_000], timeout: TIMEOUTS.STANDARD });
   }
 }

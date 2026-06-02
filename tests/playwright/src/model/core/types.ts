@@ -91,6 +91,7 @@ export const resources = {
   ramalama: { displayName: 'RamaLama', hasCreateButton: false },
   mistral: { displayName: 'Mistral', hasCreateButton: true },
   milvus: { displayName: 'Milvus Vector Database', hasCreateButton: true },
+  docling: { displayName: 'Docling Chunk Provider', hasCreateButton: true },
 } as const;
 
 export type SettingsResourceId = keyof typeof resources;
@@ -114,7 +115,7 @@ export const MCP_SERVERS = {
 
 export type MCPServerId = keyof typeof MCP_SERVERS;
 
-export type ConnectionType = 'inference' | 'rag';
+export type ConnectionType = 'inference' | 'rag' | 'chunk';
 
 export interface ResourceConfig {
   readonly envVarName: string;
@@ -160,6 +161,11 @@ export const PROVIDERS = {
     envVarName: 'PODMAN_ENABLED',
     resourceId: 'milvus',
     connectionType: 'rag',
+  },
+  docling: {
+    envVarName: 'PODMAN_ENABLED',
+    resourceId: 'docling',
+    connectionType: 'chunk',
   },
 } as const satisfies Record<string, ResourceConfig>;
 
@@ -229,4 +235,5 @@ export const TIMEOUTS = {
   SHORT: 10_000,
   MODEL_RESPONSE: 90_000,
   WORKSPACE_READY: 180_000,
+  IMAGE_PULL: 600_000,
 } as const;
