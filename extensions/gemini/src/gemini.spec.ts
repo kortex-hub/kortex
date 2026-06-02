@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { randomUUID } from 'node:crypto';
+
 import { createGoogleGenerativeAI, type GoogleGenerativeAIProvider } from '@ai-sdk/google';
 import type { Model, Pager } from '@google/genai';
 import { GoogleGenAI } from '@google/genai';
@@ -29,7 +31,15 @@ import type {
 } from '@openkaiden/api';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { Gemini, TOKENS_KEY } from './gemini';
+import { Gemini, type StoredConnection, TOKENS_KEY } from './gemini';
+
+vi.mock(import('node:crypto'), async importOriginal => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    randomUUID: vi.fn().mockReturnValue('fake-uuid-1'),
+  };
+});
 
 vi.mock('@openkaiden/api', () => ({
   Disposable: {
@@ -71,6 +81,7 @@ const SAFE_STORAGE_MOCK: SecretStorage = {
 beforeEach(() => {
   vi.resetAllMocks();
 
+  vi.mocked(randomUUID).mockReturnValue('fake-uuid-1' as ReturnType<typeof randomUUID>);
   vi.mocked(PROVIDER_API_MOCK.createProvider).mockReturnValue(PROVIDER_MOCK as Provider);
   vi.mocked(createGoogleGenerativeAI).mockReturnValue(GOOGLE_AI_PROVIDER_MOCK);
 
@@ -148,6 +159,71 @@ describe('init', () => {
       create: expect.any(Function),
     });
   });
+
+  test('should restore connections from secret storage', async () => {
+    const stored: StoredConnection[] = [{ id: 'persisted-id', token: 'existingKey' }];
+    vi.mocked(SAFE_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify(stored));
+
+    const gemini = new Gemini(PROVIDER_API_MOCK, SAFE_STORAGE_MOCK);
+    await gemini.init();
+
+    expect(SAFE_STORAGE_MOCK.get).toHaveBeenCalledWith(TOKENS_KEY);
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledOnce();
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'persisted-id' }),
+    );
+  });
+
+  test('should handle empty secret storage', async () => {
+    vi.mocked(SAFE_STORAGE_MOCK.get).mockResolvedValue(undefined);
+
+    const gemini = new Gemini(PROVIDER_API_MOCK, SAFE_STORAGE_MOCK);
+    await gemini.init();
+
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).not.toHaveBeenCalled();
+  });
+
+  test('should migrate legacy comma-separated tokens to JSON format', async () => {
+    vi.mocked(randomUUID)
+      .mockReturnValueOnce('migrated-id-1' as ReturnType<typeof randomUUID>)
+      .mockReturnValueOnce('migrated-id-2' as ReturnType<typeof randomUUID>);
+    vi.mocked(SAFE_STORAGE_MOCK.get).mockResolvedValue('tokenA,tokenB');
+
+    const gemini = new Gemini(PROVIDER_API_MOCK, SAFE_STORAGE_MOCK);
+    await gemini.init();
+
+    const expected: StoredConnection[] = [
+      { id: 'migrated-id-1', token: 'tokenA' },
+      { id: 'migrated-id-2', token: 'tokenB' },
+    ];
+    expect(SAFE_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, JSON.stringify(expected));
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledTimes(2);
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'migrated-id-1' }),
+    );
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'migrated-id-2' }),
+    );
+  });
+
+  test('should restore persisted IDs across restarts', async () => {
+    const stored: StoredConnection[] = [
+      { id: 'stable-id-1', token: 'key1' },
+      { id: 'stable-id-2', token: 'key2' },
+    ];
+    vi.mocked(SAFE_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify(stored));
+
+    const gemini = new Gemini(PROVIDER_API_MOCK, SAFE_STORAGE_MOCK);
+    await gemini.init();
+
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledTimes(2);
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'stable-id-1' }),
+    );
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'stable-id-2' }),
+    );
+  });
 });
 
 describe('factory', () => {
@@ -167,14 +243,14 @@ describe('factory', () => {
     }).rejects.toThrowError('invalid apiKey');
   });
 
-  test('calling create with proper params should save token', async () => {
+  test('calling create with proper params should save connection as JSON', async () => {
     await create({
       'gemini.factory.apiKey': 'dummyKey',
     });
 
-    // ensure store has been updated
     expect(SAFE_STORAGE_MOCK.store).toHaveBeenCalledOnce();
-    expect(SAFE_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, 'dummyKey');
+    const expected: StoredConnection[] = [{ id: 'fake-uuid-1', token: 'dummyKey' }];
+    expect(SAFE_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, JSON.stringify(expected));
   });
 
   test('calling create with proper params should register inference connection', async () => {
@@ -193,10 +269,9 @@ describe('factory', () => {
       apiKey: 'dummyKey',
     });
 
-    // ensure the connection has been registered
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledOnce();
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith({
-      id: '0',
+      id: 'fake-uuid-1',
       name: 'dum*****',
       type: 'cloud',
       llmMetadata: { name: 'gemini' },
@@ -239,22 +314,46 @@ describe('connection delete lifecycle', () => {
     mDelete = lifecycle.delete;
   });
 
-  test('calling delete should delete the token', async () => {
+  test('calling delete should remove the connection from storage', async () => {
     await mDelete();
 
-    // should have been called twice
     expect(SAFE_STORAGE_MOCK.store).toHaveBeenCalledTimes(2);
 
-    // first time when registering the connection
-    expect(SAFE_STORAGE_MOCK.store).toHaveBeenNthCalledWith(1, TOKENS_KEY, 'dummyKey');
+    const saved: StoredConnection[] = [{ id: 'fake-uuid-1', token: 'dummyKey' }];
+    expect(SAFE_STORAGE_MOCK.store).toHaveBeenNthCalledWith(1, TOKENS_KEY, JSON.stringify(saved));
 
-    // second time when unregistering the connection
-    expect(SAFE_STORAGE_MOCK.store).toHaveBeenNthCalledWith(2, TOKENS_KEY, '');
+    expect(SAFE_STORAGE_MOCK.store).toHaveBeenNthCalledWith(2, TOKENS_KEY, JSON.stringify([]));
   });
 
   test('calling delete should dispose provider inference connection', async () => {
     await mDelete();
 
     expect(disposeMock).toHaveBeenCalledOnce();
+  });
+
+  test('calling delete should remove connection by ID, not by token value', async () => {
+    // Setup: simulate two connections with same token but different IDs
+    const multipleConnections: StoredConnection[] = [
+      { id: 'id-1', token: 'sharedToken' },
+      { id: 'id-2', token: 'sharedToken' },
+    ];
+    vi.mocked(SAFE_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify(multipleConnections));
+
+    vi.mocked(PROVIDER_MOCK.registerInferenceProviderConnection).mockClear();
+    vi.mocked(SAFE_STORAGE_MOCK.store).mockClear();
+    const gemini2 = new Gemini(PROVIDER_API_MOCK, SAFE_STORAGE_MOCK);
+    await gemini2.init();
+
+    // Get the delete function for the restored id-1 connection
+    const registerMock2 = vi.mocked(PROVIDER_MOCK.registerInferenceProviderConnection);
+    expect(registerMock2).toHaveBeenCalledTimes(2);
+    const lifecycle2 = registerMock2.mock.calls[0][0].lifecycle;
+    assert(lifecycle2?.delete, 'delete method must be defined');
+
+    await lifecycle2.delete();
+
+    // Verify only the connection with id-1 was removed, id-2 remains
+    const expectedAfterDelete: StoredConnection[] = [{ id: 'id-2', token: 'sharedToken' }];
+    expect(SAFE_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, JSON.stringify(expectedAfterDelete));
   });
 });

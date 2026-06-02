@@ -15,7 +15,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-import { createHash } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { GoogleGenAI } from '@google/genai';
@@ -29,12 +29,16 @@ import type {
 } from '@openkaiden/api';
 
 export const TOKENS_KEY = 'gemini:tokens';
-export const TOKEN_SEPARATOR = ',';
+
+export interface StoredConnection {
+  id: string;
+  token: string;
+}
 
 export class Gemini implements Disposable {
   private provider: Provider | undefined = undefined;
   private connections: Map<string, Disposable> = new Map();
-  private connectionIdCounter = 0;
+  private storageUpdateQueue: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly providerAPI: typeof ProviderAPI,
@@ -67,87 +71,68 @@ export class Gemini implements Disposable {
   }
 
   private async restoreConnections(): Promise<void> {
-    const tokens = await this.getTokens();
-    for (const token of tokens) {
-      await this.registerInferenceProviderConnection({ token });
+    const stored = await this.getStoredConnections();
+    for (const entry of stored) {
+      await this.registerInferenceProviderConnection({ id: entry.id, token: entry.token });
     }
   }
 
-  /**
-   * Get all tokens from secret storage
-   * @private
-   */
-  private async getTokens(): Promise<string[]> {
-    // get raw string from secret storage
+  private async getStoredConnections(): Promise<StoredConnection[]> {
     let raw: string | undefined;
     try {
       raw = await this.secrets.get(TOKENS_KEY);
     } catch (err: unknown) {
       console.error('Gemini: something went wrong while trying to get tokens from secret storage', err);
     }
-    // if undefined return empty array
     if (!raw) return [];
-    // split raw string by token separator
-    return raw.split(TOKEN_SEPARATOR);
+
+    try {
+      return JSON.parse(raw) as StoredConnection[];
+    } catch {
+      // Migrate legacy comma-separated token format
+      const tokens = raw.split(',');
+      const migrated: StoredConnection[] = tokens.map(token => ({ id: randomUUID(), token }));
+      await this.secrets.store(TOKENS_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
   }
 
-  /**
-   * Save token to secret storage
-   * @param token
-   * @private
-   */
-  private async saveToken(token: string): Promise<void> {
-    // get existing tokens
-    const tokens: Array<string> = await this.getTokens();
-    // concat new token with existing tokens
-    const raw = [...tokens, token].join(TOKEN_SEPARATOR);
-    // save to secret storage
-    await this.secrets.store(TOKENS_KEY, raw);
+  private updateStoredConnections(mutate: (stored: StoredConnection[]) => StoredConnection[]): Promise<void> {
+    this.storageUpdateQueue = this.storageUpdateQueue.then(async () => {
+      const stored = await this.getStoredConnections();
+      await this.secrets.store(TOKENS_KEY, JSON.stringify(mutate(stored)));
+    });
+    return this.storageUpdateQueue;
   }
 
-  private getTokenHash(token: string): string {
-    const sha256 = createHash('sha256');
-    return sha256.update(token).digest('hex');
+  private async saveConnection(connection: StoredConnection): Promise<void> {
+    await this.updateStoredConnections(stored => [...stored, connection]);
   }
 
-  private async removeToken(token: string): Promise<void> {
-    // get existing tokens
-    const tokens: Array<string> = await this.getTokens();
-    // filter out the token
-    const raw = tokens.filter(t => t !== token).join(TOKEN_SEPARATOR);
-    // save to secret storage
-    await this.secrets.store(TOKENS_KEY, raw);
+  private async removeConnection(id: string): Promise<void> {
+    await this.updateStoredConnections(stored => stored.filter(entry => entry.id !== id));
   }
 
-  private async registerInferenceProviderConnection({ token }: { token: string }): Promise<void> {
+  private async registerInferenceProviderConnection({ id, token }: { id: string; token: string }): Promise<void> {
     if (!this.provider) throw new Error('cannot create MCP provider connection: provider is not initialized');
 
-    // create masked version of token
     const key = this.maskKey(token);
 
-    // get hash of the token (used for Map)
-    const tokenHash = this.getTokenHash(token);
-
-    if (this.connections.has(tokenHash)) {
+    if (this.connections.has(id)) {
       throw new Error(`connection already exists for token ${key}`);
     }
 
-    // create ProviderV2
     const google = createGoogleGenerativeAI({
       apiKey: token,
     });
 
-    // create a clean method
     const clean = async (): Promise<void> => {
-      // dispose inference provider connection
-      this.connections.get(tokenHash)?.dispose();
-      // delete map entry
-      this.connections.delete(tokenHash);
-      // remove token from secret storage
-      await this.removeToken(token);
+      this.connections.get(id)?.dispose();
+      this.connections.delete(id);
+      await this.removeConnection(id);
     };
 
-    let status: ProviderConnectionStatus = 'unknown'; // if status is not unknown we cannot delete the connection
+    let status: ProviderConnectionStatus = 'unknown';
     let models: InferenceModel[] = [];
 
     try {
@@ -157,7 +142,7 @@ export class Gemini implements Disposable {
     }
 
     const connectionDisposable = this.provider.registerInferenceProviderConnection({
-      id: String(this.connectionIdCounter++),
+      id,
       name: this.maskKey(token),
       type: 'cloud',
       llmMetadata: { name: 'gemini' },
@@ -175,7 +160,7 @@ export class Gemini implements Disposable {
         };
       },
     });
-    this.connections.set(tokenHash, connectionDisposable);
+    this.connections.set(id, connectionDisposable);
   }
 
   private async getGeminiModels(token: string): Promise<Array<{ label: string }>> {
@@ -197,15 +182,12 @@ export class Gemini implements Disposable {
   }
 
   private async mcpFactory(params: { [p: string]: unknown }): Promise<void> {
-    // extract key from params
     const apiKey = params['gemini.factory.apiKey'];
     if (!apiKey || typeof apiKey !== 'string') throw new Error('invalid apiKey');
 
-    // save the key in secret storage
-    await this.saveToken(apiKey);
-
-    // use dedicated method to register connection
-    await this.registerInferenceProviderConnection({ token: apiKey });
+    const id = randomUUID();
+    await this.saveConnection({ id, token: apiKey });
+    await this.registerInferenceProviderConnection({ id, token: apiKey });
   }
 
   dispose(): void {
