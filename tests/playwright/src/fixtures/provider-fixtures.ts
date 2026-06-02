@@ -184,8 +184,9 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
       let created = false;
       try {
         const createPage = await resourcesPage.openCreateMilvusPage();
-        await createPage.createAndGoBack(milvusConnectionName);
+        await createPage.create(milvusConnectionName);
         created = true;
+        await createPage.goBackToResources();
         await resourcesPage.waitForLoad();
         await expect(resourcesPage.getCreatedConnectionFor('milvus', 'rag')).toBeVisible({
           timeout: TIMEOUTS.DEFAULT,
@@ -241,8 +242,9 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
       let created = false;
       try {
         const createPage = await resourcesPage.openCreateDoclingPage();
-        await createPage.createAndGoBack(doclingConnectionName);
+        await createPage.create(doclingConnectionName);
         created = true;
+        await createPage.goBackToResources();
         await resourcesPage.waitForLoad();
         await expect(resourcesPage.getCreatedConnectionFor('docling', 'chunk')).toBeVisible({
           timeout: TIMEOUTS.DEFAULT,
