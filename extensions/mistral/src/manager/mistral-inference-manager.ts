@@ -82,23 +82,15 @@ export class MistralInferenceManager {
     await this.secrets.store(TOKENS_KEY, JSON.stringify(stored));
   }
 
-  private getTokenHash(token: string): string {
-    const sha256 = createHash('sha256');
-    return sha256.update(token).digest('hex');
-  }
-
-  private async removeConnection(token: string): Promise<void> {
+  private async removeConnection(id: string): Promise<void> {
     const stored = await this.getStoredConnections();
-    const filtered = stored.filter(entry => entry.token !== token);
+    const filtered = stored.filter(entry => entry.id !== id);
     await this.secrets.store(TOKENS_KEY, JSON.stringify(filtered));
   }
 
   private async registerInferenceProviderConnection({ id, token }: { id: string; token: string }): Promise<void> {
-    const key = this.maskKey(token);
-    const tokenHash = this.getTokenHash(token);
-
-    if (this.connections.has(tokenHash)) {
-      throw new Error(`connection already exists for token ${key}`);
+    if (this.connections.has(id)) {
+      throw new Error(`connection already exists for id ${id}`);
     }
 
     const mistral = createMistral({
@@ -106,9 +98,9 @@ export class MistralInferenceManager {
     });
 
     const clean = async (): Promise<void> => {
-      this.connections.get(tokenHash)?.dispose();
-      this.connections.delete(tokenHash);
-      await this.removeConnection(token);
+      this.connections.get(id)?.dispose();
+      this.connections.delete(id);
+      await this.removeConnection(id);
     };
 
     let status: ProviderConnectionStatus = 'unknown';
@@ -139,7 +131,7 @@ export class MistralInferenceManager {
         };
       },
     });
-    this.connections.set(tokenHash, connectionDisposable);
+    this.connections.set(id, connectionDisposable);
   }
 
   private async getMistralModels(token: string): Promise<Array<{ label: string }>> {
