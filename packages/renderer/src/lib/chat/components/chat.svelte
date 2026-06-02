@@ -62,6 +62,7 @@ const lastUsedModel = new LocalStorage<ModelInfo | undefined>(LAST_USED_MODEL_KE
 let selectedModel = $derived<ModelInfo | undefined>(
   config
     ? {
+        connectionId: '',
         connectionName: config.connectionName,
         label: config.modelId,
         providerId: config.providerId,

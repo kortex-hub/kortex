@@ -41,6 +41,7 @@ export class CursorInferenceManager {
   private cursorRestHelper: CursorRestHelper;
 
   private connections: Map<string, Disposable> = new Map();
+  private connectionIdCounter = 0;
 
   async init(): Promise<void> {
     this.cursorProvider.setInferenceProviderConnectionFactory({
@@ -116,6 +117,7 @@ export class CursorInferenceManager {
     };
 
     const connectionDisposable = this.cursorProvider.registerInferenceProviderConnection({
+      id: String(this.connectionIdCounter++),
       name: this.maskKey(token),
       type: 'cloud',
       llmMetadata: {

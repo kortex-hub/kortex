@@ -3,6 +3,8 @@ import { faPlus, faShieldHalved } from '@fortawesome/free-solid-svg-icons';
 import { Button, Input } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
+import { agentWorkspaceRuntime } from '/@/stores/agentworkspace-runtime';
+
 export interface NetworkAccessOption {
   value: string;
   name: string;
@@ -13,22 +15,65 @@ export interface NetworkAccessOption {
   disabled?: boolean;
 }
 
+const baseNetworkOptions: NetworkAccessOption[] = [
+  {
+    value: 'blocked',
+    name: 'Deny All',
+    description: 'No outbound HTTP/HTTPS from the sandbox.',
+    access: 'None',
+    notes: 'Strict',
+    disabled: false,
+  },
+  {
+    value: 'registries',
+    name: 'Developer Preset',
+    description: 'Allow npm, PyPI, and similar registries — not arbitrary public hosts.',
+    access: 'Registries',
+    notes: 'Balanced default',
+    badge: 'Recommended',
+    disabled: false,
+  },
+  {
+    value: 'agent_mode',
+    name: 'Agent mode',
+    description: 'The agent requests each outbound access; you approve before traffic leaves the sandbox.',
+    access: 'Per request',
+    notes: 'Human in the loop',
+    disabled: true,
+  },
+  {
+    value: 'open',
+    name: 'Unrestricted',
+    description: 'Permit all outbound traffic. Best for trusted dev setups.',
+    access: 'All hosts',
+    notes: 'Trusted setups',
+    disabled: false,
+  },
+];
+
+let networkOptions = $derived(
+  baseNetworkOptions.map(option => ({
+    ...option,
+    disabled: option.value === 'open' && $agentWorkspaceRuntime === 'openshell' ? true : option.disabled,
+  })),
+);
+
 interface Props {
-  networkOptions: NetworkAccessOption[];
   selectedNetwork: string;
   customHosts: string[];
   onAddCustomHost: () => void;
   onRemoveCustomHost: (index: number) => void;
   onUpdateCustomHost: (index: number, value: string) => void;
+  onchange?: (selected: string) => void;
 }
 
 let {
-  networkOptions,
   selectedNetwork = $bindable(),
   customHosts,
   onAddCustomHost,
   onRemoveCustomHost,
   onUpdateCustomHost,
+  onchange,
 }: Props = $props();
 
 let showCustomHosts = $derived(selectedNetwork === 'blocked' || selectedNetwork === 'registries');
@@ -74,6 +119,7 @@ let showCustomHosts = $derived(selectedNetwork === 'blocked' || selectedNetwork 
           value={option.value}
           bind:group={selectedNetwork}
           disabled={option.disabled}
+          onchange={(): void => onchange?.(option.value)}
           aria-label="Use {option.name}"
           class="accent-[var(--pd-button-primary-bg)] w-4 h-4 {option.disabled ? 'cursor-not-allowed' : 'cursor-pointer'}" />
       </div>

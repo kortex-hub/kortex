@@ -91,6 +91,7 @@ test('getCatalogModels builds CatalogModelInfo from providers', () => {
       internalId: 'anthropic-1',
       inferenceConnections: [
         {
+          id: 'conn-0',
           name: 'default',
           type: 'cloud',
           status: 'started',
@@ -111,6 +112,7 @@ test('getCatalogModels builds CatalogModelInfo from providers', () => {
   expect(data[0]).toEqual({
     providerId: 'anthropic',
     providerName: 'Anthropic',
+    connectionId: 'conn-0',
     connectionName: 'default',
     type: 'cloud',
     llmMetadata: { name: 'claude' },
@@ -130,7 +132,9 @@ test('invalidate sends model-registry:update event when data changes', () => {
       id: 'new-provider',
       name: 'New',
       internalId: 'new-1',
-      inferenceConnections: [{ name: 'conn', type: 'cloud', status: 'started', models: [{ label: 'new-model' }] }],
+      inferenceConnections: [
+        { id: 'conn-0', name: 'conn', type: 'cloud', status: 'started', models: [{ label: 'new-model' }] },
+      ],
       inferenceProviderConnectionCreation: false,
       inferenceProviderConnectionCreationTypes: [],
     },

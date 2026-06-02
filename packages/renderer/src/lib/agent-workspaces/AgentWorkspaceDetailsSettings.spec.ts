@@ -23,6 +23,7 @@ import { writable } from 'svelte/store';
 import { router } from 'tinro';
 import { beforeEach, expect, test, vi } from 'vitest';
 
+import * as agentWorkspaceRuntimeStore from '/@/stores/agentworkspace-runtime';
 import * as mcpStore from '/@/stores/mcp-remote-servers';
 import * as ragStore from '/@/stores/rag-environments';
 import * as skillsStore from '/@/stores/skills';
@@ -38,6 +39,7 @@ vi.mock(import('/@/stores/skills'));
 vi.mock(import('/@/stores/rag-environments'));
 vi.mock(import('/@/navigation'));
 vi.mock(import('/@/stores/mcp-remote-servers'));
+vi.mock(import('/@/stores/agentworkspace-runtime'));
 
 const routerStore = writable({
   path: '/agent-workspaces/ws-1/settings',
@@ -77,6 +79,7 @@ beforeEach(() => {
   vi.mocked(skillsStore).skillInfos = writable<readonly SkillInfo[]>([]);
   vi.mocked(ragStore).ragEnvironments = writable<RagEnvironment[]>([]);
   vi.mocked(mcpStore).mcpRemoteServerInfos = writable<readonly MCPRemoteServerInfo[]>([]);
+  vi.mocked(agentWorkspaceRuntimeStore).agentWorkspaceRuntime = writable<string>('podman');
 });
 
 test('Expect General section is active by default with workspace info', () => {
@@ -484,7 +487,7 @@ test('Expect Knowledge section shows checklist with available knowledge bases', 
     {
       name: 'Project Docs',
       ragConnection: { name: 'ChromaDB', providerId: 'chroma-1' },
-      chunkerId: 'chunker-1',
+      chunkerConnection: { id: 'chunker-1', providerId: 'chroma-1' },
       files: [
         { path: '/docs/api.md', status: 'indexed' },
         { path: '/docs/guide.md', status: 'indexed' },
@@ -525,7 +528,7 @@ test('Expect Knowledge section pre-selects knowledge matching workspace mcp conf
     {
       name: 'Project Docs',
       ragConnection: { name: 'ChromaDB', providerId: 'chroma-1' },
-      chunkerId: 'chunker-1',
+      chunkerConnection: { id: 'chunker-1', providerId: 'chroma-1' },
       files: [{ path: '/docs/api.md', status: 'indexed' }],
       mcpServer: {
         id: 'rag-1',
@@ -539,7 +542,7 @@ test('Expect Knowledge section pre-selects knowledge matching workspace mcp conf
     {
       name: 'Wiki',
       ragConnection: { name: 'Weaviate', providerId: 'weav-1' },
-      chunkerId: 'chunker-2',
+      chunkerConnection: { id: 'chunker-2', providerId: 'weav-1' },
       files: [],
       mcpServer: {
         id: 'rag-2',
@@ -570,7 +573,7 @@ test('Expect toggling knowledge base shows unsaved changes', async () => {
     {
       name: 'Project Docs',
       ragConnection: { name: 'ChromaDB', providerId: 'chroma-1' },
-      chunkerId: 'chunker-1',
+      chunkerConnection: { id: 'chunker-1', providerId: 'chroma-1' },
       files: [],
       mcpServer: {
         id: 'rag-1',
@@ -599,7 +602,7 @@ test('Expect saving knowledge changes calls updateAgentWorkspaceConfiguration', 
     {
       name: 'Project Docs',
       ragConnection: { name: 'ChromaDB', providerId: 'chroma-1' },
-      chunkerId: 'chunker-1',
+      chunkerConnection: { id: 'chunker-1', providerId: 'chroma-1' },
       files: [],
       mcpServer: {
         id: 'rag-1',
@@ -631,7 +634,7 @@ test('Expect saving knowledge preserves non-knowledge MCP servers', async () => 
     {
       name: 'Project Docs',
       ragConnection: { name: 'ChromaDB', providerId: 'chroma-1' },
-      chunkerId: 'chunker-1',
+      chunkerConnection: { id: 'chunker-1', providerId: 'chroma-1' },
       files: [],
       mcpServer: {
         id: 'rag-1',
@@ -681,7 +684,7 @@ test('Expect discarding knowledge changes resets selection', async () => {
     {
       name: 'Project Docs',
       ragConnection: { name: 'ChromaDB', providerId: 'chroma-1' },
-      chunkerId: 'chunker-1',
+      chunkerConnection: { id: 'chunker-1', providerId: 'chroma-1' },
       files: [],
       mcpServer: {
         id: 'rag-1',
@@ -875,4 +878,185 @@ test('Expect MCP section has Manage Servers button', async () => {
   await fireEvent.click(mcpNav);
 
   expect(screen.getByRole('button', { name: 'Manage Servers' })).toBeInTheDocument();
+});
+
+// --- Network section tests ---
+
+test('Expect Network section defaults to Developer Preset when no network config', async () => {
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: {} });
+
+  const networkNav = screen.getByRole('link', { name: 'Network' });
+  await fireEvent.click(networkNav);
+
+  const registriesRadio = screen.getByRole('radio', { name: 'Use Developer Preset' });
+  expect(registriesRadio).toBeChecked();
+});
+
+test('Expect Network section shows Unrestricted selected for allow mode config', async () => {
+  const networkConfig: AgentWorkspaceConfiguration = { network: { mode: 'allow' } };
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: networkConfig });
+
+  const networkNav = screen.getByRole('link', { name: 'Network' });
+  await fireEvent.click(networkNav);
+
+  const openRadio = screen.getByRole('radio', { name: 'Use Unrestricted' });
+  expect(openRadio).toBeChecked();
+});
+
+test('Expect Network section shows Deny All selected for deny mode without hosts', async () => {
+  const networkConfig: AgentWorkspaceConfiguration = { network: { mode: 'deny' } };
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: networkConfig });
+
+  const networkNav = screen.getByRole('link', { name: 'Network' });
+  await fireEvent.click(networkNav);
+
+  const blockedRadio = screen.getByRole('radio', { name: 'Use Deny All' });
+  expect(blockedRadio).toBeChecked();
+});
+
+test('Expect Network section shows Developer Preset selected for deny mode with hosts', async () => {
+  const networkConfig: AgentWorkspaceConfiguration = { network: { mode: 'deny', hosts: ['registry.npmjs.org'] } };
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: networkConfig });
+
+  const networkNav = screen.getByRole('link', { name: 'Network' });
+  await fireEvent.click(networkNav);
+
+  const registriesRadio = screen.getByRole('radio', { name: 'Use Developer Preset' });
+  expect(registriesRadio).toBeChecked();
+  expect(screen.getByLabelText('Custom host 1')).toHaveValue('registry.npmjs.org');
+});
+
+test('Expect switching network mode shows unsaved changes', async () => {
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: {} });
+
+  const networkNav = screen.getByRole('link', { name: 'Network' });
+  await fireEvent.click(networkNav);
+
+  await fireEvent.click(screen.getByRole('radio', { name: 'Use Deny All' }));
+
+  expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+});
+
+test('Expect Agent mode radio is disabled', async () => {
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: {} });
+
+  const networkNav = screen.getByRole('link', { name: 'Network' });
+  await fireEvent.click(networkNav);
+
+  expect(screen.getByRole('radio', { name: 'Use Agent mode' })).toBeDisabled();
+});
+
+test('Expect Unrestricted disabled when runtime is openshell', async () => {
+  vi.mocked(agentWorkspaceRuntimeStore).agentWorkspaceRuntime = writable<string>('openshell');
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: {} });
+
+  const networkNav = screen.getByRole('link', { name: 'Network' });
+  await fireEvent.click(networkNav);
+
+  expect(screen.getByRole('radio', { name: 'Use Unrestricted' })).toBeDisabled();
+});
+
+test('Expect saving Unrestricted mode calls updateAgentWorkspaceConfiguration', async () => {
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: {} });
+
+  const networkNav = screen.getByRole('link', { name: 'Network' });
+  await fireEvent.click(networkNav);
+
+  await fireEvent.click(screen.getByRole('radio', { name: 'Use Unrestricted' }));
+  await fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+  expect(window.updateAgentWorkspaceConfiguration).toHaveBeenCalledWith('ws-1', {
+    network: { mode: 'allow' },
+  });
+});
+
+test('Expect saving Deny All mode calls updateAgentWorkspaceConfiguration', async () => {
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: {} });
+
+  const networkNav = screen.getByRole('link', { name: 'Network' });
+  await fireEvent.click(networkNav);
+
+  await fireEvent.click(screen.getByRole('radio', { name: 'Use Deny All' }));
+  await fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+  expect(window.updateAgentWorkspaceConfiguration).toHaveBeenCalledWith('ws-1', {
+    network: { mode: 'deny', hosts: undefined },
+  });
+});
+
+test('Expect saving Developer Preset with custom hosts calls updateAgentWorkspaceConfiguration', async () => {
+  const networkConfig: AgentWorkspaceConfiguration = { network: { mode: 'deny', hosts: ['registry.npmjs.org'] } };
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: networkConfig });
+
+  const networkNav = screen.getByRole('link', { name: 'Network' });
+  await fireEvent.click(networkNav);
+
+  await fireEvent.click(screen.getByRole('button', { name: 'Add Another Host' }));
+  const inputs = screen.getAllByPlaceholderText('e.g. api.example.com');
+  await fireEvent.input(inputs[inputs.length - 1], { target: { value: 'api.example.com' } });
+  await fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+  expect(window.updateAgentWorkspaceConfiguration).toHaveBeenCalledWith('ws-1', {
+    network: { mode: 'deny', hosts: ['registry.npmjs.org', 'api.example.com'] },
+  });
+});
+
+test('Expect discarding network changes resets to original mode', async () => {
+  const networkConfig: AgentWorkspaceConfiguration = { network: { mode: 'allow' } };
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: networkConfig });
+
+  const networkNav = screen.getByRole('link', { name: 'Network' });
+  await fireEvent.click(networkNav);
+
+  await fireEvent.click(screen.getByRole('radio', { name: 'Use Deny All' }));
+  await fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }));
+
+  const openRadio = screen.getByRole('radio', { name: 'Use Unrestricted' });
+  expect(openRadio).toBeChecked();
+  expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
+});
+
+test('Expect switching to Developer Preset auto-fills default registry hosts', async () => {
+  const networkConfig: AgentWorkspaceConfiguration = { network: { mode: 'deny' } };
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: networkConfig });
+
+  const networkNav = screen.getByRole('link', { name: 'Network' });
+  await fireEvent.click(networkNav);
+
+  await fireEvent.click(screen.getByRole('radio', { name: 'Use Developer Preset' }));
+
+  expect(screen.getByLabelText('Custom host 1')).toHaveValue('registry.npmjs.org');
+  expect(screen.getByLabelText('Custom host 2')).toHaveValue('pypi.python.org');
+});
+
+test('Expect custom hosts hidden when Unrestricted is selected', async () => {
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: {} });
+
+  const networkNav = screen.getByRole('link', { name: 'Network' });
+  await fireEvent.click(networkNav);
+
+  await fireEvent.click(screen.getByRole('radio', { name: 'Use Unrestricted' }));
+
+  expect(screen.queryByLabelText('Custom host 1')).not.toBeInTheDocument();
+});
+
+test('Expect error dialog shown when network save fails', async () => {
+  vi.mocked(window.updateAgentWorkspaceConfiguration).mockRejectedValue(new Error('server error'));
+  vi.mocked(window.showMessageBox).mockResolvedValue({ response: 0 });
+
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: {} });
+
+  const networkNav = screen.getByRole('link', { name: 'Network' });
+  await fireEvent.click(networkNav);
+
+  await fireEvent.click(screen.getByRole('radio', { name: 'Use Unrestricted' }));
+  await fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+  expect(window.showMessageBox).toHaveBeenCalledWith(
+    expect.objectContaining({
+      title: 'Agent Workspace',
+      type: 'error',
+      message: expect.stringContaining('server error'),
+    }),
+  );
 });

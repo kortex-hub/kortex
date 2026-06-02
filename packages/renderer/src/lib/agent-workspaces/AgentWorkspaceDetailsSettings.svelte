@@ -6,6 +6,7 @@ import { router } from 'tinro';
 import AgentWorkspaceCreateStepFileSystem, {
   type CustomMount,
 } from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepFileSystem.svelte';
+import AgentWorkspaceCreateStepNetworking from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepNetworking.svelte';
 import type { ChecklistItem } from '/@/lib/ui/ChecklistPanel.svelte';
 import ChecklistPanel from '/@/lib/ui/ChecklistPanel.svelte';
 import { handleNavigation } from '/@/navigation';
@@ -17,6 +18,7 @@ import type {
   AgentWorkspaceConfiguration,
   AgentWorkspaceMcpConfig,
   AgentWorkspaceMount,
+  NetworkConfiguration,
 } from '/@api/agent-workspace-info';
 import { NavigationPage } from '/@api/navigation-page';
 
@@ -109,6 +111,30 @@ function buildMountsFromSelection(fileAccess: string, mounts: CustomMount[]): Ag
         .map(m => ({ host: m.host.trim(), target: m.target.trim() ?? m.host.trim(), ro: m.ro }));
       return filtered.length > 0 ? filtered : undefined;
     }
+  }
+}
+
+// --- Network section state ---
+function deriveNetworkSelection(network: NetworkConfiguration | undefined): string {
+  if (!network) return 'registries';
+  if (network.mode === 'allow') return 'open';
+  if (network.hosts && network.hosts.length > 0) return 'registries';
+  return 'blocked';
+}
+
+function deriveNetworkHosts(network: NetworkConfiguration | undefined): string[] {
+  if (!network?.hosts || network.hosts.length === 0) return [''];
+  return [...network.hosts];
+}
+
+function mapNetworkSelection(value: string, hosts: string[]): NetworkConfiguration | undefined {
+  const filtered = hosts.filter(h => h.trim() !== '');
+  switch (value) {
+    case 'open':
+      return { mode: 'allow' };
+    case 'registries':
+    case 'blocked':
+      return { mode: 'deny', hosts: filtered.length ? filtered : undefined };
     default:
       return undefined;
   }
@@ -191,9 +217,56 @@ function onMcpSelectionChange(selected: string[]): void {
   pendingMcpIds = selected;
 }
 
-// --- Combined dirty state ---
+const defaultRegistryHosts = ['registry.npmjs.org', 'pypi.python.org'];
+
+const originalNetworkSelection = $derived(deriveNetworkSelection(configuration.network));
+const originalNetworkHosts = $derived(deriveNetworkHosts(configuration.network));
+
+let pendingNetworkSelection: string = $state(originalNetworkSelection);
+let pendingHostsByMode: Record<string, string[]> = $state({
+  [originalNetworkSelection]: [...originalNetworkHosts],
+});
+
+let pendingNetworkHosts = $derived(pendingHostsByMode[pendingNetworkSelection] ?? ['']);
+
+const hasNetworkChanges: boolean = $derived(
+  pendingNetworkSelection !== originalNetworkSelection ||
+    ((pendingNetworkSelection === 'blocked' || pendingNetworkSelection === 'registries') &&
+      (pendingNetworkHosts.length !== originalNetworkHosts.length ||
+        pendingNetworkHosts.some((h, i) => h !== originalNetworkHosts[i]))),
+);
+
+function onNetworkModeChange(mode: string): void {
+  pendingNetworkSelection = mode;
+  if (!(mode in pendingHostsByMode)) {
+    pendingHostsByMode = {
+      ...pendingHostsByMode,
+      [mode]: mode === 'registries' ? [...defaultRegistryHosts] : [''],
+    };
+  }
+}
+
+function addCustomHost(): void {
+  const current = pendingHostsByMode[pendingNetworkSelection] ?? [''];
+  pendingHostsByMode = { ...pendingHostsByMode, [pendingNetworkSelection]: [...current, ''] };
+}
+
+function removeCustomHost(index: number): void {
+  const current = pendingHostsByMode[pendingNetworkSelection] ?? [''];
+  if (current.length <= 1) return;
+  pendingHostsByMode = { ...pendingHostsByMode, [pendingNetworkSelection]: current.filter((_, i) => i !== index) };
+}
+
+function updateCustomHost(index: number, value: string): void {
+  const current = pendingHostsByMode[pendingNetworkSelection] ?? [''];
+  pendingHostsByMode = {
+    ...pendingHostsByMode,
+    [pendingNetworkSelection]: current.map((h, i) => (i === index ? value : h)),
+  };
+}
+
 const hasChanges = $derived(
-  hasNameChanges || hasMountChanges || hasSkillChanges || hasKnowledgeChanges || hasMcpChanges,
+  hasNameChanges || hasMountChanges || hasSkillChanges || hasKnowledgeChanges || hasMcpChanges || hasNetworkChanges,
 );
 
 // --- Save / Discard ---
@@ -232,6 +305,19 @@ async function saveChanges(): Promise<void> {
       if (allCommands.length > 0) newMcpConfig.commands = allCommands;
       await window.updateAgentWorkspaceConfiguration(workspaceId, { mcp: newMcpConfig });
       configuration = { ...configuration, mcp: newMcpConfig };
+    }
+    if (hasMcpChanges) {
+      const mcpConfig = buildMcpConfig(pendingMcpIds);
+      await window.updateAgentWorkspaceConfiguration(workspaceId, { mcp: mcpConfig });
+      configuration = { ...configuration, mcp: mcpConfig };
+    }
+    if (hasNetworkChanges) {
+      const newNetwork = mapNetworkSelection(pendingNetworkSelection, pendingNetworkHosts);
+      await window.updateAgentWorkspaceConfiguration(workspaceId, { network: newNetwork });
+      configuration = { ...configuration, network: newNetwork };
+      const newSelection = deriveNetworkSelection(configuration.network);
+      pendingNetworkSelection = newSelection;
+      pendingHostsByMode = { [newSelection]: [...deriveNetworkHosts(configuration.network)] };
     }
   } catch (err: unknown) {
     await window.showMessageBox({
@@ -307,6 +393,8 @@ function discardChanges(): void {
   pendingSkillIds = [...originalSkillIds];
   pendingKnowledgeIds = [...originalKnowledgeIds];
   pendingMcpIds = [...originalMcpIds];
+  pendingNetworkSelection = originalNetworkSelection;
+  pendingHostsByMode = { [originalNetworkSelection]: [...originalNetworkHosts] };
 }
 
 function addCustomMount(): void {
@@ -473,6 +561,14 @@ function navigateToMcp(): void {
               <Button type="secondary" onclick={navigateToMcp}>Manage Servers</Button>
             {/snippet}
           </ChecklistPanel>
+        {:else if activeSection === 'network'}
+          <AgentWorkspaceCreateStepNetworking
+            bind:selectedNetwork={pendingNetworkSelection}
+            customHosts={pendingNetworkHosts}
+            onchange={onNetworkModeChange}
+            onAddCustomHost={addCustomHost}
+            onRemoveCustomHost={removeCustomHost}
+            onUpdateCustomHost={updateCustomHost} />
 
         {:else}
           <p class="text-sm text-[var(--pd-content-text)] mb-7">

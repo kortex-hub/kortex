@@ -44,6 +44,7 @@ test('fetchCatalogModels calls window.getCatalogModels and updates store', async
     {
       providerId: 'p',
       providerName: 'Provider',
+      connectionId: 'conn-0',
       connectionName: 'c',
       type: 'cloud',
       label: 'model-1',
@@ -64,6 +65,7 @@ test('allModels derived store strips catalog-specific fields', () => {
     {
       providerId: 'p',
       providerName: 'Provider',
+      connectionId: 'conn-0',
       connectionName: 'c',
       type: 'cloud',
       label: 'model-1',

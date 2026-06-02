@@ -2672,8 +2672,10 @@ describe('getInferenceConnectionCredentials', () => {
       name: id,
       status: 'installed',
     });
+    let counter = 0;
     for (const conn of connections) {
       provider.registerInferenceProviderConnection({
+        id: `${id}-${counter++}`,
         name: conn.name,
         type: 'cloud',
         llmMetadata: { name: conn.llmMetadataName },
@@ -2860,4 +2862,27 @@ describe('a chunk provider connection is registered', async () => {
       }),
     );
   });
+});
+
+test('rejects duplicate inference connection id for the same provider', () => {
+  const provider = providerRegistry.createProvider('ext', 'ext', {
+    id: 'provider-a',
+    name: 'provider-a',
+    status: 'installed',
+  });
+
+  const base = {
+    name: 'conn',
+    type: 'cloud' as const,
+    llmMetadata: { name: 'openai' },
+    sdk: {} as never,
+    credentials: (): Record<string, string> => ({}),
+    status: (): ProviderConnectionStatus => 'started',
+    models: [{ label: 'gpt-4o' }],
+  };
+
+  provider.registerInferenceProviderConnection({ id: 'conn-0', ...base });
+  expect(() => provider.registerInferenceProviderConnection({ id: 'conn-0', ...base })).toThrow(
+    /an inference connection with id 'conn-0' is already registered for provider 'provider-a'/,
+  );
 });

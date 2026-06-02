@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import type { ExtensionContext } from '@openkaiden/api';
-import { provider } from '@openkaiden/api';
+import { agents, provider } from '@openkaiden/api';
 
 import { Gemini } from './gemini';
 
@@ -28,6 +28,21 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
   extensionContext.subscriptions.push(gemini);
 
   await gemini.init();
+
+  const disposable = agents.registerAgent({
+    id: 'gemini',
+    name: 'Gemini CLI',
+    description: 'Google cloud agent — connect with an API key to access Gemini models.',
+    icon: {
+      icon: './icon.png',
+      logo: { dark: './icon.png', light: './icon.png' },
+    },
+    tags: ['Cloud'],
+    isSupportedModelType(type): boolean {
+      return type.name === 'gemini';
+    },
+  });
+  extensionContext.subscriptions.push(disposable);
 }
 
 export function deactivate(): void {

@@ -38,6 +38,7 @@ interface ConnectionInfo {
 export class OpenShiftAI implements Disposable {
   private provider: Provider | undefined = undefined;
   private connections: Map<ConnectionInfo, Disposable> = new Map();
+  private connectionIdCounter = 0;
 
   constructor(
     private readonly providerAPI: typeof ProviderAPI,
@@ -53,10 +54,13 @@ export class OpenShiftAI implements Disposable {
       emptyConnectionMarkdownDescription:
         'Provides OpenShift AI integration. Connects Kaiden to models running on OpenShift AI.',
       images: {
-        icon: './icon.png',
+        icon: {
+          light: './icon_light.png',
+          dark: './icon_dark.png',
+        },
         logo: {
-          dark: './icon.png',
-          light: './icon.png',
+          light: './icon_light.png',
+          dark: './icon_dark.png',
         },
       },
     });
@@ -263,6 +267,7 @@ export class OpenShiftAI implements Disposable {
       };
 
       const connectionDisposable = this.provider.registerInferenceProviderConnection({
+        id: String(this.connectionIdCounter++),
         name: baseURL,
         type: 'self-hosted',
         endpoint: connectionInfo.baseURL,

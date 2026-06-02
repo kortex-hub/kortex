@@ -20,12 +20,11 @@ import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-import type { ChunkProvider, ProviderRagConnection } from '@openkaiden/api';
+import type { ChunkProviderConnection, ProviderChunkProviderConnection, ProviderRagConnection } from '@openkaiden/api';
 import type { MockInstance } from 'vitest';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { IPCHandle } from '/@/plugin/api.js';
-import type { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import type { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { TaskManager } from '/@/plugin/tasks/task-manager.js';
@@ -51,15 +50,11 @@ const apiSender: ApiSenderType = {
 
 const ipcHandle: IPCHandle = vi.fn();
 
-const chunkProviderRegistry = {
-  getChunkProvider: vi.fn(),
-  findProviderById: vi.fn(),
-} as unknown as ChunkProviderRegistry;
-
 const providerRegistry = {
   onDidRegisterRagConnection: vi.fn(),
   onDidUnregisterRagConnection: vi.fn(),
   getRagConnections: vi.fn().mockReturnValue([]),
+  getChunkConnections: vi.fn().mockReturnValue([]),
 } as unknown as ProviderRegistry;
 
 const taskManager = {
@@ -89,7 +84,6 @@ beforeEach(() => {
     apiSender,
     ipcHandle,
     directories,
-    chunkProviderRegistry,
     providerRegistry,
     taskManager,
     mcpManager,
@@ -104,7 +98,7 @@ describe('RagEnvironmentRegistry', () => {
         providerId: 'provider-1',
         name: 'rag-conn-1',
       },
-      chunkerId: 'chunker-1',
+      chunkerConnection: { id: 'chunker-1', providerId: 'provider-1' },
       files: [
         {
           path: '/path/to/file1.txt',
@@ -131,7 +125,7 @@ describe('RagEnvironmentRegistry', () => {
         providerId: 'provider-1',
         name: 'rag-conn-1',
       },
-      chunkerId: 'chunker-1',
+      chunkerConnection: { id: 'chunker-1', providerId: 'provider-1' },
       files: [{ path: '/path/to/file1.txt', status: 'indexed' }],
     };
 
@@ -175,7 +169,7 @@ describe('RagEnvironmentRegistry', () => {
         providerId: 'provider-1',
         name: 'rag-conn-1',
       },
-      chunkerId: 'chunker-1',
+      chunkerConnection: { id: 'chunker-1', providerId: 'provider-1' },
       files: [],
     };
 
@@ -185,7 +179,7 @@ describe('RagEnvironmentRegistry', () => {
         providerId: 'provider-2',
         name: 'rag-conn-2',
       },
-      chunkerId: 'chunker-2',
+      chunkerConnection: { id: 'chunker-2', providerId: 'provider-2' },
       files: [],
     };
 
@@ -290,7 +284,7 @@ describe('RagEnvironmentRegistry', () => {
         providerId: 'provider-1',
         name: 'rag-conn-1',
       },
-      chunkerId: 'chunker-1',
+      chunkerConnection: { id: 'chunker-1', providerId: 'provider-1' },
       files: [{ path: '/path/to/file1.txt', status: 'indexed' }],
     };
 
@@ -320,18 +314,21 @@ describe('RagEnvironmentRegistry', () => {
           providerId: 'provider-1',
           name: 'rag-conn-1',
         },
-        chunkerId: 'chunker-1',
+        chunkerConnection: { id: 'chunker-1', providerId: 'provider-1' },
         files: [],
       };
 
       await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
 
-      // Mock chunk provider
-      const mockChunkProvider = {
+      const mockChunkConnection: ChunkProviderConnection = {
+        id: 'chunker-1',
         name: 'chunker',
         chunk: vi.fn().mockResolvedValue([{ text: 'chunk1' }, { text: 'chunk2' }]),
+        status: vi.fn().mockReturnValue('started'),
       };
-      vi.mocked(chunkProviderRegistry.findProviderById).mockReturnValue(mockChunkProvider);
+      vi.mocked(providerRegistry.getChunkConnections).mockReturnValue([
+        { providerId: 'provider-1', connection: mockChunkConnection } as ProviderChunkProviderConnection,
+      ]);
 
       // Mock RAG connection
       const mockRagConnection = {
@@ -355,12 +352,12 @@ describe('RagEnvironmentRegistry', () => {
       const result = await ragEnvironmentRegistry.addFileToPendingFiles('test-env', '/path/to/newfile.txt');
 
       expect(result).toBe(true);
-      expect(chunkProviderRegistry.findProviderById).toHaveBeenCalledWith('chunker-1');
+      expect(providerRegistry.getChunkConnections).toHaveBeenCalled();
       expect(providerRegistry.getRagConnections).toHaveBeenCalled();
 
       // Wait for async indexing to complete
       await vi.waitFor(() => {
-        expect(mockChunkProvider.chunk).toHaveBeenCalled();
+        expect(mockChunkConnection.chunk).toHaveBeenCalled();
         expect(mockRagConnection.connection.index).toHaveBeenCalled();
       });
 
@@ -391,7 +388,7 @@ describe('RagEnvironmentRegistry', () => {
           providerId: 'provider-1',
           name: 'rag-conn-1',
         },
-        chunkerId: 'chunker-1',
+        chunkerConnection: { id: 'chunker-1', providerId: 'provider-1' },
         files: [{ path: '/path/to/existing.txt', status: 'indexed' }],
       };
 
@@ -409,20 +406,20 @@ describe('RagEnvironmentRegistry', () => {
       consoleWarnSpy.mockRestore();
     });
 
-    test('should return false if chunk provider is not found', async () => {
+    test('should return false if chunk connection is not found', async () => {
       const ragEnvironment: RagEnvironment = {
         name: 'test-env',
         ragConnection: {
           providerId: 'provider-1',
           name: 'rag-conn-1',
         },
-        chunkerId: 'chunker-1',
+        chunkerConnection: { id: 'chunker-1', providerId: 'provider-1' },
         files: [],
       };
 
       await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
 
-      vi.mocked(chunkProviderRegistry.findProviderById).mockReturnValue(undefined);
+      vi.mocked(providerRegistry.getChunkConnections).mockReturnValue([]);
 
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -430,7 +427,7 @@ describe('RagEnvironmentRegistry', () => {
 
       expect(result).toBe(false);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Chunk provider with ID chunker-1 not found'),
+        expect.stringContaining('Chunk connection with ID chunker-1 for provider provider-1 not found'),
       );
 
       consoleErrorSpy.mockRestore();
@@ -443,16 +440,21 @@ describe('RagEnvironmentRegistry', () => {
           providerId: 'provider-1',
           name: 'rag-conn-1',
         },
-        chunkerId: 'chunker-1',
+        chunkerConnection: { id: 'chunker-1', providerId: 'provider-1' },
         files: [],
       };
 
       await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
 
-      const mockChunkProvider = {
+      const mockChunkConnection: ChunkProviderConnection = {
+        id: 'chunker-1',
+        name: 'chunker',
         chunk: vi.fn(),
-      } as unknown as ChunkProvider;
-      vi.mocked(chunkProviderRegistry.findProviderById).mockReturnValue(mockChunkProvider);
+        status: vi.fn().mockReturnValue('started'),
+      };
+      vi.mocked(providerRegistry.getChunkConnections).mockReturnValue([
+        { providerId: 'provider-1', connection: mockChunkConnection } as ProviderChunkProviderConnection,
+      ]);
       vi.mocked(providerRegistry.getRagConnections).mockReturnValue([]);
 
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -472,17 +474,21 @@ describe('RagEnvironmentRegistry', () => {
           providerId: 'provider-1',
           name: 'rag-conn-1',
         },
-        chunkerId: 'chunker-1',
+        chunkerConnection: { id: 'chunker-1', providerId: 'provider-1' },
         files: [],
       };
 
       await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
 
-      // Mock chunk provider that fails
-      const mockChunkProvider = {
+      const mockChunkConnection: ChunkProviderConnection = {
+        id: 'chunker-1',
+        name: 'chunker',
         chunk: vi.fn().mockRejectedValue(new Error('Chunking failed')),
-      } as unknown as ChunkProvider;
-      vi.mocked(chunkProviderRegistry.findProviderById).mockReturnValue(mockChunkProvider);
+        status: vi.fn().mockReturnValue('started'),
+      };
+      vi.mocked(providerRegistry.getChunkConnections).mockReturnValue([
+        { providerId: 'provider-1', connection: mockChunkConnection } as ProviderChunkProviderConnection,
+      ]);
 
       const mockRagConnection = {
         providerId: 'provider-1',
@@ -505,14 +511,14 @@ describe('RagEnvironmentRegistry', () => {
 
       const result = await ragEnvironmentRegistry.addFileToPendingFiles('test-env', '/path/to/newfile.txt');
 
-      expect(result).toBe(true); // File is added to pending, but indexing fails async
+      expect(result).toBe(true);
 
       // Wait for async indexing to complete
       await vi.waitFor(() => {
         expect(mockTask.status).toBe('failure');
       });
 
-      expect(mockChunkProvider.chunk).toHaveBeenCalled();
+      expect(mockChunkConnection.chunk).toHaveBeenCalled();
       expect(mockRagConnection.connection.index).not.toHaveBeenCalled();
       expect(mockTask.error).toContain('Chunking failed');
 
@@ -530,17 +536,21 @@ describe('RagEnvironmentRegistry', () => {
           providerId: 'provider-1',
           name: 'rag-conn-1',
         },
-        chunkerId: 'chunker-1',
+        chunkerConnection: { id: 'chunker-1', providerId: 'provider-1' },
         files: [],
       };
 
       await ragEnvironmentRegistry.saveOrUpdate(ragEnvironment);
 
-      // Mock chunk provider
-      const mockChunkProvider = {
+      const mockChunkConnection: ChunkProviderConnection = {
+        id: 'chunker-1',
+        name: 'chunker',
         chunk: vi.fn().mockResolvedValue([{ text: 'chunk1' }, { text: 'chunk2' }]),
-      } as unknown as ChunkProvider;
-      vi.mocked(chunkProviderRegistry.findProviderById).mockReturnValue(mockChunkProvider);
+        status: vi.fn().mockReturnValue('started'),
+      };
+      vi.mocked(providerRegistry.getChunkConnections).mockReturnValue([
+        { providerId: 'provider-1', connection: mockChunkConnection } as ProviderChunkProviderConnection,
+      ]);
 
       // Mock RAG connection that fails
       const mockRagConnection = {
@@ -566,7 +576,7 @@ describe('RagEnvironmentRegistry', () => {
         expect(indexTask.status).toBe('failure');
       });
 
-      expect(mockChunkProvider.chunk).toHaveBeenCalled();
+      expect(mockChunkConnection.chunk).toHaveBeenCalled();
       expect(mockRagConnection.connection.index).toHaveBeenCalled();
       expect(chunkTask.status).toBe('success');
       expect(indexTask.error).toContain('Indexing failed');
@@ -585,7 +595,7 @@ describe('RagEnvironmentRegistry', () => {
           providerId: 'provider-1',
           name: 'rag-conn-1',
         },
-        chunkerId: 'chunker-1',
+        chunkerConnection: { id: 'chunker-1', providerId: 'provider-1' },
         files: [
           { path: '/path/to/file1.txt', status: 'indexed' },
           { path: '/path/to/file2.txt', status: 'indexed' },
@@ -647,7 +657,7 @@ describe('RagEnvironmentRegistry', () => {
           providerId: 'provider-1',
           name: 'rag-conn-1',
         },
-        chunkerId: 'chunker-1',
+        chunkerConnection: { id: 'chunker-1', providerId: 'provider-1' },
         files: [{ path: '/path/to/file1.txt', status: 'indexed' }],
       };
 
@@ -672,7 +682,7 @@ describe('RagEnvironmentRegistry', () => {
           providerId: 'provider-1',
           name: 'rag-conn-1',
         },
-        chunkerId: 'chunker-1',
+        chunkerConnection: { id: 'chunker-1', providerId: 'provider-1' },
         files: [{ path: '/path/to/file1.txt', status: 'indexed' }],
       };
 
@@ -697,7 +707,7 @@ describe('RagEnvironmentRegistry', () => {
           providerId: 'provider-1',
           name: 'rag-conn-1',
         },
-        chunkerId: 'chunker-1',
+        chunkerConnection: { id: 'chunker-1', providerId: 'provider-1' },
         files: [{ path: '/path/to/file1.txt', status: 'indexed' }],
       };
 
@@ -749,7 +759,7 @@ describe('RagEnvironmentRegistry', () => {
           providerId: 'provider-1',
           name: 'rag-conn-1',
         },
-        chunkerId: 'chunker-1',
+        chunkerConnection: { id: 'chunker-1', providerId: 'provider-1' },
         files: [
           { path: '/path/to/file1.txt', status: 'pending' },
           { path: '/path/to/file2.txt', status: 'indexed' },

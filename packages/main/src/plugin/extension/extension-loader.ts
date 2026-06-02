@@ -20,13 +20,12 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import type * as containerDesktopAPI from '@openkaiden/api';
-import { ChunkProvider, RegisterServerResult } from '@openkaiden/api';
+import { RegisterServerResult } from '@openkaiden/api';
 import { components } from '@openkaiden/mcp-registry-types';
 import AdmZip from 'adm-zip';
 import { app, clipboard as electronClipboard } from 'electron';
 import { inject, injectable, preDestroy } from 'inversify';
 
-import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import { ColorRegistry } from '/@/plugin/color-registry.js';
 import { ExtensionApiVersion } from '/@/plugin/extension/extension-api-version.js';
 import { FeatureRegistry } from '/@/plugin/feature-registry.js';
@@ -233,8 +232,6 @@ export class ExtensionLoader implements IAsyncDisposable {
     private featureRegistry: FeatureRegistry,
     @inject(MCPRegistry)
     private mcpRegistry: MCPRegistry,
-    @inject(ChunkProviderRegistry)
-    private chunkProviderRegistry: ChunkProviderRegistry,
   ) {
     this.pluginsDirectory = directories.getPluginsDirectory();
     this.pluginsScanDirectory = directories.getPluginsScanDirectory();
@@ -1710,14 +1707,6 @@ export class ExtensionLoader implements IAsyncDisposable {
       },
     };
 
-    const rag: typeof containerDesktopAPI.rag = {
-      registerChunkProvider: (provider: ChunkProvider): containerDesktopAPI.Disposable => {
-        const disposable = this.chunkProviderRegistry.registerChunkProvider(extensionInfo.id, provider);
-        disposables.push(disposable);
-        return disposable;
-      },
-    };
-
     return <typeof containerDesktopAPI>{
       // Types
       Disposable: Disposable,
@@ -1755,7 +1744,6 @@ export class ExtensionLoader implements IAsyncDisposable {
       net,
       mcpRegistry,
       agents,
-      rag,
     };
   }
 

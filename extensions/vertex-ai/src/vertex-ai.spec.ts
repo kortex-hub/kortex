@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { randomUUID } from 'node:crypto';
 import { access, readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -24,7 +25,15 @@ import { createVertexAnthropic } from '@ai-sdk/google-vertex/anthropic';
 import type { Disposable, Logger, Provider, provider as ProviderAPI, SecretStorage } from '@openkaiden/api';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { CONNECTIONS_KEY, FALLBACK_MODELS, VertexAi, type VertexAiConnectionConfig } from './vertex-ai';
+import {
+  CONNECTIONS_KEY,
+  FALLBACK_MODELS,
+  type StoredConnection,
+  VertexAi,
+  type VertexAiConnectionConfig,
+} from './vertex-ai';
+
+vi.mock(import('node:crypto'));
 
 vi.mock(import('node:fs/promises'));
 vi.mock(import('node:os'));
@@ -92,6 +101,7 @@ function mockFetchResponses(): void {
 beforeEach(() => {
   vi.resetAllMocks();
 
+  vi.mocked(randomUUID).mockReturnValue('fake-uuid-1' as ReturnType<typeof randomUUID>);
   vi.mocked(PROVIDER_API_MOCK.createProvider).mockReturnValue(PROVIDER_MOCK);
   vi.mocked(createVertexAnthropic).mockReturnValue(VERTEX_ANTHROPIC_MOCK);
   vi.mocked(homedir).mockReturnValue('/home/testuser');
@@ -122,14 +132,18 @@ describe('init', () => {
     });
   });
 
-  test('should restore connections from secret storage', async () => {
-    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify([VALID_CONFIG]));
+  test('should restore connections from secret storage with persisted IDs', async () => {
+    const stored: StoredConnection[] = [{ id: 'persisted-id', ...VALID_CONFIG }];
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify(stored));
 
     const vertexAi = createVertexAi();
     await vertexAi.init();
 
     expect(SECRET_STORAGE_MOCK.get).toHaveBeenCalledWith(CONNECTIONS_KEY);
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledOnce();
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'persisted-id' }),
+    );
   });
 
   test('should handle empty secret storage', async () => {
@@ -142,7 +156,8 @@ describe('init', () => {
   });
 
   test('should restore connections with fallback models when fetch fails', async () => {
-    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify([VALID_CONFIG]));
+    const stored: StoredConnection[] = [{ id: 'persisted-id', ...VALID_CONFIG }];
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify(stored));
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network error'));
 
     const vertexAi = createVertexAi();
@@ -162,6 +177,20 @@ describe('init', () => {
     await vertexAi.init();
 
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).not.toHaveBeenCalled();
+  });
+
+  test('should migrate legacy JSON without id field', async () => {
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify([VALID_CONFIG]));
+
+    const vertexAi = createVertexAi();
+    await vertexAi.init();
+
+    const expected: StoredConnection[] = [{ ...VALID_CONFIG, id: 'fake-uuid-1' }];
+    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(CONNECTIONS_KEY, JSON.stringify(expected));
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledOnce();
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'fake-uuid-1' }),
+    );
   });
 });
 
@@ -467,6 +496,16 @@ describe('factory', () => {
       'vertex-ai.factory.credentialsFile': '/home/user/.config/gcloud/application_default_credentials.json',
     });
 
+    const stored: StoredConnection[] = [
+      {
+        id: 'fake-uuid-1',
+        projectId: 'my-project',
+        region: 'us-east5',
+        credentialsFile: '/home/user/.config/gcloud/application_default_credentials.json',
+      },
+    ];
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify(stored));
+
     await expect(
       create({
         'vertex-ai.factory.projectId': 'my-project',
@@ -476,7 +515,7 @@ describe('factory', () => {
     ).rejects.toThrow('Connection already exists for project my-project in us-east5');
   });
 
-  test('should save config and register connection', async () => {
+  test('should save config as JSON with persisted ID and register connection', async () => {
     await create({
       'vertex-ai.factory.projectId': 'my-project',
       'vertex-ai.factory.region': 'us-east5',
@@ -484,9 +523,19 @@ describe('factory', () => {
     });
 
     expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledOnce();
+    const expected: StoredConnection[] = [
+      {
+        id: 'fake-uuid-1',
+        projectId: 'my-project',
+        region: 'us-east5',
+        credentialsFile: '/home/user/.config/gcloud/application_default_credentials.json',
+      },
+    ];
+    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(CONNECTIONS_KEY, JSON.stringify(expected));
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledOnce();
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
       expect.objectContaining({
+        id: 'fake-uuid-1',
         name: 'my-project (us-east5)',
         type: 'cloud',
         llmMetadata: { name: 'vertexai' },

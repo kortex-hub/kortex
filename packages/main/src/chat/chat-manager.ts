@@ -336,6 +336,7 @@ export class ChatManager {
         }
       })
       .catch((error: unknown) => {
+        if (abortSignal?.aborted) return;
         console.error('Failed to generate chat title', error);
       });
   }

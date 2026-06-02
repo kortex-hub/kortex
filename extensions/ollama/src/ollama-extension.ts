@@ -40,6 +40,7 @@ export class OllamaExtension {
   #extensionContext: ExtensionContext;
   #currentModels: string[] = [];
   #connectionDisposable: Disposable | undefined;
+  #connectionIdCounter = 0;
   #interval: NodeJS.Timeout | undefined;
   #abortController: AbortController | undefined;
 
@@ -55,10 +56,13 @@ export class OllamaExtension {
       status: 'unknown',
       id: 'ollama',
       images: {
-        icon: './icon.png',
+        icon: {
+          dark: './icon_dark.png',
+          light: './icon_light.png',
+        },
         logo: {
-          dark: './icon.png',
-          light: './icon.png',
+          dark: './icon_dark.png',
+          light: './icon_light.png',
         },
       },
       links: [{ title: 'Website', url: 'https://ollama.com' }],
@@ -124,6 +128,7 @@ export class OllamaExtension {
       if (newModelNames.length > 0) {
         const sdk = createOllama();
         const disposable = ollamaProvider.registerInferenceProviderConnection({
+          id: String(this.#connectionIdCounter++),
           name: 'ollama',
           type: 'local',
           llmMetadata: { name: 'ollama' },

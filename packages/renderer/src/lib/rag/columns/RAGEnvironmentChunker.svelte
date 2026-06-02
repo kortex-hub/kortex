@@ -2,7 +2,7 @@
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
 import { getChunkProviderName } from '/@/lib/rag/rag-environment-utils';
-import { chunkProviders } from '/@/stores/chunk-providers';
+import { providerInfos } from '/@/stores/providers';
 import type { RagEnvironment } from '/@api/rag/rag-environment';
 
 interface Props {
@@ -11,7 +11,7 @@ interface Props {
 
 const { object }: Props = $props();
 
-const chunkerName = $derived(getChunkProviderName($chunkProviders, object));
+const chunkerName = $derived(getChunkProviderName($providerInfos, object));
 </script>
 
 <div class="flex items-center">

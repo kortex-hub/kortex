@@ -59,6 +59,7 @@ function buildCatalogModels(providers: ProviderInfo[]): CatalogModelInfo[] {
         result.push({
           providerId: provider.id,
           providerName: provider.name,
+          connectionId: connection.id,
           connectionName: connection.name,
           type: connection.type,
           llmMetadata: connection.llmMetadata,
@@ -613,7 +614,7 @@ test('Expect knowledge bases listed with provider display name and source count'
     {
       name: 'kubernetes-knowledges',
       ragConnection: { name: 'my-connection', providerId: 'milvus' },
-      chunkerId: 'docling',
+      chunkerConnection: { id: 'docling', providerId: 'milvus' },
       mcpServer: { id: 'kb-mcp', name: 'kb-mcp' } as MCPRemoteServerInfo,
       files: [
         { path: '/docs/k8s.md', status: 'indexed' },
@@ -806,6 +807,7 @@ const mockAnthropicProvider: ProviderInfo = {
   status: 'started',
   inferenceConnections: [
     {
+      id: 'conn-0',
       name: 'Anthropic Cloud',
       type: 'cloud',
       status: 'started',
@@ -823,6 +825,7 @@ const mockOllamaProvider: ProviderInfo = {
   status: 'started',
   inferenceConnections: [
     {
+      id: 'conn-1',
       name: 'Ollama Local',
       type: 'local',
       status: 'started',

@@ -45,6 +45,7 @@ function buildCatalogModels(providers: ProviderInfo[]): CatalogModelInfo[] {
         result.push({
           providerId: provider.id,
           providerName: provider.name,
+          connectionId: connection.id,
           connectionName: connection.name,
           type: connection.type,
           llmMetadata: connection.llmMetadata,
@@ -106,6 +107,7 @@ const mockAnthropicProvider: ProviderInfo = {
   status: 'started',
   inferenceConnections: [
     {
+      id: 'conn-0',
       name: 'Anthropic Cloud',
       type: 'cloud',
       status: 'started',
@@ -123,6 +125,7 @@ const mockVertexProvider: ProviderInfo = {
   status: 'started',
   inferenceConnections: [
     {
+      id: 'conn-1',
       name: 'Vertex AI',
       type: 'cloud',
       status: 'started',
@@ -140,6 +143,7 @@ const mockOllamaProvider: ProviderInfo = {
   status: 'started',
   inferenceConnections: [
     {
+      id: 'conn-2',
       name: 'Ollama Local',
       type: 'local',
       status: 'started',
@@ -260,7 +264,13 @@ test('switching agent keeps model if still compatible', async () => {
 
   render(AgentWorkspaceCreateStepAgentModel, {
     selectedAgent: 'opencode',
-    selectedModel: { providerId: 'claude', connectionName: 'Anthropic Cloud', type: 'cloud', label: 'claude-opus-4' },
+    selectedModel: {
+      providerId: 'claude',
+      connectionId: 'conn-0',
+      connectionName: 'Anthropic Cloud',
+      type: 'cloud',
+      label: 'claude-opus-4',
+    },
   });
 
   const initiallySelected = screen.getByRole('radio', { name: 'Use claude-opus-4' });
@@ -290,7 +300,13 @@ test('auto-selects first model when agent filters remove current selection', asy
 
   render(AgentWorkspaceCreateStepAgentModel, {
     selectedAgent: 'opencode',
-    selectedModel: { providerId: 'ollama', connectionName: 'Ollama', type: 'local', label: 'llama3.2:3b' },
+    selectedModel: {
+      providerId: 'ollama',
+      connectionId: 'conn-2',
+      connectionName: 'Ollama',
+      type: 'local',
+      label: 'llama3.2:3b',
+    },
   });
 
   // Switching to Claude filters out Ollama models, should auto-select first Anthropic model

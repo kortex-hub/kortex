@@ -34,6 +34,7 @@ export const TOKEN_SEPARATOR = ',';
 export class Gemini implements Disposable {
   private provider: Provider | undefined = undefined;
   private connections: Map<string, Disposable> = new Map();
+  private connectionIdCounter = 0;
 
   constructor(
     private readonly providerAPI: typeof ProviderAPI,
@@ -156,6 +157,7 @@ export class Gemini implements Disposable {
     }
 
     const connectionDisposable = this.provider.registerInferenceProviderConnection({
+      id: String(this.connectionIdCounter++),
       name: this.maskKey(token),
       type: 'cloud',
       llmMetadata: { name: 'gemini' },

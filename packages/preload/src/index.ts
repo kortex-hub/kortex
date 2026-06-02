@@ -141,7 +141,6 @@ import type {
 } from '/@api/provider-info';
 import type { ProxyState } from '/@api/proxy';
 import type { PullEvent } from '/@api/pull-event';
-import type { ChunkProviderInfo } from '/@api/rag/chunk-provider-info';
 import type { RagEnvironment } from '/@api/rag/rag-environment';
 import type { ExtensionBanner, RecommendedRegistry } from '/@api/recommendations/recommendations';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info';
@@ -154,6 +153,11 @@ import type { ViewInfoUI } from '/@api/view-info';
 import type { VolumeInspectInfo, VolumeListInfo } from '/@api/volume-info';
 import type { WebviewInfo } from '/@api/webview-info';
 import type { WelcomeMessages } from '/@api/welcome-info';
+import type {
+  WorkspaceProjectCreateOptions,
+  WorkspaceProjectInfo,
+  WorkspaceProjectUpdateOptions,
+} from '/@api/workspace-project-info';
 
 export type DialogResultCallback = (openDialogReturnValue: Electron.OpenDialogReturnValue) => void;
 export type OpenSaveDialogResultCallback = (result: string | string[] | undefined) => void;
@@ -529,6 +533,33 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld('getSkillFileContent', async (filePath: string): Promise<SkillFileContent> => {
     return ipcInvoke('skill-manager:getSkillFileContent', filePath);
   });
+
+  // Workspace Projects
+  contextBridge.exposeInMainWorld('listWorkspaceProjects', async (): Promise<WorkspaceProjectInfo[]> => {
+    return ipcInvoke('workspace-project-manager:list');
+  });
+
+  contextBridge.exposeInMainWorld('getWorkspaceProject', async (id: string): Promise<WorkspaceProjectInfo> => {
+    return ipcInvoke('workspace-project-manager:get', id);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'createWorkspaceProject',
+    async (options: WorkspaceProjectCreateOptions): Promise<WorkspaceProjectInfo> => {
+      return ipcInvoke('workspace-project-manager:create', options);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('removeWorkspaceProject', async (id: string): Promise<void> => {
+    return ipcInvoke('workspace-project-manager:remove', id);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'updateWorkspaceProject',
+    async (id: string, options: WorkspaceProjectUpdateOptions): Promise<WorkspaceProjectInfo> => {
+      return ipcInvoke('workspace-project-manager:update', id, options);
+    },
+  );
 
   contextBridge.exposeInMainWorld(
     'deleteSchedule',
@@ -2008,8 +2039,12 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld(
     'createRagEnvironment',
-    async (name: string, ragConnection: { name: string; providerId: string }, chunkerId: string): Promise<void> => {
-      return ipcInvoke('rag-environment-registry:createRagEnvironment', name, ragConnection, chunkerId);
+    async (
+      name: string,
+      ragConnection: { name: string; providerId: string },
+      chunkerConnection: { id: string; providerId: string },
+    ): Promise<void> => {
+      return ipcInvoke('rag-environment-registry:createRagEnvironment', name, ragConnection, chunkerConnection);
     },
   );
 
@@ -2026,10 +2061,6 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld('deleteRagEnvironment', async (name: string): Promise<void> => {
     return ipcInvoke('rag-environment-registry:deleteRagEnvironment', name);
-  });
-
-  contextBridge.exposeInMainWorld('getChunkProviders', async (): Promise<ChunkProviderInfo[]> => {
-    return ipcInvoke('chunk-provider-registry:getChunkProviders');
   });
 
   contextBridge.exposeInMainWorld('getCliToolInfos', async (): Promise<CliToolInfo[]> => {

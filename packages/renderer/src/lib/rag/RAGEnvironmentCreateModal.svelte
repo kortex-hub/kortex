@@ -2,22 +2,23 @@
 import { Button, CloseButton, Input, Modal } from '@podman-desktop/ui-svelte';
 
 import type { ProviderInfo } from '/@api/provider-info';
-import type { ChunkProviderInfo } from '/@api/rag/chunk-provider-info';
 
 interface Props {
   providers: ProviderInfo[];
-  chunkProviders: ChunkProviderInfo[];
   closeCallback: () => void;
-  onCreate: (name: string, ragConnection: { name: string; providerId: string }, chunkerId: string) => void;
+  onCreate: (
+    name: string,
+    ragConnection: { name: string; providerId: string },
+    chunkerConnection: { id: string; providerId: string },
+  ) => void;
 }
 
-let { providers, chunkProviders, closeCallback, onCreate }: Props = $props();
+let { providers, closeCallback, onCreate }: Props = $props();
 
 let environmentName = $state('');
 let selectedRagConnectionKey = $state('');
-let selectedChunkerId = $state('');
+let selectedChunkerConnectionKey = $state('');
 
-// Flatten all RAG connections from all providers
 let ragConnectionOptions = $derived(
   providers.flatMap(provider =>
     provider.ragConnections.map(connection => ({
@@ -30,25 +31,42 @@ let ragConnectionOptions = $derived(
   ),
 );
 
-// Check if form is valid
+let chunkConnectionOptions = $derived(
+  providers.flatMap(provider =>
+    provider.chunkConnections.map(connection => ({
+      key: `${provider.id}:${connection.id}`,
+      providerId: provider.id,
+      connection: connection,
+      displayName: connection.name,
+      providerName: provider.name,
+    })),
+  ),
+);
+
+const selectedRagOption = $derived(ragConnectionOptions.find(option => option.key === selectedRagConnectionKey));
+const selectedChunkOption = $derived(
+  chunkConnectionOptions.find(option => option.key === selectedChunkerConnectionKey),
+);
+
 let isFormValid = $derived(
-  environmentName.trim() !== '' && selectedRagConnectionKey !== '' && selectedChunkerId !== '',
+  environmentName.trim() !== '' && selectedRagOption !== undefined && selectedChunkOption !== undefined,
 );
 
 function handleCreate(): void {
   if (!isFormValid) return;
 
-  // Find the selected RAG connection
-  const selectedOption = ragConnectionOptions.find(option => option.key === selectedRagConnectionKey);
-  if (!selectedOption) return;
+  if (!selectedRagOption || !selectedChunkOption) return;
 
   onCreate(
     environmentName.trim(),
     {
-      name: selectedOption.connection.name,
-      providerId: selectedOption.providerId,
+      name: selectedRagOption.connection.name,
+      providerId: selectedRagOption.providerId,
     },
-    selectedChunkerId,
+    {
+      id: selectedChunkOption.connection.id,
+      providerId: selectedChunkOption.providerId,
+    },
   );
 }
 
@@ -64,8 +82,8 @@ function selectRagConnection(key: string): void {
   selectedRagConnectionKey = key;
 }
 
-function selectChunkProvider(id: string): void {
-  selectedChunkerId = id;
+function selectChunkConnection(key: string): void {
+  selectedChunkerConnectionKey = key;
 }
 </script>
 
@@ -121,23 +139,23 @@ function selectChunkProvider(id: string): void {
         <div role="group" aria-label="Embedding Model" class="flex flex-col space-y-3">
           <label class="text-sm font-medium text-[var(--pd-modal-text)]">Embedding Model</label>
           <div class="grid grid-cols-2 gap-4">
-            {#each chunkProviders as provider (provider.id)}
+            {#each chunkConnectionOptions as option (option.key)}
               <button
                 type="button"
-                class="border-2 rounded-lg p-4 text-left transition-all cursor-pointer {selectedChunkerId ===
-                provider.id
+                class="border-2 rounded-lg p-4 text-left transition-all cursor-pointer {selectedChunkerConnectionKey ===
+                option.key
                   ? 'border-[var(--pd-content-card-border-selected)] bg-[var(--pd-content-card-hover-inset-bg)]'
                   : 'border-[var(--pd-content-card-border)] bg-[var(--pd-content-card-bg)] hover:border-[var(--pd-content-card-border-selected)] hover:bg-[var(--pd-content-card-hover-inset-bg)]'}"
-                onclick={selectChunkProvider.bind(undefined, provider.id)}>
+                onclick={selectChunkConnection.bind(undefined, option.key)}>
                 <div class="flex items-center gap-3 mb-2">
                   <div
                     class="w-8 h-8 rounded-md flex items-center justify-center text-[var(--pd-label-primary-text)] text-xs font-bold bg-[var(--pd-label-primary-bg)]">
-                    {provider.name.charAt(0).toUpperCase()}
+                    {option.displayName.charAt(0).toUpperCase()}
                   </div>
-                  <div class="text-base font-medium text-[var(--pd-modal-text)]">{provider.name}</div>
+                  <div class="text-base font-medium text-[var(--pd-modal-text)]">{option.displayName}</div>
                 </div>
                 <div class="text-xs text-[var(--pd-content-text)] leading-relaxed">
-                  Advanced document parsing and chunking for knowledge database applications
+                  {option.providerName}
                 </div>
               </button>
             {/each}

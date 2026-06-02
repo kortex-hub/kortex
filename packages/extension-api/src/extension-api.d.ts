@@ -655,6 +655,7 @@ declare module '@openkaiden/api' {
   }
 
   export type InferenceProviderConnection = {
+    id: string;
     name: string;
     type: InferenceProviderConnectionType;
     llmMetadata?: LLMMetadata;
@@ -713,14 +714,6 @@ declare module '@openkaiden/api' {
     text: Uri;
   };
 
-  /**
-   * @deprecated Use {@link ChunkProviderConnection} instead.
-   */
-  export type ChunkProvider = {
-    name: string;
-    chunk(doc: Uri): Promise<Chunk[]>;
-  };
-
   export type ChunkProviderConnection = {
     id: string;
     name: string;
@@ -737,14 +730,6 @@ declare module '@openkaiden/api' {
   export interface ProviderRagConnection {
     providerId: string;
     connection: RagProviderConnection;
-  }
-
-  /**
-   * @deprecated Use {@link ProviderChunkProviderConnection} instead.
-   */
-  export interface ProviderChunkerConnection {
-    providerId: string;
-    connection: ChunkProvider;
   }
 
   export interface ProviderChunkProviderConnection {
@@ -1182,19 +1167,6 @@ declare module '@openkaiden/api' {
     providerId: string;
     connection: RagProviderConnection;
   }
-  /**
-   * @deprecated Use {@link RegisterChunkProviderConnectionEvent} instead.
-   */
-  export interface RegisterChunkerConnectionEvent {
-    providerId: string;
-  }
-  /**
-   * @deprecated Use {@link UnregisterChunkProviderConnectionEvent} instead.
-   */
-  export interface UnregisterChunkerConnectionEvent {
-    providerId: string;
-  }
-
   export interface RegisterChunkProviderConnectionEvent {
     providerId: string;
     connection: ChunkProviderConnection;
@@ -5595,12 +5567,5 @@ declare module '@openkaiden/api' {
 
   export namespace agents {
     export function registerAgent(agent: Agent): Disposable;
-  }
-
-  export namespace rag {
-    /**
-     * @deprecated Use {@link provider.registerChunkProviderConnection} instead.
-     */
-    export function registerChunkProvider(provider: ChunkProvider): Disposable;
   }
 }

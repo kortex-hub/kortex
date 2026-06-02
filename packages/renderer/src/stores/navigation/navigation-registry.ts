@@ -25,9 +25,11 @@ import { configurationProperties } from '/@/stores/configurationProperties';
 import { EventStore } from '/@/stores/event-store';
 
 import { createNavigationAgentWorkspacesEntry } from './navigation-registry-agent-workspaces.svelte';
+import { createNavigationCodingAgentsEntry } from './navigation-registry-coding-agents.svelte';
 import { createNavigationExtensionEntry, createNavigationExtensionGroup } from './navigation-registry-extension.svelte';
 import { createNavigationMcpEntry } from './navigation-registry-mcp.svelte';
 import { createNavigationModelsEntry } from './navigation-registry-models.svelte';
+import { createNavigationProjectsEntry } from './navigation-registry-projects.svelte';
 import { createNavigationRagEntry } from './navigation-registry-rag.svelte';
 import { createNavigationSecretVaultEntry } from './navigation-registry-secret-vault.svelte';
 import { createNavigationSkillsEntry } from './navigation-registry-skills.svelte';
@@ -64,6 +66,8 @@ let values: NavigationRegistryEntry[] = [];
 let initialized = false;
 const init = (): void => {
   values.push(createNavigationAgentWorkspacesEntry());
+  values.push(createNavigationProjectsEntry());
+  values.push(createNavigationCodingAgentsEntry());
   values.push(createNavigationModelsEntry());
   values.push(createNavigationMcpEntry());
   values.push(createNavigationSecretVaultEntry());

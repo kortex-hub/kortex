@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { randomUUID } from 'node:crypto';
+
 import { createOpenAICompatible, type OpenAICompatibleProvider } from '@ai-sdk/openai-compatible';
 import type {
   CancellationToken,
@@ -27,7 +29,9 @@ import type {
 } from '@openkaiden/api';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { OpenAI, TOKENS_KEY } from './openAI';
+import { OpenAI, type StoredConnection, TOKENS_KEY } from './openAI';
+
+vi.mock(import('node:crypto'));
 
 vi.mock('@openkaiden/api', () => ({
   Disposable: {
@@ -71,6 +75,7 @@ global.fetch = fetchMock;
 beforeEach(() => {
   vi.resetAllMocks();
 
+  vi.mocked(randomUUID).mockReturnValue('fake-uuid-1' as ReturnType<typeof randomUUID>);
   vi.mocked(PROVIDER_API_MOCK.createProvider).mockReturnValue(PROVIDER_MOCK as Provider);
   vi.mocked(createOpenAICompatible).mockReturnValue(OPENAI_PROVIDER_MOCK);
   vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(undefined);
@@ -143,15 +148,17 @@ describe('factory', () => {
     }).rejects.toThrowError('invalid baseURL');
   });
 
-  test('calling create with proper params should save connection info', async () => {
+  test('calling create with proper params should save connection as JSON', async () => {
     await create({
       'openai.factory.apiKey': 'dummyKey',
       'openai.factory.baseURL': 'http://localhost:11434/v1',
     });
 
-    // ensure store has been updated with combined key|baseURL format
     expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledOnce();
-    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, 'dummyKey|http://localhost:11434/v1');
+    const expected: StoredConnection[] = [
+      { id: 'fake-uuid-1', apiKey: 'dummyKey', baseURL: 'http://localhost:11434/v1' },
+    ];
+    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, JSON.stringify(expected));
   });
 
   test('calling create should fetch models, create SDK and register inference connection', async () => {
@@ -230,16 +237,24 @@ describe('connection delete lifecycle', () => {
 });
 
 describe('restoreConnections', () => {
-  test('should restore multiple connections from secret storage on init', async () => {
-    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue('key1|http://a/v1,key2|http://b/v1');
+  test('should restore multiple connections from JSON storage on init', async () => {
+    const stored: StoredConnection[] = [
+      { id: 'id-1', apiKey: 'key1', baseURL: 'http://a/v1' },
+      { id: 'id-2', apiKey: 'key2', baseURL: 'http://b/v1' },
+    ];
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify(stored));
 
     const openai = new OpenAI(PROVIDER_API_MOCK, SECRET_STORAGE_MOCK);
     await openai.init();
 
-    // two connections should be attempted
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledTimes(2);
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'id-1' }),
+    );
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'id-2' }),
+    );
 
-    // Also ensure models listing was requested twice
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock).toHaveBeenNthCalledWith(1, 'http://a/v1/models', {
       headers: { Authorization: 'Bearer key1' },
@@ -249,17 +264,19 @@ describe('restoreConnections', () => {
     });
   });
 
-  test('should restore a single connection from secret storage on init', async () => {
-    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue('key1|http://a/v1,key2|http://b/v1');
+  test('should restore connections even when one fails model listing', async () => {
+    const stored: StoredConnection[] = [
+      { id: 'id-1', apiKey: 'key1', baseURL: 'http://a/v1' },
+      { id: 'id-2', apiKey: 'key2', baseURL: 'http://b/v1' },
+    ];
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify(stored));
     fetchMock.mockResolvedValueOnce({ status: 500, json: async () => ({}) });
 
     const openai = new OpenAI(PROVIDER_API_MOCK, SECRET_STORAGE_MOCK);
     await openai.init();
 
-    // two connections should be attempted
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledTimes(2);
 
-    // Also ensure models listing was requested twice
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock).toHaveBeenNthCalledWith(1, 'http://a/v1/models', {
       headers: { Authorization: 'Bearer key1' },
@@ -267,6 +284,29 @@ describe('restoreConnections', () => {
     expect(fetchMock).toHaveBeenNthCalledWith(2, 'http://b/v1/models', {
       headers: { Authorization: 'Bearer key2' },
     });
+  });
+
+  test('should migrate legacy pipe+comma-separated format to JSON', async () => {
+    vi.mocked(randomUUID)
+      .mockReturnValueOnce('migrated-id-1' as ReturnType<typeof randomUUID>)
+      .mockReturnValueOnce('migrated-id-2' as ReturnType<typeof randomUUID>);
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue('key1|http://a/v1,key2|http://b/v1');
+
+    const openai = new OpenAI(PROVIDER_API_MOCK, SECRET_STORAGE_MOCK);
+    await openai.init();
+
+    const expected: StoredConnection[] = [
+      { id: 'migrated-id-1', apiKey: 'key1', baseURL: 'http://a/v1' },
+      { id: 'migrated-id-2', apiKey: 'key2', baseURL: 'http://b/v1' },
+    ];
+    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, JSON.stringify(expected));
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledTimes(2);
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'migrated-id-1' }),
+    );
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'migrated-id-2' }),
+    );
   });
 });
 
@@ -324,8 +364,11 @@ describe('duplicate connection prevention', () => {
 
     await create({ 'openai.factory.apiKey': 'dup', 'openai.factory.baseURL': 'http://dup/v1' });
 
+    const stored: StoredConnection[] = [{ id: 'fake-uuid-1', apiKey: 'dup', baseURL: 'http://dup/v1' }];
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify(stored));
+
     await expect(
       create({ 'openai.factory.apiKey': 'dup', 'openai.factory.baseURL': 'http://dup/v1' }),
-    ).rejects.toThrowError('connection already exists for token (hidden) baseURL http://dup/v1');
+    ).rejects.toThrowError('connection already exists for baseURL http://dup/v1');
   });
 });

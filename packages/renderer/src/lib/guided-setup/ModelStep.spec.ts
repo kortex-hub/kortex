@@ -68,6 +68,7 @@ function buildCatalogModels(providers: Partial<ProviderInfo>[]): CatalogModelInf
         result.push({
           providerId: provider.id,
           providerName: provider.name,
+          connectionId: connection.id,
           connectionName: connection.name,
           type: connection.type,
           llmMetadata: connection.llmMetadata,
@@ -92,6 +93,7 @@ const OPENCODE_PROVIDERS: Partial<ProviderInfo>[] = [
     name: 'Ollama',
     inferenceConnections: [
       {
+        id: 'conn-0',
         name: 'default',
         type: 'local',
         status: 'started',
@@ -108,6 +110,7 @@ const CLAUDE_PROVIDERS: Partial<ProviderInfo>[] = [
     name: 'Claude',
     inferenceConnections: [
       {
+        id: 'conn-0',
         name: 'api-key',
         type: 'cloud',
         status: 'started',

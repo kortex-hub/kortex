@@ -5,14 +5,6 @@ import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { onMount } from 'svelte';
 import { toast } from 'svelte-sonner';
 
-import AgentWorkspaceCreateStepAgentModel from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepAgentModel.svelte';
-import AgentWorkspaceCreateStepFileSystem, {
-  type CustomMount,
-} from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepFileSystem.svelte';
-import type { NetworkAccessOption } from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepNetworking.svelte';
-import AgentWorkspaceCreateStepNetworking from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepNetworking.svelte';
-import AgentWorkspaceCreateStepToolsSecrets from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepToolsSecrets.svelte';
-import AgentWorkspaceCreateStepWorkspace from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepWorkspace.svelte';
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
 import { agentDefinitions, matchesModelFilter } from '/@/lib/guided-setup/agent-registry';
 import { getModelId } from '/@/lib/models/models-utils';
@@ -36,48 +28,12 @@ import type {
 import { NavigationPage } from '/@api/navigation-page';
 import type { DefaultWorkspaceSettings } from '/@api/onboarding-settings-info';
 
-const baseNetworkOptions: NetworkAccessOption[] = [
-  {
-    value: 'blocked',
-    name: 'Deny All',
-    description: 'No outbound HTTP/HTTPS from the sandbox.',
-    access: 'None',
-    notes: 'Strict',
-    disabled: false,
-  },
-  {
-    value: 'registries',
-    name: 'Developer Preset',
-    description: 'Allow npm, PyPI, and similar registries — not arbitrary public hosts.',
-    access: 'Registries',
-    notes: 'Balanced default',
-    badge: 'Recommended',
-    disabled: false,
-  },
-  {
-    value: 'agent_mode',
-    name: 'Agent mode',
-    description: 'The agent requests each outbound access; you approve before traffic leaves the sandbox.',
-    access: 'Per request',
-    notes: 'Human in the loop',
-    disabled: true,
-  },
-  {
-    value: 'open',
-    name: 'Unrestricted',
-    description: 'Permit all outbound traffic. Best for trusted dev setups.',
-    access: 'All hosts',
-    notes: 'Trusted setups',
-    disabled: false,
-  },
-];
-
-let networkOptions: NetworkAccessOption[] = $derived(
-  baseNetworkOptions.map(option => ({
-    ...option,
-    disabled: option.value === 'open' && $agentWorkspaceRuntime === 'openshell' ? true : option.disabled,
-  })),
-);
+import AgentWorkspaceCreateStepAgentModel from './AgentWorkspaceCreateStepAgentModel.svelte';
+import type { CustomMount } from './AgentWorkspaceCreateStepFileSystem.svelte';
+import AgentWorkspaceCreateStepFileSystem from './AgentWorkspaceCreateStepFileSystem.svelte';
+import AgentWorkspaceCreateStepNetworking from './AgentWorkspaceCreateStepNetworking.svelte';
+import AgentWorkspaceCreateStepToolsSecrets from './AgentWorkspaceCreateStepToolsSecrets.svelte';
+import AgentWorkspaceCreateStepWorkspace from './AgentWorkspaceCreateStepWorkspace.svelte';
 
 function mapNetworkSelection(value: string, hosts: string[]): NetworkConfiguration | undefined {
   const filtered = hosts.filter(h => h.trim() !== '');
@@ -506,7 +462,6 @@ async function startWorkspace(): Promise<void> {
                 onUpdateCustomMount={updateCustomMount} />
             {:else if currentStepId === 'networking'}
               <AgentWorkspaceCreateStepNetworking
-                {networkOptions}
                 bind:selectedNetwork={wizard.draft.selectedNetwork}
                 customHosts={customHosts}
                 onAddCustomHost={addCustomHost}

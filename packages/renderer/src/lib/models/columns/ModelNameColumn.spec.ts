@@ -28,6 +28,7 @@ import ModelNameColumn from './ModelNameColumn.svelte';
 const model: CatalogModelInfo = {
   providerId: 'gemini',
   providerName: 'Gemini',
+  connectionId: 'conn-0',
   connectionName: 'default',
   type: 'cloud',
   label: 'gemini-2.5-flash',

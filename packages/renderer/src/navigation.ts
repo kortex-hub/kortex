@@ -182,6 +182,9 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
     case NavigationPage.AGENT_WORKSPACE_CREATE:
       router.goto('/agent-workspaces/create');
       break;
+    case NavigationPage.CODING_AGENTS:
+      router.goto('/coding-agents');
+      break;
     case NavigationPage.SKILL_DETAILS:
       router.goto(`/skills/${encodeURIComponent(request.parameters.name)}/summary`);
       break;
@@ -202,6 +205,9 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
       break;
     case NavigationPage.SECRET_VAULT_DETAILS:
       router.goto(`/secret-vault/${encodeURIComponent(request.parameters.id)}/summary`);
+      break;
+    case NavigationPage.PROJECTS:
+      router.goto('/projects');
       break;
   }
 };

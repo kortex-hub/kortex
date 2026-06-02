@@ -82,6 +82,7 @@ export class ModelRegistry {
           result.push({
             providerId: provider.id,
             providerName: provider.name,
+            connectionId: connection.id,
             connectionName: connection.name,
             type: connection.type,
             llmMetadata: connection.llmMetadata,

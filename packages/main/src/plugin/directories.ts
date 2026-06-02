@@ -28,4 +28,5 @@ export interface Directories {
   getManagedDefaultsDirectory(): string;
   getChatPersistenceDirectory(): string;
   getSkillsDirectory(): string;
+  getWorkspaceProjectsDirectory(): string;
 }

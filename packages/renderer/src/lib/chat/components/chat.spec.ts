@@ -30,13 +30,19 @@ beforeEach(() => {
 
 describe('findModel', () => {
   const models: ModelInfo[] = [
-    { providerId: 'ollama', connectionName: 'local', label: 'llama3', type: 'local' },
-    { providerId: 'ollama', connectionName: 'local', label: 'mistral', type: 'local' },
-    { providerId: 'gemini', connectionName: 'cloud', label: 'gemini-pro', type: 'cloud' },
+    { providerId: 'ollama', connectionId: 'conn-0', connectionName: 'local', label: 'llama3', type: 'local' },
+    { providerId: 'ollama', connectionId: 'conn-0', connectionName: 'local', label: 'mistral', type: 'local' },
+    { providerId: 'gemini', connectionId: 'conn-0', connectionName: 'cloud', label: 'gemini-pro', type: 'cloud' },
   ];
 
   test('should return matching model when all fields match', () => {
-    const target: ModelInfo = { providerId: 'ollama', connectionName: 'local', label: 'mistral', type: 'local' };
+    const target: ModelInfo = {
+      providerId: 'ollama',
+      connectionId: 'conn-0',
+      connectionName: 'local',
+      label: 'mistral',
+      type: 'local',
+    };
     const result = findModel(models, target);
     expect(result).toEqual(target);
   });
@@ -47,19 +53,37 @@ describe('findModel', () => {
   });
 
   test('should return undefined when no model matches', () => {
-    const target: ModelInfo = { providerId: 'openai', connectionName: 'remote', label: 'gpt-4', type: 'cloud' };
+    const target: ModelInfo = {
+      providerId: 'openai',
+      connectionId: 'conn-0',
+      connectionName: 'remote',
+      label: 'gpt-4',
+      type: 'cloud',
+    };
     const result = findModel(models, target);
     expect(result).toBeUndefined();
   });
 
   test('should return undefined when label does not match', () => {
-    const target: ModelInfo = { providerId: 'ollama', connectionName: 'local', label: 'nonexistent', type: 'local' };
+    const target: ModelInfo = {
+      providerId: 'ollama',
+      connectionId: 'conn-0',
+      connectionName: 'local',
+      label: 'nonexistent',
+      type: 'local',
+    };
     const result = findModel(models, target);
     expect(result).toBeUndefined();
   });
 
   test('should return undefined when providerId does not match', () => {
-    const target: ModelInfo = { providerId: 'wrong-provider', connectionName: 'local', label: 'llama3', type: 'local' };
+    const target: ModelInfo = {
+      providerId: 'wrong-provider',
+      connectionId: 'conn-0',
+      connectionName: 'local',
+      label: 'llama3',
+      type: 'local',
+    };
     const result = findModel(models, target);
     expect(result).toBeUndefined();
   });
@@ -67,6 +91,7 @@ describe('findModel', () => {
   test('should return undefined when connectionName does not match', () => {
     const target: ModelInfo = {
       providerId: 'ollama',
+      connectionId: 'conn-0',
       connectionName: 'wrong-connection',
       label: 'llama3',
       type: 'local',
@@ -78,6 +103,7 @@ describe('findModel', () => {
   test('should return undefined when type does not match', () => {
     const target: ModelInfo = {
       providerId: 'ollama',
+      connectionId: 'conn-0',
       connectionName: 'local',
       label: 'llama3',
       type: 'cloud',
@@ -87,17 +113,31 @@ describe('findModel', () => {
   });
 
   test('should return undefined when models list is empty', () => {
-    const target: ModelInfo = { providerId: 'ollama', connectionName: 'local', label: 'llama3', type: 'local' };
+    const target: ModelInfo = {
+      providerId: 'ollama',
+      connectionId: 'conn-0',
+      connectionName: 'local',
+      label: 'llama3',
+      type: 'local',
+    };
     const result = findModel([], target);
     expect(result).toBeUndefined();
   });
 
   test('should return undefined when endpoint does not match', () => {
     const modelsWithEndpoint: ModelInfo[] = [
-      { providerId: 'openai', connectionName: 'conn', label: 'gpt-4', type: 'cloud', endpoint: 'http://host-a/v1' },
+      {
+        providerId: 'openai',
+        connectionId: 'conn-0',
+        connectionName: 'conn',
+        label: 'gpt-4',
+        type: 'cloud',
+        endpoint: 'http://host-a/v1',
+      },
     ];
     const target: ModelInfo = {
       providerId: 'openai',
+      connectionId: 'conn-0',
       connectionName: 'conn',
       label: 'gpt-4',
       type: 'cloud',
@@ -108,7 +148,13 @@ describe('findModel', () => {
   });
 
   test('should match models when both have undefined endpoint', () => {
-    const target: ModelInfo = { providerId: 'ollama', connectionName: 'local', label: 'llama3', type: 'local' };
+    const target: ModelInfo = {
+      providerId: 'ollama',
+      connectionId: 'conn-0',
+      connectionName: 'local',
+      label: 'llama3',
+      type: 'local',
+    };
     const result = findModel(models, target);
     expect(result).toEqual(target);
   });

@@ -814,6 +814,7 @@ export class ProviderRegistry {
     } else if (this.isInferenceConnection(connection)) {
       providerConnection = {
         connectionType: 'inference',
+        id: connection.id,
         name: connection.name,
         type: connection.type,
         llmMetadata: connection.llmMetadata,
@@ -1316,16 +1317,7 @@ export class ProviderRegistry {
   ): InferenceProviderConnection {
     const provider = this.getMatchingProvider(internalProviderId);
 
-    const inferenceConnection = provider.inferenceConnections.find(
-      connection => connection.name === providerConnectionInfo.name,
-    );
-    if (!inferenceConnection) {
-      throw new Error(`no Inference connection matching provider id ${internalProviderId}`);
-    }
-    // grab the correct inference connection
-    const connection = provider.inferenceConnections.find(
-      connection => connection.name === providerConnectionInfo.name,
-    );
+    const connection = provider.inferenceConnections.find(connection => connection.id === providerConnectionInfo.id);
     if (!connection) {
       throw new Error(`no inference connection matching provider id ${internalProviderId}`);
     }
@@ -1971,8 +1963,12 @@ export class ProviderRegistry {
     provider: Provider,
     inferenceProviderConnection: InferenceProviderConnection,
   ): Disposable {
-    const providerName = inferenceProviderConnection.name;
-    const id = `${provider.id}.${providerName}`;
+    const id = `${provider.id}.${inferenceProviderConnection.id}`;
+    if (this.inferenceProviders.has(id)) {
+      throw new Error(
+        `an inference connection with id '${inferenceProviderConnection.id}' is already registered for provider '${provider.id}'`,
+      );
+    }
     this.inferenceProviders.set(id, inferenceProviderConnection);
     this.telemetryService.track('registerInferenceProviderConnection', {
       name: inferenceProviderConnection.name,

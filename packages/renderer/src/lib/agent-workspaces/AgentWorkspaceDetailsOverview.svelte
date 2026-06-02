@@ -10,7 +10,9 @@ import {
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
 import { getAgentDefinition } from '/@/lib/guided-setup/agent-registry';
+import { getModelId } from '/@/lib/models/models-utils';
 import type { AgentWorkspaceSummaryUI } from '/@/stores/agent-workspaces.svelte';
+import { catalogModels } from '/@/stores/models';
 import { skillInfos } from '/@/stores/skills';
 import type { AgentWorkspaceConfiguration } from '/@api/agent-workspace-info';
 
@@ -24,6 +26,17 @@ interface Props {
 let { workspaceSummary, configuration }: Props = $props();
 
 const agentDef = $derived(getAgentDefinition(workspaceSummary?.agent ?? ''));
+
+const resolvedModel = $derived(
+  workspaceSummary?.model ? $catalogModels.find(m => getModelId(m) === workspaceSummary.model) : undefined,
+);
+
+const modelDisplayName = $derived.by(() => {
+  if (!resolvedModel) return workspaceSummary?.model;
+  const name = resolvedModel.llmMetadata?.name;
+  if (name) return `${name.charAt(0).toUpperCase()}${name.slice(1)} · ${resolvedModel.label}`;
+  return resolvedModel.label;
+});
 
 const statusStyle = $derived.by(() => {
   const state = workspaceSummary?.state;
@@ -116,7 +129,7 @@ const filesystemBadge = $derived.by(() => {
           </h2>
           {#if workspaceSummary?.model}
             <p class="text-xs text-[var(--pd-link)] m-0">
-              {workspaceSummary.model}
+              {modelDisplayName}
             </p>
           {/if}
         </div>

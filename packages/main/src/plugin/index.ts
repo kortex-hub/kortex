@@ -55,7 +55,6 @@ import { lookup } from 'mime-types';
 import { AgentRegistry } from '/@/plugin/agent-registry.js';
 import { AgentWorkspaceManager } from '/@/plugin/agent-workspace/agent-workspace-manager.js';
 import { IPCHandle, IPCMainOn, WebContentsType } from '/@/plugin/api.js';
-import { ChunkProviderRegistry } from '/@/plugin/chunk-provider-registry.js';
 import { ContainerfileParser } from '/@/plugin/containerfile-parser.js';
 import { ExtensionApiVersion } from '/@/plugin/extension/extension-api-version.js';
 import { ExtensionLoader } from '/@/plugin/extension/extension-loader.js';
@@ -79,6 +78,7 @@ import { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import { Uri } from '/@/plugin/types/uri.js';
 import { Updater } from '/@/plugin/updater.js';
 import { Welcome } from '/@/plugin/welcome.js';
+import { WorkspaceProjectManager } from '/@/plugin/workspace-project/workspace-project-manager.js';
 import type { AgentInfo } from '/@api/agent-info.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { AuthenticationProviderInfo } from '/@api/authentication/authentication.js';
@@ -577,7 +577,6 @@ export class PluginSystem {
     container.bind<MCPRegistry>(MCPRegistry).toSelf().inSingletonScope();
     container.bind<MCPExporter>(MCPExporter).toSelf().inSingletonScope();
     container.bind<MCPIPCHandler>(MCPIPCHandler).toSelf().inSingletonScope();
-    container.bind<ChunkProviderRegistry>(ChunkProviderRegistry).toSelf().inSingletonScope();
     container.bind<ViewRegistry>(ViewRegistry).toSelf().inSingletonScope();
     container.bind<Context>(Context).toSelf().inSingletonScope();
     container.bind<ContainerProviderRegistry>(ContainerProviderRegistry).toSelf().inSingletonScope();
@@ -593,6 +592,7 @@ export class PluginSystem {
     container.bind<SecretManager>(SecretManager).toSelf().inSingletonScope();
     container.bind<FlowManager>(FlowManager).toSelf().inSingletonScope();
     container.bind<SkillManager>(SkillManager).toSelf().inSingletonScope();
+    container.bind<WorkspaceProjectManager>(WorkspaceProjectManager).toSelf().inSingletonScope();
     container.bind<TrayMenuRegistry>(TrayMenuRegistry).toSelf().inSingletonScope();
     container.bind<InputQuickPickRegistry>(InputQuickPickRegistry).toSelf().inSingletonScope();
     container.bind<FilesystemMonitoring>(FilesystemMonitoring).toSelf().inSingletonScope();
@@ -908,8 +908,8 @@ export class PluginSystem {
     const ragEnvironmentRegistry = container.get<RagEnvironmentRegistry>(RagEnvironmentRegistry);
     await ragEnvironmentRegistry.init();
 
-    const chunkProviderRegistry = container.get<ChunkProviderRegistry>(ChunkProviderRegistry);
-    chunkProviderRegistry.init();
+    const workspaceProjectManager = container.get<WorkspaceProjectManager>(WorkspaceProjectManager);
+    await workspaceProjectManager.init();
 
     const mcpIPCHandler = container.get<MCPIPCHandler>(MCPIPCHandler);
     mcpIPCHandler.init();

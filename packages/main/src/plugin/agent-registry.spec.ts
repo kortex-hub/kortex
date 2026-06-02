@@ -50,6 +50,7 @@ function createCatalogModel(llmMetadataName?: string): CatalogModelInfo {
   return {
     providerId: 'provider-1',
     providerName: 'Provider 1',
+    connectionId: 'conn-0',
     connectionName: 'connection-1',
     type: 'cloud',
     label: 'model-label',

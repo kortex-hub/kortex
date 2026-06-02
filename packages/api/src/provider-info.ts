@@ -81,6 +81,7 @@ export interface ProviderChunkProviderConnectionInfo {
 
 export interface ProviderInferenceConnectionInfo {
   connectionType: 'inference';
+  id: string;
   name: string;
   type: InferenceProviderConnectionType;
   llmMetadata?: LLMMetadata;

@@ -20,6 +20,7 @@ import type { InferenceProviderConnectionType, LLMMetadata, ProviderConnectionSt
 
 export interface ModelInfo {
   providerId: string;
+  connectionId: string;
   connectionName: string;
   type: InferenceProviderConnectionType;
   llmMetadata?: LLMMetadata;
@@ -36,6 +37,7 @@ export interface InferenceConnectionSummary {
   providerName: string;
   providerId: string;
   providerInternalId: string;
+  connectionId: string;
   connectionName: string;
   connectionType?: InferenceProviderConnectionType;
   status: ProviderConnectionStatus | 'not-configured';

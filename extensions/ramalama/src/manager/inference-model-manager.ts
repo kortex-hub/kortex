@@ -34,6 +34,7 @@ export class InferenceModelManager {
   private ramaLamaProvider: Provider;
 
   #modelsDisposable: Disposable[] = [];
+  #connectionIdCounter = 0;
 
   async init(): Promise<void> {
     this.modelsHandler.onModelsChanged(async models => {
@@ -56,6 +57,7 @@ export class InferenceModelManager {
         name: `RamaLama/${modelinfo.port}`,
       });
       const disposable = this.ramaLamaProvider.registerInferenceProviderConnection({
+        id: String(this.#connectionIdCounter++),
         name: `port/${modelinfo.port}`,
         type: 'local',
         llmMetadata: { name: 'openai' },

@@ -15,6 +15,7 @@ import FlowDetails from '/@/lib/flows/FlowDetails.svelte';
 import FlowList from '/@/lib/flows/FlowList.svelte';
 import KubernetesRoot from '/@/lib/kube/KubernetesRoot.svelte';
 import MCPDetails from '/@/lib/mcp/MCPDetails.svelte';
+import ProjectList from '/@/lib/projects/ProjectList.svelte';
 import RAGEnvironmentDetails from '/@/lib/rag/RAGEnvironmentDetails.svelte';
 import RAGEnvironmentList from '/@/lib/rag/RAGEnvironmentList.svelte';
 import PinActions from '/@/lib/statusbar/PinActions.svelte';
@@ -28,6 +29,7 @@ import AppNavigation from './AppNavigation.svelte';
 import { navigateTo } from './kubernetesNavigation';
 import Appearance from './lib/appearance/Appearance.svelte';
 import CustomChat from './lib/chat/route/CustomChat.svelte';
+import CodingAgentsPage from './lib/coding-agents/CodingAgentsPage.svelte';
 import ComposeDetails from './lib/compose/ComposeDetails.svelte';
 import ConfigMapDetails from './lib/configmaps-secrets/ConfigMapDetails.svelte';
 import ConfigMapSecretList from './lib/configmaps-secrets/ConfigMapSecretList.svelte';
@@ -228,6 +230,10 @@ tablePersistence.storage = new PodmanDesktopStoragePersist();
           </Route>
         </Route>
 
+        <Route path="/projects" breadcrumb="Projects" navigationHint="root">
+          <ProjectList />
+        </Route>
+
         <Route path="/flows/*" breadcrumb="Flows" navigationHint="root" firstmatch>
           <Route path="/" breadcrumb="Flows" navigationHint="root">
             <FlowList/>
@@ -255,6 +261,11 @@ tablePersistence.storage = new PodmanDesktopStoragePersist();
         </Route>
         <Route path="/mcp-install-from-registry/:serverId/*" breadcrumb="Install MCP Server from Registry" let:meta>
           <McpRegistryCreateFromRegistryForm serverId={decodeURIComponent(meta.params.serverId)} />
+        </Route>
+
+        <!-- Coding agents -->
+        <Route path="/coding-agents" breadcrumb="Coding agents" navigationHint="root">
+          <CodingAgentsPage />
         </Route>
 
         <!-- Models -->

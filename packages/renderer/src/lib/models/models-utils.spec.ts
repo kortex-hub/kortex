@@ -25,6 +25,7 @@ import { getModelId } from './models-utils';
 test('getModelId builds id from llmMetadata.name, label and endpoint', () => {
   const model: ModelInfo = {
     providerId: 'p',
+    connectionId: 'conn-0',
     connectionName: 'c',
     type: 'cloud',
     llmMetadata: { name: 'claude' },
@@ -38,6 +39,7 @@ test('getModelId builds id from llmMetadata.name, label and endpoint', () => {
 test('getModelId handles missing llmMetadata and endpoint', () => {
   const model: ModelInfo = {
     providerId: 'p',
+    connectionId: 'conn-0',
     connectionName: 'c',
     type: 'cloud',
     label: 'gpt-4',

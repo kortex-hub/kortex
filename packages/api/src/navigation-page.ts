@@ -62,6 +62,7 @@ export enum NavigationPage {
   MCP_DETAILS = 'mcp-details',
   AGENT_WORKSPACES = 'agent-workspaces',
   AGENT_WORKSPACE_CREATE = 'agent-workspace-create',
+  CODING_AGENTS = 'coding-agents',
   SKILLS = 'skills',
   SKILL_DETAILS = 'skill-details',
   RAG_ENVIRONMENTS = 'rag-environments',
@@ -70,4 +71,5 @@ export enum NavigationPage {
   SECRET_VAULT_CREATE = 'secret-vault-create',
   SECRET_VAULT_DETAILS = 'secret-vault-details',
   MODELS = 'models',
+  PROJECTS = 'projects',
 }
