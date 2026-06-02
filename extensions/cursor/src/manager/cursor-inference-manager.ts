@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import type { Disposable, InferenceModel, Provider, ProviderConnectionStatus, SecretStorage } from '@openkaiden/api';
 import { MockProviderV3 } from 'ai/test';
@@ -27,7 +27,11 @@ import { CursorProviderSymbol, SecretStorageSymbol } from '/@/inject/symbol';
 import { CursorRestHelper } from './cursor-rest-helper';
 
 export const TOKENS_KEY = 'cursor:tokens';
-export const TOKEN_SEPARATOR = ',';
+
+export interface StoredConnection {
+  id: string;
+  token: string;
+}
 
 @injectable()
 export class CursorInferenceManager {
@@ -41,7 +45,6 @@ export class CursorInferenceManager {
   private cursorRestHelper: CursorRestHelper;
 
   private connections: Map<string, Disposable> = new Map();
-  private connectionIdCounter = 0;
 
   async init(): Promise<void> {
     this.cursorProvider.setInferenceProviderConnectionFactory({
@@ -52,17 +55,17 @@ export class CursorInferenceManager {
   }
 
   private async restoreConnections(): Promise<void> {
-    const tokens = await this.getTokens();
-    for (const token of tokens) {
+    const stored = await this.getStoredConnections();
+    for (const entry of stored) {
       try {
-        await this.registerInferenceProviderConnection({ token });
+        await this.registerInferenceProviderConnection({ id: entry.id, token: entry.token });
       } catch (err: unknown) {
         console.error('cursor: failed to restore connection', err);
       }
     }
   }
 
-  private async getTokens(): Promise<string[]> {
+  private async getStoredConnections(): Promise<StoredConnection[]> {
     let raw: string | undefined;
     try {
       raw = await this.secrets.get(TOKENS_KEY);
@@ -70,32 +73,33 @@ export class CursorInferenceManager {
       console.error('cursor: something went wrong while trying to get tokens from secret storage', err);
     }
     if (!raw) return [];
-    return raw.split(TOKEN_SEPARATOR);
+
+    try {
+      return JSON.parse(raw) as StoredConnection[];
+    } catch {
+      // Migrate legacy comma-separated token format
+      const tokens = raw.split(',');
+      const migrated: StoredConnection[] = tokens.map(token => ({ id: randomUUID(), token }));
+      await this.secrets.store(TOKENS_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
   }
 
-  private async saveToken(token: string): Promise<void> {
-    const tokens: Array<string> = await this.getTokens();
-    const raw = [...tokens, token].join(TOKEN_SEPARATOR);
-    await this.secrets.store(TOKENS_KEY, raw);
+  private async saveConnection(connection: StoredConnection): Promise<void> {
+    const stored = await this.getStoredConnections();
+    stored.push(connection);
+    await this.secrets.store(TOKENS_KEY, JSON.stringify(stored));
   }
 
-  private getTokenHash(token: string): string {
-    const sha256 = createHash('sha256');
-    return sha256.update(token).digest('hex');
+  private async removeConnection(id: string): Promise<void> {
+    const stored = await this.getStoredConnections();
+    const filtered = stored.filter(entry => entry.id !== id);
+    await this.secrets.store(TOKENS_KEY, JSON.stringify(filtered));
   }
 
-  private async removeToken(token: string): Promise<void> {
-    const tokens: Array<string> = await this.getTokens();
-    const raw = tokens.filter(t => t !== token).join(TOKEN_SEPARATOR);
-    await this.secrets.store(TOKENS_KEY, raw);
-  }
-
-  private async registerInferenceProviderConnection({ token }: { token: string }): Promise<void> {
-    const key = this.maskKey(token);
-    const tokenHash = this.getTokenHash(token);
-
-    if (this.connections.has(tokenHash)) {
-      throw new Error(`connection already exists for token ${key}`);
+  private async registerInferenceProviderConnection({ id, token }: { id: string; token: string }): Promise<void> {
+    if (this.connections.has(id)) {
+      throw new Error(`connection already exists for id ${id}`);
     }
 
     let status: ProviderConnectionStatus = 'unknown';
@@ -111,13 +115,13 @@ export class CursorInferenceManager {
     const cursorSdk = new MockProviderV3();
 
     const clean = async (): Promise<void> => {
-      this.connections.get(tokenHash)?.dispose();
-      this.connections.delete(tokenHash);
-      await this.removeToken(token);
+      this.connections.get(id)?.dispose();
+      this.connections.delete(id);
+      await this.removeConnection(id);
     };
 
     const connectionDisposable = this.cursorProvider.registerInferenceProviderConnection({
-      id: String(this.connectionIdCounter++),
+      id,
       name: this.maskKey(token),
       type: 'cloud',
       llmMetadata: {
@@ -137,7 +141,7 @@ export class CursorInferenceManager {
         };
       },
     });
-    this.connections.set(tokenHash, connectionDisposable);
+    this.connections.set(id, connectionDisposable);
   }
 
   private async getCursorModels(token: string): Promise<Array<{ label: string }>> {
@@ -154,8 +158,9 @@ export class CursorInferenceManager {
     const apiKey = params['cursor.factory.apiKey'];
     if (!apiKey || typeof apiKey !== 'string') throw new Error('invalid apiKey');
 
-    await this.saveToken(apiKey);
-    await this.registerInferenceProviderConnection({ token: apiKey });
+    const id = randomUUID();
+    await this.saveConnection({ id, token: apiKey });
+    await this.registerInferenceProviderConnection({ id, token: apiKey });
   }
 
   dispose(): void {
