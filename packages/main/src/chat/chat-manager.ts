@@ -428,20 +428,15 @@ export class ChatManager {
         })
         .getReader();
 
-      let streamDone = false;
       try {
         while (true) {
           const { done, value } = await reader.read();
-          if (done) {
-            streamDone = true;
-            break;
-          }
+          if (done) break;
           this.webContents.send('inference:streamText-onChunk', params.onDataId, value);
         }
-      } finally {
-        if (!streamDone) {
-          reader.cancel().catch(() => {});
-        }
+      } catch (err) {
+        reader.cancel().catch(() => {});
+        throw err;
       }
 
       if (onFinishSavePromise) {

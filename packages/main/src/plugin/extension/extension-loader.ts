@@ -52,7 +52,6 @@ import product from '/@product.json' with { type: 'json' };
 import { securityRestrictionCurrentHandler } from '../../security-restrictions-handler.js';
 import { getBase64Image, isLinux, isMac, isWindows } from '../../util.js';
 import { AgentRegistry } from '../agent-registry.js';
-import { AgentWorkspaceManager } from '../agent-workspace/agent-workspace-manager.js';
 import { AuthenticationImpl } from '../authentication.js';
 import { CancellationTokenSource } from '../cancellation-token.js';
 import { Certificates } from '../certificates.js';
@@ -236,8 +235,6 @@ export class ExtensionLoader implements IAsyncDisposable {
     private mcpRegistry: MCPRegistry,
     @inject(ChunkProviderRegistry)
     private chunkProviderRegistry: ChunkProviderRegistry,
-    @inject(AgentWorkspaceManager)
-    private agentWorkspaceManager: AgentWorkspaceManager,
   ) {
     this.pluginsDirectory = directories.getPluginsDirectory();
     this.pluginsScanDirectory = directories.getPluginsScanDirectory();
@@ -1713,19 +1710,6 @@ export class ExtensionLoader implements IAsyncDisposable {
       },
     };
 
-    const agentWorkspace: typeof containerDesktopAPI.agentWorkspace = {
-      onDidStopWorkspace: (listener, thisArg, disposables) => {
-        return this.agentWorkspaceManager.onDidStopWorkspace(listener, thisArg, disposables);
-      },
-      onDidRemoveWorkspace: (listener, thisArg, disposables) => {
-        return this.agentWorkspaceManager.onDidRemoveWorkspace(listener, thisArg, disposables);
-      },
-      list: async () => {
-        const workspaces = await this.agentWorkspaceManager.list();
-        return workspaces.map(ws => ({ id: ws.id, model: ws.model, state: ws.state }));
-      },
-    };
-
     const rag: typeof containerDesktopAPI.rag = {
       registerChunkProvider: (provider: ChunkProvider): containerDesktopAPI.Disposable => {
         const disposable = this.chunkProviderRegistry.registerChunkProvider(extensionInfo.id, provider);
@@ -1771,7 +1755,6 @@ export class ExtensionLoader implements IAsyncDisposable {
       net,
       mcpRegistry,
       agents,
-      agentWorkspace,
       rag,
     };
   }

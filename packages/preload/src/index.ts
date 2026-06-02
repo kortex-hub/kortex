@@ -1598,9 +1598,8 @@ export function initExposure(): void {
           if (callback) {
             streamState.bufferedChunks = [];
           }
-          const failedOnDataId = id;
           setTimeout(() => {
-            if (activeStreamsByChatId.get(params.chatId)?.onDataId === failedOnDataId) {
+            if (activeStreamsByChatId.get(params.chatId)?.onDataId === id) {
               activeStreamsByChatId.delete(params.chatId);
             }
           }, STREAM_BUFFER_TTL_MS);

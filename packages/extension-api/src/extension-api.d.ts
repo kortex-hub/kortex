@@ -5597,22 +5597,6 @@ declare module '@openkaiden/api' {
     export function registerAgent(agent: Agent): Disposable;
   }
 
-  export interface AgentWorkspaceInfo {
-    readonly id: string;
-    readonly model?: string;
-    readonly state?: string;
-  }
-
-  export interface AgentWorkspaceLifecycleEvent {
-    readonly workspace: AgentWorkspaceInfo;
-  }
-
-  export namespace agentWorkspace {
-    export const onDidStopWorkspace: Event<AgentWorkspaceLifecycleEvent>;
-    export const onDidRemoveWorkspace: Event<AgentWorkspaceLifecycleEvent>;
-    export function list(): Promise<AgentWorkspaceInfo[]>;
-  }
-
   export namespace rag {
     /**
      * @deprecated Use {@link provider.registerChunkProviderConnection} instead.

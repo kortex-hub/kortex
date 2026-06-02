@@ -20,14 +20,13 @@ import { access, readFile, rm, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 
-import type { AgentWorkspaceLifecycleEvent, Disposable, FileSystemWatcher } from '@openkaiden/api';
+import type { Disposable, FileSystemWatcher } from '@openkaiden/api';
 import type { WebContents } from 'electron';
 import { inject, injectable, preDestroy } from 'inversify';
 import type { IPty } from 'node-pty';
 import { spawn } from 'node-pty';
 
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
-import { Emitter } from '/@/plugin/events/emitter.js';
 import { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
@@ -58,12 +57,6 @@ export class AgentWorkspaceManager implements Disposable {
     { write: (param: string) => void; resize: (w: number, h: number) => void }
   >();
   private readonly terminalProcesses = new Map<number, IPty>();
-
-  private readonly _onDidStopWorkspace = new Emitter<AgentWorkspaceLifecycleEvent>();
-  readonly onDidStopWorkspace = this._onDidStopWorkspace.event;
-
-  private readonly _onDidRemoveWorkspace = new Emitter<AgentWorkspaceLifecycleEvent>();
-  readonly onDidRemoveWorkspace = this._onDidRemoveWorkspace.event;
 
   constructor(
     @inject(ApiSenderType)
@@ -269,11 +262,7 @@ export class AgentWorkspaceManager implements Disposable {
     task.state = 'running';
     task.status = 'in-progress';
     try {
-      const workspaceInfo = await this.getWorkspaceInfo(id);
       const result = await this.kdnCli.removeWorkspaces(id);
-      if (workspaceInfo) {
-        this._onDidRemoveWorkspace.fire({ workspace: workspaceInfo });
-      }
       this.apiSender.send('agent-workspace-update');
       task.status = 'success';
       return result;
@@ -338,24 +327,9 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   async stop(id: string): Promise<AgentWorkspaceId> {
-    const workspaceInfo = await this.getWorkspaceInfo(id);
     const result = await this.kdnCli.stopWorkspace(id);
-    if (workspaceInfo) {
-      this._onDidStopWorkspace.fire({ workspace: workspaceInfo });
-    }
     this.apiSender.send('agent-workspace-update');
     return result;
-  }
-
-  private async getWorkspaceInfo(id: string): Promise<{ id: string; model?: string; state?: string } | undefined> {
-    try {
-      const workspaces = await this.list();
-      const workspace = workspaces.find(ws => ws.id === id);
-      if (!workspace) return undefined;
-      return { id: workspace.id, model: workspace.model, state: workspace.state };
-    } catch {
-      return undefined;
-    }
   }
 
   shellInAgentWorkspace(

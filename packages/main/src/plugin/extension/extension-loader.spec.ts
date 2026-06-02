@@ -47,7 +47,6 @@ import product from '/@product.json' with { type: 'json' };
 
 import { getBase64Image } from '../../util.js';
 import type { AgentRegistry } from '../agent-registry.js';
-import type { AgentWorkspaceManager } from '../agent-workspace/agent-workspace-manager.js';
 import type { AuthenticationImpl } from '../authentication.js';
 import type { CliToolRegistry } from '../cli-tool-registry.js';
 import type { ColorRegistry } from '../color-registry.js';
@@ -320,12 +319,6 @@ const extensionAnalyzer = {
 
 const chunkProviderRegistry = {} as ChunkProviderRegistry;
 
-const agentWorkspaceManager: AgentWorkspaceManager = {
-  onDidStopWorkspace: vi.fn(),
-  onDidRemoveWorkspace: vi.fn(),
-  list: vi.fn(),
-} as unknown as AgentWorkspaceManager;
-
 const createApi = (disposables?: { dispose(): unknown }[]): typeof containerDesktopAPI => {
   const analyzedExtension = {
     path: '/path',
@@ -411,7 +404,6 @@ beforeEach(() => {
     featureRegistry,
     mcpRegistry,
     chunkProviderRegistry,
-    agentWorkspaceManager,
   );
 });
 
