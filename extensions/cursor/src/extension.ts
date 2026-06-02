@@ -17,6 +17,7 @@
  ***********************************************************************/
 
 import type { ExtensionContext } from '@openkaiden/api';
+import { agents } from '@openkaiden/api';
 
 import { CursorExtension } from './cursor-extension';
 
@@ -25,6 +26,21 @@ let cursorExtension: CursorExtension | undefined;
 export async function activate(extensionContext: ExtensionContext): Promise<void> {
   cursorExtension ??= new CursorExtension(extensionContext);
   await cursorExtension.activate();
+
+  const disposable = agents.registerAgent({
+    id: 'cursor',
+    name: 'Cursor CLI',
+    description: 'Cursor AI agent — connect to your Cursor instance to access AI capabilities.',
+    icon: {
+      icon: { dark: './APP_ICON_2D_DARK.png', light: './APP_ICON_2D_LIGHT.png' },
+      logo: { dark: './APP_ICON_2D_DARK.png', light: './APP_ICON_2D_LIGHT.png' },
+    },
+    tags: ['Local'],
+    isSupportedModelType(type): boolean {
+      return type.name === 'cursor';
+    },
+  });
+  extensionContext.subscriptions.push(disposable);
 }
 
 export async function deactivate(): Promise<void> {
