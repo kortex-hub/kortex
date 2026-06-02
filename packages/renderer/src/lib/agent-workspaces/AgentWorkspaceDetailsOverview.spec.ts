@@ -19,11 +19,16 @@
 import '@testing-library/jest-dom/vitest';
 
 import { render, screen } from '@testing-library/svelte';
+import { writable } from 'svelte/store';
 import { beforeEach, expect, test, vi } from 'vitest';
 
+import * as modelsStore from '/@/stores/models';
 import type { AgentWorkspaceConfiguration, AgentWorkspaceSummary } from '/@api/agent-workspace-info';
+import type { CatalogModelInfo } from '/@api/model-registry-info';
 
 import AgentWorkspaceDetailsOverview from './AgentWorkspaceDetailsOverview.svelte';
+
+vi.mock(import('/@/stores/models'));
 
 const workspaceSummary: AgentWorkspaceSummary = {
   id: 'ws-1',
@@ -57,6 +62,7 @@ const configuration: AgentWorkspaceConfiguration = {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.useFakeTimers({ shouldAdvanceTime: true });
+  vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>([]);
 });
 
 test('Expect agent name is displayed', () => {
@@ -65,10 +71,56 @@ test('Expect agent name is displayed', () => {
   expect(screen.getByText('coder-v1')).toBeInTheDocument();
 });
 
-test('Expect model is displayed when present', () => {
+test('Expect raw model string is displayed when no catalog match', () => {
   render(AgentWorkspaceDetailsOverview, { workspaceSummary, configuration });
 
   expect(screen.getByText('gpt-4o')).toBeInTheDocument();
+});
+
+test('Expect resolved model displays Name · label when llmMetadata.name exists', () => {
+  const model = 'claude::claude-opus-4::';
+  vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>([
+    {
+      providerId: 'anthropic',
+      providerName: 'Anthropic',
+      connectionId: 'conn-1',
+      connectionName: 'default',
+      type: 'cloud',
+      llmMetadata: { name: 'claude' },
+      label: 'claude-opus-4',
+      connectionStatus: 'started',
+    } as unknown as CatalogModelInfo,
+  ]);
+
+  render(AgentWorkspaceDetailsOverview, {
+    workspaceSummary: { ...workspaceSummary, model },
+    configuration,
+  });
+
+  expect(screen.getByText('Claude · claude-opus-4')).toBeInTheDocument();
+});
+
+test('Expect resolved model displays label when llmMetadata.name is absent', () => {
+  const model = '::my-local-model::http://localhost:11434';
+  vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>([
+    {
+      providerId: 'ollama',
+      providerName: 'Ollama',
+      connectionId: 'conn-2',
+      connectionName: 'local',
+      type: 'local',
+      label: 'my-local-model',
+      endpoint: 'http://localhost:11434',
+      connectionStatus: 'started',
+    } as unknown as CatalogModelInfo,
+  ]);
+
+  render(AgentWorkspaceDetailsOverview, {
+    workspaceSummary: { ...workspaceSummary, model },
+    configuration,
+  });
+
+  expect(screen.getByText('my-local-model')).toBeInTheDocument();
 });
 
 test('Expect project is displayed', () => {

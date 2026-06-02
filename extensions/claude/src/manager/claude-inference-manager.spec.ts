@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { randomUUID } from 'node:crypto';
+
 import { type AnthropicProvider, createAnthropic } from '@ai-sdk/anthropic';
 import AnthropicClient from '@anthropic-ai/sdk';
 import type { ModelInfo } from '@anthropic-ai/sdk/resources';
@@ -25,7 +27,15 @@ import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { ClaudeProviderSymbol, SecretStorageSymbol } from '/@/inject/symbol';
 
-import { ClaudeInferenceManager, TOKENS_KEY } from './claude-inference-manager';
+import { ClaudeInferenceManager, type StoredConnection, TOKENS_KEY } from './claude-inference-manager';
+
+vi.mock(import('node:crypto'), async importOriginal => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    randomUUID: vi.fn().mockReturnValue('fake-uuid-1'),
+  };
+});
 
 vi.mock(import('@ai-sdk/anthropic'));
 
@@ -48,6 +58,7 @@ const SECRET_STORAGE_MOCK: SecretStorage = {
 beforeEach(() => {
   vi.resetAllMocks();
 
+  vi.mocked(randomUUID).mockReturnValue('fake-uuid-1' as ReturnType<typeof randomUUID>);
   vi.mocked(createAnthropic).mockReturnValue(ANTHROPIC_PROVIDER_MOCK);
 
   const mockModels: ModelInfo[] = [
@@ -106,13 +117,17 @@ describe('init', () => {
   });
 
   test('should restore connections from secret storage', async () => {
-    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue('existingKey');
+    const stored: StoredConnection[] = [{ id: 'persisted-id', token: 'existingKey' }];
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify(stored));
 
     const manager = await createManager();
     await manager.init();
 
     expect(SECRET_STORAGE_MOCK.get).toHaveBeenCalledWith(TOKENS_KEY);
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledOnce();
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'persisted-id' }),
+    );
   });
 
   test('should handle empty secret storage', async () => {
@@ -122,6 +137,48 @@ describe('init', () => {
     await manager.init();
 
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).not.toHaveBeenCalled();
+  });
+
+  test('should migrate legacy comma-separated tokens to JSON format', async () => {
+    vi.mocked(randomUUID)
+      .mockReturnValueOnce('migrated-id-1' as ReturnType<typeof randomUUID>)
+      .mockReturnValueOnce('migrated-id-2' as ReturnType<typeof randomUUID>);
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue('tokenA,tokenB');
+
+    const manager = await createManager();
+    await manager.init();
+
+    const expected: StoredConnection[] = [
+      { id: 'migrated-id-1', token: 'tokenA' },
+      { id: 'migrated-id-2', token: 'tokenB' },
+    ];
+    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, JSON.stringify(expected));
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledTimes(2);
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'migrated-id-1' }),
+    );
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'migrated-id-2' }),
+    );
+  });
+
+  test('should restore persisted IDs across restarts', async () => {
+    const stored: StoredConnection[] = [
+      { id: 'stable-id-1', token: 'key1' },
+      { id: 'stable-id-2', token: 'key2' },
+    ];
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify(stored));
+
+    const manager = await createManager();
+    await manager.init();
+
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledTimes(2);
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'stable-id-1' }),
+    );
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'stable-id-2' }),
+    );
   });
 });
 
@@ -143,13 +200,14 @@ describe('factory', () => {
     }).rejects.toThrowError('invalid apiKey');
   });
 
-  test('calling create with proper params should save token', async () => {
+  test('calling create with proper params should save connection as JSON', async () => {
     await create({
       'claude.factory.apiKey': 'dummyKey',
     });
 
     expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledOnce();
-    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, 'dummyKey');
+    const expected: StoredConnection[] = [{ id: 'fake-uuid-1', token: 'dummyKey' }];
+    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, JSON.stringify(expected));
   });
 
   test('calling create with proper params should register inference connection', async () => {
@@ -168,7 +226,7 @@ describe('factory', () => {
 
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledOnce();
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith({
-      id: '0',
+      id: 'fake-uuid-1',
       name: 'dum*****',
       type: 'cloud',
       llmMetadata: {
@@ -212,16 +270,15 @@ describe('connection delete lifecycle', () => {
     mDelete = lifecycle.delete;
   });
 
-  test('calling delete should delete the token', async () => {
+  test('calling delete should remove the connection from storage', async () => {
     await mDelete();
 
     expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledTimes(2);
 
-    // first time when registering the connection
-    expect(SECRET_STORAGE_MOCK.store).toHaveBeenNthCalledWith(1, TOKENS_KEY, 'dummyKey');
+    const saved: StoredConnection[] = [{ id: 'fake-uuid-1', token: 'dummyKey' }];
+    expect(SECRET_STORAGE_MOCK.store).toHaveBeenNthCalledWith(1, TOKENS_KEY, JSON.stringify(saved));
 
-    // second time when unregistering the connection
-    expect(SECRET_STORAGE_MOCK.store).toHaveBeenNthCalledWith(2, TOKENS_KEY, '');
+    expect(SECRET_STORAGE_MOCK.store).toHaveBeenNthCalledWith(2, TOKENS_KEY, JSON.stringify([]));
   });
 
   test('calling delete should dispose provider inference connection', async () => {
