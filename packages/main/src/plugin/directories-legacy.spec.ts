@@ -71,6 +71,7 @@ describe('LegacyDirectories', () => {
       expect(provider.getExtensionsStorageDirectory()).toBe(path.resolve(baseDir, 'extensions-storage'));
       expect(provider.getContributionStorageDir()).toBe(path.resolve(baseDir, 'contributions'));
       expect(provider.getSafeStorageDirectory()).toBe(path.resolve(baseDir, 'safe-storage'));
+      expect(provider.getSemanticRoutersDirectory()).toBe(path.resolve(baseDir, 'semantic-routers'));
     });
   });
 

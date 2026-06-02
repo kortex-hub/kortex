@@ -29,4 +29,5 @@ export interface Directories {
   getChatPersistenceDirectory(): string;
   getSkillsDirectory(): string;
   getWorkspaceProjectsDirectory(): string;
+  getSemanticRoutersDirectory(): string;
 }

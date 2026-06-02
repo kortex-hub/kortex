@@ -145,6 +145,7 @@ import type { RagEnvironment } from '/@api/rag/rag-environment';
 import type { ExtensionBanner, RecommendedRegistry } from '/@api/recommendations/recommendations';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info';
 import type { SecretCreateOptions, SecretInfo, SecretName, SecretService } from '/@api/secret-info';
+import type { SemanticRouterConfigInfo } from '/@api/semantic-router-info';
 import type { SkillFileContent, SkillFolderInfo, SkillInfo, SkillResourceEntry } from '/@api/skill/skill-info';
 import type { StatusBarEntryDescriptor } from '/@api/status-bar';
 import type { PinOption } from '/@api/status-bar/pin-option';
@@ -560,6 +561,29 @@ export function initExposure(): void {
       return ipcInvoke('workspace-project-manager:update', id, options);
     },
   );
+
+  // Semantic Routers
+  contextBridge.exposeInMainWorld('listSemanticRouters', async (): Promise<SemanticRouterConfigInfo[]> => {
+    return ipcInvoke('semantic-router-manager:list');
+  });
+
+  contextBridge.exposeInMainWorld(
+    'findSemanticRouterByName',
+    async (name: string): Promise<SemanticRouterConfigInfo | undefined> => {
+      return ipcInvoke('semantic-router-manager:findByName', name);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'createSemanticRouter',
+    async (config: SemanticRouterConfigInfo): Promise<SemanticRouterConfigInfo> => {
+      return ipcInvoke('semantic-router-manager:create', config);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('removeSemanticRouter', async (name: string): Promise<void> => {
+    return ipcInvoke('semantic-router-manager:remove', name);
+  });
 
   contextBridge.exposeInMainWorld(
     'deleteSchedule',

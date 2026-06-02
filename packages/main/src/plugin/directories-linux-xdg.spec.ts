@@ -84,6 +84,7 @@ describe('LinuxXDGDirectories', () => {
       expect(provider.getExtensionsStorageDirectory()).toBe(path.resolve(dataDir, 'extensions-storage'));
       expect(provider.getContributionStorageDir()).toBe(path.resolve(dataDir, 'contributions'));
       expect(provider.getSafeStorageDirectory()).toBe(path.resolve(dataDir, 'safe-storage'));
+      expect(provider.getSemanticRoutersDirectory()).toBe(path.resolve(dataDir, 'semantic-routers'));
     });
   });
 
