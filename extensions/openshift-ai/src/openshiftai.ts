@@ -32,8 +32,9 @@ export const TOKENS_KEY = 'openshiftai:infos';
 
 export interface StoredConnection {
   id: string;
-  token: string;
   url: string;
+  token: string;
+  baseURL: string;
 }
 
 interface ConnectionInfo {
@@ -43,7 +44,7 @@ interface ConnectionInfo {
 
 export class OpenShiftAI implements Disposable {
   private provider: Provider | undefined = undefined;
-  private connections: Map<ConnectionInfo, Disposable> = new Map();
+  private connections: Map<string, Disposable> = new Map();
 
   constructor(
     private readonly providerAPI: typeof ProviderAPI,
@@ -81,9 +82,15 @@ export class OpenShiftAI implements Disposable {
     const stored = await this.getStoredConnections();
     for (const entry of stored) {
       try {
-        await this.registerInferenceProviderConnection(entry);
+        const services = await this.getInferenceServices(entry.url, entry.token);
+        const matching = services.find(s => s.baseURL === entry.baseURL);
+        if (!matching) {
+          console.error(`OpenShift AI: inference service at ${entry.baseURL} no longer available`);
+          continue;
+        }
+        await this.registerSingleConnection(entry, matching);
       } catch (err: unknown) {
-        console.error(`OpenShift AI: failed to restore connection for baseURL ${entry.url}`, err);
+        console.error(`OpenShift AI: failed to restore connection for ${entry.url}`, err);
       }
     }
   }
@@ -102,10 +109,14 @@ export class OpenShiftAI implements Disposable {
     } catch {
       // Migrate legacy pipe/comma-separated format: token|url,token|url
       const entries = raw.split(',');
-      const migrated: StoredConnection[] = entries.map(entry => {
+      const migrated: StoredConnection[] = [];
+      for (const entry of entries) {
         const [token, url] = entry.split('|');
-        return { id: randomUUID(), token, url };
-      });
+        const services = await this.getInferenceServices(url, token);
+        for (const service of services) {
+          migrated.push({ id: randomUUID(), url, token, baseURL: service.baseURL });
+        }
+      }
       await this.secrets.store(TOKENS_KEY, JSON.stringify(migrated));
       return migrated;
     }
@@ -214,55 +225,47 @@ export class OpenShiftAI implements Disposable {
     return urls;
   }
 
-  private async registerInferenceProviderConnection({ id, token, url }: StoredConnection): Promise<void> {
+  private async registerSingleConnection(stored: StoredConnection, serviceInfo: ConnectionInfo): Promise<void> {
     if (!this.provider) throw new Error('cannot create MCP provider connection: provider is not initialized');
 
-    const connectionInfos = await this.getInferenceServices(url, token);
-
-    if (connectionInfos.length === 0) {
-      throw new Error('no inference services found on the cluster');
+    if (this.connections.has(stored.id)) {
+      throw new Error(`connection already exists for baseURL ${serviceInfo.baseURL}`);
     }
 
-    for (const connectionInfo of connectionInfos) {
-      if (this.connections.has(connectionInfo)) {
-        throw new Error(`connection already exists for token (hidden) baseURL ${url}`);
-      }
+    const models = await this.listModels(serviceInfo);
 
-      const models = await this.listModels(connectionInfo);
+    const openai = createOpenAICompatible({
+      baseURL: serviceInfo.baseURL,
+      apiKey: serviceInfo.token,
+      name: serviceInfo.baseURL,
+    });
 
-      const openai = createOpenAICompatible({
-        baseURL: connectionInfo.baseURL,
-        apiKey: connectionInfo.token,
-        name: connectionInfo.baseURL,
-      });
+    const clean = async (): Promise<void> => {
+      this.connections.get(stored.id)?.dispose();
+      this.connections.delete(stored.id);
+      await this.removeConnection(stored.id);
+    };
 
-      const clean = async (): Promise<void> => {
-        this.connections.get(connectionInfo)?.dispose();
-        this.connections.delete(connectionInfo);
-        await this.removeConnection(id);
-      };
-
-      const connectionDisposable = this.provider.registerInferenceProviderConnection({
-        id: randomUUID(),
-        name: url,
-        type: 'self-hosted',
-        endpoint: connectionInfo.baseURL,
-        sdk: openai,
-        status(): ProviderConnectionStatus {
-          return 'unknown';
-        },
-        lifecycle: {
-          delete: clean.bind(this),
-        },
-        models: models,
-        credentials(): Record<string, string> {
-          return {
-            'openshiftai:tokens': token,
-          };
-        },
-      });
-      this.connections.set(connectionInfo, connectionDisposable);
-    }
+    const connectionDisposable = this.provider.registerInferenceProviderConnection({
+      id: stored.id,
+      name: stored.url,
+      type: 'self-hosted',
+      endpoint: serviceInfo.baseURL,
+      sdk: openai,
+      status(): ProviderConnectionStatus {
+        return 'unknown';
+      },
+      lifecycle: {
+        delete: clean.bind(this),
+      },
+      models: models,
+      credentials(): Record<string, string> {
+        return {
+          'openshiftai:tokens': stored.token,
+        };
+      },
+    });
+    this.connections.set(stored.id, connectionDisposable);
   }
 
   private async inferenceFactory(params: { [p: string]: unknown }): Promise<void> {
@@ -272,9 +275,16 @@ export class OpenShiftAI implements Disposable {
     const token = params['openshiftai.factory.token'];
     if (!token || typeof token !== 'string') throw new Error('invalid token');
 
-    const connection: StoredConnection = { id: randomUUID(), token, url };
-    await this.registerInferenceProviderConnection(connection);
-    await this.saveConnection(connection);
+    const services = await this.getInferenceServices(url, token);
+    if (services.length === 0) {
+      throw new Error('no inference services found on the cluster');
+    }
+
+    for (const service of services) {
+      const connection: StoredConnection = { id: randomUUID(), url, token, baseURL: service.baseURL };
+      await this.registerSingleConnection(connection, service);
+      await this.saveConnection(connection);
+    }
   }
 
   dispose(): void {

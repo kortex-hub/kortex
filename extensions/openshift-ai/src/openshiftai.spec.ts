@@ -232,6 +232,7 @@ describe('factory', () => {
 
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledOnce();
     const call = vi.mocked(PROVIDER_MOCK.registerInferenceProviderConnection).mock.calls[0][0];
+    expect(call.id).toBe('fake-uuid-1');
     expect(call.name).toBe('https://api.cluster.example.com:6443');
     expect(call.type).toBe('self-hosted');
     expect(call.endpoint).toBe('https://my-model.example.com/v1');
@@ -240,7 +241,12 @@ describe('factory', () => {
 
     expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledOnce();
     const expected: StoredConnection[] = [
-      { id: 'fake-uuid-1', token: 'dummyToken', url: 'https://api.cluster.example.com:6443' },
+      {
+        id: 'fake-uuid-1',
+        url: 'https://api.cluster.example.com:6443',
+        token: 'dummyToken',
+        baseURL: 'https://my-model.example.com/v1',
+      },
     ];
     expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, JSON.stringify(expected));
   });
@@ -249,7 +255,12 @@ describe('factory', () => {
 describe('restoreConnections', () => {
   test('should not crash if restore fails due to no inference services', async () => {
     const stored: StoredConnection[] = [
-      { id: 'persisted-id', token: 'savedToken', url: 'https://api.cluster.example.com:6443' },
+      {
+        id: 'persisted-id',
+        url: 'https://api.cluster.example.com:6443',
+        token: 'savedToken',
+        baseURL: 'https://my-model.example.com/v1',
+      },
     ];
     vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify(stored));
 
@@ -261,29 +272,73 @@ describe('restoreConnections', () => {
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).not.toHaveBeenCalled();
   });
 
-  test('should migrate legacy pipe/comma-separated format to JSON', async () => {
-    vi.mocked(randomUUID)
-      .mockReturnValueOnce('migrated-id-1' as ReturnType<typeof randomUUID>)
-      .mockReturnValueOnce('migrated-id-2' as ReturnType<typeof randomUUID>);
-    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(
-      'tokenA|https://cluster-a.com:6443,tokenB|https://cluster-b.com:6443',
-    );
+  test('should migrate legacy pipe/comma-separated format by discovering services', async () => {
+    vi.mocked(randomUUID).mockReturnValue('migrated-id-1' as ReturnType<typeof randomUUID>);
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue('tokenA|https://cluster-a.com:6443');
 
-    listClusterCustomObjectMock.mockResolvedValue({ items: [] });
+    const coreAPI = {
+      listClusterCustomObject: listClusterCustomObjectMock,
+      listNamespacedSecret: listNamespacedSecretMock,
+    };
+    const genericAPI = {
+      listNamespacedCustomObject: listNamespacedCustomObjectMock,
+      listClusterCustomObject: listClusterCustomObjectMock,
+    };
+    vi.mocked(KubeConfig.prototype.makeApiClient)
+      .mockReturnValueOnce(coreAPI)
+      .mockReturnValueOnce(genericAPI)
+      .mockReturnValueOnce(coreAPI)
+      .mockReturnValueOnce(genericAPI);
+
+    listClusterCustomObjectMock.mockResolvedValue({
+      items: [{ metadata: { name: 'test-project' } }],
+    });
+    listNamespacedCustomObjectMock.mockResolvedValue({
+      items: [
+        {
+          metadata: { name: 'my-model' },
+          spec: { predictor: { model: { runtime: 'vllm' } } },
+          status: { url: 'https://my-model.example.com' },
+        },
+      ],
+    });
+    listNamespacedSecretMock.mockResolvedValue({
+      items: [
+        {
+          metadata: { annotations: { 'kubernetes.io/service-account.name': 'vllm-sa' } },
+          data: { token: Buffer.from('serviceToken').toString('base64') },
+        },
+      ],
+    });
+    fetchMock.mockResolvedValue({
+      status: 200,
+      json: async () => ({ data: [{ id: 'llama-3' }] }),
+    });
 
     const openshiftai = new OpenShiftAI(PROVIDER_API_MOCK, SECRET_STORAGE_MOCK);
     await openshiftai.init();
 
     const expected: StoredConnection[] = [
-      { id: 'migrated-id-1', token: 'tokenA', url: 'https://cluster-a.com:6443' },
-      { id: 'migrated-id-2', token: 'tokenB', url: 'https://cluster-b.com:6443' },
+      {
+        id: 'migrated-id-1',
+        url: 'https://cluster-a.com:6443',
+        token: 'tokenA',
+        baseURL: 'https://my-model.example.com/v1',
+      },
     ];
     expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, JSON.stringify(expected));
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledOnce();
   });
 
   test('should restore persisted IDs across restarts', async () => {
-    vi.mocked(randomUUID).mockReturnValue('conn-uuid' as ReturnType<typeof randomUUID>);
-    const stored: StoredConnection[] = [{ id: 'stable-id-1', token: 'key1', url: 'https://cluster1.example.com:6443' }];
+    const stored: StoredConnection[] = [
+      {
+        id: 'stable-id-1',
+        url: 'https://cluster1.example.com:6443',
+        token: 'key1',
+        baseURL: 'https://my-model.example.com/v1',
+      },
+    ];
     vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify(stored));
 
     listClusterCustomObjectMock.mockResolvedValue({
@@ -316,7 +371,7 @@ describe('restoreConnections', () => {
 
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledOnce();
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'https://cluster1.example.com:6443' }),
+      expect.objectContaining({ id: 'stable-id-1', name: 'https://cluster1.example.com:6443' }),
     );
   });
 });
