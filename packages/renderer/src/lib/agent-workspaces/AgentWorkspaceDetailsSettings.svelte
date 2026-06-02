@@ -162,7 +162,7 @@ let knowledgeItems: ChecklistItem[] = $derived(
       return {
         id: r.name,
         name: r.name,
-        description: [sourcesLabel, r.ragConnection.name].filter(Boolean).join(' · '),
+        description: [sourcesLabel, r.ragConnection?.name].filter(Boolean).join(' · '),
       };
     }),
 );

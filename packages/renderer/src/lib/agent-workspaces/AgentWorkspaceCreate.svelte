@@ -76,7 +76,7 @@ let knowledgeItems: ChecklistItem[] = $derived(
       const sourceCount = r.files.length;
       const sourcesLabel = sourceCount > 0 ? `${sourceCount} source${sourceCount !== 1 ? 's' : ''}` : '';
       const providerName =
-        $providerInfos.find(p => p.id === r.ragConnection.providerId)?.name ?? r.ragConnection.providerId;
+        $providerInfos.find(p => p.id === r.ragConnection?.providerId)?.name ?? r.ragConnection?.providerId;
       return {
         id: r.name,
         name: r.name,
