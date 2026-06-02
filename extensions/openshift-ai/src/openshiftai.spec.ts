@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { randomUUID } from 'node:crypto';
+
 import { createOpenAICompatible, type OpenAICompatibleProvider } from '@ai-sdk/openai-compatible';
 import { KubeConfig } from '@kubernetes/client-node';
 import type {
@@ -28,7 +30,15 @@ import type {
 } from '@openkaiden/api';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { OpenShiftAI, TOKENS_KEY } from './openshiftai';
+import { OpenShiftAI, type StoredConnection, TOKENS_KEY } from './openshiftai';
+
+vi.mock(import('node:crypto'), async importOriginal => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    randomUUID: vi.fn().mockReturnValue('fake-uuid-1'),
+  };
+});
 
 vi.mock('@openkaiden/api', () => ({
   Disposable: {
@@ -78,6 +88,7 @@ global.fetch = fetchMock;
 beforeEach(() => {
   vi.resetAllMocks();
 
+  vi.mocked(randomUUID).mockReturnValue('fake-uuid-1' as ReturnType<typeof randomUUID>);
   vi.mocked(PROVIDER_API_MOCK.createProvider).mockReturnValue(PROVIDER_MOCK as Provider);
   vi.mocked(createOpenAICompatible).mockReturnValue(OPENAI_PROVIDER_MOCK);
   vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(undefined);
@@ -228,16 +239,19 @@ describe('factory', () => {
     expect(call.models).toEqual([{ label: 'llama-3' }]);
 
     expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledOnce();
-    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(
-      TOKENS_KEY,
-      'dummyToken|https://api.cluster.example.com:6443',
-    );
+    const expected: StoredConnection[] = [
+      { id: 'fake-uuid-1', token: 'dummyToken', url: 'https://api.cluster.example.com:6443' },
+    ];
+    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, JSON.stringify(expected));
   });
 });
 
 describe('restoreConnections', () => {
   test('should not crash if restore fails due to no inference services', async () => {
-    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue('savedToken|https://api.cluster.example.com:6443');
+    const stored: StoredConnection[] = [
+      { id: 'persisted-id', token: 'savedToken', url: 'https://api.cluster.example.com:6443' },
+    ];
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify(stored));
 
     listClusterCustomObjectMock.mockResolvedValue({ items: [] });
 
@@ -245,5 +259,64 @@ describe('restoreConnections', () => {
     await openshiftai.init();
 
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).not.toHaveBeenCalled();
+  });
+
+  test('should migrate legacy pipe/comma-separated format to JSON', async () => {
+    vi.mocked(randomUUID)
+      .mockReturnValueOnce('migrated-id-1' as ReturnType<typeof randomUUID>)
+      .mockReturnValueOnce('migrated-id-2' as ReturnType<typeof randomUUID>);
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(
+      'tokenA|https://cluster-a.com:6443,tokenB|https://cluster-b.com:6443',
+    );
+
+    listClusterCustomObjectMock.mockResolvedValue({ items: [] });
+
+    const openshiftai = new OpenShiftAI(PROVIDER_API_MOCK, SECRET_STORAGE_MOCK);
+    await openshiftai.init();
+
+    const expected: StoredConnection[] = [
+      { id: 'migrated-id-1', token: 'tokenA', url: 'https://cluster-a.com:6443' },
+      { id: 'migrated-id-2', token: 'tokenB', url: 'https://cluster-b.com:6443' },
+    ];
+    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, JSON.stringify(expected));
+  });
+
+  test('should restore persisted IDs across restarts', async () => {
+    vi.mocked(randomUUID).mockReturnValue('conn-uuid' as ReturnType<typeof randomUUID>);
+    const stored: StoredConnection[] = [{ id: 'stable-id-1', token: 'key1', url: 'https://cluster1.example.com:6443' }];
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify(stored));
+
+    listClusterCustomObjectMock.mockResolvedValue({
+      items: [{ metadata: { name: 'test-project' } }],
+    });
+    listNamespacedCustomObjectMock.mockResolvedValue({
+      items: [
+        {
+          metadata: { name: 'my-model' },
+          spec: { predictor: { model: { runtime: 'vllm' } } },
+          status: { url: 'https://my-model.example.com' },
+        },
+      ],
+    });
+    listNamespacedSecretMock.mockResolvedValue({
+      items: [
+        {
+          metadata: { annotations: { 'kubernetes.io/service-account.name': 'vllm-sa' } },
+          data: { token: Buffer.from('serviceToken').toString('base64') },
+        },
+      ],
+    });
+    fetchMock.mockResolvedValue({
+      status: 200,
+      json: async () => ({ data: [{ id: 'llama-3' }] }),
+    });
+
+    const openshiftai = new OpenShiftAI(PROVIDER_API_MOCK, SECRET_STORAGE_MOCK);
+    await openshiftai.init();
+
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledOnce();
+    expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'https://cluster1.example.com:6443' }),
+    );
   });
 });
