@@ -20,10 +20,19 @@ import { randomUUID } from 'node:crypto';
 
 import { createMistral } from '@ai-sdk/mistral';
 import { Mistral } from '@mistralai/mistralai';
-import type { Disposable, InferenceModel, Provider, ProviderConnectionStatus, SecretStorage } from '@openkaiden/api';
+import type {
+  Disposable,
+  InferenceModel,
+  InferenceProviderConnection,
+  Provider,
+  ProviderConnectionStatus,
+  SecretStorage,
+} from '@openkaiden/api';
+import { configuration } from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 
 import { MistralProviderSymbol, SecretStorageSymbol } from '/@/inject/symbol';
+import { PROVIDER_ID } from '/@/mistral-extension';
 
 export const TOKENS_KEY = 'mistral:tokens';
 
@@ -88,6 +97,28 @@ export class MistralInferenceManager {
     await this.secrets.store(TOKENS_KEY, JSON.stringify(filtered));
   }
 
+  private getSecretName(connectionId: string): string {
+    return `${PROVIDER_ID}:${connectionId}:token`;
+  }
+
+  private async setConnectionConfiguration(connection: InferenceProviderConnection, token: string): Promise<void> {
+    const secretName = this.getSecretName(connection.id);
+    await this.secrets.store(secretName, token);
+
+    const config = configuration.getConfiguration(undefined, connection);
+    await config.update('_type', PROVIDER_ID);
+    await config.update('token', secretName);
+  }
+
+  private async clearConnectionConfiguration(connection: InferenceProviderConnection): Promise<void> {
+    const secretName = this.getSecretName(connection.id);
+    await this.secrets.delete(secretName);
+
+    const config = configuration.getConfiguration('mistral.connection', connection);
+    await config.update('_type', undefined);
+    await config.update('token', undefined);
+  }
+
   private async registerInferenceProviderConnection({ id, token }: { id: string; token: string }): Promise<void> {
     if (this.connections.has(id)) {
       throw new Error(`connection already exists for id ${id}`);
@@ -96,12 +127,6 @@ export class MistralInferenceManager {
     const mistral = createMistral({
       apiKey: token,
     });
-
-    const clean = async (): Promise<void> => {
-      this.connections.get(id)?.dispose();
-      this.connections.delete(id);
-      await this.removeConnection(id);
-    };
 
     let status: ProviderConnectionStatus = 'unknown';
     let models: InferenceModel[] = [];
@@ -112,7 +137,7 @@ export class MistralInferenceManager {
       status = 'stopped';
     }
 
-    const connectionDisposable = this.mistralProvider.registerInferenceProviderConnection({
+    const connection: InferenceProviderConnection = {
       id,
       name: this.maskKey(token),
       type: 'cloud',
@@ -122,7 +147,12 @@ export class MistralInferenceManager {
         return status;
       },
       lifecycle: {
-        delete: clean.bind(this),
+        delete: async (): Promise<void> => {
+          await this.clearConnectionConfiguration(connection);
+          this.connections.get(id)?.dispose();
+          this.connections.delete(id);
+          await this.removeConnection(id);
+        },
       },
       models,
       credentials(): Record<string, string> {
@@ -130,8 +160,12 @@ export class MistralInferenceManager {
           [TOKENS_KEY]: token,
         };
       },
-    });
+    };
+
+    const connectionDisposable = this.mistralProvider.registerInferenceProviderConnection(connection);
     this.connections.set(id, connectionDisposable);
+
+    await this.setConnectionConfiguration(connection, token);
   }
 
   private async getMistralModels(token: string): Promise<Array<{ label: string }>> {

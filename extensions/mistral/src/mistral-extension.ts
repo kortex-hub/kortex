@@ -24,6 +24,8 @@ import { InversifyBinding } from '/@/inject/inversify-binding';
 import { MistralInferenceManager } from '/@/manager/mistral-inference-manager';
 import { MistralSkillsManager } from '/@/manager/mistral-skills-manager';
 
+export const PROVIDER_ID = 'mistral';
+
 export class MistralExtension {
   #extensionContext: ExtensionContext;
 
@@ -40,7 +42,7 @@ export class MistralExtension {
     const mistralProvider = provider.createProvider({
       name: 'Mistral',
       status: 'unknown',
-      id: 'mistral',
+      id: PROVIDER_ID,
       images: {
         icon: './icon.png',
         logo: {

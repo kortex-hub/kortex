@@ -25,6 +25,19 @@
           "scope": "InferenceProviderConnectionFactory",
           "description": "Enter your Mistral API key (MISTRAL_API_KEY)",
           "format": "password"
+        },
+        "mistral.connection._type": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "Mistral provider type",
+          "hidden": true
+        },
+        "mistral.connection.token": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "API key secret reference",
+          "format": "password",
+          "hidden": true
         }
       }
     }
