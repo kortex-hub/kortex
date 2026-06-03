@@ -32,6 +32,19 @@
           "scope": "InferenceProviderConnectionFactory",
           "description": "Enter your OpenShift AI token",
           "format": "password"
+        },
+        "openshiftai.connection._type": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "OpenShift AI provider type",
+          "hidden": true
+        },
+        "openshiftai.connection.token": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "API token secret reference",
+          "format": "password",
+          "hidden": true
         }
       }
     }

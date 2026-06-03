@@ -22,12 +22,15 @@ import { CoreV1Api, CustomObjectsApi, KubeConfig } from '@kubernetes/client-node
 import type {
   Disposable,
   InferenceModel,
+  InferenceProviderConnection,
   Provider,
   provider as ProviderAPI,
   ProviderConnectionStatus,
   SecretStorage,
 } from '@openkaiden/api';
+import { configuration } from '@openkaiden/api';
 
+export const PROVIDER_ID = 'openshiftai';
 export const TOKENS_KEY = 'openshiftai:infos';
 
 export interface StoredConnection {
@@ -56,7 +59,7 @@ export class OpenShiftAI implements Disposable {
     this.provider = this.providerAPI.createProvider({
       name: 'OpenShift AI',
       status: 'unknown',
-      id: 'openshiftai',
+      id: PROVIDER_ID,
       emptyConnectionMarkdownDescription:
         'Provides OpenShift AI integration. Connects Kaiden to models running on OpenShift AI.',
       images: {
@@ -135,6 +138,31 @@ export class OpenShiftAI implements Disposable {
     const stored = await this.getStoredConnections();
     const filtered = stored.filter(entry => entry.id !== id);
     await this.secrets.store(TOKENS_KEY, JSON.stringify(filtered));
+  }
+
+  private getSecretName(connectionId: string): string {
+    return `${PROVIDER_ID}:${connectionId}:token`;
+  }
+
+  private async setConnectionConfiguration(
+    connection: InferenceProviderConnection,
+    stored: StoredConnection,
+  ): Promise<void> {
+    const secretName = this.getSecretName(connection.id);
+    await this.secrets.store(secretName, stored.token);
+
+    const config = configuration.getConfiguration(undefined, connection);
+    await config.update('openshiftai.connection._type', PROVIDER_ID);
+    await config.update('openshiftai.connection.token', secretName);
+  }
+
+  private async clearConnectionConfiguration(connection: InferenceProviderConnection): Promise<void> {
+    const secretName = this.getSecretName(connection.id);
+    await this.secrets.delete(secretName);
+
+    const config = configuration.getConfiguration(undefined, connection);
+    await config.update('openshiftai.connection._type', undefined);
+    await config.update('openshiftai.connection.token', undefined);
   }
 
   protected async listModels({ baseURL, token }: ConnectionInfo): Promise<Array<InferenceModel>> {
@@ -243,13 +271,7 @@ export class OpenShiftAI implements Disposable {
       name: serviceInfo.baseURL,
     });
 
-    const clean = async (): Promise<void> => {
-      this.connections.get(stored.id)?.dispose();
-      this.connections.delete(stored.id);
-      await this.removeConnection(stored.id);
-    };
-
-    const connectionDisposable = this.provider.registerInferenceProviderConnection({
+    const connection: InferenceProviderConnection = {
       id: stored.id,
       name: stored.url,
       type: 'self-hosted',
@@ -259,7 +281,12 @@ export class OpenShiftAI implements Disposable {
         return 'unknown';
       },
       lifecycle: {
-        delete: clean.bind(this),
+        delete: async (): Promise<void> => {
+          await this.clearConnectionConfiguration(connection);
+          this.connections.get(stored.id)?.dispose();
+          this.connections.delete(stored.id);
+          await this.removeConnection(stored.id);
+        },
       },
       models: models,
       credentials(): Record<string, string> {
@@ -267,8 +294,12 @@ export class OpenShiftAI implements Disposable {
           'openshiftai:tokens': stored.token,
         };
       },
-    });
+    };
+
+    const connectionDisposable = this.provider.registerInferenceProviderConnection(connection);
     this.connections.set(stored.id, connectionDisposable);
+
+    await this.setConnectionConfiguration(connection, stored);
   }
 
   private async inferenceFactory(params: { [p: string]: unknown }): Promise<void> {
