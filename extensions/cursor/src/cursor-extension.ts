@@ -23,6 +23,8 @@ import type { Container } from 'inversify';
 import { InversifyBinding } from '/@/inject/inversify-binding';
 import { CursorInferenceManager } from '/@/manager/cursor-inference-manager';
 
+export const PROVIDER_ID = 'cursor';
+
 export class CursorExtension {
   #extensionContext: ExtensionContext;
 
@@ -38,7 +40,7 @@ export class CursorExtension {
     const cursorProvider = provider.createProvider({
       name: 'Cursor',
       status: 'unknown',
-      id: 'cursor',
+      id: PROVIDER_ID,
       images: {
         icon: {
           dark: './APP_ICON_2D_DARK.png',

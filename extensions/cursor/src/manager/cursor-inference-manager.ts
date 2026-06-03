@@ -18,10 +18,19 @@
 
 import { randomUUID } from 'node:crypto';
 
-import type { Disposable, InferenceModel, Provider, ProviderConnectionStatus, SecretStorage } from '@openkaiden/api';
+import type {
+  Disposable,
+  InferenceModel,
+  InferenceProviderConnection,
+  Provider,
+  ProviderConnectionStatus,
+  SecretStorage,
+} from '@openkaiden/api';
+import { configuration } from '@openkaiden/api';
 import { MockProviderV3 } from 'ai/test';
 import { inject, injectable } from 'inversify';
 
+import { PROVIDER_ID } from '/@/cursor-extension';
 import { CursorProviderSymbol, SecretStorageSymbol } from '/@/inject/symbol';
 
 import { CursorRestHelper } from './cursor-rest-helper';
@@ -97,6 +106,28 @@ export class CursorInferenceManager {
     await this.secrets.store(TOKENS_KEY, JSON.stringify(filtered));
   }
 
+  private getSecretName(connectionId: string): string {
+    return `${PROVIDER_ID}:${connectionId}:token`;
+  }
+
+  private async setConnectionConfiguration(connection: InferenceProviderConnection, token: string): Promise<void> {
+    const secretName = this.getSecretName(connection.id);
+    await this.secrets.store(secretName, token);
+
+    const config = configuration.getConfiguration(undefined, connection);
+    await config.update('_type', PROVIDER_ID);
+    await config.update('token', secretName);
+  }
+
+  private async clearConnectionConfiguration(connection: InferenceProviderConnection): Promise<void> {
+    const secretName = this.getSecretName(connection.id);
+    await this.secrets.delete(secretName);
+
+    const config = configuration.getConfiguration('cursor.connection', connection);
+    await config.update('_type', undefined);
+    await config.update('token', undefined);
+  }
+
   private async registerInferenceProviderConnection({ id, token }: { id: string; token: string }): Promise<void> {
     if (this.connections.has(id)) {
       throw new Error(`connection already exists for id ${id}`);
@@ -114,13 +145,7 @@ export class CursorInferenceManager {
 
     const cursorSdk = new MockProviderV3();
 
-    const clean = async (): Promise<void> => {
-      this.connections.get(id)?.dispose();
-      this.connections.delete(id);
-      await this.removeConnection(id);
-    };
-
-    const connectionDisposable = this.cursorProvider.registerInferenceProviderConnection({
+    const connection: InferenceProviderConnection = {
       id,
       name: this.maskKey(token),
       type: 'cloud',
@@ -132,7 +157,12 @@ export class CursorInferenceManager {
         return status;
       },
       lifecycle: {
-        delete: clean.bind(this),
+        delete: async (): Promise<void> => {
+          await this.clearConnectionConfiguration(connection);
+          this.connections.get(id)?.dispose();
+          this.connections.delete(id);
+          await this.removeConnection(id);
+        },
       },
       models,
       credentials(): Record<string, string> {
@@ -140,8 +170,12 @@ export class CursorInferenceManager {
           [TOKENS_KEY]: token,
         };
       },
-    });
+    };
+
+    const connectionDisposable = this.cursorProvider.registerInferenceProviderConnection(connection);
     this.connections.set(id, connectionDisposable);
+
+    await this.setConnectionConfiguration(connection, token);
   }
 
   private async getCursorModels(token: string): Promise<Array<{ label: string }>> {

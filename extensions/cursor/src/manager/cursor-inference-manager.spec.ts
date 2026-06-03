@@ -18,10 +18,12 @@
 
 import { randomUUID } from 'node:crypto';
 
-import type { CancellationToken, Disposable, Logger, Provider, SecretStorage } from '@openkaiden/api';
+import type { CancellationToken, Configuration, Disposable, Logger, Provider, SecretStorage } from '@openkaiden/api';
+import { configuration } from '@openkaiden/api';
 import { Container } from 'inversify';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
+import { PROVIDER_ID } from '/@/cursor-extension';
 import { CursorProviderSymbol, SecretStorageSymbol } from '/@/inject/symbol';
 
 import { CursorInferenceManager, type StoredConnection, TOKENS_KEY } from './cursor-inference-manager';
@@ -49,11 +51,20 @@ vi.mock(import('node:crypto'), async importOriginal => {
 
 vi.mock(import('./cursor-rest-helper'));
 
+const CONFIG_UPDATE_MOCK = vi.fn();
+
+const CONFIGURATION_MOCK: Configuration = {
+  get: vi.fn(),
+  has: vi.fn(),
+  update: CONFIG_UPDATE_MOCK,
+} as unknown as Configuration;
+
 beforeEach(() => {
   vi.resetAllMocks();
 
   vi.mocked(randomUUID).mockReturnValue('fake-uuid-1' as ReturnType<typeof randomUUID>);
   vi.mocked(CursorRestHelper.prototype.listModels).mockResolvedValue([{ id: 'composer-2' }, { id: 'gpt-5.5' }]);
+  vi.mocked(configuration.getConfiguration).mockReturnValue(CONFIGURATION_MOCK);
 });
 
 async function createManager(): Promise<CursorInferenceManager> {
@@ -166,7 +177,6 @@ describe('factory', () => {
       'cursor.factory.apiKey': 'dummyKey',
     });
 
-    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledOnce();
     const expected: StoredConnection[] = [{ id: 'fake-uuid-1', token: 'dummyKey' }];
     expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, JSON.stringify(expected));
   });
@@ -225,21 +235,61 @@ describe('connection delete lifecycle', () => {
     mDelete = lifecycle.delete;
   });
 
-  test('calling delete should remove the connection from storage', async () => {
+  test('calling delete should remove the connection from storage, clear configuration, and dispose', async () => {
     await mDelete();
 
-    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledTimes(2);
+    expect(SECRET_STORAGE_MOCK.delete).toHaveBeenCalledWith(`${PROVIDER_ID}:fake-uuid-1:token`);
 
-    const saved: StoredConnection[] = [{ id: 'fake-uuid-1', token: 'dummyKey' }];
-    expect(SECRET_STORAGE_MOCK.store).toHaveBeenNthCalledWith(1, TOKENS_KEY, JSON.stringify(saved));
-
-    expect(SECRET_STORAGE_MOCK.store).toHaveBeenNthCalledWith(2, TOKENS_KEY, JSON.stringify([]));
-  });
-
-  test('calling delete should dispose provider inference connection', async () => {
-    await mDelete();
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('_type', undefined);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('token', undefined);
 
     expect(disposeMock).toHaveBeenCalledOnce();
+  });
+});
+
+describe('workspace configuration', () => {
+  beforeEach(async () => {
+    vi.mocked(PROVIDER_MOCK.registerInferenceProviderConnection).mockReturnValue({
+      dispose: vi.fn(),
+    });
+  });
+
+  test('should store per-connection secret and set configuration after registration', async () => {
+    const manager = await createManager();
+    await manager.init();
+
+    const mock = vi.mocked(PROVIDER_MOCK.setInferenceProviderConnectionFactory);
+    const create = mock.mock.calls[0][0].create;
+
+    await create({
+      'cursor.factory.apiKey': 'dummyKey',
+    });
+
+    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(`${PROVIDER_ID}:fake-uuid-1:token`, 'dummyKey');
+
+    const connection = vi.mocked(PROVIDER_MOCK.registerInferenceProviderConnection).mock.calls[0][0];
+    expect(configuration.getConfiguration).toHaveBeenCalledWith(undefined, connection);
+
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('_type', PROVIDER_ID);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('token', `${PROVIDER_ID}:fake-uuid-1:token`);
+  });
+
+  test('should set workspace configuration for each restored connection', async () => {
+    const stored: StoredConnection[] = [
+      { id: 'id-1', token: 'key1' },
+      { id: 'id-2', token: 'key2' },
+    ];
+    vi.mocked(SECRET_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify(stored));
+
+    const manager = await createManager();
+    await manager.init();
+
+    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(`${PROVIDER_ID}:id-1:token`, 'key1');
+    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(`${PROVIDER_ID}:id-2:token`, 'key2');
+
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('_type', PROVIDER_ID);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('token', `${PROVIDER_ID}:id-1:token`);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('token', `${PROVIDER_ID}:id-2:token`);
   });
 });
 
