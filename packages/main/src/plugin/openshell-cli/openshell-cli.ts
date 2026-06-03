@@ -142,7 +142,6 @@ export class OpenshellCli {
     const args = ['sandbox', 'list'];
     if (gatewayName) {
       args.push('-g', gatewayName);
-      args.push('--selector', `gateway=${gatewayName}`);
     }
     const data = await this.execCLI<unknown>(args);
     return z.array(SandboxInfoSchema).parse(data);

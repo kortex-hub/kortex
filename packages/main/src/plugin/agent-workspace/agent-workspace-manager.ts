@@ -29,6 +29,7 @@ import { spawn } from 'node-pty';
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
+import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
@@ -43,6 +44,7 @@ import type {
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IConfigurationNode } from '/@api/configuration/models.js';
 import { IConfigurationRegistry } from '/@api/configuration/models.js';
+import type { GatewaySandboxes } from '/@api/openshell-gateway-info.js';
 import type { InferenceConnectionCredentials } from '/@api/provider-info.js';
 import type { SecretCreateOptions } from '/@api/secret-info.js';
 
@@ -77,6 +79,8 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly providerRegistry: ProviderRegistry,
     @inject(SecretManager)
     private readonly secretManager: SecretManager,
+    @inject(OpenshellCli)
+    private readonly openshellCli: OpenshellCli,
   ) {}
 
   async getCliInfo(): Promise<CliInfo> {
@@ -332,6 +336,28 @@ export class AgentWorkspaceManager implements Disposable {
     return result;
   }
 
+  async listOpenshellSandboxes(): Promise<GatewaySandboxes[]> {
+    return this.openshellCli.listSandboxesPerGateway();
+  }
+
+  async deleteOpenshellSandbox(name: string): Promise<void> {
+    const task = this.taskManager.createTask({ title: `Deleting workspace ${name}` });
+    task.state = 'running';
+    task.status = 'in-progress';
+    try {
+      await this.openshellCli.deleteSandbox(name);
+      this.apiSender.send('agent-workspace-update');
+      task.status = 'success';
+    } catch (err: unknown) {
+      const detail = err instanceof Error ? err.message : String(err);
+      task.status = 'failure';
+      task.error = `Failed to delete workspace: ${detail}`;
+      throw new Error(detail);
+    } finally {
+      task.state = 'completed';
+    }
+  }
+
   shellInAgentWorkspace(
     name: string,
     onData: (data: string) => void,
@@ -436,6 +462,17 @@ export class AgentWorkspaceManager implements Disposable {
     this.ipcHandle('agent-workspace:stop', async (_listener: unknown, id: string): Promise<AgentWorkspaceId> => {
       return this.stop(id);
     });
+
+    this.ipcHandle('agent-workspace:listOpenshellSandboxes', async (): Promise<GatewaySandboxes[]> => {
+      return this.listOpenshellSandboxes();
+    });
+
+    this.ipcHandle(
+      'agent-workspace:deleteOpenshellSandbox',
+      async (_listener: unknown, name: string): Promise<void> => {
+        return this.deleteOpenshellSandbox(name);
+      },
+    );
 
     this.ipcHandle(
       'agent-workspace:terminal',

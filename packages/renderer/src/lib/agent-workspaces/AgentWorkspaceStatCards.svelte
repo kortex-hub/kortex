@@ -5,17 +5,22 @@ import { SvelteSet } from 'svelte/reactivity';
 
 import Card from '/@/lib/components/Card.svelte';
 import type { AgentWorkspaceSummaryUI } from '/@/stores/agent-workspaces.svelte';
+import type { SandboxInfoWithGateway } from '/@/stores/openshell-sandboxes';
 
 import { isActiveWorkspace } from './workspace-utils';
 
 interface Props {
   workspaces: AgentWorkspaceSummaryUI[];
+  sandboxes: SandboxInfoWithGateway[];
 }
 
-let { workspaces }: Props = $props();
+let { workspaces, sandboxes }: Props = $props();
 
-const activeCount = $derived(workspaces.filter(isActiveWorkspace).length);
-const totalCount = $derived(workspaces.length);
+const activeSandboxCount = $derived(
+  sandboxes.filter(s => s.phase.toLowerCase() === 'ready' || s.phase.toLowerCase() === 'running').length,
+);
+const activeCount = $derived(workspaces.filter(isActiveWorkspace).length + activeSandboxCount);
+const totalCount = $derived(workspaces.length + sandboxes.length);
 const agentCount = $derived(new SvelteSet(workspaces.map(ws => ws.agent)).size);
 </script>
 

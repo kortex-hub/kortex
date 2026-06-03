@@ -29,6 +29,7 @@ import type { IPCHandle } from '/@/plugin/api.js';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
+import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
 import type { TaskManager } from '/@/plugin/tasks/task-manager.js';
@@ -46,6 +47,7 @@ vi.mock(import('yaml'));
 vi.mock(import('node-pty'));
 
 vi.mock(import('/@/plugin/kdn-cli/kdn-cli.js'));
+vi.mock(import('/@/plugin/openshell-cli/openshell-cli.js'));
 
 const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
   {
@@ -81,6 +83,7 @@ const apiSender: ApiSenderType = {
 };
 const ipcHandle: IPCHandle = vi.fn();
 const kdnCli = new KdnCli({} as Exec, {} as CliToolRegistry);
+const openshellCli = new OpenshellCli({} as Exec, {} as CliToolRegistry);
 
 const mockTask = {
   id: 'task-1',
@@ -149,6 +152,7 @@ beforeEach(() => {
     configurationRegistry,
     providerRegistry,
     secretManager,
+    openshellCli,
   );
   manager.init();
 });
