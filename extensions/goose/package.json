@@ -3,7 +3,10 @@
   "displayName": "Goose",
   "description": "Goose coding agent",
   "version": "0.1.0-next",
-  "icon": "icon.png",
+  "icon": {
+    "light": "icon_light.png",
+    "dark": "icon_dark.png"
+  },
   "publisher": "kaiden",
   "license": "Apache-2.0",
   "engines": {

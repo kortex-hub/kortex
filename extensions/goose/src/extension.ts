@@ -25,8 +25,8 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     name: 'Goose',
     description: 'Open-source autonomous coding agent by Block.',
     icon: {
-      icon: './icon.png',
-      logo: { dark: './icon.png', light: './icon.png' },
+      icon: { dark: './icon_dark.png', light: './icon_light.png' },
+      logo: { dark: './icon_dark.png', light: './icon_light.png' },
     },
     isSupportedRuntime(runtime): boolean {
       return runtime === 'podman';
