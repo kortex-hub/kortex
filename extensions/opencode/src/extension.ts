@@ -26,8 +26,8 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     description:
       'Open-source agent on your machine — local models via Ollama or Ramalama, or cloud APIs (OpenAI, Gemini, and other providers OpenCode supports).',
     icon: {
-      icon: './icon.png',
-      logo: { dark: './icon.png', light: './icon.png' },
+      icon: { dark: './icon_dark.png', light: './icon_light.png' },
+      logo: { dark: './icon_dark.png', light: './icon_light.png' },
     },
     tags: ['Recommended'],
     isSupportedRuntime(): boolean {
