@@ -78,7 +78,11 @@ export class SemanticRouterManager {
   }
 
   async create(config: SemanticRouterConfigInfo): Promise<SemanticRouterConfigInfo> {
-    const parsed = SemanticRouterConfigSchema.parse(config);
+    const parsed = {
+      ...SemanticRouterConfigSchema.parse(config),
+      name: this.getSafeName(config.name),
+    };
+
     if (this.configs.has(parsed.name)) {
       throw new Error(`Semantic router "${parsed.name}" already exists`);
     }
