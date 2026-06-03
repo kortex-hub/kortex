@@ -19,10 +19,12 @@ import '@testing-library/jest-dom/vitest';
 
 import { faRobot } from '@fortawesome/free-solid-svg-icons';
 import { fireEvent, render, screen } from '@testing-library/svelte';
+import { writable } from 'svelte/store';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import { getAgentDefinition } from '/@/lib/guided-setup/agent-registry';
 import type { AgentWorkspaceSummaryUI } from '/@/stores/agent-workspaces.svelte';
+import * as agentsStore from '/@/stores/agents';
 
 import AgentWorkspaceName from './AgentWorkspaceName.svelte';
 
@@ -30,8 +32,11 @@ vi.mock(import('/@/lib/guided-setup/agent-registry'));
 
 vi.mock(import('tinro'));
 
+vi.mock(import('/@/stores/agents'));
+
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(agentsStore).agentInfos = writable([]);
   vi.mocked(getAgentDefinition).mockReturnValue({
     title: 'Test Agent',
     icon: faRobot,

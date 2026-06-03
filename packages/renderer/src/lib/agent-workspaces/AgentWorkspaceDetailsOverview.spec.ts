@@ -22,12 +22,14 @@ import { render, screen } from '@testing-library/svelte';
 import { writable } from 'svelte/store';
 import { beforeEach, expect, test, vi } from 'vitest';
 
+import * as agentsStore from '/@/stores/agents';
 import * as modelsStore from '/@/stores/models';
 import type { AgentWorkspaceConfiguration, AgentWorkspaceSummary } from '/@api/agent-workspace-info';
 import type { CatalogModelInfo } from '/@api/model-registry-info';
 
 import AgentWorkspaceDetailsOverview from './AgentWorkspaceDetailsOverview.svelte';
 
+vi.mock(import('/@/stores/agents'));
 vi.mock(import('/@/stores/models'));
 
 const workspaceSummary: AgentWorkspaceSummary = {
@@ -62,6 +64,7 @@ const configuration: AgentWorkspaceConfiguration = {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.useFakeTimers({ shouldAdvanceTime: true });
+  vi.mocked(agentsStore).agentInfos = writable([]);
   vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>([]);
 });
 

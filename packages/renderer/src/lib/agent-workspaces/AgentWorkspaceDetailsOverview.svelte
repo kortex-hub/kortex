@@ -9,9 +9,11 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
+import IconImage from '/@/lib/appearance/IconImage.svelte';
 import { getAgentDefinition } from '/@/lib/guided-setup/agent-registry';
 import { getModelId } from '/@/lib/models/models-utils';
 import type { AgentWorkspaceSummaryUI } from '/@/stores/agent-workspaces.svelte';
+import { agentInfos } from '/@/stores/agents';
 import { catalogModels } from '/@/stores/models';
 import { skillInfos } from '/@/stores/skills';
 import type { AgentWorkspaceConfiguration } from '/@api/agent-workspace-info';
@@ -26,6 +28,7 @@ interface Props {
 let { workspaceSummary, configuration }: Props = $props();
 
 const agentDef = $derived(getAgentDefinition(workspaceSummary?.agent ?? ''));
+const agentInfo = $derived(workspaceSummary ? $agentInfos.find(a => a.id === workspaceSummary.agent) : undefined);
 
 const resolvedModel = $derived(
   workspaceSummary?.model ? $catalogModels.find(m => getModelId(m) === workspaceSummary.model) : undefined,
@@ -119,10 +122,17 @@ const filesystemBadge = $derived.by(() => {
     <!-- Agent Profile Card -->
     <div class="bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] rounded-lg p-5" aria-label="Agent profile">
       <div class="flex items-center gap-3.5 mb-3">
-        <div
-          class="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 {agentDef.colorClass}">
-          <Icon icon={agentDef.icon} size="1.5x" class="text-white" />
-        </div>
+        {#if agentInfo?.icon?.logo ?? agentInfo?.icon?.icon}
+          <IconImage image={agentInfo.icon.logo ?? agentInfo.icon.icon} alt={agentDef.title} class="w-10 h-10 rounded-[10px]">
+            <div class="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 {agentDef.colorClass}">
+              <Icon icon={agentDef.icon} size="1.5x" class="text-white" />
+            </div>
+          </IconImage>
+        {:else}
+          <div class="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 {agentDef.colorClass}">
+            <Icon icon={agentDef.icon} size="1.5x" class="text-white" />
+          </div>
+        {/if}
         <div class="flex-1 min-w-0">
           <h2 class="text-[15px] font-semibold text-[var(--pd-content-card-header-text)] m-0 mb-0.5">
             {agentDef.title}
