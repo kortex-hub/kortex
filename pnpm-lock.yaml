@@ -840,8 +840,8 @@ importers:
   extensions/vertex-ai:
     dependencies:
       '@ai-sdk/google-vertex':
-        specifier: ^4.0.140
-        version: 4.0.140(zod@4.4.3)
+        specifier: ^4.0.141
+        version: 4.0.141(zod@4.4.3)
       '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
@@ -1118,8 +1118,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/google-vertex@4.0.140':
-    resolution: {integrity: sha512-Fz3STER9hcrY0uJ6wMg8tSasS5+FbLnBU9N89cw9KBkSUtq+Hefeert7y/UA7RUgPS+d6Z+kzmkqbdAU5dn+oA==}
+  '@ai-sdk/google-vertex@4.0.141':
+    resolution: {integrity: sha512-UGXQeV+z30Gk1/mhKZoXKbYO7Q0U7pg0Nlz44hb2B1FpYRFBu8+ziaI60BdetncaoxPocdNKhP41AD15IA6nJg==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -8104,7 +8104,7 @@ snapshots:
       '@vercel/oidc': 3.2.0
       zod: 4.4.3
 
-  '@ai-sdk/google-vertex@4.0.140(zod@4.4.3)':
+  '@ai-sdk/google-vertex@4.0.141(zod@4.4.3)':
     dependencies:
       '@ai-sdk/anthropic': 3.0.81(zod@4.4.3)
       '@ai-sdk/google': 3.0.80(zod@4.4.3)
@@ -9141,7 +9141,7 @@ snapshots:
 
   '@npmcli/fs@4.0.0':
     dependencies:
-      semver: 7.7.3
+      semver: 7.8.1
 
   '@npmcli/move-file@1.1.2':
     dependencies:
