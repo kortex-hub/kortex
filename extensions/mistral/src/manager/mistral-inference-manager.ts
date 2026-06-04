@@ -106,8 +106,8 @@ export class MistralInferenceManager {
     await this.secrets.store(secretName, token);
 
     const config = configuration.getConfiguration(undefined, connection);
-    await config.update('_type', PROVIDER_ID);
-    await config.update('token', secretName);
+    await config.update('mistral.connection._type', PROVIDER_ID);
+    await config.update('mistral.connection.token', secretName);
   }
 
   private async clearConnectionConfiguration(connection: InferenceProviderConnection): Promise<void> {
@@ -115,8 +115,8 @@ export class MistralInferenceManager {
     await this.secrets.delete(secretName);
 
     const config = configuration.getConfiguration('mistral.connection', connection);
-    await config.update('_type', undefined);
-    await config.update('token', undefined);
+    await config.update('mistral.connection._type', undefined);
+    await config.update('mistral.connection.token', undefined);
   }
 
   private async registerInferenceProviderConnection({ id, token }: { id: string; token: string }): Promise<void> {

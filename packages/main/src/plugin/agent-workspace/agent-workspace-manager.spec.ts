@@ -19,7 +19,7 @@
 import { access, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import type { FileSystemWatcher } from '@openkaiden/api';
+import type { FileSystemWatcher, InferenceProviderConnection } from '@openkaiden/api';
 import type { WebContents } from 'electron';
 import type { IPty } from 'node-pty';
 import { spawn } from 'node-pty';
@@ -31,6 +31,7 @@ import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
+import type { SafeStorageRegistry, SecretStorageWrapper } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import type { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
 import type { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import type { Task } from '/@/plugin/tasks/tasks.js';
@@ -121,16 +122,29 @@ const configurationRegistry = {
   getConfiguration: vi.fn().mockReturnValue({
     get: vi.fn().mockReturnValue(undefined),
   }),
+  getConfigurationProperties: vi.fn().mockReturnValue({}),
 } as unknown as IConfigurationRegistry;
 
 const providerRegistry = {
   getInferenceConnectionCredentials: vi.fn(),
+  getInferenceConnection: vi.fn(),
 } as unknown as ProviderRegistry;
 
 const secretManager = {
   create: vi.fn(),
   init: vi.fn(),
 } as unknown as SecretManager;
+
+const extensionStorageMock = {
+  get: vi.fn(),
+  store: vi.fn(),
+  delete: vi.fn(),
+  onDidChange: vi.fn(),
+} as unknown as SecretStorageWrapper;
+
+const safeStorageRegistry = {
+  getExtensionStorage: vi.fn().mockReturnValue(extensionStorageMock),
+} as unknown as SafeStorageRegistry;
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -142,6 +156,8 @@ beforeEach(() => {
   vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
     get: vi.fn().mockReturnValue(undefined),
   } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
+  vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({});
+  vi.mocked(safeStorageRegistry.getExtensionStorage).mockReturnValue(extensionStorageMock);
   manager = new AgentWorkspaceManager(
     apiSender,
     ipcHandle,
@@ -153,6 +169,7 @@ beforeEach(() => {
     providerRegistry,
     secretManager,
     openshellCli,
+    safeStorageRegistry,
   );
   manager.init();
 });
@@ -719,6 +736,188 @@ describe('ensureModelSecret', () => {
     await manager.ensureModelSecret(options);
 
     expect(options.secrets).toEqual(['my-workspace-anthropic']);
+  });
+
+  test('creates secret from connection config when _type and password property exist', async () => {
+    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
+    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
+      connection: mockConnection,
+      extensionId: 'kaiden.cursor',
+    });
+    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
+      get: vi.fn().mockImplementation((key: string) => {
+        if (key === 'cursor.connection._type') return 'cursor';
+        if (key === 'cursor.connection.token') return 'cursor:conn-1:token';
+        return undefined;
+      }),
+    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
+    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
+      'cursor.connection._type': {
+        title: 'Cursor',
+        parentId: 'cursor',
+        scope: 'InferenceProviderConnection',
+        hidden: true,
+        extension: {
+          id: 'kaiden.cursor',
+        },
+      },
+      'cursor.connection.token': {
+        title: 'Cursor',
+        parentId: 'cursor',
+        scope: 'InferenceProviderConnection',
+        format: 'password',
+        hidden: true,
+        extension: {
+          id: 'kaiden.cursor',
+        },
+      },
+    });
+    vi.mocked(extensionStorageMock.get).mockResolvedValue('actual-api-key');
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-token' });
+
+    const options = { ...baseOptions, model: 'cursor::gpt-4o::https://api.cursor.com' };
+    await manager.ensureModelSecret(options);
+
+    expect(safeStorageRegistry.getExtensionStorage).toHaveBeenCalledWith('kaiden.cursor');
+    expect(extensionStorageMock.get).toHaveBeenCalledWith('cursor:conn-1:token');
+    expect(secretManager.create).toHaveBeenCalledWith({
+      name: 'my-workspace-cursor-token',
+      type: 'cursor',
+      value: 'actual-api-key',
+    });
+    expect(options.secrets).toContain('my-workspace-cursor-token');
+    expect(providerRegistry.getInferenceConnectionCredentials).not.toHaveBeenCalled();
+  });
+
+  test('falls back to legacy path when getInferenceConnection returns undefined', async () => {
+    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue(undefined);
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { 'claude:tokens': 'sk-ant-secret' },
+      llmMetadataName: 'anthropic',
+      endpoint: undefined,
+    });
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-anthropic' });
+
+    const options = { ...baseOptions, model: 'anthropic::claude-sonnet-4-20250514::' };
+    await manager.ensureModelSecret(options);
+
+    expect(secretManager.create).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'my-workspace-anthropic', type: 'anthropic' }),
+    );
+  });
+
+  test('falls back to legacy path when config has no _type', async () => {
+    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
+    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
+      connection: mockConnection,
+      extensionId: 'kaiden.claude',
+    });
+    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
+      get: vi.fn().mockReturnValue(undefined),
+    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
+    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
+      credentials: { 'claude:tokens': 'sk-ant-secret' },
+      llmMetadataName: 'anthropic',
+      endpoint: undefined,
+    });
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-anthropic' });
+
+    const options = { ...baseOptions, model: 'anthropic::claude-sonnet-4-20250514::' };
+    await manager.ensureModelSecret(options);
+
+    expect(secretManager.create).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'my-workspace-anthropic', type: 'anthropic' }),
+    );
+  });
+
+  test('does not fall back when _type exists but secret value is not found', async () => {
+    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
+    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
+      connection: mockConnection,
+      extensionId: 'kaiden.cursor',
+    });
+    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
+      get: vi.fn().mockImplementation((key: string) => {
+        if (key === 'cursor.connection._type') return 'cursor';
+        if (key === 'cursor.connection.token') return 'cursor:conn-1:token';
+        return undefined;
+      }),
+    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
+    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
+      'cursor.connection._type': {
+        title: 'Cursor',
+        parentId: 'cursor',
+        scope: 'InferenceProviderConnection',
+        hidden: true,
+        extension: {
+          id: 'kaiden.cursor',
+        },
+      },
+      'cursor.connection.token': {
+        title: 'Cursor',
+        parentId: 'cursor',
+        scope: 'InferenceProviderConnection',
+        format: 'password',
+        hidden: true,
+        extension: {
+          id: 'kaiden.cursor',
+        },
+      },
+    });
+    vi.mocked(extensionStorageMock.get).mockResolvedValue(undefined);
+
+    const options = { ...baseOptions, model: 'cursor::gpt-4o::' };
+    await manager.ensureModelSecret(options);
+
+    expect(secretManager.create).not.toHaveBeenCalled();
+    expect(providerRegistry.getInferenceConnectionCredentials).not.toHaveBeenCalled();
+  });
+
+  test('derives secret name from sourcePath when name is omitted (config path)', async () => {
+    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
+    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
+      connection: mockConnection,
+      extensionId: 'kaiden.mistral',
+    });
+    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
+      get: vi.fn().mockImplementation((key: string) => {
+        if (key === 'mistral.connection._type') return 'mistral';
+        if (key === 'mistral.connection.token') return 'mistral:conn-1:token';
+        return undefined;
+      }),
+    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
+    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
+      'mistral.connection._type': {
+        title: 'Mistral',
+        parentId: 'mistral',
+        scope: 'InferenceProviderConnection',
+        hidden: true,
+        extension: {
+          id: 'kaiden.mistral',
+        },
+      },
+      'mistral.connection.token': {
+        title: 'Mistral',
+        parentId: 'mistral',
+        scope: 'InferenceProviderConnection',
+        format: 'password',
+        hidden: true,
+        extension: {
+          id: 'kaiden.mistral',
+        },
+      },
+    });
+    vi.mocked(extensionStorageMock.get).mockResolvedValue('mistral-key');
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-project-token' });
+
+    const options: AgentWorkspaceCreateOptions = {
+      sourcePath: '/tmp/my-project',
+      agent: 'coder',
+      model: 'mistral::mistral-large::',
+    };
+    await manager.ensureModelSecret(options);
+
+    expect(secretManager.create).toHaveBeenCalledWith(expect.objectContaining({ name: 'my-project-mistral-token' }));
   });
 });
 

@@ -247,8 +247,8 @@ describe('connection delete lifecycle', () => {
     expect(SECRET_STORAGE_MOCK.delete).toHaveBeenCalledWith(`${PROVIDER_ID}:fake-uuid-1:token`);
 
     // configuration values should be cleared
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('_type', undefined);
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('token', undefined);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('openai.connection._type', undefined);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('openai.connection.token', undefined);
 
     // provider inference connection should be disposed
     expect(disposeMock).toHaveBeenCalledOnce();
@@ -279,11 +279,11 @@ describe('workspace configuration', () => {
 
     // configuration should be scoped to the connection object
     const connection = vi.mocked(PROVIDER_MOCK.registerInferenceProviderConnection).mock.calls[0][0];
-    expect(CONFIGURATION_API_MOCK.getConfiguration).toHaveBeenCalledWith('openai.connection', connection);
+    expect(CONFIGURATION_API_MOCK.getConfiguration).toHaveBeenCalledWith(undefined, connection);
 
     // _type and token should be set
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('_type', PROVIDER_ID);
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('token', `${PROVIDER_ID}:fake-uuid-1:token`);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('openai.connection._type', PROVIDER_ID);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('openai.connection.token', `${PROVIDER_ID}:fake-uuid-1:token`);
   });
 
   test('should set workspace configuration for each restored connection', async () => {
@@ -301,9 +301,9 @@ describe('workspace configuration', () => {
     expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(`${PROVIDER_ID}:id-2:token`, 'key2');
 
     // configuration should be set for each connection
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('_type', PROVIDER_ID);
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('token', `${PROVIDER_ID}:id-1:token`);
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('token', `${PROVIDER_ID}:id-2:token`);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('openai.connection._type', PROVIDER_ID);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('openai.connection.token', `${PROVIDER_ID}:id-1:token`);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('openai.connection.token', `${PROVIDER_ID}:id-2:token`);
   });
 });
 

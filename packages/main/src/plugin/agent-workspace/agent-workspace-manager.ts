@@ -31,6 +31,7 @@ import { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
+import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import { AgentWorkspaceSettings } from '/@api/agent-workspace/agent-workspace-settings.js';
@@ -81,6 +82,8 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly secretManager: SecretManager,
     @inject(OpenshellCli)
     private readonly openshellCli: OpenshellCli,
+    @inject(SafeStorageRegistry)
+    private readonly safeStorageRegistry: SafeStorageRegistry,
   ) {}
 
   async getCliInfo(): Promise<CliInfo> {
@@ -138,6 +141,12 @@ export class AgentWorkspaceManager implements Disposable {
 
     if (options.workspaceConfiguration?.secrets?.length) return;
 
+    try {
+      if (await this.ensureModelSecretFromConfig(options)) return;
+    } finally {
+      /* empty */
+    }
+
     const connectionInfo = this.providerRegistry.getInferenceConnectionCredentials(options.model);
     if (!connectionInfo) return;
 
@@ -165,6 +174,58 @@ export class AgentWorkspaceManager implements Disposable {
       );
       options.workspaceConfiguration.environment.push(result.environmentVariable);
     }
+  }
+
+  private async ensureModelSecretFromConfig(options: AgentWorkspaceCreateOptions): Promise<boolean> {
+    const info = this.providerRegistry.getInferenceConnection(options.model!);
+    if (!info) return false;
+
+    const config = this.configurationRegistry.getConfiguration(undefined, info.connection);
+    const allProperties = this.configurationRegistry.getConfigurationProperties();
+
+    const connectionProperties = Object.entries(allProperties)
+      .filter(([, schema]) => {
+        const scope = schema.scope;
+        return Array.isArray(scope)
+          ? scope.includes('InferenceProviderConnection')
+          : scope === 'InferenceProviderConnection';
+      })
+      .filter(([_, schema]) => schema.extension?.id === info.extensionId);
+
+    const typeEntry = connectionProperties.find(([fullKey]) => fullKey.endsWith('_type'));
+    if (!typeEntry) return false;
+
+    const typeShortKey = typeEntry[0];
+    const secretType = config.get<string>(typeShortKey);
+    if (!secretType) return false;
+
+    const workspaceName = options.name ?? basename(options.sourcePath);
+
+    const passwordKeys = [
+      ...new Set(connectionProperties.filter(([, schema]) => schema.format === 'password').map(([fullKey]) => fullKey)),
+    ];
+
+    const extensionStorage = this.safeStorageRegistry.getExtensionStorage(info.extensionId);
+
+    for (const propertyName of passwordKeys) {
+      const secretRefName = config.get<string>(propertyName);
+      if (!secretRefName) continue;
+
+      const actualValue = await extensionStorage.get(secretRefName);
+      if (!actualValue) continue;
+
+      const shortPropertyName = propertyName.split('.').pop()!;
+      const secretName = `${workspaceName}-${secretType}-${shortPropertyName}`;
+      await this.secretManager.create({
+        name: secretName,
+        type: secretType,
+        value: actualValue,
+      });
+
+      options.secrets = [...new Set([...(options.secrets ?? []), secretName])];
+    }
+
+    return true;
   }
 
   private applyVertexAiConfiguration(options: AgentWorkspaceCreateOptions, credentials: Record<string, string>): void {

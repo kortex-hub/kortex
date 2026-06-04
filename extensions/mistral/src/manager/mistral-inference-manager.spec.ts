@@ -275,8 +275,8 @@ describe('connection delete lifecycle', () => {
 
     expect(SECRET_STORAGE_MOCK.delete).toHaveBeenCalledWith(`${PROVIDER_ID}:fake-uuid-1:token`);
 
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('_type', undefined);
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('token', undefined);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('mistral.connection._type', undefined);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('mistral.connection.token', undefined);
 
     expect(disposeMock).toHaveBeenCalledOnce();
   });
@@ -305,8 +305,8 @@ describe('workspace configuration', () => {
     const connection = vi.mocked(PROVIDER_MOCK.registerInferenceProviderConnection).mock.calls[0][0];
     expect(configuration.getConfiguration).toHaveBeenCalledWith(undefined, connection);
 
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('_type', PROVIDER_ID);
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('token', `${PROVIDER_ID}:fake-uuid-1:token`);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('mistral.connection._type', PROVIDER_ID);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('mistral.connection.token', `${PROVIDER_ID}:fake-uuid-1:token`);
   });
 
   test('should set workspace configuration for each restored connection', async () => {
@@ -322,9 +322,9 @@ describe('workspace configuration', () => {
     expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(`${PROVIDER_ID}:id-1:token`, 'key1');
     expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(`${PROVIDER_ID}:id-2:token`, 'key2');
 
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('_type', PROVIDER_ID);
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('token', `${PROVIDER_ID}:id-1:token`);
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('token', `${PROVIDER_ID}:id-2:token`);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('mistral.connection._type', PROVIDER_ID);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('mistral.connection.token', `${PROVIDER_ID}:id-1:token`);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('mistral.connection.token', `${PROVIDER_ID}:id-2:token`);
   });
 });
 

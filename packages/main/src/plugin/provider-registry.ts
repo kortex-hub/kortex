@@ -2260,6 +2260,27 @@ export class ProviderRegistry {
     return undefined;
   }
 
+  getInferenceConnection(
+    modelId: string,
+  ): { connection: InferenceProviderConnection; extensionId: string } | undefined {
+    const [metadataName = '', modelLabel = '', endpoint = ''] = modelId.split('::');
+
+    for (const provider of this.providers.values()) {
+      for (const connection of provider.inferenceConnections) {
+        const connMetadataName = connection.llmMetadata?.name ?? '';
+        const connEndpoint = connection.endpoint ?? '';
+        if (
+          connMetadataName === metadataName &&
+          connEndpoint === endpoint &&
+          connection.models.some(m => m.label === modelLabel)
+        ) {
+          return { connection, extensionId: provider.extensionId };
+        }
+      }
+    }
+    return undefined;
+  }
+
   getFlowProviderConnection(internalProviderId: string): Array<FlowProviderConnection> {
     const provider = this.providers.get(internalProviderId);
     if (!provider) throw new Error('Provider not found');
