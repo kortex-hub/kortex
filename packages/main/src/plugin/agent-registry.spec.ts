@@ -42,6 +42,7 @@ function createAgent(overrides?: Partial<Agent>): Agent {
     id: 'test-agent',
     name: 'Test Agent',
     description: 'A test agent',
+    command: 'test-cmd',
     ...overrides,
   };
 }
@@ -260,9 +261,32 @@ describe('AgentRegistry', () => {
         description: 'A test agent',
         icon: undefined,
         tags: undefined,
+        command: 'test-cmd',
+        acp: undefined,
         supportedModelTypes: undefined,
         supportedRuntimes: undefined,
       });
+    });
+
+    test('passes through command and acp configuration', async () => {
+      const agent = createAgent({
+        command: 'goose',
+        acp: { args: ['acp'] },
+      });
+
+      const info = await agentRegistry.toAgentInfo(agent);
+      expect(info.command).toBe('goose');
+      expect(info.acp).toEqual({ args: ['acp'] });
+    });
+
+    test('passes through command without acp', async () => {
+      const agent = createAgent({
+        command: 'claude',
+      });
+
+      const info = await agentRegistry.toAgentInfo(agent);
+      expect(info.command).toBe('claude');
+      expect(info.acp).toBeUndefined();
     });
 
     test('populates supportedModelTypes when isSupportedModelType is provided', async () => {

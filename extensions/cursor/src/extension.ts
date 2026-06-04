@@ -35,6 +35,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       icon: { dark: './APP_ICON_2D_DARK.png', light: './APP_ICON_2D_LIGHT.png' },
       logo: { dark: './APP_ICON_2D_DARK.png', light: './APP_ICON_2D_LIGHT.png' },
     },
+    command: 'cursor',
     tags: ['Local'],
     isSupportedModelType(type): boolean {
       return type.name === 'cursor';

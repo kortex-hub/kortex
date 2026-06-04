@@ -2113,6 +2113,7 @@ test('registerAgent', async () => {
     id: 'my-agent',
     name: 'My Agent',
     description: 'An agent for testing',
+    command: 'my-agent',
   };
 
   vi.mocked(agentRegistry.registerAgent).mockReturnValue(Disposable.create(() => {}));

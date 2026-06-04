@@ -28,6 +28,8 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       icon: './icon.png',
       logo: './icon.png',
     },
+    command: 'openclaw',
+    acp: { args: ['acp'] },
     isSupportedModelType(type: ModelType): boolean {
       return type.name !== 'vertexai';
     },

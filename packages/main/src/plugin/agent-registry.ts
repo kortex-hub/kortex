@@ -94,6 +94,8 @@ export class AgentRegistry {
       description: agent.description,
       icon: agent.icon,
       tags: agent.tags,
+      command: agent.command,
+      acp: agent.acp,
       supportedModelTypes,
       supportedRuntimes,
     };

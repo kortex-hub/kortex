@@ -28,6 +28,8 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       icon: { dark: './icon_dark.png', light: './icon_light.png' },
       logo: { dark: './icon_dark.png', light: './icon_light.png' },
     },
+    command: 'goose',
+    acp: { args: ['acp'] },
     isSupportedRuntime(runtime): boolean {
       return runtime === 'podman';
     },

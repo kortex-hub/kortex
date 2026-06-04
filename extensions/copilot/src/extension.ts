@@ -36,6 +36,8 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
         light: './icon_light.png',
       },
     },
+    command: 'copilot',
+    acp: { args: ['--acp'] },
     tags: [],
     isSupportedModelType(type): boolean {
       return type.name !== 'vertexai';

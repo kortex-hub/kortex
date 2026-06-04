@@ -28,6 +28,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       icon: './icon.png',
       logo: { dark: './icon.png', light: './icon.png' },
     },
+    command: 'codex',
     isSupportedModelType(type): boolean {
       return type.name === 'openai';
     },

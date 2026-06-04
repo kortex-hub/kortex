@@ -37,6 +37,8 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       icon: './icon.png',
       logo: { dark: './icon.png', light: './icon.png' },
     },
+    command: 'gemini',
+    acp: { args: ['--acp'] },
     tags: ['Cloud'],
     isSupportedModelType(type): boolean {
       return type.name === 'gemini';

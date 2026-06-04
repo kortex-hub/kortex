@@ -58,6 +58,7 @@ export class ClaudeExtension {
       name: 'Claude Code',
       description: 'Anthropic cloud agent — connect with an API key to access Claude models.',
       icon: providerImages,
+      command: 'claude',
       tags: ['Cloud'],
       isSupportedModelType: (type): boolean => type.name === 'anthropic',
     });

@@ -18,12 +18,18 @@
 
 import type { ModelType, ProviderImages, Runtime } from '@openkaiden/api';
 
+export interface AcpConfigurationInfo {
+  args: ReadonlyArray<string>;
+}
+
 export interface AgentInfo {
   id: string;
   name: string;
   description: string;
   icon?: ProviderImages;
   tags?: ReadonlyArray<string>;
+  command: string;
+  acp?: AcpConfigurationInfo;
   supportedModelTypes?: ReadonlyArray<ModelType>;
   supportedRuntimes?: ReadonlyArray<Runtime>;
 }

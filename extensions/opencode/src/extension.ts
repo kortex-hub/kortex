@@ -29,6 +29,8 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       icon: { dark: './icon_dark.png', light: './icon_light.png' },
       logo: { dark: './icon_dark.png', light: './icon_light.png' },
     },
+    command: 'opencode',
+    acp: { args: ['acp'] },
     tags: ['Recommended'],
     isSupportedRuntime(): boolean {
       return true;

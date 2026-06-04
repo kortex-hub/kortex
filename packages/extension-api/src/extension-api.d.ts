@@ -5547,12 +5547,18 @@ declare module '@openkaiden/api' {
     readonly name: string;
   }
 
+  export interface AcpConfiguration {
+    readonly args: ReadonlyArray<string>;
+  }
+
   export interface Agent {
     readonly id: string;
     readonly name: string;
     readonly description: string;
     readonly icon?: ProviderImages;
     readonly tags?: ReadonlyArray<string>;
+    readonly command: string;
+    readonly acp?: AcpConfiguration;
     isSupportedModelType?(type: ModelType): boolean | Promise<boolean>;
     isSupportedRuntime?(runtime: Runtime): boolean | Promise<boolean>;
   }

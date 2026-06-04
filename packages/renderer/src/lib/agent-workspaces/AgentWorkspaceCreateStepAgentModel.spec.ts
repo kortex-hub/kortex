@@ -71,6 +71,7 @@ const mockAgentInfos: AgentInfo[] = [
     id: 'opencode',
     name: 'OpenCode',
     description: 'Open-source agent.',
+    command: 'opencode',
     tags: ['Recommended'],
     supportedModelTypes: [{ name: 'anthropic' }, { name: 'openai' }, { name: 'ollama' }, { name: 'gemini' }],
   },
@@ -78,6 +79,7 @@ const mockAgentInfos: AgentInfo[] = [
     id: 'claude',
     name: 'Claude Code',
     description: 'Anthropic Claude.',
+    command: 'claude',
     tags: ['Cloud'],
     supportedModelTypes: [{ name: 'anthropic' }],
   },
@@ -85,18 +87,21 @@ const mockAgentInfos: AgentInfo[] = [
     id: 'claude-vertex',
     name: 'Claude on Vertex AI',
     description: 'Claude via Vertex AI.',
+    command: 'claude',
     supportedModelTypes: [{ name: 'vertexai' }],
   },
   {
     id: 'cursor',
     name: 'Cursor',
     description: 'AI code editor.',
+    command: 'cursor',
     supportedModelTypes: [{ name: 'anthropic' }, { name: 'openai' }, { name: 'ollama' }, { name: 'gemini' }],
   },
   {
     id: 'goose',
     name: 'Goose',
     description: 'Autonomous coding agent.',
+    command: 'goose',
     supportedRuntimes: ['podman'],
     supportedModelTypes: [{ name: 'anthropic' }, { name: 'openai' }, { name: 'ollama' }, { name: 'gemini' }],
   },
@@ -388,9 +393,15 @@ test('Claude on Vertex AI shows only Vertex AI models', async () => {
 
 test('recommended agent is sorted first regardless of other tags', () => {
   const agents: AgentInfo[] = [
-    { id: 'cloud', name: 'Cloud Agent', description: 'Cloud tag.', tags: ['Cloud'] },
-    { id: 'no-tag', name: 'No Tag Agent', description: 'No tags.' },
-    { id: 'recommended', name: 'Recommended Agent', description: 'Recommended.', tags: ['Recommended'] },
+    { id: 'cloud', name: 'Cloud Agent', description: 'Cloud tag.', command: 'cloud', tags: ['Cloud'] },
+    { id: 'no-tag', name: 'No Tag Agent', description: 'No tags.', command: 'no-tag' },
+    {
+      id: 'recommended',
+      name: 'Recommended Agent',
+      description: 'Recommended.',
+      command: 'recommended',
+      tags: ['Recommended'],
+    },
   ];
   vi.mocked(agentsStore).agentInfos = writable<AgentInfo[]>(agents);
 
