@@ -465,7 +465,7 @@ describe('listSandboxesForGateway', () => {
     expect(result.sandboxes).toEqual(sandboxes);
     expect(exec.exec).toHaveBeenCalledWith(
       OPENSHELL_CLI_PATH,
-      ['sandbox', 'list', '-g', 'gw-2', '--selector', 'gateway=gw-2', '-o', 'json'],
+      ['sandbox', 'list', '-g', 'gw-2', '-o', 'json'],
       undefined,
     );
     expect(exec.exec).not.toHaveBeenCalledWith(OPENSHELL_CLI_PATH, expect.arrayContaining(['gateway', 'select']));
@@ -503,12 +503,12 @@ describe('listSandboxesPerGateway', () => {
     expect(second?.sandboxes).toEqual(sandboxes2);
     expect(exec.exec).toHaveBeenCalledWith(
       OPENSHELL_CLI_PATH,
-      ['sandbox', 'list', '-g', 'gw-1', '--selector', 'gateway=gw-1', '-o', 'json'],
+      ['sandbox', 'list', '-g', 'gw-1', '-o', 'json'],
       undefined,
     );
     expect(exec.exec).toHaveBeenCalledWith(
       OPENSHELL_CLI_PATH,
-      ['sandbox', 'list', '-g', 'gw-2', '--selector', 'gateway=gw-2', '-o', 'json'],
+      ['sandbox', 'list', '-g', 'gw-2', '-o', 'json'],
       undefined,
     );
     expect(exec.exec).not.toHaveBeenCalledWith(OPENSHELL_CLI_PATH, expect.arrayContaining(['gateway', 'select']));
