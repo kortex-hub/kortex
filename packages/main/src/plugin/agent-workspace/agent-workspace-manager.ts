@@ -258,7 +258,10 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   async remove(id: string): Promise<AgentWorkspaceId> {
-    const task = this.taskManager.createTask({ title: `Deleting workspace ${id}` });
+    const workspaces = await this.list();
+    const workspace = workspaces.find(ws => ws.id === id);
+    const workspaceName = workspace?.name ?? id;
+    const task = this.taskManager.createTask({ title: `Deleting workspace "${workspaceName}"` });
     task.state = 'running';
     task.status = 'in-progress';
     try {

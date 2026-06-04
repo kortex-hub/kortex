@@ -816,6 +816,7 @@ describe('list', () => {
 
 describe('remove', () => {
   test('delegates to kdnCli.remove and returns the workspace id', async () => {
+    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
     vi.mocked(kdnCli.removeWorkspaces).mockResolvedValue({ id: 'ws-1' });
 
     const result = await manager.remove('ws-1');
@@ -824,17 +825,28 @@ describe('remove', () => {
     expect(result).toEqual({ id: 'ws-1' });
   });
 
-  test('creates a task and sets success status on completion', async () => {
+  test('creates a task with workspace name and sets success status on completion', async () => {
+    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
     vi.mocked(kdnCli.removeWorkspaces).mockResolvedValue({ id: 'ws-1' });
 
     await manager.remove('ws-1');
 
-    expect(taskManager.createTask).toHaveBeenCalledWith({ title: 'Deleting workspace ws-1' });
+    expect(taskManager.createTask).toHaveBeenCalledWith({ title: 'Deleting workspace "test-workspace-1"' });
     expect(mockTask.status).toBe('success');
     expect(mockTask.state).toBe('completed');
   });
 
+  test('uses workspace id as fallback when workspace not found in list', async () => {
+    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue([]);
+    vi.mocked(kdnCli.removeWorkspaces).mockResolvedValue({ id: 'unknown-id' });
+
+    await manager.remove('unknown-id');
+
+    expect(taskManager.createTask).toHaveBeenCalledWith({ title: 'Deleting workspace "unknown-id"' });
+  });
+
   test('sets task failure status when CLI fails', async () => {
+    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
     vi.mocked(kdnCli.removeWorkspaces).mockRejectedValue(new Error('workspace not found: unknown-id'));
 
     await expect(manager.remove('unknown-id')).rejects.toThrow('workspace not found: unknown-id');
@@ -845,6 +857,7 @@ describe('remove', () => {
   });
 
   test('preserves error detail in task error message', async () => {
+    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
     vi.mocked(kdnCli.removeWorkspaces).mockRejectedValue(new Error('failed to remove workspace: permission denied'));
 
     await expect(manager.remove('ws-1')).rejects.toThrow('failed to remove workspace: permission denied');
@@ -853,6 +866,7 @@ describe('remove', () => {
   });
 
   test('emits agent-workspace-update event', async () => {
+    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
     vi.mocked(kdnCli.removeWorkspaces).mockResolvedValue({ id: 'ws-1' });
 
     await manager.remove('ws-1');
