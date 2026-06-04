@@ -12,18 +12,26 @@ const statusLabel = $derived(
   object.phase.toLowerCase() === 'ready' ? 'Running' : object.phase.charAt(0).toUpperCase() + object.phase.slice(1),
 );
 
-const dotColor = $derived(
+const phaseCategory = $derived(
   object.phase.toLowerCase() === 'ready' || object.phase.toLowerCase() === 'running'
-    ? 'bg-[var(--pd-status-running)]'
+    ? 'running'
     : object.phase.toLowerCase() === 'pending' || object.phase.toLowerCase() === 'creating'
+      ? 'waiting'
+      : 'terminated',
+);
+
+const dotColor = $derived(
+  phaseCategory === 'running'
+    ? 'bg-[var(--pd-status-running)]'
+    : phaseCategory === 'waiting'
       ? 'bg-[var(--pd-status-waiting)]'
       : 'bg-[var(--pd-status-terminated)]',
 );
 
 const textColor = $derived(
-  object.phase.toLowerCase() === 'ready' || object.phase.toLowerCase() === 'running'
+  phaseCategory === 'running'
     ? 'text-[var(--pd-status-running)]'
-    : object.phase.toLowerCase() === 'pending' || object.phase.toLowerCase() === 'creating'
+    : phaseCategory === 'waiting'
       ? 'text-[var(--pd-status-waiting)]'
       : 'text-[var(--pd-table-body-text)] opacity-60',
 );
