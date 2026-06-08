@@ -58,7 +58,7 @@ export const filteredSecretVaultInfos = derived(
 let readyToUpdate = false;
 
 async function checkForUpdate(eventName: string): Promise<boolean> {
-  if ('system-ready' === eventName) {
+  if ('extensions-already-started' === eventName) {
     readyToUpdate = true;
   }
   return readyToUpdate;
@@ -74,7 +74,7 @@ export const secretVaultEventStore = new EventStore<readonly SecretVaultInfo[]>(
   secretVaultInfos,
   checkForUpdate,
   ['secret-manager-update'],
-  ['system-ready'],
+  ['extensions-already-started'],
   listSecrets,
 );
 secretVaultEventStore.setup();
