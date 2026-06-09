@@ -66,11 +66,12 @@ describe('ClaudeExtension', () => {
     );
   });
 
-  test('registered agent supports anthropic model type', async () => {
+  test('registered agent supports anthropic and vertexai model types', async () => {
     await claudeExtension.activate();
 
     const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
     expect(agent.isSupportedModelType!({ name: 'anthropic' })).toBe(true);
+    expect(agent.isSupportedModelType!({ name: 'vertexai' })).toBe(true);
     expect(agent.isSupportedModelType!({ name: 'openai' })).toBe(false);
   });
 

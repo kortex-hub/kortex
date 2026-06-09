@@ -60,7 +60,7 @@ export class ClaudeExtension {
       icon: providerImages,
       command: 'claude',
       tags: ['Cloud'],
-      isSupportedModelType: (type): boolean => type.name === 'anthropic',
+      isSupportedModelType: (type): boolean => type.name === 'anthropic' || type.name === 'vertexai',
     });
 
     this.#inversifyBinding = new InversifyBinding(claudeProvider, this.#extensionContext);
