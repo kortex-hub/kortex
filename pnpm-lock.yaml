@@ -8113,20 +8113,6 @@ snapshots:
       '@vercel/oidc': 3.2.0
       zod: 4.4.3
 
-  '@ai-sdk/gateway@3.0.126(zod@4.3.6)':
-    dependencies:
-      '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@4.3.6)
-      '@vercel/oidc': 3.2.0
-      zod: 4.3.6
-
-  '@ai-sdk/gateway@3.0.126(zod@4.4.3)':
-    dependencies:
-      '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
-      '@vercel/oidc': 3.2.0
-      zod: 4.4.3
-
   '@ai-sdk/google-vertex@4.0.142(zod@4.4.3)':
     dependencies:
       '@ai-sdk/anthropic': 3.0.81(zod@4.4.3)
@@ -10288,22 +10274,6 @@ snapshots:
       '@ai-sdk/provider-utils': 4.0.27(zod@4.3.6)
       '@opentelemetry/api': 1.9.1
       zod: 4.3.6
-
-  ai@6.0.198(zod@4.3.6):
-    dependencies:
-      '@ai-sdk/gateway': 3.0.126(zod@4.3.6)
-      '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@4.3.6)
-      '@opentelemetry/api': 1.9.1
-      zod: 4.3.6
-
-  ai@6.0.198(zod@4.4.3):
-    dependencies:
-      '@ai-sdk/gateway': 3.0.126(zod@4.4.3)
-      '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
-      '@opentelemetry/api': 1.9.1
-      zod: 4.4.3
 
   ai@6.0.198(zod@4.3.6):
     dependencies:
