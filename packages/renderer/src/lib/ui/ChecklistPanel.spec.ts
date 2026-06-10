@@ -33,6 +33,7 @@ const SAMPLE_ITEMS: ChecklistItem[] = [
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.useFakeTimers({ shouldAdvanceTime: true });
 });
 
 describe('empty state', () => {
@@ -54,9 +55,10 @@ describe('empty state', () => {
     expect(screen.queryByText(/\d+ items/)).not.toBeInTheDocument();
   });
 
-  test('does not show footer when empty', () => {
+  test('does not show select all link when empty', () => {
     render(ChecklistPanel, { title: 'Vault', items: [] });
 
+    expect(screen.queryByRole('button', { name: 'Select all' })).not.toBeInTheDocument();
     expect(screen.queryByText(/selected/)).not.toBeInTheDocument();
   });
 });
@@ -162,9 +164,71 @@ describe('selection', () => {
     expect(screen.getByText('2 of 3 selected')).toBeInTheDocument();
   });
 
-  test('renders zero selection count', () => {
+  test('renders zero selection count in footer', () => {
     render(ChecklistPanel, { title: 'Vault', items: SAMPLE_ITEMS, selected: [] });
 
     expect(screen.getByText('0 of 3 selected')).toBeInTheDocument();
+  });
+
+  test('select all link selects all items', async () => {
+    render(ChecklistPanel, { title: 'Vault', items: SAMPLE_ITEMS, selected: [] });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
+
+    expect(screen.getByText('3 of 3 selected')).toBeInTheDocument();
+  });
+
+  test('deselect all link deselects all items', async () => {
+    render(ChecklistPanel, { title: 'Vault', items: SAMPLE_ITEMS, selected: ['gh', 'jira', 'ocp'] });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Deselect all' }));
+
+    expect(screen.getByText('0 of 3 selected')).toBeInTheDocument();
+  });
+
+  test('shows "Select all" link when not all selected', () => {
+    render(ChecklistPanel, { title: 'Vault', items: SAMPLE_ITEMS, selected: ['gh'] });
+
+    expect(screen.getByRole('button', { name: 'Select all' })).toBeInTheDocument();
+  });
+
+  test('shows "Deselect all" link when all selected', () => {
+    render(ChecklistPanel, { title: 'Vault', items: SAMPLE_ITEMS, selected: ['gh', 'jira', 'ocp'] });
+
+    expect(screen.getByRole('button', { name: 'Deselect all' })).toBeInTheDocument();
+  });
+
+  test('calls onchange when select all is clicked', async () => {
+    const onchange = vi.fn();
+    render(ChecklistPanel, { title: 'Vault', items: SAMPLE_ITEMS, selected: [], onchange });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Select all' }));
+
+    expect(onchange).toHaveBeenCalledWith(['gh', 'jira', 'ocp']);
+  });
+
+  test('calls onchange when deselect all is clicked', async () => {
+    const onchange = vi.fn();
+    render(ChecklistPanel, { title: 'Vault', items: SAMPLE_ITEMS, selected: ['gh', 'jira', 'ocp'], onchange });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Deselect all' }));
+
+    expect(onchange).toHaveBeenCalledWith([]);
+  });
+
+  test('calls onchange when individual item is toggled', async () => {
+    const onchange = vi.fn();
+    render(ChecklistPanel, { title: 'Vault', items: SAMPLE_ITEMS, selected: [], onchange });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'GitHub' }));
+
+    expect(onchange).toHaveBeenCalledWith(['gh']);
+  });
+
+  test('does not show deselect all when selected contains invalid IDs', () => {
+    render(ChecklistPanel, { title: 'Vault', items: SAMPLE_ITEMS, selected: ['gh', 'jira', 'invalid-id'] });
+
+    expect(screen.getByRole('button', { name: 'Select all' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Deselect all' })).not.toBeInTheDocument();
   });
 });

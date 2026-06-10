@@ -54,6 +54,17 @@ function isSelected(id: string): boolean {
   return selected.includes(id);
 }
 
+let allSelected: boolean = $derived(items.length > 0 && items.every(item => selected.includes(item.id)));
+
+function toggleAll(): void {
+  if (allSelected) {
+    selected = [];
+  } else {
+    selected = items.map(i => i.id);
+  }
+  onchange?.(selected);
+}
+
 function toggle(id: string): void {
   if (isSelected(id)) {
     selected = selected.filter(s => s !== id);
@@ -90,8 +101,17 @@ function toggle(id: string): void {
     {/if}
   </div>
 
-  <!-- Items -->
+  <!-- Toggle all + Items -->
   <div class="px-2 py-1">
+    {#if items.length > 0}
+      <div class="flex justify-end px-3 pt-1">
+        <button
+          class="text-xs text-[var(--pd-link)] hover:underline cursor-pointer"
+          onclick={toggleAll}>
+          {allSelected ? 'Deselect all' : 'Select all'}
+        </button>
+      </div>
+    {/if}
     {#if items.length === 0}
       <div class="py-4 text-center text-sm text-[var(--pd-content-card-text)] opacity-50 italic">
         {emptyMessage}
