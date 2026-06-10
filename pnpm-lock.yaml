@@ -399,8 +399,8 @@ importers:
   extensions/claude:
     dependencies:
       '@ai-sdk/anthropic':
-        specifier: ^3.0.78
-        version: 3.0.81(zod@4.4.3)
+        specifier: ^3.0.82
+        version: 3.0.82(zod@4.4.3)
       '@anthropic-ai/sdk':
         specifier: ^0.88.0
         version: 0.88.0(zod@4.4.3)
@@ -1108,6 +1108,12 @@ packages:
 
   '@ai-sdk/anthropic@3.0.81':
     resolution: {integrity: sha512-B1JDd9Ugq9R5AgIaW3674lhGCMMYJcPUxnrZh8fzbGojgg4QvHFRv6eZahGQAUsmGHbcf74G9bdSBDLWQGY2GA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/anthropic@3.0.82':
+    resolution: {integrity: sha512-WKKou2wbhGGYV8PSALAPyV2YY4nfCqCPkyBzYtJtDA9yCcIFwsbtkTNgg7bqtLCVzeEsY7wwxRoCWy+EMfrw/A==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -8092,6 +8098,12 @@ snapshots:
       '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
       zod: 4.4.3
 
+  '@ai-sdk/anthropic@3.0.82(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/provider': 3.0.10
+      '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
+      zod: 4.4.3
+
   '@ai-sdk/gateway@3.0.126(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.10
@@ -9157,7 +9169,7 @@ snapshots:
 
   '@npmcli/fs@4.0.0':
     dependencies:
-      semver: 7.7.3
+      semver: 7.8.4
 
   '@npmcli/move-file@1.1.2':
     dependencies:
