@@ -151,6 +151,7 @@ describe('init', () => {
     );
     expect(PROVIDER_MOCK.setInferenceProviderConnectionFactory).toHaveBeenCalledWith({
       connectionTypes: ['cloud'],
+      llmMetadata: { name: 'vertexai' },
       create: expect.any(Function),
     });
   });

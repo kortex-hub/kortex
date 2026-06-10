@@ -129,6 +129,7 @@ describe('init', () => {
     expect(PROVIDER_MOCK.setInferenceProviderConnectionFactory).toHaveBeenCalledOnce();
     expect(PROVIDER_MOCK.setInferenceProviderConnectionFactory).toHaveBeenCalledWith({
       connectionTypes: ['cloud'],
+      llmMetadata: { name: 'openai' },
       create: expect.any(Function),
     });
   });

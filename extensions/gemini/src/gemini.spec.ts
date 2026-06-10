@@ -156,6 +156,7 @@ describe('init', () => {
     expect(PROVIDER_MOCK.setInferenceProviderConnectionFactory).toHaveBeenCalledOnce();
     expect(PROVIDER_MOCK.setInferenceProviderConnectionFactory).toHaveBeenCalledWith({
       connectionTypes: ['cloud'],
+      llmMetadata: { name: 'gemini' },
       create: expect.any(Function),
     });
   });

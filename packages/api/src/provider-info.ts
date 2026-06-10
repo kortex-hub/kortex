@@ -171,6 +171,8 @@ export interface ProviderInfo {
   inferenceProviderConnectionCreationButtonTitle?: string;
   // optional connection types from the factory (e.g. ['cloud', 'self-hosted'])
   inferenceProviderConnectionCreationTypes?: InferenceProviderConnectionType[];
+  // optional LLM metadata from the factory (e.g. { name: 'anthropic' })
+  inferenceProviderConnectionCreationLLMMetadata?: LLMMetadata;
 
   /**
    * RAG Provider connection

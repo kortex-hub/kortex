@@ -63,6 +63,7 @@ export class Gemini implements Disposable {
     // register MCP Provider connection factory
     this.provider?.setInferenceProviderConnectionFactory({
       connectionTypes: ['cloud'],
+      llmMetadata: { name: 'gemini' },
       create: this.mcpFactory.bind(this),
     });
 

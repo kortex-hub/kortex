@@ -58,6 +58,7 @@ export class CursorInferenceManager {
   async init(): Promise<void> {
     this.cursorProvider.setInferenceProviderConnectionFactory({
       connectionTypes: ['cloud'],
+      llmMetadata: { name: 'cursor' },
       create: this.factory.bind(this),
     });
     await this.restoreConnections();

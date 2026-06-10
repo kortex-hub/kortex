@@ -54,6 +54,7 @@ export class MistralInferenceManager {
   async init(): Promise<void> {
     this.mistralProvider.setInferenceProviderConnectionFactory({
       connectionTypes: ['cloud'],
+      llmMetadata: { name: 'mistral' },
       create: this.factory.bind(this),
     });
     await this.restoreConnections();

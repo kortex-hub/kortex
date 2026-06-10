@@ -59,6 +59,7 @@ export class OpenAI implements Disposable {
     // register MCP Provider connection factory
     this.provider?.setInferenceProviderConnectionFactory({
       connectionTypes: ['cloud'],
+      llmMetadata: { name: 'openai' },
       create: this.inferenceFactory.bind(this),
     });
 

@@ -143,6 +143,85 @@ test('getInferenceConnectionSummaries includes not-configured entries for factor
   expect(notConfigured.map(s => s.connectionType)).toEqual(expect.arrayContaining(['self-hosted', 'local']));
 });
 
+test('getInferenceConnectionSummaries includes llmMetadata from connection', () => {
+  getProviderInfosMock.mockReturnValue([
+    {
+      id: 'claude',
+      name: 'Claude',
+      internalId: 'claude-1',
+      inferenceConnections: [
+        {
+          id: 'conn-0',
+          name: 'conn1',
+          type: 'cloud',
+          status: 'started',
+          llmMetadata: { name: 'anthropic' },
+          models: [{ label: 'claude-4' }],
+        },
+      ],
+      inferenceProviderConnectionCreation: true,
+      inferenceProviderConnectionCreationDisplayName: 'Claude Setup',
+      inferenceProviderConnectionCreationTypes: [],
+    },
+  ] as unknown as ProviderInfo[]);
+
+  registry.init();
+  const data = registry.getInferenceConnectionSummaries();
+
+  expect(data).toHaveLength(1);
+  expect(data[0]?.llmMetadata).toEqual({ name: 'anthropic' });
+});
+
+test('getInferenceConnectionSummaries uses factory llmMetadata for not-configured entries', () => {
+  getProviderInfosMock.mockReturnValue([
+    {
+      id: 'claude',
+      name: 'Claude',
+      internalId: 'claude-1',
+      inferenceConnections: [],
+      inferenceProviderConnectionCreation: true,
+      inferenceProviderConnectionCreationTypes: ['cloud'],
+      inferenceProviderConnectionCreationLLMMetadata: { name: 'anthropic' },
+    },
+  ] as unknown as ProviderInfo[]);
+
+  registry.init();
+  const data = registry.getInferenceConnectionSummaries();
+
+  expect(data).toHaveLength(1);
+  expect(data[0]?.status).toBe('not-configured');
+  expect(data[0]?.llmMetadata).toEqual({ name: 'anthropic' });
+});
+
+test('getInferenceConnectionSummaries prefers connection llmMetadata over factory llmMetadata', () => {
+  getProviderInfosMock.mockReturnValue([
+    {
+      id: 'claude',
+      name: 'Claude',
+      internalId: 'claude-1',
+      inferenceConnections: [
+        {
+          id: 'conn-0',
+          name: 'conn1',
+          type: 'cloud',
+          status: 'started',
+          llmMetadata: { name: 'anthropic' },
+          models: [{ label: 'claude-4' }],
+        },
+      ],
+      inferenceProviderConnectionCreation: true,
+      inferenceProviderConnectionCreationTypes: [],
+      inferenceProviderConnectionCreationLLMMetadata: { name: 'fallback' },
+    },
+  ] as unknown as ProviderInfo[]);
+
+  registry.init();
+  const data = registry.getInferenceConnectionSummaries();
+
+  expect(data).toHaveLength(1);
+  expect(data[0]?.llmMetadata).toEqual({ name: 'anthropic' });
+});
+
 test('invalidate sends inference-connection-summary-registry:update event when data changes', () => {
   getProviderInfosMock.mockReturnValue([]);
   registry.init();

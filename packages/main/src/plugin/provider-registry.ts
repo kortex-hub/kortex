@@ -951,6 +951,7 @@ export class ProviderRegistry {
     const inferenceProviderConnectionCreationButtonTitle =
       provider.inferenceProviderConnectionFactory?.creationButtonTitle;
     const inferenceProviderConnectionCreationTypes = provider.inferenceProviderConnectionFactory?.connectionTypes;
+    const inferenceProviderConnectionCreationLLMMetadata = provider.inferenceProviderConnectionFactory?.llmMetadata;
     if (provider?.inferenceProviderConnectionFactory?.initialize) {
       inferenceProviderConnectionInitialization = true;
     }
@@ -1027,6 +1028,7 @@ export class ProviderRegistry {
       inferenceProviderConnectionCreationDisplayName,
       inferenceProviderConnectionCreationButtonTitle,
       inferenceProviderConnectionCreationTypes,
+      inferenceProviderConnectionCreationLLMMetadata,
       // RAG
       ragProviderConnectionCreation,
       ragProviderConnectionInitialization,

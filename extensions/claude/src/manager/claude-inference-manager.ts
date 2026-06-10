@@ -57,6 +57,7 @@ export class ClaudeInferenceManager {
   async init(): Promise<void> {
     this.claudeProvider.setInferenceProviderConnectionFactory({
       connectionTypes: ['cloud'],
+      llmMetadata: { name: 'anthropic' },
       create: this.factory.bind(this),
     });
     await this.restoreConnections();

@@ -123,6 +123,7 @@ export class VertexAi implements Disposable {
 
     this.provider?.setInferenceProviderConnectionFactory({
       connectionTypes: ['cloud'],
+      llmMetadata: { name: 'vertexai' },
       create: this.factory.bind(this),
     });
 
