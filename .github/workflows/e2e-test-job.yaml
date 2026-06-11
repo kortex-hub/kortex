@@ -21,7 +21,7 @@ on:
   workflow_call:
     inputs:
       instance:
-        description: 'GitHub Actions runner instance (e.g., macos-latest, windows-2025, ubuntu-24.04)'
+        description: 'GitHub Actions runner instance (e.g., macos-latest, windows-2022, ubuntu-24.04)'
         required: true
         type: string
       mode:

@@ -49,7 +49,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2025, windows-11-arm]
+        os: [windows-2022, windows-11-arm]
         mode: [prod, dev]
     uses: ./.github/workflows/e2e-test-job.yaml
     with:
