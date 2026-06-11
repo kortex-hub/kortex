@@ -281,25 +281,27 @@ export class OpenshellCli {
       throw new Error('credentials must not be empty');
     }
     const args = ['provider', 'create', '--name', options.name, '--type', options.type];
+    const env: Record<string, string> = {};
     for (const [key, value] of Object.entries(options.credentials)) {
-      args.push('--credential', `${key}=${value}`);
+      env[key] = value;
+      args.push('--credential', key);
     }
     if (options.config) {
       for (const [key, value] of Object.entries(options.config)) {
         args.push('--config', `${key}=${value}`);
       }
     }
-    await this.runCli(args, { redact: true });
+    await this.runCli(args, { redact: true, env });
   }
 
   // ── helpers ───────────────────────────────────────────────────────
 
-  private async runCli(args: string[], options?: { redact?: boolean }): Promise<void> {
+  private async runCli(args: string[], options?: { redact?: boolean; env?: { [p: string]: string } }): Promise<void> {
     const cliPath = this.getCliPath();
     const displayArgs = options?.redact ? this.redactSensitiveArgs(args) : args;
     console.log(`Executing: ${cliPath} ${displayArgs.join(' ')}`);
     try {
-      await this.exec.exec(cliPath, args);
+      await this.exec.exec(cliPath, args, options?.env ? { env: options.env } : undefined);
     } catch (err: unknown) {
       const detail = this.extractCliError(err);
       console.error(`openshell failed: ${cliPath} ${displayArgs.join(' ')} — ${detail}`);

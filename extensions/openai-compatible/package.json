@@ -31,7 +31,7 @@
           "description": "OpenShell provider type",
           "hidden": true
         },
-        "openai.connection.token": {
+        "openai.connection.OPENAI_API_KEY": {
           "type": "string",
           "scope": "InferenceProviderConnection",
           "description": "API key secret reference",

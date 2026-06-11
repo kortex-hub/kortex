@@ -101,7 +101,7 @@ describe('createSandbox', () => {
 
     await openshellCli.createSandbox();
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'create']);
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'create'], undefined);
   });
 
   test('includes --name flag when provided', async () => {
@@ -110,7 +110,11 @@ describe('createSandbox', () => {
 
     await openshellCli.createSandbox({ name: 'my-sandbox' });
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'create', '--name', 'my-sandbox']);
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['sandbox', 'create', '--name', 'my-sandbox'],
+      undefined,
+    );
   });
 
   test('includes --from flag when provided', async () => {
@@ -119,7 +123,7 @@ describe('createSandbox', () => {
 
     await openshellCli.createSandbox({ from: 'python' });
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'create', '--from', 'python']);
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'create', '--from', 'python'], undefined);
   });
 
   test('includes -g flag and gateway label when gateway is provided', async () => {
@@ -128,14 +132,11 @@ describe('createSandbox', () => {
 
     await openshellCli.createSandbox({ gateway: 'my-gw' });
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, [
-      'sandbox',
-      'create',
-      '-g',
-      'my-gw',
-      '--label',
-      'gateway=my-gw',
-    ]);
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['sandbox', 'create', '-g', 'my-gw', '--label', 'gateway=my-gw'],
+      undefined,
+    );
   });
 
   test('includes resource flags when provided', async () => {
@@ -144,15 +145,11 @@ describe('createSandbox', () => {
 
     await openshellCli.createSandbox({ gpu: true, cpu: '2', memory: '4Gi' });
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, [
-      'sandbox',
-      'create',
-      '--gpu',
-      '--cpu',
-      '2',
-      '--memory',
-      '4Gi',
-    ]);
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['sandbox', 'create', '--gpu', '--cpu', '2', '--memory', '4Gi'],
+      undefined,
+    );
   });
 
   test('includes --provider flags when provided', async () => {
@@ -161,14 +158,11 @@ describe('createSandbox', () => {
 
     await openshellCli.createSandbox({ providers: ['openai', 'anthropic'] });
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, [
-      'sandbox',
-      'create',
-      '--provider',
-      'openai',
-      '--provider',
-      'anthropic',
-    ]);
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['sandbox', 'create', '--provider', 'openai', '--provider', 'anthropic'],
+      undefined,
+    );
   });
 
   test('includes --label flags when provided', async () => {
@@ -177,14 +171,11 @@ describe('createSandbox', () => {
 
     await openshellCli.createSandbox({ labels: { env: 'dev', team: 'platform' } });
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, [
-      'sandbox',
-      'create',
-      '--label',
-      'env=dev',
-      '--label',
-      'team=platform',
-    ]);
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['sandbox', 'create', '--label', 'env=dev', '--label', 'team=platform'],
+      undefined,
+    );
   });
 
   test('includes single --upload flag when provided', async () => {
@@ -195,12 +186,11 @@ describe('createSandbox', () => {
       uploads: [{ local: '.agents/skills', remote: '.agents/skills' }],
     });
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, [
-      'sandbox',
-      'create',
-      '--upload',
-      '.agents/skills:.agents/skills',
-    ]);
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['sandbox', 'create', '--upload', '.agents/skills:.agents/skills'],
+      undefined,
+    );
   });
 
   test('includes multiple --upload flags when provided', async () => {
@@ -214,14 +204,18 @@ describe('createSandbox', () => {
       ],
     });
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, [
-      'sandbox',
-      'create',
-      '--upload',
-      '.agents/skills/generate-sandbox-policy:.agents/skills/generate-sandbox-policy',
-      '--upload',
-      '.agents/skills/openshell-cli:.agents/skills/openshell-cli',
-    ]);
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      [
+        'sandbox',
+        'create',
+        '--upload',
+        '.agents/skills/generate-sandbox-policy:.agents/skills/generate-sandbox-policy',
+        '--upload',
+        '.agents/skills/openshell-cli:.agents/skills/openshell-cli',
+      ],
+      undefined,
+    );
   });
 
   test('places --upload flags before -- command separator', async () => {
@@ -233,14 +227,11 @@ describe('createSandbox', () => {
       command: ['bash'],
     });
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, [
-      'sandbox',
-      'create',
-      '--upload',
-      '.agents/skills:.agents/skills',
-      '--',
-      'bash',
-    ]);
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['sandbox', 'create', '--upload', '.agents/skills:.agents/skills', '--', 'bash'],
+      undefined,
+    );
   });
 
   test('appends command after -- separator', async () => {
@@ -249,7 +240,11 @@ describe('createSandbox', () => {
 
     await openshellCli.createSandbox({ command: ['bash', '-c', 'echo hello'] });
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'create', '--', 'bash', '-c', 'echo hello']);
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['sandbox', 'create', '--', 'bash', '-c', 'echo hello'],
+      undefined,
+    );
   });
 
   test('rejects when CLI fails', async () => {
@@ -298,7 +293,7 @@ describe('startSandbox', () => {
 
     await openshellCli.startSandbox('my-sandbox');
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'start', 'my-sandbox']);
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'start', 'my-sandbox'], undefined);
   });
 
   test('rejects when CLI fails', async () => {
@@ -317,7 +312,7 @@ describe('stopSandbox', () => {
 
     await openshellCli.stopSandbox('my-sandbox');
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'stop', 'my-sandbox']);
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'stop', 'my-sandbox'], undefined);
   });
 
   test('rejects when CLI fails', async () => {
@@ -336,7 +331,7 @@ describe('deleteSandbox', () => {
 
     await openshellCli.deleteSandbox('my-sandbox');
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'delete', 'my-sandbox']);
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'delete', 'my-sandbox'], undefined);
   });
 
   test('rejects when CLI fails', async () => {
@@ -355,7 +350,7 @@ describe('deleteAllSandboxes', () => {
 
     await openshellCli.deleteAllSandboxes();
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'delete', '--all']);
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'delete', '--all'], undefined);
   });
 
   test('includes -g flag when gateway is provided', async () => {
@@ -364,7 +359,11 @@ describe('deleteAllSandboxes', () => {
 
     await openshellCli.deleteAllSandboxes('my-gw');
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'delete', '--all', '-g', 'my-gw']);
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['sandbox', 'delete', '--all', '-g', 'my-gw'],
+      undefined,
+    );
   });
 });
 
@@ -375,7 +374,7 @@ describe('connectSandbox', () => {
 
     await openshellCli.connectSandbox('my-sandbox');
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'connect', 'my-sandbox']);
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'connect', 'my-sandbox'], undefined);
   });
 
   test('rejects when CLI fails', async () => {
@@ -394,7 +393,7 @@ describe('addGateway', () => {
 
     await openshellCli.addGateway({ endpoint: 'https://gw.example.com' });
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'add', 'https://gw.example.com']);
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'add', 'https://gw.example.com'], undefined);
   });
 
   test('includes --name flag when provided', async () => {
@@ -403,13 +402,11 @@ describe('addGateway', () => {
 
     await openshellCli.addGateway({ endpoint: 'https://gw.example.com', name: 'my-gw' });
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, [
-      'gateway',
-      'add',
-      'https://gw.example.com',
-      '--name',
-      'my-gw',
-    ]);
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['gateway', 'add', 'https://gw.example.com', '--name', 'my-gw'],
+      undefined,
+    );
   });
 
   test('includes --remote flag when provided', async () => {
@@ -418,13 +415,11 @@ describe('addGateway', () => {
 
     await openshellCli.addGateway({ endpoint: 'https://gw.example.com', remote: 'user@host' });
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, [
-      'gateway',
-      'add',
-      'https://gw.example.com',
-      '--remote',
-      'user@host',
-    ]);
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['gateway', 'add', 'https://gw.example.com', '--remote', 'user@host'],
+      undefined,
+    );
   });
 
   test('includes --local flag when provided', async () => {
@@ -433,7 +428,11 @@ describe('addGateway', () => {
 
     await openshellCli.addGateway({ endpoint: 'https://127.0.0.1', local: true });
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'add', 'https://127.0.0.1', '--local']);
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['gateway', 'add', 'https://127.0.0.1', '--local'],
+      undefined,
+    );
   });
 
   test('extracts JSON error from stdout on failure', async () => {
@@ -455,7 +454,7 @@ describe('removeGateway', () => {
 
     await openshellCli.removeGateway('my-gw');
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'remove', 'my-gw']);
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'remove', 'my-gw'], undefined);
   });
 
   test('executes gateway remove without name for active gateway', async () => {
@@ -464,7 +463,7 @@ describe('removeGateway', () => {
 
     await openshellCli.removeGateway();
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'remove']);
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'remove'], undefined);
   });
 });
 
@@ -475,7 +474,7 @@ describe('selectGateway', () => {
 
     await openshellCli.selectGateway('my-gw');
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'select', 'my-gw']);
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'select', 'my-gw'], undefined);
   });
 
   test('executes gateway select without name', async () => {
@@ -484,7 +483,7 @@ describe('selectGateway', () => {
 
     await openshellCli.selectGateway();
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'select']);
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'select'], undefined);
   });
 });
 
@@ -650,7 +649,7 @@ describe('deleteProvider', () => {
 
     await openshellCli.deleteProvider('my-openai');
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['provider', 'delete', 'my-openai']);
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['provider', 'delete', 'my-openai'], undefined);
   });
 
   test('rejects when CLI fails', async () => {
@@ -673,16 +672,15 @@ describe('createProvider', () => {
       credentials: { apiKey: 'sk-123' },
     });
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, [
-      'provider',
-      'create',
-      '--name',
-      'my-openai',
-      '--type',
-      'openai',
-      '--credential',
-      'apiKey=sk-123',
-    ]);
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['provider', 'create', '--name', 'my-openai', '--type', 'openai', '--credential', 'apiKey'],
+      {
+        env: {
+          apiKey: 'sk-123',
+        },
+      },
+    );
   });
 
   test('includes multiple credential entries', async () => {
@@ -695,18 +693,27 @@ describe('createProvider', () => {
       credentials: { apiKey: 'key-1', secret: 'sec-2' },
     });
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, [
-      'provider',
-      'create',
-      '--name',
-      'my-provider',
-      '--type',
-      'custom',
-      '--credential',
-      'apiKey=key-1',
-      '--credential',
-      'secret=sec-2',
-    ]);
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      [
+        'provider',
+        'create',
+        '--name',
+        'my-provider',
+        '--type',
+        'custom',
+        '--credential',
+        'apiKey',
+        '--credential',
+        'secret',
+      ],
+      {
+        env: {
+          apiKey: 'key-1',
+          secret: 'sec-2',
+        },
+      },
+    );
   });
 
   test('includes optional config keys', async () => {
@@ -720,20 +727,28 @@ describe('createProvider', () => {
       config: { model: 'gpt-4', temperature: '0.7' },
     });
 
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, [
-      'provider',
-      'create',
-      '--name',
-      'my-openai',
-      '--type',
-      'openai',
-      '--credential',
-      'apiKey=sk-123',
-      '--config',
-      'model=gpt-4',
-      '--config',
-      'temperature=0.7',
-    ]);
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      [
+        'provider',
+        'create',
+        '--name',
+        'my-openai',
+        '--type',
+        'openai',
+        '--credential',
+        'apiKey',
+        '--config',
+        'model=gpt-4',
+        '--config',
+        'temperature=0.7',
+      ],
+      {
+        env: {
+          apiKey: 'sk-123',
+        },
+      },
+    );
   });
 
   test('rejects when credentials are empty', async () => {

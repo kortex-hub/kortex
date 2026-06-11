@@ -142,7 +142,7 @@ export class OpenAI implements Disposable {
 
     const config = this.configurationAPI.getConfiguration(undefined, connection);
     await config.update('openai.connection._type', PROVIDER_ID);
-    await config.update('openai.connection.token', secretName);
+    await config.update('openai.connection.OPENAI_API_KEY', secretName);
   }
 
   private async clearConnectionConfiguration(connection: InferenceProviderConnection): Promise<void> {
@@ -151,7 +151,7 @@ export class OpenAI implements Disposable {
 
     const config = this.configurationAPI.getConfiguration(undefined, connection);
     await config.update('openai.connection._type', undefined);
-    await config.update('openai.connection.token', undefined);
+    await config.update('openai.connection.OPENAI_API_KEY', undefined);
   }
 
   private async registerInferenceProviderConnection({

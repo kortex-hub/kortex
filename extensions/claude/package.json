@@ -37,7 +37,7 @@
           "description": "Claude provider type",
           "hidden": true
         },
-        "claude.connection.token": {
+        "claude.connection.ANTHROPIC_API_KEY": {
           "type": "string",
           "scope": "InferenceProviderConnection",
           "description": "API key secret reference",

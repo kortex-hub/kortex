@@ -116,7 +116,7 @@ export class ClaudeInferenceManager {
 
     const config = configuration.getConfiguration(undefined, connection);
     await config.update('claude.connection._type', PROVIDER_ID);
-    await config.update('claude.connection.token', secretName);
+    await config.update('claude.connection.ANTHROPIC_API_KEY', secretName);
   }
 
   private async clearConnectionConfiguration(connection: InferenceProviderConnection): Promise<void> {
@@ -125,7 +125,7 @@ export class ClaudeInferenceManager {
 
     const config = configuration.getConfiguration(undefined, connection);
     await config.update('claude.connection._type', undefined);
-    await config.update('claude.connection.token', undefined);
+    await config.update('claude.connection.ANTHROPIC_API_KEY', undefined);
   }
 
   private async registerInferenceProviderConnection({

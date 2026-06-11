@@ -359,7 +359,7 @@ describe('connection delete lifecycle', () => {
     expect(SECRET_STORAGE_MOCK.delete).toHaveBeenCalledWith(`${PROVIDER_ID}:fake-uuid-1:token`);
 
     expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('claude.connection._type', undefined);
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('claude.connection.token', undefined);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('claude.connection.ANTHROPIC_API_KEY', undefined);
 
     expect(disposeMock).toHaveBeenCalledOnce();
   });
@@ -389,7 +389,10 @@ describe('workspace configuration', () => {
     expect(configuration.getConfiguration).toHaveBeenCalledWith(undefined, connection);
 
     expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('claude.connection._type', PROVIDER_ID);
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('claude.connection.token', `${PROVIDER_ID}:fake-uuid-1:token`);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith(
+      'claude.connection.ANTHROPIC_API_KEY',
+      `${PROVIDER_ID}:fake-uuid-1:token`,
+    );
   });
 
   test('should set workspace configuration for each restored connection', async () => {
@@ -406,8 +409,8 @@ describe('workspace configuration', () => {
     expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(`${PROVIDER_ID}:id-2:token`, 'key2');
 
     expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('claude.connection._type', PROVIDER_ID);
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('claude.connection.token', `${PROVIDER_ID}:id-1:token`);
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('claude.connection.token', `${PROVIDER_ID}:id-2:token`);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('claude.connection.ANTHROPIC_API_KEY', `${PROVIDER_ID}:id-1:token`);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('claude.connection.ANTHROPIC_API_KEY', `${PROVIDER_ID}:id-2:token`);
   });
 });
 
