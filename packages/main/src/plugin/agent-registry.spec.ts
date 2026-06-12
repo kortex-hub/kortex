@@ -21,9 +21,11 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { CatalogModelInfo } from '/@api/model-registry-info.js';
+import type { ProviderInfo } from '/@api/provider-info.js';
 
 import { AgentRegistry } from './agent-registry.js';
 import type { ModelRegistry } from './model-registry.js';
+import type { ProviderRegistry } from './provider-registry.js';
 
 const apiSender: ApiSenderType = {
   send: vi.fn(),
@@ -34,6 +36,12 @@ const modelRegistry: ModelRegistry = {
   getCatalogModels: vi.fn(),
   onChange: vi.fn(),
 } as unknown as ModelRegistry;
+
+const providerRegistry: ProviderRegistry = {
+  getProviderInfos: vi.fn(),
+  onDidSetConnectionFactory: vi.fn(),
+  onDidUnsetConnectionFactory: vi.fn(),
+} as unknown as ProviderRegistry;
 
 let agentRegistry: AgentRegistry;
 
@@ -60,10 +68,21 @@ function createCatalogModel(llmMetadataName?: string): CatalogModelInfo {
   };
 }
 
+function createProviderInfo(llmMetadataName?: string): ProviderInfo {
+  return {
+    id: 'provider-1',
+    name: 'Provider 1',
+    internalId: 'internal-1',
+    status: 'started',
+    inferenceProviderConnectionCreationLLMMetadata: llmMetadataName ? { name: llmMetadataName } : undefined,
+  } as unknown as ProviderInfo;
+}
+
 describe('AgentRegistry', () => {
   beforeEach(() => {
-    agentRegistry = new AgentRegistry(apiSender, modelRegistry);
+    agentRegistry = new AgentRegistry(apiSender, modelRegistry, providerRegistry);
     vi.mocked(modelRegistry.getCatalogModels).mockReturnValue([]);
+    vi.mocked(providerRegistry.getProviderInfos).mockReturnValue([]);
   });
 
   afterEach(() => {
@@ -220,6 +239,43 @@ describe('AgentRegistry', () => {
 
       const result = await agentRegistry.getModelTypes(async type => type.name === 'anthropic');
       expect(result).toEqual([{ name: 'anthropic' }]);
+    });
+
+    test('includes model types from factory llmMetadata when no catalog models exist', async () => {
+      vi.mocked(providerRegistry.getProviderInfos).mockReturnValue([createProviderInfo('anthropic')]);
+
+      const result = await agentRegistry.getModelTypes(() => true);
+      expect(result).toEqual([{ name: 'anthropic' }]);
+    });
+
+    test('deduplicates model types between catalog models and factory metadata', async () => {
+      vi.mocked(modelRegistry.getCatalogModels).mockReturnValue([createCatalogModel('anthropic')]);
+      vi.mocked(providerRegistry.getProviderInfos).mockReturnValue([createProviderInfo('anthropic')]);
+
+      const result = await agentRegistry.getModelTypes(() => true);
+      expect(result).toEqual([{ name: 'anthropic' }]);
+    });
+
+    test('combines model types from catalog models and factory metadata', async () => {
+      vi.mocked(modelRegistry.getCatalogModels).mockReturnValue([createCatalogModel('openai')]);
+      vi.mocked(providerRegistry.getProviderInfos).mockReturnValue([createProviderInfo('anthropic')]);
+
+      const result = await agentRegistry.getModelTypes(() => true);
+      expect(result).toEqual([{ name: 'openai' }, { name: 'anthropic' }]);
+    });
+
+    test('skips providers without factory llmMetadata', async () => {
+      vi.mocked(providerRegistry.getProviderInfos).mockReturnValue([createProviderInfo()]);
+
+      const result = await agentRegistry.getModelTypes(() => true);
+      expect(result).toEqual([]);
+    });
+
+    test('filters factory model types through isSupportedModelType callback', async () => {
+      vi.mocked(providerRegistry.getProviderInfos).mockReturnValue([createProviderInfo('anthropic')]);
+
+      const result = await agentRegistry.getModelTypes(type => type.name !== 'anthropic');
+      expect(result).toEqual([]);
     });
   });
 

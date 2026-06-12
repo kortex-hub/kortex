@@ -328,9 +328,11 @@ export class ProviderImpl implements Provider, IDisposable {
   ): Disposable {
     this._inferenceProviderConnectionFactory = inferenceProviderConnectionFactory;
     this._connectionAuditor = connectionAuditor;
+    this.providerRegistry.onDidSetConnectionFactoryCallback(this, inferenceProviderConnectionFactory, 'inference');
     return Disposable.create(() => {
       this._inferenceProviderConnectionFactory = undefined;
       this._connectionAuditor = undefined;
+      this.providerRegistry.onDidUnsetConnectionFactoryCallback(this, 'inference');
     });
   }
 

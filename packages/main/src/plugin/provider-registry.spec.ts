@@ -201,6 +201,55 @@ test('onDidSetConnectionFactory is called when a container connection factory is
   });
 });
 
+test('onDidSetConnectionFactory is called when an inference connection factory is set and onDidUnsetConnectionFactory is called when the disposable is disposed', async () => {
+  const onDidSetConnectionFactoryMock: (e: ConnectionFactoryDetails) => void = vi.fn();
+  providerRegistry.onDidSetConnectionFactory(onDidSetConnectionFactoryMock);
+
+  const onDidUnsetConnectionFactoryMock: (e: ConnectionFactory) => void = vi.fn();
+  providerRegistry.onDidUnsetConnectionFactory(onDidUnsetConnectionFactoryMock);
+
+  const images = {
+    icon: {
+      light: 'a light image',
+      dark: 'a dark image',
+    },
+    logo: {
+      light: 'a light image',
+      dark: 'a dark image',
+    },
+  } as ProviderImages;
+  const provider = providerRegistry.createProvider('id', 'name', {
+    id: 'aProviderId',
+    name: 'aProviderName',
+    status: 'installed',
+    emptyConnectionMarkdownDescription: 'an empty connection markdown description',
+    images,
+  });
+
+  const disposable = provider.setInferenceProviderConnectionFactory({
+    connectionTypes: ['cloud'],
+    llmMetadata: { name: 'anthropic' },
+    create: async () => {},
+    creationDisplayName: 'a creation Display Name',
+    creationButtonTitle: 'a creation Button Title',
+  });
+
+  expect(onDidSetConnectionFactoryMock).toHaveBeenCalledWith({
+    type: 'inference',
+    providerId: 'aProviderId',
+    creationDisplayName: 'a creation Display Name',
+    creationButtonTitle: 'a creation Button Title',
+    emptyConnectionMarkdownDescription: 'an empty connection markdown description',
+    images,
+  });
+
+  disposable.dispose();
+  expect(onDidUnsetConnectionFactoryMock).toHaveBeenCalledWith({
+    type: 'inference',
+    providerId: 'aProviderId',
+  });
+});
+
 test('should initialize provider if there is VM connection provider', async () => {
   const providerInternalId = '0';
 

@@ -1201,7 +1201,7 @@ declare module '@openkaiden/api' {
   }
 
   export interface ConnectionFactory {
-    type: 'container' | 'kubernetes' | 'vm';
+    type: 'container' | 'kubernetes' | 'vm' | 'inference';
     providerId: string;
   }
 

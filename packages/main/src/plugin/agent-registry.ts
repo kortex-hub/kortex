@@ -20,6 +20,7 @@ import type { Agent, AgentRegisteredEvent, AgentUnregisteredEvent, ModelType, Ru
 import { inject, injectable } from 'inversify';
 
 import { ModelRegistry } from '/@/plugin/model-registry.js';
+import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { AgentInfo } from '/@api/agent-info.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { Event } from '/@api/event.js';
@@ -37,8 +38,19 @@ export class AgentRegistry {
   constructor(
     @inject(ApiSenderType) private apiSender: ApiSenderType,
     @inject(ModelRegistry) private modelRegistry: ModelRegistry,
+    @inject(ProviderRegistry) private providerRegistry: ProviderRegistry,
   ) {
     modelRegistry.onChange(() => this.invalidate());
+    providerRegistry.onDidSetConnectionFactory(e => {
+      if (e.type === 'inference') {
+        this.invalidate();
+      }
+    });
+    providerRegistry.onDidUnsetConnectionFactory(e => {
+      if (e.type === 'inference') {
+        this.invalidate();
+      }
+    });
   }
 
   private agentRegistrations = new Map<string, AgentRegistration>();
@@ -56,6 +68,12 @@ export class AgentRegistry {
       }
       return llmMetadatas;
     }, []);
+    for (const provider of this.providerRegistry.getProviderInfos()) {
+      const factoryName = provider.inferenceProviderConnectionCreationLLMMetadata?.name;
+      if (factoryName !== undefined && !modelTypes.includes(factoryName)) {
+        modelTypes.push(factoryName);
+      }
+    }
     const result = [];
     for (const modelType of modelTypes) {
       if (await isSupportedModelType({ name: modelType })) {
