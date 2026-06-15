@@ -5560,7 +5560,7 @@ declare module '@openkaiden/api' {
 
   export interface AgentWorkspaceContext {
     readonly model: {
-      readonly llmMetaData?: LLMMetadata;
+      readonly llmMetadata?: LLMMetadata;
       readonly model: InferenceModel;
       readonly endpoint?: string;
     };
