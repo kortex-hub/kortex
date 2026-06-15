@@ -29,8 +29,12 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       logo: { dark: './icon.png', light: './icon.png' },
     },
     command: 'codex',
+    configurationFiles: [],
     isSupportedModelType(type): boolean {
       return type.name === 'openai';
+    },
+    async preWorkspaceStart(): Promise<void> {
+      throw new Error('not implemented');
     },
   });
   extensionContext.subscriptions.push(disposable);

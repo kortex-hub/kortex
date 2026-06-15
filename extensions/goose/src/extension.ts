@@ -30,11 +30,15 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     },
     command: 'goose',
     acp: { args: ['acp'] },
+    configurationFiles: [],
     isSupportedRuntime(runtime): boolean {
       return runtime === 'podman';
     },
     isSupportedModelType(): boolean {
       return true;
+    },
+    async preWorkspaceStart(): Promise<void> {
+      throw new Error('not implemented');
     },
   });
   extensionContext.subscriptions.push(disposable);

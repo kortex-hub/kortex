@@ -32,11 +32,15 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     command: 'opencode',
     acp: { args: ['acp'] },
     tags: ['Recommended'],
+    configurationFiles: [],
     isSupportedRuntime(): boolean {
       return true;
     },
     isSupportedModelType(type): boolean {
       return type.name !== 'vertexai';
+    },
+    async preWorkspaceStart(): Promise<void> {
+      throw new Error('not implemented');
     },
   });
   extensionContext.subscriptions.push(disposable);

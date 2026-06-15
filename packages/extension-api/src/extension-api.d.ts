@@ -5552,6 +5552,21 @@ declare module '@openkaiden/api' {
     readonly args: ReadonlyArray<string>;
   }
 
+  export interface AgentConfigurationFile {
+    readonly path: string;
+    read(): Promise<string>;
+    update(content: string): Promise<void>;
+  }
+
+  export interface AgentWorkspaceContext {
+    readonly model: {
+      readonly llmMetaData?: LLMMetadata;
+      readonly model: InferenceModel;
+      readonly endpoint?: string;
+    };
+    readonly configurationFiles: ReadonlyArray<AgentConfigurationFile>;
+  }
+
   export interface Agent {
     readonly id: string;
     readonly name: string;
@@ -5560,8 +5575,10 @@ declare module '@openkaiden/api' {
     readonly tags?: ReadonlyArray<string>;
     readonly command: string;
     readonly acp?: AcpConfiguration;
+    readonly configurationFiles: ReadonlyArray<AgentConfigurationFile>;
     isSupportedModelType?(type: ModelType): boolean | Promise<boolean>;
     isSupportedRuntime?(runtime: Runtime): boolean | Promise<boolean>;
+    preWorkspaceStart(context: AgentWorkspaceContext): Promise<void>;
   }
 
   export interface AgentRegisteredEvent {

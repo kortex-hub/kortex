@@ -39,8 +39,12 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     command: 'copilot',
     acp: { args: ['--acp'] },
     tags: [],
+    configurationFiles: [],
     isSupportedModelType(type): boolean {
       return type.name !== 'vertexai';
+    },
+    async preWorkspaceStart(): Promise<void> {
+      throw new Error('not implemented');
     },
   });
   extensionContext.subscriptions.push(disposable);

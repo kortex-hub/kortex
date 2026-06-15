@@ -2114,6 +2114,10 @@ test('registerAgent', async () => {
     name: 'My Agent',
     description: 'An agent for testing',
     command: 'my-agent',
+    configurationFiles: [],
+    async preWorkspaceStart(): Promise<void> {
+      throw new Error('not implemented');
+    },
   };
 
   vi.mocked(agentRegistry.registerAgent).mockReturnValue(Disposable.create(() => {}));

@@ -30,8 +30,12 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     },
     command: 'openclaw',
     acp: { args: ['acp'] },
+    configurationFiles: [],
     isSupportedModelType(type: ModelType): boolean {
       return type.name !== 'vertexai';
+    },
+    async preWorkspaceStart(): Promise<void> {
+      throw new Error('not implemented');
     },
   });
   extensionContext.subscriptions.push(disposable);

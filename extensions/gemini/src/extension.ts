@@ -40,8 +40,12 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     command: 'gemini',
     acp: { args: ['--acp'] },
     tags: ['Cloud'],
+    configurationFiles: [],
     isSupportedModelType(type): boolean {
       return type.name === 'gemini';
+    },
+    async preWorkspaceStart(): Promise<void> {
+      throw new Error('not implemented');
     },
   });
   extensionContext.subscriptions.push(disposable);

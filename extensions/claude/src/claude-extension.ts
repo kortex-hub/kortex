@@ -62,7 +62,11 @@ export class ClaudeExtension {
       icon: providerImages,
       command: 'claude',
       tags: ['Cloud'],
+      configurationFiles: [],
       isSupportedModelType: (type): boolean => type.name === 'anthropic' || type.name === 'vertexai',
+      async preWorkspaceStart(): Promise<void> {
+        throw new Error('not implemented');
+      },
     });
 
     this.#inversifyBinding = new InversifyBinding(claudeProvider, this.#extensionContext);

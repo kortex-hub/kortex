@@ -43,6 +43,10 @@ function createAgent(overrides?: Partial<Agent>): Agent {
     name: 'Test Agent',
     description: 'A test agent',
     command: 'test-cmd',
+    configurationFiles: [],
+    async preWorkspaceStart(): Promise<void> {
+      throw new Error('not implemented');
+    },
     ...overrides,
   };
 }
