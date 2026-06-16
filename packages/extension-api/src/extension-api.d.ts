@@ -5552,9 +5552,11 @@ declare module '@openkaiden/api' {
     readonly args: ReadonlyArray<string>;
   }
 
-  export interface AgentConfigurationFile {
+  export interface AgentConfigurationBase {
     readonly path: string;
     read(): Promise<string>;
+  }
+  export interface AgentConfigurationFile extends AgentConfigurationBase {
     update(content: string): Promise<void>;
   }
 
