@@ -5577,7 +5577,7 @@ declare module '@openkaiden/api' {
     readonly tags?: ReadonlyArray<string>;
     readonly command: string;
     readonly acp?: AcpConfiguration;
-    readonly configurationFiles: ReadonlyArray<AgentConfigurationFile>;
+    readonly configurationFiles: ReadonlyArray<AgentConfigurationBase>;
     isSupportedModelType?(type: ModelType): boolean | Promise<boolean>;
     isSupportedRuntime?(runtime: Runtime): boolean | Promise<boolean>;
     preWorkspaceStart(context: AgentWorkspaceContext): Promise<void>;
