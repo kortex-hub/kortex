@@ -16,15 +16,56 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Disposable, ExtensionContext } from '@openkaiden/api';
+import type { AgentWorkspaceContext, Disposable, ExtensionContext } from '@openkaiden/api';
 import { agents, provider } from '@openkaiden/api';
 import type { Container } from 'inversify';
+import { z } from 'zod';
 
 import { InversifyBinding } from '/@/inject/inversify-binding';
 import { ClaudeInferenceManager } from '/@/manager/claude-inference-manager';
 import { ClaudeSkillsManager } from '/@/manager/claude-skills-manager';
 
 export const PROVIDER_ID = 'claude';
+export const CLAUDE_SETTINGS_PATH = '.claude/settings.json';
+export const CLAUDE_JSON_PATH = '.claude.json';
+const WORKSPACE_SOURCES_PATH = '/sandbox';
+
+function jsonCodec<T extends z.ZodType>(schema: T): z.ZodCodec<z.ZodString, T> {
+  return z.codec(z.string(), schema, {
+    decode: (jsonString, ctx) => {
+      try {
+        return JSON.parse(jsonString);
+      } catch (err: unknown) {
+        ctx.issues.push({
+          code: 'invalid_format',
+          format: 'json',
+          input: jsonString,
+          message: err instanceof Error ? err.message : String(err),
+        });
+        return z.NEVER;
+      }
+    },
+    encode: value => JSON.stringify(value, undefined, 2),
+  });
+}
+
+const ClaudeSettingsCodec = jsonCodec(
+  z.looseObject({
+    model: z.string().optional(),
+  }),
+);
+
+const ClaudeProjectSchema = z.looseObject({
+  hasTrustDialogAccepted: z.boolean().optional(),
+});
+
+const ClaudeJsonCodec = jsonCodec(
+  z.looseObject({
+    hasCompletedOnboarding: z.boolean().optional(),
+    projects: z.record(z.string(), ClaudeProjectSchema).optional(),
+    mcpServers: z.record(z.string(), z.unknown()).optional(),
+  }),
+);
 
 export class ClaudeExtension {
   #extensionContext: ExtensionContext;
@@ -62,11 +103,69 @@ export class ClaudeExtension {
       icon: providerImages,
       command: 'claude',
       tags: ['Cloud'],
-      configurationFiles: [],
+      configurationFiles: [
+        {
+          path: CLAUDE_SETTINGS_PATH,
+          async read(): Promise<string> {
+            return '{}';
+          },
+        },
+        {
+          path: CLAUDE_JSON_PATH,
+          async read(): Promise<string> {
+            return '{}';
+          },
+        },
+      ],
       destinationSkillsFolder: '${HOME}/.claude/skills',
       isSupportedModelType: (type): boolean => type.name === 'anthropic' || type.name === 'vertexai',
-      async preWorkspaceStart(): Promise<void> {
-        throw new Error('not implemented');
+      async preWorkspaceStart(context: AgentWorkspaceContext): Promise<void> {
+        const settingsFile = context.configurationFiles.find(f => f.path === CLAUDE_SETTINGS_PATH);
+        if (settingsFile) {
+          const config = ClaudeSettingsCodec.decode(await settingsFile.read());
+          config.model = context.model.model.label;
+          await settingsFile.update(ClaudeSettingsCodec.encode(config));
+        }
+
+        const claudeJsonFile = context.configurationFiles.find(f => f.path === CLAUDE_JSON_PATH);
+        if (claudeJsonFile) {
+          const config = ClaudeJsonCodec.decode(await claudeJsonFile.read());
+          config.hasCompletedOnboarding = true;
+
+          const projects = config.projects ?? {};
+          const project = projects[WORKSPACE_SOURCES_PATH] ?? {};
+          project.hasTrustDialogAccepted = true;
+          projects[WORKSPACE_SOURCES_PATH] = project;
+          config.projects = projects;
+
+          const mcpServers = context.workspace.mcp?.servers;
+          const mcpCommands = context.workspace.mcp?.commands;
+
+          if (mcpServers?.length || mcpCommands?.length) {
+            const servers: Record<string, unknown> = config.mcpServers ?? {};
+
+            for (const cmd of mcpCommands ?? []) {
+              servers[cmd.name] = {
+                type: 'stdio',
+                command: cmd.command,
+                args: cmd.args ?? [],
+                env: cmd.env ?? {},
+              };
+            }
+
+            for (const srv of mcpServers ?? []) {
+              const entry: Record<string, unknown> = { type: 'sse', url: srv.url };
+              if (srv.headers && Object.keys(srv.headers).length > 0) {
+                entry['headers'] = srv.headers;
+              }
+              servers[srv.name] = entry;
+            }
+
+            config.mcpServers = servers;
+          }
+
+          await claudeJsonFile.update(ClaudeJsonCodec.encode(config));
+        }
       },
     });
 

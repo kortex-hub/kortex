@@ -16,12 +16,12 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ExtensionContext } from '@openkaiden/api';
+import type { AgentConfigurationFile, AgentWorkspaceContext, ExtensionContext } from '@openkaiden/api';
 import { agents } from '@openkaiden/api';
 import type { Container } from 'inversify';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { ClaudeExtension } from '/@/claude-extension';
+import { CLAUDE_JSON_PATH, CLAUDE_SETTINGS_PATH, ClaudeExtension } from '/@/claude-extension';
 import { ClaudeInferenceManager } from '/@/manager/claude-inference-manager';
 import { ClaudeSkillsManager } from '/@/manager/claude-skills-manager';
 
@@ -106,5 +106,276 @@ describe('ClaudeExtension', () => {
     await claudeExtension.deactivate();
     expect(ClaudeSkillsManager.prototype.dispose).toHaveBeenCalled();
     expect(ClaudeInferenceManager.prototype.dispose).toHaveBeenCalled();
+  });
+
+  test('registers agent with configuration files', async () => {
+    await claudeExtension.activate();
+
+    const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+    expect(agent.configurationFiles).toHaveLength(2);
+    expect(agent.configurationFiles[0]!.path).toBe(CLAUDE_SETTINGS_PATH);
+    expect(agent.configurationFiles[1]!.path).toBe(CLAUDE_JSON_PATH);
+  });
+
+  describe('preWorkspaceStart', () => {
+    function createContext(
+      configFiles: AgentConfigurationFile[],
+      modelLabel = 'claude-sonnet-4-20250514',
+      workspace: AgentWorkspaceContext['workspace'] = {},
+    ): AgentWorkspaceContext {
+      return {
+        model: {
+          model: { label: modelLabel },
+        },
+        configurationFiles: configFiles,
+        workspace,
+      };
+    }
+
+    test('writes model label to settings', async () => {
+      await claudeExtension.activate();
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const updateMock = vi.fn();
+      const configFile: AgentConfigurationFile = {
+        path: CLAUDE_SETTINGS_PATH,
+        read: vi.fn().mockResolvedValue('{}'),
+        update: updateMock,
+      };
+
+      await agent.preWorkspaceStart(createContext([configFile]));
+
+      expect(updateMock).toHaveBeenCalledOnce();
+      const written = JSON.parse(updateMock.mock.calls[0]![0] as string);
+      expect(written).toEqual({ model: 'claude-sonnet-4-20250514' });
+    });
+
+    test('preserves existing config fields', async () => {
+      await claudeExtension.activate();
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const updateMock = vi.fn();
+      const existingConfig = JSON.stringify({ existingKey: 'existingValue' });
+      const configFile: AgentConfigurationFile = {
+        path: CLAUDE_SETTINGS_PATH,
+        read: vi.fn().mockResolvedValue(existingConfig),
+        update: updateMock,
+      };
+
+      await agent.preWorkspaceStart(createContext([configFile], 'claude-opus-4-20250514'));
+
+      const written = JSON.parse(updateMock.mock.calls[0]![0] as string);
+      expect(written.existingKey).toBe('existingValue');
+      expect(written.model).toBe('claude-opus-4-20250514');
+    });
+
+    test('rejects invalid JSON', async () => {
+      await claudeExtension.activate();
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile: AgentConfigurationFile = {
+        path: CLAUDE_SETTINGS_PATH,
+        read: vi.fn().mockResolvedValue('not valid json'),
+        update: vi.fn(),
+      };
+
+      await expect(agent.preWorkspaceStart(createContext([configFile]))).rejects.toThrow();
+    });
+
+    test.each(['null', '"string"', '123', '[]'])('rejects non-object JSON: %s', async (payload: string) => {
+      await claudeExtension.activate();
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile: AgentConfigurationFile = {
+        path: CLAUDE_SETTINGS_PATH,
+        read: vi.fn().mockResolvedValue(payload),
+        update: vi.fn(),
+      };
+
+      await expect(agent.preWorkspaceStart(createContext([configFile]))).rejects.toThrow();
+    });
+
+    test('does nothing when config file is not in context', async () => {
+      await claudeExtension.activate();
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const otherFile: AgentConfigurationFile = {
+        path: 'some/other/path.json',
+        read: vi.fn(),
+        update: vi.fn(),
+      };
+      await agent.preWorkspaceStart(createContext([otherFile]));
+
+      expect(otherFile.read).not.toHaveBeenCalled();
+      expect(otherFile.update).not.toHaveBeenCalled();
+    });
+
+    test('skips onboarding in .claude.json', async () => {
+      await claudeExtension.activate();
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const updateMock = vi.fn();
+      const configFile: AgentConfigurationFile = {
+        path: CLAUDE_JSON_PATH,
+        read: vi.fn().mockResolvedValue('{}'),
+        update: updateMock,
+      };
+
+      await agent.preWorkspaceStart(createContext([configFile]));
+
+      expect(updateMock).toHaveBeenCalledOnce();
+      const written = JSON.parse(updateMock.mock.calls[0]![0] as string);
+      expect(written.hasCompletedOnboarding).toBe(true);
+      expect(written.projects['/sandbox'].hasTrustDialogAccepted).toBe(true);
+    });
+
+    test('writes command MCP servers as stdio in .claude.json', async () => {
+      await claudeExtension.activate();
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const updateMock = vi.fn();
+      const configFile: AgentConfigurationFile = {
+        path: CLAUDE_JSON_PATH,
+        read: vi.fn().mockResolvedValue('{}'),
+        update: updateMock,
+      };
+
+      const workspace = {
+        mcp: {
+          commands: [{ name: 'playwright', command: 'npx', args: ['-y', '@playwright/mcp'] }],
+        },
+      };
+
+      await agent.preWorkspaceStart(createContext([configFile], undefined, workspace));
+
+      const written = JSON.parse(updateMock.mock.calls[0]![0] as string);
+      expect(written.mcpServers).toEqual({
+        playwright: {
+          type: 'stdio',
+          command: 'npx',
+          args: ['-y', '@playwright/mcp'],
+          env: {},
+        },
+      });
+    });
+
+    test('writes URL MCP servers as sse in .claude.json', async () => {
+      await claudeExtension.activate();
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const updateMock = vi.fn();
+      const configFile: AgentConfigurationFile = {
+        path: CLAUDE_JSON_PATH,
+        read: vi.fn().mockResolvedValue('{}'),
+        update: updateMock,
+      };
+
+      const workspace = {
+        mcp: {
+          servers: [{ name: 'github', url: 'https://api.github.com/mcp', headers: { Authorization: 'Bearer tok' } }],
+        },
+      };
+
+      await agent.preWorkspaceStart(createContext([configFile], undefined, workspace));
+
+      const written = JSON.parse(updateMock.mock.calls[0]![0] as string);
+      expect(written.mcpServers).toEqual({
+        github: {
+          type: 'sse',
+          url: 'https://api.github.com/mcp',
+          headers: { Authorization: 'Bearer tok' },
+        },
+      });
+    });
+
+    test('omits headers when empty in URL MCP servers', async () => {
+      await claudeExtension.activate();
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const updateMock = vi.fn();
+      const configFile: AgentConfigurationFile = {
+        path: CLAUDE_JSON_PATH,
+        read: vi.fn().mockResolvedValue('{}'),
+        update: updateMock,
+      };
+
+      const workspace = {
+        mcp: {
+          servers: [{ name: 'github', url: 'https://api.github.com/mcp' }],
+        },
+      };
+
+      await agent.preWorkspaceStart(createContext([configFile], undefined, workspace));
+
+      const written = JSON.parse(updateMock.mock.calls[0]![0] as string);
+      expect(written.mcpServers.github).toEqual({ type: 'sse', url: 'https://api.github.com/mcp' });
+    });
+
+    test('does not set mcpServers when workspace has no MCP config', async () => {
+      await claudeExtension.activate();
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const updateMock = vi.fn();
+      const configFile: AgentConfigurationFile = {
+        path: CLAUDE_JSON_PATH,
+        read: vi.fn().mockResolvedValue('{}'),
+        update: updateMock,
+      };
+
+      await agent.preWorkspaceStart(createContext([configFile]));
+
+      const written = JSON.parse(updateMock.mock.calls[0]![0] as string);
+      expect(written.mcpServers).toBeUndefined();
+    });
+
+    test('.claude.json preserves existing fields', async () => {
+      await claudeExtension.activate();
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const updateMock = vi.fn();
+      const existing = JSON.stringify({ projects: { '/workspace': { hasTrustDialogAccepted: true } } });
+      const configFile: AgentConfigurationFile = {
+        path: CLAUDE_JSON_PATH,
+        read: vi.fn().mockResolvedValue(existing),
+        update: updateMock,
+      };
+
+      await agent.preWorkspaceStart(createContext([configFile]));
+
+      const written = JSON.parse(updateMock.mock.calls[0]![0] as string);
+      expect(written.projects['/workspace']).toEqual({ hasTrustDialogAccepted: true });
+      expect(written.hasCompletedOnboarding).toBe(true);
+    });
+
+    test('.claude.json rejects invalid JSON', async () => {
+      await claudeExtension.activate();
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile: AgentConfigurationFile = {
+        path: CLAUDE_JSON_PATH,
+        read: vi.fn().mockResolvedValue('not valid json'),
+        update: vi.fn(),
+      };
+
+      await expect(agent.preWorkspaceStart(createContext([configFile]))).rejects.toThrow();
+    });
+
+    test.each([
+      'null',
+      '"string"',
+      '123',
+      '[]',
+    ])('.claude.json rejects non-object JSON: %s', async (payload: string) => {
+      await claudeExtension.activate();
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile: AgentConfigurationFile = {
+        path: CLAUDE_JSON_PATH,
+        read: vi.fn().mockResolvedValue(payload),
+        update: vi.fn(),
+      };
+
+      await expect(agent.preWorkspaceStart(createContext([configFile]))).rejects.toThrow();
+    });
   });
 });
