@@ -30,6 +30,7 @@ export interface AgentInfo {
   tags?: ReadonlyArray<string>;
   command: string;
   acp?: AcpConfigurationInfo;
+  baseImage?: string;
   supportedModelTypes?: ReadonlyArray<ModelType>;
   supportedRuntimes?: ReadonlyArray<Runtime>;
 }

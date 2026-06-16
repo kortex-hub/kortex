@@ -323,9 +323,16 @@ describe('AgentRegistry', () => {
         tags: undefined,
         command: 'test-cmd',
         acp: undefined,
+        baseImage: undefined,
         supportedModelTypes: undefined,
         supportedRuntimes: undefined,
       });
+    });
+
+    test('includes baseImage when set on the agent', async () => {
+      const agent = createAgent({ baseImage: 'ghcr.io/my-org/my-image:latest' });
+      const info = await agentRegistry.toAgentInfo(agent);
+      expect(info.baseImage).toBe('ghcr.io/my-org/my-image:latest');
     });
 
     test('passes through command and acp configuration', async () => {

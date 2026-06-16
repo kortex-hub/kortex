@@ -229,6 +229,20 @@ describe('init', () => {
       }),
     ]);
   });
+
+  test('registers defaultBaseImage configuration', () => {
+    expect(configurationRegistry.registerConfigurations).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: 'preferences.agentWorkspace',
+        properties: expect.objectContaining({
+          'agentWorkspace.defaultBaseImage': expect.objectContaining({
+            type: 'string',
+            default: 'ghcr.io/nvidia/openshell-community/sandboxes/base:latest',
+          }),
+        }),
+      }),
+    ]);
+  });
 });
 
 describe('watchInstancesFile', () => {

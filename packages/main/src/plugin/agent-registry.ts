@@ -114,6 +114,7 @@ export class AgentRegistry {
       tags: agent.tags,
       command: agent.command,
       acp: agent.acp,
+      baseImage: agent.baseImage,
       supportedModelTypes,
       supportedRuntimes,
     };
