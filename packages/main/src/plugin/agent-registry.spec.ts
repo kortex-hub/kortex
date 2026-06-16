@@ -206,6 +206,28 @@ describe('AgentRegistry', () => {
     });
   });
 
+  describe('getAgentRegistration', () => {
+    test('returns undefined for unknown id', () => {
+      expect(agentRegistry.getAgentRegistration('unknown')).toBeUndefined();
+    });
+
+    test('returns the raw Agent object for known id', () => {
+      const agent = createAgent();
+      agentRegistry.registerAgent(agent);
+
+      const result = agentRegistry.getAgentRegistration('test-agent');
+      expect(result).toBe(agent);
+    });
+
+    test('returns undefined after agent is disposed', () => {
+      const agent = createAgent();
+      const disposable = agentRegistry.registerAgent(agent);
+      disposable.dispose();
+
+      expect(agentRegistry.getAgentRegistration('test-agent')).toBeUndefined();
+    });
+  });
+
   describe('getModelTypes', () => {
     test('filters model types using isSupportedModelType callback', async () => {
       vi.mocked(modelRegistry.getCatalogModels).mockReturnValue([

@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import { access, readFile, rm, writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 
 import type { Disposable, FileSystemWatcher } from '@openkaiden/api';
@@ -26,11 +26,12 @@ import { inject, injectable, preDestroy } from 'inversify';
 import type { IPty } from 'node-pty';
 import { spawn } from 'node-pty';
 
+import { AgentRegistry } from '/@/plugin/agent-registry.js';
+import { WritableConfigurationFile } from '/@/plugin/agent-workspace/writable-configuration-file.js';
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
-import { OpenshellImageBuilder } from '/@/plugin/openshell-cli/openshell-image-builder.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
@@ -85,8 +86,8 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly openshellCli: OpenshellCli,
     @inject(SafeStorageRegistry)
     private readonly safeStorageRegistry: SafeStorageRegistry,
-    @inject(OpenshellImageBuilder)
-    private readonly imageBuilderCli: OpenshellImageBuilder,
+    @inject(AgentRegistry)
+    private readonly agentRegistry: AgentRegistry,
   ) {}
 
   async getCliInfo(): Promise<CliInfo> {
@@ -121,43 +122,51 @@ export class AgentWorkspaceManager implements Disposable {
     }
   }
 
-  private sanitizeImageTag(name: string): string {
-    const sanitized = name
-      .toLowerCase()
-      .replace(/[^a-z0-9-]+/g, '-')
-      .split('-')
-      .filter(Boolean)
-      .join('-');
-    return sanitized || 'workspace';
-  }
-
   private async createOpenshell(options: AgentWorkspaceCreateOptions): Promise<AgentWorkspaceId> {
     const connectionInfo = options.model
       ? this.providerRegistry.getInferenceConnectionCredentials(options.model)
       : undefined;
 
     const modelName = options.model?.split('::')[1];
-    const inference = connectionInfo?.llmMetadataName;
     const endpoint = connectionInfo?.endpoint;
 
     await this.kdnCli.writeWorkspaceConfig(options);
 
-    const sandboxName = options.name ?? basename(options.sourcePath);
-    const imageTag = `kaiden-workspace-${this.sanitizeImageTag(sandboxName)}:latest`;
+    const agent = this.agentRegistry.getAgentRegistration(options.agent);
+    const uploads: Array<{ local: string; remote: string }> = [];
 
-    await this.imageBuilderCli.buildImage(imageTag, {
-      agent: options.agent,
-      model: modelName,
-      inference,
-      endpoint,
-      cwd: options.sourcePath,
-    });
+    if (agent) {
+      const writable = await Promise.all(
+        agent.configurationFiles.map(
+          async (base, i) =>
+            new WritableConfigurationFile(base, await base.read(), join(tmpdir(), `kaiden-config-${Date.now()}-${i}`)),
+        ),
+      );
+
+      await agent.preWorkspaceStart({
+        model: {
+          llmMetadata: connectionInfo?.llmMetadataName ? { name: connectionInfo.llmMetadataName } : undefined,
+          model: { label: modelName ?? '' },
+          endpoint,
+        },
+        configurationFiles: writable,
+      });
+
+      for (const file of writable) {
+        await writeFile(file.localPath, await file.read(), 'utf-8');
+        uploads.push({ local: file.localPath, remote: file.path });
+      }
+    } else {
+      throw new Error(`Unable to create workspace: agent ${options.agent} not registered`);
+    }
+
+    const sandboxName = options.name ?? basename(options.sourcePath);
 
     await this.openshellCli.createSandbox({
       name: sandboxName,
-      from: imageTag,
       providers: options.secrets,
       labels: { 'ai.openkaiden.kaiden.workspace': Buffer.from(options.sourcePath).toString('base64url') },
+      uploads: uploads.length > 0 ? uploads : undefined,
       noTty: true,
       command: ['true'],
     });

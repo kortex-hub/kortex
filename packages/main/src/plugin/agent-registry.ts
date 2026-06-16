@@ -151,4 +151,8 @@ export class AgentRegistry {
     agentRegistration.agentInfo ??= await this.toAgentInfo(agentRegistration.agent);
     return agentRegistration.agentInfo;
   }
+
+  getAgentRegistration(id: string): Agent | undefined {
+    return this.agentRegistrations.get(id)?.agent;
+  }
 }

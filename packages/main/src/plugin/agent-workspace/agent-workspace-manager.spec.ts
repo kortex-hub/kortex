@@ -19,18 +19,18 @@
 import { access, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import type { FileSystemWatcher, InferenceProviderConnection } from '@openkaiden/api';
+import type { Agent, FileSystemWatcher, InferenceProviderConnection } from '@openkaiden/api';
 import type { WebContents } from 'electron';
 import type { IPty } from 'node-pty';
 import { spawn } from 'node-pty';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
+import type { AgentRegistry } from '/@/plugin/agent-registry.js';
 import type { IPCHandle } from '/@/plugin/api.js';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
-import { OpenshellImageBuilder } from '/@/plugin/openshell-cli/openshell-image-builder.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { SafeStorageRegistry, SecretStorageWrapper } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import type { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
@@ -50,7 +50,6 @@ vi.mock(import('node-pty'));
 
 vi.mock(import('/@/plugin/kdn-cli/kdn-cli.js'));
 vi.mock(import('/@/plugin/openshell-cli/openshell-cli.js'));
-vi.mock(import('/@/plugin/openshell-cli/openshell-image-builder.js'));
 
 const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
   {
@@ -87,7 +86,10 @@ const apiSender: ApiSenderType = {
 const ipcHandle: IPCHandle = vi.fn();
 const kdnCli = new KdnCli({} as Exec, {} as CliToolRegistry);
 const openshellCli = new OpenshellCli({} as Exec, {} as CliToolRegistry);
-const imageBuilderCli = new OpenshellImageBuilder({} as Exec, {} as CliToolRegistry);
+
+const agentRegistry = {
+  getAgentRegistration: vi.fn(),
+} as unknown as AgentRegistry;
 
 const mockTask = {
   id: 'task-1',
@@ -173,7 +175,7 @@ beforeEach(() => {
     secretManager,
     openshellCli,
     safeStorageRegistry,
-    imageBuilderCli,
+    agentRegistry,
   );
   manager.init();
 });
@@ -370,33 +372,32 @@ describe('create – OpenShell mode', () => {
     name: 'my-sandbox',
   };
 
+  const mockAgent: Agent = {
+    id: 'claude',
+    name: 'Claude Code',
+    description: 'Test agent',
+    command: 'claude',
+    configurationFiles: [],
+    async preWorkspaceStart(): Promise<void> {},
+  };
+
   beforeEach(() => {
     process.env['KAIDEN_OPENSHELL'] = '1';
     vi.mocked(kdnCli.writeWorkspaceConfig).mockResolvedValue(undefined);
-    vi.mocked(imageBuilderCli.buildImage).mockResolvedValue(undefined);
     vi.mocked(openshellCli.createSandbox).mockResolvedValue(undefined);
+    vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue(mockAgent);
   });
 
   afterEach(() => {
     delete process.env['KAIDEN_OPENSHELL'];
   });
 
-  test('calls imageBuilderCli.buildImage with correct tag and agent option', async () => {
-    await manager.create(defaultOptions);
-
-    expect(imageBuilderCli.buildImage).toHaveBeenCalledWith(
-      'kaiden-workspace-my-sandbox:latest',
-      expect.objectContaining({ agent: 'claude', cwd: '/tmp/my-project' }),
-    );
-  });
-
-  test('calls openshellCli.createSandbox with from, name, providers, and workspace label', async () => {
+  test('calls openshellCli.createSandbox with name, providers, and workspace label', async () => {
     const options = { ...defaultOptions, secrets: ['my-secret'] };
     await manager.create(options);
 
     expect(openshellCli.createSandbox).toHaveBeenCalledWith({
       name: 'my-sandbox',
-      from: 'kaiden-workspace-my-sandbox:latest',
       providers: ['my-secret'],
       labels: { 'ai.openkaiden.kaiden.workspace': Buffer.from('/tmp/my-project').toString('base64url') },
       noTty: true,
@@ -424,17 +425,9 @@ describe('create – OpenShell mode', () => {
     expect(result).toEqual({ id: 'my-project' });
   });
 
-  test('sanitizes uppercase and special characters in sandbox name for image tag', async () => {
-    const options = { ...defaultOptions, name: 'My Project/V2!' };
-    await manager.create(options);
-
-    expect(imageBuilderCli.buildImage).toHaveBeenCalledWith(
-      'kaiden-workspace-my-project-v2:latest',
-      expect.any(Object),
-    );
-  });
-
-  test('passes model name, inference, and endpoint to buildImage', async () => {
+  test('calls agent.preWorkspaceStart with correct context', async () => {
+    const preWorkspaceStart = vi.fn();
+    vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue({ ...mockAgent, preWorkspaceStart });
     vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
       credentials: { 'claude:tokens': 'sk-ant-secret' },
       llmMetadataName: 'anthropic',
@@ -445,21 +438,74 @@ describe('create – OpenShell mode', () => {
     const options = { ...defaultOptions, model: 'anthropic::claude-3-5-sonnet::' };
     await manager.create(options);
 
-    expect(imageBuilderCli.buildImage).toHaveBeenCalledWith(
-      'kaiden-workspace-my-sandbox:latest',
-      expect.objectContaining({
-        model: 'claude-3-5-sonnet',
-        inference: 'anthropic',
+    expect(preWorkspaceStart).toHaveBeenCalledWith({
+      model: {
+        llmMetadata: { name: 'anthropic' },
+        model: { label: 'claude-3-5-sonnet' },
         endpoint: 'https://api.anthropic.com',
+      },
+      configurationFiles: [],
+    });
+  });
+
+  test('uploads updated configuration files to sandbox', async () => {
+    const configFile = {
+      path: '/home/user/.config/agent/config.toml',
+      read: vi.fn().mockResolvedValue(''),
+    };
+    const preWorkspaceStart = vi
+      .fn()
+      .mockImplementation(async (ctx: { configurationFiles: Array<{ update(c: string): Promise<void> }> }) => {
+        await ctx.configurationFiles[0]!.update('key = "value"');
+      });
+    vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue({
+      ...mockAgent,
+      configurationFiles: [configFile],
+      preWorkspaceStart,
+    });
+
+    await manager.create(defaultOptions);
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uploads: [{ local: expect.any(String), remote: '/home/user/.config/agent/config.toml' }],
       }),
     );
   });
 
-  test('falls back to "workspace" image tag component when name sanitizes to empty', async () => {
-    const options = { ...defaultOptions, name: '!!!' };
-    await manager.create(options);
+  test('does not include uploads when agent has no config files', async () => {
+    await manager.create(defaultOptions);
 
-    expect(imageBuilderCli.buildImage).toHaveBeenCalledWith('kaiden-workspace-workspace:latest', expect.any(Object));
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.not.objectContaining({ uploads: expect.anything() }),
+    );
+  });
+
+  test('uploads config files even when preWorkspaceStart does not update them', async () => {
+    const configFile = {
+      path: '/home/user/.config/agent/config.toml',
+      read: vi.fn().mockResolvedValue('initial content'),
+    };
+    vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue({
+      ...mockAgent,
+      configurationFiles: [configFile],
+    });
+
+    await manager.create(defaultOptions);
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uploads: [{ local: expect.any(String), remote: '/home/user/.config/agent/config.toml' }],
+      }),
+    );
+  });
+
+  test('throws when agent is not found in registry', async () => {
+    vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue(undefined);
+
+    await expect(manager.create(defaultOptions)).rejects.toThrow('agent claude not registered');
+
+    expect(openshellCli.createSandbox).not.toHaveBeenCalled();
   });
 });
 
