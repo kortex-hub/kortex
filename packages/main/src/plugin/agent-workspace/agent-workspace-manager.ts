@@ -524,7 +524,6 @@ export class AgentWorkspaceManager implements Disposable {
         [`${AgentWorkspaceSettings.SectionName}.${AgentWorkspaceSettings.DefaultBaseImage}`]: {
           description: 'Default base image for agent workspaces when the agent does not specify one.',
           type: 'string',
-          default: 'ghcr.io/nvidia/openshell-community/sandboxes/base:latest',
         },
       },
     };

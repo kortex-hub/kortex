@@ -237,7 +237,6 @@ describe('init', () => {
         properties: expect.objectContaining({
           'agentWorkspace.defaultBaseImage': expect.objectContaining({
             type: 'string',
-            default: 'ghcr.io/nvidia/openshell-community/sandboxes/base:latest',
           }),
         }),
       }),
