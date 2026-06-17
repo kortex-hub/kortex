@@ -870,6 +870,9 @@ importers:
       '@ai-sdk/provider':
         specifier: ^3.0.10
         version: 3.0.10
+      '@openkaiden/workspace-configuration':
+        specifier: ^0.14.0
+        version: 0.14.0
 
   packages/preload-webview:
     devDependencies:
