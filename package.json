@@ -271,7 +271,8 @@
       "tmp-promise>tmp": "^0.2.5",
       "tar": "^7.5.3",
       "cheerio>undici": "^7.18.2",
-      "cpu-features>nan": "^2.25.0"
+      "cpu-features>nan": "^2.25.0",
+      "acorn": "8.17.0"
     },
     "patchedDependencies": {
       "dmg-builder": "patches/dmg-builder.patch"
