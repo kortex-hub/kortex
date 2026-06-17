@@ -92,8 +92,8 @@ jobs:
           node-version: 24.15.0
           cache: 'pnpm'
 
-      - name: Execute pnpm
-        run: pnpm install
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Get Playwright version and cache path
         id: playwright-info

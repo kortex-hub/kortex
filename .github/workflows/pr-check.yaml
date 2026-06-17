@@ -49,8 +49,8 @@ jobs:
           node-version: 24.15.0
           cache: 'pnpm'
 
-      - name: Execute pnpm
-        run: pnpm install
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run Build
         timeout-minutes: 20
@@ -99,8 +99,8 @@ jobs:
           node-version: 24.15.0
           cache: 'pnpm'
 
-      - name: Execute pnpm
-        run: pnpm install
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Install flatpak
         run: |
@@ -148,8 +148,8 @@ jobs:
           node-version: 24.15.0
           cache: 'pnpm'
 
-      - name: Execute pnpm
-        run: pnpm install
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run Build
         timeout-minutes: 40
@@ -180,8 +180,8 @@ jobs:
           node-version: 24.15.0
           cache: 'pnpm'
 
-      - name: Execute pnpm
-        run: pnpm install
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run linter
         run: pnpm lint:check
@@ -214,8 +214,8 @@ jobs:
           node-version: 24.15.0
           cache: 'pnpm'
 
-      - name: Execute pnpm
-        run: pnpm install
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run typecheck
         run: pnpm typecheck
@@ -244,8 +244,8 @@ jobs:
           node-version: 24.15.0
           cache: 'pnpm'
 
-      - name: Execute pnpm
-        run: pnpm install
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
         # run the unit tests with coverage on ubuntu
       - name: Run unit tests with coverage
