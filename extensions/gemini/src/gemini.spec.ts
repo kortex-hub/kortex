@@ -23,15 +23,17 @@ import type { Model, Pager } from '@google/genai';
 import { GoogleGenAI } from '@google/genai';
 import type {
   CancellationToken,
+  Configuration,
   Disposable,
   Logger,
   Provider,
   provider as ProviderAPI,
   SecretStorage,
 } from '@openkaiden/api';
+import { configuration } from '@openkaiden/api';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { Gemini, type StoredConnection, TOKENS_KEY } from './gemini';
+import { Gemini, PROVIDER_ID, type StoredConnection, TOKENS_KEY } from './gemini';
 
 vi.mock(import('node:crypto'), async importOriginal => {
   const actual = await importOriginal();
@@ -49,6 +51,9 @@ vi.mock('@openkaiden/api', () => ({
       };
     },
     from: vi.fn(),
+  },
+  configuration: {
+    getConfiguration: vi.fn(),
   },
 }));
 
@@ -78,12 +83,21 @@ const SAFE_STORAGE_MOCK: SecretStorage = {
   onDidChange: vi.fn(),
 };
 
+const CONFIG_UPDATE_MOCK = vi.fn();
+
+const CONFIGURATION_MOCK: Configuration = {
+  get: vi.fn(),
+  has: vi.fn(),
+  update: CONFIG_UPDATE_MOCK,
+} as unknown as Configuration;
+
 beforeEach(() => {
   vi.resetAllMocks();
 
   vi.mocked(randomUUID).mockReturnValue('fake-uuid-1' as ReturnType<typeof randomUUID>);
   vi.mocked(PROVIDER_API_MOCK.createProvider).mockReturnValue(PROVIDER_MOCK as Provider);
   vi.mocked(createGoogleGenerativeAI).mockReturnValue(GOOGLE_AI_PROVIDER_MOCK);
+  vi.mocked(configuration.getConfiguration).mockReturnValue(CONFIGURATION_MOCK);
 
   // Mock GoogleGenAI prototype models.list to return async iterable Pager
   const mockModels: Model[] = [
@@ -249,7 +263,7 @@ describe('factory', () => {
       'gemini.factory.apiKey': 'dummyKey',
     });
 
-    expect(SAFE_STORAGE_MOCK.store).toHaveBeenCalledOnce();
+    // Verify both the tokens list and per-connection secret are stored
     const expected: StoredConnection[] = [{ id: 'fake-uuid-1', token: 'dummyKey' }];
     expect(SAFE_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, JSON.stringify(expected));
   });
@@ -315,20 +329,20 @@ describe('connection delete lifecycle', () => {
     mDelete = lifecycle.delete;
   });
 
-  test('calling delete should remove the connection from storage', async () => {
+  test('calling delete should remove the connection from storage, clear configuration, and dispose', async () => {
     await mDelete();
 
-    expect(SAFE_STORAGE_MOCK.store).toHaveBeenCalledTimes(2);
+    // Verify secret deletion
+    expect(SAFE_STORAGE_MOCK.delete).toHaveBeenCalledWith(`${PROVIDER_ID}:fake-uuid-1:token`);
 
-    const saved: StoredConnection[] = [{ id: 'fake-uuid-1', token: 'dummyKey' }];
-    expect(SAFE_STORAGE_MOCK.store).toHaveBeenNthCalledWith(1, TOKENS_KEY, JSON.stringify(saved));
+    // Verify configuration clearing
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('gemini.connection._type', undefined);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('gemini.connection.GEMINI_API_KEY', undefined);
 
-    expect(SAFE_STORAGE_MOCK.store).toHaveBeenNthCalledWith(2, TOKENS_KEY, JSON.stringify([]));
-  });
+    // Verify storage update - the tokens list is updated after per-connection secret
+    expect(SAFE_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, JSON.stringify([]));
 
-  test('calling delete should dispose provider inference connection', async () => {
-    await mDelete();
-
+    // Verify disposal
     expect(disposeMock).toHaveBeenCalledOnce();
   });
 
@@ -356,5 +370,59 @@ describe('connection delete lifecycle', () => {
     // Verify only the connection with id-1 was removed, id-2 remains
     const expectedAfterDelete: StoredConnection[] = [{ id: 'id-2', token: 'sharedToken' }];
     expect(SAFE_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, JSON.stringify(expectedAfterDelete));
+  });
+});
+
+describe('workspace configuration', () => {
+  beforeEach(async () => {
+    vi.mocked(PROVIDER_MOCK.registerInferenceProviderConnection).mockReturnValue({
+      dispose: vi.fn(),
+    });
+  });
+
+  test('should store per-connection secret and set configuration after registration', async () => {
+    const gemini = new Gemini(PROVIDER_API_MOCK, SAFE_STORAGE_MOCK);
+    await gemini.init();
+
+    const mock = vi.mocked(PROVIDER_MOCK.setInferenceProviderConnectionFactory);
+    const create = mock.mock.calls[0][0].create;
+
+    await create({
+      'gemini.factory.apiKey': 'dummyKey',
+    });
+
+    // Verify per-connection secret storage
+    expect(SAFE_STORAGE_MOCK.store).toHaveBeenCalledWith(`${PROVIDER_ID}:fake-uuid-1:token`, 'dummyKey');
+
+    // Verify configuration.getConfiguration was called with the connection
+    const connection = vi.mocked(PROVIDER_MOCK.registerInferenceProviderConnection).mock.calls[0][0];
+    expect(configuration.getConfiguration).toHaveBeenCalledWith(undefined, connection);
+
+    // Verify configuration updates
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('gemini.connection._type', PROVIDER_ID);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith(
+      'gemini.connection.GEMINI_API_KEY',
+      `${PROVIDER_ID}:fake-uuid-1:token`,
+    );
+  });
+
+  test('should set workspace configuration for each restored connection', async () => {
+    const stored: StoredConnection[] = [
+      { id: 'id-1', token: 'key1' },
+      { id: 'id-2', token: 'key2' },
+    ];
+    vi.mocked(SAFE_STORAGE_MOCK.get).mockResolvedValue(JSON.stringify(stored));
+
+    const gemini = new Gemini(PROVIDER_API_MOCK, SAFE_STORAGE_MOCK);
+    await gemini.init();
+
+    // Verify per-connection secrets stored
+    expect(SAFE_STORAGE_MOCK.store).toHaveBeenCalledWith(`${PROVIDER_ID}:id-1:token`, 'key1');
+    expect(SAFE_STORAGE_MOCK.store).toHaveBeenCalledWith(`${PROVIDER_ID}:id-2:token`, 'key2');
+
+    // Verify configuration updates for both connections
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('gemini.connection._type', PROVIDER_ID);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('gemini.connection.GEMINI_API_KEY', `${PROVIDER_ID}:id-1:token`);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('gemini.connection.GEMINI_API_KEY', `${PROVIDER_ID}:id-2:token`);
   });
 });

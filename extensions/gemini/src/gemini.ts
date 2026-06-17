@@ -22,12 +22,15 @@ import { GoogleGenAI } from '@google/genai';
 import type {
   Disposable,
   InferenceModel,
+  InferenceProviderConnection,
   Provider,
   provider as ProviderAPI,
   ProviderConnectionStatus,
   SecretStorage,
 } from '@openkaiden/api';
+import { configuration } from '@openkaiden/api';
 
+export const PROVIDER_ID = 'gemini';
 export const TOKENS_KEY = 'gemini:tokens';
 
 export interface StoredConnection {
@@ -50,7 +53,7 @@ export class Gemini implements Disposable {
     this.provider = this.providerAPI.createProvider({
       name: 'Gemini',
       status: 'unknown',
-      id: 'gemini',
+      id: PROVIDER_ID,
       images: {
         icon: './icon.png',
         logo: {
@@ -114,6 +117,28 @@ export class Gemini implements Disposable {
     await this.updateStoredConnections(stored => stored.filter(entry => entry.id !== id));
   }
 
+  private getSecretName(connectionId: string): string {
+    return `${PROVIDER_ID}:${connectionId}:token`;
+  }
+
+  private async setConnectionConfiguration(connection: InferenceProviderConnection, token: string): Promise<void> {
+    const secretName = this.getSecretName(connection.id);
+    await this.secrets.store(secretName, token);
+
+    const config = configuration.getConfiguration(undefined, connection);
+    await config.update('gemini.connection._type', PROVIDER_ID);
+    await config.update('gemini.connection.GEMINI_API_KEY', secretName);
+  }
+
+  private async clearConnectionConfiguration(connection: InferenceProviderConnection): Promise<void> {
+    const secretName = this.getSecretName(connection.id);
+    await this.secrets.delete(secretName);
+
+    const config = configuration.getConfiguration(undefined, connection);
+    await config.update('gemini.connection._type', undefined);
+    await config.update('gemini.connection.GEMINI_API_KEY', undefined);
+  }
+
   private async registerInferenceProviderConnection({ id, token }: { id: string; token: string }): Promise<void> {
     if (!this.provider) throw new Error('cannot create MCP provider connection: provider is not initialized');
 
@@ -127,12 +152,6 @@ export class Gemini implements Disposable {
       apiKey: token,
     });
 
-    const clean = async (): Promise<void> => {
-      this.connections.get(id)?.dispose();
-      this.connections.delete(id);
-      await this.removeConnection(id);
-    };
-
     let status: ProviderConnectionStatus = 'unknown';
     let models: InferenceModel[] = [];
 
@@ -142,7 +161,7 @@ export class Gemini implements Disposable {
       status = 'stopped';
     }
 
-    const connectionDisposable = this.provider.registerInferenceProviderConnection({
+    const connection: InferenceProviderConnection = {
       id,
       name: this.maskKey(token),
       type: 'cloud',
@@ -152,7 +171,12 @@ export class Gemini implements Disposable {
         return status;
       },
       lifecycle: {
-        delete: clean.bind(this),
+        delete: async (): Promise<void> => {
+          await this.clearConnectionConfiguration(connection);
+          this.connections.get(id)?.dispose();
+          this.connections.delete(id);
+          await this.removeConnection(id);
+        },
       },
       models,
       credentials(): Record<string, string> {
@@ -160,8 +184,12 @@ export class Gemini implements Disposable {
           [TOKENS_KEY]: token,
         };
       },
-    });
+    };
+
+    const connectionDisposable = this.provider.registerInferenceProviderConnection(connection);
     this.connections.set(id, connectionDisposable);
+
+    await this.setConnectionConfiguration(connection, token);
   }
 
   private async getGeminiModels(token: string): Promise<Array<{ label: string }>> {

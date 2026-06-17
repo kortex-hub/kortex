@@ -24,6 +24,19 @@
           "scope": "InferenceProviderConnectionFactory",
           "description": "Enter your Gemini API key (GEMINI_API_KEY)",
           "format": "password"
+        },
+        "gemini.connection._type": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "Gemini provider type",
+          "hidden": true
+        },
+        "gemini.connection.GEMINI_API_KEY": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "API key secret reference",
+          "format": "password",
+          "hidden": true
         }
       }
     }
