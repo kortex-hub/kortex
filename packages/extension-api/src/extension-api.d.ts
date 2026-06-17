@@ -42,6 +42,7 @@
 declare module '@openkaiden/api' {
   import type { ProviderV3 as AISDKInferenceProvider } from '@ai-sdk/provider';
   import type { components } from '@openkaiden/mcp-registry-types';
+  import type { components as workspaceConfigComponents } from '@openkaiden/workspace-configuration';
 
   /**
    * The version of Kaiden.
@@ -5560,6 +5561,8 @@ declare module '@openkaiden/api' {
     update(content: string): Promise<void>;
   }
 
+  export type AgentWorkspaceConfiguration = workspaceConfigComponents['schemas']['WorkspaceConfiguration'];
+
   export interface AgentWorkspaceContext {
     readonly model: {
       readonly llmMetadata?: LLMMetadata;
@@ -5567,6 +5570,7 @@ declare module '@openkaiden/api' {
       readonly endpoint?: string;
     };
     readonly configurationFiles: ReadonlyArray<AgentConfigurationFile>;
+    readonly workspace: AgentWorkspaceConfiguration;
   }
 
   export interface Agent {
