@@ -99,6 +99,7 @@ describe('activate', () => {
           endpoint,
         },
         configurationFiles: configFiles,
+        workspace: {},
       };
     }
 
