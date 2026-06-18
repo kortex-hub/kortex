@@ -20,9 +20,9 @@ import type { RunError, RunOptions } from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 
 import {
-  writeWorkspaceConfig as writeWsConfig,
   updateWorkspaceConfig as updateWsConfig,
   type WorkspaceConfiguration,
+  writeWorkspaceConfig as writeWsConfig,
 } from '/@/plugin/agent-workspace/workspace-config-writer.js';
 import { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import { Exec } from '/@/plugin/util/exec.js';
