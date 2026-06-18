@@ -398,6 +398,7 @@ describe('create – OpenShell mode', () => {
     description: 'Test agent',
     command: 'claude',
     configurationFiles: [],
+    skillsFolder: '.claude/skills',
     async preWorkspaceStart(): Promise<void> {},
   };
 
