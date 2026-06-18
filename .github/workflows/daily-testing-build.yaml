@@ -23,6 +23,10 @@ on:
   schedule:
     - cron: '0 1 * * *'
 
+concurrency:
+  group: daily-testing-build
+  cancel-in-progress: true
+
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   DEBUG: electron-builder
@@ -44,6 +48,7 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           token: ${{ secrets.KORTEX_BOT_TOKEN }}
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Generate tag utilities
@@ -60,19 +65,24 @@ jobs:
           echo "kaidenVersion=$TAG_PATTERN" >> ${GITHUB_OUTPUT}
 
           # check for tag existence - exit the workflow
-          echo "Checking if tag exists: $(git rev-parse -q --verify "$githubTag")"
-          if [ git rev-parse -q --verify "$githubTag" ]; then
-            echo "Tag '$githubTag' exists, skipping..."
+          GITHUB_TAG="v$TAG_PATTERN"
+          echo "Checking if tag exists: $(git rev-parse -q --verify "$GITHUB_TAG")"
+          if git rev-parse -q --verify "$GITHUB_TAG" > /dev/null 2>&1; then
+            echo "Tag '$GITHUB_TAG' exists, skipping..."
             exit 1;
           else
-            echo "Tag '$githubTag' does not exist yet, continue"
+            echo "Tag '$GITHUB_TAG' does not exist yet, continue"
           fi
 
       - name: Create a Tag, commit and push to testing-prereleases
+        env:
+          GIT_USER_NAME: ${{ github.actor }}
+          GIT_USER_EMAIL: "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          KORTEX_BOT_TOKEN: ${{ secrets.KORTEX_BOT_TOKEN }}
         run: |
-          echo "Setting github.actor: ${{ github.actor }} and id: ${{ github.actor_id }}"
-          git config --local user.name ${{ github.actor }}
-          git config --local user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          echo "Setting github.actor: $GIT_USER_NAME"
+          git config --local user.name "$GIT_USER_NAME"
+          git config --local user.email "$GIT_USER_EMAIL"
           sed -i "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.kaidenVersion }}\",#g" package.json
           find extensions/* -maxdepth 2 -name "package.json" | xargs -I {} sed -i "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.kaidenVersion }}\",#g" {}
 
@@ -91,7 +101,7 @@ jobs:
           git tag ${{ steps.TAG_UTIL.outputs.githubTag }}
 
           # push tag to the prereleases repository
-          git remote add prereleases https://github.com/openkaiden/testing-prereleases
+          git remote add prereleases https://${KORTEX_BOT_TOKEN}@github.com/openkaiden/testing-prereleases
           git push prereleases ${{ steps.TAG_UTIL.outputs.githubTag }}
 
       - name: Create Release
@@ -125,6 +135,7 @@ jobs:
         with:
           repository: openkaiden/testing-prereleases
           ref: ${{ needs.tag.outputs.githubTag }}
+          persist-credentials: false
 
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
         name: Install pnpm
@@ -176,7 +187,7 @@ jobs:
           owner: openkaiden
 
       - name: Delete release
-        if: ${{ needs.build.result != 'success' }}
+        if: ${{ needs.build.result != 'success' && needs.tag.outputs.releaseId != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.KORTEX_BOT_TOKEN }}
         run: |
