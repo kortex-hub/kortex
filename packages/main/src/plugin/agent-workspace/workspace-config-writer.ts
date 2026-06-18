@@ -27,16 +27,13 @@ import type { AgentWorkspaceCreateOptions } from '/@api/agent-workspace-info.js'
 
 export type WorkspaceConfiguration = workspaceComponents['schemas']['WorkspaceConfiguration'];
 
-export async function writeWorkspaceConfig(options: AgentWorkspaceCreateOptions): Promise<void> {
+export async function writeWorkspaceConfig(options: AgentWorkspaceCreateOptions): Promise<WorkspaceConfiguration> {
   const mcpServers = options.mcp?.servers;
   const mcpCommands = options.mcp?.commands;
   const hasSkills = !!options.skills?.length;
   const hasMcp = !!mcpServers?.length || !!mcpCommands?.length;
   const hasWsConfig = !!options.workspaceConfiguration;
   const hasMounts = !!options.mounts?.length;
-  if (!hasSkills && !options.secrets?.length && !options.network && !hasMcp && !hasMounts && !hasWsConfig) {
-    return;
-  }
 
   const configDir = join(options.sourcePath, '.kaiden');
   const configPath = join(configDir, 'workspace.json');
@@ -154,6 +151,7 @@ export async function writeWorkspaceConfig(options: AgentWorkspaceCreateOptions)
   const output = JSON.stringify(existing, undefined, 2) + '\n';
   console.log(`[KdnCli] workspace.json:\n${output}`);
   await writeFile(configPath, output, 'utf-8');
+  return existing;
 }
 
 export async function updateWorkspaceConfig(

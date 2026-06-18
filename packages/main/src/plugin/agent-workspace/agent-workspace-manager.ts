@@ -27,6 +27,7 @@ import type { IPty } from 'node-pty';
 import { spawn } from 'node-pty';
 
 import { AgentRegistry } from '/@/plugin/agent-registry.js';
+import { writeWorkspaceConfig } from '/@/plugin/agent-workspace/workspace-config-writer.js';
 import { WritableConfigurationFile } from '/@/plugin/agent-workspace/writable-configuration-file.js';
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
@@ -130,7 +131,7 @@ export class AgentWorkspaceManager implements Disposable {
     const modelName = options.model?.split('::')[1];
     const endpoint = connectionInfo?.endpoint;
 
-    await this.kdnCli.writeWorkspaceConfig(options);
+    const workspace = await writeWorkspaceConfig(options);
 
     const agent = this.agentRegistry.getAgentRegistration(options.agent);
     const uploads: Array<{ local: string; remote: string }> = [];
@@ -150,6 +151,7 @@ export class AgentWorkspaceManager implements Disposable {
           endpoint,
         },
         configurationFiles: writable,
+        workspace,
       });
 
       for (const file of writable) {

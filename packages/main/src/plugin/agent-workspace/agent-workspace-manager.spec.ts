@@ -26,6 +26,7 @@ import { spawn } from 'node-pty';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { AgentRegistry } from '/@/plugin/agent-registry.js';
+import type { WorkspaceConfiguration } from '/@/plugin/agent-workspace/workspace-config-writer.js';
 import type { IPCHandle } from '/@/plugin/api.js';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
@@ -150,6 +151,12 @@ const extensionStorageMock = {
 const safeStorageRegistry = {
   getExtensionStorage: vi.fn().mockReturnValue(extensionStorageMock),
 } as unknown as SafeStorageRegistry;
+
+function mockEnoent(): NodeJS.ErrnoException {
+  const err: NodeJS.ErrnoException = new Error('ENOENT');
+  err.code = 'ENOENT';
+  return err;
+}
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -383,9 +390,10 @@ describe('create – OpenShell mode', () => {
 
   beforeEach(() => {
     process.env['KAIDEN_OPENSHELL'] = '1';
-    vi.mocked(kdnCli.writeWorkspaceConfig).mockResolvedValue(undefined);
+    vi.mocked(kdnCli.writeWorkspaceConfig).mockResolvedValue({} as WorkspaceConfiguration);
     vi.mocked(openshellCli.createSandbox).mockResolvedValue(undefined);
     vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue(mockAgent);
+    vi.mocked(readFile).mockRejectedValue(mockEnoent());
   });
 
   afterEach(() => {
@@ -445,6 +453,7 @@ describe('create – OpenShell mode', () => {
         endpoint: 'https://api.anthropic.com',
       },
       configurationFiles: [],
+      workspace: expect.anything(),
     });
   });
 

@@ -143,7 +143,7 @@ export class KdnCli implements SecretCliBackend {
     }
   }
 
-  async writeWorkspaceConfig(options: AgentWorkspaceCreateOptions): Promise<void> {
+  async writeWorkspaceConfig(options: AgentWorkspaceCreateOptions): Promise<WorkspaceConfiguration> {
     return writeWsConfig(options);
   }
 

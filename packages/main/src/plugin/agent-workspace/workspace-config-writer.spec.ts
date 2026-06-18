@@ -89,10 +89,11 @@ describe('writeWorkspaceConfig', () => {
     expect(parsed.network).toEqual({ mode: 'deny', hosts: ['registry.npmjs.org', 'pypi.org'] });
   });
 
-  test('does not write workspace.json when no skills, network, secrets, mcp, mounts or workspaceConfiguration provided', async () => {
+  test('write empty workspace.json when no skills, network, secrets, mcp, mounts or workspaceConfiguration provided', async () => {
+    vi.mocked(readFile).mockRejectedValue(mockEnoent());
     await writeWorkspaceConfig(defaultOptions);
 
-    expect(writeFile).not.toHaveBeenCalled();
+    expect(writeFile).toHaveBeenCalled();
   });
 
   test('writes workspace.json with mounts', async () => {

@@ -103,6 +103,7 @@ describe('activate', () => {
           model: { label: modelLabel },
         },
         configurationFiles: configFiles,
+        workspace: {},
       };
     }
 
