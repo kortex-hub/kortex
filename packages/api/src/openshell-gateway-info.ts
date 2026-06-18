@@ -38,7 +38,43 @@ export const SandboxInfoSchema = z.object({
   resource_version: z.number().optional(),
 });
 
-export type SandboxInfo = z.output<typeof SandboxInfoSchema>;
+export type SandboxInfo = z.output<typeof SandboxInfoSchema> & {
+  sourcePath?: string;
+};
+
+export const WORKSPACE_LABEL = 'ai.openkaiden.kaiden.workspace';
+
+export function decodeWorkspaceLabels(labels: Record<string, string>): string | undefined {
+  let encoded: string;
+  if (WORKSPACE_LABEL in labels) {
+    encoded = labels[WORKSPACE_LABEL]!;
+  } else {
+    const chunks = Object.entries(labels)
+      .flatMap(([key, value]) => {
+        if (!key.startsWith(`${WORKSPACE_LABEL}.`)) {
+          return [];
+        }
+        const suffix = key.slice(WORKSPACE_LABEL.length + 1);
+        if (!/^\d+$/.test(suffix)) {
+          return [];
+        }
+        return [{ index: Number(suffix), value }];
+      })
+      .sort((a, b) => a.index - b.index);
+    if (chunks.length === 0 || chunks.some((chunk, i) => chunk.index !== i)) {
+      return undefined;
+    }
+    encoded = chunks.map(chunk => chunk.value).join('');
+  }
+  try {
+    const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    const binary = atob(base64);
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return undefined;
+  }
+}
 
 export interface CreateSandboxOptions {
   name?: string;

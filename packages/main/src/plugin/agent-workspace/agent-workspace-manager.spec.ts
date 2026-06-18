@@ -41,9 +41,10 @@ import type { Exec } from '/@/plugin/util/exec.js';
 import type { AgentWorkspaceCreateOptions, AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IConfigurationRegistry } from '/@api/configuration/models.js';
+import { decodeWorkspaceLabels } from '/@api/openshell-gateway-info.js';
 import type { TaskState, TaskStatus } from '/@api/taskInfo.js';
 
-import { AgentWorkspaceManager } from './agent-workspace-manager.js';
+import { AgentWorkspaceManager, encodeWorkspaceLabels } from './agent-workspace-manager.js';
 
 vi.mock(import('node:fs/promises'));
 vi.mock(import('yaml'));
@@ -421,7 +422,7 @@ describe('create – OpenShell mode', () => {
     expect(openshellCli.createSandbox).toHaveBeenCalledWith({
       name: 'my-sandbox',
       providers: ['my-secret'],
-      labels: { 'ai.openkaiden.kaiden.workspace': Buffer.from('/tmp/my-project').toString('base64url') },
+      labels: encodeWorkspaceLabels('/tmp/my-project'),
       noTty: true,
       command: ['true'],
     });
@@ -1635,5 +1636,53 @@ describe('dispose', () => {
     onExitCallback!();
 
     expect(webContents.send).not.toHaveBeenCalled();
+  });
+});
+
+describe('encodeWorkspaceLabels', () => {
+  test('returns single label for short paths', () => {
+    const labels = encodeWorkspaceLabels('/tmp/my-project');
+    expect(Object.keys(labels)).toEqual(['ai.openkaiden.kaiden.workspace']);
+    expect(labels['ai.openkaiden.kaiden.workspace']!.length).toBeLessThanOrEqual(63);
+  });
+
+  test('splits into indexed labels for long paths', () => {
+    const longPath = '/Users/fbricon/Dev/souk/ideas/stock-trading-ai/backend';
+    const labels = encodeWorkspaceLabels(longPath);
+    expect(labels['ai.openkaiden.kaiden.workspace']).toBeUndefined();
+    expect(labels['ai.openkaiden.kaiden.workspace.0']).toBeDefined();
+    expect(labels['ai.openkaiden.kaiden.workspace.1']).toBeDefined();
+    for (const value of Object.values(labels)) {
+      expect(value.length).toBeLessThanOrEqual(63);
+    }
+  });
+});
+
+describe('decodeWorkspaceLabels', () => {
+  test('round-trips a short path', () => {
+    const path = '/tmp/my-project';
+    expect(decodeWorkspaceLabels(encodeWorkspaceLabels(path))).toBe(path);
+  });
+
+  test('round-trips a long path', () => {
+    const path = '/Users/fbricon/Dev/souk/ideas/stock-trading-ai/backend';
+    expect(decodeWorkspaceLabels(encodeWorkspaceLabels(path))).toBe(path);
+  });
+
+  test('returns undefined when no matching labels exist', () => {
+    expect(decodeWorkspaceLabels({ unrelated: 'value' })).toBeUndefined();
+  });
+
+  test('returns undefined for non-numeric chunk suffixes', () => {
+    expect(decodeWorkspaceLabels({ 'ai.openkaiden.kaiden.workspace.foo': 'abc' })).toBeUndefined();
+  });
+
+  test('returns undefined for non-contiguous chunk indices', () => {
+    expect(
+      decodeWorkspaceLabels({
+        'ai.openkaiden.kaiden.workspace.0': 'abc',
+        'ai.openkaiden.kaiden.workspace.2': 'def',
+      }),
+    ).toBeUndefined();
   });
 });

@@ -49,10 +49,24 @@ import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IConfigurationNode } from '/@api/configuration/models.js';
 import { IConfigurationRegistry } from '/@api/configuration/models.js';
 import type { GatewaySandboxes } from '/@api/openshell-gateway-info.js';
+import { decodeWorkspaceLabels, WORKSPACE_LABEL } from '/@api/openshell-gateway-info.js';
 import type { InferenceConnectionCredentials } from '/@api/provider-info.js';
 import type { SecretCreateOptions, SecretValue } from '/@api/secret-info.js';
 
 const HOME_VARIABLE = '${HOME}';
+const LABEL_MAX_LENGTH = 63;
+
+export function encodeWorkspaceLabels(sourcePath: string): Record<string, string> {
+  const encoded = Buffer.from(sourcePath).toString('base64url');
+  if (encoded.length <= LABEL_MAX_LENGTH) {
+    return { [WORKSPACE_LABEL]: encoded };
+  }
+  const labels: Record<string, string> = {};
+  for (let i = 0, chunk = 0; i < encoded.length; i += LABEL_MAX_LENGTH, chunk++) {
+    labels[`${WORKSPACE_LABEL}.${chunk}`] = encoded.slice(i, i + LABEL_MAX_LENGTH);
+  }
+  return labels;
+}
 
 /**
  * Manages agent workspaces by delegating to the `kdn` CLI.
@@ -172,7 +186,7 @@ export class AgentWorkspaceManager implements Disposable {
     await this.openshellCli.createSandbox({
       name: sandboxName,
       providers: options.secrets,
-      labels: { 'ai.openkaiden.kaiden.workspace': Buffer.from(options.sourcePath).toString('base64url') },
+      labels: encodeWorkspaceLabels(options.sourcePath),
       uploads: uploads.length > 0 ? uploads : undefined,
       noTty: true,
       command: ['true'],
@@ -503,7 +517,15 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   async listOpenshellSandboxes(): Promise<GatewaySandboxes[]> {
-    return this.openshellCli.listSandboxesPerGateway();
+    const results = await this.openshellCli.listSandboxesPerGateway();
+    for (const entry of results) {
+      for (const sandbox of entry.sandboxes) {
+        if (sandbox.labels) {
+          sandbox.sourcePath = decodeWorkspaceLabels(sandbox.labels);
+        }
+      }
+    }
+    return results;
   }
 
   async deleteOpenshellSandbox(name: string): Promise<void> {
