@@ -16,6 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+
 import type { AgentWorkspaceContext, ExtensionContext } from '@openkaiden/api';
 import { agents, provider } from '@openkaiden/api';
 
@@ -50,6 +53,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
         },
       },
     ],
+    skillsFolder: join(homedir(), '.gemini', 'skills'),
     isSupportedModelType(type): boolean {
       return type.name === 'gemini';
     },

@@ -46,6 +46,7 @@ describe('activate', () => {
         name: 'GitHub Copilot',
         description: expect.any(String),
         icon: expect.objectContaining({ icon: { light: './icon_light.png', dark: './icon_dark.png' } }),
+        skillsFolder: expect.any(String),
         isSupportedModelType: expect.any(Function),
       }),
     );

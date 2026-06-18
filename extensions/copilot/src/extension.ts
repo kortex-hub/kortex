@@ -16,6 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+
 import type { ExtensionContext } from '@openkaiden/api';
 import { agents } from '@openkaiden/api';
 
@@ -40,6 +43,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     acp: { args: ['--acp'] },
     tags: [],
     configurationFiles: [],
+    skillsFolder: join(homedir(), '.copilot', 'skills'),
     isSupportedModelType(type): boolean {
       return type.name !== 'vertexai';
     },

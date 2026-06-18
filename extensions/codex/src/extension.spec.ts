@@ -46,6 +46,7 @@ describe('activate', () => {
         name: 'Codex',
         description: expect.any(String),
         icon: expect.objectContaining({ icon: './icon.png' }),
+        skillsFolder: expect.any(String),
         isSupportedModelType: expect.any(Function),
       }),
     );
