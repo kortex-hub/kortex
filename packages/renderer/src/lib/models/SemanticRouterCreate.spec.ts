@@ -23,13 +23,28 @@ import { writable } from 'svelte/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { CatalogModelInfo } from '/@/lib/models/models-utils';
+import * as modelCatalogStore from '/@/stores/model-catalog';
 import * as modelsStore from '/@/stores/models';
 import { resetRouterDraft } from '/@/stores/semantic-router-create-draft.svelte';
 
 import SemanticRouterCreate from './SemanticRouterCreate.svelte';
 
 vi.mock(import('/@/navigation'));
+vi.mock(import('/@/stores/model-catalog'));
 vi.mock(import('/@/stores/models'));
+
+const mockCloudModels: CatalogModelInfo[] = [
+  {
+    providerId: 'claude',
+    providerName: 'Anthropic',
+    connectionId: 'conn-0',
+    connectionName: 'Anthropic Cloud',
+    type: 'cloud',
+    llmMetadata: { name: 'anthropic' },
+    label: 'claude-sonnet-4',
+    connectionStatus: 'started',
+  } as CatalogModelInfo,
+];
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -40,17 +55,17 @@ beforeEach(() => {
     listeners: [{ address: '0.0.0.0', port: 8899 }],
     routing: { keywords: [], decisions: [] },
   });
-  vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>([
-    {
-      providerId: 'gemini',
-      connectionId: 'conn-1',
-      connectionName: 'Gemini',
-      type: 'cloud',
-      label: 'gemini-2.5-pro',
-      connectionStatus: 'started',
-      providerName: 'Gemini',
-    },
-  ]);
+  vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>([]);
+  vi.mocked(modelCatalogStore).disabledModels = writable<Set<string>>(new Set());
+  vi.mocked(modelCatalogStore.isModelEnabled).mockImplementation(
+    (disabled: Set<string>, providerId: string, label: string): boolean => !disabled.has(`${providerId}::${label}`),
+  );
+  vi.mocked(modelCatalogStore.modelKey).mockImplementation(
+    (providerId: string, label: string): string => `${providerId}::${label}`,
+  );
+  vi.mocked(modelCatalogStore.modelSelectionKey).mockImplementation(
+    (providerId: string, connectionId: string, label: string): string => `${providerId}::${connectionId}::${label}`,
+  );
 });
 
 describe('basic setup step', () => {
@@ -88,73 +103,142 @@ describe('basic setup step', () => {
   });
 });
 
-describe('step navigation', () => {
-  test('navigates to signals step when Next is clicked', async () => {
+describe('model selection step', () => {
+  test('advances to model selection step when clicking next', async () => {
+    vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(mockCloudModels);
+
     render(SemanticRouterCreate);
 
     const nameInput = screen.getByLabelText('Router name');
     await fireEvent.input(nameInput, { target: { value: 'my-router' } });
 
-    const nextBtn = screen.getByRole('button', { name: 'Continue' });
-    await fireEvent.click(nextBtn);
+    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(screen.getByText(/Select one or more models/)).toBeInTheDocument();
+  });
+
+  test('continue is disabled when no models are selected', async () => {
+    vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(mockCloudModels);
+
+    render(SemanticRouterCreate);
+
+    const nameInput = screen.getByLabelText('Router name');
+    await fireEvent.input(nameInput, { target: { value: 'my-router' } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+    const continueBtn = screen.getByRole('button', { name: 'Continue' });
+    expect(continueBtn).toBeDisabled();
+  });
+
+  test('continue is enabled when a model is selected', async () => {
+    vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(mockCloudModels);
+
+    render(SemanticRouterCreate);
+
+    const nameInput = screen.getByLabelText('Router name');
+    await fireEvent.input(nameInput, { target: { value: 'my-router' } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await fireEvent.click(screen.getByRole('checkbox', { name: 'Use claude-sonnet-4' }));
+
+    const continueBtn = screen.getByRole('button', { name: 'Continue' });
+    expect(continueBtn).toBeEnabled();
+  });
+
+  test('back button returns to basic setup step', async () => {
+    vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(mockCloudModels);
+
+    render(SemanticRouterCreate);
+
+    const nameInput = screen.getByLabelText('Router name');
+    await fireEvent.input(nameInput, { target: { value: 'my-router' } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+    expect(screen.getByText(/Select one or more models/)).toBeInTheDocument();
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+
+    expect(screen.getByLabelText('Router name')).toBeInTheDocument();
+  });
+});
+
+describe('step navigation', () => {
+  test('navigates to signals step from models step', async () => {
+    vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(mockCloudModels);
+
+    render(SemanticRouterCreate);
+
+    const nameInput = screen.getByLabelText('Router name');
+    await fireEvent.input(nameInput, { target: { value: 'my-router' } });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await fireEvent.click(screen.getByRole('checkbox', { name: 'Use claude-sonnet-4' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
 
     screen.getByText('Signals');
     screen.getByText('Decisions');
   });
 
-  test('Back button appears on step 2 and navigates back', async () => {
-    render(SemanticRouterCreate);
-
-    expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
-
-    const nameInput = screen.getByLabelText('Router name');
-    await fireEvent.input(nameInput, { target: { value: 'my-router' } });
-
-    const nextBtn = screen.getByRole('button', { name: 'Continue' });
-    await fireEvent.click(nextBtn);
-
-    const backBtn = screen.getByRole('button', { name: 'Back' });
-    await fireEvent.click(backBtn);
-
-    screen.getByLabelText('Router name');
-  });
-
   test('shows Create button on last step', async () => {
+    vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(mockCloudModels);
+
     render(SemanticRouterCreate);
 
     const nameInput = screen.getByLabelText('Router name');
     await fireEvent.input(nameInput, { target: { value: 'my-router' } });
 
-    const nextBtn = screen.getByRole('button', { name: 'Continue' });
-    await fireEvent.click(nextBtn);
+    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await fireEvent.click(screen.getByRole('checkbox', { name: 'Use claude-sonnet-4' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
 
     screen.getByRole('button', { name: 'Create' });
   });
 
   test('step counter updates as steps change', async () => {
+    vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(mockCloudModels);
+
     render(SemanticRouterCreate);
 
-    screen.getByText('Step 1 of 2');
+    screen.getByText('Step 1 of 3');
 
     const nameInput = screen.getByLabelText('Router name');
     await fireEvent.input(nameInput, { target: { value: 'my-router' } });
 
-    const nextBtn = screen.getByRole('button', { name: 'Continue' });
-    await fireEvent.click(nextBtn);
+    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
 
-    screen.getByText('Step 2 of 2');
+    screen.getByText('Step 2 of 3');
+
+    await fireEvent.click(screen.getByRole('checkbox', { name: 'Use claude-sonnet-4' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+    screen.getByText('Step 3 of 3');
+  });
+
+  test('back button is not shown on step 1', () => {
+    render(SemanticRouterCreate);
+
+    expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
   });
 });
 
 describe('create flow', () => {
-  test('calls createSemanticRouter on final step', async () => {
+  test('calls createSemanticRouter with selected models on final step', async () => {
+    vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(mockCloudModels);
+
     render(SemanticRouterCreate);
 
     const nameInput = screen.getByLabelText('Router name');
     await fireEvent.input(nameInput, { target: { value: 'my-router' } });
 
-    const nextBtn = screen.getByRole('button', { name: 'Continue' });
-    await fireEvent.click(nextBtn);
+    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await fireEvent.click(screen.getByRole('checkbox', { name: 'Use claude-sonnet-4' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
 
     const createBtn = screen.getByRole('button', { name: 'Create' });
     await fireEvent.click(createBtn);
@@ -164,19 +248,40 @@ describe('create flow', () => {
       expect.objectContaining({
         name: 'my-router',
         listeners: expect.arrayContaining([expect.objectContaining({ port: 8899 })]),
-        routing: { keywords: [], decisions: [] },
+        routing: expect.objectContaining({
+          keywords: [],
+          decisions: [
+            {
+              name: 'default',
+              priority: 0,
+              rules: [
+                {
+                  operator: 'OR',
+                  conditions: [],
+                  modelRefs: [
+                    { providerId: 'claude', connectionId: 'conn-0', label: 'claude-sonnet-4', useReasoning: false },
+                  ],
+                },
+              ],
+            },
+          ],
+        }),
       }),
     );
   });
 
   test('navigates to semantic routers page after creation', async () => {
+    vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(mockCloudModels);
+
     render(SemanticRouterCreate);
 
     const nameInput = screen.getByLabelText('Router name');
     await fireEvent.input(nameInput, { target: { value: 'my-router' } });
 
-    const nextBtn = screen.getByRole('button', { name: 'Continue' });
-    await fireEvent.click(nextBtn);
+    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await fireEvent.click(screen.getByRole('checkbox', { name: 'Use claude-sonnet-4' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
 
     const createBtn = screen.getByRole('button', { name: 'Create' });
     await fireEvent.click(createBtn);
@@ -190,14 +295,17 @@ describe('create flow', () => {
 
   test('displays error when createSemanticRouter fails', async () => {
     vi.mocked(window.createSemanticRouter).mockRejectedValueOnce(new Error('duplicate name'));
+    vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(mockCloudModels);
 
     render(SemanticRouterCreate);
 
     const nameInput = screen.getByLabelText('Router name');
     await fireEvent.input(nameInput, { target: { value: 'my-router' } });
 
-    const nextBtn = screen.getByRole('button', { name: 'Continue' });
-    await fireEvent.click(nextBtn);
+    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+    await fireEvent.click(screen.getByRole('checkbox', { name: 'Use claude-sonnet-4' }));
+    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
 
     const createBtn = screen.getByRole('button', { name: 'Create' });
     await fireEvent.click(createBtn);
@@ -217,4 +325,10 @@ describe('create flow', () => {
     const { handleNavigation } = await import('/@/navigation');
     expect(handleNavigation).toHaveBeenCalledWith({ page: 'semantic-routers' });
   });
+});
+
+test('shows step counter', () => {
+  render(SemanticRouterCreate);
+
+  expect(screen.getByText('Step 1 of 3')).toBeInTheDocument();
 });

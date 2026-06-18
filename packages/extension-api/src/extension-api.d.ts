@@ -653,6 +653,7 @@ declare module '@openkaiden/api' {
 
   export interface LLMMetadata {
     name?: string;
+    semanticRouter?: string;
   }
 
   export type InferenceProviderConnection = {

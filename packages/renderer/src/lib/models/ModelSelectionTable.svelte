@@ -29,11 +29,22 @@ const statusMap: Record<string, string> = {
 interface Props {
   models: CatalogModelInfo[];
   selectedKey?: string;
+  selectedKeys?: Set<string>;
+  multiSelect?: boolean;
   showCatalogLink?: boolean;
   onselect?: (model: CatalogModelInfo) => void;
+  ontoggle?: (model: CatalogModelInfo) => void;
 }
 
-let { models, selectedKey = '', showCatalogLink = true, onselect }: Props = $props();
+let {
+  models,
+  selectedKey = '',
+  selectedKeys,
+  multiSelect = false,
+  showCatalogLink = true,
+  onselect,
+  ontoggle,
+}: Props = $props();
 
 let searchTerm = $state('');
 
@@ -44,7 +55,17 @@ let corporateModels: CatalogModelInfo[] = $derived(displayedModels.filter(m => m
 let localModels: CatalogModelInfo[] = $derived(displayedModels.filter(m => m.type === 'local'));
 let hasAnyModels: boolean = $derived(cloudModels.length > 0 || corporateModels.length > 0 || localModels.length > 0);
 
-let selectedModel: CatalogModelInfo | undefined = $derived(models.find(m => getKey(m) === selectedKey));
+let selectedModel: CatalogModelInfo | undefined = $derived(
+  multiSelect ? undefined : models.find(m => getKey(m) === selectedKey),
+);
+let selectedCount: number = $derived(
+  multiSelect && selectedKeys ? models.filter(m => selectedKeys.has(getKey(m))).length : 0,
+);
+
+function isSelected(key: string): boolean {
+  if (multiSelect) return selectedKeys?.has(key) ?? false;
+  return selectedKey === key;
+}
 
 function filterBySearch(allModels: CatalogModelInfo[], term: string): CatalogModelInfo[] {
   if (!term.trim()) return allModels;
@@ -129,18 +150,18 @@ function navigateToModels(): void {
               <tbody>
                 {#each catModels as model (getKey(model))}
                   {@const key = getKey(model)}
-                  {@const isSelected = selectedKey === key}
+                  {@const selected = isSelected(key)}
                   <tr
                     role="button"
                     tabindex="0"
                     class="border-b border-(--pd-content-card-border) last:border-b-0 transition-colors
                       cursor-pointer hover:bg-(--pd-content-card-hover-inset-bg)
-                      {isSelected ? 'bg-(--pd-content-card-hover-inset-bg)' : ''}"
-                    onclick={onselect?.bind(undefined, model)}
+                      {selected ? 'bg-(--pd-content-card-hover-inset-bg)' : ''}"
+                    onclick={(multiSelect ? ontoggle : onselect)?.bind(undefined, model)}
                     onkeydown={(e: KeyboardEvent): void => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        onselect?.(model);
+                        (multiSelect ? ontoggle : onselect)?.(model);
                       }
                     }}
                     data-testid="model-row-{model.label}">
@@ -154,14 +175,23 @@ function navigateToModels(): void {
                     <td class="px-3 py-2 text-(--pd-table-body-text)">—</td>
                     <td class="px-3 py-2 text-(--pd-table-body-text)">{model.providerName}</td>
                     <td class="px-3 py-2 text-center">
-                      <input
-                        type="radio"
-                        name="modelSelection"
-                        value={key}
-                        checked={isSelected}
-                        aria-label="Use {model.label}"
-                        onclick={(e: MouseEvent): void => e.stopPropagation()}
-                        onchange={onselect?.bind(undefined, model)} />
+                      {#if multiSelect}
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          aria-label="Use {model.label}"
+                          onclick={(e: MouseEvent): void => e.stopPropagation()}
+                          onchange={ontoggle?.bind(undefined, model)} />
+                      {:else}
+                        <input
+                          type="radio"
+                          name="modelSelection"
+                          value={key}
+                          checked={selected}
+                          aria-label="Use {model.label}"
+                          onclick={(e: MouseEvent): void => e.stopPropagation()}
+                          onchange={onselect?.bind(undefined, model)} />
+                      {/if}
                     </td>
                   </tr>
                 {/each}
@@ -173,7 +203,11 @@ function navigateToModels(): void {
     {/each}
   </div>
 
-  {#if selectedModel}
+  {#if multiSelect && selectedCount > 0}
+    <p class="text-xs text-(--pd-state-success) mt-4" data-testid="selected-count">
+      {selectedCount} model{selectedCount !== 1 ? 's' : ''} selected
+    </p>
+  {:else if !multiSelect && selectedModel}
     <p class="text-xs text-(--pd-state-success) mt-4" data-testid="selected-model">
       Selected: {selectedModel.label}
     </p>

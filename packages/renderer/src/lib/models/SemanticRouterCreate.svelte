@@ -3,6 +3,8 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { Button, ErrorMessage, Input, NumberInput } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
+import type { CatalogModelInfo } from '/@/lib/models/models-utils';
+import SemanticRouterCreateStepModels from '/@/lib/models/SemanticRouterCreateStepModels.svelte';
 import FormPage from '/@/lib/ui/FormPage.svelte';
 import WizardStepper from '/@/lib/ui/WizardStepper.svelte';
 import { handleNavigation } from '/@/navigation';
@@ -14,12 +16,15 @@ import SemanticRouterCreateStepSignals from './SemanticRouterCreateStepSignals.s
 
 const WIZARD_STEPS = [
   { id: 'basic', title: 'Basic setup' },
+  { id: 'models', title: 'Backend models' },
   { id: 'signals', title: 'Signals & decisions' },
 ];
 
 let currentStepIndex = $derived(routerWizard.draft.currentStepIndex);
 let currentStepId = $derived(WIZARD_STEPS[currentStepIndex]?.id ?? '');
 let isLastStep = $derived(currentStepIndex === WIZARD_STEPS.length - 1);
+
+let selectedModels: CatalogModelInfo[] = $state([]);
 
 let error = $state('');
 let creating = $state(false);
@@ -32,6 +37,8 @@ let isBasicStepValid = $derived(
     routerWizard.draft.timeout <= 3600,
 );
 
+let canProceedModels = $derived(selectedModels.length > 0);
+
 let isSignalsStepValid = $derived.by(() => {
   const { keywords, decisions } = routerWizard.draft;
   const allSignalsNamed = keywords.every(k => k.name.trim().length > 0);
@@ -41,7 +48,22 @@ let isSignalsStepValid = $derived.by(() => {
   return allSignalsNamed && allDecisionsNamed && allDecisionsHaveSignal && allDecisionsHaveModel;
 });
 
-let canProceed = $derived(currentStepId === 'basic' ? isBasicStepValid : isSignalsStepValid);
+let canProceed = $derived(
+  currentStepId === 'basic'
+    ? isBasicStepValid
+    : currentStepId === 'models'
+      ? canProceedModels
+      : isSignalsStepValid,
+);
+
+function buildModelRefs(): Array<{ providerId: string; connectionId: string; label: string; useReasoning: boolean }> {
+  return selectedModels.map(m => ({
+    providerId: m.providerId,
+    connectionId: m.connectionId,
+    label: m.label,
+    useReasoning: false,
+  }));
+}
 
 function goBack(): void {
   if (routerWizard.draft.currentStepIndex > 0) {
@@ -55,13 +77,18 @@ function handleStepClick(index: number): void {
 
 function buildConfig(): SemanticRouterConfigInfo {
   const d = $state.snapshot(routerWizard.draft);
+  const modelRefs = buildModelRefs();
   return {
     name: d.name.trim(),
     description: d.description.trim() || undefined,
     listeners: [{ address: d.listenerAddress, port: d.listenerPort, timeout: d.timeout }],
     routing: {
       keywords: d.keywords,
-      decisions: d.decisions,
+      decisions: d.decisions.length > 0
+        ? d.decisions
+        : modelRefs.length > 0
+          ? [{ name: 'default', priority: 0, rules: [{ operator: 'OR', conditions: [], modelRefs }] }]
+          : [],
     },
   };
 }
@@ -181,6 +208,8 @@ function cancel(): void {
                 </p>
               </div>
             </div>
+            {:else if currentStepId === 'models'}
+              <SemanticRouterCreateStepModels bind:selectedModels={selectedModels} />
             {:else if currentStepId === 'signals'}
               <SemanticRouterCreateStepSignals
                 bind:keywords={routerWizard.draft.keywords}
@@ -203,7 +232,7 @@ function cancel(): void {
               {/if}
               <Button onclick={cancel}>Cancel</Button>
               {#if isLastStep}
-                <Button onclick={createRouter} disabled={!isBasicStepValid || !isSignalsStepValid || creating} inProgress={creating}>
+                <Button onclick={createRouter} disabled={!isBasicStepValid || !canProceedModels || !isSignalsStepValid || creating} inProgress={creating}>
                   Create
                 </Button>
               {:else}
