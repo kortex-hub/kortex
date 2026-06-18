@@ -31,7 +31,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     command: 'openclaw',
     acp: { args: ['acp'] },
     configurationFiles: [],
-    destinationSkillsFolder: '.openclaw/skills',
+    destinationSkillsFolder: '${HOME}/.openclaw/skills',
     isSupportedModelType(type: ModelType): boolean {
       return type.name !== 'vertexai';
     },

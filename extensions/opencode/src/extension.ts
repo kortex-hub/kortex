@@ -52,7 +52,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
         },
       },
     ],
-    destinationSkillsFolder: '.opencode/skills',
+    destinationSkillsFolder: '${HOME}/.opencode/skills',
     isSupportedRuntime(): boolean {
       return true;
     },

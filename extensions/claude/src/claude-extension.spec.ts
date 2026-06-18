@@ -61,7 +61,7 @@ describe('ClaudeExtension', () => {
         description: expect.any(String),
         icon: expect.objectContaining({ icon: './icon.png' }),
         tags: ['Cloud'],
-        destinationSkillsFolder: '.claude/skills',
+        destinationSkillsFolder: '${HOME}/.claude/skills',
         isSupportedModelType: expect.any(Function),
       }),
     );
