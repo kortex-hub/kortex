@@ -46,7 +46,7 @@ describe('activate', () => {
         name: 'OpenClaw',
         description: expect.any(String),
         icon: expect.objectContaining({ icon: './icon.png' }),
-        skillsFolder: '.openclaw/skills',
+        destinationSkillsFolder: '.openclaw/skills',
         isSupportedModelType: expect.any(Function),
       }),
     );

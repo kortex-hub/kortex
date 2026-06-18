@@ -96,7 +96,7 @@ beforeEach(() => {
       description: 'Open-source agent.',
       command: 'opencode',
       tags: ['Recommended'],
-      skillsFolder: '/home/test/.opencode/skills',
+      destinationSkillsFolder: '/home/test/.opencode/skills',
       supportedModelTypes: [{ name: 'anthropic' }, { name: 'openai' }, { name: 'ollama' }, { name: 'gemini' }],
     },
     {
@@ -105,7 +105,7 @@ beforeEach(() => {
       description: 'Anthropic Claude.',
       command: 'claude',
       tags: ['Cloud'],
-      skillsFolder: '/home/test/.claude/skills',
+      destinationSkillsFolder: '/home/test/.claude/skills',
       supportedModelTypes: [{ name: 'anthropic' }],
     },
     {
@@ -113,7 +113,7 @@ beforeEach(() => {
       name: 'Goose',
       description: 'Autonomous coding agent.',
       command: 'goose',
-      skillsFolder: '/home/test/.agents/skills',
+      destinationSkillsFolder: '/home/test/.agents/skills',
       supportedRuntimes: ['podman'],
       supportedModelTypes: [{ name: 'anthropic' }, { name: 'openai' }, { name: 'ollama' }, { name: 'gemini' }],
     },

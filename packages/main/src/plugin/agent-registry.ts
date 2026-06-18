@@ -115,7 +115,7 @@ export class AgentRegistry {
       command: agent.command,
       acp: agent.acp,
       baseImage: agent.baseImage,
-      skillsFolder: agent.skillsFolder,
+      destinationSkillsFolder: agent.destinationSkillsFolder,
       supportedModelTypes,
       supportedRuntimes,
     };

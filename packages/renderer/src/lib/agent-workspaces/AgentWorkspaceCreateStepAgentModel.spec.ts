@@ -73,7 +73,7 @@ const mockAgentInfos: AgentInfo[] = [
     description: 'Open-source agent.',
     command: 'opencode',
     tags: ['Recommended'],
-    skillsFolder: '/home/test/.opencode/skills',
+    destinationSkillsFolder: '/home/test/.opencode/skills',
     supportedModelTypes: [{ name: 'anthropic' }, { name: 'openai' }, { name: 'ollama' }, { name: 'gemini' }],
   },
   {
@@ -82,7 +82,7 @@ const mockAgentInfos: AgentInfo[] = [
     description: 'Anthropic Claude.',
     command: 'claude',
     tags: ['Cloud'],
-    skillsFolder: '/home/test/.claude/skills',
+    destinationSkillsFolder: '/home/test/.claude/skills',
     supportedModelTypes: [{ name: 'anthropic' }],
   },
   {
@@ -90,7 +90,7 @@ const mockAgentInfos: AgentInfo[] = [
     name: 'Claude on Vertex AI',
     description: 'Claude via Vertex AI.',
     command: 'claude',
-    skillsFolder: '/home/test/.claude/skills',
+    destinationSkillsFolder: '/home/test/.claude/skills',
     supportedModelTypes: [{ name: 'vertexai' }],
   },
   {
@@ -98,7 +98,7 @@ const mockAgentInfos: AgentInfo[] = [
     name: 'Cursor',
     description: 'AI code editor.',
     command: 'cursor',
-    skillsFolder: '/home/test/.cursor/skills',
+    destinationSkillsFolder: '/home/test/.cursor/skills',
     supportedModelTypes: [{ name: 'anthropic' }, { name: 'openai' }, { name: 'ollama' }, { name: 'gemini' }],
   },
   {
@@ -106,7 +106,7 @@ const mockAgentInfos: AgentInfo[] = [
     name: 'Goose',
     description: 'Autonomous coding agent.',
     command: 'goose',
-    skillsFolder: '/home/test/.agents/skills',
+    destinationSkillsFolder: '/home/test/.agents/skills',
     supportedRuntimes: ['podman'],
     supportedModelTypes: [{ name: 'anthropic' }, { name: 'openai' }, { name: 'ollama' }, { name: 'gemini' }],
   },
@@ -407,14 +407,14 @@ test('recommended agent is sorted first regardless of other tags', () => {
       description: 'Cloud tag.',
       command: 'cloud',
       tags: ['Cloud'],
-      skillsFolder: '/home/test/.cloud/skills',
+      destinationSkillsFolder: '/home/test/.cloud/skills',
     },
     {
       id: 'no-tag',
       name: 'No Tag Agent',
       description: 'No tags.',
       command: 'no-tag',
-      skillsFolder: '/home/test/.no-tag/skills',
+      destinationSkillsFolder: '/home/test/.no-tag/skills',
     },
     {
       id: 'recommended',
@@ -422,7 +422,7 @@ test('recommended agent is sorted first regardless of other tags', () => {
       description: 'Recommended.',
       command: 'recommended',
       tags: ['Recommended'],
-      skillsFolder: '/home/test/.recommended/skills',
+      destinationSkillsFolder: '/home/test/.recommended/skills',
     },
   ];
   vi.mocked(agentsStore).agentInfos = writable<AgentInfo[]>(agents);

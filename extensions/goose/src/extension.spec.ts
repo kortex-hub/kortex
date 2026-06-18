@@ -46,7 +46,7 @@ describe('activate', () => {
         name: 'Goose',
         description: expect.any(String),
         icon: expect.objectContaining({ icon: { dark: './icon_dark.png', light: './icon_light.png' } }),
-        skillsFolder: '.agents/skills',
+        destinationSkillsFolder: '.agents/skills',
         isSupportedModelType: expect.any(Function),
         isSupportedRuntime: expect.any(Function),
       }),

@@ -31,7 +31,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     command: 'goose',
     acp: { args: ['acp'] },
     configurationFiles: [],
-    skillsFolder: '.agents/skills',
+    destinationSkillsFolder: '.agents/skills',
     isSupportedRuntime(runtime): boolean {
       return runtime === 'podman';
     },

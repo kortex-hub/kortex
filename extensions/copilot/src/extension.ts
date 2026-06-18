@@ -40,7 +40,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     acp: { args: ['--acp'] },
     tags: [],
     configurationFiles: [],
-    skillsFolder: '.copilot/skills',
+    destinationSkillsFolder: '.copilot/skills',
     isSupportedModelType(type): boolean {
       return type.name !== 'vertexai';
     },

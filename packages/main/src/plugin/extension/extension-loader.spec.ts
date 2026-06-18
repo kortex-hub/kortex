@@ -2115,7 +2115,7 @@ test('registerAgent', async () => {
     description: 'An agent for testing',
     command: 'my-agent',
     configurationFiles: [],
-    skillsFolder: '/home/test/.my-agent/skills',
+    destinationSkillsFolder: '/home/test/.my-agent/skills',
     async preWorkspaceStart(): Promise<void> {
       throw new Error('not implemented');
     },
