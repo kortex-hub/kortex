@@ -16,9 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { homedir } from 'node:os';
-import { join } from 'node:path';
-
 import type { ExtensionContext } from '@openkaiden/api';
 import { agents } from '@openkaiden/api';
 
@@ -34,7 +31,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     command: 'goose',
     acp: { args: ['acp'] },
     configurationFiles: [],
-    skillsFolder: join(homedir(), '.agents', 'skills'),
+    skillsFolder: '.agents/skills',
     isSupportedRuntime(runtime): boolean {
       return runtime === 'podman';
     },

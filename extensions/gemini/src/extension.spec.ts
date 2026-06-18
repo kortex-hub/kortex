@@ -65,7 +65,7 @@ describe('activate', () => {
         description: expect.any(String),
         icon: expect.objectContaining({ icon: './icon.png' }),
         tags: ['Cloud'],
-        skillsFolder: expect.any(String),
+        skillsFolder: '.gemini/skills',
         isSupportedModelType: expect.any(Function),
       }),
     );

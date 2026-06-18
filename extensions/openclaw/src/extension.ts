@@ -16,9 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { homedir } from 'node:os';
-import { join } from 'node:path';
-
 import type { ExtensionContext, ModelType } from '@openkaiden/api';
 import { agents } from '@openkaiden/api';
 
@@ -34,7 +31,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     command: 'openclaw',
     acp: { args: ['acp'] },
     configurationFiles: [],
-    skillsFolder: join(homedir(), '.openclaw', 'skills'),
+    skillsFolder: '.openclaw/skills',
     isSupportedModelType(type: ModelType): boolean {
       return type.name !== 'vertexai';
     },

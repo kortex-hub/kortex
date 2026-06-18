@@ -16,9 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { homedir } from 'node:os';
-import { join } from 'node:path';
-
 import type { Disposable, ExtensionContext } from '@openkaiden/api';
 import { agents, provider } from '@openkaiden/api';
 import type { Container } from 'inversify';
@@ -66,7 +63,7 @@ export class ClaudeExtension {
       command: 'claude',
       tags: ['Cloud'],
       configurationFiles: [],
-      skillsFolder: join(homedir(), '.claude', 'skills'),
+      skillsFolder: '.claude/skills',
       isSupportedModelType: (type): boolean => type.name === 'anthropic' || type.name === 'vertexai',
       async preWorkspaceStart(): Promise<void> {
         throw new Error('not implemented');
