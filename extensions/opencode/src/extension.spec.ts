@@ -197,7 +197,7 @@ describe('activate', () => {
       });
     });
 
-    test('handles malformed nested provider values gracefully', async () => {
+    test('throws on malformed nested provider values', async () => {
       await activate(extensionContextMock);
       const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
 
@@ -205,17 +205,15 @@ describe('activate', () => {
         provider: 'not-an-object',
       });
       const configFile = createConfigFile(existingConfig);
-      await agent.preWorkspaceStart(
-        createContext([configFile], {
-          provider: 'ollama',
-          modelLabel: 'llama3',
-          endpoint: 'http://localhost:11434/v1',
-        }),
-      );
-
-      expect(configFile.updateMock).toHaveBeenCalledOnce();
-      const written = JSON.parse(configFile.updateMock.mock.calls[0]![0] as string);
-      expect(written.provider.ollama.name).toBe('ollama');
+      await expect(
+        agent.preWorkspaceStart(
+          createContext([configFile], {
+            provider: 'ollama',
+            modelLabel: 'llama3',
+            endpoint: 'http://localhost:11434/v1',
+          }),
+        ),
+      ).rejects.toThrow();
     });
 
     test('uses native SDK for anthropic provider with custom endpoint', async () => {
@@ -268,30 +266,22 @@ describe('activate', () => {
       expect(written.model).toBe('gpt-4o');
     });
 
-    test('handles invalid JSON by starting with empty config', async () => {
+    test('throws on invalid JSON', async () => {
       await activate(extensionContextMock);
       const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
 
       const configFile = createConfigFile('not valid json');
-      await agent.preWorkspaceStart(createContext([configFile]));
-
-      expect(configFile.updateMock).toHaveBeenCalledOnce();
-      const written = JSON.parse(configFile.updateMock.mock.calls[0]![0] as string);
-      expect(written.model).toBe('gpt-4o');
+      await expect(agent.preWorkspaceStart(createContext([configFile]))).rejects.toThrow();
     });
 
-    test('normalizes non-object JSON to empty config', async () => {
+    test('throws on non-object JSON', async () => {
       await activate(extensionContextMock);
       const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
 
       for (const nonObject of ['null', '"string"', '123', '[]']) {
         const configFile = createConfigFile(nonObject);
 
-        await agent.preWorkspaceStart(createContext([configFile]));
-
-        expect(configFile.updateMock).toHaveBeenCalledOnce();
-        const written = JSON.parse(configFile.updateMock.mock.calls[0]![0] as string);
-        expect(written.model).toBe('gpt-4o');
+        await expect(agent.preWorkspaceStart(createContext([configFile]))).rejects.toThrow();
       }
     });
 

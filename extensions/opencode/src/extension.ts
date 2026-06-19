@@ -18,18 +18,32 @@
 
 import type { AgentWorkspaceContext, ExtensionContext } from '@openkaiden/api';
 import { agents } from '@openkaiden/api';
+import { z } from 'zod';
 
 export const OPENCODE_CONFIG_PATH = '.config/opencode/opencode.json';
+
+const ModelEntrySchema = z.object({
+  _launch: z.boolean(),
+  name: z.string(),
+});
+
+const ProviderEntrySchema = z.looseObject({
+  name: z.string().optional(),
+  npm: z.string().optional(),
+  options: z.record(z.string(), z.unknown()).default({}),
+  models: z.record(z.string(), ModelEntrySchema).default({}),
+});
+
+const OpenCodeConfigSchema = z.looseObject({
+  model: z.string().optional(),
+  provider: z.record(z.string(), ProviderEntrySchema).optional(),
+});
 
 const NATIVE_PROVIDERS = new Set(['anthropic', 'mistral', 'google']);
 
 const NATIVE_PROVIDER_SDKS: Record<string, string> = {
   anthropic: '@ai-sdk/anthropic',
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
 
 export async function activate(extensionContext: ExtensionContext): Promise<void> {
   const disposable = agents.registerAgent({
@@ -65,40 +79,31 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
         return;
       }
 
-      const content = await configFile.read();
-      let config: Record<string, unknown>;
-      try {
-        const parsed: unknown = JSON.parse(content);
-        config = isRecord(parsed) ? parsed : {};
-      } catch {
-        config = {};
-      }
+      const config = OpenCodeConfigSchema.parse(JSON.parse(await configFile.read()));
 
       const modelName = context.model.model.label;
       const provider = context.model.llmMetadata?.name;
       const endpoint = context.model.endpoint;
 
       if (provider) {
-        config['model'] = `${provider}/${modelName}`;
+        config.model = `${provider}/${modelName}`;
 
         if ((!NATIVE_PROVIDERS.has(provider) || provider in NATIVE_PROVIDER_SDKS) && endpoint) {
-          const providers = isRecord(config['provider']) ? config['provider'] : {};
-          const providerEntry = isRecord(providers[provider]) ? providers[provider] : {};
+          const providers = config.provider ?? {};
+          const providerEntry = providers[provider] ?? {};
 
-          providerEntry['name'] = provider;
-          providerEntry['npm'] = NATIVE_PROVIDER_SDKS[provider] ?? '@ai-sdk/openai-compatible';
-          const existingOptions = isRecord(providerEntry['options']) ? providerEntry['options'] : {};
-          providerEntry['options'] = { ...existingOptions, baseURL: endpoint };
+          providerEntry.name = provider;
+          providerEntry.npm = NATIVE_PROVIDER_SDKS[provider] ?? '@ai-sdk/openai-compatible';
+          providerEntry.options = { ...providerEntry.options, baseURL: endpoint };
 
-          const models = isRecord(providerEntry['models']) ? providerEntry['models'] : {};
-          models[modelName] ??= { _launch: true, name: modelName };
-          providerEntry['models'] = models;
+          providerEntry.models ??= {};
+          providerEntry.models[modelName] ??= { _launch: true, name: modelName };
 
           providers[provider] = providerEntry;
-          config['provider'] = providers;
+          config.provider = providers;
         }
       } else {
-        config['model'] = modelName;
+        config.model = modelName;
       }
 
       await configFile.update(JSON.stringify(config, undefined, 2));
