@@ -52,6 +52,7 @@ function createAgent(overrides?: Partial<Agent>): Agent {
     description: 'A test agent',
     command: 'test-cmd',
     configurationFiles: [],
+    destinationSkillsFolder: '/home/test/.test-agent/skills',
     async preWorkspaceStart(): Promise<void> {
       throw new Error('not implemented');
     },
@@ -346,6 +347,7 @@ describe('AgentRegistry', () => {
         command: 'test-cmd',
         acp: undefined,
         baseImage: undefined,
+        destinationSkillsFolder: '/home/test/.test-agent/skills',
         supportedModelTypes: undefined,
         supportedRuntimes: undefined,
       });
@@ -398,6 +400,15 @@ describe('AgentRegistry', () => {
 
       const info = await agentRegistry.toAgentInfo(agent);
       expect(info.supportedRuntimes).toEqual(['podman']);
+    });
+
+    test('passes through skillsFolder', async () => {
+      const agent = createAgent({
+        destinationSkillsFolder: '/home/user/.claude/skills',
+      });
+
+      const info = await agentRegistry.toAgentInfo(agent);
+      expect(info.destinationSkillsFolder).toBe('/home/user/.claude/skills');
     });
 
     test('includes icon and tags', async () => {

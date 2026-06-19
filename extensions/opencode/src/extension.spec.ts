@@ -49,6 +49,7 @@ describe('activate', () => {
         description: expect.any(String),
         icon: expect.objectContaining({ icon: { dark: './icon_dark.png', light: './icon_light.png' } }),
         tags: ['Recommended'],
+        destinationSkillsFolder: '${HOME}/.opencode/skills',
         isSupportedModelType: expect.any(Function),
         isSupportedRuntime: expect.any(Function),
       }),
@@ -99,6 +100,7 @@ describe('activate', () => {
           endpoint,
         },
         configurationFiles: configFiles,
+        workspace: {},
       };
     }
 

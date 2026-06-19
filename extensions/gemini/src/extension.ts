@@ -50,6 +50,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
         },
       },
     ],
+    destinationSkillsFolder: '${HOME}/.gemini/skills',
     isSupportedModelType(type): boolean {
       return type.name === 'gemini';
     },

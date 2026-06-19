@@ -30,6 +30,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     },
     command: 'codex',
     configurationFiles: [],
+    destinationSkillsFolder: '${HOME}/.agents/skills',
     isSupportedModelType(type): boolean {
       return type.name === 'openai';
     },

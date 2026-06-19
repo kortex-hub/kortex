@@ -73,6 +73,7 @@ const mockAgentInfos: AgentInfo[] = [
     description: 'Open-source agent.',
     command: 'opencode',
     tags: ['Recommended'],
+    destinationSkillsFolder: '/home/test/.opencode/skills',
     supportedModelTypes: [{ name: 'anthropic' }, { name: 'openai' }, { name: 'ollama' }, { name: 'gemini' }],
   },
   {
@@ -81,6 +82,7 @@ const mockAgentInfos: AgentInfo[] = [
     description: 'Anthropic Claude.',
     command: 'claude',
     tags: ['Cloud'],
+    destinationSkillsFolder: '/home/test/.claude/skills',
     supportedModelTypes: [{ name: 'anthropic' }],
   },
   {
@@ -88,6 +90,7 @@ const mockAgentInfos: AgentInfo[] = [
     name: 'Claude on Vertex AI',
     description: 'Claude via Vertex AI.',
     command: 'claude',
+    destinationSkillsFolder: '/home/test/.claude/skills',
     supportedModelTypes: [{ name: 'vertexai' }],
   },
   {
@@ -95,6 +98,7 @@ const mockAgentInfos: AgentInfo[] = [
     name: 'Cursor',
     description: 'AI code editor.',
     command: 'cursor',
+    destinationSkillsFolder: '/home/test/.cursor/skills',
     supportedModelTypes: [{ name: 'anthropic' }, { name: 'openai' }, { name: 'ollama' }, { name: 'gemini' }],
   },
   {
@@ -102,6 +106,7 @@ const mockAgentInfos: AgentInfo[] = [
     name: 'Goose',
     description: 'Autonomous coding agent.',
     command: 'goose',
+    destinationSkillsFolder: '/home/test/.agents/skills',
     supportedRuntimes: ['podman'],
     supportedModelTypes: [{ name: 'anthropic' }, { name: 'openai' }, { name: 'ollama' }, { name: 'gemini' }],
   },
@@ -396,14 +401,28 @@ test('Claude on Vertex AI shows only Vertex AI models', async () => {
 
 test('recommended agent is sorted first regardless of other tags', () => {
   const agents: AgentInfo[] = [
-    { id: 'cloud', name: 'Cloud Agent', description: 'Cloud tag.', command: 'cloud', tags: ['Cloud'] },
-    { id: 'no-tag', name: 'No Tag Agent', description: 'No tags.', command: 'no-tag' },
+    {
+      id: 'cloud',
+      name: 'Cloud Agent',
+      description: 'Cloud tag.',
+      command: 'cloud',
+      tags: ['Cloud'],
+      destinationSkillsFolder: '/home/test/.cloud/skills',
+    },
+    {
+      id: 'no-tag',
+      name: 'No Tag Agent',
+      description: 'No tags.',
+      command: 'no-tag',
+      destinationSkillsFolder: '/home/test/.no-tag/skills',
+    },
     {
       id: 'recommended',
       name: 'Recommended Agent',
       description: 'Recommended.',
       command: 'recommended',
       tags: ['Recommended'],
+      destinationSkillsFolder: '/home/test/.recommended/skills',
     },
   ];
   vi.mocked(agentsStore).agentInfos = writable<AgentInfo[]>(agents);

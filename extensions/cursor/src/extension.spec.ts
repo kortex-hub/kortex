@@ -60,6 +60,7 @@ describe('activate', () => {
           icon: { dark: './APP_ICON_2D_DARK.png', light: './APP_ICON_2D_LIGHT.png' },
         }),
         tags: ['Local'],
+        destinationSkillsFolder: '${HOME}/.cursor/skills',
         isSupportedModelType: expect.any(Function),
       }),
     );

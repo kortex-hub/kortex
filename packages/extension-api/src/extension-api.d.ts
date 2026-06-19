@@ -5583,6 +5583,11 @@ declare module '@openkaiden/api' {
     readonly acp?: AcpConfiguration;
     readonly configurationFiles: ReadonlyArray<AgentConfigurationBase>;
     readonly baseImage?: string;
+    /**
+     * If relative path taken as relative to home folder of the sandbox user or
+     * ${HOME}/path1/path2
+     */
+    readonly destinationSkillsFolder: string;
     isSupportedModelType?(type: ModelType): boolean | Promise<boolean>;
     isSupportedRuntime?(runtime: Runtime): boolean | Promise<boolean>;
     preWorkspaceStart(context: AgentWorkspaceContext): Promise<void>;

@@ -63,6 +63,7 @@ export class ClaudeExtension {
       command: 'claude',
       tags: ['Cloud'],
       configurationFiles: [],
+      destinationSkillsFolder: '${HOME}/.claude/skills',
       isSupportedModelType: (type): boolean => type.name === 'anthropic' || type.name === 'vertexai',
       async preWorkspaceStart(): Promise<void> {
         throw new Error('not implemented');

@@ -38,6 +38,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     command: 'cursor',
     tags: ['Local'],
     configurationFiles: [],
+    destinationSkillsFolder: '${HOME}/.cursor/skills',
     isSupportedModelType(type): boolean {
       return type.name === 'cursor';
     },
