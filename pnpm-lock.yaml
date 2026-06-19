@@ -847,8 +847,8 @@ importers:
   extensions/vertex-ai:
     dependencies:
       '@ai-sdk/google-vertex':
-        specifier: ^4.0.146
-        version: 4.0.146(zod@4.4.3)
+        specifier: ^4.0.147
+        version: 4.0.147(zod@4.4.3)
       '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
@@ -1122,8 +1122,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/google-vertex@4.0.146':
-    resolution: {integrity: sha512-nsyG3zdP3/RZUfCUgHmaqZlback7WjuOu6P8BUtNx0FgtjohbOsoRtsZivI3s2PatBWD+yaeZUzy1dcOWwUnlQ==}
+  '@ai-sdk/google-vertex@4.0.147':
+    resolution: {integrity: sha512-GWHyCCjhTJ1DVZSPUl+fITtqAu0hDsApyF2IBORQJxMaBES+d7B/YOIZW9bz64yHB89BInHuxkQoMqVRNm+LyQ==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -6487,8 +6487,8 @@ packages:
     resolution: {integrity: sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==}
     engines: {node: '>=4.0.0'}
 
-  pg-protocol@1.14.0:
-    resolution: {integrity: sha512-n5taZ1kO3s9ngDTVxsEznOqCyToTgz0FLuPq0B33COy5pPpuWJpY3/2oRBVETuOgzdqRXfWpM9HIhp2LBBT1BA==}
+  pg-protocol@1.15.0:
+    resolution: {integrity: sha512-cq9sECI5s0+uPUXjbz8ioyPJni6RzsRib0US67i5IoTZKw8fNeYlVE7u8F4dG7vEJJtc5wdD1K189lCCUwqWTQ==}
 
   pg-types@2.2.0:
     resolution: {integrity: sha512-qTAAlrEsl8s4OiEQY69wDvcMIdQN6wdz5ojQiOy6YRMuynxenON0O5oCpJI6lshc6scgAY8qvJ2On/p+CXY0GA==}
@@ -8062,6 +8062,10 @@ packages:
     resolution: {integrity: sha512-7dSzzRQ++CKnNI/krKnYRV7JKKPUXMEh61soaHKg9mrWEhzFWhFnxPxGl+69cD1Ou63C13NUPCnmIcrvqCuM6w==}
     engines: {node: '>=12'}
 
+  yargs@17.7.3:
+    resolution: {integrity: sha512-GZtjxm/J/4TSxuL3FNYjCmLktBTnIw/rVmKSIyKeYAZpmJB2ig9VauCC5xsa82GNKVKDAqpOn3KVzNt0zmrU0g==}
+    engines: {node: '>=12'}
+
   yauzl@2.10.0:
     resolution: {integrity: sha512-p4a9I6X6nu6IhoGmBqAcbJy1mlC4j27vEPZX9F4L4/vZT3Lyq1VkFHw/V/PUcB9Buo+DG3iHkT0x3Qya58zc3g==}
 
@@ -8131,7 +8135,7 @@ snapshots:
       '@vercel/oidc': 3.2.0
       zod: 4.4.3
 
-  '@ai-sdk/google-vertex@4.0.146(zod@4.4.3)':
+  '@ai-sdk/google-vertex@4.0.147(zod@4.4.3)':
     dependencies:
       '@ai-sdk/anthropic': 3.0.85(zod@4.4.3)
       '@ai-sdk/google': 3.0.83(zod@4.4.3)
@@ -8564,7 +8568,7 @@ snapshots:
       read-binary-file-arch: 1.0.6
       semver: 7.8.4
       tar: 7.5.16
-      yargs: 17.7.2
+      yargs: 17.7.3
     transitivePeerDependencies:
       - bluebird
       - supports-color
@@ -9738,7 +9742,7 @@ snapshots:
   '@types/pg@8.15.5':
     dependencies:
       '@types/node': 24.13.2
-      pg-protocol: 1.14.0
+      pg-protocol: 1.15.0
       pg-types: 2.2.0
     optional: true
 
@@ -14406,7 +14410,7 @@ snapshots:
   pg-int8@1.0.1:
     optional: true
 
-  pg-protocol@1.14.0:
+  pg-protocol@1.15.0:
     optional: true
 
   pg-types@2.2.0:
@@ -16248,6 +16252,16 @@ snapshots:
   yargs-parser@21.1.1: {}
 
   yargs@17.7.2:
+    dependencies:
+      cliui: 8.0.1
+      escalade: 3.2.0
+      get-caller-file: 2.0.5
+      require-directory: 2.1.1
+      string-width: 4.2.3
+      y18n: 5.0.8
+      yargs-parser: 21.1.1
+
+  yargs@17.7.3:
     dependencies:
       cliui: 8.0.1
       escalade: 3.2.0
