@@ -144,6 +144,9 @@ export class OpenshellCli {
         args.push('--upload', `${upload.local}:${upload.remote}`);
       }
     }
+    if (options.policy) {
+      args.push('--policy', options.policy);
+    }
     if (options.noTty) {
       args.push('--no-tty');
     }

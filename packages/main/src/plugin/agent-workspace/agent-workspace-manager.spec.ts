@@ -567,6 +567,72 @@ describe('create – OpenShell mode', () => {
 
     expect(openshellCli.createSandbox).not.toHaveBeenCalled();
   });
+
+  test('passes policy file to createSandbox when network has deny mode with hosts', async () => {
+    const options = {
+      ...defaultOptions,
+      network: { mode: 'deny' as const, hosts: ['registry.npmjs.org', 'pypi.python.org'] },
+    };
+
+    await manager.create(options);
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        policy: expect.stringContaining('kaiden-policy-'),
+      }),
+    );
+    expect(writeFile).toHaveBeenCalledWith(
+      expect.stringContaining('kaiden-policy-'),
+      expect.stringContaining('registry.npmjs.org'),
+      'utf-8',
+    );
+  });
+
+  test('does not pass policy when network is undefined', async () => {
+    await manager.create(defaultOptions);
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(expect.not.objectContaining({ policy: expect.anything() }));
+  });
+
+  test('does not pass policy when network is deny with no hosts', async () => {
+    const options = { ...defaultOptions, network: { mode: 'deny' as const } };
+
+    await manager.create(options);
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(expect.not.objectContaining({ policy: expect.anything() }));
+  });
+
+  test('does not pass policy when network is deny with empty hosts', async () => {
+    const options = { ...defaultOptions, network: { mode: 'deny' as const, hosts: [] } };
+
+    await manager.create(options);
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(expect.not.objectContaining({ policy: expect.anything() }));
+  });
+
+  test('cleans up temp policy file after sandbox creation', async () => {
+    const options = {
+      ...defaultOptions,
+      network: { mode: 'deny' as const, hosts: ['registry.npmjs.org'] },
+    };
+
+    await manager.create(options);
+
+    expect(rm).toHaveBeenCalledWith(expect.stringContaining('kaiden-policy-'), { force: true });
+  });
+
+  test('cleans up temp policy file even when createSandbox fails', async () => {
+    vi.mocked(openshellCli.createSandbox).mockRejectedValue(new Error('sandbox creation failed'));
+
+    const options = {
+      ...defaultOptions,
+      network: { mode: 'deny' as const, hosts: ['registry.npmjs.org'] },
+    };
+
+    await expect(manager.create(options)).rejects.toThrow('sandbox creation failed');
+
+    expect(rm).toHaveBeenCalledWith(expect.stringContaining('kaiden-policy-'), { force: true });
+  });
 });
 
 describe('checkWorkspaceConfigExists', () => {

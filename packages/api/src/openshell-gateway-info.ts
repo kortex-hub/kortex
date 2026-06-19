@@ -89,6 +89,7 @@ export interface CreateSandboxOptions {
   uploads?: Array<{ local: string; remote: string }>;
   command?: string[];
   noTty?: boolean;
+  policy?: string;
 }
 
 export interface GatewayAddOptions {

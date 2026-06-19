@@ -33,6 +33,7 @@ import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
+import { generateNetworkPolicyYaml } from '/@/plugin/openshell-cli/openshell-network-policy.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
@@ -191,6 +192,31 @@ export class AgentWorkspaceManager implements Disposable {
       noTty: true,
       command: ['true'],
     });
+    const finalNetwork = workspace.network;
+    let policyFilePath: string | undefined;
+    if (finalNetwork) {
+      const policyYaml = generateNetworkPolicyYaml(finalNetwork);
+      if (policyYaml) {
+        policyFilePath = join(tmpdir(), `kaiden-policy-${Date.now()}.yaml`);
+        await writeFile(policyFilePath, policyYaml, 'utf-8');
+      }
+    }
+
+    try {
+      await this.openshellCli.createSandbox({
+        name: sandboxName,
+        providers: options.secrets,
+        labels: { 'ai.openkaiden.kaiden.workspace': Buffer.from(options.sourcePath).toString('base64url') },
+        uploads: uploads.length > 0 ? uploads : undefined,
+        noTty: true,
+        command: ['true'],
+        ...(policyFilePath ? { policy: policyFilePath } : {}),
+      });
+    } finally {
+      if (policyFilePath) {
+        await rm(policyFilePath, { force: true });
+      }
+    }
 
     return { id: sandboxName };
   }

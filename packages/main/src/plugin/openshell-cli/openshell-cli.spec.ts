@@ -259,6 +259,32 @@ describe('createSandbox', () => {
     );
   });
 
+  test('includes --policy flag when provided', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.createSandbox({ policy: '/tmp/policy.yaml' });
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['sandbox', 'create', '--policy', '/tmp/policy.yaml'],
+      undefined,
+    );
+  });
+
+  test('places --policy flag before --no-tty and command', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.createSandbox({ policy: '/tmp/policy.yaml', noTty: true, command: ['true'] });
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['sandbox', 'create', '--policy', '/tmp/policy.yaml', '--no-tty', '--', 'true'],
+      undefined,
+    );
+  });
+
   test('rejects when CLI fails', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
