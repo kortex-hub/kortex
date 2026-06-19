@@ -47,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          token: ${{ secrets.KORTEX_BOT_TOKEN }}
+          token: ${{ secrets.KAIDEN_BOT_TOKEN }}
           persist-credentials: false
           fetch-depth: 0
 
@@ -78,7 +78,7 @@ jobs:
         env:
           GIT_USER_NAME: ${{ github.actor }}
           GIT_USER_EMAIL: "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
-          KORTEX_BOT_TOKEN: ${{ secrets.KORTEX_BOT_TOKEN }}
+          KAIDEN_BOT_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
         run: |
           echo "Setting github.actor: $GIT_USER_NAME"
           git config --local user.name "$GIT_USER_NAME"
@@ -101,7 +101,7 @@ jobs:
           git tag ${{ steps.TAG_UTIL.outputs.githubTag }}
 
           # push tag to the prereleases repository
-          git remote add prereleases https://${KORTEX_BOT_TOKEN}@github.com/openkaiden/testing-prereleases
+          git remote add prereleases https://${KAIDEN_BOT_TOKEN}@github.com/openkaiden/testing-prereleases
           git push prereleases ${{ steps.TAG_UTIL.outputs.githubTag }}
 
       - name: Create Release
@@ -114,7 +114,7 @@ jobs:
           prerelease: true
           owner: openkaiden
           repo: testing-prereleases
-          token: ${{ secrets.KORTEX_BOT_TOKEN }}
+          token: ${{ secrets.KAIDEN_BOT_TOKEN }}
 
   build:
     name: Build / ${{ matrix.os }}
@@ -124,7 +124,7 @@ jobs:
     if: github.event.repository.fork == false
     env:
       ELECTRON_ENABLE_INSPECT: true
-      GITHUB_TOKEN: ${{ secrets.KORTEX_BOT_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
     strategy:
       fail-fast: true
       matrix:
@@ -180,7 +180,7 @@ jobs:
         if: ${{ needs.build.result == 'success' }}
         uses: StuYarrow/publish-release@01f2a1365bacd77bad861873a7fdf274ab49eefd # v1.1.2
         env:
-          GITHUB_TOKEN: ${{ secrets.KORTEX_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
         with:
           id: ${{ needs.tag.outputs.releaseId }}
           repo: testing-prereleases
@@ -189,7 +189,7 @@ jobs:
       - name: Delete release
         if: ${{ needs.build.result != 'success' && needs.tag.outputs.releaseId != '' }}
         env:
-          GITHUB_TOKEN: ${{ secrets.KORTEX_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
         run: |
           echo "Build failed, deleting release with id: ${{ needs.tag.outputs.releaseId }}"
           set -e
