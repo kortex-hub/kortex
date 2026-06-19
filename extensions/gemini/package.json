@@ -48,7 +48,7 @@
     "watch": "vite build --watch"
   },
   "dependencies": {
-    "@ai-sdk/google": "^3.0.81",
+    "@ai-sdk/google": "^3.0.83",
     "@google/genai": "^1.25.0",
     "@openkaiden/api": "workspace:*"
   },
