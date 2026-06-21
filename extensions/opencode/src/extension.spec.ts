@@ -90,9 +90,17 @@ describe('activate', () => {
   describe('preWorkspaceStart', () => {
     function createContext(
       configFiles: AgentConfigurationFile[],
-      options: { modelLabel?: string; provider?: string; endpoint?: string } = {},
+      options: {
+        modelLabel?: string;
+        provider?: string;
+        endpoint?: string;
+        mcp?: {
+          servers?: { name: string; url: string; headers?: Record<string, string> }[];
+          commands?: { name: string; command: string; args?: string[]; env?: Record<string, string> }[];
+        };
+      } = {},
     ): AgentWorkspaceContext {
-      const { modelLabel = 'gpt-4o', provider, endpoint } = options;
+      const { modelLabel = 'gpt-4o', provider, endpoint, mcp } = options;
       return {
         model: {
           model: { label: modelLabel },
@@ -100,7 +108,7 @@ describe('activate', () => {
           endpoint,
         },
         configurationFiles: configFiles,
-        workspace: {},
+        workspace: { ...(mcp ? { mcp } : {}) },
       };
     }
 
@@ -299,6 +307,212 @@ describe('activate', () => {
       await agent.preWorkspaceStart(createContext([otherFile]));
 
       expect(updateMock).not.toHaveBeenCalled();
+    });
+
+    test('writes remote MCP servers from workspace config', async () => {
+      await activate(extensionContextMock);
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          mcp: {
+            servers: [{ name: 'my-remote', url: 'https://mcp.example.com' }],
+          },
+        }),
+      );
+
+      const written = JSON.parse(configFile.updateMock.mock.calls[0]![0] as string);
+      expect(written.mcp).toEqual({
+        'my-remote': { type: 'remote', url: 'https://mcp.example.com', enabled: true },
+      });
+    });
+
+    test('writes remote MCP servers with headers as environment', async () => {
+      await activate(extensionContextMock);
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          mcp: {
+            servers: [
+              {
+                name: 'authed-server',
+                url: 'https://mcp.example.com',
+                headers: { Authorization: 'Bearer token123' },
+              },
+            ],
+          },
+        }),
+      );
+
+      const written = JSON.parse(configFile.updateMock.mock.calls[0]![0] as string);
+      expect(written.mcp).toEqual({
+        'authed-server': {
+          type: 'remote',
+          url: 'https://mcp.example.com',
+          enabled: true,
+          environment: { Authorization: 'Bearer token123' },
+        },
+      });
+    });
+
+    test('writes local MCP commands from workspace config', async () => {
+      await activate(extensionContextMock);
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          mcp: {
+            commands: [{ name: 'my-local', command: 'npx', args: ['-y', 'my-mcp-server'] }],
+          },
+        }),
+      );
+
+      const written = JSON.parse(configFile.updateMock.mock.calls[0]![0] as string);
+      expect(written.mcp).toEqual({
+        'my-local': { type: 'local', command: ['npx', '-y', 'my-mcp-server'], enabled: true },
+      });
+    });
+
+    test('writes local MCP commands with env variables as environment', async () => {
+      await activate(extensionContextMock);
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          mcp: {
+            commands: [
+              {
+                name: 'github-mcp',
+                command: 'npx',
+                args: ['@modelcontextprotocol/server-github'],
+                env: { GITHUB_TOKEN: 'ghp_test123' },
+              },
+            ],
+          },
+        }),
+      );
+
+      const written = JSON.parse(configFile.updateMock.mock.calls[0]![0] as string);
+      expect(written.mcp).toEqual({
+        'github-mcp': {
+          type: 'local',
+          command: ['npx', '@modelcontextprotocol/server-github'],
+          enabled: true,
+          environment: { GITHUB_TOKEN: 'ghp_test123' },
+        },
+      });
+    });
+
+    test('writes both remote and local MCP servers together', async () => {
+      await activate(extensionContextMock);
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          mcp: {
+            servers: [{ name: 'remote-one', url: 'https://mcp.example.com' }],
+            commands: [{ name: 'local-one', command: 'npx', args: ['my-server'] }],
+          },
+        }),
+      );
+
+      const written = JSON.parse(configFile.updateMock.mock.calls[0]![0] as string);
+      expect(written.mcp).toEqual({
+        'remote-one': { type: 'remote', url: 'https://mcp.example.com', enabled: true },
+        'local-one': { type: 'local', command: ['npx', 'my-server'], enabled: true },
+      });
+    });
+
+    test('merges MCP servers with existing MCP config', async () => {
+      await activate(extensionContextMock);
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const existingConfig = JSON.stringify({
+        mcp: { 'existing-server': { type: 'remote', url: 'https://existing.example.com', enabled: true } },
+      });
+      const configFile = createConfigFile(existingConfig);
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          mcp: {
+            servers: [{ name: 'new-server', url: 'https://new.example.com' }],
+          },
+        }),
+      );
+
+      const written = JSON.parse(configFile.updateMock.mock.calls[0]![0] as string);
+      expect(written.mcp).toEqual({
+        'existing-server': { type: 'remote', url: 'https://existing.example.com', enabled: true },
+        'new-server': { type: 'remote', url: 'https://new.example.com', enabled: true },
+      });
+    });
+
+    test('does not write mcp key when workspace has no MCP config', async () => {
+      await activate(extensionContextMock);
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(createContext([configFile]));
+
+      const written = JSON.parse(configFile.updateMock.mock.calls[0]![0] as string);
+      expect(written.mcp).toBeUndefined();
+    });
+
+    test('preserves existing MCP entries when workspace has no MCP config', async () => {
+      await activate(extensionContextMock);
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const existingConfig = JSON.stringify({
+        mcp: { 'existing-server': { type: 'remote', url: 'https://existing.example.com', enabled: true } },
+      });
+      const configFile = createConfigFile(existingConfig);
+      await agent.preWorkspaceStart(createContext([configFile]));
+
+      const written = JSON.parse(configFile.updateMock.mock.calls[0]![0] as string);
+      expect(written.mcp).toEqual({
+        'existing-server': { type: 'remote', url: 'https://existing.example.com', enabled: true },
+      });
+    });
+
+    test('omits environment when remote MCP server has empty headers', async () => {
+      await activate(extensionContextMock);
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          mcp: {
+            servers: [{ name: 'no-headers', url: 'https://mcp.example.com', headers: {} }],
+          },
+        }),
+      );
+
+      const written = JSON.parse(configFile.updateMock.mock.calls[0]![0] as string);
+      expect(written.mcp['no-headers']).toEqual({ type: 'remote', url: 'https://mcp.example.com', enabled: true });
+      expect(written.mcp['no-headers']).not.toHaveProperty('environment');
+    });
+
+    test('omits environment when local MCP command has empty env', async () => {
+      await activate(extensionContextMock);
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          mcp: {
+            commands: [{ name: 'minimal', command: 'my-server', args: [], env: {} }],
+          },
+        }),
+      );
+
+      const written = JSON.parse(configFile.updateMock.mock.calls[0]![0] as string);
+      expect(written.mcp['minimal']).toEqual({ type: 'local', command: ['my-server'], enabled: true });
+      expect(written.mcp['minimal']).not.toHaveProperty('environment');
     });
   });
 });

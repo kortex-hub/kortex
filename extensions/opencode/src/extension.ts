@@ -34,9 +34,20 @@ const ProviderEntrySchema = z.looseObject({
   models: z.record(z.string(), ModelEntrySchema).default({}),
 });
 
+const McpEntrySchema = z.looseObject({
+  type: z.enum(['remote', 'local']),
+  url: z.string().optional(),
+  command: z.array(z.string()).optional(),
+  enabled: z.boolean(),
+  environment: z.record(z.string(), z.string()).optional(),
+});
+
+type McpEntry = z.infer<typeof McpEntrySchema>;
+
 const OpenCodeConfigSchema = z.looseObject({
   model: z.string().optional(),
   provider: z.record(z.string(), ProviderEntrySchema).optional(),
+  mcp: z.record(z.string(), McpEntrySchema).optional(),
 });
 
 const NATIVE_PROVIDERS = new Set(['anthropic', 'mistral', 'google']);
@@ -104,6 +115,33 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
         }
       } else {
         config.model = modelName;
+      }
+
+      const mcpServers = context.workspace.mcp?.servers;
+      const mcpCommands = context.workspace.mcp?.commands;
+
+      if (mcpServers?.length || mcpCommands?.length) {
+        const mcp: Record<string, McpEntry> = { ...config.mcp };
+
+        for (const server of mcpServers ?? []) {
+          mcp[server.name] = {
+            type: 'remote',
+            url: server.url,
+            enabled: true,
+            ...(server.headers && Object.keys(server.headers).length > 0 ? { environment: server.headers } : {}),
+          };
+        }
+
+        for (const cmd of mcpCommands ?? []) {
+          mcp[cmd.name] = {
+            type: 'local',
+            command: [cmd.command, ...(cmd.args ?? [])],
+            enabled: true,
+            ...(cmd.env && Object.keys(cmd.env).length > 0 ? { environment: cmd.env } : {}),
+          };
+        }
+
+        config.mcp = mcp;
       }
 
       await configFile.update(JSON.stringify(config, undefined, 2));
