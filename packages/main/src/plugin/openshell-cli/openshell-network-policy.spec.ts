@@ -18,19 +18,19 @@
 
 import { describe, expect, test } from 'vitest';
 
-import { buildNetworkPolicyEndpoints, buildNetworkPolicyUpdateOptions } from './openshell-network-policy.js';
+import { buildNetworkPolicyEndpoints, buildNetworkPolicyOperations } from './openshell-network-policy.js';
 
 describe('buildNetworkPolicyEndpoints', () => {
   test('returns undefined for mode allow', () => {
     expect(buildNetworkPolicyEndpoints({ mode: 'allow' })).toBeUndefined();
   });
 
-  test('returns undefined for mode deny with no hosts', () => {
-    expect(buildNetworkPolicyEndpoints({ mode: 'deny' })).toBeUndefined();
+  test('returns empty array for mode deny with no hosts', () => {
+    expect(buildNetworkPolicyEndpoints({ mode: 'deny' })).toEqual([]);
   });
 
-  test('returns undefined for mode deny with empty hosts array', () => {
-    expect(buildNetworkPolicyEndpoints({ mode: 'deny', hosts: [] })).toBeUndefined();
+  test('returns empty array for mode deny with empty hosts array', () => {
+    expect(buildNetworkPolicyEndpoints({ mode: 'deny', hosts: [] })).toEqual([]);
   });
 
   test('returns two endpoint strings per host', () => {
@@ -62,24 +62,38 @@ describe('buildNetworkPolicyEndpoints', () => {
   });
 });
 
-describe('buildNetworkPolicyUpdateOptions', () => {
-  test('returns undefined for mode allow', () => {
-    expect(buildNetworkPolicyUpdateOptions('my-sandbox', { mode: 'allow' })).toBeUndefined();
+describe('buildNetworkPolicyOperations', () => {
+  test('returns remove-only operation for allow mode', () => {
+    const ops = buildNetworkPolicyOperations('my-sandbox', { mode: 'allow' });
+
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toEqual({ sandboxName: 'my-sandbox', removeRule: 'kdn-network' });
   });
 
-  test('returns undefined for mode deny with no hosts', () => {
-    expect(buildNetworkPolicyUpdateOptions('my-sandbox', { mode: 'deny' })).toBeUndefined();
+  test('returns remove-only operation for deny mode with no hosts', () => {
+    const ops = buildNetworkPolicyOperations('my-sandbox', { mode: 'deny' });
+
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toEqual({ sandboxName: 'my-sandbox', removeRule: 'kdn-network' });
   });
 
-  test('returns correct options for deny mode with hosts', () => {
-    const options = buildNetworkPolicyUpdateOptions('my-sandbox', {
+  test('returns remove-only operation for deny mode with empty hosts', () => {
+    const ops = buildNetworkPolicyOperations('my-sandbox', { mode: 'deny', hosts: [] });
+
+    expect(ops).toHaveLength(1);
+    expect(ops[0]).toEqual({ sandboxName: 'my-sandbox', removeRule: 'kdn-network' });
+  });
+
+  test('returns remove then add operations for deny mode with hosts', () => {
+    const ops = buildNetworkPolicyOperations('my-sandbox', {
       mode: 'deny',
       hosts: ['registry.npmjs.org'],
     });
 
-    expect(options).toEqual({
+    expect(ops).toHaveLength(2);
+    expect(ops[0]).toEqual({ sandboxName: 'my-sandbox', removeRule: 'kdn-network' });
+    expect(ops[1]).toEqual({
       sandboxName: 'my-sandbox',
-      removeRule: 'kdn-network',
       addEndpoints: ['registry.npmjs.org:443:full', 'registry.npmjs.org:80:full'],
       binary: '/**',
       wait: true,
@@ -87,11 +101,12 @@ describe('buildNetworkPolicyUpdateOptions', () => {
   });
 
   test('uses the provided sandbox name', () => {
-    const options = buildNetworkPolicyUpdateOptions('test-sandbox', {
+    const ops = buildNetworkPolicyOperations('test-sandbox', {
       mode: 'deny',
       hosts: ['example.com'],
     });
 
-    expect(options!.sandboxName).toBe('test-sandbox');
+    expect(ops[0]!.sandboxName).toBe('test-sandbox');
+    expect(ops[1]!.sandboxName).toBe('test-sandbox');
   });
 });

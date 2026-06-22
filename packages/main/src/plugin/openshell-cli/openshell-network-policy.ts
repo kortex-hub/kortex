@@ -130,26 +130,32 @@ export function buildNetworkPolicyEndpoints(network: NetworkConfiguration): stri
   }
 
   if (!network.hosts?.length) {
-    return undefined;
+    return [];
   }
 
   return network.hosts.flatMap(host => [`${host}:443:full`, `${host}:80:full`]);
 }
 
-export function buildNetworkPolicyUpdateOptions(
+export function buildNetworkPolicyOperations(
   sandboxName: string,
   network: NetworkConfiguration,
-): PolicyUpdateOptions | undefined {
-  const endpoints = buildNetworkPolicyEndpoints(network);
-  if (!endpoints) {
-    return undefined;
-  }
-
-  return {
+): PolicyUpdateOptions[] {
+  const removeOp: PolicyUpdateOptions = {
     sandboxName,
     removeRule: NETWORK_RULE_NAME,
+  };
+
+  const endpoints = buildNetworkPolicyEndpoints(network);
+  if (!endpoints?.length) {
+    return [removeOp];
+  }
+
+  const addOp: PolicyUpdateOptions = {
+    sandboxName,
     addEndpoints: endpoints,
     binary: '/**',
     wait: true,
   };
+
+  return [removeOp, addOp];
 }

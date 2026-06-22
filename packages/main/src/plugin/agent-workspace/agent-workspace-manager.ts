@@ -33,7 +33,7 @@ import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
-import { buildNetworkPolicyUpdateOptions } from '/@/plugin/openshell-cli/openshell-network-policy.js';
+import { buildNetworkPolicyOperations } from '/@/plugin/openshell-cli/openshell-network-policy.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
@@ -195,9 +195,17 @@ export class AgentWorkspaceManager implements Disposable {
 
     const finalNetwork = workspace.network;
     if (finalNetwork) {
-      const policyUpdateOptions = buildNetworkPolicyUpdateOptions(sandboxName, finalNetwork);
-      if (policyUpdateOptions) {
-        await this.openshellCli.policyUpdate(policyUpdateOptions);
+      const operations = buildNetworkPolicyOperations(sandboxName, finalNetwork);
+      for (const op of operations) {
+        if (op.removeRule && !op.addEndpoints) {
+          try {
+            await this.openshellCli.policyUpdate(op);
+          } catch {
+            // Rule may not exist on a fresh sandbox — ignore, matching kdn behavior
+          }
+        } else {
+          await this.openshellCli.policyUpdate(op);
+        }
       }
     }
 

@@ -568,7 +568,7 @@ describe('create – OpenShell mode', () => {
     expect(openshellCli.createSandbox).not.toHaveBeenCalled();
   });
 
-  test('calls policyUpdate after createSandbox when network has deny mode with hosts', async () => {
+  test('calls policyUpdate twice for deny mode with hosts: remove then add', async () => {
     const options = {
       ...defaultOptions,
       network: { mode: 'deny' as const, hosts: ['registry.npmjs.org', 'pypi.python.org'] },
@@ -577,9 +577,13 @@ describe('create – OpenShell mode', () => {
     await manager.create(options);
 
     expect(openshellCli.createSandbox).toHaveBeenCalled();
-    expect(openshellCli.policyUpdate).toHaveBeenCalledWith({
+    expect(openshellCli.policyUpdate).toHaveBeenCalledTimes(2);
+    expect(openshellCli.policyUpdate).toHaveBeenNthCalledWith(1, {
       sandboxName: 'my-sandbox',
       removeRule: 'kdn-network',
+    });
+    expect(openshellCli.policyUpdate).toHaveBeenNthCalledWith(2, {
+      sandboxName: 'my-sandbox',
       addEndpoints: [
         'registry.npmjs.org:443:full',
         'registry.npmjs.org:80:full',
@@ -591,29 +595,31 @@ describe('create – OpenShell mode', () => {
     });
   });
 
-  test('does not call policyUpdate when network is undefined', async () => {
-    await manager.create(defaultOptions);
-
-    expect(openshellCli.policyUpdate).not.toHaveBeenCalled();
-  });
-
-  test('does not call policyUpdate when network is deny with no hosts', async () => {
+  test('calls policyUpdate once for deny mode with no hosts: remove only', async () => {
     const options = { ...defaultOptions, network: { mode: 'deny' as const } };
 
     await manager.create(options);
 
-    expect(openshellCli.policyUpdate).not.toHaveBeenCalled();
+    expect(openshellCli.policyUpdate).toHaveBeenCalledTimes(1);
+    expect(openshellCli.policyUpdate).toHaveBeenCalledWith({
+      sandboxName: 'my-sandbox',
+      removeRule: 'kdn-network',
+    });
   });
 
-  test('does not call policyUpdate when network is deny with empty hosts', async () => {
+  test('calls policyUpdate once for deny mode with empty hosts: remove only', async () => {
     const options = { ...defaultOptions, network: { mode: 'deny' as const, hosts: [] } };
 
     await manager.create(options);
 
-    expect(openshellCli.policyUpdate).not.toHaveBeenCalled();
+    expect(openshellCli.policyUpdate).toHaveBeenCalledTimes(1);
+    expect(openshellCli.policyUpdate).toHaveBeenCalledWith({
+      sandboxName: 'my-sandbox',
+      removeRule: 'kdn-network',
+    });
   });
 
-  test('does not call policyUpdate when network mode is allow', async () => {
+  test('calls policyUpdate once for allow mode: remove only', async () => {
     const options = {
       ...defaultOptions,
       network: { mode: 'allow' as const, hosts: ['registry.npmjs.org'] },
@@ -621,11 +627,31 @@ describe('create – OpenShell mode', () => {
 
     await manager.create(options);
 
+    expect(openshellCli.policyUpdate).toHaveBeenCalledTimes(1);
+    expect(openshellCli.policyUpdate).toHaveBeenCalledWith({
+      sandboxName: 'my-sandbox',
+      removeRule: 'kdn-network',
+    });
+  });
+
+  test('does not call policyUpdate when network is undefined', async () => {
+    await manager.create(defaultOptions);
+
     expect(openshellCli.policyUpdate).not.toHaveBeenCalled();
   });
 
-  test('propagates policyUpdate errors', async () => {
-    vi.mocked(openshellCli.policyUpdate).mockRejectedValue(new Error('policy update failed'));
+  test('swallows errors on remove-only policyUpdate', async () => {
+    vi.mocked(openshellCli.policyUpdate).mockRejectedValue(new Error('rule not found'));
+
+    const options = { ...defaultOptions, network: { mode: 'deny' as const } };
+
+    await expect(manager.create(options)).resolves.toEqual({ id: 'my-sandbox' });
+  });
+
+  test('propagates errors on add-endpoints policyUpdate', async () => {
+    vi.mocked(openshellCli.policyUpdate)
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('policy update failed'));
 
     const options = {
       ...defaultOptions,
