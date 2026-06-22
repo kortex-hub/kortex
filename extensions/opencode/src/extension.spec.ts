@@ -328,7 +328,7 @@ describe('activate', () => {
       });
     });
 
-    test('writes remote MCP servers with headers as environment', async () => {
+    test('writes remote MCP servers with headers', async () => {
       await activate(extensionContextMock);
       const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
 
@@ -353,7 +353,7 @@ describe('activate', () => {
           type: 'remote',
           url: 'https://mcp.example.com',
           enabled: true,
-          environment: { Authorization: 'Bearer token123' },
+          headers: { Authorization: 'Bearer token123' },
         },
       });
     });
@@ -479,7 +479,7 @@ describe('activate', () => {
       });
     });
 
-    test('omits environment when remote MCP server has empty headers', async () => {
+    test('omits headers when remote MCP server has empty headers', async () => {
       await activate(extensionContextMock);
       const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
 
@@ -494,7 +494,7 @@ describe('activate', () => {
 
       const written = JSON.parse(configFile.updateMock.mock.calls[0]![0] as string);
       expect(written.mcp['no-headers']).toEqual({ type: 'remote', url: 'https://mcp.example.com', enabled: true });
-      expect(written.mcp['no-headers']).not.toHaveProperty('environment');
+      expect(written.mcp['no-headers']).not.toHaveProperty('headers');
     });
 
     test('omits environment when local MCP command has empty env', async () => {

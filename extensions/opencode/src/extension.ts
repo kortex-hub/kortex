@@ -40,6 +40,7 @@ const McpEntrySchema = z.looseObject({
   command: z.array(z.string()).optional(),
   enabled: z.boolean(),
   environment: z.record(z.string(), z.string()).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
 });
 
 type McpEntry = z.infer<typeof McpEntrySchema>;
@@ -128,7 +129,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
             type: 'remote',
             url: server.url,
             enabled: true,
-            ...(server.headers && Object.keys(server.headers).length > 0 ? { environment: server.headers } : {}),
+            ...(server.headers && Object.keys(server.headers).length > 0 ? { headers: server.headers } : {}),
           };
         }
 
