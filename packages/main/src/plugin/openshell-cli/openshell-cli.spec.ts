@@ -259,32 +259,6 @@ describe('createSandbox', () => {
     );
   });
 
-  test('includes --policy flag when provided', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
-
-    await openshellCli.createSandbox({ policy: '/tmp/policy.yaml' });
-
-    expect(exec.exec).toHaveBeenCalledWith(
-      OPENSHELL_CLI_PATH,
-      ['sandbox', 'create', '--policy', '/tmp/policy.yaml'],
-      undefined,
-    );
-  });
-
-  test('places --policy flag before --no-tty and command', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
-
-    await openshellCli.createSandbox({ policy: '/tmp/policy.yaml', noTty: true, command: ['true'] });
-
-    expect(exec.exec).toHaveBeenCalledWith(
-      OPENSHELL_CLI_PATH,
-      ['sandbox', 'create', '--policy', '/tmp/policy.yaml', '--no-tty', '--', 'true'],
-      undefined,
-    );
-  });
-
   test('rejects when CLI fails', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -421,6 +395,130 @@ describe('connectSandbox', () => {
     vi.mocked(exec.exec).mockRejectedValue(new Error('sandbox not found: unknown'));
 
     await expect(openshellCli.connectSandbox('unknown')).rejects.toThrow('sandbox not found: unknown');
+  });
+});
+
+describe('policyUpdate', () => {
+  test('executes openshell policy update with sandbox name', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.policyUpdate({ sandboxName: 'my-sandbox' });
+
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['policy', 'update', 'my-sandbox'], undefined);
+  });
+
+  test('includes --remove-rule flag when provided', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.policyUpdate({ sandboxName: 'my-sandbox', removeRule: 'kdn-network' });
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['policy', 'update', 'my-sandbox', '--remove-rule', 'kdn-network'],
+      undefined,
+    );
+  });
+
+  test('includes --add-endpoint flags when provided', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.policyUpdate({
+      sandboxName: 'my-sandbox',
+      addEndpoints: ['example.com:443:full', 'example.com:80:full'],
+    });
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      [
+        'policy',
+        'update',
+        'my-sandbox',
+        '--add-endpoint',
+        'example.com:443:full',
+        '--add-endpoint',
+        'example.com:80:full',
+      ],
+      undefined,
+    );
+  });
+
+  test('includes --binary flag when provided', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.policyUpdate({ sandboxName: 'my-sandbox', binary: '/**' });
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['policy', 'update', 'my-sandbox', '--binary', '/**'],
+      undefined,
+    );
+  });
+
+  test('includes --wait flag when provided', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.policyUpdate({ sandboxName: 'my-sandbox', wait: true });
+
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['policy', 'update', 'my-sandbox', '--wait'], undefined);
+  });
+
+  test('includes --rule-name flag when provided', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.policyUpdate({ sandboxName: 'my-sandbox', ruleName: 'kdn-model' });
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['policy', 'update', 'my-sandbox', '--rule-name', 'kdn-model'],
+      undefined,
+    );
+  });
+
+  test('includes all flags in correct order', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.policyUpdate({
+      sandboxName: 'my-sandbox',
+      removeRule: 'kdn-network',
+      ruleName: 'kdn-network',
+      addEndpoints: ['host:443:full'],
+      binary: '/**',
+      wait: true,
+    });
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      [
+        'policy',
+        'update',
+        'my-sandbox',
+        '--remove-rule',
+        'kdn-network',
+        '--rule-name',
+        'kdn-network',
+        '--add-endpoint',
+        'host:443:full',
+        '--binary',
+        '/**',
+        '--wait',
+      ],
+      undefined,
+    );
+  });
+
+  test('rejects when CLI fails', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockRejectedValue(new Error('sandbox not found'));
+
+    await expect(openshellCli.policyUpdate({ sandboxName: 'unknown' })).rejects.toThrow('sandbox not found');
   });
 });
 

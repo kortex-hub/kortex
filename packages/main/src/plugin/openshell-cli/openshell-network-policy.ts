@@ -16,11 +16,115 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { dump } from 'js-yaml';
+import z from 'zod';
 
 import type { NetworkConfiguration } from '/@api/agent-workspace-info.js';
+import type { PolicyUpdateOptions } from '/@api/openshell-gateway-info.js';
 
-export function generateNetworkPolicyYaml(network: NetworkConfiguration): string | undefined {
+// ── OpenShell sandbox policy schema ────────────────────────────────
+
+export const OpenshellRestAllowRuleSchema = z.object({
+  allow: z.object({
+    method: z.string(),
+    path: z.string(),
+    query: z.record(z.string(), z.union([z.string(), z.object({ any: z.array(z.string()) })])).optional(),
+  }),
+});
+
+export const OpenshellGraphqlAllowRuleSchema = z.object({
+  allow: z.object({
+    operation_type: z.string(),
+    operation_name: z.string().optional(),
+    fields: z.array(z.string()).optional(),
+  }),
+});
+
+export const OpenshellRestDenyRuleSchema = z.object({
+  method: z.string(),
+  path: z.string(),
+  query: z.record(z.string(), z.union([z.string(), z.object({ any: z.array(z.string()) })])).optional(),
+});
+
+export const OpenshellGraphqlDenyRuleSchema = z.object({
+  operation_type: z.string(),
+  operation_name: z.string().optional(),
+  fields: z.array(z.string()).optional(),
+});
+
+export const OpenshellEndpointSchema = z.object({
+  host: z.string(),
+  port: z.number().int(),
+  path: z.string().optional(),
+  protocol: z.enum(['rest', 'websocket', 'graphql']).optional(),
+  tls: z.string().optional(),
+  enforcement: z.enum(['enforce', 'audit']).optional(),
+  access: z.enum(['read-only', 'read-write', 'full']).optional(),
+  rules: z.array(z.union([OpenshellRestAllowRuleSchema, OpenshellGraphqlAllowRuleSchema])).optional(),
+  deny_rules: z.array(z.union([OpenshellRestDenyRuleSchema, OpenshellGraphqlDenyRuleSchema])).optional(),
+  allowed_ips: z.array(z.string()).optional(),
+  allow_encoded_slash: z.boolean().optional(),
+  websocket_credential_rewrite: z.boolean().optional(),
+  request_body_credential_rewrite: z.boolean().optional(),
+  persisted_queries: z.string().optional(),
+  graphql_persisted_queries: z
+    .record(
+      z.string(),
+      z.object({
+        operation_type: z.string(),
+        operation_name: z.string().optional(),
+        fields: z.array(z.string()).optional(),
+      }),
+    )
+    .optional(),
+  graphql_max_body_bytes: z.number().int().optional(),
+});
+
+export type OpenshellEndpoint = z.output<typeof OpenshellEndpointSchema>;
+
+export const OpenshellBinarySchema = z.object({
+  path: z.string(),
+});
+
+export type OpenshellBinary = z.output<typeof OpenshellBinarySchema>;
+
+export const OpenshellNetworkPolicyEntrySchema = z.object({
+  name: z.string().optional(),
+  endpoints: z.array(OpenshellEndpointSchema),
+  binaries: z.array(OpenshellBinarySchema),
+});
+
+export type OpenshellNetworkPolicyEntry = z.output<typeof OpenshellNetworkPolicyEntrySchema>;
+
+export const OpenshellFilesystemPolicySchema = z.object({
+  include_workdir: z.boolean().optional(),
+  read_only: z.array(z.string()).optional(),
+  read_write: z.array(z.string()).optional(),
+});
+
+export const OpenshellLandlockSchema = z.object({
+  compatibility: z.enum(['best_effort', 'hard_requirement']).optional(),
+});
+
+export const OpenshellProcessSchema = z.object({
+  run_as_user: z.string().optional(),
+  run_as_group: z.string().optional(),
+});
+
+export const OpenshellPolicySchema = z.object({
+  version: z.literal(1),
+  filesystem_policy: OpenshellFilesystemPolicySchema.optional(),
+  landlock: OpenshellLandlockSchema.optional(),
+  process: OpenshellProcessSchema.optional(),
+  network_policies: z.record(z.string(), OpenshellNetworkPolicyEntrySchema).optional(),
+});
+
+export type OpenshellPolicy = z.output<typeof OpenshellPolicySchema>;
+
+// ── Policy endpoint builder ───────────────────────────────────────
+
+const NETWORK_RULE_NAME = 'kdn-network';
+
+export function buildNetworkPolicyEndpoints(network: NetworkConfiguration): string[] | undefined {
   if (network.mode === 'allow') {
     return undefined;
   }
@@ -29,21 +133,23 @@ export function generateNetworkPolicyYaml(network: NetworkConfiguration): string
     return undefined;
   }
 
-  const policy = {
-    version: 1,
-    network_policies: {
-      workspace_network_access: {
-        name: 'workspace-network-access',
-        endpoints: network.hosts.map(host => ({
-          host,
-          port: 443,
-          protocol: 'rest',
-          enforcement: 'enforce',
-          access: 'read-only',
-        })),
-      },
-    },
-  };
+  return network.hosts.flatMap(host => [`${host}:443:full`, `${host}:80:full`]);
+}
 
-  return dump(policy, { lineWidth: -1 });
+export function buildNetworkPolicyUpdateOptions(
+  sandboxName: string,
+  network: NetworkConfiguration,
+): PolicyUpdateOptions | undefined {
+  const endpoints = buildNetworkPolicyEndpoints(network);
+  if (!endpoints) {
+    return undefined;
+  }
+
+  return {
+    sandboxName,
+    removeRule: NETWORK_RULE_NAME,
+    addEndpoints: endpoints,
+    binary: '/**',
+    wait: true,
+  };
 }

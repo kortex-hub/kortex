@@ -568,7 +568,7 @@ describe('create – OpenShell mode', () => {
     expect(openshellCli.createSandbox).not.toHaveBeenCalled();
   });
 
-  test('passes policy file to createSandbox when network has deny mode with hosts', async () => {
+  test('calls policyUpdate after createSandbox when network has deny mode with hosts', async () => {
     const options = {
       ...defaultOptions,
       network: { mode: 'deny' as const, hosts: ['registry.npmjs.org', 'pypi.python.org'] },
@@ -576,62 +576,63 @@ describe('create – OpenShell mode', () => {
 
     await manager.create(options);
 
-    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
-      expect.objectContaining({
-        policy: expect.stringContaining('kaiden-policy-'),
-      }),
-    );
-    expect(writeFile).toHaveBeenCalledWith(
-      expect.stringContaining('kaiden-policy-'),
-      expect.stringContaining('registry.npmjs.org'),
-      'utf-8',
-    );
+    expect(openshellCli.createSandbox).toHaveBeenCalled();
+    expect(openshellCli.policyUpdate).toHaveBeenCalledWith({
+      sandboxName: 'my-sandbox',
+      removeRule: 'kdn-network',
+      addEndpoints: [
+        'registry.npmjs.org:443:full',
+        'registry.npmjs.org:80:full',
+        'pypi.python.org:443:full',
+        'pypi.python.org:80:full',
+      ],
+      binary: '/**',
+      wait: true,
+    });
   });
 
-  test('does not pass policy when network is undefined', async () => {
+  test('does not call policyUpdate when network is undefined', async () => {
     await manager.create(defaultOptions);
 
-    expect(openshellCli.createSandbox).toHaveBeenCalledWith(expect.not.objectContaining({ policy: expect.anything() }));
+    expect(openshellCli.policyUpdate).not.toHaveBeenCalled();
   });
 
-  test('does not pass policy when network is deny with no hosts', async () => {
+  test('does not call policyUpdate when network is deny with no hosts', async () => {
     const options = { ...defaultOptions, network: { mode: 'deny' as const } };
 
     await manager.create(options);
 
-    expect(openshellCli.createSandbox).toHaveBeenCalledWith(expect.not.objectContaining({ policy: expect.anything() }));
+    expect(openshellCli.policyUpdate).not.toHaveBeenCalled();
   });
 
-  test('does not pass policy when network is deny with empty hosts', async () => {
+  test('does not call policyUpdate when network is deny with empty hosts', async () => {
     const options = { ...defaultOptions, network: { mode: 'deny' as const, hosts: [] } };
 
     await manager.create(options);
 
-    expect(openshellCli.createSandbox).toHaveBeenCalledWith(expect.not.objectContaining({ policy: expect.anything() }));
+    expect(openshellCli.policyUpdate).not.toHaveBeenCalled();
   });
 
-  test('cleans up temp policy file after sandbox creation', async () => {
+  test('does not call policyUpdate when network mode is allow', async () => {
     const options = {
       ...defaultOptions,
-      network: { mode: 'deny' as const, hosts: ['registry.npmjs.org'] },
+      network: { mode: 'allow' as const, hosts: ['registry.npmjs.org'] },
     };
 
     await manager.create(options);
 
-    expect(rm).toHaveBeenCalledWith(expect.stringContaining('kaiden-policy-'), { force: true });
+    expect(openshellCli.policyUpdate).not.toHaveBeenCalled();
   });
 
-  test('cleans up temp policy file even when createSandbox fails', async () => {
-    vi.mocked(openshellCli.createSandbox).mockRejectedValue(new Error('sandbox creation failed'));
+  test('propagates policyUpdate errors', async () => {
+    vi.mocked(openshellCli.policyUpdate).mockRejectedValue(new Error('policy update failed'));
 
     const options = {
       ...defaultOptions,
       network: { mode: 'deny' as const, hosts: ['registry.npmjs.org'] },
     };
 
-    await expect(manager.create(options)).rejects.toThrow('sandbox creation failed');
-
-    expect(rm).toHaveBeenCalledWith(expect.stringContaining('kaiden-policy-'), { force: true });
+    await expect(manager.create(options)).rejects.toThrow('policy update failed');
   });
 });
 

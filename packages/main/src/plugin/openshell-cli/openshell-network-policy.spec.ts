@@ -16,83 +16,82 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { load } from 'js-yaml';
 import { describe, expect, test } from 'vitest';
 
-import { generateNetworkPolicyYaml } from './openshell-network-policy.js';
+import { buildNetworkPolicyEndpoints, buildNetworkPolicyUpdateOptions } from './openshell-network-policy.js';
 
-describe('generateNetworkPolicyYaml', () => {
+describe('buildNetworkPolicyEndpoints', () => {
   test('returns undefined for mode allow', () => {
-    expect(generateNetworkPolicyYaml({ mode: 'allow' })).toBeUndefined();
+    expect(buildNetworkPolicyEndpoints({ mode: 'allow' })).toBeUndefined();
   });
 
   test('returns undefined for mode deny with no hosts', () => {
-    expect(generateNetworkPolicyYaml({ mode: 'deny' })).toBeUndefined();
+    expect(buildNetworkPolicyEndpoints({ mode: 'deny' })).toBeUndefined();
   });
 
   test('returns undefined for mode deny with empty hosts array', () => {
-    expect(generateNetworkPolicyYaml({ mode: 'deny', hosts: [] })).toBeUndefined();
+    expect(buildNetworkPolicyEndpoints({ mode: 'deny', hosts: [] })).toBeUndefined();
   });
 
-  test('returns valid YAML for mode deny with one host', () => {
-    const yaml = generateNetworkPolicyYaml({ mode: 'deny', hosts: ['registry.npmjs.org'] });
+  test('returns two endpoint strings per host', () => {
+    const endpoints = buildNetworkPolicyEndpoints({ mode: 'deny', hosts: ['registry.npmjs.org'] });
 
-    expect(yaml).toBeDefined();
-    const parsed = load(yaml!) as Record<string, unknown>;
-    expect(parsed).toEqual({
-      version: 1,
-      network_policies: {
-        workspace_network_access: {
-          name: 'workspace-network-access',
-          endpoints: [
-            {
-              host: 'registry.npmjs.org',
-              port: 443,
-              protocol: 'rest',
-              enforcement: 'enforce',
-              access: 'read-only',
-            },
-          ],
-        },
-      },
-    });
+    expect(endpoints).toEqual(['registry.npmjs.org:443:full', 'registry.npmjs.org:80:full']);
   });
 
-  test('returns valid YAML for mode deny with multiple hosts', () => {
-    const yaml = generateNetworkPolicyYaml({
+  test('returns endpoint strings for multiple hosts', () => {
+    const endpoints = buildNetworkPolicyEndpoints({
       mode: 'deny',
       hosts: ['registry.npmjs.org', 'pypi.python.org'],
     });
 
-    expect(yaml).toBeDefined();
-    const parsed = load(yaml!) as Record<string, unknown>;
-    const policies = (parsed as { network_policies: { workspace_network_access: { endpoints: unknown[] } } })
-      .network_policies.workspace_network_access.endpoints;
-    expect(policies).toHaveLength(2);
-    expect(policies).toEqual([
-      expect.objectContaining({ host: 'registry.npmjs.org' }),
-      expect.objectContaining({ host: 'pypi.python.org' }),
+    expect(endpoints).toEqual([
+      'registry.npmjs.org:443:full',
+      'registry.npmjs.org:80:full',
+      'pypi.python.org:443:full',
+      'pypi.python.org:80:full',
     ]);
   });
 
-  test('all endpoints use port 443 and rest protocol', () => {
-    const yaml = generateNetworkPolicyYaml({
+  test('uses full access level', () => {
+    const endpoints = buildNetworkPolicyEndpoints({ mode: 'deny', hosts: ['example.com'] })!;
+
+    for (const endpoint of endpoints) {
+      expect(endpoint).toMatch(/:full$/);
+    }
+  });
+});
+
+describe('buildNetworkPolicyUpdateOptions', () => {
+  test('returns undefined for mode allow', () => {
+    expect(buildNetworkPolicyUpdateOptions('my-sandbox', { mode: 'allow' })).toBeUndefined();
+  });
+
+  test('returns undefined for mode deny with no hosts', () => {
+    expect(buildNetworkPolicyUpdateOptions('my-sandbox', { mode: 'deny' })).toBeUndefined();
+  });
+
+  test('returns correct options for deny mode with hosts', () => {
+    const options = buildNetworkPolicyUpdateOptions('my-sandbox', {
       mode: 'deny',
-      hosts: ['example.com', 'api.example.com'],
+      hosts: ['registry.npmjs.org'],
     });
 
-    const parsed = load(yaml!) as {
-      network_policies: {
-        workspace_network_access: {
-          endpoints: Array<{ host: string; port: number; protocol: string; enforcement: string; access: string }>;
-        };
-      };
-    };
-    for (const endpoint of parsed.network_policies.workspace_network_access.endpoints) {
-      expect(endpoint.port).toBe(443);
-      expect(endpoint.protocol).toBe('rest');
-      expect(endpoint.enforcement).toBe('enforce');
-      expect(endpoint.access).toBe('read-only');
-    }
+    expect(options).toEqual({
+      sandboxName: 'my-sandbox',
+      removeRule: 'kdn-network',
+      addEndpoints: ['registry.npmjs.org:443:full', 'registry.npmjs.org:80:full'],
+      binary: '/**',
+      wait: true,
+    });
+  });
+
+  test('uses the provided sandbox name', () => {
+    const options = buildNetworkPolicyUpdateOptions('test-sandbox', {
+      mode: 'deny',
+      hosts: ['example.com'],
+    });
+
+    expect(options!.sandboxName).toBe('test-sandbox');
   });
 });
