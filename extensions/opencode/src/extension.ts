@@ -34,14 +34,20 @@ const ProviderEntrySchema = z.looseObject({
   models: z.record(z.string(), ModelEntrySchema).default({}),
 });
 
-const McpEntrySchema = z.looseObject({
-  type: z.enum(['remote', 'local']),
-  url: z.string().optional(),
-  command: z.array(z.string()).optional(),
-  enabled: z.boolean(),
-  environment: z.record(z.string(), z.string()).optional(),
-  headers: z.record(z.string(), z.string()).optional(),
-});
+const McpEntrySchema = z.discriminatedUnion('type', [
+  z.looseObject({
+    type: z.literal('remote'),
+    url: z.string(),
+    enabled: z.boolean(),
+    headers: z.record(z.string(), z.string()).optional(),
+  }),
+  z.looseObject({
+    type: z.literal('local'),
+    command: z.array(z.string()),
+    enabled: z.boolean(),
+    environment: z.record(z.string(), z.string()).optional(),
+  }),
+]);
 
 type McpEntry = z.infer<typeof McpEntrySchema>;
 
