@@ -45,7 +45,7 @@ jobs:
       kaidenVersion: ${{ steps.TAG_UTIL.outputs.kaidenVersion }}
       releaseId: ${{ steps.create_release.outputs.id }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           token: ${{ secrets.KAIDEN_BOT_TOKEN }}
           persist-credentials: false
@@ -139,7 +139,7 @@ jobs:
             windows_arch: ''
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: openkaiden/testing-prereleases
           ref: ${{ needs.tag.outputs.githubTag }}
@@ -172,14 +172,12 @@ jobs:
         timeout-minutes: 60
         shell: bash
         run: |
-          if [ "${{ matrix.windows_arch }}" = "x64" ]; then
+          if [ -n "${{ matrix.windows_arch }}" ]; then
             pnpm exec cross-env MODE=production pnpm run build
             # Target list is required: --x64 alone still builds both archs from config and
             # lets windows-11-arm clobber setup-x64.exe on the shared GitHub release.
-            pnpm exec electron-builder build --publish always --config .electron-builder.config.cjs --win nsis:x64 portable:x64
-          elif [ "${{ matrix.windows_arch }}" = "arm64" ]; then
-            pnpm exec cross-env MODE=production pnpm run build
-            pnpm exec electron-builder build --publish always --config .electron-builder.config.cjs --win nsis:arm64 portable:arm64
+            pnpm exec electron-builder build --publish always --config .electron-builder.config.cjs \
+              --win nsis:${{ matrix.windows_arch }} portable:${{ matrix.windows_arch }}
           else
             pnpm compile:next
           fi
