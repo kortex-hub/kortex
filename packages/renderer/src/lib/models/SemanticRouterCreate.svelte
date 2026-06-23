@@ -49,11 +49,7 @@ let isSignalsStepValid = $derived.by(() => {
 });
 
 let canProceed = $derived(
-  currentStepId === 'basic'
-    ? isBasicStepValid
-    : currentStepId === 'models'
-      ? canProceedModels
-      : isSignalsStepValid,
+  currentStepId === 'basic' ? isBasicStepValid : currentStepId === 'models' ? canProceedModels : isSignalsStepValid,
 );
 
 function buildModelRefs(): Array<{ providerId: string; connectionId: string; label: string; useReasoning: boolean }> {
@@ -84,11 +80,12 @@ function buildConfig(): SemanticRouterConfigInfo {
     listeners: [{ address: d.listenerAddress, port: d.listenerPort, timeout: d.timeout }],
     routing: {
       keywords: d.keywords,
-      decisions: d.decisions.length > 0
-        ? d.decisions
-        : modelRefs.length > 0
-          ? [{ name: 'default', priority: 0, rules: [{ operator: 'OR', conditions: [], modelRefs }] }]
-          : [],
+      decisions:
+        d.decisions.length > 0
+          ? d.decisions
+          : modelRefs.length > 0
+            ? [{ name: 'default', priority: 0, rules: [{ operator: 'OR', conditions: [], modelRefs }] }]
+            : [],
     },
   };
 }
