@@ -13,13 +13,15 @@ interface Props {
 
 let { selectedModels = $bindable([]) }: Props = $props();
 
-let selectedKeys = new SvelteSet<string>();
+let selectedKeys = new SvelteSet<string>(
+  selectedModels.map(m => modelSelectionKey(m.providerId, m.connectionId, m.label)),
+);
 
 let eligibleModels: CatalogModelInfo[] = $derived.by(() => {
   const enabled = $catalogModels.filter(m => isModelEnabled($disabledModels, m.providerId, m.label));
   const seen: Record<string, boolean> = {};
   return enabled.filter(m => {
-    if (m.llmMetadata?.semanticRouter) return false;
+    if (m.llmMetadata?.semanticRouter !== undefined) return false;
     const key = modelKey(m.providerId, m.label);
     if (seen[key]) return false;
     seen[key] = true;
