@@ -4,17 +4,15 @@ import { Button, Checkbox, CloseButton, Dropdown, Input, NumberInput } from '@po
 
 import type { CatalogModelInfo } from '/@/lib/models/models-utils';
 import SlideToggle from '/@/lib/ui/SlideToggle.svelte';
-import { catalogModels } from '/@/stores/models';
 import type { DecisionConfigDraft, KeywordGroupDraft } from '/@/stores/semantic-router-create-draft.svelte';
 
 interface Props {
   keywords: KeywordGroupDraft[];
   decisions: DecisionConfigDraft[];
+  availableModels: readonly CatalogModelInfo[];
 }
 
-let { keywords = $bindable(), decisions = $bindable() }: Props = $props();
-
-let allModels: readonly CatalogModelInfo[] = $derived($catalogModels);
+let { keywords = $bindable(), decisions = $bindable(), availableModels }: Props = $props();
 
 let keywordNames: string[] = $derived(keywords.map(k => k.name).filter(n => n.trim().length > 0));
 
@@ -70,12 +68,12 @@ function addDecision(): void {
   const defaultConditions = keywordNames.length > 0 ? [{ type: 'keyword' as const, name: keywordNames[0] }] : [];
 
   const defaultModelRefs =
-    allModels.length > 0
+    availableModels.length > 0
       ? [
           {
-            providerId: allModels[0].providerId,
-            connectionId: allModels[0].connectionId ?? '',
-            label: allModels[0].label,
+            providerId: availableModels[0].providerId,
+            connectionId: availableModels[0].connectionId ?? '',
+            label: availableModels[0].label,
             useReasoning: false,
           },
         ]
@@ -127,7 +125,7 @@ function isConditionSelected(decIndex: number, signalName: string): boolean {
 }
 
 function onSelectedModelChanged(decIndex: number, label: string): void {
-  const model = allModels.find(m => m.label === label);
+  const model = availableModels.find(m => m.label === label);
   if (model) selectModel(decIndex, model);
 }
 
@@ -344,7 +342,7 @@ function getSelectedModelLabel(decIndex: number): string {
             <!-- Target model -->
             <div class="pb-3">
               <span class="block text-xs font-semibold text-(--pd-modal-text) pb-1.5">Target model</span>
-              {#if allModels.length === 0}
+              {#if availableModels.length === 0}
                 <p class="text-xs text-(--pd-content-card-text) opacity-50 italic">
                   No models available in the catalog.
                 </p>
@@ -352,7 +350,7 @@ function getSelectedModelLabel(decIndex: number): string {
                 <Dropdown
                   ariaLabel="Target model"
                   value={getSelectedModelLabel(decIdx)}
-                  options={allModels.map(m => ({ label: `${m.label} (${m.providerName})`, value: m.label }))}
+                  options={availableModels.map(m => ({ label: `${m.label} (${m.providerName})`, value: m.label }))}
                   onChange={(val: string): void => onSelectedModelChanged(decIdx, val)} />
               {/if}
             </div>

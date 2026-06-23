@@ -19,15 +19,11 @@
 import '@testing-library/jest-dom/vitest';
 
 import { fireEvent, render, screen } from '@testing-library/svelte';
-import { writable } from 'svelte/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { CatalogModelInfo } from '/@/lib/models/models-utils';
-import * as modelsStore from '/@/stores/models';
 
 import SemanticRouterCreateStepSignals from './SemanticRouterCreateStepSignals.svelte';
-
-vi.mock(import('/@/stores/models'));
 
 const mockModels: CatalogModelInfo[] = [
   {
@@ -52,25 +48,25 @@ const mockModels: CatalogModelInfo[] = [
 
 beforeEach(() => {
   vi.resetAllMocks();
-  vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(mockModels);
+  vi.useFakeTimers({ shouldAdvanceTime: true });
 });
 
 describe('signals section', () => {
   test('renders signals and decisions headers', () => {
-    render(SemanticRouterCreateStepSignals, { keywords: [], decisions: [] });
+    render(SemanticRouterCreateStepSignals, { keywords: [], decisions: [], availableModels: mockModels });
 
     screen.getByText('Signals');
     screen.getByText('Decisions');
   });
 
   test('shows empty state when no signals defined', () => {
-    render(SemanticRouterCreateStepSignals, { keywords: [], decisions: [] });
+    render(SemanticRouterCreateStepSignals, { keywords: [], decisions: [], availableModels: mockModels });
 
     screen.getByText('No signals defined yet. Add a keyword signal to get started.');
   });
 
   test('adds a keyword signal when button is clicked', async () => {
-    render(SemanticRouterCreateStepSignals, { keywords: [], decisions: [] });
+    render(SemanticRouterCreateStepSignals, { keywords: [], decisions: [], availableModels: mockModels });
 
     const addBtn = screen.getByRole('button', { name: /Add keyword signal/i });
     await fireEvent.click(addBtn);
@@ -82,6 +78,7 @@ describe('signals section', () => {
     render(SemanticRouterCreateStepSignals, {
       keywords: [{ name: 'coding_keywords', operator: 'OR', keywords: ['function', 'class'], caseSensitive: false }],
       decisions: [],
+      availableModels: mockModels,
     });
 
     expect(screen.getByDisplayValue('coding_keywords')).toBeInTheDocument();
@@ -93,6 +90,7 @@ describe('signals section', () => {
     render(SemanticRouterCreateStepSignals, {
       keywords: [{ name: 'my-signal', operator: 'OR', keywords: [], caseSensitive: false }],
       decisions: [],
+      availableModels: mockModels,
     });
 
     const closeBtn = screen.getByRole('button', { name: 'Close' });
@@ -105,6 +103,7 @@ describe('signals section', () => {
     render(SemanticRouterCreateStepSignals, {
       keywords: [{ name: 'sig', operator: 'OR', keywords: [], caseSensitive: false }],
       decisions: [],
+      availableModels: mockModels,
     });
 
     const chipInput = screen.getByLabelText('Add keyword');
@@ -118,6 +117,7 @@ describe('signals section', () => {
     render(SemanticRouterCreateStepSignals, {
       keywords: [{ name: 'sig', operator: 'OR', keywords: ['testchip'], caseSensitive: false }],
       decisions: [],
+      availableModels: mockModels,
     });
 
     screen.getByText('testchip');
@@ -132,6 +132,7 @@ describe('signals section', () => {
     render(SemanticRouterCreateStepSignals, {
       keywords: [{ name: 'sig', operator: 'OR', keywords: [], caseSensitive: false }],
       decisions: [],
+      availableModels: mockModels,
     });
 
     const toggle = screen.getByRole('checkbox', { name: 'Toggle operator' });
@@ -143,13 +144,13 @@ describe('signals section', () => {
 
 describe('decisions section', () => {
   test('shows empty state when no decisions defined', () => {
-    render(SemanticRouterCreateStepSignals, { keywords: [], decisions: [] });
+    render(SemanticRouterCreateStepSignals, { keywords: [], decisions: [], availableModels: mockModels });
 
     screen.getByText('No decisions defined yet. Add a decision to create routing rules.');
   });
 
   test('adds a decision when button is clicked', async () => {
-    render(SemanticRouterCreateStepSignals, { keywords: [], decisions: [] });
+    render(SemanticRouterCreateStepSignals, { keywords: [], decisions: [], availableModels: mockModels });
 
     const addBtn = screen.getByRole('button', { name: /Add decision/i });
     await fireEvent.click(addBtn);
@@ -167,6 +168,7 @@ describe('decisions section', () => {
           rules: [{ operator: 'AND', conditions: [], modelRefs: [] }],
         },
       ],
+      availableModels: mockModels,
     });
 
     expect(screen.getByDisplayValue('code-route')).toBeInTheDocument();
@@ -182,6 +184,7 @@ describe('decisions section', () => {
           rules: [{ operator: 'AND', conditions: [], modelRefs: [] }],
         },
       ],
+      availableModels: mockModels,
     });
 
     const closeBtn = screen.getByRole('button', { name: 'Close' });
@@ -203,6 +206,7 @@ describe('decisions section', () => {
           rules: [{ operator: 'AND', conditions: [], modelRefs: [] }],
         },
       ],
+      availableModels: mockModels,
     });
 
     screen.getByRole('checkbox', { name: 'Toggle signal coding_kw' });
@@ -219,12 +223,13 @@ describe('decisions section', () => {
           rules: [{ operator: 'AND', conditions: [], modelRefs: [] }],
         },
       ],
+      availableModels: mockModels,
     });
 
     screen.getByText('Define keyword signals above first.');
   });
 
-  test('renders model select with catalog models', () => {
+  test('renders model select with available models', () => {
     render(SemanticRouterCreateStepSignals, {
       keywords: [],
       decisions: [
@@ -234,6 +239,7 @@ describe('decisions section', () => {
           rules: [{ operator: 'AND', conditions: [], modelRefs: [] }],
         },
       ],
+      availableModels: mockModels,
     });
 
     screen.getByLabelText('Target model');
@@ -249,6 +255,7 @@ describe('decisions section', () => {
           rules: [{ operator: 'AND', conditions: [], modelRefs: [] }],
         },
       ],
+      availableModels: mockModels,
     });
 
     screen.getByText('Enable reasoning mode');

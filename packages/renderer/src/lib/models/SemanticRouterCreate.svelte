@@ -210,7 +210,8 @@ function cancel(): void {
             {:else if currentStepId === 'signals'}
               <SemanticRouterCreateStepSignals
                 bind:keywords={routerWizard.draft.keywords}
-                bind:decisions={routerWizard.draft.decisions} />
+                bind:decisions={routerWizard.draft.decisions}
+                availableModels={selectedModels} />
             {/if}
           </div>
 
