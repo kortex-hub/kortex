@@ -94,6 +94,7 @@ describe('buildNetworkPolicyOperations', () => {
     expect(ops[0]).toEqual({ sandboxName: 'my-sandbox', removeRule: 'kdn-network' });
     expect(ops[1]).toEqual({
       sandboxName: 'my-sandbox',
+      ruleName: 'kdn-network',
       addEndpoints: ['registry.npmjs.org:443:full', 'registry.npmjs.org:80:full'],
       binary: '/**',
       wait: true,

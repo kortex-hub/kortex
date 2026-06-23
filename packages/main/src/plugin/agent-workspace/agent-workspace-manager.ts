@@ -204,7 +204,16 @@ export class AgentWorkspaceManager implements Disposable {
             // Rule may not exist on a fresh sandbox — ignore, matching kdn behavior
           }
         } else {
-          await this.openshellCli.policyUpdate(op);
+          try {
+            await this.openshellCli.policyUpdate(op);
+          } catch (err) {
+            try {
+              await this.openshellCli.deleteSandbox(sandboxName);
+            } catch {
+              // best-effort rollback; preserve original failure
+            }
+            throw err;
+          }
         }
       }
     }

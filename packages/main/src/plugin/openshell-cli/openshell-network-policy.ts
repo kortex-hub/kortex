@@ -152,6 +152,7 @@ export function buildNetworkPolicyOperations(
 
   const addOp: PolicyUpdateOptions = {
     sandboxName,
+    ruleName: NETWORK_RULE_NAME,
     addEndpoints: endpoints,
     binary: '/**',
     wait: true,

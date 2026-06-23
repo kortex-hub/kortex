@@ -591,6 +591,7 @@ describe('create – OpenShell mode', () => {
         'pypi.python.org:80:full',
       ],
       binary: '/**',
+      ruleName: 'kdn-network',
       wait: true,
     });
   });
