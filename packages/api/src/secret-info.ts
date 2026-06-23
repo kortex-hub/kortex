@@ -36,6 +36,7 @@ export type SecretService = components['schemas']['SecretService'];
 export interface SecretValue {
   credentials: Record<string, string>;
   config?: Record<string, string>;
+  flags?: string[];
 }
 
 export interface SecretCreateOptions extends SecretInfo {

@@ -280,7 +280,7 @@ export class OpenshellCli {
   }
 
   async createProvider(options: CreateProviderOptions): Promise<void> {
-    if (Object.keys(options.credentials).length === 0) {
+    if (Object.keys(options.credentials).length === 0 && !options.flags?.length) {
       throw new Error('credentials must not be empty');
     }
     const args = ['provider', 'create', '--name', options.name, '--type', options.type];
@@ -288,6 +288,11 @@ export class OpenshellCli {
     for (const [key, value] of Object.entries(options.credentials)) {
       env[key] = value;
       args.push('--credential', key);
+    }
+    if (options.flags) {
+      for (const flag of options.flags) {
+        args.push(flag);
+      }
     }
     if (options.config) {
       for (const [key, value] of Object.entries(options.config)) {

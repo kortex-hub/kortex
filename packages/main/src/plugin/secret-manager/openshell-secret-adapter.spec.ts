@@ -55,6 +55,8 @@ describe('createSecret', () => {
       name: 'my-secret',
       type: 'github',
       credentials: { GH_TOKEN: 'ghp_abc123' },
+      config: undefined,
+      flags: undefined,
     });
     expect(result).toEqual({ name: 'my-secret' });
   });
@@ -63,6 +65,31 @@ describe('createSecret', () => {
     vi.mocked(openshellCli.createProvider).mockRejectedValue(new Error('provider type not supported'));
 
     await expect(adapter.createSecret(defaultOptions)).rejects.toThrow('provider type not supported');
+  });
+
+  test('passes config and flags through to createProvider', async () => {
+    vi.mocked(openshellCli.createProvider).mockResolvedValue(undefined);
+
+    const options: SecretCreateOptions = {
+      name: 'my-vertex',
+      type: 'google-vertex-ai',
+      value: {
+        credentials: { GOOGLE_APPLICATION_CREDENTIALS: '/path/to/creds.json' },
+        config: { GOOGLE_VERTEX_PROJECT: 'my-project', GOOGLE_VERTEX_LOCATION: 'us-east5' },
+        flags: ['__from_gcloud_adc'],
+      },
+    };
+
+    const result = await adapter.createSecret(options);
+
+    expect(openshellCli.createProvider).toHaveBeenCalledWith({
+      name: 'my-vertex',
+      type: 'google-vertex-ai',
+      credentials: { GOOGLE_APPLICATION_CREDENTIALS: '/path/to/creds.json' },
+      config: { GOOGLE_VERTEX_PROJECT: 'my-project', GOOGLE_VERTEX_LOCATION: 'us-east5' },
+      flags: ['__from_gcloud_adc'],
+    });
+    expect(result).toEqual({ name: 'my-vertex' });
   });
 });
 

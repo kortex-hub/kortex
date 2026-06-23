@@ -125,4 +125,5 @@ export interface CreateProviderOptions {
   type: string;
   credentials: Record<string, string>;
   config?: Record<string, string>;
+  flags?: string[];
 }

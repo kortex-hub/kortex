@@ -53,6 +53,8 @@ export class OpenshellSecretAdapter implements SecretCliBackend {
       name: options.name,
       type: options.type,
       credentials: options.value.credentials,
+      config: options.value.config,
+      flags: options.value.flags,
     });
     return { name: options.name };
   }

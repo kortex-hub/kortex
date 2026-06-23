@@ -248,31 +248,32 @@ export class AgentWorkspaceManager implements Disposable {
    * the provider type is unknown, or secrets were already explicitly
    * configured (e.g. by the onboarding flow via workspaceConfiguration).
    */
-  async ensureModelSecret(options: AgentWorkspaceCreateOptions): Promise<void> {
-    if (!options.model) return;
+  async ensureModelSecret(options: AgentWorkspaceCreateOptions): Promise<Record<string, string>> {
+    if (!options.model) return {};
 
-    if (options.workspaceConfiguration?.secrets?.length) return;
+    if (options.workspaceConfiguration?.secrets?.length) return {};
 
     try {
-      if (await this.ensureModelSecretFromConfig(options)) return;
+      const result = await this.ensureModelSecretFromConfig(options);
+      if (result.handled) return result.environment;
     } finally {
       /* empty */
     }
 
     const connectionInfo = this.providerRegistry.getInferenceConnectionCredentials(options.model);
-    if (!connectionInfo) return;
+    if (!connectionInfo) return {};
 
     if (connectionInfo.llmMetadataName === 'vertexai') {
       this.applyVertexAiConfiguration(options, connectionInfo.credentials);
-      return;
+      return {};
     }
 
     const entries = Object.entries(connectionInfo.credentials);
-    if (entries.length !== 1) return;
+    if (entries.length !== 1) return {};
 
     const workspaceSecretPrefix = options.name ?? basename(options.sourcePath);
     const result = this.buildSecretOptions(connectionInfo, workspaceSecretPrefix);
-    if (!result) return;
+    if (!result) return {};
 
     await this.secretManager.create(result.secret);
 
@@ -286,11 +287,17 @@ export class AgentWorkspaceManager implements Disposable {
       );
       options.workspaceConfiguration.environment.push(result.environmentVariable);
     }
+
+    return {};
   }
 
-  private async ensureModelSecretFromConfig(options: AgentWorkspaceCreateOptions): Promise<boolean> {
+  private async ensureModelSecretFromConfig(
+    options: AgentWorkspaceCreateOptions,
+  ): Promise<{ handled: boolean; environment: Record<string, string> }> {
+    const notHandled = { handled: false, environment: {} };
+
     const info = this.providerRegistry.getInferenceConnection(options.model!);
-    if (!info) return false;
+    if (!info) return notHandled;
 
     const config = this.configurationRegistry.getConfiguration(undefined, info.connection);
     const allProperties = this.configurationRegistry.getConfigurationProperties();
@@ -305,11 +312,11 @@ export class AgentWorkspaceManager implements Disposable {
       .filter(([_, schema]) => schema.extension?.id === info.extensionId);
 
     const typeEntry = connectionProperties.find(([fullKey]) => fullKey.endsWith('_type'));
-    if (!typeEntry) return false;
+    if (!typeEntry) return notHandled;
 
     const typeShortKey = typeEntry[0];
     const secretType = config.get<string>(typeShortKey);
-    if (!secretType) return false;
+    if (!secretType) return notHandled;
 
     const workspaceName = options.name ?? basename(options.sourcePath);
 
@@ -330,6 +337,36 @@ export class AgentWorkspaceManager implements Disposable {
       const shortPropertyName = propertyName.split('.').pop()!;
       value.credentials[shortPropertyName] = actualValue;
     }
+
+    const flagEntry = connectionProperties.find(([fullKey]) => fullKey.endsWith('._flag'));
+    const flagValue = flagEntry ? config.get<string>(flagEntry[0]) : undefined;
+    if (flagValue) {
+      value.flags = [flagValue];
+    }
+
+    const configKeys = connectionProperties.filter(
+      ([fullKey, schema]) => schema.format !== 'password' && !fullKey.endsWith('._type') && !fullKey.endsWith('._flag'),
+    );
+
+    const environment: Record<string, string> = {};
+
+    if (flagValue) {
+      for (const [propertyName] of configKeys) {
+        const configValue = config.get<string>(propertyName);
+        if (!configValue) continue;
+        const shortPropertyName = propertyName.split('.').pop()!;
+        environment[shortPropertyName] = configValue;
+      }
+    } else {
+      for (const [propertyName] of configKeys) {
+        const configValue = config.get<string>(propertyName);
+        if (!configValue) continue;
+        const shortPropertyName = propertyName.split('.').pop()!;
+        value.config ??= {};
+        value.config[shortPropertyName] = configValue;
+      }
+    }
+
     if (Object.keys(value.credentials).length > 0) {
       const secretName = `${workspaceName}-${secretType}`;
       await this.secretManager.create({
@@ -341,7 +378,7 @@ export class AgentWorkspaceManager implements Disposable {
       options.secrets = [...new Set([...(options.secrets ?? []), secretName])];
     }
 
-    return true;
+    return { handled: true, environment };
   }
 
   private applyVertexAiConfiguration(options: AgentWorkspaceCreateOptions, credentials: Record<string, string>): void {
