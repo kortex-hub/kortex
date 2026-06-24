@@ -32,7 +32,12 @@ let unconfiguredConnections = $derived(
 
 let selectedProviderInternalId: string | undefined = $state(undefined);
 
-let activeProviderInternalId = $derived(selectedProviderInternalId);
+let autoSelectedProvider = $derived.by((): string | undefined => {
+  if (unconfiguredConnections.length === 1) return unconfiguredConnections[0]!.providerInternalId;
+  return undefined;
+});
+
+let activeProviderInternalId = $derived(selectedProviderInternalId ?? autoSelectedProvider);
 
 let activeProviderInfo: ProviderInfo | undefined = $derived(
   activeProviderInternalId ? $providerInfos.find(p => p.internalId === activeProviderInternalId) : undefined,

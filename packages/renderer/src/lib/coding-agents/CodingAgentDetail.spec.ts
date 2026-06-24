@@ -83,9 +83,9 @@ beforeEach(() => {
   vi.mocked(modelCatalogStore.modelSelectionKey).mockImplementation(
     (providerId: string, connectionId: string, label: string): string => `${providerId}::${connectionId}::${label}`,
   );
-  (window as unknown as Record<string, unknown>).getConfigurationValue = vi.fn().mockResolvedValue(undefined);
-  (window as unknown as Record<string, unknown>).updateConfigurationValue = vi.fn().mockResolvedValue(undefined);
-  (window as unknown as Record<string, unknown>).showMessageBox = vi.fn().mockResolvedValue({ response: 0 });
+  vi.mocked(window.getConfigurationValue).mockResolvedValue(undefined);
+  vi.mocked(window.updateConfigurationValue).mockResolvedValue(undefined);
+  vi.mocked(window.showMessageBox).mockResolvedValue({ response: 0 });
 });
 
 test('renders agent name and description', () => {
@@ -107,7 +107,7 @@ test('shows empty state when no models and no unconfigured connections', () => {
   expect(screen.getByTestId('no-providers-available')).toBeInTheDocument();
 });
 
-test('shows inline connection creation after clicking provider button', async () => {
+test('auto-selects single provider and shows form immediately', () => {
   vi.mocked(inferenceConnectionSummariesStore).inferenceConnectionSummariesData = writable<
     Readonly<InferenceConnectionSummary[]>
   >([
@@ -136,10 +136,6 @@ test('shows inline connection creation after clicking provider button', async ()
   render(CodingAgentDetail, { props: { agentInfo: mockAgentInfo } });
 
   expect(screen.getByTestId('no-models-create-connection')).toBeInTheDocument();
-  expect(screen.queryByTestId('inline-connection-form')).not.toBeInTheDocument();
-
-  await fireEvent.click(screen.getByLabelText('Select Anthropic'));
-
   expect(screen.getByTestId('inline-connection-form')).toBeInTheDocument();
 });
 

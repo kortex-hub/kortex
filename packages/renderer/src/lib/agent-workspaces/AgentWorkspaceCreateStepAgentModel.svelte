@@ -42,7 +42,7 @@ let allModels: CatalogModelInfo[] = $derived.by(() => {
   });
 });
 
-let selectedAgentInfo = $derived($agentInfos.find(a => a.id === selectedAgent));
+let selectedAgentInfo = $derived(filteredAgents.find(a => a.id === selectedAgent));
 let agentFilteredModels: CatalogModelInfo[] = $derived(
   getCompatibleModels(allModels, selectedAgentInfo?.supportedModelTypes),
 );
