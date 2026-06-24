@@ -4,10 +4,9 @@ import { Button } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
 import IconImage from '/@/lib/appearance/IconImage.svelte';
-import type { CatalogModelInfo, InferenceConnectionSummary } from '/@/lib/models/models-utils';
-import ModelSelectionTable from '/@/lib/models/ModelSelectionTable.svelte';
-import ProviderConnectionTiles from '/@/lib/models/ProviderConnectionTiles.svelte';
-import { inferenceConnectionSummariesData } from '/@/stores/inference-connection-summaries';
+import { getCompatibleModels } from '/@/lib/models/compatible-connections';
+import CompatibleConnectionGate from '/@/lib/models/CompatibleConnectionGate.svelte';
+import type { CatalogModelInfo } from '/@/lib/models/models-utils';
 import { modelSelectionKey } from '/@/stores/model-catalog';
 import { catalogModels } from '/@/stores/models';
 import type { AgentInfo } from '/@api/agent-info';
@@ -19,23 +18,8 @@ interface Props {
 
 let { agentInfo }: Props = $props();
 
-let compatibleModels: CatalogModelInfo[] = $derived.by(() => {
-  const types = agentInfo.supportedModelTypes;
-  if (types === undefined) return $catalogModels.slice();
-  if (types.length === 0) return [];
-  const typeNames = new Set(types.map(t => t.name));
-  return $catalogModels.filter(m => m.llmMetadata?.name !== undefined && typeNames.has(m.llmMetadata.name));
-});
-
+let compatibleModels: CatalogModelInfo[] = $derived(getCompatibleModels($catalogModels, agentInfo.supportedModelTypes));
 let hasModels = $derived(compatibleModels.length > 0);
-
-let configurableConnections: InferenceConnectionSummary[] = $derived.by(() => {
-  const all: InferenceConnectionSummary[] = $inferenceConnectionSummariesData.slice();
-  if (agentInfo.supportedModelTypes === undefined) return all;
-  const compatibleProviderIds = new Set(compatibleModels.map(m => m.providerId));
-  if (compatibleProviderIds.size === 0) return all;
-  return all.filter(c => compatibleProviderIds.has(c.providerId));
-});
 
 let savedModelKey = $state('');
 let selectedModelKey = $state('');
@@ -133,23 +117,19 @@ function getAgentSubtitle(agent: AgentInfo): string {
   </div>
 
   <div class="px-8 pb-8 flex-1">
-    {#if configurableConnections.length > 0}
-      <div class="mb-4">
-        <ProviderConnectionTiles connections={configurableConnections} />
-      </div>
-    {/if}
+    <div class="rounded-xl border border-(--pd-content-card-border) bg-(--pd-content-card-inset-bg) p-6">
+      <h2 class="text-sm font-semibold text-(--pd-content-card-text) mb-1">Default model</h2>
+      <p class="text-xs text-(--pd-content-card-text) opacity-60 mb-4">
+        Select the default model for this agent. You can override per workspace later.
+      </p>
 
-    {#if hasModels}
-      <div class="rounded-xl border border-(--pd-content-card-border) bg-(--pd-content-card-inset-bg) p-6">
-        <h2 class="text-sm font-semibold text-(--pd-content-card-text) mb-1">Default model</h2>
-        <p class="text-xs text-(--pd-content-card-text) opacity-60 mb-4">
-          Select the default model for this agent. You can override per workspace later.
-        </p>
-        <ModelSelectionTable
-          models={compatibleModels}
-          selectedKey={selectedModelKey}
-          onselect={selectModel} />
+      <CompatibleConnectionGate
+        models={$catalogModels}
+        supportedModelTypes={agentInfo.supportedModelTypes}
+        selectedKey={selectedModelKey}
+        onselect={selectModel} />
 
+      {#if hasModels}
         <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-(--pd-content-divider)">
           <span class="text-xs text-(--pd-content-card-text) opacity-60 mr-auto">
             {hasChanges ? 'You have unsaved changes' : ''}
@@ -159,28 +139,7 @@ function getAgentSubtitle(agent: AgentInfo): string {
             {saving ? 'Saving…' : 'Save'}
           </Button>
         </div>
-      </div>
-    {:else if configurableConnections.length === 0}
-      <div class="rounded-xl border border-(--pd-content-card-border) bg-(--pd-content-card-inset-bg) p-6">
-        <div class="flex flex-col items-center text-center py-6">
-          <Icon icon={faTerminal} size="2em" class="text-(--pd-content-card-text) opacity-40 mb-4" />
-          <h2 class="text-base font-semibold text-(--pd-content-card-text) mb-2">No models or providers available</h2>
-          <p class="text-sm text-(--pd-content-card-text) opacity-60 max-w-md">
-            Install a compatible provider extension, then return here to select a model.
-          </p>
-        </div>
-      </div>
-    {:else}
-      <div class="rounded-xl border border-(--pd-content-card-border) bg-(--pd-content-card-inset-bg) p-6">
-        <div class="flex flex-col items-center text-center py-6">
-          <Icon icon={faTerminal} size="2em" class="text-(--pd-content-card-text) opacity-40 mb-4" />
-          <h2 class="text-base font-semibold text-(--pd-content-card-text) mb-2">No compatible models found</h2>
-          <p class="text-sm text-(--pd-content-card-text) opacity-60 max-w-md">
-            Your providers are connected but no compatible models are available yet.
-            Check the provider settings above or install a model that supports this agent.
-          </p>
-        </div>
-      </div>
-    {/if}
+      {/if}
+    </div>
   </div>
 </div>

@@ -24,11 +24,13 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import * as agentsStore from '/@/stores/agents';
 import * as agentWorkspaceRuntimeStore from '/@/stores/agentworkspace-runtime';
+import * as configurationPropertiesStore from '/@/stores/configurationProperties';
+import * as inferenceConnectionSummariesStore from '/@/stores/inference-connection-summaries';
 import * as modelCatalogStore from '/@/stores/model-catalog';
 import * as modelsStore from '/@/stores/models';
 import * as providersStore from '/@/stores/providers';
 import type { AgentInfo } from '/@api/agent-info';
-import type { CatalogModelInfo } from '/@api/model-registry-info';
+import type { CatalogModelInfo, InferenceConnectionSummary } from '/@api/model-registry-info';
 import type { ProviderInfo } from '/@api/provider-info';
 
 import AgentWorkspaceCreateStepAgentModel from './AgentWorkspaceCreateStepAgentModel.svelte';
@@ -39,6 +41,8 @@ vi.mock(import('/@/stores/providers'));
 vi.mock(import('/@/stores/model-catalog'));
 vi.mock(import('/@/stores/models'));
 vi.mock(import('/@/stores/agentworkspace-runtime'));
+vi.mock(import('/@/stores/inference-connection-summaries'));
+vi.mock(import('/@/stores/configurationProperties'));
 
 function buildCatalogModels(providers: ProviderInfo[]): CatalogModelInfo[] {
   const result: CatalogModelInfo[] = [];
@@ -174,6 +178,10 @@ beforeEach(() => {
   vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>([]);
   vi.mocked(agentWorkspaceRuntimeStore).agentWorkspaceRuntime = writable<string>('podman');
   vi.mocked(modelCatalogStore).disabledModels = writable<Set<string>>(new Set());
+  vi.mocked(inferenceConnectionSummariesStore).inferenceConnectionSummariesData = writable<
+    Readonly<InferenceConnectionSummary[]>
+  >([]);
+  vi.mocked(configurationPropertiesStore).configurationProperties = writable([]);
   vi.mocked(modelCatalogStore.isModelEnabled).mockImplementation(
     (disabled: Set<string>, providerId: string, label: string): boolean => !disabled.has(`${providerId}::${label}`),
   );
@@ -224,7 +232,7 @@ test('shows empty state when no providers configured', async () => {
 
   await fireEvent.click(screen.getByText('OpenCode'));
 
-  expect(screen.getByText(/No model sources match/i)).toBeInTheDocument();
+  expect(screen.getByTestId('no-providers-available')).toBeInTheDocument();
 });
 
 test('shows cloud models under Cloud category', async () => {
@@ -345,6 +353,8 @@ test('disabled models are hidden from selection list', async () => {
 });
 
 test('Open Models catalog link visible when agent selected', async () => {
+  setProviders([mockAnthropicProvider]);
+
   render(AgentWorkspaceCreateStepAgentModel);
 
   await fireEvent.click(screen.getByText('OpenCode'));

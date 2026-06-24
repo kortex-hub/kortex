@@ -5,8 +5,9 @@ import { untrack } from 'svelte';
 
 import IconImage from '/@/lib/appearance/IconImage.svelte';
 import type { ModelInfo } from '/@/lib/chat/components/model-info';
+import { getCompatibleModels } from '/@/lib/models/compatible-connections';
+import CompatibleConnectionGate from '/@/lib/models/CompatibleConnectionGate.svelte';
 import type { CatalogModelInfo } from '/@/lib/models/models-utils';
-import ModelSelectionTable from '/@/lib/models/ModelSelectionTable.svelte';
 import { agentInfos } from '/@/stores/agents';
 import { agentWorkspaceRuntime } from '/@/stores/agentworkspace-runtime';
 import { disabledModels, isModelEnabled, modelKey, modelSelectionKey } from '/@/stores/model-catalog';
@@ -41,21 +42,16 @@ let allModels: CatalogModelInfo[] = $derived.by(() => {
   });
 });
 
-let agentFilteredModels: CatalogModelInfo[] = $derived(filterByAgent(allModels, selectedAgent));
+let selectedAgentInfo = $derived($agentInfos.find(a => a.id === selectedAgent));
+let agentFilteredModels: CatalogModelInfo[] = $derived(
+  getCompatibleModels(allModels, selectedAgentInfo?.supportedModelTypes),
+);
 
-let selectedAgentLabel: string = $derived($agentInfos.find(a => a.id === selectedAgent)?.name ?? 'the selected agent');
+let selectedAgentLabel: string = $derived(selectedAgentInfo?.name ?? 'the selected agent');
 
 let selectedKey: string = $derived(
   selectedModel ? modelSelectionKey(selectedModel.providerId, selectedModel.connectionId, selectedModel.label) : '',
 );
-
-function filterByAgent(models: CatalogModelInfo[], agent: string): CatalogModelInfo[] {
-  if (!agent) return models;
-  const info = $agentInfos.find(a => a.id === agent);
-  if (!info?.supportedModelTypes || info.supportedModelTypes.length === 0) return models;
-  const typeNames = new Set(info.supportedModelTypes.map(t => t.name));
-  return models.filter(m => m.llmMetadata?.name !== undefined && typeNames.has(m.llmMetadata.name));
-}
 
 function handleModelSelect(model: CatalogModelInfo): void {
   selectedModel = model;
@@ -139,8 +135,9 @@ $effect(() => {
         here. Disabled rows cannot be selected; the table is filtered to models that fit the agent you picked above.
       </p>
 
-      <ModelSelectionTable
-        models={agentFilteredModels}
+      <CompatibleConnectionGate
+        models={allModels}
+        supportedModelTypes={selectedAgentInfo?.supportedModelTypes}
         selectedKey={selectedKey}
         onselect={handleModelSelect} />
     </div>
