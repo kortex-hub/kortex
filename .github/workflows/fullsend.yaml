@@ -25,15 +25,15 @@ permissions:
   packages: read
   pull-requests: write
 
-#on:
-#  issues:
-#    types: [opened, edited, labeled]
-#  issue_comment:
-#    types: [created]
-#  pull_request_target:
-#    types: [opened, synchronize, ready_for_review, closed]
-#  pull_request_review:
-#    types: [submitted]
+on:
+  issues:
+    types: [opened, edited, labeled]
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, synchronize, ready_for_review, closed]
+  pull_request_review:
+    types: [submitted]
 
 jobs:
   dispatch:
