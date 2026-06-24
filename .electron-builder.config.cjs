@@ -23,10 +23,6 @@ const { flipFuses, FuseVersion, FuseV1Options } = require('@electron/fuses');
 const product = require('./product.json');
 const fs = require('node:fs');
 
-function getKdnOutputDir(platform, arch) {
-  return path.resolve('./kdn-binary', `${platform}-${arch}`);
-}
-
 if (process.env.VITE_APP_VERSION === undefined) {
   const now = new Date();
   process.env.VITE_APP_VERSION = `${now.getUTCFullYear() - 2000}.${now.getUTCMonth() + 1}.${now.getUTCDate()}-${
@@ -104,53 +100,6 @@ async function packageRemoteExtensions(context) {
 }
 
 /**
- * Downloads the kdn CLI binary for the target platform/arch.
- * Fetches the latest version from GitHub releases.
- */
-async function downloadKdn(context) {
-  const downloadScript = path.join('extensions', 'kdn', 'dist', 'kdn-download.js');
-  if (!fs.existsSync(downloadScript)) {
-    throw new Error(`${downloadScript} not found. Run "pnpm run build:extensions:kdn" before packaging.`);
-  }
-
-  const archMap = {
-    [Arch.x64]: 'x64',
-    [Arch.arm64]: 'arm64',
-  };
-  const arch = archMap[context.arch];
-  if (!arch) {
-    throw new Error(`unsupported arch ${context.arch} for kdn bundling`);
-  }
-
-  const outputDir = getKdnOutputDir(context.electronPlatformName, arch);
-
-  await new Promise((resolve, reject) => {
-    execFile(
-      'node',
-      [downloadScript, `--output=${outputDir}`, `--platform=${context.electronPlatformName}`, `--arch=${arch}`],
-      { maxBuffer: 10 * 1024 * 1024, timeout: 10 * 60 * 1000 },
-      (error, stdout, stderr) => {
-        if (stdout) console.log(stdout);
-        if (stderr) console.error(stderr);
-        if (error) {
-          reject(
-            new Error(`kdn download failed for ${context.electronPlatformName}/${arch}: ${stderr || error.message}`),
-          );
-        } else {
-          resolve();
-        }
-      },
-    );
-  });
-
-  context.packager.config.extraResources.push({
-    from: outputDir,
-    to: 'kdn',
-    filter: ['!.kdn-version'],
-  });
-}
-
-/**
  * @type {import('electron-builder').Configuration}
  * @see https://www.electron.build/configuration/configuration
  */
@@ -170,9 +119,6 @@ const config = {
 
     // download & package remote extensions
     await packageRemoteExtensions(context);
-
-    // download & bundle kdn CLI binary
-    await downloadKdn(context);
 
     // include pre-downloaded OpenShell binaries (not available on Windows)
     const openshellArchMap = { [Arch.x64]: 'x64', [Arch.arm64]: 'arm64' };
