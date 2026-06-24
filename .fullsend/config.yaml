@@ -6,11 +6,6 @@
 version: "1"
 roles:
     - triage
-    - coder
-    - review
-    - fix
-    - retro
-    - prioritize
 create_issues:
     allow_targets:
         repos:
