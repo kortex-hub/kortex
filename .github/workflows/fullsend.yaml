@@ -15,6 +15,10 @@
 # which determines the stage and conditionally calls the appropriate
 # reusable-{stage}.yml workflow. Adding a new stage requires only a case
 # branch in reusable-dispatch.yml — zero changes to this repo.
+#
+# Concurrency: per-role cancel-in-progress groups live in reusable-dispatch.yml
+# stage jobs and agent-scoped groups on reusable-{stage}.yml — not on this shim.
+# A monolithic shim group would serialize unrelated roles and drop pending runs (#2452).
 name: fullsend
 
 permissions:
@@ -37,19 +41,16 @@ on:
 
 jobs:
   dispatch:
-    concurrency:
-      group: fullsend-dispatch-${{ github.event.issue.number || github.event.pull_request.number }}
-      cancel-in-progress: false
     if: >-
       github.event_name != 'issue_comment'
       || github.event.comment.user.type != 'Bot'
-    uses: fullsend-ai/fullsend/.github/workflows/reusable-dispatch.yml@d59366d23998b574e6650e7c9612614c35089774 # v0.20.0
+    uses: fullsend-ai/fullsend/.github/workflows/reusable-dispatch.yml@10b62b5510e1c8a22ed08ad0b1061aa346dd1373 # v0.21.0
     with:
       event_action: ${{ github.event.action }}
       install_mode: per-repo
       mint_url: ${{ vars.FULLSEND_MINT_URL }}
       gcp_region: ${{ vars.FULLSEND_GCP_REGION }}
-      fullsend_ai_ref: d59366d23998b574e6650e7c9612614c35089774 # v0.20.0
+      fullsend_ai_ref: 10b62b5510e1c8a22ed08ad0b1061aa346dd1373 # v0.21.0
     secrets:
       FULLSEND_GCP_WIF_PROVIDER: ${{ secrets.FULLSEND_GCP_WIF_PROVIDER }}
       FULLSEND_GCP_PROJECT_ID: ${{ secrets.FULLSEND_GCP_PROJECT_ID }}
