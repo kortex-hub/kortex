@@ -535,6 +535,7 @@ suite('cli module', () => {
       displayName: 'tool-display-name',
       markdownDescription: 'markdown description',
       images: {},
+      path: '/usr/bin/tool-name',
     };
     const newCliTool = cliToolRegistry.createCliTool(extensionInfo, options);
     const cliToolInfo = cliToolRegistry['convertToCliToolInfo'](newCliTool);
@@ -544,5 +545,6 @@ suite('cli module', () => {
     expect(cliToolInfo.displayName).equals(newCliTool.displayName);
     expect(cliToolInfo.markdownDescription).equals(newCliTool.markdownDescription);
     expect(cliToolInfo.version).equals(newCliTool.version);
+    expect(cliToolInfo.path).equals(newCliTool.path);
   });
 });
