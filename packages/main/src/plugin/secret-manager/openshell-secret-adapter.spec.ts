@@ -76,7 +76,7 @@ describe('createSecret', () => {
       value: {
         credentials: { GOOGLE_APPLICATION_CREDENTIALS: '/path/to/creds.json' },
         config: { GOOGLE_VERTEX_PROJECT: 'my-project', GOOGLE_VERTEX_LOCATION: 'us-east5' },
-        flags: ['__from_gcloud_adc'],
+        flags: ['--from-gcloud-adc'],
       },
     };
 
@@ -87,7 +87,7 @@ describe('createSecret', () => {
       type: 'google-vertex-ai',
       credentials: { GOOGLE_APPLICATION_CREDENTIALS: '/path/to/creds.json' },
       config: { GOOGLE_VERTEX_PROJECT: 'my-project', GOOGLE_VERTEX_LOCATION: 'us-east5' },
-      flags: ['__from_gcloud_adc'],
+      flags: ['--from-gcloud-adc'],
     });
     expect(result).toEqual({ name: 'my-vertex' });
   });

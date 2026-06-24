@@ -338,19 +338,21 @@ export class AgentWorkspaceManager implements Disposable {
       value.credentials[shortPropertyName] = actualValue;
     }
 
-    const flagEntry = connectionProperties.find(([fullKey]) => fullKey.endsWith('._flag'));
-    const flagValue = flagEntry ? config.get<string>(flagEntry[0]) : undefined;
-    if (flagValue) {
-      value.flags = [flagValue];
+    const flagsEntry = connectionProperties.find(([fullKey]) => fullKey.endsWith('._flags'));
+    const flagsRaw = flagsEntry ? config.get<string | string[]>(flagsEntry[0]) : undefined;
+    const flagsValue = flagsRaw ? (Array.isArray(flagsRaw) ? flagsRaw : [flagsRaw]) : undefined;
+    if (flagsValue) {
+      value.flags = flagsValue;
     }
 
     const configKeys = connectionProperties.filter(
-      ([fullKey, schema]) => schema.format !== 'password' && !fullKey.endsWith('._type') && !fullKey.endsWith('._flag'),
+      ([fullKey, schema]) =>
+        schema.format !== 'password' && !fullKey.endsWith('._type') && !fullKey.endsWith('._flags'),
     );
 
     const environment: Record<string, string> = {};
 
-    if (flagValue) {
+    if (flagsValue) {
       for (const [propertyName] of configKeys) {
         const configValue = config.get<string>(propertyName);
         if (!configValue) continue;

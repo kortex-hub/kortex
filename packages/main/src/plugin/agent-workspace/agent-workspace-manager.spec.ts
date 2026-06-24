@@ -1144,7 +1144,7 @@ describe('ensureModelSecret', () => {
     vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
       get: vi.fn().mockImplementation((key: string) => {
         if (key === 'vertex-ai.connection._type') return 'google-vertex-ai';
-        if (key === 'vertex-ai.connection._flag') return '__from_gcloud_adc';
+        if (key === 'vertex-ai.connection._flags') return '--from-gcloud-adc';
         if (key === 'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS') return 'vertex-ai:conn-1:token';
         if (key === 'vertex-ai.connection.GOOGLE_VERTEX_PROJECT') return 'my-gcp-project';
         if (key === 'vertex-ai.connection.GOOGLE_VERTEX_LOCATION') return 'us-east5';
@@ -1159,7 +1159,7 @@ describe('ensureModelSecret', () => {
         hidden: true,
         extension: { id: 'kaiden.vertex-ai' },
       },
-      'vertex-ai.connection._flag': {
+      'vertex-ai.connection._flags': {
         title: 'Vertex AI',
         parentId: 'vertex-ai',
         scope: 'InferenceProviderConnection',
@@ -1202,7 +1202,7 @@ describe('ensureModelSecret', () => {
         credentials: {
           GOOGLE_APPLICATION_CREDENTIALS: '/path/to/creds.json',
         },
-        flags: ['__from_gcloud_adc'],
+        flags: ['--from-gcloud-adc'],
       },
     });
     expect(options.secrets).toContain('my-workspace-google-vertex-ai');

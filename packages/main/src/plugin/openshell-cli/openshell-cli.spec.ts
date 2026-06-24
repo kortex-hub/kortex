@@ -783,7 +783,7 @@ describe('createProvider', () => {
       name: 'my-vertex',
       type: 'google-vertex-ai',
       credentials: { GOOGLE_APPLICATION_CREDENTIALS: '/path/to/creds.json' },
-      flags: ['__from_gcloud_adc'],
+      flags: ['--from-gcloud-adc'],
     });
 
     expect(exec.exec).toHaveBeenCalledWith(
@@ -797,7 +797,7 @@ describe('createProvider', () => {
         'google-vertex-ai',
         '--credential',
         'GOOGLE_APPLICATION_CREDENTIALS',
-        '__from_gcloud_adc',
+        '--from-gcloud-adc',
       ],
       {
         env: {
@@ -815,12 +815,12 @@ describe('createProvider', () => {
       name: 'my-vertex',
       type: 'google-vertex-ai',
       credentials: {},
-      flags: ['__from_gcloud_adc'],
+      flags: ['--from-gcloud-adc'],
     });
 
     expect(exec.exec).toHaveBeenCalledWith(
       OPENSHELL_CLI_PATH,
-      ['provider', 'create', '--name', 'my-vertex', '--type', 'google-vertex-ai', '__from_gcloud_adc'],
+      ['provider', 'create', '--name', 'my-vertex', '--type', 'google-vertex-ai', '--from-gcloud-adc'],
       { env: {} },
     );
   });
