@@ -1212,6 +1212,82 @@ describe('ensureModelSecret', () => {
     });
     expect(providerRegistry.getInferenceConnectionCredentials).not.toHaveBeenCalled();
   });
+
+  test('passes _flags array through unchanged when value is string[]', async () => {
+    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
+    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
+      connection: mockConnection,
+      extensionId: 'kaiden.vertex-ai',
+    });
+    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
+      get: vi.fn().mockImplementation((key: string) => {
+        if (key === 'vertex-ai.connection._type') return 'google-vertex-ai';
+        if (key === 'vertex-ai.connection._flags') return ['--flag-one', '--flag-two'];
+        if (key === 'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS') return 'vertex-ai:conn-1:token';
+        if (key === 'vertex-ai.connection.GOOGLE_VERTEX_PROJECT') return 'my-gcp-project';
+        if (key === 'vertex-ai.connection.GOOGLE_VERTEX_LOCATION') return 'us-east5';
+        return undefined;
+      }),
+    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
+    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
+      'vertex-ai.connection._type': {
+        title: 'Vertex AI',
+        parentId: 'vertex-ai',
+        scope: 'InferenceProviderConnection',
+        hidden: true,
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+      'vertex-ai.connection._flags': {
+        title: 'Vertex AI',
+        parentId: 'vertex-ai',
+        scope: 'InferenceProviderConnection',
+        hidden: true,
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+      'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS': {
+        title: 'Vertex AI',
+        parentId: 'vertex-ai',
+        scope: 'InferenceProviderConnection',
+        format: 'password',
+        hidden: true,
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+      'vertex-ai.connection.GOOGLE_VERTEX_PROJECT': {
+        title: 'Vertex AI',
+        parentId: 'vertex-ai',
+        scope: 'InferenceProviderConnection',
+        hidden: true,
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+      'vertex-ai.connection.GOOGLE_VERTEX_LOCATION': {
+        title: 'Vertex AI',
+        parentId: 'vertex-ai',
+        scope: 'InferenceProviderConnection',
+        hidden: true,
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+    });
+    vi.mocked(extensionStorageMock.get).mockResolvedValue('/path/to/creds.json');
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-google-vertex-ai' });
+
+    const options = { ...baseOptions, model: 'vertexai::claude-sonnet-4-20250514::' };
+    const environment = await manager.ensureModelSecret(options);
+
+    expect(secretManager.create).toHaveBeenCalledWith({
+      name: 'my-workspace-google-vertex-ai',
+      type: 'google-vertex-ai',
+      value: {
+        credentials: {
+          GOOGLE_APPLICATION_CREDENTIALS: '/path/to/creds.json',
+        },
+        flags: ['--flag-one', '--flag-two'],
+      },
+    });
+    expect(environment).toEqual({
+      GOOGLE_VERTEX_PROJECT: 'my-gcp-project',
+      GOOGLE_VERTEX_LOCATION: 'us-east5',
+    });
+  });
 });
 
 describe('buildSecretOptions', () => {
