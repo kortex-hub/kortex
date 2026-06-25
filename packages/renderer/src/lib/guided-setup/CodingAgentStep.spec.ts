@@ -216,8 +216,6 @@ describe('Claude agent tile', () => {
   });
 
   test('does not show Claude tile when CLI only returns opencode', async () => {
-    vi.mocked(window.getCliInfo).mockResolvedValue({ version: '0.1.0', agents: ['opencode'], runtimes: ['podman'] });
-
     renderStep();
 
     await waitFor(() => {
@@ -230,12 +228,6 @@ describe('Claude agent tile', () => {
 
 describe('agents without panels', () => {
   test('does not show Cursor tile (no panel configured)', async () => {
-    vi.mocked(window.getCliInfo).mockResolvedValue({
-      version: '0.1.0',
-      agents: ['opencode', 'claude', 'cursor'],
-      runtimes: ['podman'],
-    });
-
     renderStep();
 
     await waitFor(() => {
@@ -246,12 +238,6 @@ describe('agents without panels', () => {
   });
 
   test('does not show Goose tile (no panel configured)', async () => {
-    vi.mocked(window.getCliInfo).mockResolvedValue({
-      version: '0.1.0',
-      agents: ['opencode', 'claude', 'goose'],
-      runtimes: ['podman'],
-    });
-
     renderStep();
 
     await waitFor(() => {
@@ -264,8 +250,6 @@ describe('agents without panels', () => {
 
 describe('CLI fallback', () => {
   test('falls back to all registry entries when CLI returns empty agents', async () => {
-    vi.mocked(window.getCliInfo).mockResolvedValue({ version: '0.1.0', agents: [], runtimes: [] });
-
     renderStep();
 
     await waitFor(() => {
@@ -274,8 +258,6 @@ describe('CLI fallback', () => {
   });
 
   test('falls back to all registry entries when getCliInfo fails', async () => {
-    vi.mocked(window.getCliInfo).mockRejectedValue(new Error('kdn not found'));
-
     renderStep();
 
     await waitFor(() => {

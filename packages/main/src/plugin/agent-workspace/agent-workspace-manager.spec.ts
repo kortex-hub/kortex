@@ -16,21 +16,20 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { access, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import type { Agent, FileSystemWatcher, InferenceProviderConnection } from '@openkaiden/api';
 import type { WebContents } from 'electron';
 import type { IPty } from 'node-pty';
 import { spawn } from 'node-pty';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { AgentRegistry } from '/@/plugin/agent-registry.js';
-import type { WorkspaceConfiguration } from '/@/plugin/agent-workspace/workspace-config-writer.js';
+import * as configWriter from '/@/plugin/agent-workspace/workspace-config-writer.js';
 import type { IPCHandle } from '/@/plugin/api.js';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
-import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { SafeStorageRegistry, SecretStorageWrapper } from '/@/plugin/safe-storage/safe-storage-registry.js';
@@ -38,9 +37,10 @@ import type { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
 import type { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import type { Task } from '/@/plugin/tasks/tasks.js';
 import type { Exec } from '/@/plugin/util/exec.js';
-import type { AgentWorkspaceCreateOptions, AgentWorkspaceSummary } from '/@api/agent-workspace-info.js';
+import type { AgentWorkspaceCreateOptions } from '/@api/agent-workspace-info.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IConfigurationRegistry } from '/@api/configuration/models.js';
+import type { GatewaySandboxes } from '/@api/openshell-gateway-info.js';
 import { decodeWorkspaceLabels } from '/@api/openshell-gateway-info.js';
 import type { TaskState, TaskStatus } from '/@api/taskInfo.js';
 
@@ -50,32 +50,22 @@ vi.mock(import('node:fs/promises'));
 vi.mock(import('yaml'));
 vi.mock(import('node-pty'));
 
-vi.mock(import('/@/plugin/kdn-cli/kdn-cli.js'));
 vi.mock(import('/@/plugin/openshell-cli/openshell-cli.js'));
 
-const TEST_SUMMARIES: AgentWorkspaceSummary[] = [
+const TEST_SUMMARIES: GatewaySandboxes[] = [
   {
-    id: 'ws-1',
-    name: 'test-workspace-1',
-    project: 'project-alpha',
-    agent: 'coder-v1',
-    state: 'stopped',
-    model: 'gpt-4o',
-    runtime: 'podman',
-    paths: { source: '/tmp/ws1', configuration: '/tmp/ws1/.kaiden' },
-    timestamps: { created: 1700000000 },
-    forwards: [],
-  },
-  {
-    id: 'ws-2',
-    name: 'test-workspace-2',
-    project: 'project-beta',
-    agent: 'coder-v2',
-    state: 'running',
-    runtime: 'podman',
-    paths: { source: '/tmp/ws2', configuration: '/tmp/ws2/.kaiden' },
-    timestamps: { created: 1700000001, started: 1700000002 },
-    forwards: [],
+    gateway: {
+      name: 'kaiden',
+      endpoint: 'http://localhost:10080',
+    },
+    sandboxes: [
+      { id: 'ws-1', name: 'test-workspace-1', phase: 'started', sourcePath: '/tmp/ws1' },
+      {
+        id: 'ws-2',
+        name: 'test-workspace-2',
+        phase: 'started',
+      },
+    ],
   },
 ];
 
@@ -86,7 +76,6 @@ const apiSender: ApiSenderType = {
   receive: vi.fn(),
 };
 const ipcHandle: IPCHandle = vi.fn();
-const kdnCli = new KdnCli({} as Exec, {} as CliToolRegistry);
 const openshellCli = new OpenshellCli({} as Exec, {} as CliToolRegistry);
 
 const agentRegistry = {
@@ -166,6 +155,8 @@ beforeEach(() => {
   mockTask.status = '' as TaskStatus;
   mockTask.error = '';
   vi.mocked(filesystemMonitoring.createFileSystemWatcher).mockReturnValue(mockWatcher);
+  vi.mocked(writeFile).mockResolvedValue(undefined);
+  vi.mocked(readFile).mockResolvedValue('{}');
   vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
     get: vi.fn().mockReturnValue(undefined),
   } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
@@ -174,7 +165,6 @@ beforeEach(() => {
   manager = new AgentWorkspaceManager(
     apiSender,
     ipcHandle,
-    kdnCli,
     taskManager,
     filesystemMonitoring,
     webContents,
@@ -197,10 +187,6 @@ describe('init', () => {
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:create', expect.any(Function));
   });
 
-  test('registers IPC handler for list', () => {
-    expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:list', expect.any(Function));
-  });
-
   test('registers IPC handler for remove', () => {
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:remove', expect.any(Function));
   });
@@ -211,18 +197,6 @@ describe('init', () => {
 
   test('registers IPC handler for updateConfiguration', () => {
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:updateConfiguration', expect.any(Function));
-  });
-
-  test('registers IPC handler for start', () => {
-    expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:start', expect.any(Function));
-  });
-
-  test('registers IPC handler for stop', () => {
-    expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:stop', expect.any(Function));
-  });
-
-  test('registers IPC handler for getCliInfo', () => {
-    expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:getCliInfo', expect.any(Function));
   });
 
   test('registers runtime configuration with enum', () => {
@@ -285,106 +259,6 @@ describe('watchInstancesFile', () => {
   });
 });
 
-describe('getCliInfo', () => {
-  test('delegates to kdnCli.getInfo', async () => {
-    const expected = { version: '0.1.0', agents: ['claude'], runtimes: ['podman'] };
-    vi.mocked(kdnCli.getInfo).mockResolvedValue(expected);
-
-    const result = await manager.getCliInfo();
-
-    expect(kdnCli.getInfo).toHaveBeenCalled();
-    expect(result).toEqual(expected);
-  });
-
-  test('rejects when kdnCli.getInfo fails', async () => {
-    vi.mocked(kdnCli.getInfo).mockRejectedValue(new Error('command not found'));
-
-    await expect(manager.getCliInfo()).rejects.toThrow('command not found');
-  });
-});
-
-describe('create', () => {
-  const defaultOptions: AgentWorkspaceCreateOptions = {
-    sourcePath: '/tmp/my-project',
-    agent: 'claude',
-    runtime: 'podman',
-  };
-
-  test('delegates to kdnCli.create and returns the workspace id', async () => {
-    vi.mocked(kdnCli.createWorkspace).mockResolvedValue({ id: 'ws-new' });
-
-    const result = await manager.create(defaultOptions);
-
-    expect(kdnCli.createWorkspace).toHaveBeenCalledWith(defaultOptions);
-    expect(result).toEqual({ id: 'ws-new' });
-  });
-
-  test('creates a task and sets success status on completion', async () => {
-    vi.mocked(kdnCli.createWorkspace).mockResolvedValue({ id: 'ws-new' });
-
-    await manager.create(defaultOptions);
-
-    expect(taskManager.createTask).toHaveBeenCalledWith({ title: 'Creating workspace' });
-    expect(mockTask.status).toBe('success');
-    expect(mockTask.state).toBe('completed');
-  });
-
-  test('sets task failure status when CLI fails', async () => {
-    vi.mocked(kdnCli.createWorkspace).mockRejectedValue(new Error('command not found'));
-
-    await expect(manager.create(defaultOptions)).rejects.toThrow('command not found');
-
-    expect(mockTask.status).toBe('failure');
-    expect(mockTask.error).toContain('command not found');
-    expect(mockTask.state).toBe('completed');
-  });
-
-  test('preserves error detail in task error message', async () => {
-    vi.mocked(kdnCli.createWorkspace).mockRejectedValue(
-      new Error('failed to create runtime instance: exit status 125'),
-    );
-
-    await expect(manager.create(defaultOptions)).rejects.toThrow('failed to create runtime instance: exit status 125');
-
-    expect(mockTask.error).toBe('Failed to create workspace: failed to create runtime instance: exit status 125');
-  });
-
-  test('includes workspace name in task title when provided', async () => {
-    vi.mocked(kdnCli.createWorkspace).mockResolvedValue({ id: 'ws-new' });
-
-    await manager.create({ ...defaultOptions, name: 'my-workspace' });
-
-    expect(taskManager.createTask).toHaveBeenCalledWith({ title: 'Creating workspace "my-workspace"' });
-  });
-
-  test('emits agent-workspace-update event', async () => {
-    vi.mocked(kdnCli.createWorkspace).mockResolvedValue({ id: 'ws-new' });
-
-    await manager.create(defaultOptions);
-
-    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
-  });
-
-  test('deletes existing workspace.json when replaceConfig is true', async () => {
-    vi.mocked(rm).mockResolvedValue(undefined);
-    vi.mocked(kdnCli.createWorkspace).mockResolvedValue({ id: 'ws-new' });
-
-    await manager.create({ ...defaultOptions, replaceConfig: true });
-
-    expect(rm).toHaveBeenCalledWith(join(defaultOptions.sourcePath, '.kaiden', 'workspace.json'), { force: true });
-    expect(kdnCli.createWorkspace).toHaveBeenCalled();
-  });
-
-  test('does not delete workspace.json when replaceConfig is not set', async () => {
-    vi.mocked(kdnCli.createWorkspace).mockResolvedValue({ id: 'ws-new' });
-
-    await manager.create(defaultOptions);
-
-    expect(rm).not.toHaveBeenCalled();
-    expect(kdnCli.createWorkspace).toHaveBeenCalled();
-  });
-});
-
 describe('create – OpenShell mode', () => {
   const defaultOptions: AgentWorkspaceCreateOptions = {
     sourcePath: '/tmp/my-project',
@@ -404,15 +278,9 @@ describe('create – OpenShell mode', () => {
   };
 
   beforeEach(() => {
-    process.env['KAIDEN_OPENSHELL'] = '1';
-    vi.mocked(kdnCli.writeWorkspaceConfig).mockResolvedValue({} as WorkspaceConfiguration);
     vi.mocked(openshellCli.createSandbox).mockResolvedValue(undefined);
     vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue(mockAgent);
     vi.mocked(readFile).mockRejectedValue(mockEnoent());
-  });
-
-  afterEach(() => {
-    delete process.env['KAIDEN_OPENSHELL'];
   });
 
   test('calls openshellCli.createSandbox with name, providers, and workspace label', async () => {
@@ -428,34 +296,10 @@ describe('create – OpenShell mode', () => {
     });
   });
 
-  test('passes workspace environment variables to sandbox creation', async () => {
-    await manager.create({
-      ...defaultOptions,
-      workspaceConfiguration: {
-        environment: [
-          { name: 'MISTRAL_API_KEY', value: 'provided' },
-          { name: 'DEBUG', value: '1' },
-        ],
-      },
-    });
-
-    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
-      expect.objectContaining({
-        env: { MISTRAL_API_KEY: 'provided', DEBUG: '1' },
-      }),
-    );
-  });
-
   test('returns { id: sandboxName }', async () => {
     const result = await manager.create(defaultOptions);
 
     expect(result).toEqual({ id: 'my-sandbox' });
-  });
-
-  test('does not call kdnCli.createWorkspace', async () => {
-    await manager.create(defaultOptions);
-
-    expect(kdnCli.createWorkspace).not.toHaveBeenCalled();
   });
 
   test('derives sandbox name from sourcePath basename when name is omitted', async () => {
@@ -1482,36 +1326,36 @@ describe('buildSecretOptions', () => {
 
 describe('list', () => {
   test('delegates to kdnCli.list and returns items', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
 
-    const result = await manager.list();
+    const result = await manager.listOpenshellSandboxes();
 
-    expect(kdnCli.listWorkspaces).toHaveBeenCalled();
-    expect(result).toHaveLength(2);
-    expect(result.map(s => s.id)).toEqual(['ws-1', 'ws-2']);
+    expect(openshellCli.listSandboxesPerGateway).toHaveBeenCalled();
+    expect(result).toHaveLength(1);
+    expect(result.flatMap(gw => gw.sandboxes).map(s => s.id)).toEqual(['ws-1', 'ws-2']);
   });
 
   test('rejects when kdnCli.list fails', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockRejectedValue(new Error('command not found'));
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockRejectedValue(new Error('command not found'));
 
-    await expect(manager.list()).rejects.toThrow('command not found');
+    await expect(manager.listOpenshellSandboxes()).rejects.toThrow('command not found');
   });
 });
 
 describe('remove', () => {
   test('delegates to kdnCli.remove and returns the workspace id', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
-    vi.mocked(kdnCli.removeWorkspaces).mockResolvedValue({ id: 'ws-1' });
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(openshellCli.deleteSandbox).mockResolvedValue(undefined);
 
     const result = await manager.remove('ws-1');
 
-    expect(kdnCli.removeWorkspaces).toHaveBeenCalledWith('ws-1');
+    expect(openshellCli.deleteSandbox).toHaveBeenCalledWith('test-workspace-1');
     expect(result).toEqual({ id: 'ws-1' });
   });
 
   test('creates a task with workspace name and sets success status on completion', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
-    vi.mocked(kdnCli.removeWorkspaces).mockResolvedValue({ id: 'ws-1' });
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(openshellCli.deleteSandbox).mockResolvedValue(undefined);
 
     await manager.remove('ws-1');
 
@@ -1521,8 +1365,8 @@ describe('remove', () => {
   });
 
   test('uses workspace id as fallback when workspace not found in list', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue([]);
-    vi.mocked(kdnCli.removeWorkspaces).mockResolvedValue({ id: 'unknown-id' });
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue([]);
+    vi.mocked(openshellCli.deleteSandbox).mockResolvedValue(undefined);
 
     await manager.remove('unknown-id');
 
@@ -1530,8 +1374,8 @@ describe('remove', () => {
   });
 
   test('sets task failure status when CLI fails', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
-    vi.mocked(kdnCli.removeWorkspaces).mockRejectedValue(new Error('workspace not found: unknown-id'));
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(openshellCli.deleteSandbox).mockRejectedValue(new Error('workspace not found: unknown-id'));
 
     await expect(manager.remove('unknown-id')).rejects.toThrow('workspace not found: unknown-id');
 
@@ -1541,8 +1385,8 @@ describe('remove', () => {
   });
 
   test('preserves error detail in task error message', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
-    vi.mocked(kdnCli.removeWorkspaces).mockRejectedValue(new Error('failed to remove workspace: permission denied'));
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(openshellCli.deleteSandbox).mockRejectedValue(new Error('failed to remove workspace: permission denied'));
 
     await expect(manager.remove('ws-1')).rejects.toThrow('failed to remove workspace: permission denied');
 
@@ -1550,8 +1394,8 @@ describe('remove', () => {
   });
 
   test('emits agent-workspace-update event', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
-    vi.mocked(kdnCli.removeWorkspaces).mockResolvedValue({ id: 'ws-1' });
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(openshellCli.deleteSandbox).mockResolvedValue(undefined);
 
     await manager.remove('ws-1');
 
@@ -1561,18 +1405,18 @@ describe('remove', () => {
 
 describe('getConfiguration', () => {
   test('reads JSON configuration file from workspace directory', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
     vi.mocked(readFile).mockResolvedValue('{"mounts":{"dependencies":[]}}');
 
     const result = await manager.getConfiguration('ws-1');
 
-    expect(kdnCli.listWorkspaces).toHaveBeenCalled();
+    expect(openshellCli.listSandboxesPerGateway).toHaveBeenCalled();
     expect(readFile).toHaveBeenCalledWith(join('/tmp/ws1/.kaiden', 'workspace.json'), 'utf-8');
     expect(result).toEqual({ mounts: { dependencies: [] } });
   });
 
   test('throws when workspace id is not found in list', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
 
     await expect(manager.getConfiguration('unknown-id')).rejects.toThrow(
       'workspace "unknown-id" not found. Use "workspace list" to see available workspaces.',
@@ -1580,7 +1424,7 @@ describe('getConfiguration', () => {
   });
 
   test('returns empty configuration when file does not exist', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
     const enoent = Object.assign(new Error('ENOENT: no such file'), { code: 'ENOENT' });
     vi.mocked(readFile).mockRejectedValue(enoent);
 
@@ -1590,7 +1434,7 @@ describe('getConfiguration', () => {
   });
 
   test('rejects when reading the configuration file fails with a non-ENOENT error', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
     const eacces = Object.assign(new Error('EACCES: permission denied'), { code: 'EACCES' });
     vi.mocked(readFile).mockRejectedValue(eacces);
 
@@ -1600,17 +1444,16 @@ describe('getConfiguration', () => {
 
 describe('updateConfiguration', () => {
   test('delegates to kdnCli.updateWorkspaceConfig with the workspace configuration path', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
-    vi.mocked(kdnCli.updateWorkspaceConfig).mockResolvedValue(undefined);
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
+    const spy = vi.spyOn(configWriter, 'updateWorkspaceConfig');
 
     await manager.updateConfiguration('ws-1', { skills: ['/path/to/skill'] });
 
-    expect(kdnCli.updateWorkspaceConfig).toHaveBeenCalledWith('/tmp/ws1/.kaiden', { skills: ['/path/to/skill'] });
+    expect(spy).toHaveBeenCalledWith(join('/tmp/ws1', '.kaiden'), { skills: ['/path/to/skill'] });
   });
 
   test('emits agent-workspace-update event', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
-    vi.mocked(kdnCli.updateWorkspaceConfig).mockResolvedValue(undefined);
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
 
     await manager.updateConfiguration('ws-1', { network: { mode: 'allow' } });
 
@@ -1618,7 +1461,7 @@ describe('updateConfiguration', () => {
   });
 
   test('throws when workspace id is not found', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
 
     await expect(manager.updateConfiguration('unknown-id', {})).rejects.toThrow(
       'workspace "unknown-id" not found. Use "workspace list" to see available workspaces.',
@@ -1626,8 +1469,8 @@ describe('updateConfiguration', () => {
   });
 
   test('propagates errors from kdnCli.updateWorkspaceConfig', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
-    vi.mocked(kdnCli.updateWorkspaceConfig).mockRejectedValue(new Error('permission denied'));
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(configWriter.updateWorkspaceConfig).mockRejectedValue(new Error('permission denied'));
 
     await expect(manager.updateConfiguration('ws-1', {})).rejects.toThrow('permission denied');
   });
@@ -1674,56 +1517,6 @@ describe('updateSummary', () => {
   });
 });
 
-describe('start', () => {
-  test('delegates to kdnCli.start and returns the workspace id', async () => {
-    vi.mocked(kdnCli.startWorkspace).mockResolvedValue({ id: 'ws-1' });
-
-    const result = await manager.start('ws-1');
-
-    expect(kdnCli.startWorkspace).toHaveBeenCalledWith('ws-1');
-    expect(result).toEqual({ id: 'ws-1' });
-  });
-
-  test('emits agent-workspace-update event', async () => {
-    vi.mocked(kdnCli.startWorkspace).mockResolvedValue({ id: 'ws-1' });
-
-    await manager.start('ws-1');
-
-    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
-  });
-
-  test('rejects when kdnCli.start fails', async () => {
-    vi.mocked(kdnCli.startWorkspace).mockRejectedValue(new Error('workspace not found: unknown-id'));
-
-    await expect(manager.start('unknown-id')).rejects.toThrow('workspace not found: unknown-id');
-  });
-});
-
-describe('stop', () => {
-  test('delegates to kdnCli.stop and returns the workspace id', async () => {
-    vi.mocked(kdnCli.stopWorkspace).mockResolvedValue({ id: 'ws-1' });
-
-    const result = await manager.stop('ws-1');
-
-    expect(kdnCli.stopWorkspace).toHaveBeenCalledWith('ws-1');
-    expect(result).toEqual({ id: 'ws-1' });
-  });
-
-  test('emits agent-workspace-update event', async () => {
-    vi.mocked(kdnCli.stopWorkspace).mockResolvedValue({ id: 'ws-1' });
-
-    await manager.stop('ws-1');
-
-    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
-  });
-
-  test('rejects when kdnCli.stop fails', async () => {
-    vi.mocked(kdnCli.stopWorkspace).mockRejectedValue(new Error('workspace not found: unknown-id'));
-
-    await expect(manager.stop('unknown-id')).rejects.toThrow('workspace not found: unknown-id');
-  });
-});
-
 describe('shellInAgentWorkspace', () => {
   let onDataCallback: ((data: string) => void) | undefined;
   let onExitCallback: (() => void) | undefined;
@@ -1766,11 +1559,11 @@ describe('shellInAgentWorkspace', () => {
 
   test('spawns kdn terminal with workspace name', () => {
     vi.mocked(spawn).mockReturnValue(createMockPty());
-    vi.mocked(kdnCli.getCliPath).mockReturnValue('kdn');
+    vi.mocked(openshellCli.getCliPath).mockReturnValue('openshell');
 
     manager.shellInAgentWorkspace('test-workspace-1', vi.fn(), vi.fn(), vi.fn());
 
-    expect(spawn).toHaveBeenCalledWith('kdn', ['terminal', 'test-workspace-1'], expect.any(Object));
+    expect(spawn).toHaveBeenCalledWith('openshell', ['connect', 'test-workspace-1'], expect.any(Object));
   });
 
   test('write function forwards data to pty', () => {
@@ -1820,7 +1613,7 @@ describe('shellInAgentWorkspace', () => {
 
 describe('dispose', () => {
   test('kills active terminal processes', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
 
     const mockPty = {
       onData: vi.fn(() => ({ dispose: vi.fn() })),
@@ -1849,7 +1642,7 @@ describe('dispose', () => {
   });
 
   test('terminal IPC handler rejects when workspace id is not found', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
 
     const terminalHandler = vi
       .mocked(ipcHandle)
@@ -1866,7 +1659,7 @@ describe('dispose', () => {
   });
 
   test('does not send terminal data when webContents is destroyed', async () => {
-    vi.mocked(kdnCli.listWorkspaces).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
 
     let onDataCallback: ((data: string) => void) | undefined;
     let onExitCallback: (() => void) | undefined;

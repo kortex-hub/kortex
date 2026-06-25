@@ -27,11 +27,10 @@ import type { IPty } from 'node-pty';
 import { spawn } from 'node-pty';
 
 import { AgentRegistry } from '/@/plugin/agent-registry.js';
-import { writeWorkspaceConfig } from '/@/plugin/agent-workspace/workspace-config-writer.js';
+import { updateWorkspaceConfig, writeWorkspaceConfig } from '/@/plugin/agent-workspace/workspace-config-writer.js';
 import { WritableConfigurationFile } from '/@/plugin/agent-workspace/writable-configuration-file.js';
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
-import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import { buildNetworkPolicyOperations } from '/@/plugin/openshell-cli/openshell-network-policy.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
@@ -44,7 +43,6 @@ import type {
   AgentWorkspaceCreateOptions,
   AgentWorkspaceId,
   AgentWorkspaceSummary,
-  CliInfo,
 } from '/@api/agent-workspace-info.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IConfigurationNode } from '/@api/configuration/models.js';
@@ -86,8 +84,6 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly apiSender: ApiSenderType,
     @inject(IPCHandle)
     private readonly ipcHandle: IPCHandle,
-    @inject(KdnCli)
-    private readonly kdnCli: KdnCli,
     @inject(TaskManager)
     private readonly taskManager: TaskManager,
     @inject(FilesystemMonitoring)
@@ -108,10 +104,6 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly agentRegistry: AgentRegistry,
   ) {}
 
-  async getCliInfo(): Promise<CliInfo> {
-    return this.kdnCli.getInfo();
-  }
-
   async create(options: AgentWorkspaceCreateOptions): Promise<AgentWorkspaceId> {
     const suffix = options.name ? ` "${options.name}"` : '';
     const task = this.taskManager.createTask({ title: `Creating workspace${suffix}` });
@@ -124,9 +116,7 @@ export class AgentWorkspaceManager implements Disposable {
       }
 
       await this.ensureModelSecret(options);
-      const workspaceId = process.env['KAIDEN_OPENSHELL']
-        ? await this.createOpenshell(options)
-        : await this.kdnCli.createWorkspace(options);
+      const workspaceId = await this.createOpenshell(options);
       this.apiSender.send('agent-workspace-update');
       task.status = 'success';
       return workspaceId;
@@ -506,22 +496,18 @@ export class AgentWorkspaceManager implements Disposable {
     }
   }
 
-  async list(): Promise<AgentWorkspaceSummary[]> {
-    return this.kdnCli.listWorkspaces();
-  }
-
   async remove(id: string): Promise<AgentWorkspaceId> {
-    const workspaces = await this.list();
-    const workspace = workspaces.find(ws => ws.id === id);
+    const workspaces = await this.listOpenshellSandboxes();
+    const workspace = workspaces.flatMap(gw => gw.sandboxes).find(ws => ws.id === id);
     const workspaceName = workspace?.name ?? id;
     const task = this.taskManager.createTask({ title: `Deleting workspace "${workspaceName}"` });
     task.state = 'running';
     task.status = 'in-progress';
     try {
-      const result = await this.kdnCli.removeWorkspaces(id);
+      await this.openshellCli.deleteSandbox(workspaceName);
       this.apiSender.send('agent-workspace-update');
       task.status = 'success';
-      return result;
+      return { id };
     } catch (err: unknown) {
       const detail = err instanceof Error ? err.message : String(err);
       task.status = 'failure';
@@ -533,30 +519,36 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   async getConfiguration(id: string): Promise<AgentWorkspaceConfiguration> {
-    const workspaces = await this.list();
-    const workspace = workspaces.find(ws => ws.id === id);
+    const workspaces = await this.listOpenshellSandboxes();
+    const workspace = workspaces.flatMap(gw => gw.sandboxes).find(ws => ws.id === id);
     if (!workspace) {
       throw new Error(`workspace "${id}" not found. Use "workspace list" to see available workspaces.`);
     }
-    try {
-      const content = await readFile(join(workspace.paths.configuration, 'workspace.json'), 'utf-8');
-      return JSON.parse(content) as AgentWorkspaceConfiguration;
-    } catch (error: unknown) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        return {} as AgentWorkspaceConfiguration;
+    if (workspace.sourcePath) {
+      try {
+        const content = await readFile(join(workspace.sourcePath, '.kaiden', 'workspace.json'), 'utf-8');
+        return JSON.parse(content) as AgentWorkspaceConfiguration;
+      } catch (error: unknown) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+          return {} as AgentWorkspaceConfiguration;
+        }
+        throw error;
       }
-      throw error;
+    } else {
+      return {};
     }
   }
 
   async updateConfiguration(id: string, config: Partial<AgentWorkspaceConfiguration>): Promise<void> {
-    const workspaces = await this.list();
-    const workspace = workspaces.find(ws => ws.id === id);
+    const workspaces = await this.listOpenshellSandboxes();
+    const workspace = workspaces.flatMap(gw => gw.sandboxes).find(ws => ws.id === id);
     if (!workspace) {
       throw new Error(`workspace "${id}" not found. Use "workspace list" to see available workspaces.`);
     }
-    await this.kdnCli.updateWorkspaceConfig(workspace.paths.configuration, config);
-    this.apiSender.send('agent-workspace-update');
+    if (workspace.sourcePath) {
+      await updateWorkspaceConfig(join(workspace.sourcePath, '.kaiden'), config);
+      this.apiSender.send('agent-workspace-update');
+    }
   }
 
   async updateSummary(id: string, update: Pick<AgentWorkspaceSummary, 'name'>): Promise<void> {
@@ -574,18 +566,6 @@ export class AgentWorkspaceManager implements Disposable {
       entry['name'] = update.name;
     }
     await writeFile(instancesPath, JSON.stringify(instances, undefined, 4) + '\n', 'utf-8');
-  }
-
-  async start(id: string): Promise<AgentWorkspaceId> {
-    const result = await this.kdnCli.startWorkspace(id);
-    this.apiSender.send('agent-workspace-update');
-    return result;
-  }
-
-  async stop(id: string): Promise<AgentWorkspaceId> {
-    const result = await this.kdnCli.stopWorkspace(id);
-    this.apiSender.send('agent-workspace-update');
-    return result;
   }
 
   async listOpenshellSandboxes(): Promise<GatewaySandboxes[]> {
@@ -628,7 +608,7 @@ export class AgentWorkspaceManager implements Disposable {
     resize: (w: number, h: number) => void;
     ptyProcess: IPty;
   } {
-    const ptyProcess = spawn(this.kdnCli.getCliPath(), ['terminal', name], {
+    const ptyProcess = spawn(this.openshellCli.getCliPath(), ['connect', name], {
       name: 'xterm-256color',
       env: process.env as Record<string, string>,
     });
@@ -672,10 +652,6 @@ export class AgentWorkspaceManager implements Disposable {
     };
     this.configurationRegistry.registerConfigurations([runtimeConfiguration]);
 
-    this.ipcHandle('agent-workspace:getCliInfo', async (): Promise<CliInfo> => {
-      return this.getCliInfo();
-    });
-
     this.ipcHandle(
       'agent-workspace:checkConfigExists',
       async (_listener: unknown, sourcePath: string): Promise<boolean> => {
@@ -689,10 +665,6 @@ export class AgentWorkspaceManager implements Disposable {
         return this.create(options);
       },
     );
-
-    this.ipcHandle('agent-workspace:list', async (): Promise<AgentWorkspaceSummary[]> => {
-      return this.list();
-    });
 
     this.ipcHandle('agent-workspace:remove', async (_listener: unknown, id: string): Promise<AgentWorkspaceId> => {
       return this.remove(id);
@@ -719,14 +691,6 @@ export class AgentWorkspaceManager implements Disposable {
       },
     );
 
-    this.ipcHandle('agent-workspace:start', async (_listener: unknown, id: string): Promise<AgentWorkspaceId> => {
-      return this.start(id);
-    });
-
-    this.ipcHandle('agent-workspace:stop', async (_listener: unknown, id: string): Promise<AgentWorkspaceId> => {
-      return this.stop(id);
-    });
-
     this.ipcHandle('agent-workspace:listOpenshellSandboxes', async (): Promise<GatewaySandboxes[]> => {
       return this.listOpenshellSandboxes();
     });
@@ -741,8 +705,8 @@ export class AgentWorkspaceManager implements Disposable {
     this.ipcHandle(
       'agent-workspace:terminal',
       async (_listener: unknown, id: string, onDataId: number): Promise<number> => {
-        const workspaces = await this.list();
-        const workspace = workspaces.find(ws => ws.id === id);
+        const workspaces = await this.listOpenshellSandboxes();
+        const workspace = workspaces.flatMap(gw => gw.sandboxes).find(ws => ws.id === id);
         if (!workspace) {
           throw new Error(`workspace "${id}" not found. Use "workspace list" to see available workspaces.`);
         }

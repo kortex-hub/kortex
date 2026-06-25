@@ -61,7 +61,6 @@ import { ExtensionLoader } from '/@/plugin/extension/extension-loader.js';
 import { ExtensionWatcher } from '/@/plugin/extension/extension-watcher.js';
 import { FeatureRegistry } from '/@/plugin/feature-registry.js';
 import { FlowManager } from '/@/plugin/flow/flow-manager.js';
-import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
 import { KubeGeneratorRegistry } from '/@/plugin/kubernetes/kube-generator-registry.js';
 import { LockedConfiguration } from '/@/plugin/locked-configuration.js';
 import { MCPExchanges } from '/@/plugin/mcp/mcp-exchanges.js';
@@ -592,7 +591,6 @@ export class PluginSystem {
     container.bind<MCPManager>(MCPManager).toSelf().inSingletonScope();
     container.bind<CliToolRegistry>(CliToolRegistry).toSelf().inSingletonScope();
     container.bind<AgentRegistry>(AgentRegistry).toSelf().inSingletonScope();
-    container.bind<KdnCli>(KdnCli).toSelf().inSingletonScope();
     container.bind<OpenshellCli>(OpenshellCli).toSelf().inSingletonScope();
     container.bind<OpenshellGateway>(OpenshellGateway).toSelf().inSingletonScope();
     container.bind<OpenshellImageBuilder>(OpenshellImageBuilder).toSelf().inSingletonScope();

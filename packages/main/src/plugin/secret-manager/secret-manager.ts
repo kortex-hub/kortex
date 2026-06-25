@@ -16,15 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { homedir } from 'node:os';
-import { join } from 'node:path';
-
-import type { Disposable, FileSystemWatcher } from '@openkaiden/api';
-import { inject, injectable, preDestroy } from 'inversify';
+import { inject, injectable } from 'inversify';
 
 import { IPCHandle } from '/@/plugin/api.js';
-import { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
-import { KdnCli } from '/@/plugin/kdn-cli/kdn-cli.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type {
   SecretCliBackend,
@@ -39,37 +33,20 @@ import { OpenshellSecretAdapter } from './openshell-secret-adapter.js';
 /**
  * Manages secrets by delegating to a CLI backend.
  *
- * By default the `kdn` CLI is used. When the `KAIDEN_OPENSHELL`
- * environment variable is set, the OpenShell provider commands
- * are used instead (via {@link OpenshellSecretAdapter}).
- *
- * Watches `~/.kdn/secrets.json` so that external mutations
- * (e.g. `kdn secret remove` run from a terminal) are picked
- * up and forwarded to the renderer. File watching is skipped
- * when the OpenShell backend is active.
  */
 @injectable()
-export class SecretManager implements Disposable {
-  private secretsWatcher: FileSystemWatcher | undefined;
-
+export class SecretManager {
   constructor(
     @inject(ApiSenderType)
     private readonly apiSender: ApiSenderType,
     @inject(IPCHandle)
     private readonly ipcHandle: IPCHandle,
-    @inject(KdnCli)
-    private readonly kdnCli: KdnCli,
     @inject(OpenshellSecretAdapter)
     private readonly openshellAdapter: OpenshellSecretAdapter,
-    @inject(FilesystemMonitoring)
-    private readonly filesystemMonitoring: FilesystemMonitoring,
   ) {}
 
   private get cli(): SecretCliBackend {
-    if (process.env['KAIDEN_OPENSHELL']) {
-      return this.openshellAdapter;
-    }
-    return this.kdnCli;
+    return this.openshellAdapter;
   }
 
   async create(options: SecretCreateOptions): Promise<SecretName> {
@@ -111,26 +88,5 @@ export class SecretManager implements Disposable {
     this.ipcHandle('secret-manager:list-services', async (): Promise<SecretService[]> => {
       return this.listServices();
     });
-
-    if (!process.env['KAIDEN_OPENSHELL']) {
-      this.watchSecretsFile();
-    }
-  }
-
-  private watchSecretsFile(): void {
-    this.secretsWatcher?.dispose();
-    const secretsPath = join(homedir(), '.kdn', 'secrets.json');
-    this.secretsWatcher = this.filesystemMonitoring.createFileSystemWatcher(secretsPath);
-    const notify = (): void => {
-      this.apiSender.send('secret-manager-update');
-    };
-    this.secretsWatcher.onDidChange(notify);
-    this.secretsWatcher.onDidCreate(notify);
-    this.secretsWatcher.onDidDelete(notify);
-  }
-
-  @preDestroy()
-  dispose(): void {
-    this.secretsWatcher?.dispose();
   }
 }
