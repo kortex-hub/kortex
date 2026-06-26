@@ -439,19 +439,35 @@ describe('create – OpenShell mode', () => {
     await manager.create(options);
 
     expect(openshellCli.createSandbox).toHaveBeenCalled();
-    expect(openshellCli.policyUpdate).toHaveBeenCalledTimes(2);
+    expect(openshellCli.policyUpdate).toHaveBeenCalledTimes(5);
     expect(openshellCli.policyUpdate).toHaveBeenNthCalledWith(1, {
       sandboxName: 'my-sandbox',
       removeRule: 'kdn-network',
     });
     expect(openshellCli.policyUpdate).toHaveBeenNthCalledWith(2, {
       sandboxName: 'my-sandbox',
-      addEndpoints: [
-        'registry.npmjs.org:443:full',
-        'registry.npmjs.org:80:full',
-        'pypi.python.org:443:full',
-        'pypi.python.org:80:full',
-      ],
+      addEndpoints: ['registry.npmjs.org:443:full'],
+      binary: '/**',
+      ruleName: 'kdn-network',
+      wait: true,
+    });
+    expect(openshellCli.policyUpdate).toHaveBeenNthCalledWith(3, {
+      sandboxName: 'my-sandbox',
+      addEndpoints: ['registry.npmjs.org:80:full'],
+      binary: '/**',
+      ruleName: 'kdn-network',
+      wait: true,
+    });
+    expect(openshellCli.policyUpdate).toHaveBeenNthCalledWith(4, {
+      sandboxName: 'my-sandbox',
+      addEndpoints: ['pypi.python.org:443:full'],
+      binary: '/**',
+      ruleName: 'kdn-network',
+      wait: true,
+    });
+    expect(openshellCli.policyUpdate).toHaveBeenNthCalledWith(5, {
+      sandboxName: 'my-sandbox',
+      addEndpoints: ['pypi.python.org:80:full'],
       binary: '/**',
       ruleName: 'kdn-network',
       wait: true,

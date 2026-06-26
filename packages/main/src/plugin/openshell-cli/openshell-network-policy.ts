@@ -150,13 +150,17 @@ export function buildNetworkPolicyOperations(
     return [removeOp];
   }
 
-  const addOp: PolicyUpdateOptions = {
-    sandboxName,
-    ruleName: NETWORK_RULE_NAME,
-    addEndpoints: endpoints,
-    binary: '/**',
-    wait: true,
-  };
+  const operations = [removeOp];
 
-  return [removeOp, addOp];
+  for (const endpoint of endpoints) {
+    operations.push({
+      sandboxName,
+      ruleName: NETWORK_RULE_NAME,
+      addEndpoints: [endpoint],
+      binary: '/**',
+      wait: true,
+    });
+  }
+
+  return operations;
 }
