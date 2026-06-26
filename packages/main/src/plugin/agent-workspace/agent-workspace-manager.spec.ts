@@ -19,7 +19,12 @@
 import { access, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import type { Agent, FileSystemWatcher, InferenceProviderConnection } from '@openkaiden/api';
+import type {
+  Agent,
+  AgentWorkspaceConfiguration,
+  FileSystemWatcher,
+  InferenceProviderConnection,
+} from '@openkaiden/api';
 import type { WebContents } from 'electron';
 import type { IPty } from 'node-pty';
 import { spawn } from 'node-pty';
@@ -558,19 +563,28 @@ describe('create – OpenShell mode', () => {
     } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
     vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
       'vertex-ai.connection._type': {
+        title: 'Vertex AI',
+        parentId: 'vertexai',
+        hidden: true,
         scope: 'InferenceProviderConnection',
         extension: { id: 'kaiden.vertex-ai' },
       },
       'vertex-ai.connection._flags': {
+        title: 'Vertex AI',
+        parentId: 'vertexai',
         scope: 'InferenceProviderConnection',
         extension: { id: 'kaiden.vertex-ai' },
       },
       'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS': {
+        title: 'Vertex AI',
+        parentId: 'vertexai',
         scope: 'InferenceProviderConnection',
         format: 'password',
         extension: { id: 'kaiden.vertex-ai' },
       },
       'vertex-ai.connection.GOOGLE_VERTEX_PROJECT': {
+        title: 'Vertex AI',
+        parentId: 'vertexai',
         scope: 'InferenceProviderConnection',
         extension: { id: 'kaiden.vertex-ai' },
       },
@@ -608,23 +622,34 @@ describe('create – OpenShell mode', () => {
     } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
     vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
       'vertex-ai.connection._type': {
+        title: 'Vertex AI',
+        parentId: 'vertexai',
+        hidden: true,
         scope: 'InferenceProviderConnection',
         extension: { id: 'kaiden.vertex-ai' },
       },
       'vertex-ai.connection._flags': {
+        title: 'Vertex AI',
+        parentId: 'vertexai',
         scope: 'InferenceProviderConnection',
         extension: { id: 'kaiden.vertex-ai' },
       },
       'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS': {
+        title: 'Vertex AI',
+        parentId: 'vertexai',
         scope: 'InferenceProviderConnection',
         format: 'password',
         extension: { id: 'kaiden.vertex-ai' },
       },
       'vertex-ai.connection.GOOGLE_VERTEX_PROJECT': {
+        title: 'Vertex AI',
+        parentId: 'vertexai',
         scope: 'InferenceProviderConnection',
         extension: { id: 'kaiden.vertex-ai' },
       },
       'vertex-ai.connection.GOOGLE_VERTEX_LOCATION': {
+        title: 'Vertex AI',
+        parentId: 'vertexai',
         scope: 'InferenceProviderConnection',
         extension: { id: 'kaiden.vertex-ai' },
       },
@@ -649,8 +674,8 @@ describe('create – OpenShell mode', () => {
     const options = { ...defaultOptions };
     await manager.create(options);
 
-    const call = vi.mocked(openshellCli.createSandbox).mock.calls[0][0];
-    expect(call.env).toBeUndefined();
+    const call = vi.mocked(openshellCli.createSandbox).mock.calls[0]![0];
+    expect(call!.env).toBeUndefined();
   });
 
   test('filters out empty string values from environment before createSandbox', async () => {
@@ -671,8 +696,8 @@ describe('create – OpenShell mode', () => {
         },
       }),
     );
-    const call = vi.mocked(openshellCli.createSandbox).mock.calls[0][0];
-    expect(call.env).not.toHaveProperty('EMPTY_VAR');
+    const call = vi.mocked(openshellCli.createSandbox).mock.calls[0]![0];
+    expect(call!.env).not.toHaveProperty('EMPTY_VAR');
   });
 
   test('appends credentialsEnvironment to existing workspace.environment entries', async () => {
@@ -692,19 +717,28 @@ describe('create – OpenShell mode', () => {
     } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
     vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
       'vertex-ai.connection._type': {
+        title: 'Vertex AI',
+        parentId: 'vertexai',
+        hidden: true,
         scope: 'InferenceProviderConnection',
         extension: { id: 'kaiden.vertex-ai' },
       },
       'vertex-ai.connection._flags': {
+        title: 'Vertex AI',
+        parentId: 'vertexai',
         scope: 'InferenceProviderConnection',
         extension: { id: 'kaiden.vertex-ai' },
       },
       'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS': {
+        title: 'Vertex AI',
+        parentId: 'vertexai',
         scope: 'InferenceProviderConnection',
         format: 'password',
         extension: { id: 'kaiden.vertex-ai' },
       },
       'vertex-ai.connection.GOOGLE_VERTEX_PROJECT': {
+        title: 'Vertex AI',
+        parentId: 'vertexai',
         scope: 'InferenceProviderConnection',
         extension: { id: 'kaiden.vertex-ai' },
       },
@@ -739,8 +773,8 @@ describe('create – OpenShell mode', () => {
     const options = { ...defaultOptions };
     await manager.create(options);
 
-    const call = vi.mocked(openshellCli.createSandbox).mock.calls[0][0];
-    expect(call.env).toBeUndefined();
+    const call = vi.mocked(openshellCli.createSandbox).mock.calls[0]![0];
+    expect(call!.env).toBeUndefined();
   });
 });
 

@@ -49,7 +49,6 @@ import type { IConfigurationNode } from '/@api/configuration/models.js';
 import { IConfigurationRegistry } from '/@api/configuration/models.js';
 import type { GatewaySandboxes } from '/@api/openshell-gateway-info.js';
 import { decodeWorkspaceLabels, WORKSPACE_LABEL } from '/@api/openshell-gateway-info.js';
-import type { InferenceConnectionCredentials } from '/@api/provider-info.js';
 import type { SecretValue } from '/@api/secret-info.js';
 
 const HOME_VARIABLE = '${HOME}';
