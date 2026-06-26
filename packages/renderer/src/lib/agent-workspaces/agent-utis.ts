@@ -15,6 +15,8 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+import { get } from 'svelte/store';
+
 import { isDark } from '/@/stores/appearance';
 import type { AgentInfo } from '/@api/agent-info';
 
@@ -23,7 +25,7 @@ export function getAgentIcon(agentInfo: AgentInfo | undefined): string {
   if (typeof icon === 'string') {
     return icon;
   } else if (typeof icon === 'object') {
-    return isDark ? icon.dark : icon.light;
+    return get(isDark) ? icon.dark : icon.light;
   }
   return '';
 }

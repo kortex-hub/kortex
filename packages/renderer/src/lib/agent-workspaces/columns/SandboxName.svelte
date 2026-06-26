@@ -1,8 +1,8 @@
 <script lang="ts">
 import { Tooltip } from '@podman-desktop/ui-svelte';
+import { router } from 'tinro';
 
 import type { SandboxInfo } from '/@api/openshell-gateway-info';
-import { router } from 'tinro';
 
 interface Props {
   object: SandboxInfo;

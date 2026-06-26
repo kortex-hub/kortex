@@ -28,14 +28,7 @@ interface Props {
 let { workspaceSummary, configuration }: Props = $props();
 
 const agentDef = $derived(getAgentId(workspaceSummary) ?? '');
-const agentInfo = $derived(
-  workspaceSummary
-    ? $agentInfos.find(a => {
-        console.log('matching "', agentDef, '" against', a.id);
-        return a.id === agentDef;
-      })
-    : undefined,
-);
+const agentInfo = $derived(workspaceSummary ? $agentInfos.find(a => a.id === agentDef) : undefined);
 
 const resolvedModel = $derived(
   // eslint-disable-next-line no-constant-condition

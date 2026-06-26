@@ -59,7 +59,7 @@ test('removes terminal entries when workspace disappears from agentWorkspaces', 
       },
       sandboxes: [
         {
-          id: 'test',
+          id: 'ws-1',
           name: 'test',
           phase: 'Ready',
           created_at: Date.now().toString(),

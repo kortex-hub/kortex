@@ -60,7 +60,7 @@ async function handleTerminal(): Promise<void> {
     await window.showMessageBox({
       title: 'Agent Workspace',
       type: 'error',
-      message: `Error can't open terminal on workspace "${name}"`,
+      message: `Error can't open terminal on workspace "${workspaceSummary?.name}"`,
       buttons: ['OK'],
     });
   }
