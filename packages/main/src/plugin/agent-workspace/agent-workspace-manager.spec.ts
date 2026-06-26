@@ -1579,7 +1579,7 @@ describe('shellInAgentWorkspace', () => {
 
     manager.shellInAgentWorkspace('test-workspace-1', vi.fn(), vi.fn(), vi.fn());
 
-    expect(spawn).toHaveBeenCalledWith('openshell', ['connect', 'test-workspace-1'], expect.any(Object));
+    expect(spawn).toHaveBeenCalledWith('openshell', ['sandbox', 'connect', 'test-workspace-1'], expect.any(Object));
   });
 
   test('write function forwards data to pty', () => {

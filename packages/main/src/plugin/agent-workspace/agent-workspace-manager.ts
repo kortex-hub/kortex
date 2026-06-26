@@ -608,7 +608,7 @@ export class AgentWorkspaceManager implements Disposable {
     resize: (w: number, h: number) => void;
     ptyProcess: IPty;
   } {
-    const ptyProcess = spawn(this.openshellCli.getCliPath(), ['connect', name], {
+    const ptyProcess = spawn(this.openshellCli.getCliPath(), ['sandbox', 'connect', name], {
       name: 'xterm-256color',
       env: process.env as Record<string, string>,
     });
