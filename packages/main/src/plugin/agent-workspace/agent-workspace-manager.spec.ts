@@ -539,6 +539,209 @@ describe('create – OpenShell mode', () => {
 
     await expect(manager.create(options)).rejects.toThrow('policy update failed');
   });
+
+  // Environment variable merging tests
+  test('merges single credentialsEnvironment variable into workspace and passes to createSandbox', async () => {
+    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
+    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
+      connection: mockConnection,
+      extensionId: 'kaiden.vertex-ai',
+    });
+    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
+      get: vi.fn().mockImplementation((key: string) => {
+        if (key === 'vertex-ai.connection._type') return 'google-vertex-ai';
+        if (key === 'vertex-ai.connection._flags') return ['--from-gcloud-adc'];
+        if (key === 'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS') return 'vertex-ai:conn-1:token';
+        if (key === 'vertex-ai.connection.GOOGLE_VERTEX_PROJECT') return 'test-project';
+        return undefined;
+      }),
+    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
+    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
+      'vertex-ai.connection._type': {
+        scope: 'InferenceProviderConnection',
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+      'vertex-ai.connection._flags': {
+        scope: 'InferenceProviderConnection',
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+      'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS': {
+        scope: 'InferenceProviderConnection',
+        format: 'password',
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+      'vertex-ai.connection.GOOGLE_VERTEX_PROJECT': {
+        scope: 'InferenceProviderConnection',
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+    });
+    vi.mocked(extensionStorageMock.get).mockResolvedValue('/path/to/creds.json');
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-sandbox-google-vertex-ai' });
+
+    const options = { ...defaultOptions, model: 'vertexai::claude-sonnet-4::' };
+    await manager.create(options);
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        env: {
+          GOOGLE_VERTEX_PROJECT: 'test-project',
+        },
+      }),
+    );
+  });
+
+  test('merges multiple credentialsEnvironment variables into workspace', async () => {
+    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
+    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
+      connection: mockConnection,
+      extensionId: 'kaiden.vertex-ai',
+    });
+    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
+      get: vi.fn().mockImplementation((key: string) => {
+        if (key === 'vertex-ai.connection._type') return 'google-vertex-ai';
+        if (key === 'vertex-ai.connection._flags') return ['--from-gcloud-adc'];
+        if (key === 'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS') return 'vertex-ai:conn-1:token';
+        if (key === 'vertex-ai.connection.GOOGLE_VERTEX_PROJECT') return 'multi-var-project';
+        if (key === 'vertex-ai.connection.GOOGLE_VERTEX_LOCATION') return 'us-east5';
+        return undefined;
+      }),
+    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
+    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
+      'vertex-ai.connection._type': {
+        scope: 'InferenceProviderConnection',
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+      'vertex-ai.connection._flags': {
+        scope: 'InferenceProviderConnection',
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+      'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS': {
+        scope: 'InferenceProviderConnection',
+        format: 'password',
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+      'vertex-ai.connection.GOOGLE_VERTEX_PROJECT': {
+        scope: 'InferenceProviderConnection',
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+      'vertex-ai.connection.GOOGLE_VERTEX_LOCATION': {
+        scope: 'InferenceProviderConnection',
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+    });
+    vi.mocked(extensionStorageMock.get).mockResolvedValue('/path/to/creds.json');
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-sandbox-google-vertex-ai' });
+
+    const options = { ...defaultOptions, model: 'vertexai::claude-sonnet-4::' };
+    await manager.create(options);
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        env: {
+          GOOGLE_VERTEX_PROJECT: 'multi-var-project',
+          GOOGLE_VERTEX_LOCATION: 'us-east5',
+        },
+      }),
+    );
+  });
+
+  test('does not pass env parameter when credentialsEnvironment is empty', async () => {
+    const options = { ...defaultOptions };
+    await manager.create(options);
+
+    const call = vi.mocked(openshellCli.createSandbox).mock.calls[0][0];
+    expect(call.env).toBeUndefined();
+  });
+
+  test('filters out empty string values from environment before createSandbox', async () => {
+    vi.spyOn(configWriter, 'writeWorkspaceConfig').mockResolvedValue({
+      environment: [
+        { name: 'VALID_VAR', value: 'valid-value' },
+        { name: 'EMPTY_VAR', value: '' },
+      ],
+    } as AgentWorkspaceConfiguration);
+
+    const options = { ...defaultOptions };
+    await manager.create(options);
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        env: {
+          VALID_VAR: 'valid-value',
+        },
+      }),
+    );
+    const call = vi.mocked(openshellCli.createSandbox).mock.calls[0][0];
+    expect(call.env).not.toHaveProperty('EMPTY_VAR');
+  });
+
+  test('appends credentialsEnvironment to existing workspace.environment entries', async () => {
+    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
+    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
+      connection: mockConnection,
+      extensionId: 'kaiden.vertex-ai',
+    });
+    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
+      get: vi.fn().mockImplementation((key: string) => {
+        if (key === 'vertex-ai.connection._type') return 'google-vertex-ai';
+        if (key === 'vertex-ai.connection._flags') return ['--from-gcloud-adc'];
+        if (key === 'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS') return 'vertex-ai:conn-1:token';
+        if (key === 'vertex-ai.connection.GOOGLE_VERTEX_PROJECT') return 'append-project';
+        return undefined;
+      }),
+    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
+    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
+      'vertex-ai.connection._type': {
+        scope: 'InferenceProviderConnection',
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+      'vertex-ai.connection._flags': {
+        scope: 'InferenceProviderConnection',
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+      'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS': {
+        scope: 'InferenceProviderConnection',
+        format: 'password',
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+      'vertex-ai.connection.GOOGLE_VERTEX_PROJECT': {
+        scope: 'InferenceProviderConnection',
+        extension: { id: 'kaiden.vertex-ai' },
+      },
+    });
+    vi.mocked(extensionStorageMock.get).mockResolvedValue('/path/to/creds.json');
+    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-sandbox-google-vertex-ai' });
+    vi.spyOn(configWriter, 'writeWorkspaceConfig').mockResolvedValue({
+      environment: [{ name: 'EXISTING_VAR', value: 'existing-value' }],
+    } as AgentWorkspaceConfiguration);
+
+    const options = { ...defaultOptions, model: 'vertexai::claude-sonnet-4::' };
+    await manager.create(options);
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        env: {
+          EXISTING_VAR: 'existing-value',
+          GOOGLE_VERTEX_PROJECT: 'append-project',
+        },
+      }),
+    );
+  });
+
+  test('does not pass env when all environment values are filtered out', async () => {
+    vi.spyOn(configWriter, 'writeWorkspaceConfig').mockResolvedValue({
+      environment: [
+        { name: 'EMPTY_VAR_1', value: '' },
+        { name: 'EMPTY_VAR_2', value: '' },
+      ],
+    } as AgentWorkspaceConfiguration);
+
+    const options = { ...defaultOptions };
+    await manager.create(options);
+
+    const call = vi.mocked(openshellCli.createSandbox).mock.calls[0][0];
+    expect(call.env).toBeUndefined();
+  });
 });
 
 describe('checkWorkspaceConfigExists', () => {
