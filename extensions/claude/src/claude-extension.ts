@@ -120,6 +120,32 @@ export class ClaudeExtension {
       destinationSkillsFolder: '${HOME}/.claude/skills',
       isSupportedModelType: (type): boolean => type.name === 'anthropic' || type.name === 'vertexai',
       async preWorkspaceStart(context: AgentWorkspaceContext): Promise<void> {
+        // Handle Vertex AI model configuration
+        if (context.model.llmMetadata?.name === 'vertexai') {
+          const environment = context.workspace.environment ?? [];
+          const googleProject = environment.find(e => e.name === 'GOOGLE_VERTEX_PROJECT')?.value;
+          const googleLocation = environment.find(e => e.name === 'GOOGLE_VERTEX_LOCATION')?.value;
+
+          if (googleProject && googleLocation) {
+            // Add Claude Code-specific environment variables for Vertex AI
+            const claudeEnvVars = [
+              { name: 'CLAUDE_CODE_USE_VERTEX', value: '1' },
+              { name: 'CLOUD_ML_REGION', value: googleLocation },
+              { name: 'ANTHROPIC_VERTEX_PROJECT_ID', value: googleProject },
+            ];
+
+            context.workspace.environment ??= [];
+            for (const envVar of claudeEnvVars) {
+              // Remove existing entry if present
+              const index = context.workspace.environment.findIndex(e => e.name === envVar.name);
+              if (index >= 0) {
+                context.workspace.environment.splice(index, 1);
+              }
+              context.workspace.environment.push(envVar);
+            }
+          }
+        }
+
         const settingsFile = context.configurationFiles.find(f => f.path === CLAUDE_SETTINGS_PATH);
         if (settingsFile) {
           const config = ClaudeSettingsCodec.decode(await settingsFile.read());

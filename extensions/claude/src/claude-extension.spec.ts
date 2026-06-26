@@ -377,5 +377,110 @@ describe('ClaudeExtension', () => {
 
       await expect(agent.preWorkspaceStart(createContext([configFile]))).rejects.toThrow();
     });
+
+    test('adds Vertex AI environment variables when using vertexai model', async () => {
+      await claudeExtension.activate();
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const workspace = {
+        environment: [
+          { name: 'GOOGLE_VERTEX_PROJECT', value: 'my-gcp-project' },
+          { name: 'GOOGLE_VERTEX_LOCATION', value: 'us-east5' },
+        ],
+      };
+
+      const context: AgentWorkspaceContext = {
+        model: {
+          llmMetadata: { name: 'vertexai' },
+          model: { label: 'claude-sonnet-4-20250514' },
+        },
+        configurationFiles: [],
+        workspace,
+      };
+
+      await agent.preWorkspaceStart(context);
+
+      expect(workspace.environment).toContainEqual({ name: 'CLAUDE_CODE_USE_VERTEX', value: '1' });
+      expect(workspace.environment).toContainEqual({ name: 'CLOUD_ML_REGION', value: 'us-east5' });
+      expect(workspace.environment).toContainEqual({ name: 'ANTHROPIC_VERTEX_PROJECT_ID', value: 'my-gcp-project' });
+    });
+
+    test('does not add Vertex AI environment variables for non-vertexai models', async () => {
+      await claudeExtension.activate();
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const workspace = {
+        environment: [{ name: 'SOME_OTHER_VAR', value: 'value' }],
+      };
+
+      const context: AgentWorkspaceContext = {
+        model: {
+          llmMetadata: { name: 'anthropic' },
+          model: { label: 'claude-sonnet-4-20250514' },
+        },
+        configurationFiles: [],
+        workspace,
+      };
+
+      await agent.preWorkspaceStart(context);
+
+      expect(workspace.environment).toHaveLength(1);
+      expect(workspace.environment).toEqual([{ name: 'SOME_OTHER_VAR', value: 'value' }]);
+    });
+
+    test('does not add Vertex AI environment variables when Google env vars are missing', async () => {
+      await claudeExtension.activate();
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const workspace = {
+        environment: [],
+      };
+
+      const context: AgentWorkspaceContext = {
+        model: {
+          llmMetadata: { name: 'vertexai' },
+          model: { label: 'claude-sonnet-4-20250514' },
+        },
+        configurationFiles: [],
+        workspace,
+      };
+
+      await agent.preWorkspaceStart(context);
+
+      expect(workspace.environment).toHaveLength(0);
+    });
+
+    test('replaces existing Vertex AI environment variables', async () => {
+      await claudeExtension.activate();
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const workspace = {
+        environment: [
+          { name: 'GOOGLE_VERTEX_PROJECT', value: 'my-gcp-project' },
+          { name: 'GOOGLE_VERTEX_LOCATION', value: 'us-east5' },
+          { name: 'CLAUDE_CODE_USE_VERTEX', value: '0' },
+          { name: 'CLOUD_ML_REGION', value: 'old-region' },
+        ],
+      };
+
+      const context: AgentWorkspaceContext = {
+        model: {
+          llmMetadata: { name: 'vertexai' },
+          model: { label: 'claude-sonnet-4-20250514' },
+        },
+        configurationFiles: [],
+        workspace,
+      };
+
+      await agent.preWorkspaceStart(context);
+
+      const claudeUseVertex = workspace.environment.filter(e => e.name === 'CLAUDE_CODE_USE_VERTEX');
+      const cloudMlRegion = workspace.environment.filter(e => e.name === 'CLOUD_ML_REGION');
+
+      expect(claudeUseVertex).toHaveLength(1);
+      expect(claudeUseVertex[0]).toEqual({ name: 'CLAUDE_CODE_USE_VERTEX', value: '1' });
+      expect(cloudMlRegion).toHaveLength(1);
+      expect(cloudMlRegion[0]).toEqual({ name: 'CLOUD_ML_REGION', value: 'us-east5' });
+    });
   });
 });
