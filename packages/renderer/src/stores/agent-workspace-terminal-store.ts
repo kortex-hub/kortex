@@ -19,7 +19,7 @@
 import type { Writable } from 'svelte/store';
 import { get, writable } from 'svelte/store';
 
-import { agentWorkspaces } from './agent-workspaces.svelte';
+import { allOpenshellSandboxes } from '/@/stores/openshell-sandboxes';
 
 export interface TerminalOfAgentWorkspace {
   workspaceId: string;
@@ -29,7 +29,7 @@ export interface TerminalOfAgentWorkspace {
 
 export const agentWorkspaceTerminals: Writable<TerminalOfAgentWorkspace[]> = writable([]);
 
-agentWorkspaces.subscribe(workspaces => {
+allOpenshellSandboxes.subscribe(workspaces => {
   const terminals = get(agentWorkspaceTerminals);
   const toRemove: TerminalOfAgentWorkspace[] = [];
   for (const terminal of terminals) {

@@ -12,7 +12,7 @@ import { router } from 'tinro';
 import { getTerminalTheme } from '/@/lib/terminal/terminal-theme';
 import NoLogIcon from '/@/lib/ui/NoLogIcon.svelte';
 import { getExistingTerminal, registerTerminal } from '/@/stores/agent-workspace-terminal-store';
-import { agentWorkspaces } from '/@/stores/agent-workspaces.svelte';
+import { allOpenshellSandboxes } from '/@/stores/openshell-sandboxes';
 import { TerminalSettings } from '/@api/terminal/terminal-settings';
 
 const MAX_RECONNECT_ATTEMPTS = 30;
@@ -41,9 +41,9 @@ let onDataDisposable: IDisposable | undefined;
 let reconnecting = false;
 let reconnectCount = 0;
 
-const workspaceSummary = $derived($agentWorkspaces.find(ws => ws.id === workspaceId));
-const status = $derived(workspaceSummary?.state ?? 'stopped');
-const isRunning = $derived(status === 'running');
+const workspaceSummary = $derived($allOpenshellSandboxes.find(ws => ws.id === workspaceId));
+const status = $derived(workspaceSummary?.phase ?? 'Provisioning');
+const isRunning = $derived(status === 'Ready');
 let lastStatus = $state('');
 
 function registerInputHandler(callbackId: number): void {
@@ -104,7 +104,7 @@ function manualReconnect(): void {
 }
 
 $effect(() => {
-  if (lastStatus !== '' && lastStatus !== 'running' && status === 'running') {
+  if (lastStatus !== '' && lastStatus !== 'Ready' && status === 'Ready') {
     reconnectCount = 0;
     reconnectExhausted = false;
     restartTerminal().catch((err: unknown) => {

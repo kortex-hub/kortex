@@ -15,20 +15,15 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
+import { isDark } from '/@/stores/appearance';
+import type { AgentInfo } from '/@api/agent-info';
 
-import type { SandboxInfoWithGateway } from '/@/stores/openshell-sandboxes';
-
-export const ACTIVE_GROUP_LABEL = 'Active';
-export const STOPPED_GROUP_LABEL = 'Stopped';
-
-export function isActiveWorkspace(sandbox: SandboxInfoWithGateway): boolean {
-  return sandbox.phase === 'Ready';
-}
-
-export function getReferenceTime(sandbox: SandboxInfoWithGateway): string | undefined {
-  return sandbox.created_at;
-}
-
-export function getAgentId(sandbox?: SandboxInfoWithGateway): string | undefined {
-  return sandbox?.labels?.['ai.openkaiden.kaiden.agent'];
+export function getAgentIcon(agentInfo: AgentInfo | undefined): string {
+  const icon = agentInfo?.icon?.icon;
+  if (typeof icon === 'string') {
+    return icon;
+  } else if (typeof icon === 'object') {
+    return isDark ? icon.dark : icon.light;
+  }
+  return '';
 }

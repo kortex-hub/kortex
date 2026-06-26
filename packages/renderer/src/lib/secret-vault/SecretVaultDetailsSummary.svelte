@@ -1,6 +1,6 @@
 <script lang="ts">
 import { getServiceLabel } from '/@/lib/secret-vault/secret-vault-utils';
-import { agentWorkspaces } from '/@/stores/agent-workspaces.svelte';
+import { allOpenshellSandboxes } from '/@/stores/openshell-sandboxes';
 import type { AgentWorkspaceConfiguration } from '/@api/agent-workspace-info';
 import type { SecretVaultInfo } from '/@api/secret-vault/secret-vault-info';
 
@@ -31,7 +31,7 @@ $effect(() => {
     return;
   }
 
-  const workspaces = $agentWorkspaces;
+  const workspaces = $allOpenshellSandboxes;
   let current = true;
 
   Promise.all(

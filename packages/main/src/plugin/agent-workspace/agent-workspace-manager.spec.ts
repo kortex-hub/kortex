@@ -59,11 +59,11 @@ const TEST_SUMMARIES: GatewaySandboxes[] = [
       endpoint: 'http://localhost:10080',
     },
     sandboxes: [
-      { id: 'ws-1', name: 'test-workspace-1', phase: 'started', sourcePath: '/tmp/ws1' },
+      { id: 'ws-1', name: 'test-workspace-1', phase: 'Ready', sourcePath: '/tmp/ws1' },
       {
         id: 'ws-2',
         name: 'test-workspace-2',
-        phase: 'started',
+        phase: 'Ready',
       },
     ],
   },

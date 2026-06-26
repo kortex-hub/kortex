@@ -23,8 +23,9 @@ import { get, writable } from 'svelte/store';
 import { router } from 'tinro';
 import { beforeEach, expect, test, vi } from 'vitest';
 
-import { agentWorkspaces } from '/@/stores/agent-workspaces.svelte';
-import type { AgentWorkspaceConfiguration, AgentWorkspaceSummary } from '/@api/agent-workspace-info';
+import { openshellSandboxes } from '/@/stores/openshell-sandboxes';
+import type { AgentWorkspaceConfiguration } from '/@api/agent-workspace-info';
+import type { GatewaySandboxes } from '/@api/openshell-gateway-info';
 
 import AgentWorkspaceDetails from './AgentWorkspaceDetails.svelte';
 
@@ -43,19 +44,20 @@ const configuration: AgentWorkspaceConfiguration = {
   environment: [{ name: 'API_KEY', value: 'test-key' }],
 };
 
-const workspaceSummary: AgentWorkspaceSummary = {
-  id: 'ws-1',
-  name: 'api-refactor',
-  project: 'backend',
-  agent: 'coder-v1',
-  state: 'stopped',
-  runtime: 'podman',
-  paths: {
-    source: '/home/user/projects/backend',
-    configuration: '/home/user/.config/kaiden/workspaces/api-refactor.yaml',
+const workspaceSummary: GatewaySandboxes = {
+  gateway: {
+    name: 'kaiden',
+    endpoint: 'http://localhost:18080',
   },
-  timestamps: { created: 1700000000 },
-  forwards: [],
+  sandboxes: [
+    {
+      id: 'ws-1',
+      name: 'api-refactor',
+      phase: 'Unknown',
+      sourcePath: '/home/user/projects/backend',
+      created_at: Date.now().toString(),
+    },
+  ],
 };
 
 beforeEach(() => {
@@ -67,7 +69,7 @@ beforeEach(() => {
   vi.mocked(window.stopAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
   vi.mocked(window.showMessageBox).mockResolvedValue({ response: 1 });
   vi.mocked(window.removeAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
-  agentWorkspaces.set([{ ...workspaceSummary }]);
+  openshellSandboxes.set([{ ...workspaceSummary }]);
 });
 
 test('Expect page title to use workspace overview name', async () => {
@@ -104,10 +106,10 @@ test('Expect workspace summary with project is resolved from the store', () => {
   render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
 
   const storeValue = [workspaceSummary];
-  agentWorkspaces.set(storeValue);
+  openshellSandboxes.set(storeValue);
 
-  const resolved = get(agentWorkspaces);
-  expect(resolved.find(ws => ws.id === 'ws-1')?.project).toBe('backend');
+  const resolved = get(openshellSandboxes);
+  expect(resolved.flatMap(gw => gw.sandboxes).find(ws => ws.id === 'ws-1')?.name).toBe('api-refactor');
 });
 
 test('Expect page shell renders when configuration fetch fails', async () => {
@@ -116,59 +118,8 @@ test('Expect page shell renders when configuration fetch fails', async () => {
   render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
 
   await waitFor(() => {
-    expect(screen.getByRole('button', { name: 'Start Workspace' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Remove Workspace' })).toBeInTheDocument();
     expect(screen.getByText('Overview')).toBeInTheDocument();
-  });
-});
-
-test('Expect start button is rendered when workspace is stopped', async () => {
-  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
-
-  await waitFor(() => {
-    expect(screen.getByRole('button', { name: 'Start Workspace' })).toBeInTheDocument();
-  });
-});
-
-test('Expect clicking start button transitions workspace to running', async () => {
-  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
-
-  await waitFor(() => {
-    expect(screen.getByRole('button', { name: 'Start Workspace' })).toBeInTheDocument();
-  });
-
-  const startButton = screen.getByRole('button', { name: 'Start Workspace' });
-  await fireEvent.click(startButton);
-
-  await waitFor(() => {
-    expect(get(agentWorkspaces).find(w => w.id === 'ws-1')?.state).toBe('running');
-  });
-});
-
-test('Expect stop button is rendered when workspace is running', async () => {
-  agentWorkspaces.set([{ ...workspaceSummary, state: 'running' }]);
-
-  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
-
-  await waitFor(() => {
-    expect(screen.getByRole('button', { name: 'Stop Workspace' })).toBeInTheDocument();
-  });
-});
-
-test('Expect clicking stop button transitions workspace to stopped', async () => {
-  agentWorkspaces.set([{ ...workspaceSummary, state: 'running' }]);
-
-  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
-
-  await waitFor(() => {
-    expect(screen.getByRole('button', { name: 'Stop Workspace' })).toBeInTheDocument();
-  });
-
-  const stopButton = screen.getByRole('button', { name: 'Stop Workspace' });
-  await fireEvent.click(stopButton);
-
-  await waitFor(() => {
-    expect(get(agentWorkspaces).find(w => w.id === 'ws-1')?.state).toBe('stopped');
   });
 });
 
@@ -228,52 +179,6 @@ test('Expect workspace not removed when user cancels', async () => {
   expect(router.goto).not.toHaveBeenCalled();
 });
 
-test('Expect error dialog shown when start fails', async () => {
-  vi.mocked(window.startAgentWorkspace).mockRejectedValue(new Error('container not found'));
-
-  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
-
-  await waitFor(() => {
-    expect(screen.getByRole('button', { name: 'Start Workspace' })).toBeInTheDocument();
-  });
-
-  const startButton = screen.getByRole('button', { name: 'Start Workspace' });
-  await fireEvent.click(startButton);
-
-  await waitFor(() => {
-    expect(window.showMessageBox).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: 'Agent Workspace',
-        type: 'error',
-        message: expect.stringContaining('container not found'),
-      }),
-    );
-  });
-
-  expect(get(agentWorkspaces).find(w => w.id === 'ws-1')?.state).toBe('stopped');
-});
-
-test('Expect error dialog uses workspace name when start fails', async () => {
-  vi.mocked(window.startAgentWorkspace).mockRejectedValue(new Error('start failed'));
-
-  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
-
-  await waitFor(() => {
-    expect(screen.getByRole('button', { name: 'Start Workspace' })).toBeInTheDocument();
-  });
-
-  const startButton = screen.getByRole('button', { name: 'Start Workspace' });
-  await fireEvent.click(startButton);
-
-  await waitFor(() => {
-    expect(window.showMessageBox).toHaveBeenCalledWith(
-      expect.objectContaining({
-        message: expect.stringContaining('api-refactor'),
-      }),
-    );
-  });
-});
-
 test('Expect terminal button is rendered', async () => {
   render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
 
@@ -295,7 +200,7 @@ test('Expect clicking terminal button navigates to terminal tab', async () => {
   expect(router.goto).toHaveBeenCalledWith('/agent-workspaces/ws-1/terminal');
 });
 
-test('Expect clicking terminal button starts workspace when stopped', async () => {
+test('Expect clicking terminal redirects to terminal', async () => {
   render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
 
   await waitFor(() => {
@@ -305,73 +210,7 @@ test('Expect clicking terminal button starts workspace when stopped', async () =
   const terminalButton = screen.getByRole('button', { name: 'Open Terminal' });
   await fireEvent.click(terminalButton);
 
-  expect(window.startAgentWorkspace).toHaveBeenCalledWith('ws-1');
   expect(router.goto).toHaveBeenCalledWith('/agent-workspaces/ws-1/terminal');
-});
-
-test('Expect clicking terminal button does not start workspace when already running', async () => {
-  agentWorkspaces.set([{ ...workspaceSummary, state: 'running' }]);
-
-  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
-
-  await waitFor(() => {
-    expect(screen.getByRole('button', { name: 'Open Terminal' })).toBeInTheDocument();
-  });
-
-  const terminalButton = screen.getByRole('button', { name: 'Open Terminal' });
-  await fireEvent.click(terminalButton);
-
-  expect(window.startAgentWorkspace).not.toHaveBeenCalled();
-  expect(router.goto).toHaveBeenCalledWith('/agent-workspaces/ws-1/terminal');
-});
-
-test('Expect error dialog shown when terminal button start fails', async () => {
-  vi.mocked(window.startAgentWorkspace).mockRejectedValue(new Error('sandbox init failed'));
-
-  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
-
-  await waitFor(() => {
-    expect(screen.getByRole('button', { name: 'Open Terminal' })).toBeInTheDocument();
-  });
-
-  const terminalButton = screen.getByRole('button', { name: 'Open Terminal' });
-  await fireEvent.click(terminalButton);
-
-  await waitFor(() => {
-    expect(window.showMessageBox).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: 'Agent Workspace',
-        type: 'error',
-        message: expect.stringContaining('sandbox init failed'),
-      }),
-    );
-  });
-});
-
-test('Expect error dialog shown when stop fails', async () => {
-  agentWorkspaces.set([{ ...workspaceSummary, state: 'running' }]);
-  vi.mocked(window.stopAgentWorkspace).mockRejectedValue(new Error('stop timeout'));
-
-  render(AgentWorkspaceDetails, { workspaceId: 'ws-1' });
-
-  await waitFor(() => {
-    expect(screen.getByRole('button', { name: 'Stop Workspace' })).toBeInTheDocument();
-  });
-
-  const stopButton = screen.getByRole('button', { name: 'Stop Workspace' });
-  await fireEvent.click(stopButton);
-
-  await waitFor(() => {
-    expect(window.showMessageBox).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: 'Agent Workspace',
-        type: 'error',
-        message: expect.stringContaining('stop timeout'),
-      }),
-    );
-  });
-
-  expect(get(agentWorkspaces).find(w => w.id === 'ws-1')?.state).toBe('running');
 });
 
 test('Expect no navigation when removal fails', async () => {

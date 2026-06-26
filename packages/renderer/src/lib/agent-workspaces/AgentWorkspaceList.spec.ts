@@ -21,14 +21,14 @@ import '@testing-library/jest-dom/vitest';
 import { render, screen, within } from '@testing-library/svelte';
 import { beforeEach, expect, test, vi } from 'vitest';
 
-import { agentWorkspaces } from '/@/stores/agent-workspaces.svelte';
-import type { AgentWorkspaceSummary } from '/@api/agent-workspace-info';
+import { openshellSandboxes } from '/@/stores/openshell-sandboxes';
+import type { GatewaySandboxes } from '/@api/openshell-gateway-info';
 
 import AgentWorkspaceList from './AgentWorkspaceList.svelte';
 
 beforeEach(() => {
   vi.resetAllMocks();
-  agentWorkspaces.set([]);
+  openshellSandboxes.set([]);
 });
 
 test('Expect empty screen when no workspaces', () => {
@@ -50,37 +50,39 @@ test('Expect stat cards show zero counts when empty', () => {
 });
 
 test('Expect stat cards show correct counts with workspaces', () => {
-  const workspaces: AgentWorkspaceSummary[] = [
+  const workspaces: GatewaySandboxes[] = [
     {
-      id: 'ws-1',
-      name: 'api-refactor',
-      project: 'backend',
-      agent: 'coder-v1',
-      state: 'stopped',
-      runtime: 'podman',
-      paths: {
-        source: '/home/user/projects/backend',
-        configuration: '/home/user/.config/kaiden/workspaces/api-refactor.yaml',
+      gateway: {
+        name: 'kaiden',
+        endpoint: 'http://localhost:18080',
       },
-      timestamps: { created: 1700000000 },
-      forwards: [],
+      sandboxes: [
+        {
+          id: 'ws-1',
+          name: 'api-refactor',
+          phase: 'Unknown',
+          sourcePath: '/home/user/projects/backend',
+          created_at: Date.now().toString(),
+        },
+      ],
     },
     {
-      id: 'ws-2',
-      name: 'frontend-redesign',
-      project: 'frontend',
-      agent: 'coder-v2',
-      state: 'running',
-      runtime: 'podman',
-      paths: {
-        source: '/home/user/projects/frontend',
-        configuration: '/home/user/.config/kaiden/workspaces/frontend-redesign.yaml',
+      gateway: {
+        name: 'kaiden',
+        endpoint: 'http://localhost:18080',
       },
-      timestamps: { created: 1700000001, started: 1700000002 },
-      forwards: [],
+      sandboxes: [
+        {
+          id: 'ws-2',
+          name: 'frontend-redesign',
+          phase: 'Ready',
+          sourcePath: '/home/user/projects/frontend',
+          created_at: Date.now().toString(),
+        },
+      ],
     },
   ];
-  agentWorkspaces.set(workspaces);
+  openshellSandboxes.set(workspaces);
 
   render(AgentWorkspaceList);
 
@@ -92,7 +94,7 @@ test('Expect stat cards show correct counts with workspaces', () => {
 
   expect(within(activeCard).getByText('1')).toBeInTheDocument();
   expect(within(totalCard).getByText('2')).toBeInTheDocument();
-  expect(within(agentsCard).getByText('2')).toBeInTheDocument();
+  expect(within(agentsCard).getByText('0')).toBeInTheDocument();
 });
 
 test('Expect page title to be Agentic Workspaces', () => {

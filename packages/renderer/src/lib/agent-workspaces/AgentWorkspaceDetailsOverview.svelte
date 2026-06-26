@@ -9,55 +9,63 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
+import { getAgentIcon } from '/@/lib/agent-workspaces/agent-utis';
 import IconImage from '/@/lib/appearance/IconImage.svelte';
-import { getAgentDefinition } from '/@/lib/guided-setup/agent-registry';
 import { getModelId } from '/@/lib/models/models-utils';
-import type { AgentWorkspaceSummaryUI } from '/@/stores/agent-workspaces.svelte';
 import { agentInfos } from '/@/stores/agents';
 import { catalogModels } from '/@/stores/models';
+import type { SandboxInfoWithGateway } from '/@/stores/openshell-sandboxes';
 import { skillInfos } from '/@/stores/skills';
 import type { AgentWorkspaceConfiguration } from '/@api/agent-workspace-info';
 
-import { getReferenceTime, isActiveWorkspace } from './workspace-utils';
+import { getAgentId, getReferenceTime, isActiveWorkspace } from './workspace-utils';
 
 interface Props {
-  workspaceSummary: AgentWorkspaceSummaryUI | undefined;
+  workspaceSummary: SandboxInfoWithGateway | undefined;
   configuration: AgentWorkspaceConfiguration;
 }
 
 let { workspaceSummary, configuration }: Props = $props();
 
-const agentDef = $derived(getAgentDefinition(workspaceSummary?.agent ?? ''));
-const agentInfo = $derived(workspaceSummary ? $agentInfos.find(a => a.id === workspaceSummary.agent) : undefined);
+const agentDef = $derived(getAgentId(workspaceSummary) ?? '');
+const agentInfo = $derived(
+  workspaceSummary
+    ? $agentInfos.find(a => {
+        console.log('matching "', agentDef, '" against', a.id);
+        return a.id === agentDef;
+      })
+    : undefined,
+);
 
 const resolvedModel = $derived(
-  workspaceSummary?.model ? $catalogModels.find(m => getModelId(m) === workspaceSummary.model) : undefined,
+  // eslint-disable-next-line no-constant-condition
+  false ? $catalogModels.find(m => getModelId(m) === '') : undefined,
 );
 
 const modelDisplayName = $derived.by(() => {
-  if (!resolvedModel) return workspaceSummary?.model;
+  if (!resolvedModel) return 'Not available';
   const name = resolvedModel.llmMetadata?.name;
   if (name) return `${name.charAt(0).toUpperCase()}${name.slice(1)} · ${resolvedModel.label}`;
   return resolvedModel.label;
 });
 
 const statusStyle = $derived.by(() => {
-  const state = workspaceSummary?.state;
-  if (state === 'running') {
+  const state = workspaceSummary?.phase;
+  if (state === 'Ready') {
     return {
       stateColor: 'text-[var(--pd-status-running)]',
       sandboxLabel: 'Sandbox Active',
       sandboxColor: 'var(--pd-status-running)',
     };
   }
-  if (state === 'starting') {
+  if (state === 'Provisioning') {
     return {
       stateColor: 'text-[var(--pd-status-waiting)]',
       sandboxLabel: 'Sandbox Starting',
       sandboxColor: 'var(--pd-status-waiting)',
     };
   }
-  if (state === 'stopping') {
+  if (state === 'Deleting') {
     return {
       stateColor: 'text-[var(--pd-status-waiting)]',
       sandboxLabel: 'Sandbox Stopping',
@@ -71,22 +79,10 @@ const statusStyle = $derived.by(() => {
   };
 });
 
-function formatRelativeTime(ts: number | undefined): string {
-  if (!ts) return '-';
-  const seconds = Math.floor((Date.now() - ts) / 1000);
-  if (seconds < 60) return 'just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes} min ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hr ago`;
-  const days = Math.floor(hours / 24);
-  return `${days} day${days !== 1 ? 's' : ''} ago`;
-}
-
 const referenceTime = $derived(workspaceSummary ? getReferenceTime(workspaceSummary) : undefined);
 const timeLabel = $derived(workspaceSummary && isActiveWorkspace(workspaceSummary) ? 'Started' : 'Created');
 
-const runtimeLabel = $derived(workspaceSummary?.runtime ?? '—');
+const runtimeLabel = 'Runtime not available';
 
 const networkMode = $derived(configuration?.network?.mode ?? 'deny');
 const networkHosts = $derived(configuration?.network?.hosts ?? []);
@@ -115,6 +111,19 @@ const filesystemBadge = $derived.by(() => {
   if (hasHomeMnt) return 'Home';
   return 'Custom';
 });
+
+function formatRelativeTime(ts: string | undefined): string {
+  if (!ts) return '-';
+  const date = new Date(ts);
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days !== 1 ? 's' : ''} ago`;
+}
 </script>
 
 <div class="px-5 py-4 h-full overflow-auto">
@@ -123,21 +132,21 @@ const filesystemBadge = $derived.by(() => {
     <div class="bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-table-border)] rounded-lg p-5" aria-label="Agent profile">
       <div class="flex items-center gap-3.5 mb-3">
         {#if agentInfo?.icon?.logo ?? agentInfo?.icon?.icon}
-          <IconImage image={agentInfo.icon.logo ?? agentInfo.icon.icon} alt={agentDef.title} class="w-10 h-10 rounded-[10px]">
-            <div class="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 {agentDef.colorClass}">
-              <Icon icon={agentDef.icon} size="1.5x" class="text-white" />
+          <IconImage image={agentInfo.icon.logo ?? agentInfo.icon.icon} alt={agentInfo.name} class="w-10 h-10 rounded-[10px]">
+            <div class="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0">
+              <Icon icon={getAgentIcon(agentInfo)} size="1.5x" class="text-white" />
             </div>
           </IconImage>
         {:else}
-          <div class="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 {agentDef.colorClass}">
-            <Icon icon={agentDef.icon} size="1.5x" class="text-white" />
+          <div class="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0">
+            <Icon icon={getAgentIcon(agentInfo)} size="1.5x" class="text-white" />
           </div>
         {/if}
         <div class="flex-1 min-w-0">
           <h2 class="text-[15px] font-semibold text-[var(--pd-content-card-header-text)] m-0 mb-0.5">
-            {agentDef.title}
+            {agentInfo?.name}
           </h2>
-          {#if workspaceSummary?.model}
+          {#if modelDisplayName}
             <p class="text-xs text-[var(--pd-link)] m-0">
               {modelDisplayName}
             </p>
@@ -151,9 +160,9 @@ const filesystemBadge = $derived.by(() => {
           <span class="text-[11px] font-medium" style="color: {statusStyle.sandboxColor}">{statusStyle.sandboxLabel}</span>
         </div>
       </div>
-      {#if workspaceSummary?.project}
+      {#if workspaceSummary?.sourcePath}
         <p class="text-[13px] text-[var(--pd-content-text)] leading-relaxed m-0">
-          Project: {workspaceSummary.project}
+          Project: {workspaceSummary.sourcePath}
         </p>
       {/if}
     </div>
@@ -167,7 +176,7 @@ const filesystemBadge = $derived.by(() => {
         <div class="flex flex-col gap-0.5" aria-label="Status">
           <div class="text-[10px] text-[var(--pd-content-text)] opacity-60 uppercase tracking-wider">Status</div>
           <div class="text-[13px] font-semibold {statusStyle.stateColor}">
-            {workspaceSummary?.state ?? 'unknown'}
+            {workspaceSummary?.phase ?? 'unknown'}
           </div>
         </div>
         <div class="flex flex-col gap-0.5" aria-label="Started">
@@ -268,7 +277,7 @@ const filesystemBadge = $derived.by(() => {
           </span>
         </div>
         <div class="flex flex-col gap-1.5">
-          {#if workspaceSummary?.paths.source}
+          {#if workspaceSummary?.sourcePath}
             <div
               class="flex items-center gap-2.5 py-2 px-2.5 rounded-lg bg-[var(--pd-content-bg)] border border-transparent overflow-hidden">
               <div
@@ -276,7 +285,7 @@ const filesystemBadge = $derived.by(() => {
                 <Icon icon={faFolder} size="sm" />
               </div>
               <span class="flex-1 min-w-0 text-[13px] font-medium text-[var(--pd-content-card-header-text)] truncate">
-                {workspaceSummary.paths.source}
+                {workspaceSummary.sourcePath}
               </span>
               <span class="text-[11px] text-[var(--pd-status-running)] shrink-0">read-write</span>
             </div>

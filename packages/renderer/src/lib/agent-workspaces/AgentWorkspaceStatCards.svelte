@@ -1,27 +1,19 @@
 <script lang="ts">
 import { faCirclePlay, faRobot, faTableCells } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
-import { SvelteSet } from 'svelte/reactivity';
 
 import Card from '/@/lib/components/Card.svelte';
-import type { AgentWorkspaceSummaryUI } from '/@/stores/agent-workspaces.svelte';
 import type { SandboxInfoWithGateway } from '/@/stores/openshell-sandboxes';
 
-import { isActiveWorkspace } from './workspace-utils';
-
 interface Props {
-  workspaces: AgentWorkspaceSummaryUI[];
   sandboxes: SandboxInfoWithGateway[];
 }
 
-let { workspaces, sandboxes }: Props = $props();
+let { sandboxes }: Props = $props();
 
 const activeSandboxCount = $derived(
   sandboxes.filter(s => s.phase.toLowerCase() === 'ready' || s.phase.toLowerCase() === 'running').length,
 );
-const activeCount = $derived(workspaces.filter(isActiveWorkspace).length + activeSandboxCount);
-const totalCount = $derived(workspaces.length + sandboxes.length);
-const agentCount = $derived(new SvelteSet(workspaces.map(ws => ws.agent)).size);
 </script>
 
 <div class="grid grid-cols-3 gap-3.5 mb-5">
@@ -30,7 +22,7 @@ const agentCount = $derived(new SvelteSet(workspaces.map(ws => ws.agent)).size);
       <Icon icon={faCirclePlay} size="1.1x" />
     </div>
     <div class="flex flex-col">
-      <span class="text-4xl font-bold text-[var(--pd-content-text)]">{activeCount}</span>
+      <span class="text-4xl font-bold text-[var(--pd-content-text)]">{activeSandboxCount}</span>
       <span class="text-base text-[var(--pd-content-text)] opacity-60">Active Sessions</span>
     </div>
   </Card>
@@ -40,7 +32,7 @@ const agentCount = $derived(new SvelteSet(workspaces.map(ws => ws.agent)).size);
       <Icon icon={faTableCells} size="1.1x" />
     </div>
     <div class="flex flex-col">
-      <span class="text-4xl font-bold text-[var(--pd-content-text)]">{totalCount}</span>
+      <span class="text-4xl font-bold text-[var(--pd-content-text)]">{sandboxes.length}</span>
       <span class="text-base text-[var(--pd-content-text)] opacity-60">Total Sessions</span>
     </div>
   </Card>
@@ -50,7 +42,7 @@ const agentCount = $derived(new SvelteSet(workspaces.map(ws => ws.agent)).size);
       <Icon icon={faRobot} size="1.1x" />
     </div>
     <div class="flex flex-col">
-      <span class="text-4xl font-bold text-[var(--pd-content-text)]">{agentCount}</span>
+      <span class="text-4xl font-bold text-[var(--pd-content-text)]">{0}</span>
       <span class="text-base text-[var(--pd-content-text)] opacity-60">Configured Agents</span>
     </div>
   </Card>

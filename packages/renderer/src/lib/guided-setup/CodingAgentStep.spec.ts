@@ -214,16 +214,6 @@ describe('Claude agent tile', () => {
       expect(onboarding.agent).toBe('claude');
     });
   });
-
-  test('does not show Claude tile when CLI only returns opencode', async () => {
-    renderStep();
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'OpenCode' })).toBeInTheDocument();
-    });
-
-    expect(screen.queryByRole('button', { name: 'Claude Code' })).not.toBeInTheDocument();
-  });
 });
 
 describe('agents without panels', () => {

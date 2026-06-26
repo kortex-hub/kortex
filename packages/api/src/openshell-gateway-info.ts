@@ -31,7 +31,7 @@ export type GatewayInfo = z.output<typeof GatewayInfoSchema>;
 export const SandboxInfoSchema = z.object({
   id: z.string(),
   name: z.string(),
-  phase: z.string(),
+  phase: z.enum(['Provisioning', 'Ready', 'Error', 'Deleting', 'Unknown', 'Unspecified']),
   created_at: z.string().optional(),
   current_policy_version: z.number().optional(),
   labels: z.record(z.string(), z.string()).optional(),

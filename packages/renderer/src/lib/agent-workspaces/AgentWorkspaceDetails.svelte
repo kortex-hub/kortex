@@ -1,5 +1,5 @@
 <script lang="ts">
-import { faArrowsRotate, faPlay, faStop, faTerminal, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faArrowsRotate, faTerminal, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { ErrorMessage, Tab } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 
@@ -12,7 +12,7 @@ import ListItemButtonIcon from '/@/lib/ui/ListItemButtonIcon.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
 import { removeTerminal } from '/@/stores/agent-workspace-terminal-store';
-import { agentWorkspaces, startAgentWorkspace, stopAgentWorkspace } from '/@/stores/agent-workspaces.svelte';
+import { allOpenshellSandboxes } from '/@/stores/openshell-sandboxes';
 
 interface Props {
   workspaceId: string;
@@ -23,18 +23,18 @@ let { workspaceId }: Props = $props();
 let configuration: Awaited<ReturnType<typeof window.getAgentWorkspaceConfiguration>> = $state({});
 let configurationError: string | undefined = $state(undefined);
 
-const workspaceSummary = $derived($agentWorkspaces.find(ws => ws.id === workspaceId));
+const workspaceSummary = $derived($allOpenshellSandboxes.find(ws => ws.id === workspaceId));
 
-const status = $derived(workspaceSummary?.state ?? 'stopped');
-const isRunning = $derived(status === 'running' || status === 'stopping');
-const inProgress = $derived(status === 'starting' || status === 'stopping');
+const status = $derived(workspaceSummary?.phase ?? 'Provisioning');
+const isRunning = $derived(status === 'Ready' || status === 'Deleting');
+const inProgress = $derived(status === 'Provisioning' || status === 'Deleting');
 
 let terminalReconnectExhausted = $state(false);
 let terminalReconnect: (() => void) | undefined = $state(undefined);
 const isOnTerminalTab = $derived(isTabSelected($router.path, 'terminal'));
 
 $effect(() => {
-  if (status === 'stopped') {
+  if (status === 'Unknown') {
     removeTerminal(workspaceId);
   }
 });
@@ -55,36 +55,13 @@ $effect(() => {
   };
 });
 
-async function handleStartStop(): Promise<void> {
-  if (inProgress || workspaceSummary === undefined) return;
-  const name = workspaceSummary?.name ?? workspaceId;
-  try {
-    if (isRunning) {
-      await stopAgentWorkspace(workspaceSummary.id);
-    } else {
-      await startAgentWorkspace(workspaceSummary.id);
-    }
-  } catch (error: unknown) {
-    const action = isRunning ? 'stopping' : 'starting';
+async function handleTerminal(): Promise<void> {
+  if (!isRunning && !inProgress) {
     await window.showMessageBox({
       title: 'Agent Workspace',
       type: 'error',
-      message: `Error while ${action} workspace "${name}": ${error}`,
+      message: `Error can't open terminal on workspace "${name}"`,
       buttons: ['OK'],
-    });
-  }
-}
-
-function handleTerminal(): void {
-  if (!isRunning && !inProgress) {
-    startAgentWorkspace(workspaceId).catch(async (error: unknown) => {
-      const name = workspaceSummary?.name ?? workspaceId;
-      await window.showMessageBox({
-        title: 'Agent Workspace',
-        type: 'error',
-        message: `Error while starting workspace "${name}": ${error}`,
-        buttons: ['OK'],
-      });
     });
   }
   router.goto(`/agent-workspaces/${encodeURIComponent(workspaceId)}/terminal`);
@@ -113,11 +90,6 @@ function handleRemove(): void {
         onClick={terminalReconnect}
         icon={faArrowsRotate} />
     {/if}
-    <ListItemButtonIcon
-      title={isRunning ? 'Stop Workspace' : 'Start Workspace'}
-      onClick={handleStartStop}
-      icon={isRunning ? faStop : faPlay}
-      inProgress={inProgress} />
     <ListItemButtonIcon
       title="Open Terminal"
       onClick={handleTerminal}

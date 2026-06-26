@@ -322,7 +322,7 @@ describe('createSandbox', () => {
 
 describe('listSandboxes', () => {
   test('executes openshell sandbox list with json output', async () => {
-    const payload = [{ id: 'sb-1', name: 'sb-1', phase: 'Running' }];
+    const payload = [{ id: 'sb-1', name: 'sb-1', phase: 'Ready' }];
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify(payload)));
 
     const result = await openshellCli.listSandboxes();
@@ -685,7 +685,7 @@ describe('listSandboxesForGateway', () => {
       { name: 'gw-1', endpoint: 'https://gw1.example.com', active: true },
       { name: 'gw-2', endpoint: 'https://gw2.example.com', active: false },
     ];
-    const sandboxes = [{ id: 'sb-1', name: 'sb-1', phase: 'Running' }];
+    const sandboxes = [{ id: 'sb-1', name: 'sb-1', phase: 'Ready' }];
 
     vi.mocked(exec.exec)
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
@@ -717,8 +717,8 @@ describe('listSandboxesPerGateway', () => {
       { name: 'gw-1', endpoint: 'https://gw1.example.com', active: true },
       { name: 'gw-2', endpoint: 'https://gw2.example.com', active: false },
     ];
-    const sandboxes1 = [{ id: 'sb-1', name: 'sb-1', phase: 'Running' }];
-    const sandboxes2 = [{ id: 'sb-2', name: 'sb-2', phase: 'Stopped' }];
+    const sandboxes1 = [{ id: 'sb-1', name: 'sb-1', phase: 'Ready' }];
+    const sandboxes2 = [{ id: 'sb-2', name: 'sb-2', phase: 'Unknown' }];
 
     vi.mocked(exec.exec)
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))

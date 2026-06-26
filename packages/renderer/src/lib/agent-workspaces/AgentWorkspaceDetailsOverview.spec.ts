@@ -24,7 +24,8 @@ import { beforeEach, expect, test, vi } from 'vitest';
 
 import * as agentsStore from '/@/stores/agents';
 import * as modelsStore from '/@/stores/models';
-import type { AgentWorkspaceConfiguration, AgentWorkspaceSummary } from '/@api/agent-workspace-info';
+import type { SandboxInfoWithGateway } from '/@/stores/openshell-sandboxes';
+import type { AgentWorkspaceConfiguration } from '/@api/agent-workspace-info';
 import type { CatalogModelInfo } from '/@api/model-registry-info';
 
 import AgentWorkspaceDetailsOverview from './AgentWorkspaceDetailsOverview.svelte';
@@ -32,20 +33,16 @@ import AgentWorkspaceDetailsOverview from './AgentWorkspaceDetailsOverview.svelt
 vi.mock(import('/@/stores/agents'));
 vi.mock(import('/@/stores/models'));
 
-const workspaceSummary: AgentWorkspaceSummary = {
+const workspaceSummary: SandboxInfoWithGateway = {
   id: 'ws-1',
   name: 'api-refactor',
-  project: 'backend',
-  agent: 'coder-v1',
-  state: 'stopped',
-  model: 'gpt-4o',
-  runtime: 'podman',
-  paths: {
-    source: '/home/user/projects/backend',
-    configuration: '/home/user/.config/kaiden/workspaces/api-refactor.yaml',
+  gatewayName: 'kaiden',
+  phase: 'Unknown',
+  sourcePath: '/home/user/projects/backend',
+  created_at: Date.now().toString(),
+  labels: {
+    'ai.openkaiden.kaiden.agent': 'coder-v1',
   },
-  timestamps: { created: 1700000000000 },
-  forwards: [],
 };
 
 const configuration: AgentWorkspaceConfiguration = {
@@ -64,86 +61,49 @@ const configuration: AgentWorkspaceConfiguration = {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.useFakeTimers({ shouldAdvanceTime: true });
-  vi.mocked(agentsStore).agentInfos = writable([]);
+  vi.mocked(agentsStore).agentInfos = writable([
+    {
+      name: 'Coder V1',
+      id: 'coder-v1',
+      description: 'coder-v1',
+      command: 'coder-v1',
+      destinationSkillsFolder: '.coder-v1/skiils',
+    },
+  ]);
   vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>([]);
 });
 
 test('Expect agent name is displayed', () => {
   render(AgentWorkspaceDetailsOverview, { workspaceSummary, configuration });
 
-  expect(screen.getByText('coder-v1')).toBeInTheDocument();
+  expect(screen.getByText('Coder V1')).toBeInTheDocument();
 });
 
 test('Expect raw model string is displayed when no catalog match', () => {
   render(AgentWorkspaceDetailsOverview, { workspaceSummary, configuration });
 
-  expect(screen.getByText('gpt-4o')).toBeInTheDocument();
-});
-
-test('Expect resolved model displays Name · label when llmMetadata.name exists', () => {
-  const model = 'claude::claude-opus-4::';
-  vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>([
-    {
-      providerId: 'anthropic',
-      providerName: 'Anthropic',
-      connectionId: 'conn-1',
-      connectionName: 'default',
-      type: 'cloud',
-      llmMetadata: { name: 'claude' },
-      label: 'claude-opus-4',
-      connectionStatus: 'started',
-    } as unknown as CatalogModelInfo,
-  ]);
-
-  render(AgentWorkspaceDetailsOverview, {
-    workspaceSummary: { ...workspaceSummary, model },
-    configuration,
-  });
-
-  expect(screen.getByText('Claude · claude-opus-4')).toBeInTheDocument();
-});
-
-test('Expect resolved model displays label when llmMetadata.name is absent', () => {
-  const model = '::my-local-model::http://localhost:11434';
-  vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>([
-    {
-      providerId: 'ollama',
-      providerName: 'Ollama',
-      connectionId: 'conn-2',
-      connectionName: 'local',
-      type: 'local',
-      label: 'my-local-model',
-      endpoint: 'http://localhost:11434',
-      connectionStatus: 'started',
-    } as unknown as CatalogModelInfo,
-  ]);
-
-  render(AgentWorkspaceDetailsOverview, {
-    workspaceSummary: { ...workspaceSummary, model },
-    configuration,
-  });
-
-  expect(screen.getByText('my-local-model')).toBeInTheDocument();
+  expect(screen.getByText('Not available')).toBeInTheDocument();
 });
 
 test('Expect project is displayed', () => {
   render(AgentWorkspaceDetailsOverview, { workspaceSummary, configuration });
 
-  expect(screen.getByText('Project: backend')).toBeInTheDocument();
+  expect(screen.getByText('Project: /home/user/projects/backend')).toBeInTheDocument();
 });
 
 test('Expect state is displayed', () => {
   render(AgentWorkspaceDetailsOverview, { workspaceSummary, configuration });
 
-  expect(screen.getByText('stopped')).toBeInTheDocument();
+  expect(screen.getByText('Unknown')).toBeInTheDocument();
 });
 
 test('Expect running workspace shows Started label with relative time', () => {
-  const runningWorkspace = {
+  const runningWorkspace: SandboxInfoWithGateway = {
     ...workspaceSummary,
-    state: 'running' as const,
-    timestamps: { created: Date.now() - 2 * 60 * 60 * 1000, started: Date.now() - 25 * 60 * 1000 },
+    phase: 'Ready',
+    created_at: new Date(Date.now() - 25 * 60 * 1000).toString(),
   };
+
   render(AgentWorkspaceDetailsOverview, { workspaceSummary: runningWorkspace, configuration });
 
   expect(screen.getByText('Started')).toBeInTheDocument();
@@ -153,7 +113,7 @@ test('Expect running workspace shows Started label with relative time', () => {
 test('Expect stopped workspace shows Created label with relative time', () => {
   const stoppedWorkspace = {
     ...workspaceSummary,
-    timestamps: { created: Date.now() - 3 * 60 * 60 * 1000 },
+    created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toString(),
   };
   render(AgentWorkspaceDetailsOverview, { workspaceSummary: stoppedWorkspace, configuration });
 
@@ -162,9 +122,9 @@ test('Expect stopped workspace shows Created label with relative time', () => {
 });
 
 test('Expect stopping workspace shows Sandbox Stopping label', () => {
-  const stoppingWorkspace = {
+  const stoppingWorkspace: SandboxInfoWithGateway = {
     ...workspaceSummary,
-    state: 'stopping' as const,
+    phase: 'Deleting',
   };
   render(AgentWorkspaceDetailsOverview, { workspaceSummary: stoppingWorkspace, configuration });
 
@@ -221,14 +181,14 @@ test('Expect runtime label is displayed', () => {
   render(AgentWorkspaceDetailsOverview, { workspaceSummary, configuration });
 
   expect(screen.getByText('Runtime')).toBeInTheDocument();
-  expect(screen.getByText('podman')).toBeInTheDocument();
+  expect(screen.getByText('Runtime not available')).toBeInTheDocument();
 });
 
 test('Expect runtime shows dash when workspace is undefined', () => {
   render(AgentWorkspaceDetailsOverview, { workspaceSummary: undefined, configuration });
 
   expect(screen.getByText('Runtime')).toBeInTheDocument();
-  expect(screen.getByText('—')).toBeInTheDocument();
+  expect(screen.getByText('Runtime not available')).toBeInTheDocument();
 });
 
 test('Expect component renders without error when workspace is undefined', () => {

@@ -19,8 +19,9 @@
 import { get } from 'svelte/store';
 import { beforeEach, expect, test, vi } from 'vitest';
 
+import { openshellSandboxes } from '/@/stores/openshell-sandboxes';
+
 import { agentWorkspaceTerminals, getExistingTerminal, registerTerminal } from './agent-workspace-terminal-store';
-import { agentWorkspaces } from './agent-workspaces.svelte';
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -50,61 +51,64 @@ test('replaces existing terminal for the same workspace', () => {
 });
 
 test('removes terminal entries when workspace disappears from agentWorkspaces', () => {
-  agentWorkspaces.set([
+  openshellSandboxes.set([
     {
-      id: 'ws-1',
-      name: 'test',
-      project: 'proj',
-      agent: 'agent',
-      state: 'stopped',
-      runtime: 'podman',
-      paths: { source: '/s', configuration: '/c' },
-      timestamps: {
-        created: Date.now(),
+      gateway: {
+        name: 'kaiden',
+        endpoint: 'http://loalhost:18080',
       },
-      forwards: [],
+      sandboxes: [
+        {
+          id: 'test',
+          name: 'test',
+          phase: 'Ready',
+          created_at: Date.now().toString(),
+        },
+      ],
     },
   ]);
 
   registerTerminal({ workspaceId: 'ws-1', terminal: 'buffer' });
   expect(get(agentWorkspaceTerminals)).toHaveLength(1);
 
-  agentWorkspaces.set([]);
+  openshellSandboxes.set([]);
   expect(get(agentWorkspaceTerminals)).toHaveLength(0);
 });
 
 test('keeps terminal entries when workspace still exists', () => {
-  agentWorkspaces.set([
+  openshellSandboxes.set([
     {
-      id: 'ws-1',
-      name: 'test',
-      project: 'proj',
-      agent: 'agent',
-      state: 'stopped',
-      runtime: 'podman',
-      paths: { source: '/s', configuration: '/c' },
-      timestamps: {
-        created: Date.now(),
+      gateway: {
+        name: 'kaiden',
+        endpoint: 'http://localhost:18080',
       },
-      forwards: [],
+      sandboxes: [
+        {
+          id: 'ws-1',
+          name: 'test',
+          phase: 'Ready',
+          created_at: Date.now().toString(),
+        },
+      ],
     },
   ]);
 
   registerTerminal({ workspaceId: 'ws-1', terminal: 'buffer' });
 
-  agentWorkspaces.set([
+  openshellSandboxes.set([
     {
-      id: 'ws-1',
-      name: 'test',
-      project: 'proj',
-      agent: 'agent',
-      state: 'stopped',
-      runtime: 'podman',
-      paths: { source: '/s', configuration: '/c' },
-      timestamps: {
-        created: Date.now(),
+      gateway: {
+        name: 'kaiden',
+        endpoint: 'http://localhost:18080',
       },
-      forwards: [],
+      sandboxes: [
+        {
+          id: 'ws-1',
+          name: 'test',
+          phase: 'Provisioning',
+          created_at: Date.now().toString(),
+        },
+      ],
     },
   ]);
   expect(get(agentWorkspaceTerminals)).toHaveLength(1);

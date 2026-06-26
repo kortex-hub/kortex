@@ -11,8 +11,8 @@ import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
 import type { ChecklistItem } from '/@/lib/ui/ChecklistPanel.svelte';
 import ChecklistPanel from '/@/lib/ui/ChecklistPanel.svelte';
 import { handleNavigation } from '/@/navigation';
-import type { AgentWorkspaceSummaryUI } from '/@/stores/agent-workspaces.svelte';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import type { SandboxInfoWithGateway } from '/@/stores/openshell-sandboxes';
 import { ragEnvironments } from '/@/stores/rag-environments';
 import { skillInfos } from '/@/stores/skills';
 import type {
@@ -32,7 +32,7 @@ interface SectionConfig {
 
 interface Props {
   workspaceId: string;
-  workspaceSummary: AgentWorkspaceSummaryUI | undefined;
+  workspaceSummary: SandboxInfoWithGateway | undefined;
   configuration: AgentWorkspaceConfiguration;
 }
 
@@ -514,7 +514,7 @@ function handleDeleteWorkspace(): void {
                   <Input
                     id="input-working-directory"
                     aria-label="Working Directory"
-                    value={workspaceSummary?.paths.source ?? ''}
+                    value={workspaceSummary?.sourcePath ?? ''}
                     readonly />
                   <p class="text-[12px] text-[var(--pd-content-text)] opacity-50 m-0">The directory where the agent will operate</p>
                 </div>

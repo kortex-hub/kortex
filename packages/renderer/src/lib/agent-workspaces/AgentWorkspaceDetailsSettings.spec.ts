@@ -26,9 +26,10 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
 import * as agentWorkspaceRuntimeStore from '/@/stores/agentworkspace-runtime';
 import * as mcpStore from '/@/stores/mcp-remote-servers';
+import type { SandboxInfoWithGateway } from '/@/stores/openshell-sandboxes';
 import * as ragStore from '/@/stores/rag-environments';
 import * as skillsStore from '/@/stores/skills';
-import type { AgentWorkspaceConfiguration, AgentWorkspaceSummary } from '/@api/agent-workspace-info';
+import type { AgentWorkspaceConfiguration } from '/@api/agent-workspace-info';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import type { RagEnvironment } from '/@api/rag/rag-environment';
 import type { SkillInfo } from '/@api/skill/skill-info';
@@ -51,20 +52,13 @@ const routerStore = writable({
   hash: '',
 });
 
-const workspaceSummary: AgentWorkspaceSummary = {
+const workspaceSummary: SandboxInfoWithGateway = {
   id: 'ws-1',
   name: 'api-refactor',
-  project: 'backend',
-  agent: 'opencode',
-  model: 'gpt-4o',
-  runtime: 'podman',
-  state: 'stopped',
-  paths: {
-    source: '/home/user/projects/backend',
-    configuration: '/home/user/.config/kaiden/workspaces/api-refactor.yaml',
-  },
-  timestamps: { created: 1700000000000, started: 1700100000000 },
-  forwards: [],
+  phase: 'Unknown',
+  gatewayName: 'kaiden',
+  sourcePath: '/home/user/projects/backend',
+  created_at: Date.now().toString(),
 };
 
 const configuration: AgentWorkspaceConfiguration = {
