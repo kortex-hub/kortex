@@ -182,6 +182,7 @@ export class GatewayContainerManager implements Disposable {
         [GATEWAY_PORT_LABEL]: String(port),
       },
       HostConfig: {
+        SecurityOpt: ['label=disable'],
         PortBindings: {
           [`${port}/tcp`]: [{ HostPort: String(port) }],
         },
@@ -195,6 +196,11 @@ export class GatewayContainerManager implements Disposable {
             Source: convertToWslPath(gatewayDir),
             Type: 'bind',
             Target: '/kaiden',
+          },
+          {
+            Source: '/root/.local/state',
+            Type: 'bind',
+            Target: '/root/.local/state',
           },
         ],
       },
