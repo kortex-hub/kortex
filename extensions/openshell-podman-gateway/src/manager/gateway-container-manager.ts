@@ -31,7 +31,7 @@ import * as tar from 'tar';
 import { SocketHelper } from '/@/helper/socket-helper';
 import { ContainerExtensionAPISymbol, ExtensionContextSymbol } from '/@/inject/symbol';
 
-const GATEWAY_IMAGE = 'ghcr.io/nvidia/openshell/gateway:0.0.57';
+const GATEWAY_IMAGE = 'ghcr.io/nvidia/openshell/gateway:0.0.71';
 const GATEWAY_LABEL = 'ai.openkaiden.openshell-podman-gateway';
 const GATEWAY_PORT_LABEL = 'ai.openkaiden.openshell-podman-gateway.port';
 const GATEWAY_NAME = 'kaiden';
