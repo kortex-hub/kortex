@@ -37,6 +37,7 @@ export interface SecretValue {
   credentials: Record<string, string>;
   config?: Record<string, string>;
   flags?: string[];
+  env?: Record<string, string>;
 }
 
 export interface SecretCreateOptions extends SecretInfo {

@@ -317,65 +317,54 @@ export class AgentWorkspaceManager implements Disposable {
     const secretType = config.get<string>(typeShortKey);
     if (!secretType) return environment;
 
+    const flagsEntry = connectionProperties.find(([fullKey]) => fullKey.endsWith('._flags'));
+    const flagsRaw = flagsEntry ? config.get<string | string[]>(flagsEntry[0]) : undefined;
+    const flagsValue = flagsRaw ? (Array.isArray(flagsRaw) ? flagsRaw : [flagsRaw]) : undefined;
     const workspaceName = options.name ?? basename(options.sourcePath);
 
-    const passwordKeys = [
-      ...new Set(connectionProperties.filter(([, schema]) => schema.format === 'password').map(([fullKey]) => fullKey)),
-    ];
+    const configKeys = connectionProperties.filter(
+      ([fullKey, _schema]) => !fullKey.endsWith('._type') && !fullKey.endsWith('._flags'),
+    );
 
     const extensionStorage = this.safeStorageRegistry.getExtensionStorage(info.extensionId);
 
     const value: SecretValue = { credentials: {} };
-    for (const propertyName of passwordKeys) {
-      const secretRefName = config.get<string>(propertyName);
-      if (!secretRefName) continue;
-
-      const actualValue = await extensionStorage.get(secretRefName);
-      if (!actualValue) continue;
-
-      const shortPropertyName = propertyName.split('.').pop()!;
-      value.credentials[shortPropertyName] = actualValue;
-    }
-
-    const flagsEntry = connectionProperties.find(([fullKey]) => fullKey.endsWith('._flags'));
-    const flagsRaw = flagsEntry ? config.get<string | string[]>(flagsEntry[0]) : undefined;
-    const flagsValue = flagsRaw ? (Array.isArray(flagsRaw) ? flagsRaw : [flagsRaw]) : undefined;
     if (flagsValue) {
       value.flags = flagsValue;
     }
+    for (const [propertyName, schema] of configKeys) {
+      const secretRefName = config.get<string>(propertyName);
+      if (!secretRefName) continue;
 
-    const configKeys = connectionProperties.filter(
-      ([fullKey, schema]) =>
-        schema.format !== 'password' && !fullKey.endsWith('._type') && !fullKey.endsWith('._flags'),
-    );
+      const actualValue = schema.format === 'password' ? await extensionStorage.get(secretRefName) : secretRefName;
+      if (!actualValue) continue;
 
-    if (flagsValue) {
-      for (const [propertyName] of configKeys) {
-        const configValue = config.get<string>(propertyName);
-        if (!configValue) continue;
-        const shortPropertyName = propertyName.split('.').pop()!;
-        environment[shortPropertyName] = configValue;
-      }
-    } else {
-      for (const [propertyName] of configKeys) {
-        const configValue = config.get<string>(propertyName);
-        if (!configValue) continue;
-        const shortPropertyName = propertyName.split('.').pop()!;
-        value.config ??= {};
-        value.config[shortPropertyName] = configValue;
+      const shortPropertyName = propertyName.split('.').pop()!;
+      if (flagsValue === undefined) {
+        if (schema.format === 'password') {
+          value.credentials[shortPropertyName] = actualValue;
+        } else {
+          value.config ??= {};
+          value.config[shortPropertyName] = actualValue;
+        }
+      } else {
+        if (schema.format === 'password') {
+          value.env ??= {};
+          value.env[shortPropertyName] = actualValue;
+        } else {
+          environment[shortPropertyName] = actualValue;
+        }
       }
     }
 
-    if (Object.keys(value.credentials).length > 0) {
-      const secretName = `${workspaceName}-${secretType}`;
-      await this.secretManager.create({
-        name: secretName,
-        type: secretType,
-        value: value,
-      });
+    const secretName = `${workspaceName}-${secretType}`;
+    await this.secretManager.create({
+      name: secretName,
+      type: secretType,
+      value: value,
+    });
 
-      options.secrets = [...new Set([...(options.secrets ?? []), secretName])];
-    }
+    options.secrets = [...new Set([...(options.secrets ?? []), secretName])];
 
     return environment;
   }

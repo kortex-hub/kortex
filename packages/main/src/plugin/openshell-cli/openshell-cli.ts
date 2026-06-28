@@ -317,7 +317,7 @@ export class OpenshellCli {
       throw new Error('credentials must not be empty');
     }
     const args = ['provider', 'create', '--name', options.name, '--type', options.type];
-    const env: Record<string, string> = {};
+    const env: Record<string, string> = options.env ?? {};
     for (const [key, value] of Object.entries(options.credentials)) {
       env[key] = value;
       args.push('--credential', key);

@@ -893,7 +893,7 @@ describe('ensureModelSecret', () => {
     expect(providerRegistry.getInferenceConnectionCredentials).not.toHaveBeenCalled();
   });
 
-  test('does not fall back when _type exists but secret value is not found', async () => {
+  test('does call create secret when _type exists but secret value is not found', async () => {
     const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
     vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
       connection: mockConnection,
@@ -932,7 +932,7 @@ describe('ensureModelSecret', () => {
     const options = { ...baseOptions, model: 'cursor::gpt-4o::' };
     await manager.ensureModelSecret(options);
 
-    expect(secretManager.create).not.toHaveBeenCalled();
+    expect(secretManager.create).toHaveBeenCalled();
     expect(providerRegistry.getInferenceConnectionCredentials).not.toHaveBeenCalled();
   });
 
@@ -1047,7 +1047,8 @@ describe('ensureModelSecret', () => {
       name: 'my-workspace-google-vertex-ai',
       type: 'google-vertex-ai',
       value: {
-        credentials: {
+        credentials: {},
+        env: {
           GOOGLE_APPLICATION_CREDENTIALS: '/path/to/creds.json',
         },
         flags: ['--from-gcloud-adc'],
@@ -1125,7 +1126,8 @@ describe('ensureModelSecret', () => {
       name: 'my-workspace-google-vertex-ai',
       type: 'google-vertex-ai',
       value: {
-        credentials: {
+        credentials: {},
+        env: {
           GOOGLE_APPLICATION_CREDENTIALS: '/path/to/creds.json',
         },
         flags: ['--flag-one', '--flag-two'],

@@ -41,20 +41,26 @@
           "description": "Vertex AI provider type",
           "hidden": true
         },
-        "vertex-ai.connection.token": {
+        "vertex-ai.connection._flags": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "Vertex AI provider flag",
+          "hidden": true
+        },
+        "vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS": {
           "type": "string",
           "scope": "InferenceProviderConnection",
           "description": "Credentials secret reference",
           "format": "password",
           "hidden": true
         },
-        "vertex-ai.connection.VERTEX_AI_PROJECT_ID": {
+        "vertex-ai.connection.GOOGLE_VERTEX_PROJECT": {
           "type": "string",
           "scope": "InferenceProviderConnection",
           "description": "Google Cloud project ID",
           "hidden": true
         },
-        "vertex-ai.connection.VERTEX_AI_REGION": {
+        "vertex-ai.connection.GOOGLE_VERTEX_LOCATION": {
           "type": "string",
           "scope": "InferenceProviderConnection",
           "description": "Google Cloud region",

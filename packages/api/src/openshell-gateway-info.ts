@@ -136,4 +136,5 @@ export interface CreateProviderOptions {
   credentials: Record<string, string>;
   config?: Record<string, string>;
   flags?: string[];
+  env?: Record<string, string>;
 }
