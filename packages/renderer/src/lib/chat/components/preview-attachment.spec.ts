@@ -17,9 +17,10 @@
  ***********************************************************************/
 import '@testing-library/jest-dom/vitest';
 
-import type { Attachment } from '@ai-sdk/ui-utils';
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+
+import type { Attachment } from '/@/lib/chat/utils/chat';
 
 import PreviewAttachmentWrapper from './PreviewAttachmentTestWrapper.svelte';
 

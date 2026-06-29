@@ -1,6 +1,5 @@
 <script lang="ts">
 import type { Chat } from '@ai-sdk/svelte';
-import type { Attachment } from '@ai-sdk/ui-utils';
 import { faToolbox } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { onMount, untrack } from 'svelte';
@@ -11,6 +10,7 @@ import { router } from 'tinro';
 
 import { EditState } from '/@/lib/chat/hooks/edit-state.svelte';
 import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
+import type { Attachment } from '/@/lib/chat/utils/chat';
 import { fileUIPart2Attachment } from '/@/lib/chat/utils/chat';
 import { cn } from '/@/lib/chat/utils/shadcn';
 import { mcpRemoteServerInfos, mcpRemoteServerInfosStatus } from '/@/stores/mcp-remote-servers';

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { experimental_createMCPClient } from '@ai-sdk/mcp';
+import { createMCPClient } from '@ai-sdk/mcp';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { beforeEach, expect, test, vi } from 'vitest';
 
@@ -50,7 +50,7 @@ function createMockTransport(): Transport {
 }
 
 function mockMCPClient(toolSet: Record<string, { description?: string }> = {}): void {
-  vi.mocked(experimental_createMCPClient).mockResolvedValue({
+  vi.mocked(createMCPClient).mockResolvedValue({
     tools: vi.fn().mockResolvedValue(toolSet),
     close: vi.fn(),
   } as never);
@@ -110,7 +110,7 @@ test('addClient throws if client already exists', async () => {
 
 test('addClient cleans up client state when tool discovery fails', async () => {
   const close = vi.fn().mockResolvedValue(undefined);
-  vi.mocked(experimental_createMCPClient).mockResolvedValueOnce({
+  vi.mocked(createMCPClient).mockResolvedValueOnce({
     tools: vi.fn().mockRejectedValue(new Error('tool discovery failed')),
     close,
   } as never);

@@ -17,13 +17,13 @@
  ***********************************************************************/
 import '@testing-library/jest-dom/vitest';
 
-import type { Attachment } from '@ai-sdk/ui-utils';
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { toast } from 'svelte-sonner';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { EditState } from '/@/lib/chat/hooks/edit-state.svelte';
 import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
+import type { Attachment } from '/@/lib/chat/utils/chat';
 
 import MultimodalInput from './multimodal-input.svelte';
 

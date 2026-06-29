@@ -1,6 +1,7 @@
 <script lang="ts">
-import type { Attachment } from '@ai-sdk/ui-utils';
 import { Tooltip as TooltipPrimitive } from 'bits-ui';
+
+import type { Attachment } from '/@/lib/chat/utils/chat';
 
 import PreviewAttachment from './preview-attachment.svelte';
 

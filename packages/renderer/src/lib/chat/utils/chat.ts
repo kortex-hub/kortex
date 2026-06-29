@@ -1,17 +1,19 @@
-import type { Attachment } from '@ai-sdk/ui-utils';
 import type { AssistantModelMessage, FileUIPart, ToolModelMessage, UIMessage } from 'ai';
 
 import type { Document, Message } from '/@api/chat/schema.js';
+
+export interface Attachment {
+  name?: string;
+  contentType?: string;
+  url: string;
+}
 
 export function convertToUIMessages(messages: Array<Message>): Array<UIMessage> {
   return messages.map(message => ({
     id: message.id,
     parts: message.parts as UIMessage['parts'],
     role: message.role as UIMessage['role'],
-    // Note: content will soon be deprecated in @ai-sdk/react
-    content: '',
     createdAt: message.createdAt,
-    experimental_attachments: (message.attachments as Array<Attachment>) ?? [],
   }));
 }
 

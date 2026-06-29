@@ -1,5 +1,4 @@
 <script lang="ts">
-import type { Attachment } from '@ai-sdk/ui-utils';
 import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import {
   faFile,
@@ -15,6 +14,8 @@ import {
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
+
+import type { Attachment } from '/@/lib/chat/utils/chat';
 
 import LoaderIcon from './icons/loader.svelte';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';

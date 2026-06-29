@@ -17,7 +17,7 @@
  ***********************************************************************/
 import { randomUUID } from 'node:crypto';
 
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createGoogle } from '@ai-sdk/google';
 import { GoogleGenAI } from '@google/genai';
 import type {
   Disposable,
@@ -148,7 +148,7 @@ export class Gemini implements Disposable {
       throw new Error(`connection already exists for token ${key}`);
     }
 
-    const google = createGoogleGenerativeAI({
+    const google = createGoogle({
       apiKey: token,
     });
 

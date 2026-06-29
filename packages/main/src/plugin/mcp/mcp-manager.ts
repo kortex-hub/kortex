@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { experimental_createMCPClient } from '@ai-sdk/mcp';
+import { createMCPClient } from '@ai-sdk/mcp';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { ToolSet } from 'ai';
 import { inject, injectable, preDestroy } from 'inversify';
@@ -26,10 +26,7 @@ import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import { IAsyncDisposable } from '/@api/async-disposable.js';
 import type { MCPCommandSpec, MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info.js';
 
-/**
- * experimental_createMCPClient return `Promise<MCPClient>` but they did not exported this type...
- */
-type ExtractedMCPClient = Awaited<ReturnType<typeof experimental_createMCPClient>>;
+type ExtractedMCPClient = Awaited<ReturnType<typeof createMCPClient>>;
 
 @injectable()
 export class MCPManager implements IAsyncDisposable {
@@ -259,15 +256,15 @@ export class MCPManager implements IAsyncDisposable {
     transport: Transport,
   ): Promise<Record<string, { description?: string }>> {
     const wrapped = this.exchanges.createMiddleware(key, transport);
-    const client = await experimental_createMCPClient({ transport: wrapped });
+    const client = await createMCPClient({ transport: wrapped });
 
     try {
       const toolSet = await client.tools();
-      const tools = Object.fromEntries(
+      const tools: Record<string, { description?: string }> = Object.fromEntries(
         Object.entries(toolSet).map(([toolName, value]) => [
           toolName,
           {
-            description: value.description ?? '',
+            description: typeof value.description === 'string' ? value.description : '',
           },
         ]),
       );

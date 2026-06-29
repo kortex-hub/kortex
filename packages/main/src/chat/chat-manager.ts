@@ -22,9 +22,16 @@ import { mkdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import type { LanguageModelV3 } from '@ai-sdk/provider';
-import type { DynamicToolUIPart, ModelMessage, StopCondition, ToolSet, UIMessage } from 'ai';
-import { convertToModelMessages, generateObject, generateText, isTextUIPart, stepCountIs, streamText } from 'ai';
+import type { DynamicToolUIPart, LanguageModel, ModelMessage, StopCondition, ToolSet, UIMessage } from 'ai';
+import {
+  convertToModelMessages,
+  generateObject,
+  generateText,
+  isStepCount,
+  isTextUIPart,
+  streamText,
+  toUIMessageStream,
+} from 'ai';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import type { WebContents } from 'electron';
@@ -253,7 +260,7 @@ export class ChatManager {
     messages: ModelMessage[];
     tools: ToolSet;
     stopWhen: StopCondition<ToolSet>;
-    system: string;
+    instructions: string;
     userMessage: UIMessage;
   }> {
     const internalProviderId = this.providerRegistry.getMatchingProviderInternalId(params.providerId);
@@ -277,8 +284,8 @@ export class ChatManager {
       userMessage,
       messages,
       tools,
-      stopWhen: stepCountIs(5),
-      system: 'You are a friendly assistant! Keep your responses concise and helpful.',
+      stopWhen: isStepCount(5),
+      instructions: 'You are a friendly assistant! Keep your responses concise and helpful.',
     };
   }
 
@@ -298,7 +305,7 @@ export class ChatManager {
    * Only updates the title if it hasn't been manually changed from the placeholder.
    */
   private generateTitleInBackground(
-    model: LanguageModelV3,
+    model: LanguageModel,
     userMessage: UIMessage,
     chatId: string,
     placeholderTitle: string,
@@ -311,7 +318,7 @@ export class ChatManager {
         .filter(isTextUIPart)
         .map(p => p.text)
         .join(' '),
-      system: `\n
+      instructions: `\n
       - you will generate a short title based on the first message a user begins a conversation with
       - ensure it is not more than 80 characters long
       - the title should be a summary of the user's message
@@ -403,32 +410,31 @@ export class ChatManager {
         abortSignal: abortController.signal,
       });
 
-      let onFinishSavePromise: Promise<void> | undefined;
+      let onEndSavePromise: Promise<void> | undefined;
 
-      const reader = streaming
-        .toUIMessageStream({
-          onFinish: ({ messages }): void => {
-            onFinishSavePromise = this.chatQueries
-              .saveMessages({
-                messages: messages.map(message => ({
-                  id: randomUUID().toString(),
-                  role: message.role,
-                  parts: message.parts,
-                  createdAt: new Date(),
-                  chatId,
-                  attachments: [],
-                  config,
-                })),
-              })
-              .match(
-                () => {},
-                error => {
-                  throw error;
-                },
-              );
-          },
-        })
-        .getReader();
+      const reader = toUIMessageStream({
+        stream: streaming.stream,
+        onEnd: ({ messages }): void => {
+          onEndSavePromise = this.chatQueries
+            .saveMessages({
+              messages: messages.map(message => ({
+                id: randomUUID().toString(),
+                role: message.role,
+                parts: message.parts,
+                createdAt: new Date(),
+                chatId,
+                attachments: [],
+                config,
+              })),
+            })
+            .match(
+              () => {},
+              error => {
+                throw error;
+              },
+            );
+        },
+      }).getReader();
 
       try {
         while (true) {
@@ -441,8 +447,8 @@ export class ChatManager {
         throw err;
       }
 
-      if (onFinishSavePromise) {
-        await onFinishSavePromise;
+      if (onEndSavePromise) {
+        await onEndSavePromise;
       }
     } finally {
       this.activeStreams.delete(params.onDataId);
@@ -526,15 +532,23 @@ export class ChatManager {
    * Convert database Message[] to UIMessage[] format for AI SDK
    */
   private convertDbMessagesToUIMessages(messages: Message[]): UIMessage[] {
-    return messages.map(message => ({
-      id: message.id,
-      parts: message.parts as UIMessage['parts'],
-      role: message.role as UIMessage['role'],
-      content: '',
-      createdAt: message.createdAt,
-      experimental_attachments:
-        (message.attachments as Array<{ name?: string; contentType?: string; url: string }>) ?? [],
-    }));
+    return messages.map(message => {
+      const attachments = message.attachments as
+        | Array<{ name?: string; contentType?: string; url: string }>
+        | undefined;
+      const fileParts: UIMessage['parts'] = (attachments ?? []).map(a => ({
+        type: 'file' as const,
+        mediaType: a.contentType ?? 'application/octet-stream',
+        filename: a.name,
+        url: a.url,
+      }));
+      return {
+        id: message.id,
+        parts: [...fileParts, ...(message.parts as UIMessage['parts'])],
+        role: message.role as UIMessage['role'],
+        createdAt: message.createdAt,
+      };
+    });
   }
 
   /**
@@ -589,13 +603,13 @@ export class ChatManager {
         ? await generateObject({
             model,
             messages: modelMessages,
-            system: systemPrompt,
+            instructions: systemPrompt,
             schema: DetectFlowFieldsResultSchema,
           })
         : await generateObject({
             model,
             prompt: params.prompt,
-            system: systemPrompt,
+            instructions: systemPrompt,
             schema: DetectFlowFieldsResultSchema,
           });
 

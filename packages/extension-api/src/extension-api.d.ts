@@ -40,7 +40,9 @@
  **/
 
 declare module '@openkaiden/api' {
-  import type { ProviderV3 as AISDKInferenceProvider } from '@ai-sdk/provider';
+  import type { ProviderV3, ProviderV4 } from '@ai-sdk/provider' with { 'resolution-mode': 'import' };
+
+  type AISDKInferenceProvider = ProviderV3 | ProviderV4;
   import type { components } from '@openkaiden/mcp-registry-types';
   import type { components as workspaceConfigComponents } from '@openkaiden/workspace-configuration';
 

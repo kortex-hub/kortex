@@ -16,7 +16,6 @@ export function findModel(models: ModelInfo[], model: ModelInfo | undefined): Mo
 
 <script lang="ts">
 import { Chat } from '@ai-sdk/svelte';
-import type { Attachment } from '@ai-sdk/ui-utils';
 import type { ReasoningUIPart, TextUIPart, UIMessage, UIMessageChunk } from 'ai';
 import { untrack } from 'svelte';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
@@ -26,6 +25,7 @@ import { LAST_USED_MODEL_KEY } from '/@/lib/chat/ai/models';
 import { ChatHistory } from '/@/lib/chat/hooks/chat-history.svelte';
 import { EditState } from '/@/lib/chat/hooks/edit-state.svelte';
 import { LocalStorage } from '/@/lib/chat/hooks/local-storage.svelte';
+import type { Attachment } from '/@/lib/chat/utils/chat';
 import { convertToUIMessages } from '/@/lib/chat/utils/chat';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import { disabledModels, isModelEnabled } from '/@/stores/model-catalog';

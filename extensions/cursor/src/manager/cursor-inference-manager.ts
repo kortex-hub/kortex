@@ -27,7 +27,7 @@ import type {
   SecretStorage,
 } from '@openkaiden/api';
 import { configuration } from '@openkaiden/api';
-import { MockProviderV3 } from 'ai/test';
+import { MockProviderV4 } from 'ai/test';
 import { inject, injectable } from 'inversify';
 
 import { PROVIDER_ID } from '/@/cursor-extension';
@@ -144,7 +144,7 @@ export class CursorInferenceManager {
       status = 'stopped';
     }
 
-    const cursorSdk = new MockProviderV3();
+    const cursorSdk = new MockProviderV4();
 
     const connection: InferenceProviderConnection = {
       id,

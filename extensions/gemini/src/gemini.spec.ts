@@ -18,7 +18,7 @@
 
 import { randomUUID } from 'node:crypto';
 
-import { createGoogleGenerativeAI, type GoogleGenerativeAIProvider } from '@ai-sdk/google';
+import { createGoogle, type GoogleProvider } from '@ai-sdk/google';
 import type { Model, Pager } from '@google/genai';
 import { GoogleGenAI } from '@google/genai';
 import type {
@@ -58,12 +58,12 @@ vi.mock('@openkaiden/api', () => ({
 }));
 
 vi.mock(import('@ai-sdk/google'), () => ({
-  createGoogleGenerativeAI: vi.fn(),
+  createGoogle: vi.fn(),
 }));
 
 vi.mock(import('@google/genai'));
 
-const GOOGLE_AI_PROVIDER_MOCK: GoogleGenerativeAIProvider = {} as unknown as GoogleGenerativeAIProvider;
+const GOOGLE_AI_PROVIDER_MOCK: GoogleProvider = {} as unknown as GoogleProvider;
 
 const PROVIDER_API_MOCK: typeof ProviderAPI = {
   createProvider: vi.fn(),
@@ -96,7 +96,7 @@ beforeEach(() => {
 
   vi.mocked(randomUUID).mockReturnValue('fake-uuid-1' as ReturnType<typeof randomUUID>);
   vi.mocked(PROVIDER_API_MOCK.createProvider).mockReturnValue(PROVIDER_MOCK as Provider);
-  vi.mocked(createGoogleGenerativeAI).mockReturnValue(GOOGLE_AI_PROVIDER_MOCK);
+  vi.mocked(createGoogle).mockReturnValue(GOOGLE_AI_PROVIDER_MOCK);
   vi.mocked(configuration.getConfiguration).mockReturnValue(CONFIGURATION_MOCK);
 
   // Mock GoogleGenAI prototype models.list to return async iterable Pager
@@ -274,8 +274,8 @@ describe('factory', () => {
     });
 
     // ensure the key is used to create a google client
-    expect(createGoogleGenerativeAI).toHaveBeenCalledOnce();
-    expect(createGoogleGenerativeAI).toHaveBeenCalledWith({
+    expect(createGoogle).toHaveBeenCalledOnce();
+    expect(createGoogle).toHaveBeenCalledWith({
       apiKey: 'dummyKey',
     });
 
