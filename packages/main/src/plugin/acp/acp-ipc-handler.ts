@@ -29,7 +29,6 @@ import type {
   AcpSessionInfo,
   AcpUserResponse,
 } from '/@api/acp-session-info.js';
-import type { SandboxInfo } from '/@api/openshell-gateway-info.js';
 
 @injectable()
 export class AcpIPCHandler {
@@ -51,7 +50,6 @@ export class AcpIPCHandler {
     this.ipcHandle('acp:stopPrompt', this.stopPrompt.bind(this));
     this.ipcHandle('acp:deleteSession', this.deleteSession.bind(this));
     this.ipcHandle('acp:cancelSession', this.cancelSession.bind(this));
-    this.ipcHandle('acp:listSandboxes', this.listSandboxes.bind(this));
     this.ipcHandle('acp:isOpenshellAvailable', this.isOpenshellAvailable.bind(this));
     this.ipcHandle('acp:setSessionModel', this.setSessionModel.bind(this));
     this.ipcHandle('acp:setSessionMode', this.setSessionMode.bind(this));
@@ -93,10 +91,6 @@ export class AcpIPCHandler {
 
   protected cancelSession(_: IpcMainInvokeEvent, sessionId: string): void {
     this.sessionManager.cancelSession(sessionId);
-  }
-
-  protected async listSandboxes(_: IpcMainInvokeEvent): Promise<SandboxInfo[]> {
-    return this.openshellCli.listSandboxes();
   }
 
   protected async isOpenshellAvailable(_: IpcMainInvokeEvent): Promise<boolean> {

@@ -5,8 +5,8 @@ import { Icon } from '@podman-desktop/ui-svelte/icons';
 import type { Snippet } from 'svelte';
 import { router } from 'tinro';
 
-import { acpSandboxes } from '/@/stores/acp-sandboxes.svelte';
 import { acpSessions } from '/@/stores/acp-sessions.svelte';
+import { allOpenshellSandboxes } from '/@/stores/openshell-sandboxes';
 import type { AcpSessionInfo, AcpSessionStatus } from '/@api/acp-session-info';
 
 import AcpSessionCreate from './AcpSessionCreate.svelte';
@@ -19,7 +19,7 @@ interface Props {
 let { currentSessionId, children }: Props = $props();
 let showCreateDialog = $state(false);
 
-const hasReadySandboxes = $derived($acpSandboxes.some(s => s.phase === 'Ready'));
+const hasReadySandboxes = $derived($allOpenshellSandboxes.some(s => s.phase === 'Ready'));
 
 const STATUS_COLORS: Record<AcpSessionStatus, string> = {
   idle: 'bg-[var(--pd-status-not-running)]',

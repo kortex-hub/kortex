@@ -22,14 +22,15 @@ import { render, screen } from '@testing-library/svelte';
 import { writable } from 'svelte/store';
 import { beforeEach, expect, test, vi } from 'vitest';
 
-import * as acpSandboxesStore from '/@/stores/acp-sandboxes.svelte';
 import * as agentsStore from '/@/stores/agents';
+import type { SandboxInfoWithGateway } from '/@/stores/openshell-sandboxes';
+import * as openshellSandboxesStore from '/@/stores/openshell-sandboxes';
 import type { AgentInfo } from '/@api/agent-info';
-import type { SandboxInfo } from '/@api/openshell-gateway-info';
+import { AGENT_LABEL } from '/@api/openshell-gateway-info';
 
 import AcpSessionCreate from './AcpSessionCreate.svelte';
 
-vi.mock(import('/@/stores/acp-sandboxes.svelte'));
+vi.mock(import('/@/stores/openshell-sandboxes'));
 vi.mock(import('/@/stores/agents'));
 vi.mock(import('tinro'));
 
@@ -39,6 +40,7 @@ const ACP_AGENT: AgentInfo = {
   description: 'An ACP agent',
   command: 'openclaw',
   acp: { args: ['acp'] },
+  destinationSkillsFolder: '/skills',
 };
 
 const NON_ACP_AGENT: AgentInfo = {
@@ -46,19 +48,22 @@ const NON_ACP_AGENT: AgentInfo = {
   name: 'Claude Code',
   description: 'No ACP support',
   command: 'claude',
+  destinationSkillsFolder: '/skills',
 };
 
-const SANDBOX_WITH_LABEL: SandboxInfo = {
+const SANDBOX_WITH_LABEL: SandboxInfoWithGateway = {
   id: 'sb-1',
   name: 'labeled-sandbox',
   phase: 'Ready',
-  labels: { 'kaiden.agent': 'openclaw' },
+  labels: { [AGENT_LABEL]: 'openclaw' },
+  gatewayName: 'test-gateway',
 };
 
-const SANDBOX_WITHOUT_LABEL: SandboxInfo = {
+const SANDBOX_WITHOUT_LABEL: SandboxInfoWithGateway = {
   id: 'sb-2',
   name: 'plain-sandbox',
   phase: 'Ready',
+  gatewayName: 'test-gateway',
 };
 
 beforeEach(() => {
@@ -66,7 +71,9 @@ beforeEach(() => {
 });
 
 test('shows agent dropdown when sandbox has no kaiden.agent label', () => {
-  vi.mocked(acpSandboxesStore).acpSandboxes = writable<SandboxInfo[]>([SANDBOX_WITHOUT_LABEL]);
+  vi.mocked(openshellSandboxesStore).allOpenshellSandboxes = writable<SandboxInfoWithGateway[]>([
+    SANDBOX_WITHOUT_LABEL,
+  ]);
   vi.mocked(agentsStore).agentInfos = writable<AgentInfo[]>([ACP_AGENT, NON_ACP_AGENT]);
 
   render(AcpSessionCreate, { onclose: vi.fn() });
@@ -76,7 +83,7 @@ test('shows agent dropdown when sandbox has no kaiden.agent label', () => {
 });
 
 test('shows agent name from label when sandbox has kaiden.agent label', () => {
-  vi.mocked(acpSandboxesStore).acpSandboxes = writable<SandboxInfo[]>([SANDBOX_WITH_LABEL]);
+  vi.mocked(openshellSandboxesStore).allOpenshellSandboxes = writable<SandboxInfoWithGateway[]>([SANDBOX_WITH_LABEL]);
   vi.mocked(agentsStore).agentInfos = writable<AgentInfo[]>([ACP_AGENT, NON_ACP_AGENT]);
 
   render(AcpSessionCreate, { onclose: vi.fn() });
@@ -86,7 +93,9 @@ test('shows agent name from label when sandbox has kaiden.agent label', () => {
 });
 
 test('only shows ACP-capable agents in dropdown', () => {
-  vi.mocked(acpSandboxesStore).acpSandboxes = writable<SandboxInfo[]>([SANDBOX_WITHOUT_LABEL]);
+  vi.mocked(openshellSandboxesStore).allOpenshellSandboxes = writable<SandboxInfoWithGateway[]>([
+    SANDBOX_WITHOUT_LABEL,
+  ]);
   vi.mocked(agentsStore).agentInfos = writable<AgentInfo[]>([ACP_AGENT, NON_ACP_AGENT]);
 
   render(AcpSessionCreate, { onclose: vi.fn() });

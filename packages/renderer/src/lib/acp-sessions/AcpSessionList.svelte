@@ -12,8 +12,8 @@ import {
 } from '@podman-desktop/ui-svelte';
 
 import NoLogIcon from '/@/lib/ui/NoLogIcon.svelte';
-import { acpSandboxes } from '/@/stores/acp-sandboxes.svelte';
 import { acpSessions } from '/@/stores/acp-sessions.svelte';
+import { allOpenshellSandboxes } from '/@/stores/openshell-sandboxes';
 import type { AcpSessionInfo, AcpSessionStatus } from '/@api/acp-session-info';
 
 import AcpNoSandboxEmptyScreen from './AcpNoSandboxEmptyScreen.svelte';
@@ -28,7 +28,7 @@ type SessionSelectable = AcpSessionInfo & { selected: boolean };
 let searchTerm = $state('');
 let showCreateDialog = $state(false);
 
-const hasReadySandboxes = $derived($acpSandboxes.some(s => s.phase === 'Ready'));
+const hasReadySandboxes = $derived($allOpenshellSandboxes.some(s => s.phase === 'Ready'));
 
 const STATUS_ORDER: Record<AcpSessionStatus, number> = {
   waiting_input: 0,

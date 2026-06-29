@@ -42,6 +42,7 @@ import type {
 import type { AgentInfo } from '/@api/agent-info.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { SandboxInfo } from '/@api/openshell-gateway-info.js';
+import { AGENT_LABEL } from '/@api/openshell-gateway-info.js';
 
 import { createAcpDebug } from './acp-debug.js';
 
@@ -84,7 +85,7 @@ export class AcpSessionManager {
     options: AcpSessionCreateOptions,
     sandbox: SandboxInfo,
   ): Promise<{ agentInfo: AgentInfo; command: string[] }> {
-    const agentId = options.agentId ?? sandbox.labels?.['kaiden.agent'];
+    const agentId = options.agentId ?? sandbox.labels?.[AGENT_LABEL];
     if (!agentId) {
       throw new Error('No agent specified. Select an agent or use a sandbox created by a workspace.');
     }

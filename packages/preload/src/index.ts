@@ -135,7 +135,7 @@ import type { NavigationRequest } from '/@api/navigation-request';
 import type { NetworkInspectInfo } from '/@api/network-info';
 import type { NotificationCard, NotificationCardOptions } from '/@api/notification';
 import type { OnboardingInfo, OnboardingStatus } from '/@api/onboarding';
-import type { GatewayInfo, GatewaySandboxes, OpenshellProfile, SandboxInfo } from '/@api/openshell-gateway-info';
+import type { GatewayInfo, GatewaySandboxes, OpenshellProfile } from '/@api/openshell-gateway-info';
 import type { V1Route } from '/@api/openshift-types';
 import type { PodCreateOptions, PodInfo, PodInspectInfo } from '/@api/pod-info';
 import type {
@@ -497,10 +497,6 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld('cancelAcpSession', async (sessionId: string): Promise<void> => {
     return ipcInvoke('acp:cancelSession', sessionId);
-  });
-
-  contextBridge.exposeInMainWorld('listAcpSandboxes', async (): Promise<SandboxInfo[]> => {
-    return ipcInvoke('acp:listSandboxes');
   });
 
   contextBridge.exposeInMainWorld('isOpenshellAvailable', async (): Promise<boolean> => {
