@@ -122,27 +122,22 @@ export class ClaudeExtension {
       async preWorkspaceStart(context: AgentWorkspaceContext): Promise<void> {
         // Handle Vertex AI model configuration
         if (context.model.llmMetadata?.name === 'vertexai') {
-          const environment = context.workspace.environment ?? [];
-          const googleProject = environment.find(e => e.name === 'GOOGLE_VERTEX_PROJECT')?.value;
-          const googleLocation = environment.find(e => e.name === 'GOOGLE_VERTEX_LOCATION')?.value;
+          // Add Claude Code-specific environment variables for Vertex AI
+          const claudeEnvVars = [
+            { name: 'CLAUDE_CODE_SIMPLE', value: '1' },
+            { name: 'CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS', value: '1' },
+            { name: 'ANTHROPIC_BASE_URL', value: 'https://inference.local' },
+            { name: 'ANTHROPIC_API_KEY', value: 'unused' },
+          ];
 
-          if (googleProject && googleLocation) {
-            // Add Claude Code-specific environment variables for Vertex AI
-            const claudeEnvVars = [
-              { name: 'CLAUDE_CODE_USE_VERTEX', value: '1' },
-              { name: 'CLOUD_ML_REGION', value: googleLocation },
-              { name: 'ANTHROPIC_VERTEX_PROJECT_ID', value: googleProject },
-            ];
-
-            context.workspace.environment ??= [];
-            for (const envVar of claudeEnvVars) {
-              // Remove existing entry if present
-              const index = context.workspace.environment.findIndex(e => e.name === envVar.name);
-              if (index >= 0) {
-                context.workspace.environment.splice(index, 1);
-              }
-              context.workspace.environment.push(envVar);
+          context.workspace.environment ??= [];
+          for (const envVar of claudeEnvVars) {
+            // Remove existing entry if present
+            const index = context.workspace.environment.findIndex(e => e.name === envVar.name);
+            if (index >= 0) {
+              context.workspace.environment.splice(index, 1);
             }
+            context.workspace.environment.push(envVar);
           }
         }
 

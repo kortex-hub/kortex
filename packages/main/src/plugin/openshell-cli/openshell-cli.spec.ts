@@ -990,6 +990,40 @@ describe('createProvider', () => {
     );
   });
 
+  test('merges options.env into credential env', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.createProvider({
+      name: 'my-vertex',
+      type: 'google-vertex-ai',
+      credentials: { GOOGLE_APPLICATION_CREDENTIALS: '/path/to/creds.json' },
+      env: { GOOGLE_VERTEX_PROJECT: 'my-project' },
+      flags: ['--from-gcloud-adc'],
+    });
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      [
+        'provider',
+        'create',
+        '--name',
+        'my-vertex',
+        '--type',
+        'google-vertex-ai',
+        '--credential',
+        'GOOGLE_APPLICATION_CREDENTIALS',
+        '--from-gcloud-adc',
+      ],
+      {
+        env: {
+          GOOGLE_VERTEX_PROJECT: 'my-project',
+          GOOGLE_APPLICATION_CREDENTIALS: '/path/to/creds.json',
+        },
+      },
+    );
+  });
+
   test('redacts credential and config values in logs', async () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
@@ -1018,5 +1052,53 @@ describe('createProvider', () => {
         credentials: { key: 'val' },
       }),
     ).rejects.toThrow('provider type not supported');
+  });
+});
+
+describe('setInference', () => {
+  test('executes inference set with provider and model', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.setInference({ provider: 'my-vertex', model: 'claude-sonnet-4-20250514' });
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['inference', 'set', '--provider', 'my-vertex', '--model', 'claude-sonnet-4-20250514', '--no-verify'],
+      undefined,
+    );
+  });
+
+  test('rejects when CLI fails', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockRejectedValue(new Error('provider not found'));
+
+    await expect(openshellCli.setInference({ provider: 'unknown', model: 'model' })).rejects.toThrow(
+      'provider not found',
+    );
+  });
+});
+
+describe('enableV2Provider', () => {
+  test('executes settings set with sandbox name', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.enableV2Provider('my-sandbox');
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['settings', 'set', '--key', 'providers_v2_enabled', '--value', 'true', '--yes', 'my-sandbox'],
+      undefined,
+    );
+  });
+
+  test('rejects when CLI fails', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockRejectedValue(new Error('sandbox not found'));
+
+    await expect(openshellCli.enableV2Provider('unknown')).rejects.toThrow('sandbox not found');
   });
 });

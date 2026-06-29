@@ -138,3 +138,8 @@ export interface CreateProviderOptions {
   flags?: string[];
   env?: Record<string, string>;
 }
+
+export interface SetInferenceOptions {
+  provider: string;
+  model: string;
+}

@@ -54,13 +54,13 @@
           "format": "password",
           "hidden": true
         },
-        "vertex-ai.connection.GOOGLE_VERTEX_PROJECT": {
+        "vertex-ai.connection.VERTEX_AI_PROJECT_ID": {
           "type": "string",
           "scope": "InferenceProviderConnection",
           "description": "Google Cloud project ID",
           "hidden": true
         },
-        "vertex-ai.connection.GOOGLE_VERTEX_LOCATION": {
+        "vertex-ai.connection.VERTEX_AI_REGION": {
           "type": "string",
           "scope": "InferenceProviderConnection",
           "description": "Google Cloud region",

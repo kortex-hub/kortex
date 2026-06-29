@@ -288,8 +288,8 @@ export class VertexAi implements Disposable {
     await cfg.update('vertex-ai.connection._type', PROVIDER_ID);
     await cfg.update('vertex-ai.connection._flags', '--from-gcloud-adc');
     await cfg.update('vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS', secretName);
-    await cfg.update('vertex-ai.connection.GOOGLE_VERTEX_PROJECT', config.projectId);
-    await cfg.update('vertex-ai.connection.GOOGLE_VERTEX_LOCATION', config.region);
+    await cfg.update('vertex-ai.connection.VERTEX_AI_PROJECT_ID', config.projectId);
+    await cfg.update('vertex-ai.connection.VERTEX_AI_REGION', config.region);
   }
 
   private async clearConnectionConfiguration(connection: InferenceProviderConnection): Promise<void> {
@@ -300,8 +300,8 @@ export class VertexAi implements Disposable {
     await cfg.update('vertex-ai.connection._type', undefined);
     await cfg.update('vertex-ai.connection._flags', undefined);
     await cfg.update('vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS', undefined);
-    await cfg.update('vertex-ai.connection.GOOGLE_VERTEX_PROJECT', undefined);
-    await cfg.update('vertex-ai.connection.GOOGLE_VERTEX_LOCATION', undefined);
+    await cfg.update('vertex-ai.connection.VERTEX_AI_PROJECT_ID', undefined);
+    await cfg.update('vertex-ai.connection.VERTEX_AI_REGION', undefined);
   }
 
   private async registerInferenceProviderConnection(

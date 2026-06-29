@@ -199,6 +199,8 @@ export class AgentWorkspaceManager implements Disposable {
       command: ['true'],
     });
 
+    await this.openshellCli.enableV2Provider(sandboxName);
+
     const finalNetwork = workspace.network;
     if (finalNetwork) {
       const operations = buildNetworkPolicyOperations(sandboxName, finalNetwork);
@@ -352,7 +354,8 @@ export class AgentWorkspaceManager implements Disposable {
           value.env ??= {};
           value.env[shortPropertyName] = actualValue;
         } else {
-          environment[shortPropertyName] = actualValue;
+          value.config ??= {};
+          value.config[shortPropertyName] = actualValue;
         }
       }
     }
@@ -363,6 +366,12 @@ export class AgentWorkspaceManager implements Disposable {
       type: secretType,
       value: value,
     });
+    if (flagsValue !== undefined) {
+      await this.openshellCli.setInference({
+        provider: secretName,
+        model: options.model!.split('::')[1]!,
+      });
+    }
 
     options.secrets = [...new Set([...(options.secrets ?? []), secretName])];
 

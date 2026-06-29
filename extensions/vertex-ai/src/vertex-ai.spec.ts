@@ -621,8 +621,8 @@ describe('connection delete lifecycle', () => {
     expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection._type', undefined);
     expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection._flags', undefined);
     expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS', undefined);
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.GOOGLE_VERTEX_PROJECT', undefined);
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.GOOGLE_VERTEX_LOCATION', undefined);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.VERTEX_AI_PROJECT_ID', undefined);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.VERTEX_AI_REGION', undefined);
 
     expect(disposeMock).toHaveBeenCalledOnce();
   });
@@ -662,8 +662,8 @@ describe('workspace configuration', () => {
       'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS',
       `${PROVIDER_ID}:fake-uuid-1:token`,
     );
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.GOOGLE_VERTEX_PROJECT', 'my-project');
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.GOOGLE_VERTEX_LOCATION', 'us-east5');
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.VERTEX_AI_PROJECT_ID', 'my-project');
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.VERTEX_AI_REGION', 'us-east5');
   });
 
   test('should set workspace configuration for each restored connection', async () => {
@@ -689,10 +689,10 @@ describe('workspace configuration', () => {
       'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS',
       `${PROVIDER_ID}:id-2:token`,
     );
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.GOOGLE_VERTEX_PROJECT', 'proj-a');
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.GOOGLE_VERTEX_PROJECT', 'proj-b');
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.GOOGLE_VERTEX_LOCATION', 'us-east5');
-    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.GOOGLE_VERTEX_LOCATION', 'europe-west1');
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.VERTEX_AI_PROJECT_ID', 'proj-a');
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.VERTEX_AI_PROJECT_ID', 'proj-b');
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.VERTEX_AI_REGION', 'us-east5');
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.VERTEX_AI_REGION', 'europe-west1');
   });
 });
 
