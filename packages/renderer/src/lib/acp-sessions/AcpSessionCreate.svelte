@@ -4,8 +4,9 @@ import { router } from 'tinro';
 
 import { Textarea } from '/@/lib/chat/components/ui/textarea';
 import Dialog from '/@/lib/dialogs/Dialog.svelte';
-import { acpSandboxes } from '/@/stores/acp-sandboxes.svelte';
 import { agentInfos } from '/@/stores/agents';
+import { allOpenshellSandboxes } from '/@/stores/openshell-sandboxes';
+import { AGENT_LABEL } from '/@api/openshell-gateway-info';
 
 interface Props {
   onclose: () => void;
@@ -19,11 +20,11 @@ let prompt = $state('');
 let creating = $state(false);
 let error = $state<string | undefined>();
 
-const readySandboxes = $derived($acpSandboxes.filter(s => s.phase === 'Ready'));
+const readySandboxes = $derived($allOpenshellSandboxes.filter(s => s.phase === 'Ready'));
 const acpAgents = $derived($agentInfos.filter(a => a.acp !== undefined));
 
 const selectedSandbox = $derived(readySandboxes.find(s => s.name === selectedSandboxName));
-const sandboxAgentId = $derived(selectedSandbox?.labels?.['kaiden.agent']);
+const sandboxAgentId = $derived(selectedSandbox?.labels?.[AGENT_LABEL]);
 const needsAgentSelection = $derived(!sandboxAgentId);
 const effectiveAgentId = $derived(sandboxAgentId ?? selectedAgentId);
 

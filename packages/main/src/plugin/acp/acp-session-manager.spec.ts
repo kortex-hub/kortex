@@ -23,7 +23,7 @@ import type { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import type { AcpSessionCreateOptions } from '/@api/acp-session-info.js';
 import type { AgentInfo } from '/@api/agent-info.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
-import type { SandboxInfo } from '/@api/openshell-gateway-info.js';
+import { AGENT_LABEL, type SandboxInfo } from '/@api/openshell-gateway-info.js';
 
 import { AcpSessionManager } from './acp-session-manager.js';
 
@@ -57,6 +57,7 @@ function createAgentInfo(overrides?: Partial<AgentInfo>): AgentInfo {
     description: 'Test agent',
     command: 'openclaw',
     acp: { args: ['acp'] },
+    destinationSkillsFolder: '/skills',
     ...overrides,
   };
 }
@@ -89,7 +90,7 @@ describe('AcpSessionManager', () => {
       vi.mocked(agentRegistry.getAgent).mockResolvedValue(agent);
 
       const options: AcpSessionCreateOptions = { sandboxName: 'sb', prompt: 'hello' };
-      const sandbox = createSandbox({ labels: { 'kaiden.agent': 'copilot' } });
+      const sandbox = createSandbox({ labels: { [AGENT_LABEL]: 'copilot' } });
 
       const result = await manager.resolveAgentCommand(options, sandbox);
 
@@ -102,7 +103,7 @@ describe('AcpSessionManager', () => {
       vi.mocked(agentRegistry.getAgent).mockResolvedValue(agent);
 
       const options: AcpSessionCreateOptions = { sandboxName: 'sb', prompt: 'hello', agentId: 'openclaw' };
-      const sandbox = createSandbox({ labels: { 'kaiden.agent': 'copilot' } });
+      const sandbox = createSandbox({ labels: { [AGENT_LABEL]: 'copilot' } });
 
       const result = await manager.resolveAgentCommand(options, sandbox);
 
