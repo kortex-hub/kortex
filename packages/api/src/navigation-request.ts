@@ -99,6 +99,11 @@ export interface NavigationParameters {
     id: string;
   };
   [NavigationPage.PROJECT_CREATE]: never;
+  [NavigationPage.ACP_SESSIONS]: never;
+  [NavigationPage.ACP_SESSION_CREATE]: never;
+  [NavigationPage.ACP_SESSION_DETAILS]: {
+    id: string;
+  };
 }
 
 // the parameters property is optional when the NavigationParameters say it is

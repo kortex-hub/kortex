@@ -6,6 +6,9 @@ import { tablePersistence } from '@podman-desktop/ui-svelte';
 import { onDestroy } from 'svelte';
 import { router } from 'tinro';
 
+import AcpSessionDetail from '/@/lib/acp-sessions/AcpSessionDetail.svelte';
+import AcpSessionLayout from '/@/lib/acp-sessions/AcpSessionLayout.svelte';
+import AcpSessionList from '/@/lib/acp-sessions/AcpSessionList.svelte';
 import AgentWorkspaceCreate from '/@/lib/agent-workspaces/AgentWorkspaceCreate.svelte';
 import AgentWorkspaceDetails from '/@/lib/agent-workspaces/AgentWorkspaceDetails.svelte';
 import AgentWorkspaceList from '/@/lib/agent-workspaces/AgentWorkspaceList.svelte';
@@ -257,6 +260,24 @@ tablePersistence.storage = new PodmanDesktopStoragePersist();
           <CustomChat chatId={meta.params.chatId} />
         </Route>
         {/if}
+
+        <Route path="/acp-sessions/*" breadcrumb="Agents" navigationHint="root" firstmatch>
+          <Route path="/" breadcrumb="Agents" navigationHint="root">
+            <AcpSessionLayout>
+              <AcpSessionList />
+            </AcpSessionLayout>
+          </Route>
+          <Route path="/new" breadcrumb="New Session" let:meta navigationHint="details">
+            <AcpSessionLayout>
+              <AcpSessionDetail sessionId="new" draftSandboxName={meta.query.sandbox ?? ''} draftAgentId={meta.query.agent ?? ''} />
+            </AcpSessionLayout>
+          </Route>
+          <Route path="/:id/*" breadcrumb="Session Details" let:meta navigationHint="details">
+            <AcpSessionLayout currentSessionId={decodeURIComponent(meta.params.id)}>
+              <AcpSessionDetail sessionId={decodeURIComponent(meta.params.id)} />
+            </AcpSessionLayout>
+          </Route>
+        </Route>
 
         <Route path="/agent-workspaces/*" breadcrumb="Agentic Workspaces" navigationHint="root" firstmatch>
           <Route path="/" breadcrumb="Agentic Workspaces" navigationHint="root">
