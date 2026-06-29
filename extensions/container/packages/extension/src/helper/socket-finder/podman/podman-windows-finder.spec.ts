@@ -18,19 +18,31 @@
 
 import type { RunResult } from '@openkaiden/api';
 import { process } from '@openkaiden/api';
+import { Container } from 'inversify';
 import { beforeEach, expect, test, vi } from 'vitest';
 
+import { PodmanVersionDetector } from './podman-version-detector';
 import { PodmanSocketWindowsFinder } from './podman-windows-finder';
 
 vi.mock(import('@openkaiden/api'));
 
-beforeEach(() => {
+const versionDetectorMock = {
+  getMajorVersion: vi.fn(),
+} as unknown as PodmanVersionDetector;
+
+let finder: PodmanSocketWindowsFinder;
+
+beforeEach(async () => {
   vi.resetAllMocks();
+  vi.mocked(versionDetectorMock.getMajorVersion).mockResolvedValue(5);
+
+  const container = new Container();
+  container.bind(PodmanSocketWindowsFinder).toSelf().inSingletonScope();
+  container.bind(PodmanVersionDetector).toConstantValue(versionDetectorMock);
+  finder = await container.getAsync(PodmanSocketWindowsFinder);
 });
 
 test('findPaths returns empty array when socket does not exist', async () => {
-  const finder = new PodmanSocketWindowsFinder();
-
   const machineListOutput = JSON.stringify([]);
 
   vi.mocked(process.exec).mockResolvedValue({ stdout: machineListOutput, stderr: '' } as RunResult);
@@ -41,8 +53,8 @@ test('findPaths returns empty array when socket does not exist', async () => {
   expect(process.exec).toHaveBeenCalledWith('podman.exe', ['machine', 'ls', '--all-providers', '--format', 'json']);
 });
 
-test('findPaths returns socket path when socket exists and machine is running', async () => {
-  const finder = new PodmanSocketWindowsFinder();
+test('findPaths returns socket path with --all-providers on podman 5', async () => {
+  vi.mocked(versionDetectorMock.getMajorVersion).mockResolvedValue(5);
 
   const machineListOutput = JSON.stringify([{ Name: 'podman-machine-default', VMType: 'qemu', Running: true }]);
 
@@ -54,9 +66,20 @@ test('findPaths returns socket path when socket exists and machine is running', 
   expect(process.exec).toHaveBeenCalledWith('podman.exe', ['machine', 'ls', '--all-providers', '--format', 'json']);
 });
 
-test('findPaths returns empty array when socket exists but no machines are running', async () => {
-  const finder = new PodmanSocketWindowsFinder();
+test('findPaths returns socket path without --all-providers on podman 6', async () => {
+  vi.mocked(versionDetectorMock.getMajorVersion).mockResolvedValue(6);
 
+  const machineListOutput = JSON.stringify([{ Name: 'podman-machine-default', VMType: 'qemu', Running: true }]);
+
+  vi.mocked(process.exec).mockResolvedValue({ stdout: machineListOutput, stderr: '' } as RunResult);
+
+  const result = await finder.findPaths();
+
+  expect(result).toEqual(['\\\\.\\pipe\\podman-machine-default']);
+  expect(process.exec).toHaveBeenCalledWith('podman.exe', ['machine', 'ls', '--format', 'json']);
+});
+
+test('findPaths returns empty array when socket exists but no machines are running', async () => {
   const machineListOutput = JSON.stringify([{ Name: 'podman-machine-default', VMType: 'qemu', Running: false }]);
 
   vi.mocked(process.exec).mockResolvedValue({ stdout: machineListOutput, stderr: '' } as RunResult);
@@ -67,8 +90,6 @@ test('findPaths returns empty array when socket exists but no machines are runni
 });
 
 test('findPaths returns socket path when multiple machines exist and at least one is running', async () => {
-  const finder = new PodmanSocketWindowsFinder();
-
   const machineListOutput = JSON.stringify([
     { Name: 'machine-1', VMType: 'qemu', Running: false },
     { Name: 'machine-2', VMType: 'qemu', Running: true },
@@ -83,8 +104,6 @@ test('findPaths returns socket path when multiple machines exist and at least on
 });
 
 test('findPaths returns empty array when socket exists but machine list is empty', async () => {
-  const finder = new PodmanSocketWindowsFinder();
-
   const machineListOutput = JSON.stringify([]);
 
   vi.mocked(process.exec).mockResolvedValue({ stdout: machineListOutput, stderr: '' } as RunResult);

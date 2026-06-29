@@ -22,22 +22,34 @@ import { resolve } from 'node:path';
 
 import type { RunResult } from '@openkaiden/api';
 import { process } from '@openkaiden/api';
+import { Container } from 'inversify';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import { PodmanSocketMacOSFinder } from './podman-macos-finder';
+import { PodmanVersionDetector } from './podman-version-detector';
 
 vi.mock(import('node:fs'));
 vi.mock(import('node:os'));
 vi.mock(import('node:path'));
 vi.mock(import('@openkaiden/api'));
 
-beforeEach(() => {
+const versionDetectorMock = {
+  getMajorVersion: vi.fn(),
+} as unknown as PodmanVersionDetector;
+
+let finder: PodmanSocketMacOSFinder;
+
+beforeEach(async () => {
   vi.resetAllMocks();
+  vi.mocked(versionDetectorMock.getMajorVersion).mockResolvedValue(6);
+
+  const container = new Container();
+  container.bind(PodmanSocketMacOSFinder).toSelf().inSingletonScope();
+  container.bind(PodmanVersionDetector).toConstantValue(versionDetectorMock);
+  finder = await container.getAsync(PodmanSocketMacOSFinder);
 });
 
 test('findPaths returns empty array when socket does not exist', async () => {
-  const finder = new PodmanSocketMacOSFinder();
-
   vi.mocked(homedir).mockReturnValue('/home/user');
   vi.mocked(resolve).mockReturnValue('/home/user/.local/share/containers/podman/machine/podman.sock');
   vi.mocked(existsSync).mockReturnValue(false);
@@ -49,8 +61,8 @@ test('findPaths returns empty array when socket does not exist', async () => {
   expect(process.exec).not.toHaveBeenCalled();
 });
 
-test('findPaths returns socket path when socket exists and machine is running', async () => {
-  const finder = new PodmanSocketMacOSFinder();
+test('findPaths returns socket path with --all-providers on podman 5', async () => {
+  vi.mocked(versionDetectorMock.getMajorVersion).mockResolvedValue(5);
 
   const socketPath = '/home/user/.local/share/containers/podman/machine/podman.sock';
   vi.mocked(homedir).mockReturnValue('/home/user');
@@ -67,9 +79,25 @@ test('findPaths returns socket path when socket exists and machine is running', 
   expect(process.exec).toHaveBeenCalledWith('podman', ['machine', 'ls', '--all-providers', '--format', 'json']);
 });
 
-test('findPaths returns empty array when socket exists but no machines are running', async () => {
-  const finder = new PodmanSocketMacOSFinder();
+test('findPaths returns socket path without --all-providers on podman 6', async () => {
+  vi.mocked(versionDetectorMock.getMajorVersion).mockResolvedValue(6);
 
+  const socketPath = '/home/user/.local/share/containers/podman/machine/podman.sock';
+  vi.mocked(homedir).mockReturnValue('/home/user');
+  vi.mocked(resolve).mockReturnValue(socketPath);
+  vi.mocked(existsSync).mockReturnValue(true);
+
+  const machineListOutput = JSON.stringify([{ Name: 'podman-machine-default', VMType: 'qemu', Running: true }]);
+
+  vi.mocked(process.exec).mockResolvedValue({ stdout: machineListOutput, stderr: '' } as RunResult);
+
+  const result = await finder.findPaths();
+
+  expect(result).toEqual([socketPath]);
+  expect(process.exec).toHaveBeenCalledWith('podman', ['machine', 'ls', '--format', 'json']);
+});
+
+test('findPaths returns empty array when socket exists but no machines are running', async () => {
   const socketPath = '/home/user/.local/share/containers/podman/machine/podman.sock';
   vi.mocked(homedir).mockReturnValue('/home/user');
   vi.mocked(resolve).mockReturnValue(socketPath);
@@ -85,8 +113,6 @@ test('findPaths returns empty array when socket exists but no machines are runni
 });
 
 test('findPaths returns socket path when multiple machines exist and at least one is running', async () => {
-  const finder = new PodmanSocketMacOSFinder();
-
   const socketPath = '/home/user/.local/share/containers/podman/machine/podman.sock';
   vi.mocked(homedir).mockReturnValue('/home/user');
   vi.mocked(resolve).mockReturnValue(socketPath);
@@ -106,8 +132,6 @@ test('findPaths returns socket path when multiple machines exist and at least on
 });
 
 test('findPaths returns empty array when socket exists but machine list is empty', async () => {
-  const finder = new PodmanSocketMacOSFinder();
-
   const socketPath = '/home/user/.local/share/containers/podman/machine/podman.sock';
   vi.mocked(homedir).mockReturnValue('/home/user');
   vi.mocked(resolve).mockReturnValue(socketPath);

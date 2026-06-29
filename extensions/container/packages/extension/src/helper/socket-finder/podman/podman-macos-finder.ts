@@ -21,16 +21,20 @@ import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 
 import { process } from '@openkaiden/api';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 
 import type { SocketFinder } from '/@/api/socket-finder';
 import {
   type PodmanMachineListInfo,
   zodPodmanMachineList,
 } from '/@/helper/socket-finder/podman/podman-machine-list-info';
+import { PodmanVersionDetector } from '/@/helper/socket-finder/podman/podman-version-detector';
 
 @injectable()
 export class PodmanSocketMacOSFinder implements SocketFinder {
+  @inject(PodmanVersionDetector)
+  private readonly versionDetector: PodmanVersionDetector;
+
   async findPaths(): Promise<string[]> {
     // socket path is at $HOME/.local/share/containers/podman/machine/podman.sock
     const socketPath = resolve(homedir(), '.local/share/containers/podman/machine/podman.sock');
@@ -41,8 +45,13 @@ export class PodmanSocketMacOSFinder implements SocketFinder {
     }
 
     try {
-      // on macOS, run the command to list podman machines with the providers
-      const { stdout } = await process.exec('podman', ['machine', 'ls', '--all-providers', '--format', 'json']);
+      const majorVersion = await this.versionDetector.getMajorVersion();
+      const args = ['machine', 'ls'];
+      if (majorVersion < 6) {
+        args.push('--all-providers');
+      }
+      args.push('--format', 'json');
+      const { stdout } = await process.exec('podman', args);
 
       // use zod to parse the output
       const machines: PodmanMachineListInfo = zodPodmanMachineList.parse(JSON.parse(stdout));

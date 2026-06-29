@@ -25,9 +25,12 @@ import { DockerSocketLinuxFinder } from './docker/docker-linux-finder';
 import { DockerSocketMacOSFinder } from './docker/docker-macos-finder';
 import { PodmanSocketLinuxFinder } from './podman/podman-linux-finder';
 import { PodmanSocketMacOSFinder } from './podman/podman-macos-finder';
+import { PodmanVersionDetector } from './podman/podman-version-detector';
 import { PodmanSocketWindowsFinder } from './podman/podman-windows-finder';
 
 const socketFinderModule = new ContainerModule(options => {
+  options.bind(PodmanVersionDetector).toSelf().inSingletonScope();
+
   if (env.isMac) {
     options.bind<PodmanSocketMacOSFinder>(PodmanSocketMacOSFinder).toSelf().inSingletonScope();
     options.bind<DockerSocketMacOSFinder>(DockerSocketMacOSFinder).toSelf().inSingletonScope();

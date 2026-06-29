@@ -17,27 +17,30 @@
  ***********************************************************************/
 
 import { process } from '@openkaiden/api';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 
 import type { SocketFinder } from '/@/api/socket-finder';
 import {
   type PodmanMachineListInfo,
   zodPodmanMachineList,
 } from '/@/helper/socket-finder/podman/podman-machine-list-info';
+import { PodmanVersionDetector } from '/@/helper/socket-finder/podman/podman-version-detector';
 
 // on Windows, npipe are stored in \\.\pipe\ with for example \\.\pipe\podman-machine-default for the default machine
 @injectable()
 export class PodmanSocketWindowsFinder implements SocketFinder {
+  @inject(PodmanVersionDetector)
+  private readonly versionDetector: PodmanVersionDetector;
+
   async findPaths(): Promise<string[]> {
     try {
-      // run the command to list podman machines with the providers
-      const { stdout: machineListOutput } = await process.exec('podman.exe', [
-        'machine',
-        'ls',
-        '--all-providers',
-        '--format',
-        'json',
-      ]);
+      const majorVersion = await this.versionDetector.getMajorVersion();
+      const args = ['machine', 'ls'];
+      if (majorVersion < 6) {
+        args.push('--all-providers');
+      }
+      args.push('--format', 'json');
+      const { stdout: machineListOutput } = await process.exec('podman.exe', args);
 
       // use zod to parse the output
       const machines: PodmanMachineListInfo = zodPodmanMachineList.parse(JSON.parse(machineListOutput));
