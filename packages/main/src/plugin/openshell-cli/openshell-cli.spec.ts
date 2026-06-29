@@ -318,6 +318,54 @@ describe('createSandbox', () => {
 
     await expect(openshellCli.createSandbox()).rejects.toThrow('gateway connection refused');
   });
+
+  test('extracts JSON error from stderr on failure', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const runError = mockRunError({
+      stderr: JSON.stringify({ error: 'stderr json error' }),
+    });
+    vi.mocked(exec.exec).mockRejectedValue(runError);
+
+    await expect(openshellCli.createSandbox()).rejects.toThrow('stderr json error');
+  });
+
+  test('prefers stdout JSON error over stderr JSON error', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const runError = mockRunError({
+      stdout: JSON.stringify({ error: 'stdout error' }),
+      stderr: JSON.stringify({ error: 'stderr error' }),
+    });
+    vi.mocked(exec.exec).mockRejectedValue(runError);
+
+    await expect(openshellCli.createSandbox()).rejects.toThrow('stdout error');
+  });
+
+  test('augments err.message with raw stderr when not JSON', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const runError = mockRunError({
+      message: 'command failed',
+      stderr: 'permission denied',
+    });
+    vi.mocked(exec.exec).mockRejectedValue(runError);
+
+    await expect(openshellCli.createSandbox()).rejects.toThrow('command failed (stderr: permission denied)');
+  });
+
+  test('augments err.message with raw stdout when stderr is empty', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const runError = mockRunError({
+      message: 'command failed',
+      stdout: 'unexpected output',
+      stderr: '',
+    });
+    vi.mocked(exec.exec).mockRejectedValue(runError);
+
+    await expect(openshellCli.createSandbox()).rejects.toThrow('command failed (stdout: unexpected output)');
+  });
 });
 
 describe('listSandboxes', () => {

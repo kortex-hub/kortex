@@ -79,20 +79,40 @@ export class OpenshellCli {
   }
 
   private extractCliError(err: unknown): string {
-    if (err instanceof Error && 'stdout' in err && typeof (err as RunError).stdout === 'string') {
-      try {
-        const parsed: unknown = JSON.parse((err as RunError).stdout);
-        if (typeof parsed === 'object' && parsed !== null && 'error' in parsed) {
-          const errorField = (parsed as { error: unknown }).error;
-          if (typeof errorField === 'string' && errorField) {
-            return errorField;
-          }
-        }
-      } catch {
-        // not JSON – fall through
+    if (err instanceof Error && 'stdout' in err) {
+      const runErr = err as RunError;
+
+      const jsonError = this.tryExtractJsonError(runErr.stdout) ?? this.tryExtractJsonError(runErr.stderr);
+      if (jsonError) {
+        return jsonError;
+      }
+
+      if (runErr.stderr?.trim()) {
+        return `${err.message} (stderr: ${runErr.stderr.trim()})`;
+      }
+      if (runErr.stdout?.trim()) {
+        return `${err.message} (stdout: ${runErr.stdout.trim()})`;
       }
     }
     return err instanceof Error ? err.message : String(err);
+  }
+
+  private tryExtractJsonError(output: string | undefined): string | undefined {
+    if (typeof output !== 'string' || !output) {
+      return undefined;
+    }
+    try {
+      const parsed: unknown = JSON.parse(output);
+      if (typeof parsed === 'object' && parsed !== null && 'error' in parsed) {
+        const errorField = (parsed as { error: unknown }).error;
+        if (typeof errorField === 'string' && errorField) {
+          return errorField;
+        }
+      }
+    } catch {
+      // not JSON
+    }
+    return undefined;
   }
 
   async getVersion(): Promise<string> {
