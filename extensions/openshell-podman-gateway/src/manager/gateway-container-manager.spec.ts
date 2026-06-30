@@ -29,7 +29,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { SocketHelper } from '/@/helper/socket-helper';
 import { ContainerExtensionAPISymbol, ExtensionContextSymbol } from '/@/inject/symbol';
 
-import { convertToWslPath, GatewayContainerManager } from './gateway-container-manager';
+import { convertToWslPath, GATEWAY_IMAGE, GatewayContainerManager } from './gateway-container-manager';
 
 vi.mock('node:fs/promises', () => ({
   rm: vi.fn().mockResolvedValue(undefined),
@@ -217,10 +217,10 @@ describe('GatewayContainerManager', () => {
 
     await gatewayContainerManager.init();
 
-    expect(Dockerode.prototype.pull).toHaveBeenCalledWith('ghcr.io/nvidia/openshell/gateway:0.0.57');
+    expect(Dockerode.prototype.pull).toHaveBeenCalledWith(GATEWAY_IMAGE);
     expect(Dockerode.prototype.createContainer).toHaveBeenCalledWith(
       expect.objectContaining({
-        Image: 'ghcr.io/nvidia/openshell/gateway:0.0.57',
+        Image: GATEWAY_IMAGE,
         Labels: expect.objectContaining({
           'ai.openkaiden.openshell-podman-gateway': 'true',
         }),
