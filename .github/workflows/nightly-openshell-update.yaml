@@ -30,14 +30,13 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   BRANCH_NAME: chore/bump-openshell
 
-permissions:
-  contents: write
-  pull-requests: write
-
 jobs:
   check-and-update:
     name: Check for OpenShell updates
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
     if: github.event.repository.fork == false
     steps:
       - name: Checkout
@@ -48,6 +47,10 @@ jobs:
         run: |
           TAG=$(gh api repos/NVIDIA/OpenShell/releases/latest --jq '.tag_name')
           VERSION="${TAG#v}"
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
+            echo "::error::Unexpected version format: $VERSION"
+            exit 1
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Latest OpenShell release: $VERSION"
 
@@ -61,12 +64,17 @@ jobs:
       - name: Compare versions
         id: compare
         run: |
-          if [ "${{ steps.latest.outputs.version }}" = "${{ steps.current.outputs.version }}" ]; then
-            echo "OpenShell is already up to date (${{ steps.current.outputs.version }})"
+          CURRENT="${{ steps.current.outputs.version }}"
+          LATEST="${{ steps.latest.outputs.version }}"
+          if [ "$LATEST" = "$CURRENT" ]; then
+            echo "OpenShell is already up to date ($CURRENT)"
             echo "needs_update=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "Update available: ${{ steps.current.outputs.version }} -> ${{ steps.latest.outputs.version }}"
+          elif [ "$(printf '%s\n' "$CURRENT" "$LATEST" | sort -V | tail -n1)" = "$LATEST" ]; then
+            echo "Update available: $CURRENT -> $LATEST"
             echo "needs_update=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Pinned version $CURRENT is newer than latest release $LATEST; skipping"
+            echo "needs_update=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Check for existing PR
@@ -128,12 +136,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git checkout -b "$BRANCH_NAME"
+          git checkout -B "$BRANCH_NAME"
           git add extensions/openshell/package.json
           git commit -m "chore(deps): bump openshell from $CURRENT to $NEW
 
           Release: https://github.com/NVIDIA/OpenShell/releases/tag/v$NEW"
-          git push -u origin "$BRANCH_NAME"
+          git push --force-with-lease -u origin "$BRANCH_NAME"
 
           gh pr create \
             --title "chore(deps): bump openshell from $CURRENT to $NEW" \
