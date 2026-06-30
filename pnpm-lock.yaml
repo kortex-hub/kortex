@@ -786,6 +786,9 @@ importers:
       '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
+      mkdirp:
+        specifier: ^3.0.1
+        version: 3.0.1
       tsx:
         specifier: ^4.19.4
         version: 4.20.3
