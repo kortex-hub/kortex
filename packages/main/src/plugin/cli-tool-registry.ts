@@ -185,7 +185,6 @@ export class CliToolRegistry {
       images: cliTool.images,
       path: cliTool.path,
       version: cliTool.version,
-      path: cliTool.path,
       extensionInfo: {
         id: cliTool.extensionInfo.id,
         label: cliTool.extensionInfo.label,
