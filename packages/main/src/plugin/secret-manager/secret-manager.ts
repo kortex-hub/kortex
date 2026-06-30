@@ -92,6 +92,7 @@ export class SecretManager {
   private async onInferenceConnectionRegistered(event: RegisterInferenceConnectionEvent): Promise<void> {
     const connection = event.connection;
     const providerId = event.providerId;
+    const provider = this.providerRegistry.getProvider(providerId);
 
     const config = this.configurationRegistry.getConfiguration(undefined, connection);
     const allProperties = this.configurationRegistry.getConfigurationProperties();
@@ -103,7 +104,7 @@ export class SecretManager {
           ? scope.includes('InferenceProviderConnection')
           : scope === 'InferenceProviderConnection';
       })
-      .filter(([_, schema]) => schema.extension?.id === providerId);
+      .filter(([_, schema]) => schema.extension?.id === provider.extensionId);
 
     const typeEntry = connectionProperties.find(([fullKey]) => fullKey.endsWith('_type'));
     if (!typeEntry) return;
@@ -119,7 +120,7 @@ export class SecretManager {
       ([fullKey, _schema]) => !fullKey.endsWith('._type') && !fullKey.endsWith('._flags'),
     );
 
-    const extensionStorage = this.safeStorageRegistry.getExtensionStorage(providerId);
+    const extensionStorage = this.safeStorageRegistry.getExtensionStorage(provider.extensionId);
 
     const value: SecretValue = { credentials: {} };
     if (flagsValue) {

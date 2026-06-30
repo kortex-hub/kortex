@@ -32,6 +32,7 @@ import type { SecretCreateOptions } from '/@api/secret-info.js';
 
 import { OpenshellSecretAdapter } from './openshell-secret-adapter.js';
 import { SecretManager } from './secret-manager.js';
+import { ProviderImpl } from '/@/plugin/provider-impl.js';
 
 vi.mock(import('/@/plugin/openshell-cli/openshell-cli.js'));
 
@@ -60,6 +61,7 @@ const providerRegistry = {
     },
   ),
   getInferenceConnection: vi.fn(),
+  getProvider: vi.fn(),
 } as unknown as ProviderRegistry;
 
 const extensionStorageMock = {
@@ -263,6 +265,9 @@ describe('inference connection lifecycle', () => {
 
     vi.mocked(extensionStorageMock.get).mockResolvedValue('actual-api-key');
     vi.mocked(openshellCli.createProvider).mockResolvedValue(undefined);
+    vi.mocked(providerRegistry.getProvider).mockReturnValue({
+      extensionId: 'kaiden.cursor',
+    } as unknown as ProviderImpl);
   }
 
   test('creates openshell provider on inference connection register', async () => {
