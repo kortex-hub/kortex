@@ -173,10 +173,10 @@ export class CursorInferenceManager {
       },
     };
 
+    await this.setConnectionConfiguration(connection, token);
+
     const connectionDisposable = this.cursorProvider.registerInferenceProviderConnection(connection);
     this.connections.set(id, connectionDisposable);
-
-    await this.setConnectionConfiguration(connection, token);
   }
 
   private async getCursorModels(token: string): Promise<Array<{ label: string }>> {

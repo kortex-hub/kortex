@@ -509,8 +509,8 @@ describe('factory', () => {
       }),
     ).rejects.toThrow('registration boom');
 
-    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledTimes(2);
-    expect(SECRET_STORAGE_MOCK.store).toHaveBeenNthCalledWith(2, CONNECTIONS_KEY, '[]');
+    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledTimes(3);
+    expect(SECRET_STORAGE_MOCK.store).toHaveBeenNthCalledWith(3, CONNECTIONS_KEY, '[]');
   });
 
   test('should reject duplicate connection for same project and region', async () => {

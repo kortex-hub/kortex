@@ -373,16 +373,16 @@ export class VertexAi implements Disposable {
       },
     };
 
-    const connectionDisposable = this.provider.registerInferenceProviderConnection(connection);
-    this.connections.set(id, connectionDisposable);
+    await this.setConnectionConfiguration(connection, config);
 
     try {
-      await this.setConnectionConfiguration(connection, config);
-    } catch (error) {
-      connectionDisposable.dispose();
-      this.connections.delete(id);
-      throw error;
+      const connectionDisposable = this.provider.registerInferenceProviderConnection(connection);
+      this.connections.set(id, connectionDisposable);
+    } catch (err: unknown) {
+      await this.clearConnectionConfiguration(connection);
+      throw err;
     }
+
   }
 
   /**

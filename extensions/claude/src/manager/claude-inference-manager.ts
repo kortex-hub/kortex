@@ -187,10 +187,10 @@ export class ClaudeInferenceManager {
       },
     };
 
+    await this.setConnectionConfiguration(connection, token);
+
     const connectionDisposable = this.claudeProvider.registerInferenceProviderConnection(connection);
     this.connections.set(id, connectionDisposable);
-
-    await this.setConnectionConfiguration(connection, token);
   }
 
   private async getAnthropicModels(token: string, baseURL: string): Promise<Array<{ label: string }>> {

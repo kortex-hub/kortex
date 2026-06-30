@@ -1155,9 +1155,11 @@ declare module '@openkaiden/api' {
   }
   export interface RegisterInferenceConnectionEvent {
     providerId: string;
+    connection: InferenceProviderConnection;
   }
   export interface UnregisterInferenceConnectionEvent {
     providerId: string;
+    connection: InferenceProviderConnection;
   }
   export interface RegisterRagConnectionEvent {
     providerId: string;

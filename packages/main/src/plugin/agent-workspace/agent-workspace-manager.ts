@@ -38,7 +38,6 @@ import {
   rewriteLocalhostUrl,
 } from '/@/plugin/openshell-cli/openshell-network-policy.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
-import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import { AgentWorkspaceSettings } from '/@api/agent-workspace/agent-workspace-settings.js';
@@ -53,7 +52,6 @@ import type { IConfigurationNode } from '/@api/configuration/models.js';
 import { IConfigurationRegistry } from '/@api/configuration/models.js';
 import type { GatewaySandboxes, PolicyUpdateOptions } from '/@api/openshell-gateway-info.js';
 import { AGENT_LABEL, decodeWorkspaceLabels, WORKSPACE_LABEL } from '/@api/openshell-gateway-info.js';
-import type { SecretValue } from '/@api/secret-info.js';
 
 const HOME_VARIABLE = '${HOME}';
 const LABEL_MAX_LENGTH = 63;
@@ -101,8 +99,6 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly secretManager: SecretManager,
     @inject(OpenshellCli)
     private readonly openshellCli: OpenshellCli,
-    @inject(SafeStorageRegistry)
-    private readonly safeStorageRegistry: SafeStorageRegistry,
     @inject(AgentRegistry)
     private readonly agentRegistry: AgentRegistry,
   ) {}
@@ -313,86 +309,22 @@ export class AgentWorkspaceManager implements Disposable {
     return this.ensureModelSecretFromConfig(options);
   }
 
+  private static readonly SET_INFERENCE_TYPES = new Set(['vertex-ai', 'openshiftai']);
+
   private async ensureModelSecretFromConfig(options: AgentWorkspaceCreateOptions): Promise<Record<string, string>> {
     const environment: Record<string, string> = {};
 
-    const info = this.providerRegistry.getInferenceConnection(options.model!);
-    if (!info) return environment;
+    const secret = await this.secretManager.getSecretForModel(options.model!);
+    if (!secret) return environment;
 
-    const config = this.configurationRegistry.getConfiguration(undefined, info.connection);
-    const allProperties = this.configurationRegistry.getConfigurationProperties();
-
-    const connectionProperties = Object.entries(allProperties)
-      .filter(([, schema]) => {
-        const scope = schema.scope;
-        return Array.isArray(scope)
-          ? scope.includes('InferenceProviderConnection')
-          : scope === 'InferenceProviderConnection';
-      })
-      .filter(([_, schema]) => schema.extension?.id === info.extensionId);
-
-    const typeEntry = connectionProperties.find(([fullKey]) => fullKey.endsWith('_type'));
-    if (!typeEntry) return environment;
-
-    const typeShortKey = typeEntry[0];
-    const secretType = config.get<string>(typeShortKey);
-    if (!secretType) return environment;
-
-    const flagsEntry = connectionProperties.find(([fullKey]) => fullKey.endsWith('._flags'));
-    const flagsRaw = flagsEntry ? config.get<string | string[]>(flagsEntry[0]) : undefined;
-    const flagsValue = flagsRaw ? (Array.isArray(flagsRaw) ? flagsRaw : [flagsRaw]) : undefined;
-    const workspaceName = options.name ?? basename(options.sourcePath);
-
-    const configKeys = connectionProperties.filter(
-      ([fullKey, _schema]) => !fullKey.endsWith('._type') && !fullKey.endsWith('._flags'),
-    );
-
-    const extensionStorage = this.safeStorageRegistry.getExtensionStorage(info.extensionId);
-
-    const value: SecretValue = { credentials: {} };
-    if (flagsValue) {
-      value.flags = flagsValue;
-    }
-    for (const [propertyName, schema] of configKeys) {
-      const secretRefName = config.get<string>(propertyName);
-      if (!secretRefName) continue;
-
-      const actualValue = schema.format === 'password' ? await extensionStorage.get(secretRefName) : secretRefName;
-      if (!actualValue) continue;
-
-      const shortPropertyName = propertyName.split('.').pop()!;
-      if (flagsValue === undefined) {
-        if (schema.format === 'password') {
-          value.credentials[shortPropertyName] = actualValue;
-        } else {
-          value.config ??= {};
-          value.config[shortPropertyName] = actualValue;
-        }
-      } else {
-        if (schema.format === 'password') {
-          value.env ??= {};
-          value.env[shortPropertyName] = actualValue;
-        } else {
-          value.config ??= {};
-          value.config[shortPropertyName] = actualValue;
-        }
-      }
-    }
-
-    const secretName = `${workspaceName}-${secretType}`;
-    await this.secretManager.create({
-      name: secretName,
-      type: secretType,
-      value: value,
-    });
-    if (flagsValue !== undefined) {
+    if (AgentWorkspaceManager.SET_INFERENCE_TYPES.has(secret.type)) {
       await this.openshellCli.setInference({
-        provider: secretName,
+        provider: secret.name,
         model: options.model!.split('::')[1]!,
       });
     }
 
-    options.secrets = [...new Set([...(options.secrets ?? []), secretName])];
+    options.secrets = [...new Set([...(options.secrets ?? []), secret.name])];
 
     return environment;
   }

@@ -186,10 +186,10 @@ export class Gemini implements Disposable {
       },
     };
 
+    await this.setConnectionConfiguration(connection, token);
+
     const connectionDisposable = this.provider.registerInferenceProviderConnection(connection);
     this.connections.set(id, connectionDisposable);
-
-    await this.setConnectionConfiguration(connection, token);
   }
 
   private async getGeminiModels(token: string): Promise<Array<{ label: string }>> {
