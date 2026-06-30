@@ -23,6 +23,7 @@ import type { IPCHandle } from '/@/plugin/api.js';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
+import type { ProviderImpl } from '/@/plugin/provider-impl.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import type { Exec } from '/@/plugin/util/exec.js';
@@ -32,7 +33,6 @@ import type { SecretCreateOptions } from '/@api/secret-info.js';
 
 import { OpenshellSecretAdapter } from './openshell-secret-adapter.js';
 import { SecretManager } from './secret-manager.js';
-import { ProviderImpl } from '/@/plugin/provider-impl.js';
 
 vi.mock(import('/@/plugin/openshell-cli/openshell-cli.js'));
 
@@ -264,6 +264,7 @@ describe('inference connection lifecycle', () => {
     } as unknown as ReturnType<typeof configurationRegistry.getConfiguration>);
 
     vi.mocked(extensionStorageMock.get).mockResolvedValue('actual-api-key');
+    vi.mocked(openshellCli.listProviders).mockResolvedValue([]);
     vi.mocked(openshellCli.createProvider).mockResolvedValue(undefined);
     vi.mocked(providerRegistry.getProvider).mockReturnValue({
       extensionId: 'kaiden.cursor',
@@ -285,6 +286,20 @@ describe('inference connection lifecycle', () => {
         credentials: { token: 'actual-api-key' },
       });
     });
+  });
+
+  test('skips creation when provider with same name already exists', async () => {
+    setupConfigMocks('cursor');
+
+    vi.mocked(openshellCli.listProviders).mockResolvedValue([{ name: 'kaiden.cursor-conn-123', type: 'cursor' }]);
+
+    registerInferenceCallback!({
+      providerId: 'kaiden.cursor',
+      connection: mockConnection,
+    });
+
+    await new Promise(resolve => setTimeout(resolve, 50));
+    expect(openshellCli.createProvider).not.toHaveBeenCalled();
   });
 
   test('deletes openshell provider on inference connection unregister', async () => {

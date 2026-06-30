@@ -154,6 +154,9 @@ export class SecretManager {
 
     const secretName = `${providerId}-${connection.id}`;
 
+    const existingSecrets = await this.list();
+    if (existingSecrets.some(s => s.name === secretName)) return;
+
     await this.create({
       name: secretName,
       type: secretType,
