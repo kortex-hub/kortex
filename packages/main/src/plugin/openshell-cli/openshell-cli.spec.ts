@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { existsSync } from 'node:fs';
+
 import type { RunError, RunResult } from '@openkaiden/api';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -26,6 +28,7 @@ import type { CliToolInfo } from '/@api/cli-tool-info.js';
 
 import { OpenshellCli } from './openshell-cli.js';
 
+vi.mock(import('node:fs'));
 vi.mock(import('/@/plugin/util/exec.js'));
 
 const OPENSHELL_CLI_PATH = '/usr/local/bin/openshell';
@@ -65,13 +68,30 @@ describe('getCliPath', () => {
     expect(openshellCli.getCliPath()).toBe(OPENSHELL_CLI_PATH);
   });
 
-  test('falls back to openshell when no CLI tool is registered', () => {
+  test('falls back to bundled binary when no CLI tool is registered', () => {
     vi.mocked(cliToolRegistry.getCliToolInfos).mockReturnValue([]);
-    expect(openshellCli.getCliPath()).toBe('openshell');
+    Object.defineProperty(process, 'resourcesPath', { value: '/app/resources', configurable: true });
+    vi.mocked(existsSync).mockReturnValue(true);
+
+    expect(openshellCli.getCliPath()).toBe('/app/resources/openshell/openshell');
+
+    Object.defineProperty(process, 'resourcesPath', { value: undefined, configurable: true });
   });
 
-  test('falls back to openshell when tool has no path', () => {
+  test('falls back to bundled binary when tool has no path', () => {
     vi.mocked(cliToolRegistry.getCliToolInfos).mockReturnValue([{ name: 'openshell' }] as unknown as CliToolInfo[]);
+    Object.defineProperty(process, 'resourcesPath', { value: '/app/resources', configurable: true });
+    vi.mocked(existsSync).mockReturnValue(true);
+
+    expect(openshellCli.getCliPath()).toBe('/app/resources/openshell/openshell');
+
+    Object.defineProperty(process, 'resourcesPath', { value: undefined, configurable: true });
+  });
+
+  test('falls back to bare openshell when no registry and no bundled binary', () => {
+    vi.mocked(cliToolRegistry.getCliToolInfos).mockReturnValue([]);
+    Object.defineProperty(process, 'resourcesPath', { value: undefined, configurable: true });
+
     expect(openshellCli.getCliPath()).toBe('openshell');
   });
 });
@@ -253,7 +273,9 @@ describe('createSandbox', () => {
 
     await openshellCli.createSandbox({ env: { API_KEY: 'sk-secret-123' } });
 
-    const loggedMessage = logSpy.mock.calls[0]?.[0] as string;
+    const executingLog = logSpy.mock.calls.find(c => String(c[0]).startsWith('Executing:'));
+    expect(executingLog).toBeDefined();
+    const loggedMessage = executingLog![0] as string;
     expect(loggedMessage).not.toContain('sk-secret-123');
     expect(loggedMessage).toContain('--env');
     expect(loggedMessage).toContain('***');
@@ -1083,7 +1105,9 @@ describe('createProvider', () => {
       config: { model: 'gpt-4' },
     });
 
-    const loggedMessage = logSpy.mock.calls[0]?.[0] as string;
+    const executingLog = logSpy.mock.calls.find(c => String(c[0]).startsWith('Executing:'));
+    expect(executingLog).toBeDefined();
+    const loggedMessage = executingLog![0] as string;
     expect(loggedMessage).not.toContain('sk-secret-123');
     expect(loggedMessage).toContain('gpt-4');
   });

@@ -128,6 +128,10 @@ export class OpenshellCliManager implements Disposable {
     const binaryName = extensionApi.env.isWindows ? `${binaryBaseName}.exe` : binaryBaseName;
     const localBinaryPath = join(binDir, binaryName);
 
+    console.log(
+      `[${binaryBaseName}] discovery order: custom config → extension storage (${localBinaryPath}) → bundled resources → system PATH`,
+    );
+
     const customPath = extensionApi.configuration.getConfiguration('openshell').get<string>(configKey) ?? undefined;
     if (customPath && existsSync(customPath)) {
       const version = await this.getVersion(customPath);
@@ -147,23 +151,26 @@ export class OpenshellCliManager implements Disposable {
       console.warn(`[${binaryBaseName}] binary exists at ${localBinaryPath} but failed to report a version`);
     }
 
-    const systemResult = await this.findOnPath(binaryBaseName);
-    if (systemResult) {
-      console.log(`[${binaryBaseName}] binary found in system PATH`);
-      return { path: systemResult.path, version: systemResult.version, installationSource: 'external' };
-    }
-
     const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
     if (resourcesPath) {
       const bundledBinaryPath = join(resourcesPath, resourceSubdir, binaryName);
+      console.log(`[${binaryBaseName}] checking bundled resources at ${bundledBinaryPath}`);
       if (existsSync(bundledBinaryPath)) {
         const version = await this.getVersion(bundledBinaryPath);
         if (version) {
-          console.log(`[${binaryBaseName}] binary found in bundled resources`);
+          console.log(`[${binaryBaseName}] binary found in bundled resources at ${bundledBinaryPath}`);
           return { path: bundledBinaryPath, version, installationSource: 'extension' };
         }
         console.warn(`[${binaryBaseName}] bundled binary at ${bundledBinaryPath} failed to report a version`);
       }
+    } else {
+      console.log(`[${binaryBaseName}] no resourcesPath set, skipping bundled resources check`);
+    }
+
+    const systemResult = await this.findOnPath(binaryBaseName);
+    if (systemResult) {
+      console.log(`[${binaryBaseName}] binary found in system PATH at ${systemResult.path}`);
+      return { path: systemResult.path, version: systemResult.version, installationSource: 'external' };
     }
 
     return undefined;
