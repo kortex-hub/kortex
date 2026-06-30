@@ -1,5 +1,5 @@
 <script lang="ts">
-import { faPaperclip, faPaperPlane, faPlus, faSquare, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faPaperclip, faPaperPlane, faSquare, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { router } from 'tinro';
 
@@ -622,13 +622,6 @@ function handleKeyDown(e: KeyboardEvent): void {
             {/each}
           </div>
           <div class="flex items-center gap-1">
-            <button
-              class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-[var(--pd-content-text)] opacity-60 hover:opacity-100 hover:bg-[var(--pd-content-card-hover-bg)] transition-colors"
-              title="New session"
-              onclick={(): void => { router.goto(`/acp-sessions/new?sandbox=${encodeURIComponent(session?.sandboxName ?? '')}&agent=${encodeURIComponent(session?.agentId ?? '')}`); }}
-            >
-              <Icon icon={faPlus} class="text-xs" />
-            </button>
             {#if isRunning}
               <button
                 onclick={(): void => { window.stopAcpPrompt(sessionId).catch((e: unknown) => console.error(e)); }}
