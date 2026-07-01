@@ -24,6 +24,16 @@
           "default": "",
           "description": "Custom path to OpenShell binary (Default is blank)"
         },
+        "openshell.binary.resolution": {
+          "type": "string",
+          "enum": [
+            "bundled",
+            "system"
+          ],
+          "scope": "DEFAULT",
+          "default": "bundled",
+          "description": "Binary resolution priority: 'bundled' prefers the embedded binary over system PATH (default); 'system' prefers binaries found in system PATH."
+        },
         "openshell.imageBuilder.binary.path": {
           "type": "string",
           "format": "file",

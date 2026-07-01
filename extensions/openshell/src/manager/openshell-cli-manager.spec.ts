@@ -157,6 +157,44 @@ describe('OpenshellCliManager', () => {
       Object.defineProperty(process, 'resourcesPath', { value: undefined, configurable: true });
     });
 
+    test('prefers system PATH over bundled resource when resolution is system', async () => {
+      const bundledPath = '/resources/openshell/openshell';
+
+      Object.defineProperty(process, 'resourcesPath', { value: '/resources', configurable: true });
+
+      vi.mocked(configuration.getConfiguration).mockReturnValue({
+        get: vi.fn().mockImplementation((key: string) => {
+          if (key === 'binary.resolution') return 'system';
+          return undefined;
+        }),
+        has: vi.fn(),
+        update: vi.fn(),
+      } as never);
+
+      vi.mocked(existsSync).mockImplementation((p: PathLike) => {
+        return String(p) === bundledPath;
+      });
+
+      vi.mocked(extensionProcess.exec).mockImplementation(async (cmd: string, args?: string[]) => {
+        if (cmd === 'openshell' && args?.[0] === '--version') {
+          return { stdout: 'openshell 0.0.1', stderr: '', command: cmd };
+        }
+        if (cmd === 'which') {
+          return { stdout: '/usr/local/bin/openshell\n', stderr: '', command: cmd };
+        }
+        throw new Error(`unexpected exec: ${cmd}`);
+      });
+
+      const manager = createManager();
+      await manager.init();
+
+      expect(manager.getRegisteredPath()).toBe('/usr/local/bin/openshell');
+      // bundled binary should NOT have been version-checked because system PATH was found first
+      expect(extensionProcess.exec).not.toHaveBeenCalledWith(bundledPath, expect.anything());
+
+      Object.defineProperty(process, 'resourcesPath', { value: undefined, configurable: true });
+    });
+
     test('prefers custom config path over all others', async () => {
       const customPath = '/custom/openshell';
 

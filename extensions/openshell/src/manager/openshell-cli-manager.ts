@@ -128,8 +128,12 @@ export class OpenshellCliManager implements Disposable {
     const binaryName = extensionApi.env.isWindows ? `${binaryBaseName}.exe` : binaryBaseName;
     const localBinaryPath = join(binDir, binaryName);
 
+    const resolutionPriority =
+      extensionApi.configuration.getConfiguration('openshell').get<string>('binary.resolution') ?? 'bundled';
+    const laterSteps =
+      resolutionPriority === 'system' ? 'system PATH → bundled resources' : 'bundled resources → system PATH';
     console.log(
-      `[${binaryBaseName}] discovery order: custom config → extension storage (${localBinaryPath}) → bundled resources → system PATH`,
+      `[${binaryBaseName}] discovery order: custom config → extension storage (${localBinaryPath}) → ${laterSteps}`,
     );
 
     const customPath = extensionApi.configuration.getConfiguration('openshell').get<string>(configKey) ?? undefined;
@@ -151,6 +155,28 @@ export class OpenshellCliManager implements Disposable {
       console.warn(`[${binaryBaseName}] binary exists at ${localBinaryPath} but failed to report a version`);
     }
 
+    if (resolutionPriority === 'system') {
+      const systemResult = await this.discoverFromSystemPath(binaryBaseName);
+      if (systemResult) return systemResult;
+
+      const bundledResult = await this.discoverFromBundledResources(binaryBaseName, binaryName, resourceSubdir);
+      if (bundledResult) return bundledResult;
+    } else {
+      const bundledResult = await this.discoverFromBundledResources(binaryBaseName, binaryName, resourceSubdir);
+      if (bundledResult) return bundledResult;
+
+      const systemResult = await this.discoverFromSystemPath(binaryBaseName);
+      if (systemResult) return systemResult;
+    }
+
+    return undefined;
+  }
+
+  private async discoverFromBundledResources(
+    binaryBaseName: string,
+    binaryName: string,
+    resourceSubdir: string,
+  ): Promise<BinaryDiscoveryResult | undefined> {
     const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
     if (resourcesPath) {
       const bundledBinaryPath = join(resourcesPath, resourceSubdir, binaryName);
@@ -166,13 +192,15 @@ export class OpenshellCliManager implements Disposable {
     } else {
       console.log(`[${binaryBaseName}] no resourcesPath set, skipping bundled resources check`);
     }
+    return undefined;
+  }
 
+  private async discoverFromSystemPath(binaryBaseName: string): Promise<BinaryDiscoveryResult | undefined> {
     const systemResult = await this.findOnPath(binaryBaseName);
     if (systemResult) {
       console.log(`[${binaryBaseName}] binary found in system PATH at ${systemResult.path}`);
       return { path: systemResult.path, version: systemResult.version, installationSource: 'external' };
     }
-
     return undefined;
   }
 
