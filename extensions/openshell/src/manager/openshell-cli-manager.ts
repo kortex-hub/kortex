@@ -128,13 +128,11 @@ export class OpenshellCliManager implements Disposable {
     const binaryName = extensionApi.env.isWindows ? `${binaryBaseName}.exe` : binaryBaseName;
     const localBinaryPath = join(binDir, binaryName);
 
-    const resolutionPriority =
-      extensionApi.configuration.getConfiguration('openshell').get<string>('binary.resolution') ?? 'bundled';
-    const laterSteps =
-      resolutionPriority === 'system' ? 'system PATH → bundled resources' : 'bundled resources → system PATH';
-    console.log(
-      `[${binaryBaseName}] discovery order: custom config → extension storage (${localBinaryPath}) → ${laterSteps}`,
-    );
+    const resolutionOrder =
+      extensionApi.configuration.getConfiguration('openshell').get<string>('binary.resolution') ??
+      'bundled,storage,system';
+    const sources = resolutionOrder.split(',');
+    console.log(`[${binaryBaseName}] discovery order: custom config → ${sources.join(' → ')}`);
 
     const customPath = extensionApi.configuration.getConfiguration('openshell').get<string>(configKey) ?? undefined;
     if (customPath && existsSync(customPath)) {
@@ -146,6 +144,29 @@ export class OpenshellCliManager implements Disposable {
       console.warn(`[${binaryBaseName}] custom binary at ${customPath} failed to report a version`);
     }
 
+    for (const source of sources) {
+      let result: BinaryDiscoveryResult | undefined;
+      switch (source) {
+        case 'storage':
+          result = await this.discoverFromExtensionStorage(binaryBaseName, localBinaryPath);
+          break;
+        case 'bundled':
+          result = await this.discoverFromBundledResources(binaryBaseName, binaryName, resourceSubdir);
+          break;
+        case 'system':
+          result = await this.discoverFromSystemPath(binaryBaseName);
+          break;
+      }
+      if (result) return result;
+    }
+
+    return undefined;
+  }
+
+  private async discoverFromExtensionStorage(
+    binaryBaseName: string,
+    localBinaryPath: string,
+  ): Promise<BinaryDiscoveryResult | undefined> {
     if (existsSync(localBinaryPath)) {
       const version = await this.getVersion(localBinaryPath);
       if (version) {
@@ -154,21 +175,6 @@ export class OpenshellCliManager implements Disposable {
       }
       console.warn(`[${binaryBaseName}] binary exists at ${localBinaryPath} but failed to report a version`);
     }
-
-    if (resolutionPriority === 'system') {
-      const systemResult = await this.discoverFromSystemPath(binaryBaseName);
-      if (systemResult) return systemResult;
-
-      const bundledResult = await this.discoverFromBundledResources(binaryBaseName, binaryName, resourceSubdir);
-      if (bundledResult) return bundledResult;
-    } else {
-      const bundledResult = await this.discoverFromBundledResources(binaryBaseName, binaryName, resourceSubdir);
-      if (bundledResult) return bundledResult;
-
-      const systemResult = await this.discoverFromSystemPath(binaryBaseName);
-      if (systemResult) return systemResult;
-    }
-
     return undefined;
   }
 

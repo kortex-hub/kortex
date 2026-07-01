@@ -27,12 +27,16 @@
         "openshell.binary.resolution": {
           "type": "string",
           "enum": [
-            "bundled",
-            "system"
+            "bundled,storage,system",
+            "bundled,system,storage",
+            "storage,bundled,system",
+            "storage,system,bundled",
+            "system,bundled,storage",
+            "system,storage,bundled"
           ],
           "scope": "DEFAULT",
-          "default": "bundled",
-          "description": "Binary resolution priority: 'bundled' prefers the embedded binary over system PATH (default); 'system' prefers binaries found in system PATH."
+          "default": "bundled,storage,system",
+          "description": "Binary resolution priority order. Custom config path is always checked first regardless of this setting."
         },
         "openshell.imageBuilder.binary.path": {
           "type": "string",

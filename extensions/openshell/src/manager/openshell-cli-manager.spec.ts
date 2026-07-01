@@ -126,11 +126,20 @@ describe('OpenshellCliManager', () => {
       Object.defineProperty(process, 'resourcesPath', { value: undefined, configurable: true });
     });
 
-    test('prefers extension storage over bundled resource', async () => {
+    test('prefers extension storage over bundled resource when resolution is storage,bundled,system', async () => {
       const storageBinPath = `${STORAGE_PATH}/bin/openshell`;
       const bundledPath = '/resources/openshell/openshell';
 
       Object.defineProperty(process, 'resourcesPath', { value: '/resources', configurable: true });
+
+      vi.mocked(configuration.getConfiguration).mockReturnValue({
+        get: vi.fn().mockImplementation((key: string) => {
+          if (key === 'binary.resolution') return 'storage,bundled,system';
+          return undefined;
+        }),
+        has: vi.fn(),
+        update: vi.fn(),
+      } as never);
 
       vi.mocked(existsSync).mockImplementation((p: PathLike) => {
         const s = String(p);
@@ -157,14 +166,14 @@ describe('OpenshellCliManager', () => {
       Object.defineProperty(process, 'resourcesPath', { value: undefined, configurable: true });
     });
 
-    test('prefers system PATH over bundled resource when resolution is system', async () => {
+    test('prefers system PATH over bundled resource when resolution is system,bundled,storage', async () => {
       const bundledPath = '/resources/openshell/openshell';
 
       Object.defineProperty(process, 'resourcesPath', { value: '/resources', configurable: true });
 
       vi.mocked(configuration.getConfiguration).mockReturnValue({
         get: vi.fn().mockImplementation((key: string) => {
-          if (key === 'binary.resolution') return 'system';
+          if (key === 'binary.resolution') return 'system,bundled,storage';
           return undefined;
         }),
         has: vi.fn(),
