@@ -298,8 +298,13 @@ export class OpenShiftAI implements Disposable {
 
     await this.setConnectionConfiguration(connection, stored);
 
-    const connectionDisposable = this.provider.registerInferenceProviderConnection(connection);
-    this.connections.set(stored.id, connectionDisposable);
+    try {
+      const connectionDisposable = this.provider.registerInferenceProviderConnection(connection);
+      this.connections.set(stored.id, connectionDisposable);
+    } catch (err: unknown) {
+      await this.clearConnectionConfiguration(connection);
+      throw err;
+    }
   }
 
   private async inferenceFactory(params: { [p: string]: unknown }): Promise<void> {

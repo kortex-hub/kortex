@@ -263,6 +263,49 @@ describe('factory', () => {
     ];
     expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(TOKENS_KEY, JSON.stringify(expected));
   });
+
+  test('should rollback saved config if registration fails', async () => {
+    listClusterCustomObjectMock.mockResolvedValue({
+      items: [{ metadata: { name: 'test-project' } }],
+    });
+    listNamespacedCustomObjectMock.mockResolvedValue({
+      items: [
+        {
+          metadata: { name: 'my-model' },
+          spec: { predictor: { model: { runtime: 'vllm' } } },
+          status: { url: 'https://my-model.example.com' },
+        },
+      ],
+    });
+    listNamespacedSecretMock.mockResolvedValue({
+      items: [
+        {
+          metadata: { annotations: { 'kubernetes.io/service-account.name': 'vllm-sa' } },
+          data: { token: Buffer.from('serviceToken').toString('base64') },
+        },
+      ],
+    });
+
+    fetchMock.mockResolvedValue({
+      status: 200,
+      json: async () => ({ data: [{ id: 'llama-3' }] }),
+    });
+
+    vi.mocked(PROVIDER_MOCK.registerInferenceProviderConnection).mockImplementation(() => {
+      throw new Error('registration boom');
+    });
+
+    await expect(
+      create({
+        'openshiftai.factory.url': 'https://api.cluster.example.com:6443',
+        'openshiftai.factory.token': 'dummyToken',
+      }),
+    ).rejects.toThrow('registration boom');
+
+    expect(SECRET_STORAGE_MOCK.delete).toHaveBeenCalledWith('openshiftai:fake-uuid-1:token');
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('openshiftai.connection._type', undefined);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('openshiftai.connection.token', undefined);
+  });
 });
 
 describe('restoreConnections', () => {

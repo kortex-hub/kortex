@@ -299,6 +299,22 @@ describe('factory', () => {
       credentials: expect.any(Function),
     });
   });
+
+  test('should rollback saved config if registration fails', async () => {
+    vi.mocked(PROVIDER_MOCK.registerInferenceProviderConnection).mockImplementation(() => {
+      throw new Error('registration boom');
+    });
+
+    await expect(
+      create({
+        'gemini.factory.apiKey': 'dummyKey',
+      }),
+    ).rejects.toThrow('registration boom');
+
+    expect(SAFE_STORAGE_MOCK.delete).toHaveBeenCalledWith('gemini:fake-uuid-1:token');
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('gemini.connection._type', undefined);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('gemini.connection.GEMINI_API_KEY', undefined);
+  });
 });
 
 describe('connection delete lifecycle', () => {

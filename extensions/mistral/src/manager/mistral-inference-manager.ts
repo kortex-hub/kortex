@@ -165,8 +165,13 @@ export class MistralInferenceManager {
 
     await this.setConnectionConfiguration(connection, token);
 
-    const connectionDisposable = this.mistralProvider.registerInferenceProviderConnection(connection);
-    this.connections.set(id, connectionDisposable);
+    try {
+      const connectionDisposable = this.mistralProvider.registerInferenceProviderConnection(connection);
+      this.connections.set(id, connectionDisposable);
+    } catch (err: unknown) {
+      await this.clearConnectionConfiguration(connection);
+      throw err;
+    }
   }
 
   private async getMistralModels(token: string): Promise<Array<{ label: string }>> {

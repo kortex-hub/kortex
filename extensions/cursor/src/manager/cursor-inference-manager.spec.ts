@@ -207,6 +207,22 @@ describe('factory', () => {
       credentials: expect.any(Function),
     });
   });
+
+  test('should rollback saved config if registration fails', async () => {
+    vi.mocked(PROVIDER_MOCK.registerInferenceProviderConnection).mockImplementation(() => {
+      throw new Error('registration boom');
+    });
+
+    await expect(
+      create({
+        'cursor.factory.apiKey': 'dummyKey',
+      }),
+    ).rejects.toThrow('registration boom');
+
+    expect(SECRET_STORAGE_MOCK.delete).toHaveBeenCalledWith('cursor:fake-uuid-1:token');
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('cursor.connection._type', undefined);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('cursor.connection.token', undefined);
+  });
 });
 
 describe('connection delete lifecycle', () => {
