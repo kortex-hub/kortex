@@ -18,6 +18,7 @@
 
 import type { PathLike } from 'node:fs';
 import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { cli, configuration, process as extensionProcess } from '@openkaiden/api';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -69,7 +70,7 @@ beforeEach(() => {
 describe('OpenshellCliManager', () => {
   describe('binary discovery priority', () => {
     test('prefers bundled resource over system PATH', async () => {
-      const bundledPath = '/resources/openshell/openshell';
+      const bundledPath = join('/resources', 'openshell', 'openshell');
 
       Object.defineProperty(process, 'resourcesPath', { value: '/resources', configurable: true });
 
@@ -127,8 +128,8 @@ describe('OpenshellCliManager', () => {
     });
 
     test('prefers extension storage over bundled resource when resolution is storage,bundled,system', async () => {
-      const storageBinPath = `${STORAGE_PATH}/bin/openshell`;
-      const bundledPath = '/resources/openshell/openshell';
+      const storageBinPath = join(STORAGE_PATH, 'bin', 'openshell');
+      const bundledPath = join('/resources', 'openshell', 'openshell');
 
       Object.defineProperty(process, 'resourcesPath', { value: '/resources', configurable: true });
 
@@ -167,7 +168,7 @@ describe('OpenshellCliManager', () => {
     });
 
     test('prefers system PATH over bundled resource when resolution is system,bundled,storage', async () => {
-      const bundledPath = '/resources/openshell/openshell';
+      const bundledPath = join('/resources', 'openshell', 'openshell');
 
       Object.defineProperty(process, 'resourcesPath', { value: '/resources', configurable: true });
 

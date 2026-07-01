@@ -17,6 +17,7 @@
  ***********************************************************************/
 
 import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 
 import type { RunError, RunResult } from '@openkaiden/api';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -73,7 +74,7 @@ describe('getCliPath', () => {
     Object.defineProperty(process, 'resourcesPath', { value: '/app/resources', configurable: true });
     vi.mocked(existsSync).mockReturnValue(true);
 
-    expect(openshellCli.getCliPath()).toBe('/app/resources/openshell/openshell');
+    expect(openshellCli.getCliPath()).toBe(join('/app/resources', 'openshell', 'openshell'));
 
     Object.defineProperty(process, 'resourcesPath', { value: undefined, configurable: true });
   });
@@ -83,7 +84,7 @@ describe('getCliPath', () => {
     Object.defineProperty(process, 'resourcesPath', { value: '/app/resources', configurable: true });
     vi.mocked(existsSync).mockReturnValue(true);
 
-    expect(openshellCli.getCliPath()).toBe('/app/resources/openshell/openshell');
+    expect(openshellCli.getCliPath()).toBe(join('/app/resources', 'openshell', 'openshell'));
 
     Object.defineProperty(process, 'resourcesPath', { value: undefined, configurable: true });
   });
