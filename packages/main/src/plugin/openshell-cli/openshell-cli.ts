@@ -75,12 +75,8 @@ export class OpenshellCli {
   ) {}
 
   getCliPath(): string {
-    console.log('[openshell] getting CLI path');
-
     const tool = this.cliToolRegistry.getCliToolInfos().find(t => t.name === 'openshell');
-    console.log('[openshell] found CLI tool info:', tool);
     if (tool?.path) {
-      console.log('[openshell] using CLI path from registry:', tool.path);
       return tool.path;
     }
 
@@ -88,12 +84,10 @@ export class OpenshellCli {
     if (resourcesPath) {
       const bundledPath = join(resourcesPath, 'openshell', 'openshell');
       if (existsSync(bundledPath)) {
-        console.log(`[openshell] CLI not in registry yet, using bundled binary at ${bundledPath}`);
         return bundledPath;
       }
     }
 
-    console.warn('[openshell] CLI path not found in registry, falling back to default "openshell"');
     return 'openshell';
   }
 
@@ -407,9 +401,7 @@ export class OpenshellCli {
   }
 
   private async execCLI<T>(args: string[], options?: RunOptions): Promise<T> {
-    console.log(`[openshell] executing CLI command: ${args.join(' ')}`);
     const cliPath = this.getCliPath();
-    console.log(`[openshell] CLI path: ${cliPath}`);
     const fullArgs = [...args, '-o', 'json'];
     try {
       const result = await this.exec.exec(cliPath, fullArgs, options);
