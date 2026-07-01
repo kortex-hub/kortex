@@ -95,6 +95,23 @@ export class OpenshellCliManager implements Disposable {
     );
 
     this.extensionContext.subscriptions.push(ibCliTool.registerInstaller(ibInstaller));
+
+    const gwResult = await this.discoverBinary('openshell-gateway', 'gateway.binary.path', 'openshell');
+    const gwRegistration: BinaryDiscoveryResult = gwResult ?? {
+      installationSource: 'extension',
+    };
+
+    if (!gwResult) {
+      console.warn('[openshell-gateway] CLI not found, registering installer-only entry');
+      return;
+    }
+
+    this.registerCliTool(
+      'openshell-gateway',
+      'OpenShell Gateway',
+      'OpenShell Gateway server for managing sandbox connections',
+      gwRegistration,
+    );
   }
 
   dispose(): void {}

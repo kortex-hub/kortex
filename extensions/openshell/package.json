@@ -44,6 +44,14 @@
           "scope": "DEFAULT",
           "default": "",
           "description": "Custom path to openshell-image-builder binary (Default is blank)"
+        },
+        "openshell.gateway.binary.path": {
+          "type": "string",
+          "format": "file",
+          "scope": "DEFAULT",
+          "when": "!isWindows",
+          "default": "",
+          "description": "Custom path to openshell-gateway binary (Default is blank)"
         }
       }
     }
