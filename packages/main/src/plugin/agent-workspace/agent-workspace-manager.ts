@@ -295,15 +295,8 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   /**
-   * If the selected model's provider connection holds a single credential
-   * entry (assumed to be an API key), create a matching kdn vault secret
-   * and attach it to the workspace options so the CLI can inject it at
-   * runtime.
-   *
-   * Silently skips when: no model is selected, the connection cannot be
-   * resolved, credentials are empty or multi-valued (e.g. Vertex AI ADC),
-   * the provider type is unknown, or secrets were already explicitly
-   * configured (e.g. by the onboarding flow via workspaceConfiguration).
+   * Return the secret related to the inference connection linked to the
+   * model. Return undefined if there is no secret associated with this connection
    */
   async ensureModelSecret(options: AgentWorkspaceCreateOptions): Promise<string | undefined> {
     if (!options.model) {
