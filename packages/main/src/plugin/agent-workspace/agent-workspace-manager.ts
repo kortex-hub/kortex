@@ -129,10 +129,7 @@ export class AgentWorkspaceManager implements Disposable {
     }
   }
 
-  private async createOpenshell(
-    options: AgentWorkspaceCreateOptions,
-    secretName: string | undefined,
-  ): Promise<AgentWorkspaceId> {
+  private async createOpenshell(options: AgentWorkspaceCreateOptions, secretName?: string): Promise<AgentWorkspaceId> {
     if (options.model === undefined) {
       throw new Error(`Can't start workspace without model`);
     }
@@ -297,7 +294,7 @@ export class AgentWorkspaceManager implements Disposable {
   /**
    * Return the secret related to the inference connection linked to the
    * model. Return undefined if there is no secret associated with this connection
-   */
+·   */
   async ensureModelSecret(options: AgentWorkspaceCreateOptions): Promise<string | undefined> {
     if (!options.model) {
       return undefined;
