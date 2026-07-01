@@ -142,11 +142,11 @@ describe('resetDraft selects all available items', () => {
     expect(wizard.draft.selectedMcpIds).toEqual(['srv-1']);
   });
 
-  test('should select all secrets', () => {
+  test('should not select any secrets', () => {
     secretVaultInfos.set([{ id: 'sec-1', name: 'Secret 1', type: 'api', description: '' } as SecretVaultInfo]);
     resetDraft();
 
-    expect(wizard.draft.selectedSecretIds).toEqual(['sec-1']);
+    expect(wizard.draft.selectedSecretIds).toEqual([]);
   });
 
   test('should select knowledge bases with mcpServer only', () => {
@@ -173,7 +173,7 @@ describe('first emission seeding', () => {
     expect(wizard.draft.selectedSkillIds).toContain('k8s');
     expect(wizard.draft.selectedSkillIds).toContain('docker');
     expect(wizard.draft.selectedMcpIds).toContain('srv-1');
-    expect(wizard.draft.selectedSecretIds).toContain('sec-1');
+    expect(wizard.draft.selectedSecretIds).toEqual([]);
     expect(wizard.draft.selectedKnowledgeIds).toContain('kb-1');
   });
 });
