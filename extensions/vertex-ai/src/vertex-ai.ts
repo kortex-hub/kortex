@@ -282,7 +282,7 @@ export class VertexAi implements Disposable {
     config: VertexAiConnectionConfig,
   ): Promise<void> {
     const secretName = this.getSecretName(connection.id);
-    await this.secrets.store(secretName, config.credentialsFile);
+    await this.secrets.store(secretName, this.resolveCredentialsPath(config.credentialsFile));
 
     const cfg = this.configurationAPI.getConfiguration(undefined, connection);
     await cfg.update('vertex-ai.connection._type', PROVIDER_ID);

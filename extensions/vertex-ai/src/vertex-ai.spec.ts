@@ -666,6 +666,25 @@ describe('workspace configuration', () => {
     expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('vertex-ai.connection.VERTEX_AI_REGION', 'us-east5');
   });
 
+  test('should expand tilde in credentials path when storing secret', async () => {
+    const vertexAi = createVertexAi();
+    await vertexAi.init();
+
+    const mock = vi.mocked(PROVIDER_MOCK.setInferenceProviderConnectionFactory);
+    const create = mock.mock.calls[0][0].create;
+
+    await create({
+      'vertex-ai.factory.projectId': 'my-project',
+      'vertex-ai.factory.region': 'us-east5',
+      'vertex-ai.factory.credentialsFile': '~/.config/gcloud/application_default_credentials.json',
+    });
+
+    expect(SECRET_STORAGE_MOCK.store).toHaveBeenCalledWith(
+      `${PROVIDER_ID}:fake-uuid-1:token`,
+      join('/home/testuser', '.config/gcloud/application_default_credentials.json'),
+    );
+  });
+
   test('should set workspace configuration for each restored connection', async () => {
     const stored: StoredConnection[] = [
       { id: 'id-1', projectId: 'proj-a', region: 'us-east5', credentialsFile: '/path/a' },
