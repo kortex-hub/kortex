@@ -16,14 +16,20 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { RegisterInferenceConnectionEvent, UnregisterInferenceConnectionEvent } from '@openkaiden/api';
+import type {
+  Configuration,
+  InferenceProviderConnection,
+  RegisterInferenceConnectionEvent,
+  UnregisterInferenceConnectionEvent,
+} from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 
 import { IPCHandle } from '/@/plugin/api.js';
+import { ProviderImpl } from '/@/plugin/provider-impl.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
-import { IConfigurationRegistry } from '/@api/configuration/models.js';
+import { IConfigurationPropertyRecordedSchema, IConfigurationRegistry } from '/@api/configuration/models.js';
 import type {
   SecretCliBackend,
   SecretCreateOptions,
@@ -93,18 +99,7 @@ export class SecretManager {
     const connection = event.connection;
     const providerId = event.providerId;
     const provider = this.providerRegistry.getProvider(providerId);
-
-    const config = this.configurationRegistry.getConfiguration(undefined, connection);
-    const allProperties = this.configurationRegistry.getConfigurationProperties();
-
-    const connectionProperties = Object.entries(allProperties)
-      .filter(([, schema]) => {
-        const scope = schema.scope;
-        return Array.isArray(scope)
-          ? scope.includes('InferenceProviderConnection')
-          : scope === 'InferenceProviderConnection';
-      })
-      .filter(([_, schema]) => schema.extension?.id === provider.extensionId);
+    const { config, connectionProperties } = this.getConnectionProperties(connection, provider);
 
     const typeEntry = connectionProperties.find(([fullKey]) => fullKey.endsWith('_type'));
     if (!typeEntry) return;
@@ -162,6 +157,24 @@ export class SecretManager {
       type: secretType,
       value: value,
     });
+  }
+
+  public getConnectionProperties(
+    connection: InferenceProviderConnection,
+    provider: ProviderImpl,
+  ): { config: Configuration; connectionProperties: [string, IConfigurationPropertyRecordedSchema][] } {
+    const config = this.configurationRegistry.getConfiguration(undefined, connection);
+    const allProperties = this.configurationRegistry.getConfigurationProperties();
+
+    const connectionProperties = Object.entries(allProperties)
+      .filter(([, schema]) => {
+        const scope = schema.scope;
+        return Array.isArray(scope)
+          ? scope.includes('InferenceProviderConnection')
+          : scope === 'InferenceProviderConnection';
+      })
+      .filter(([_, schema]) => schema.extension?.id === provider.extensionId);
+    return { config, connectionProperties };
   }
 
   private async onInferenceConnectionUnregistered(event: UnregisterInferenceConnectionEvent): Promise<void> {

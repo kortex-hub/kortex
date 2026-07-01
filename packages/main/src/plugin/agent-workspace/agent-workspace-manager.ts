@@ -114,8 +114,8 @@ export class AgentWorkspaceManager implements Disposable {
         await rm(configPath, { force: true });
       }
 
-      const credentialsEnvironment = await this.ensureModelSecret(options);
-      const workspaceId = await this.createOpenshell(options, credentialsEnvironment);
+      const secretName = await this.ensureModelSecret(options);
+      const workspaceId = await this.createOpenshell(options, secretName);
       this.apiSender.send('agent-workspace-update');
       task.status = 'success';
       return workspaceId;
@@ -131,25 +131,18 @@ export class AgentWorkspaceManager implements Disposable {
 
   private async createOpenshell(
     options: AgentWorkspaceCreateOptions,
-    credentialsEnvironment: Record<string, string>,
+    secretName: string | undefined,
   ): Promise<AgentWorkspaceId> {
-    const connectionInfo = options.model
-      ? this.providerRegistry.getInferenceConnectionCredentials(options.model)
-      : undefined;
+    if (options.model === undefined) {
+      throw new Error(`Can't start workspace without model`);
+    }
+    const connectionInfo = this.providerRegistry.getInferenceConnectionCredentials(options.model);
 
-    const modelName = options.model?.split('::')[1];
+    const modelName = options.model?.split('::')[1] ?? '';
     const rawEndpoint = connectionInfo?.endpoint ?? options.model?.split('::')[2] ?? undefined;
     const endpoint = rawEndpoint ? rewriteLocalhostUrl(rawEndpoint) : undefined;
 
     const workspace = await writeWorkspaceConfig(options);
-    workspace.environment ??= [];
-    Object.entries(credentialsEnvironment).forEach(([key, value]) => {
-      workspace.environment?.push({
-        name: key,
-        value,
-      });
-    });
-
     const agent = this.agentRegistry.getAgentRegistration(options.agent);
     const uploads: Array<{ local: string; remote: string }> = [];
 
@@ -180,6 +173,21 @@ export class AgentWorkspaceManager implements Disposable {
       uploads.push(...skillUploads);
     } else {
       throw new Error(`Unable to create workspace: agent ${options.agent} not registered`);
+    }
+
+    if (secretName !== undefined) {
+      const connection = this.providerRegistry.getInferenceConnection(options.model);
+      if (connection) {
+        const provider = this.providerRegistry.getProvider(connection?.providerId);
+        const { connectionProperties } = this.secretManager.getConnectionProperties(connection.connection, provider);
+        const hasFlags = connectionProperties.find(([fullKey]) => fullKey.endsWith('._flags'));
+        if (hasFlags) {
+          await this.openshellCli.setInference({
+            provider: secretName,
+            model: modelName,
+          });
+        }
+      }
     }
 
     const sandboxName = options.name ?? basename(options.sourcePath);
@@ -297,36 +305,25 @@ export class AgentWorkspaceManager implements Disposable {
    * the provider type is unknown, or secrets were already explicitly
    * configured (e.g. by the onboarding flow via workspaceConfiguration).
    */
-  async ensureModelSecret(options: AgentWorkspaceCreateOptions): Promise<Record<string, string>> {
+  async ensureModelSecret(options: AgentWorkspaceCreateOptions): Promise<string | undefined> {
     if (!options.model) {
-      return {};
+      return undefined;
     }
 
     if (options.workspaceConfiguration?.secrets?.length) {
-      return {};
+      return undefined;
     }
 
     return this.ensureModelSecretFromConfig(options);
   }
 
-  private static readonly SET_INFERENCE_TYPES = new Set(['vertex-ai', 'openshiftai']);
-
-  private async ensureModelSecretFromConfig(options: AgentWorkspaceCreateOptions): Promise<Record<string, string>> {
-    const environment: Record<string, string> = {};
-
+  private async ensureModelSecretFromConfig(options: AgentWorkspaceCreateOptions): Promise<string | undefined> {
     const secret = await this.secretManager.getSecretForModel(options.model!);
-    if (!secret) return environment;
-
-    if (AgentWorkspaceManager.SET_INFERENCE_TYPES.has(secret.type)) {
-      await this.openshellCli.setInference({
-        provider: secret.name,
-        model: options.model!.split('::')[1]!,
-      });
-    }
+    if (!secret) return undefined;
 
     options.secrets = [...new Set([...(options.secrets ?? []), secret.name])];
 
-    return environment;
+    return secret.name;
   }
 
   async remove(id: string): Promise<AgentWorkspaceId> {

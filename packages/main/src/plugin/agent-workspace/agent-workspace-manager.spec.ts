@@ -19,7 +19,14 @@
 import { access, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import type { Agent, AgentWorkspaceConfiguration, FileSystemWatcher } from '@openkaiden/api';
+import type {
+  Agent,
+  AgentWorkspaceConfiguration,
+  AISDKInferenceProvider,
+  Configuration,
+  FileSystemWatcher,
+  ProviderConnectionStatus,
+} from '@openkaiden/api';
 import type { WebContents } from 'electron';
 import type { IPty } from 'node-pty';
 import { spawn } from 'node-pty';
@@ -31,6 +38,7 @@ import type { IPCHandle } from '/@/plugin/api.js';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
+import type { ProviderImpl } from '/@/plugin/provider-impl.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
 import type { TaskManager } from '/@/plugin/tasks/task-manager.js';
@@ -38,7 +46,7 @@ import type { Task } from '/@/plugin/tasks/tasks.js';
 import type { Exec } from '/@/plugin/util/exec.js';
 import type { AgentWorkspaceCreateOptions } from '/@api/agent-workspace-info.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
-import type { IConfigurationRegistry } from '/@api/configuration/models.js';
+import type { IConfigurationPropertyRecordedSchema, IConfigurationRegistry } from '/@api/configuration/models.js';
 import type { GatewaySandboxes } from '/@api/openshell-gateway-info.js';
 import { AGENT_LABEL, decodeWorkspaceLabels } from '/@api/openshell-gateway-info.js';
 import type { TaskState, TaskStatus } from '/@api/taskInfo.js';
@@ -123,12 +131,14 @@ const configurationRegistry = {
 const providerRegistry = {
   getInferenceConnectionCredentials: vi.fn(),
   getInferenceConnection: vi.fn(),
+  getProvider: vi.fn(),
 } as unknown as ProviderRegistry;
 
 const secretManager = {
   create: vi.fn(),
   init: vi.fn(),
   getSecretForModel: vi.fn(),
+  getConnectionProperties: vi.fn(),
 } as unknown as SecretManager;
 
 function mockEnoent(): NodeJS.ErrnoException {
@@ -252,6 +262,7 @@ describe('create – OpenShell mode', () => {
     agent: 'claude',
     runtime: 'podman',
     name: 'my-sandbox',
+    model: 'ramalama::granite-4.6::',
   };
 
   const mockAgent: Agent = {
@@ -296,7 +307,11 @@ describe('create – OpenShell mode', () => {
   });
 
   test('derives sandbox name from sourcePath basename when name is omitted', async () => {
-    const options: AgentWorkspaceCreateOptions = { sourcePath: '/tmp/my-project', agent: 'claude' };
+    const options: AgentWorkspaceCreateOptions = {
+      sourcePath: '/tmp/my-project',
+      agent: 'claude',
+      model: 'ramalama::granite-4::',
+    };
     const result = await manager.create(options);
 
     expect(openshellCli.createSandbox).toHaveBeenCalledWith(expect.objectContaining({ name: 'my-project' }));
@@ -578,6 +593,31 @@ describe('create – OpenShell mode', () => {
 
   test('calls setInference during create when secret type requires it', async () => {
     vi.mocked(secretManager.getSecretForModel).mockResolvedValue({ name: 'vertex-ai-conn-1', type: 'vertex-ai' });
+    vi.mocked(secretManager.getConnectionProperties).mockReturnValue({
+      config: {} as Configuration,
+      connectionProperties: [['kaiden.vertexai._flags', {} as IConfigurationPropertyRecordedSchema]],
+    });
+    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
+      connection: {
+        name: 'vertexai',
+        id: 'vertexai',
+        type: 'cloud',
+        sdk: {} as AISDKInferenceProvider,
+        credentials: (): Record<string, string> => {
+          return {};
+        },
+        status: (): ProviderConnectionStatus => 'started',
+        models: [
+          {
+            label: 'claude-sonnet-4',
+          },
+        ],
+      },
+      providerId: 'kaiden.vertexai',
+    });
+    vi.mocked(providerRegistry.getProvider).mockReturnValue({
+      extensionId: 'kaiden.vertexai',
+    } as ProviderImpl);
 
     const options = { ...defaultOptions, model: 'vertexai::claude-sonnet-4::' };
     await manager.create(options);
@@ -818,18 +858,6 @@ describe('ensureModelSecret', () => {
     await manager.ensureModelSecret(options);
 
     expect(openshellCli.setInference).not.toHaveBeenCalled();
-  });
-
-  test('calls setInference when secret type is in SET_INFERENCE_TYPES', async () => {
-    vi.mocked(secretManager.getSecretForModel).mockResolvedValue({ name: 'vertex-ai-conn-123', type: 'vertex-ai' });
-
-    const options = { ...baseOptions, model: 'vertexai::claude-sonnet-4-20250514::' };
-    await manager.ensureModelSecret(options);
-
-    expect(openshellCli.setInference).toHaveBeenCalledWith({
-      provider: 'vertex-ai-conn-123',
-      model: 'claude-sonnet-4-20250514',
-    });
   });
 });
 
