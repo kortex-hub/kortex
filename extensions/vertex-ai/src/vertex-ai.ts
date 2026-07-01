@@ -382,7 +382,6 @@ export class VertexAi implements Disposable {
       await this.clearConnectionConfiguration(connection);
       throw err;
     }
-
   }
 
   /**
