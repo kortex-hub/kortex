@@ -5609,4 +5609,89 @@ declare module '@openkaiden/api' {
   export namespace agents {
     export function registerAgent(agent: Agent): Disposable;
   }
+
+  export interface OpenShellGatewayFeatures {
+    readonly supportMount: boolean;
+  }
+
+  export interface OpenShellGateway {
+    readonly id: string;
+    readonly name: string;
+    readonly endpoint: string;
+    status(): ProviderConnectionStatus;
+    readonly features: OpenShellGatewayFeatures;
+  }
+
+  export interface OpenShellSandboxInfo {
+    readonly id: string;
+    readonly name: string;
+    readonly phase: 'Provisioning' | 'Ready' | 'Error';
+  }
+
+  export interface OpenShellSandboxAttach {
+    readonly columns: number;
+    readonly rows: number;
+    readonly onData: Event<string>;
+    readonly onExit: Event<number>;
+    resize(columns: number, rows: number): void;
+    write(data: string | Buffer): void;
+    kill(): void;
+    clear(): void;
+  }
+
+  export interface OpenShellProviderInfo {
+    readonly name: string;
+    readonly type: string;
+  }
+
+  export interface OpenShellBaseParams {
+    readonly gatewayId: string;
+  }
+
+  export interface OpenShellSandboxParams extends OpenShellBaseParams {
+    readonly sandboxName: string;
+  }
+
+  export interface OpenShellProviderParams extends OpenShellBaseParams {
+    readonly providerName: string;
+  }
+
+  export interface OpenShellCreateProviderParams extends OpenShellProviderParams {
+    readonly providerType: string;
+    readonly credentials: Record<string, string>;
+    readonly config?: Record<string, string>;
+    readonly flags?: ReadonlyArray<string>;
+    readonly env?: Record<string, string>;
+  }
+
+  export interface OpenShellSetInferenceParams extends OpenShellProviderParams {
+    readonly model: string;
+  }
+
+  export interface OpenShellCLI {
+    readonly sandbox: {
+      list(params: OpenShellBaseParams): Promise<OpenShellSandboxInfo[]>;
+      delete(params: OpenShellSandboxParams): Promise<void>;
+      connect(params: OpenShellSandboxParams): OpenShellSandboxAttach;
+      enableV2Provider(params: OpenShellSandboxParams): Promise<void>;
+    };
+    readonly provider: {
+      list(params: OpenShellBaseParams): Promise<ReadonlyArray<OpenShellProviderInfo>>;
+      delete(params: OpenShellProviderParams): Promise<void>;
+      create(params: OpenShellCreateProviderParams): Promise<void>;
+    };
+    readonly inference: {
+      set(params: OpenShellSetInferenceParams): Promise<void>;
+    };
+  }
+
+  export namespace openshell {
+    export function registerGateway(gateway: OpenShellGateway): Disposable;
+    export const onDidRegisterGateway: Event<OpenShellGateway>;
+    export const onDidUnregisterGateway: Event<OpenShellGateway>;
+    export const onDidUpdateGateway: Event<OpenShellGateway>;
+    export function registerCLI(cli: OpenShellCLI): Disposable;
+    export const onDidRegisterCLI: Event<OpenShellCLI>;
+    export const onDidUnregisterCLI: Event<OpenShellCLI>;
+  }
 }

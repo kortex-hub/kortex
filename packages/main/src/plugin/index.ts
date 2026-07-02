@@ -72,6 +72,7 @@ import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
 import { OpenshellImageBuilder } from '/@/plugin/openshell-cli/openshell-image-builder.js';
+import { OpenShellRegistry } from '/@/plugin/openshell-registry.js';
 import { RagEnvironmentRegistry } from '/@/plugin/rag-environment-registry.js';
 import { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
 import { OpenshellSecretAdapter } from '/@/plugin/secret-manager/openshell-secret-adapter.js';
@@ -591,6 +592,7 @@ export class PluginSystem {
     container.bind<MCPManager>(MCPManager).toSelf().inSingletonScope();
     container.bind<CliToolRegistry>(CliToolRegistry).toSelf().inSingletonScope();
     container.bind<AgentRegistry>(AgentRegistry).toSelf().inSingletonScope();
+    container.bind<OpenShellRegistry>(OpenShellRegistry).toSelf().inSingletonScope();
     container.bind<OpenshellCli>(OpenshellCli).toSelf().inSingletonScope();
     container.bind<OpenshellGateway>(OpenshellGateway).toSelf().inSingletonScope();
     container.bind<OpenshellImageBuilder>(OpenshellImageBuilder).toSelf().inSingletonScope();
