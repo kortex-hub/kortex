@@ -127,13 +127,10 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   private async createOpenshell(options: AgentWorkspaceCreateOptions, secretName?: string): Promise<AgentWorkspaceId> {
-    if (options.model === undefined) {
-      throw new Error(`Can't start workspace without model`);
-    }
     const connectionInfo = this.providerRegistry.getInferenceConnectionCredentials(options.model);
 
-    const modelName = options.model?.split('::')[1] ?? '';
-    const rawEndpoint = connectionInfo?.endpoint ?? options.model?.split('::')[2] ?? undefined;
+    const modelName = options.model.split('::')[1] ?? '';
+    const rawEndpoint = connectionInfo?.endpoint ?? options.model.split('::')[2] ?? undefined;
     const endpoint = rawEndpoint ? rewriteLocalhostUrl(rawEndpoint) : undefined;
 
     const workspace = await writeWorkspaceConfig(options);
@@ -280,10 +277,6 @@ export class AgentWorkspaceManager implements Disposable {
    * model. Return undefined if there is no secret associated with this connection
 ·   */
   async ensureModelSecret(options: AgentWorkspaceCreateOptions): Promise<string | undefined> {
-    if (!options.model) {
-      return undefined;
-    }
-
     if (options.workspaceConfiguration?.secrets?.length) {
       return undefined;
     }
@@ -292,7 +285,7 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   private async ensureModelSecretFromConfig(options: AgentWorkspaceCreateOptions): Promise<string | undefined> {
-    const secret = await this.secretManager.getSecretForModel(options.model!);
+    const secret = await this.secretManager.getSecretForModel(options.model);
     if (!secret) return undefined;
 
     options.secrets = [...new Set([...(options.secrets ?? []), secret.name])];

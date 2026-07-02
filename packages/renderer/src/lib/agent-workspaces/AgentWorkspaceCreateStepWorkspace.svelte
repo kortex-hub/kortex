@@ -17,6 +17,7 @@ interface Props {
   configExists?: boolean;
   configAction?: 'merge' | 'replace';
   onStartAsIs?: () => Promise<void>;
+  startAsIsDisabled?: boolean;
   projects?: WorkspaceProjectInfo[];
   selectedProjectId?: string;
   onProjectSelect?: (project: WorkspaceProjectInfo | undefined) => void;
@@ -33,6 +34,7 @@ let {
   configExists = false,
   configAction = $bindable('merge'),
   onStartAsIs,
+  startAsIsDisabled = false,
   projects = [],
   selectedProjectId,
   onProjectSelect,
@@ -85,7 +87,7 @@ function toggleProject(): void {
       </div>
 
       <div class="flex flex-col gap-3 pl-6">
-        <Button type="secondary" onclick={onStartAsIs} aria-label="Start workspace as-is">
+        <Button type="secondary" disabled={startAsIsDisabled} onclick={onStartAsIs} aria-label="Start workspace as-is">
           Start workspace as-is
         </Button>
 

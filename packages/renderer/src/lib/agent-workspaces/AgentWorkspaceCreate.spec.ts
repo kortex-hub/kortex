@@ -84,6 +84,42 @@ function setProviders(providers: ProviderInfo[]): void {
   vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(buildCatalogModels(providers));
 }
 
+const mockAnthropicProvider: ProviderInfo = {
+  id: 'claude',
+  name: 'Anthropic',
+  internalId: 'claude-internal',
+  status: 'started',
+  inferenceConnections: [
+    {
+      id: 'conn-0',
+      name: 'Anthropic Cloud',
+      type: 'cloud',
+      status: 'started',
+      llmMetadata: { name: 'anthropic' },
+      models: [{ label: 'claude-sonnet-4' }, { label: 'claude-opus-4' }],
+    },
+  ],
+  inferenceProviderConnectionCreation: false,
+} as unknown as ProviderInfo;
+
+const mockOllamaProvider: ProviderInfo = {
+  id: 'ollama',
+  name: 'Ollama',
+  internalId: 'ollama-internal',
+  status: 'started',
+  inferenceConnections: [
+    {
+      id: 'conn-1',
+      name: 'Ollama Local',
+      type: 'local',
+      status: 'started',
+      llmMetadata: { name: 'ollama' },
+      models: [{ label: 'llama3.2:3b' }],
+    },
+  ],
+  inferenceProviderConnectionCreation: false,
+} as unknown as ProviderInfo;
+
 beforeEach(() => {
   vi.resetAllMocks();
   vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -125,7 +161,7 @@ beforeEach(() => {
   vi.mocked(skillsStore).skillInfos = writable<SkillInfo[]>([]);
   vi.mocked(mcpStore).mcpRemoteServerInfos = writable<MCPRemoteServerInfo[]>([]);
   vi.mocked(secretVaultStore).secretVaultInfos = writable<readonly SecretVaultInfo[]>([]);
-  setProviders([]);
+  setProviders([mockAnthropicProvider]);
   vi.mocked(ragStore).ragEnvironments = writable<RagEnvironment[]>([]);
   vi.mocked(modelCatalogStore).disabledModels = writable<Set<string>>(new Set());
   vi.mocked(modelCatalogStore.isModelEnabled).mockImplementation(
@@ -839,42 +875,6 @@ test('Expect createAgentWorkspace called without network when agent_mode selecte
   );
 });
 
-const mockAnthropicProvider: ProviderInfo = {
-  id: 'claude',
-  name: 'Anthropic',
-  internalId: 'claude-internal',
-  status: 'started',
-  inferenceConnections: [
-    {
-      id: 'conn-0',
-      name: 'Anthropic Cloud',
-      type: 'cloud',
-      status: 'started',
-      llmMetadata: { name: 'anthropic' },
-      models: [{ label: 'claude-sonnet-4' }, { label: 'claude-opus-4' }],
-    },
-  ],
-  inferenceProviderConnectionCreation: false,
-} as unknown as ProviderInfo;
-
-const mockOllamaProvider: ProviderInfo = {
-  id: 'ollama',
-  name: 'Ollama',
-  internalId: 'ollama-internal',
-  status: 'started',
-  inferenceConnections: [
-    {
-      id: 'conn-1',
-      name: 'Ollama Local',
-      type: 'local',
-      status: 'started',
-      llmMetadata: { name: 'ollama' },
-      models: [{ label: 'llama3.2:3b' }],
-    },
-  ],
-  inferenceProviderConnectionCreation: false,
-} as unknown as ProviderInfo;
-
 test('Expect default model from onboarding.defaultWorkspaceSettings when valid', async () => {
   vi.mocked(window.getConfigurationValue).mockResolvedValue({
     defaultAgent: 'opencode',
@@ -919,24 +919,32 @@ test('Expect first compatible model used when defaultWorkspaceSettings has no mo
   );
 });
 
-test('Expect model empty when no setting and no providers', async () => {
-  vi.mocked(window.getConfigurationValue).mockResolvedValue({ defaultAgent: 'opencode' });
+test('Expect use-all-defaults button disabled when no model available', async () => {
+  setProviders([]);
 
   render(AgentWorkspaceCreate);
 
   await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
     target: { value: '/home/user/my-repo' },
   });
-  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
 
-  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
-    expect.objectContaining({
-      model: undefined,
-      agent: 'opencode',
-      name: 'my-repo',
-      skills: undefined,
-    }),
-  );
+  expect(screen.getByRole('button', { name: 'Use all defaults and create workspace' })).toBeDisabled();
+});
+
+test('Expect Start Workspace button disabled when no model available', async () => {
+  setProviders([]);
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+
+  for (let i = 0; i < wizardStepCount - 1; i++) {
+    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+  }
+
+  expect(screen.getByRole('button', { name: 'Start Workspace' })).toBeDisabled();
 });
 
 test('Expect first compatible model used when defaultWorkspaceSettings is undefined and providers exist', async () => {
@@ -1487,7 +1495,7 @@ test('Expect config-exists notification not shown when no existing config', asyn
   expect(screen.queryByText(/existing workspace configuration was found/)).not.toBeInTheDocument();
 });
 
-test('Expect Start workspace as-is calls createAgentWorkspace with minimal options', async () => {
+test('Expect Start workspace as-is calls createAgentWorkspace with model', async () => {
   vi.mocked(window.checkAgentWorkspaceConfigExists).mockResolvedValue(true);
 
   render(AgentWorkspaceCreate);
@@ -1507,6 +1515,7 @@ test('Expect Start workspace as-is calls createAgentWorkspace with minimal optio
       sourcePath: '/home/user/existing-project',
       runtime: 'podman',
       agent: 'opencode',
+      model: 'anthropic::claude-sonnet-4::',
       name: 'existing-project',
     }),
   );
@@ -1515,6 +1524,23 @@ test('Expect Start workspace as-is calls createAgentWorkspace with minimal optio
       replaceConfig: expect.anything(),
     }),
   );
+});
+
+test('Expect Start workspace as-is button disabled when no model available', async () => {
+  setProviders([]);
+  vi.mocked(window.checkAgentWorkspaceConfigExists).mockResolvedValue(true);
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/existing-project' },
+  });
+
+  await vi.waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Start workspace as-is' })).toBeInTheDocument();
+  });
+
+  expect(screen.getByRole('button', { name: 'Start workspace as-is' })).toBeDisabled();
 });
 
 test('Expect startWorkspace passes replaceConfig when configAction is replace and config exists', async () => {

@@ -64,7 +64,7 @@ export type AgentWorkspaceMount = configComponents['schemas']['Mount'];
 export interface AgentWorkspaceCreateOptions {
   sourcePath: string;
   agent: string;
-  model?: string;
+  model: string;
   runtime?: string;
   name?: string;
   project?: string;
