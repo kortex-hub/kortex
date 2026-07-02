@@ -88,10 +88,26 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     isSupportedRuntime(): boolean {
       return true;
     },
-    isSupportedModelType(type): boolean {
-      return type.name !== 'vertexai';
+    isSupportedModelType(): boolean {
+      return true;
     },
     async preWorkspaceStart(context: AgentWorkspaceContext): Promise<void> {
+      if (context.model.llmMetadata?.name === 'vertexai') {
+        const envVars = [
+          { name: 'ANTHROPIC_BASE_URL', value: 'https://inference.local/v1' },
+          { name: 'ANTHROPIC_API_KEY', value: 'unused' },
+        ];
+
+        context.workspace.environment ??= [];
+        for (const envVar of envVars) {
+          const index = context.workspace.environment.findIndex(e => e.name === envVar.name);
+          if (index >= 0) {
+            context.workspace.environment.splice(index, 1);
+          }
+          context.workspace.environment.push(envVar);
+        }
+      }
+
       const configFile = context.configurationFiles.find(f => f.path === OPENCODE_CONFIG_PATH);
       if (!configFile) {
         return;

@@ -210,6 +210,23 @@ describe('factory', () => {
     expect(call.models).toEqual([{ label: 'gpt-4o' }, { label: 'gpt-4.1' }]);
     expect(call.credentials()).toEqual({ 'openai:tokens': 'dummyKey' });
   });
+
+  test('should rollback saved config if registration fails', async () => {
+    vi.mocked(PROVIDER_MOCK.registerInferenceProviderConnection).mockImplementation(() => {
+      throw new Error('registration boom');
+    });
+
+    await expect(
+      create({
+        'openai.factory.apiKey': 'dummyKey',
+        'openai.factory.baseURL': 'http://localhost:11434/v1',
+      }),
+    ).rejects.toThrow('registration boom');
+
+    expect(SECRET_STORAGE_MOCK.delete).toHaveBeenCalledWith('openai:fake-uuid-1:token');
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('openai.connection._type', undefined);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('openai.connection.OPENAI_API_KEY', undefined);
+  });
 });
 
 describe('connection delete lifecycle', () => {

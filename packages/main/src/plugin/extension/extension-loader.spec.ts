@@ -66,6 +66,7 @@ import type { KubernetesClient } from '../kubernetes/kubernetes-client.js';
 import type { MenuRegistry } from '../menu-registry.js';
 import type { MessageBox } from '../message-box.js';
 import type { OnboardingRegistry } from '../onboarding-registry.js';
+import type { OpenShellRegistry } from '../openshell-registry.js';
 import type { ProviderRegistry } from '../provider-registry.js';
 import type { Proxy } from '../proxy.js';
 import type { SafeStorageRegistry, SecretStorageWrapper } from '../safe-storage/safe-storage-registry.js';
@@ -234,6 +235,16 @@ const agentRegistry: AgentRegistry = {
   registerAgent: vi.fn(),
 } as unknown as AgentRegistry;
 
+const openShellRegistry: OpenShellRegistry = {
+  registerGateway: vi.fn(),
+  registerCLI: vi.fn(),
+  onDidRegisterGateway: vi.fn(),
+  onDidUnregisterGateway: vi.fn(),
+  onDidUpdateGateway: vi.fn(),
+  onDidRegisterCLI: vi.fn(),
+  onDidUnregisterCLI: vi.fn(),
+} as unknown as OpenShellRegistry;
+
 const safeStorageRegistry: SafeStorageRegistry = {
   getExtensionStorage: vi.fn(),
 } as unknown as SafeStorageRegistry;
@@ -385,6 +396,7 @@ beforeEach(() => {
     kubernetesGeneratorRegistry,
     cliToolRegistry,
     agentRegistry,
+    openShellRegistry,
     notificationRegistry,
     imageCheckerImpl,
     imageFilesImpl,
@@ -2127,6 +2139,63 @@ test('registerAgent', async () => {
   expect(disposables.length).toBe(1);
 
   expect(agentRegistry.registerAgent).toHaveBeenCalledWith(agent);
+});
+
+test('registerGateway', async () => {
+  const disposables: IDisposable[] = [];
+
+  const api = createApi(disposables);
+
+  expect(api).toBeDefined();
+  expect(disposables.length).toBe(0);
+
+  const gateway: containerDesktopAPI.OpenShellGateway = {
+    id: 'gw-1',
+    name: 'Test Gateway',
+    endpoint: 'https://localhost:17670',
+    status: () => 'started',
+    features: { supportMount: false },
+  };
+
+  vi.mocked(openShellRegistry.registerGateway).mockReturnValue(Disposable.create(() => {}));
+
+  api.openshell.registerGateway(gateway);
+  expect(disposables.length).toBe(1);
+
+  expect(openShellRegistry.registerGateway).toHaveBeenCalledWith(gateway);
+});
+
+test('registerCLI', async () => {
+  const disposables: IDisposable[] = [];
+
+  const api = createApi(disposables);
+
+  expect(api).toBeDefined();
+  expect(disposables.length).toBe(0);
+
+  const cli: containerDesktopAPI.OpenShellCLI = {
+    sandbox: {
+      list: vi.fn(),
+      delete: vi.fn(),
+      connect: vi.fn(),
+      enableV2Provider: vi.fn(),
+    },
+    provider: {
+      list: vi.fn(),
+      delete: vi.fn(),
+      create: vi.fn(),
+    },
+    inference: {
+      set: vi.fn(),
+    },
+  };
+
+  vi.mocked(openShellRegistry.registerCLI).mockReturnValue(Disposable.create(() => {}));
+
+  api.openshell.registerCLI(cli);
+  expect(disposables.length).toBe(1);
+
+  expect(openShellRegistry.registerCLI).toHaveBeenCalledWith(cli);
 });
 
 test('registerImageCheckerProvider ', async () => {

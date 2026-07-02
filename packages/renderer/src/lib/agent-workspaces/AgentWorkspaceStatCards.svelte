@@ -5,6 +5,8 @@ import { Icon } from '@podman-desktop/ui-svelte/icons';
 import Card from '/@/lib/components/Card.svelte';
 import type { SandboxInfoWithGateway } from '/@/stores/openshell-sandboxes';
 
+import { getAgentId } from './workspace-utils';
+
 interface Props {
   sandboxes: SandboxInfoWithGateway[];
 }
@@ -14,6 +16,8 @@ let { sandboxes }: Props = $props();
 const activeSandboxCount = $derived(
   sandboxes.filter(s => s.phase.toLowerCase() === 'ready' || s.phase.toLowerCase() === 'running').length,
 );
+
+const configuredAgentCount = $derived(new Set(sandboxes.map(getAgentId).filter(Boolean)).size);
 </script>
 
 <div class="grid grid-cols-3 gap-3.5 mb-5">
@@ -42,7 +46,7 @@ const activeSandboxCount = $derived(
       <Icon icon={faRobot} size="1.1x" />
     </div>
     <div class="flex flex-col">
-      <span class="text-4xl font-bold text-[var(--pd-content-text)]">{0}</span>
+      <span class="text-4xl font-bold text-[var(--pd-content-text)]">{configuredAgentCount}</span>
       <span class="text-base text-[var(--pd-content-text)] opacity-60">Configured Agents</span>
     </div>
   </Card>

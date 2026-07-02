@@ -88,7 +88,6 @@ export function resetDraft(): void {
     .filter(s => s.enabled)
     .map(s => s.name);
   wizard.draft.selectedMcpIds = get(mcpRemoteServerInfos).map(m => m.id);
-  wizard.draft.selectedSecretIds = get(secretVaultInfos).map(s => s.id);
   wizard.draft.selectedKnowledgeIds = get(ragEnvironments)
     .filter(r => r.mcpServer)
     .map(r => r.name);
@@ -110,12 +109,9 @@ mcpRemoteServerInfos.subscribe(servers => {
   prevMcp = available;
 });
 
-let prevSecrets: Set<string> | undefined;
 secretVaultInfos.subscribe(secrets => {
   const available = new Set(secrets.map(s => s.id));
-  const added = prevSecrets ? [...available].filter(id => !prevSecrets!.has(id)) : [...available];
-  wizard.draft.selectedSecretIds = [...wizard.draft.selectedSecretIds.filter(id => available.has(id)), ...added];
-  prevSecrets = available;
+  wizard.draft.selectedSecretIds = wizard.draft.selectedSecretIds.filter(id => available.has(id));
 });
 
 let prevKnowledge: Set<string> | undefined;

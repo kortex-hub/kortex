@@ -16,6 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
 import type { RunError, RunOptions } from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 import z from 'zod';
@@ -76,6 +79,15 @@ export class OpenshellCli {
     if (tool?.path) {
       return tool.path;
     }
+
+    const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
+    if (resourcesPath) {
+      const bundledPath = join(resourcesPath, 'openshell', 'openshell');
+      if (existsSync(bundledPath)) {
+        return bundledPath;
+      }
+    }
+
     return 'openshell';
   }
 

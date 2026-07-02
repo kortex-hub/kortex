@@ -16,16 +16,27 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import type {
+  Configuration,
+  InferenceProviderConnection,
+  RegisterInferenceConnectionEvent,
+  UnregisterInferenceConnectionEvent,
+} from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 
 import { IPCHandle } from '/@/plugin/api.js';
+import { ProviderImpl } from '/@/plugin/provider-impl.js';
+import { ProviderRegistry } from '/@/plugin/provider-registry.js';
+import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
+import { IConfigurationPropertyRecordedSchema, IConfigurationRegistry } from '/@api/configuration/models.js';
 import type {
   SecretCliBackend,
   SecretCreateOptions,
   SecretInfo,
   SecretName,
   SecretService,
+  SecretValue,
 } from '/@api/secret-info.js';
 
 import { OpenshellSecretAdapter } from './openshell-secret-adapter.js';
@@ -43,6 +54,12 @@ export class SecretManager {
     private readonly ipcHandle: IPCHandle,
     @inject(OpenshellSecretAdapter)
     private readonly openshellAdapter: OpenshellSecretAdapter,
+    @inject(ProviderRegistry)
+    private readonly providerRegistry: ProviderRegistry,
+    @inject(IConfigurationRegistry)
+    private readonly configurationRegistry: IConfigurationRegistry,
+    @inject(SafeStorageRegistry)
+    private readonly safeStorageRegistry: SafeStorageRegistry,
   ) {}
 
   private get cli(): SecretCliBackend {
@@ -69,7 +86,123 @@ export class SecretManager {
     return this.cli.listServices();
   }
 
+  async getSecretForModel(modelId: string): Promise<SecretInfo | undefined> {
+    const info = this.providerRegistry.getInferenceConnection(modelId);
+    if (!info) return undefined;
+
+    const expectedName = `${info.providerId}-${info.connection.id}`;
+    const secrets = await this.list();
+    return secrets.find(s => s.name === expectedName);
+  }
+
+  private async onInferenceConnectionRegistered(event: RegisterInferenceConnectionEvent): Promise<void> {
+    const connection = event.connection;
+    const providerId = event.providerId;
+    const provider = this.providerRegistry.getProvider(providerId);
+    const { config, connectionProperties } = this.getConnectionProperties(connection, provider);
+
+    const typeEntry = connectionProperties.find(([fullKey]) => fullKey.endsWith('_type'));
+    if (!typeEntry) return;
+
+    const secretType = config.get<string>(typeEntry[0]);
+    if (!secretType) return;
+
+    const flagsEntry = connectionProperties.find(([fullKey]) => fullKey.endsWith('._flags'));
+    const flagsRaw = flagsEntry ? config.get<string | string[]>(flagsEntry[0]) : undefined;
+    const flagsValue = flagsRaw ? (Array.isArray(flagsRaw) ? flagsRaw : [flagsRaw]) : undefined;
+
+    const configKeys = connectionProperties.filter(
+      ([fullKey, _schema]) => !fullKey.endsWith('._type') && !fullKey.endsWith('._flags'),
+    );
+
+    const extensionStorage = this.safeStorageRegistry.getExtensionStorage(provider.extensionId);
+
+    const value: SecretValue = { credentials: {} };
+    if (flagsValue) {
+      value.flags = flagsValue;
+    }
+    for (const [propertyName, schema] of configKeys) {
+      const secretRefName = config.get<string>(propertyName);
+      if (!secretRefName) continue;
+
+      const actualValue = schema.format === 'password' ? await extensionStorage.get(secretRefName) : secretRefName;
+      if (!actualValue) continue;
+
+      const shortPropertyName = propertyName.split('.').pop()!;
+      if (flagsValue === undefined) {
+        if (schema.format === 'password') {
+          value.credentials[shortPropertyName] = actualValue;
+        } else {
+          value.config ??= {};
+          value.config[shortPropertyName] = actualValue;
+        }
+      } else {
+        if (schema.format === 'password') {
+          value.env ??= {};
+          value.env[shortPropertyName] = actualValue;
+        } else {
+          value.config ??= {};
+          value.config[shortPropertyName] = actualValue;
+        }
+      }
+    }
+
+    const secretName = `${providerId}-${connection.id}`;
+
+    const existingSecrets = await this.list();
+    if (existingSecrets.some(s => s.name === secretName)) return;
+
+    await this.create({
+      name: secretName,
+      type: secretType,
+      value: value,
+    });
+  }
+
+  public getConnectionProperties(
+    connection: InferenceProviderConnection,
+    provider: ProviderImpl,
+  ): { config: Configuration; connectionProperties: [string, IConfigurationPropertyRecordedSchema][] } {
+    const config = this.configurationRegistry.getConfiguration(undefined, connection);
+    const allProperties = this.configurationRegistry.getConfigurationProperties();
+
+    const connectionProperties = Object.entries(allProperties)
+      .filter(([, schema]) => {
+        const scope = schema.scope;
+        return Array.isArray(scope)
+          ? scope.includes('InferenceProviderConnection')
+          : scope === 'InferenceProviderConnection';
+      })
+      .filter(([_, schema]) => schema.extension?.id === provider.extensionId);
+    return { config, connectionProperties };
+  }
+
+  private async onInferenceConnectionUnregistered(event: UnregisterInferenceConnectionEvent): Promise<void> {
+    const expectedName = `${event.providerId}-${event.connection.id}`;
+    const secrets = await this.list();
+    const secret = secrets.find(s => s.name === expectedName);
+    if (secret) {
+      try {
+        await this.remove(secret.name);
+      } catch (err: unknown) {
+        console.warn(`Failed to delete openshell provider ${secret.name}:`, err);
+      }
+    }
+  }
+
   init(): void {
+    this.providerRegistry.onDidRegisterInferenceConnection(event => {
+      this.onInferenceConnectionRegistered(event).catch((err: unknown) => {
+        console.error('Failed to create openshell provider for inference connection:', err);
+      });
+    });
+
+    this.providerRegistry.onDidUnregisterInferenceConnection(event => {
+      this.onInferenceConnectionUnregistered(event).catch((err: unknown) => {
+        console.error('Failed to delete openshell provider for inference connection:', err);
+      });
+    });
+
     this.ipcHandle(
       'secret-manager:create',
       async (_listener: unknown, options: SecretCreateOptions): Promise<SecretName> => {

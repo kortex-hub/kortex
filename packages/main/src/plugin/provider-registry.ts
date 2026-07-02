@@ -1786,7 +1786,7 @@ export class ProviderRegistry {
   ): void {
     this.connectionLifecycleContexts.set(inferenceProviderConnection, new LifecycleContextImpl());
     this.apiSender.send('provider-register-inference-connection', { name: inferenceProviderConnection.name });
-    this._onDidRegisterInferenceConnection.fire({ providerId: provider.id });
+    this._onDidRegisterInferenceConnection.fire({ providerId: provider.id, connection: inferenceProviderConnection });
   }
 
   onDidRegisterRagConnectionCallback(provider: ProviderImpl, ragProviderConnection: RagProviderConnection): void {
@@ -1855,7 +1855,7 @@ export class ProviderRegistry {
     inferenceProviderConnection: InferenceProviderConnection,
   ): void {
     this.apiSender.send('provider-unregister-inference-connection', { name: inferenceProviderConnection.name });
-    this._onDidUnregisterKubernetesConnection.fire({ providerId: provider.id });
+    this._onDidUnregisterInferenceConnection.fire({ providerId: provider.id, connection: inferenceProviderConnection });
   }
 
   onDidUnregisterRagConnectionCallback(provider: ProviderImpl, ragProviderConnection: RagProviderConnection): void {
@@ -2283,9 +2283,7 @@ export class ProviderRegistry {
     return undefined;
   }
 
-  getInferenceConnection(
-    modelId: string,
-  ): { connection: InferenceProviderConnection; extensionId: string } | undefined {
+  getInferenceConnection(modelId: string): { connection: InferenceProviderConnection; providerId: string } | undefined {
     const [metadataName = '', modelLabel = '', endpoint = ''] = modelId.split('::');
 
     for (const provider of this.providers.values()) {
@@ -2297,7 +2295,7 @@ export class ProviderRegistry {
           connEndpoint === endpoint &&
           connection.models.some(m => m.label === modelLabel)
         ) {
-          return { connection, extensionId: provider.extensionId };
+          return { connection, providerId: provider.id };
         }
       }
     }

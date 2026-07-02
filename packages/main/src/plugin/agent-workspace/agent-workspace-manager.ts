@@ -38,7 +38,6 @@ import {
   rewriteLocalhostUrl,
 } from '/@/plugin/openshell-cli/openshell-network-policy.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
-import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import { AgentWorkspaceSettings } from '/@api/agent-workspace/agent-workspace-settings.js';
@@ -53,7 +52,6 @@ import type { IConfigurationNode } from '/@api/configuration/models.js';
 import { IConfigurationRegistry } from '/@api/configuration/models.js';
 import type { GatewaySandboxes, PolicyUpdateOptions } from '/@api/openshell-gateway-info.js';
 import { AGENT_LABEL, decodeWorkspaceLabels, WORKSPACE_LABEL } from '/@api/openshell-gateway-info.js';
-import type { SecretValue } from '/@api/secret-info.js';
 
 const HOME_VARIABLE = '${HOME}';
 const LABEL_MAX_LENGTH = 63;
@@ -101,8 +99,6 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly secretManager: SecretManager,
     @inject(OpenshellCli)
     private readonly openshellCli: OpenshellCli,
-    @inject(SafeStorageRegistry)
-    private readonly safeStorageRegistry: SafeStorageRegistry,
     @inject(AgentRegistry)
     private readonly agentRegistry: AgentRegistry,
   ) {}
@@ -118,8 +114,8 @@ export class AgentWorkspaceManager implements Disposable {
         await rm(configPath, { force: true });
       }
 
-      const credentialsEnvironment = await this.ensureModelSecret(options);
-      const workspaceId = await this.createOpenshell(options, credentialsEnvironment);
+      const secretName = await this.ensureModelSecret(options);
+      const workspaceId = await this.createOpenshell(options, secretName);
       this.apiSender.send('agent-workspace-update');
       task.status = 'success';
       return workspaceId;
@@ -133,27 +129,17 @@ export class AgentWorkspaceManager implements Disposable {
     }
   }
 
-  private async createOpenshell(
-    options: AgentWorkspaceCreateOptions,
-    credentialsEnvironment: Record<string, string>,
-  ): Promise<AgentWorkspaceId> {
-    const connectionInfo = options.model
-      ? this.providerRegistry.getInferenceConnectionCredentials(options.model)
-      : undefined;
+  private async createOpenshell(options: AgentWorkspaceCreateOptions, secretName?: string): Promise<AgentWorkspaceId> {
+    if (options.model === undefined) {
+      throw new Error(`Can't start workspace without model`);
+    }
+    const connectionInfo = this.providerRegistry.getInferenceConnectionCredentials(options.model);
 
-    const modelName = options.model?.split('::')[1];
+    const modelName = options.model?.split('::')[1] ?? '';
     const rawEndpoint = connectionInfo?.endpoint ?? options.model?.split('::')[2] ?? undefined;
     const endpoint = rawEndpoint ? rewriteLocalhostUrl(rawEndpoint) : undefined;
 
     const workspace = await writeWorkspaceConfig(options);
-    workspace.environment ??= [];
-    Object.entries(credentialsEnvironment).forEach(([key, value]) => {
-      workspace.environment?.push({
-        name: key,
-        value,
-      });
-    });
-
     const agent = this.agentRegistry.getAgentRegistration(options.agent);
     const uploads: Array<{ local: string; remote: string }> = [];
 
@@ -184,6 +170,21 @@ export class AgentWorkspaceManager implements Disposable {
       uploads.push(...skillUploads);
     } else {
       throw new Error(`Unable to create workspace: agent ${options.agent} not registered`);
+    }
+
+    if (secretName !== undefined) {
+      const connection = this.providerRegistry.getInferenceConnection(options.model);
+      if (connection) {
+        const provider = this.providerRegistry.getProvider(connection?.providerId);
+        const { connectionProperties } = this.secretManager.getConnectionProperties(connection.connection, provider);
+        const hasFlags = connectionProperties.find(([fullKey]) => fullKey.endsWith('._flags'));
+        if (hasFlags) {
+          await this.openshellCli.setInference({
+            provider: secretName,
+            model: modelName,
+          });
+        }
+      }
     }
 
     const sandboxName = options.name ?? basename(options.sourcePath);
@@ -291,110 +292,28 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   /**
-   * If the selected model's provider connection holds a single credential
-   * entry (assumed to be an API key), create a matching kdn vault secret
-   * and attach it to the workspace options so the CLI can inject it at
-   * runtime.
-   *
-   * Silently skips when: no model is selected, the connection cannot be
-   * resolved, credentials are empty or multi-valued (e.g. Vertex AI ADC),
-   * the provider type is unknown, or secrets were already explicitly
-   * configured (e.g. by the onboarding flow via workspaceConfiguration).
-   */
-  async ensureModelSecret(options: AgentWorkspaceCreateOptions): Promise<Record<string, string>> {
+   * Return the secret related to the inference connection linked to the
+   * model. Return undefined if there is no secret associated with this connection
+·   */
+  async ensureModelSecret(options: AgentWorkspaceCreateOptions): Promise<string | undefined> {
     if (!options.model) {
-      return {};
+      return undefined;
     }
 
     if (options.workspaceConfiguration?.secrets?.length) {
-      return {};
+      return undefined;
     }
 
     return this.ensureModelSecretFromConfig(options);
   }
 
-  private async ensureModelSecretFromConfig(options: AgentWorkspaceCreateOptions): Promise<Record<string, string>> {
-    const environment: Record<string, string> = {};
+  private async ensureModelSecretFromConfig(options: AgentWorkspaceCreateOptions): Promise<string | undefined> {
+    const secret = await this.secretManager.getSecretForModel(options.model!);
+    if (!secret) return undefined;
 
-    const info = this.providerRegistry.getInferenceConnection(options.model!);
-    if (!info) return environment;
+    options.secrets = [...new Set([...(options.secrets ?? []), secret.name])];
 
-    const config = this.configurationRegistry.getConfiguration(undefined, info.connection);
-    const allProperties = this.configurationRegistry.getConfigurationProperties();
-
-    const connectionProperties = Object.entries(allProperties)
-      .filter(([, schema]) => {
-        const scope = schema.scope;
-        return Array.isArray(scope)
-          ? scope.includes('InferenceProviderConnection')
-          : scope === 'InferenceProviderConnection';
-      })
-      .filter(([_, schema]) => schema.extension?.id === info.extensionId);
-
-    const typeEntry = connectionProperties.find(([fullKey]) => fullKey.endsWith('_type'));
-    if (!typeEntry) return environment;
-
-    const typeShortKey = typeEntry[0];
-    const secretType = config.get<string>(typeShortKey);
-    if (!secretType) return environment;
-
-    const flagsEntry = connectionProperties.find(([fullKey]) => fullKey.endsWith('._flags'));
-    const flagsRaw = flagsEntry ? config.get<string | string[]>(flagsEntry[0]) : undefined;
-    const flagsValue = flagsRaw ? (Array.isArray(flagsRaw) ? flagsRaw : [flagsRaw]) : undefined;
-    const workspaceName = options.name ?? basename(options.sourcePath);
-
-    const configKeys = connectionProperties.filter(
-      ([fullKey, _schema]) => !fullKey.endsWith('._type') && !fullKey.endsWith('._flags'),
-    );
-
-    const extensionStorage = this.safeStorageRegistry.getExtensionStorage(info.extensionId);
-
-    const value: SecretValue = { credentials: {} };
-    if (flagsValue) {
-      value.flags = flagsValue;
-    }
-    for (const [propertyName, schema] of configKeys) {
-      const secretRefName = config.get<string>(propertyName);
-      if (!secretRefName) continue;
-
-      const actualValue = schema.format === 'password' ? await extensionStorage.get(secretRefName) : secretRefName;
-      if (!actualValue) continue;
-
-      const shortPropertyName = propertyName.split('.').pop()!;
-      if (flagsValue === undefined) {
-        if (schema.format === 'password') {
-          value.credentials[shortPropertyName] = actualValue;
-        } else {
-          value.config ??= {};
-          value.config[shortPropertyName] = actualValue;
-        }
-      } else {
-        if (schema.format === 'password') {
-          value.env ??= {};
-          value.env[shortPropertyName] = actualValue;
-        } else {
-          value.config ??= {};
-          value.config[shortPropertyName] = actualValue;
-        }
-      }
-    }
-
-    const secretName = `${workspaceName}-${secretType}`;
-    await this.secretManager.create({
-      name: secretName,
-      type: secretType,
-      value: value,
-    });
-    if (flagsValue !== undefined) {
-      await this.openshellCli.setInference({
-        provider: secretName,
-        model: options.model!.split('::')[1]!,
-      });
-    }
-
-    options.secrets = [...new Set([...(options.secrets ?? []), secretName])];
-
-    return environment;
+    return secret.name;
   }
 
   async remove(id: string): Promise<AgentWorkspaceId> {

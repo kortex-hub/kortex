@@ -282,7 +282,7 @@ export class VertexAi implements Disposable {
     config: VertexAiConnectionConfig,
   ): Promise<void> {
     const secretName = this.getSecretName(connection.id);
-    await this.secrets.store(secretName, config.credentialsFile);
+    await this.secrets.store(secretName, this.resolveCredentialsPath(config.credentialsFile));
 
     const cfg = this.configurationAPI.getConfiguration(undefined, connection);
     await cfg.update('vertex-ai.connection._type', PROVIDER_ID);
@@ -373,15 +373,14 @@ export class VertexAi implements Disposable {
       },
     };
 
-    const connectionDisposable = this.provider.registerInferenceProviderConnection(connection);
-    this.connections.set(id, connectionDisposable);
+    await this.setConnectionConfiguration(connection, config);
 
     try {
-      await this.setConnectionConfiguration(connection, config);
-    } catch (error) {
-      connectionDisposable.dispose();
-      this.connections.delete(id);
-      throw error;
+      const connectionDisposable = this.provider.registerInferenceProviderConnection(connection);
+      this.connections.set(id, connectionDisposable);
+    } catch (err: unknown) {
+      await this.clearConnectionConfiguration(connection);
+      throw err;
     }
   }
 

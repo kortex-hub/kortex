@@ -1,0 +1,150 @@
+#
+# Copyright (C) 2026 Red Hat, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Nightly OpenShell update check
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'
+
+concurrency:
+  group: nightly-openshell-update
+  cancel-in-progress: true
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  BRANCH_NAME: chore/bump-openshell
+
+jobs:
+  check-and-update:
+    name: Check for OpenShell updates
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    if: github.event.repository.fork == false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Get latest OpenShell release version
+        id: latest
+        run: |
+          TAG=$(gh api repos/NVIDIA/OpenShell/releases/latest --jq '.tag_name')
+          VERSION="${TAG#v}"
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; then
+            echo "::error::Unexpected version format: $VERSION"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Latest OpenShell release: $VERSION"
+
+      - name: Get current pinned version
+        id: current
+        run: |
+          VERSION=$(jq -r '.openshellVersion' extensions/openshell/package.json)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Current pinned version: $VERSION"
+
+      - name: Compare versions
+        id: compare
+        run: |
+          CURRENT="${{ steps.current.outputs.version }}"
+          LATEST="${{ steps.latest.outputs.version }}"
+          if [ "$LATEST" = "$CURRENT" ]; then
+            echo "OpenShell is already up to date ($CURRENT)"
+            echo "needs_update=false" >> "$GITHUB_OUTPUT"
+          elif [ "$(printf '%s\n' "$CURRENT" "$LATEST" | sort -V | tail -n1)" = "$LATEST" ]; then
+            echo "Update available: $CURRENT -> $LATEST"
+            echo "needs_update=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Pinned version $CURRENT is newer than latest release $LATEST; skipping"
+            echo "needs_update=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check for existing PR
+        if: steps.compare.outputs.needs_update == 'true'
+        id: existing_pr
+        run: |
+          PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$PR_NUMBER" ]; then
+            echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Found existing PR #$PR_NUMBER"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "No existing PR found"
+          fi
+
+      - name: Update version in package.json
+        if: steps.compare.outputs.needs_update == 'true'
+        run: |
+          TMPFILE=$(mktemp)
+          jq --arg v "${{ steps.latest.outputs.version }}" '.openshellVersion = $v' extensions/openshell/package.json > "$TMPFILE"
+          mv "$TMPFILE" extensions/openshell/package.json
+
+      - name: Update existing PR
+        if: steps.compare.outputs.needs_update == 'true' && steps.existing_pr.outputs.exists == 'true'
+        run: |
+          CURRENT="${{ steps.current.outputs.version }}"
+          NEW="${{ steps.latest.outputs.version }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin "$BRANCH_NAME"
+          git checkout "$BRANCH_NAME"
+          git checkout main -- extensions/openshell/package.json
+
+          TMPFILE=$(mktemp)
+          jq --arg v "$NEW" '.openshellVersion = $v' extensions/openshell/package.json > "$TMPFILE"
+          mv "$TMPFILE" extensions/openshell/package.json
+
+          git add extensions/openshell/package.json
+          git commit --amend -m "chore(deps): bump openshell from $CURRENT to $NEW
+
+          Release: https://github.com/NVIDIA/OpenShell/releases/tag/v$NEW"
+          git push --force-with-lease
+
+          gh pr edit "${{ steps.existing_pr.outputs.number }}" \
+            --title "chore(deps): bump openshell from $CURRENT to $NEW" \
+            --body "Bumps OpenShell from \`$CURRENT\` to \`$NEW\`.
+
+          Release: https://github.com/NVIDIA/OpenShell/releases/tag/v$NEW"
+
+      - name: Create new PR
+        if: steps.compare.outputs.needs_update == 'true' && steps.existing_pr.outputs.exists == 'false'
+        run: |
+          CURRENT="${{ steps.current.outputs.version }}"
+          NEW="${{ steps.latest.outputs.version }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout -B "$BRANCH_NAME"
+          git add extensions/openshell/package.json
+          git commit -m "chore(deps): bump openshell from $CURRENT to $NEW
+
+          Release: https://github.com/NVIDIA/OpenShell/releases/tag/v$NEW"
+          git push --force-with-lease -u origin "$BRANCH_NAME"
+
+          gh pr create \
+            --title "chore(deps): bump openshell from $CURRENT to $NEW" \
+            --body "Bumps OpenShell from \`$CURRENT\` to \`$NEW\`.
+
+          Release: https://github.com/NVIDIA/OpenShell/releases/tag/v$NEW"

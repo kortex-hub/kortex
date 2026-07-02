@@ -77,6 +77,7 @@ import { MCPRegistry } from '../mcp/mcp-registry.js';
 import { MessageBox } from '../message-box.js';
 import { ModuleLoader } from '../module-loader.js';
 import { OnboardingRegistry } from '../onboarding-registry.js';
+import { OpenShellRegistry } from '../openshell-registry.js';
 import { ProviderRegistry } from '../provider-registry.js';
 import { Proxy } from '../proxy.js';
 import { createHttpPatchedModules } from '../proxy-resolver.js';
@@ -202,6 +203,8 @@ export class ExtensionLoader implements IAsyncDisposable {
     private cliToolRegistry: CliToolRegistry,
     @inject(AgentRegistry)
     private agentRegistry: AgentRegistry,
+    @inject(OpenShellRegistry)
+    private openShellRegistry: OpenShellRegistry,
     @inject(NotificationRegistry)
     private notificationRegistry: NotificationRegistry,
     @inject(ImageCheckerImpl)
@@ -1707,6 +1710,34 @@ export class ExtensionLoader implements IAsyncDisposable {
       },
     };
 
+    const openshell: typeof containerDesktopAPI.openshell = {
+      registerGateway(gateway: containerDesktopAPI.OpenShellGateway): containerDesktopAPI.Disposable {
+        const disposable = instance.openShellRegistry.registerGateway(gateway);
+        disposables.push(disposable);
+        return disposable;
+      },
+      onDidRegisterGateway: (listener, thisArg, disposableArr) => {
+        return instance.openShellRegistry.onDidRegisterGateway(listener, thisArg, disposableArr);
+      },
+      onDidUnregisterGateway: (listener, thisArg, disposableArr) => {
+        return instance.openShellRegistry.onDidUnregisterGateway(listener, thisArg, disposableArr);
+      },
+      onDidUpdateGateway: (listener, thisArg, disposableArr) => {
+        return instance.openShellRegistry.onDidUpdateGateway(listener, thisArg, disposableArr);
+      },
+      registerCLI(cli: containerDesktopAPI.OpenShellCLI): containerDesktopAPI.Disposable {
+        const disposable = instance.openShellRegistry.registerCLI(cli);
+        disposables.push(disposable);
+        return disposable;
+      },
+      onDidRegisterCLI: (listener, thisArg, disposableArr) => {
+        return instance.openShellRegistry.onDidRegisterCLI(listener, thisArg, disposableArr);
+      },
+      onDidUnregisterCLI: (listener, thisArg, disposableArr) => {
+        return instance.openShellRegistry.onDidUnregisterCLI(listener, thisArg, disposableArr);
+      },
+    };
+
     return <typeof containerDesktopAPI>{
       // Types
       Disposable: Disposable,
@@ -1744,6 +1775,7 @@ export class ExtensionLoader implements IAsyncDisposable {
       net,
       mcpRegistry,
       agents,
+      openshell,
     };
   }
 

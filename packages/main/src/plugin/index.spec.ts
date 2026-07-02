@@ -799,6 +799,30 @@ describe.each<{
   });
 });
 
+describe('before-quit container disposal', () => {
+  test('should call unbindAll on the container when before-quit is emitted', () => {
+    const beforeQuitCallbacks: (() => void)[] = [];
+    vi.mocked(app.on).mockImplementation(((event: string, cb: () => void) => {
+      if (event === 'before-quit') {
+        beforeQuitCallbacks.push(cb);
+      }
+      return app;
+    }) as typeof app.on);
+
+    const trayMenu = {} as TrayMenu;
+    const deferred = Promise.withResolvers<BrowserWindow>();
+    const ps = new PluginSystem(trayMenu, deferred);
+
+    const unbindAllMock = vi.fn().mockResolvedValue(undefined);
+    (ps as any).container = { unbindAll: unbindAllMock };
+
+    expect(beforeQuitCallbacks).toHaveLength(1);
+    beforeQuitCallbacks[0]!();
+
+    expect(unbindAllMock).toHaveBeenCalled();
+  });
+});
+
 describe('Log race condition fix', () => {
   let pluginSystem: PluginSystem;
 

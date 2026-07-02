@@ -324,6 +324,22 @@ describe('factory', () => {
       apiKey: 'dummyKey',
     });
   });
+
+  test('should rollback saved config if registration fails', async () => {
+    vi.mocked(PROVIDER_MOCK.registerInferenceProviderConnection).mockImplementation(() => {
+      throw new Error('registration boom');
+    });
+
+    await expect(
+      create({
+        'claude.factory.apiKey': 'dummyKey',
+      }),
+    ).rejects.toThrow('registration boom');
+
+    expect(SECRET_STORAGE_MOCK.delete).toHaveBeenCalledWith('claude:fake-uuid-1:token');
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('claude.connection._type', undefined);
+    expect(CONFIG_UPDATE_MOCK).toHaveBeenCalledWith('claude.connection.ANTHROPIC_API_KEY', undefined);
+  });
 });
 
 describe('connection delete lifecycle', () => {

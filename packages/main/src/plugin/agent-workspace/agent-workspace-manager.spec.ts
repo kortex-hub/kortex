@@ -22,8 +22,10 @@ import { join } from 'node:path';
 import type {
   Agent,
   AgentWorkspaceConfiguration,
+  AISDKInferenceProvider,
+  Configuration,
   FileSystemWatcher,
-  InferenceProviderConnection,
+  ProviderConnectionStatus,
 } from '@openkaiden/api';
 import type { WebContents } from 'electron';
 import type { IPty } from 'node-pty';
@@ -36,15 +38,15 @@ import type { IPCHandle } from '/@/plugin/api.js';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
+import type { ProviderImpl } from '/@/plugin/provider-impl.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
-import type { SafeStorageRegistry, SecretStorageWrapper } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import type { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
 import type { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import type { Task } from '/@/plugin/tasks/tasks.js';
 import type { Exec } from '/@/plugin/util/exec.js';
 import type { AgentWorkspaceCreateOptions } from '/@api/agent-workspace-info.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
-import type { IConfigurationRegistry } from '/@api/configuration/models.js';
+import type { IConfigurationPropertyRecordedSchema, IConfigurationRegistry } from '/@api/configuration/models.js';
 import type { GatewaySandboxes } from '/@api/openshell-gateway-info.js';
 import { AGENT_LABEL, decodeWorkspaceLabels } from '/@api/openshell-gateway-info.js';
 import type { TaskState, TaskStatus } from '/@api/taskInfo.js';
@@ -129,23 +131,15 @@ const configurationRegistry = {
 const providerRegistry = {
   getInferenceConnectionCredentials: vi.fn(),
   getInferenceConnection: vi.fn(),
+  getProvider: vi.fn(),
 } as unknown as ProviderRegistry;
 
 const secretManager = {
   create: vi.fn(),
   init: vi.fn(),
+  getSecretForModel: vi.fn(),
+  getConnectionProperties: vi.fn(),
 } as unknown as SecretManager;
-
-const extensionStorageMock = {
-  get: vi.fn(),
-  store: vi.fn(),
-  delete: vi.fn(),
-  onDidChange: vi.fn(),
-} as unknown as SecretStorageWrapper;
-
-const safeStorageRegistry = {
-  getExtensionStorage: vi.fn().mockReturnValue(extensionStorageMock),
-} as unknown as SafeStorageRegistry;
 
 function mockEnoent(): NodeJS.ErrnoException {
   const err: NodeJS.ErrnoException = new Error('ENOENT');
@@ -166,7 +160,6 @@ beforeEach(() => {
     get: vi.fn().mockReturnValue(undefined),
   } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
   vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({});
-  vi.mocked(safeStorageRegistry.getExtensionStorage).mockReturnValue(extensionStorageMock);
   manager = new AgentWorkspaceManager(
     apiSender,
     ipcHandle,
@@ -177,7 +170,6 @@ beforeEach(() => {
     providerRegistry,
     secretManager,
     openshellCli,
-    safeStorageRegistry,
     agentRegistry,
   );
   manager.init();
@@ -270,6 +262,7 @@ describe('create – OpenShell mode', () => {
     agent: 'claude',
     runtime: 'podman',
     name: 'my-sandbox',
+    model: 'ramalama::granite-4.6::',
   };
 
   const mockAgent: Agent = {
@@ -314,7 +307,11 @@ describe('create – OpenShell mode', () => {
   });
 
   test('derives sandbox name from sourcePath basename when name is omitted', async () => {
-    const options: AgentWorkspaceCreateOptions = { sourcePath: '/tmp/my-project', agent: 'claude' };
+    const options: AgentWorkspaceCreateOptions = {
+      sourcePath: '/tmp/my-project',
+      agent: 'claude',
+      model: 'ramalama::granite-4::',
+    };
     const result = await manager.create(options);
 
     expect(openshellCli.createSandbox).toHaveBeenCalledWith(expect.objectContaining({ name: 'my-project' }));
@@ -551,131 +548,15 @@ describe('create – OpenShell mode', () => {
     await expect(manager.create(options)).rejects.toThrow('policy update failed');
   });
 
-  // Environment variable merging tests
-  test('merges single credentials config key and passes to createProvider', async () => {
-    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
-    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
-      connection: mockConnection,
-      extensionId: 'kaiden.vertex-ai',
-    });
-    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
-      get: vi.fn().mockImplementation((key: string) => {
-        if (key === 'vertex-ai.connection._type') return 'google-vertex-ai';
-        if (key === 'vertex-ai.connection._flags') return ['--from-gcloud-adc'];
-        if (key === 'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS') return 'vertex-ai:conn-1:token';
-        if (key === 'vertex-ai.connection.GOOGLE_VERTEX_PROJECT') return 'test-project';
-        return undefined;
-      }),
-    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
-    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
-      'vertex-ai.connection._type': {
-        title: 'Vertex AI',
-        parentId: 'vertexai',
-        hidden: true,
-        scope: 'InferenceProviderConnection',
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection._flags': {
-        title: 'Vertex AI',
-        parentId: 'vertexai',
-        scope: 'InferenceProviderConnection',
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS': {
-        title: 'Vertex AI',
-        parentId: 'vertexai',
-        scope: 'InferenceProviderConnection',
-        format: 'password',
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection.GOOGLE_VERTEX_PROJECT': {
-        title: 'Vertex AI',
-        parentId: 'vertexai',
-        scope: 'InferenceProviderConnection',
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-    });
-    vi.mocked(extensionStorageMock.get).mockResolvedValue('/path/to/creds.json');
-    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-sandbox-google-vertex-ai' });
+  test('attaches secret to sandbox when getSecretForModel returns a secret', async () => {
+    vi.mocked(secretManager.getSecretForModel).mockResolvedValue({ name: 'vertex-ai-conn-1', type: 'vertex-ai' });
 
     const options = { ...defaultOptions, model: 'vertexai::claude-sonnet-4::' };
     await manager.create(options);
 
-    expect(secretManager.create).toHaveBeenCalledWith(
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
       expect.objectContaining({
-        value: expect.objectContaining({
-          config: {
-            GOOGLE_VERTEX_PROJECT: 'test-project',
-          },
-        }),
-      }),
-    );
-  });
-
-  test('merges multiple cfredentials config key and passes to createProvider', async () => {
-    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
-    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
-      connection: mockConnection,
-      extensionId: 'kaiden.vertex-ai',
-    });
-    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
-      get: vi.fn().mockImplementation((key: string) => {
-        if (key === 'vertex-ai.connection._type') return 'google-vertex-ai';
-        if (key === 'vertex-ai.connection._flags') return ['--from-gcloud-adc'];
-        if (key === 'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS') return 'vertex-ai:conn-1:token';
-        if (key === 'vertex-ai.connection.GOOGLE_VERTEX_PROJECT') return 'multi-var-project';
-        if (key === 'vertex-ai.connection.GOOGLE_VERTEX_LOCATION') return 'us-east5';
-        return undefined;
-      }),
-    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
-    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
-      'vertex-ai.connection._type': {
-        title: 'Vertex AI',
-        parentId: 'vertexai',
-        hidden: true,
-        scope: 'InferenceProviderConnection',
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection._flags': {
-        title: 'Vertex AI',
-        parentId: 'vertexai',
-        scope: 'InferenceProviderConnection',
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS': {
-        title: 'Vertex AI',
-        parentId: 'vertexai',
-        scope: 'InferenceProviderConnection',
-        format: 'password',
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection.GOOGLE_VERTEX_PROJECT': {
-        title: 'Vertex AI',
-        parentId: 'vertexai',
-        scope: 'InferenceProviderConnection',
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection.GOOGLE_VERTEX_LOCATION': {
-        title: 'Vertex AI',
-        parentId: 'vertexai',
-        scope: 'InferenceProviderConnection',
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-    });
-    vi.mocked(extensionStorageMock.get).mockResolvedValue('/path/to/creds.json');
-    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-sandbox-google-vertex-ai' });
-
-    const options = { ...defaultOptions, model: 'vertexai::claude-sonnet-4::' };
-    await manager.create(options);
-
-    expect(secretManager.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        value: expect.objectContaining({
-          config: {
-            GOOGLE_VERTEX_PROJECT: 'multi-var-project',
-            GOOGLE_VERTEX_LOCATION: 'us-east5',
-          },
-        }),
+        providers: expect.arrayContaining(['vertex-ai-conn-1']),
       }),
     );
   });
@@ -710,67 +591,41 @@ describe('create – OpenShell mode', () => {
     expect(call!.env).not.toHaveProperty('EMPTY_VAR');
   });
 
-  test('appends credentials config key to proivider create', async () => {
-    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
+  test('calls setInference during create when secret type requires it', async () => {
+    vi.mocked(secretManager.getSecretForModel).mockResolvedValue({ name: 'vertex-ai-conn-1', type: 'vertex-ai' });
+    vi.mocked(secretManager.getConnectionProperties).mockReturnValue({
+      config: {} as Configuration,
+      connectionProperties: [['kaiden.vertexai._flags', {} as IConfigurationPropertyRecordedSchema]],
+    });
     vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
-      connection: mockConnection,
-      extensionId: 'kaiden.vertex-ai',
+      connection: {
+        name: 'vertexai',
+        id: 'vertexai',
+        type: 'cloud',
+        sdk: {} as AISDKInferenceProvider,
+        credentials: (): Record<string, string> => {
+          return {};
+        },
+        status: (): ProviderConnectionStatus => 'started',
+        models: [
+          {
+            label: 'claude-sonnet-4',
+          },
+        ],
+      },
+      providerId: 'kaiden.vertexai',
     });
-    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
-      get: vi.fn().mockImplementation((key: string) => {
-        if (key === 'vertex-ai.connection._type') return 'google-vertex-ai';
-        if (key === 'vertex-ai.connection._flags') return ['--from-gcloud-adc'];
-        if (key === 'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS') return 'vertex-ai:conn-1:token';
-        if (key === 'vertex-ai.connection.GOOGLE_VERTEX_PROJECT') return 'append-project';
-        return undefined;
-      }),
-    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
-    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
-      'vertex-ai.connection._type': {
-        title: 'Vertex AI',
-        parentId: 'vertexai',
-        hidden: true,
-        scope: 'InferenceProviderConnection',
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection._flags': {
-        title: 'Vertex AI',
-        parentId: 'vertexai',
-        scope: 'InferenceProviderConnection',
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS': {
-        title: 'Vertex AI',
-        parentId: 'vertexai',
-        scope: 'InferenceProviderConnection',
-        format: 'password',
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection.GOOGLE_VERTEX_PROJECT': {
-        title: 'Vertex AI',
-        parentId: 'vertexai',
-        scope: 'InferenceProviderConnection',
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-    });
-    vi.mocked(extensionStorageMock.get).mockResolvedValue('/path/to/creds.json');
-    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-sandbox-google-vertex-ai' });
-    vi.spyOn(configWriter, 'writeWorkspaceConfig').mockResolvedValue({
-      environment: [{ name: 'EXISTING_VAR', value: 'existing-value' }],
-    } as AgentWorkspaceConfiguration);
+    vi.mocked(providerRegistry.getProvider).mockReturnValue({
+      extensionId: 'kaiden.vertexai',
+    } as ProviderImpl);
 
     const options = { ...defaultOptions, model: 'vertexai::claude-sonnet-4::' };
     await manager.create(options);
 
-    expect(secretManager.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        value: expect.objectContaining({
-          config: {
-            GOOGLE_VERTEX_PROJECT: 'append-project',
-          },
-        }),
-      }),
-    );
+    expect(openshellCli.setInference).toHaveBeenCalledWith({
+      provider: 'vertex-ai-conn-1',
+      model: 'claude-sonnet-4',
+    });
   });
 
   test('does not pass env when all environment values are filtered out', async () => {
@@ -968,422 +823,41 @@ describe('ensureModelSecret', () => {
     } as AgentWorkspaceCreateOptions;
     await manager.ensureModelSecret(options);
 
-    expect(providerRegistry.getInferenceConnectionCredentials).not.toHaveBeenCalled();
-    expect(secretManager.create).not.toHaveBeenCalled();
+    expect(secretManager.getSecretForModel).not.toHaveBeenCalled();
   });
 
-  test('skips when connection cannot be resolved', async () => {
-    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue(undefined);
+  test('skips when no model is provided', async () => {
+    const options = { ...baseOptions };
+    await manager.ensureModelSecret(options);
+
+    expect(secretManager.getSecretForModel).not.toHaveBeenCalled();
+  });
+
+  test('skips when getSecretForModel returns undefined (no registered provider)', async () => {
+    vi.mocked(secretManager.getSecretForModel).mockResolvedValue(undefined);
 
     const options = { ...baseOptions, model: 'unknown::model::' };
     await manager.ensureModelSecret(options);
 
-    expect(secretManager.create).not.toHaveBeenCalled();
+    expect(options.secrets).toBeUndefined();
   });
 
-  test('skips when credentials map is empty (local provider)', async () => {
-    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
-      credentials: {},
-      llmMetadataName: 'ollama',
-      endpoint: 'http://localhost:11434/v1',
-    });
-
-    const options = { ...baseOptions, model: 'ollama::llama3::http://localhost:11434/v1' };
-    await manager.ensureModelSecret(options);
-
-    expect(secretManager.create).not.toHaveBeenCalled();
-  });
-
-  test('creates secret from connection config when _type and password property exist', async () => {
-    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
-    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
-      connection: mockConnection,
-      extensionId: 'kaiden.cursor',
-    });
-    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
-      get: vi.fn().mockImplementation((key: string) => {
-        if (key === 'cursor.connection._type') return 'cursor';
-        if (key === 'cursor.connection.token') return 'cursor:conn-1:token';
-        return undefined;
-      }),
-    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
-    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
-      'cursor.connection._type': {
-        title: 'Cursor',
-        parentId: 'cursor',
-        scope: 'InferenceProviderConnection',
-        hidden: true,
-        extension: {
-          id: 'kaiden.cursor',
-        },
-      },
-      'cursor.connection.token': {
-        title: 'Cursor',
-        parentId: 'cursor',
-        scope: 'InferenceProviderConnection',
-        format: 'password',
-        hidden: true,
-        extension: {
-          id: 'kaiden.cursor',
-        },
-      },
-    });
-    vi.mocked(extensionStorageMock.get).mockResolvedValue('actual-api-key');
-    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-token' });
+  test('adds secret name to options.secrets when found', async () => {
+    vi.mocked(secretManager.getSecretForModel).mockResolvedValue({ name: 'cursor-conn-123', type: 'cursor' });
 
     const options = { ...baseOptions, model: 'cursor::gpt-4o::https://api.cursor.com' };
     await manager.ensureModelSecret(options);
 
-    expect(safeStorageRegistry.getExtensionStorage).toHaveBeenCalledWith('kaiden.cursor');
-    expect(extensionStorageMock.get).toHaveBeenCalledWith('cursor:conn-1:token');
-    expect(secretManager.create).toHaveBeenCalledWith({
-      name: 'my-workspace-cursor',
-      type: 'cursor',
-      value: {
-        credentials: {
-          token: 'actual-api-key',
-        },
-      },
-    });
-    expect(options.secrets).toContain('my-workspace-cursor');
-    expect(providerRegistry.getInferenceConnectionCredentials).not.toHaveBeenCalled();
+    expect(options.secrets).toContain('cursor-conn-123');
   });
 
-  test('does not call setInference when no flags are present', async () => {
-    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
-    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
-      connection: mockConnection,
-      extensionId: 'kaiden.cursor',
-    });
-    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
-      get: vi.fn().mockImplementation((key: string) => {
-        if (key === 'cursor.connection._type') return 'cursor';
-        if (key === 'cursor.connection.token') return 'cursor:conn-1:token';
-        return undefined;
-      }),
-    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
-    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
-      'cursor.connection._type': {
-        title: 'Cursor',
-        parentId: 'cursor',
-        scope: 'InferenceProviderConnection',
-        hidden: true,
-        extension: { id: 'kaiden.cursor' },
-      },
-      'cursor.connection.token': {
-        title: 'Cursor',
-        parentId: 'cursor',
-        scope: 'InferenceProviderConnection',
-        format: 'password',
-        hidden: true,
-        extension: { id: 'kaiden.cursor' },
-      },
-    });
-    vi.mocked(extensionStorageMock.get).mockResolvedValue('actual-api-key');
-    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-cursor' });
+  test('does not call setInference when secret type is not in SET_INFERENCE_TYPES', async () => {
+    vi.mocked(secretManager.getSecretForModel).mockResolvedValue({ name: 'cursor-conn-123', type: 'cursor' });
 
     const options = { ...baseOptions, model: 'cursor::gpt-4o::https://api.cursor.com' };
     await manager.ensureModelSecret(options);
 
     expect(openshellCli.setInference).not.toHaveBeenCalled();
-  });
-
-  test('does call create secret when _type exists but secret value is not found', async () => {
-    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
-    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
-      connection: mockConnection,
-      extensionId: 'kaiden.cursor',
-    });
-    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
-      get: vi.fn().mockImplementation((key: string) => {
-        if (key === 'cursor.connection._type') return 'cursor';
-        if (key === 'cursor.connection.token') return 'cursor:conn-1:token';
-        return undefined;
-      }),
-    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
-    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
-      'cursor.connection._type': {
-        title: 'Cursor',
-        parentId: 'cursor',
-        scope: 'InferenceProviderConnection',
-        hidden: true,
-        extension: {
-          id: 'kaiden.cursor',
-        },
-      },
-      'cursor.connection.token': {
-        title: 'Cursor',
-        parentId: 'cursor',
-        scope: 'InferenceProviderConnection',
-        format: 'password',
-        hidden: true,
-        extension: {
-          id: 'kaiden.cursor',
-        },
-      },
-    });
-    vi.mocked(extensionStorageMock.get).mockResolvedValue(undefined);
-
-    const options = { ...baseOptions, model: 'cursor::gpt-4o::' };
-    await manager.ensureModelSecret(options);
-
-    expect(secretManager.create).toHaveBeenCalled();
-    expect(providerRegistry.getInferenceConnectionCredentials).not.toHaveBeenCalled();
-  });
-
-  test('derives secret name from sourcePath when name is omitted (config path)', async () => {
-    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
-    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
-      connection: mockConnection,
-      extensionId: 'kaiden.mistral',
-    });
-    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
-      get: vi.fn().mockImplementation((key: string) => {
-        if (key === 'mistral.connection._type') return 'mistral';
-        if (key === 'mistral.connection.token') return 'mistral:conn-1:token';
-        return undefined;
-      }),
-    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
-    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
-      'mistral.connection._type': {
-        title: 'Mistral',
-        parentId: 'mistral',
-        scope: 'InferenceProviderConnection',
-        hidden: true,
-        extension: {
-          id: 'kaiden.mistral',
-        },
-      },
-      'mistral.connection.token': {
-        title: 'Mistral',
-        parentId: 'mistral',
-        scope: 'InferenceProviderConnection',
-        format: 'password',
-        hidden: true,
-        extension: {
-          id: 'kaiden.mistral',
-        },
-      },
-    });
-    vi.mocked(extensionStorageMock.get).mockResolvedValue('mistral-key');
-    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-project-token' });
-
-    const options: AgentWorkspaceCreateOptions = {
-      sourcePath: '/tmp/my-project',
-      agent: 'coder',
-      model: 'mistral::mistral-large::',
-    };
-    await manager.ensureModelSecret(options);
-
-    expect(secretManager.create).toHaveBeenCalledWith(expect.objectContaining({ name: 'my-project-mistral' }));
-  });
-
-  test('creates secret with config and flags for Vertex AI config-based path', async () => {
-    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
-    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
-      connection: mockConnection,
-      extensionId: 'kaiden.vertex-ai',
-    });
-    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
-      get: vi.fn().mockImplementation((key: string) => {
-        if (key === 'vertex-ai.connection._type') return 'google-vertex-ai';
-        if (key === 'vertex-ai.connection._flags') return '--from-gcloud-adc';
-        if (key === 'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS') return 'vertex-ai:conn-1:token';
-        if (key === 'vertex-ai.connection.GOOGLE_VERTEX_PROJECT') return 'my-gcp-project';
-        if (key === 'vertex-ai.connection.GOOGLE_VERTEX_LOCATION') return 'us-east5';
-        return undefined;
-      }),
-    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
-    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
-      'vertex-ai.connection._type': {
-        title: 'Vertex AI',
-        parentId: 'vertex-ai',
-        scope: 'InferenceProviderConnection',
-        hidden: true,
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection._flags': {
-        title: 'Vertex AI',
-        parentId: 'vertex-ai',
-        scope: 'InferenceProviderConnection',
-        hidden: true,
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS': {
-        title: 'Vertex AI',
-        parentId: 'vertex-ai',
-        scope: 'InferenceProviderConnection',
-        format: 'password',
-        hidden: true,
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection.GOOGLE_VERTEX_PROJECT': {
-        title: 'Vertex AI',
-        parentId: 'vertex-ai',
-        scope: 'InferenceProviderConnection',
-        hidden: true,
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection.GOOGLE_VERTEX_LOCATION': {
-        title: 'Vertex AI',
-        parentId: 'vertex-ai',
-        scope: 'InferenceProviderConnection',
-        hidden: true,
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-    });
-    vi.mocked(extensionStorageMock.get).mockResolvedValue('/path/to/creds.json');
-    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-google-vertex-ai' });
-
-    const options = { ...baseOptions, model: 'vertexai::claude-sonnet-4-20250514::' };
-    const environment = await manager.ensureModelSecret(options);
-
-    expect(secretManager.create).toHaveBeenCalledWith({
-      name: 'my-workspace-google-vertex-ai',
-      type: 'google-vertex-ai',
-      value: {
-        config: {
-          GOOGLE_VERTEX_LOCATION: 'us-east5',
-          GOOGLE_VERTEX_PROJECT: 'my-gcp-project',
-        },
-        credentials: {},
-        env: {
-          GOOGLE_APPLICATION_CREDENTIALS: '/path/to/creds.json',
-        },
-        flags: ['--from-gcloud-adc'],
-      },
-    });
-    expect(options.secrets).toContain('my-workspace-google-vertex-ai');
-    expect(environment).toEqual({});
-    expect(providerRegistry.getInferenceConnectionCredentials).not.toHaveBeenCalled();
-  });
-
-  test('calls setInference when flags are present', async () => {
-    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
-    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
-      connection: mockConnection,
-      extensionId: 'kaiden.vertex-ai',
-    });
-    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
-      get: vi.fn().mockImplementation((key: string) => {
-        if (key === 'vertex-ai.connection._type') return 'google-vertex-ai';
-        if (key === 'vertex-ai.connection._flags') return '--from-gcloud-adc';
-        if (key === 'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS') return 'vertex-ai:conn-1:token';
-        return undefined;
-      }),
-    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
-    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
-      'vertex-ai.connection._type': {
-        title: 'Vertex AI',
-        parentId: 'vertex-ai',
-        scope: 'InferenceProviderConnection',
-        hidden: true,
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection._flags': {
-        title: 'Vertex AI',
-        parentId: 'vertex-ai',
-        scope: 'InferenceProviderConnection',
-        hidden: true,
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS': {
-        title: 'Vertex AI',
-        parentId: 'vertex-ai',
-        scope: 'InferenceProviderConnection',
-        format: 'password',
-        hidden: true,
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-    });
-    vi.mocked(extensionStorageMock.get).mockResolvedValue('/path/to/creds.json');
-    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-google-vertex-ai' });
-
-    const options = { ...baseOptions, model: 'vertexai::claude-sonnet-4-20250514::' };
-    await manager.ensureModelSecret(options);
-
-    expect(openshellCli.setInference).toHaveBeenCalledWith({
-      provider: 'my-workspace-google-vertex-ai',
-      model: 'claude-sonnet-4-20250514',
-    });
-  });
-
-  test('passes _flags array through unchanged when value is string[]', async () => {
-    const mockConnection = { id: 'conn-1', sdk: {}, models: [] } as unknown as InferenceProviderConnection;
-    vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
-      connection: mockConnection,
-      extensionId: 'kaiden.vertex-ai',
-    });
-    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
-      get: vi.fn().mockImplementation((key: string) => {
-        if (key === 'vertex-ai.connection._type') return 'google-vertex-ai';
-        if (key === 'vertex-ai.connection._flags') return ['--flag-one', '--flag-two'];
-        if (key === 'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS') return 'vertex-ai:conn-1:token';
-        if (key === 'vertex-ai.connection.GOOGLE_VERTEX_PROJECT') return 'my-gcp-project';
-        if (key === 'vertex-ai.connection.GOOGLE_VERTEX_LOCATION') return 'us-east5';
-        return undefined;
-      }),
-    } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
-    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({
-      'vertex-ai.connection._type': {
-        title: 'Vertex AI',
-        parentId: 'vertex-ai',
-        scope: 'InferenceProviderConnection',
-        hidden: true,
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection._flags': {
-        title: 'Vertex AI',
-        parentId: 'vertex-ai',
-        scope: 'InferenceProviderConnection',
-        hidden: true,
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS': {
-        title: 'Vertex AI',
-        parentId: 'vertex-ai',
-        scope: 'InferenceProviderConnection',
-        format: 'password',
-        hidden: true,
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection.GOOGLE_VERTEX_PROJECT': {
-        title: 'Vertex AI',
-        parentId: 'vertex-ai',
-        scope: 'InferenceProviderConnection',
-        hidden: true,
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-      'vertex-ai.connection.GOOGLE_VERTEX_LOCATION': {
-        title: 'Vertex AI',
-        parentId: 'vertex-ai',
-        scope: 'InferenceProviderConnection',
-        hidden: true,
-        extension: { id: 'kaiden.vertex-ai' },
-      },
-    });
-    vi.mocked(extensionStorageMock.get).mockResolvedValue('/path/to/creds.json');
-    vi.mocked(secretManager.create).mockResolvedValue({ name: 'my-workspace-google-vertex-ai' });
-
-    const options = { ...baseOptions, model: 'vertexai::claude-sonnet-4-20250514::' };
-    const environment = await manager.ensureModelSecret(options);
-
-    expect(secretManager.create).toHaveBeenCalledWith({
-      name: 'my-workspace-google-vertex-ai',
-      type: 'google-vertex-ai',
-      value: {
-        config: {
-          GOOGLE_VERTEX_LOCATION: 'us-east5',
-          GOOGLE_VERTEX_PROJECT: 'my-gcp-project',
-        },
-        credentials: {},
-        env: {
-          GOOGLE_APPLICATION_CREDENTIALS: '/path/to/creds.json',
-        },
-        flags: ['--flag-one', '--flag-two'],
-      },
-    });
-    expect(environment).toEqual({});
   });
 });
 
