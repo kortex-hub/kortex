@@ -109,6 +109,8 @@ export interface OpenshellGatewayStartOptions {
   disableTls?: boolean;
   /** Skip CLI registration when restarting an already-registered gateway. */
   skipRegistration?: boolean;
+  /** Override the supervisor container image. When unset, the image tag is pinned to the gateway binary version. */
+  supervisorImage?: string;
 }
 
 export interface GatewaySandboxes {
