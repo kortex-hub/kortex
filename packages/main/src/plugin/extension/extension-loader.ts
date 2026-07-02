@@ -410,7 +410,15 @@ export class ExtensionLoader implements IAsyncDisposable {
   getDisabledExtensionIds(): string[] {
     return this.configurationRegistry
       .getConfiguration(ExtensionLoaderSettings.SectionName)
-      .get<string[]>(ExtensionLoaderSettings.Disabled, ['kaiden.openai']);
+      .get<string[]>(ExtensionLoaderSettings.Disabled, [
+        'kaiden.openai',
+        'kaiden.codex',
+        'kaiden.copilot',
+        'kaiden.openclaw',
+        'kaiden.goose',
+        'kaiden.gemini',
+        'kaiden.cursor',
+      ]);
   }
 
   setDisabledExtensionIds(disabledExtensionIds: string[]): void {
