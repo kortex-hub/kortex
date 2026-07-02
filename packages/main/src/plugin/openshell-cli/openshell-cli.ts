@@ -38,6 +38,19 @@ import type {
 } from '/@api/openshell-gateway-info.js';
 import { GatewayInfoSchema, OpenshellProviderInfoSchema, SandboxInfoSchema } from '/@api/openshell-gateway-info.js';
 
+const SettingValue = z.union([z.string(), z.boolean(), z.number()]);
+
+const OpenshellSettingsSchema = z.looseObject({
+  scope: z.string(),
+  settings: z.looseObject({
+    agent_policy_proposals_enabled: SettingValue,
+    ocsf_json_enabled: SettingValue,
+    proposal_approval_mode: SettingValue,
+    providers_v2_enabled: SettingValue,
+  }),
+  settings_revision: z.number(),
+});
+
 /**
  * Low-level wrapper around the `openshell` CLI binary.
  *
@@ -370,6 +383,18 @@ export class OpenshellCli {
 
   async setInference(options: SetInferenceOptions): Promise<void> {
     return this.runCli(['inference', 'set', '--provider', options.provider, '--model', options.model, '--no-verify']);
+  }
+
+  async isV2ProviderEnabled(): Promise<boolean> {
+    const cliPath = this.getCliPath();
+    try {
+      const result = await this.exec.exec(cliPath, ['settings', 'get', '--global', '--json']);
+      const parsed = OpenshellSettingsSchema.parse(JSON.parse(result.stdout));
+      const value = parsed.settings.providers_v2_enabled;
+      return value === true || value === 'true';
+    } catch {
+      return false;
+    }
   }
 
   async enableV2Provider(sandboxName: string): Promise<void> {

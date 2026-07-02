@@ -205,7 +205,10 @@ export class AgentWorkspaceManager implements Disposable {
       command: ['true'],
     });
 
-    await this.openshellCli.enableV2Provider(sandboxName);
+    const v2Globally = await this.openshellCli.isV2ProviderEnabled();
+    if (!v2Globally) {
+      await this.openshellCli.enableV2Provider(sandboxName);
+    }
 
     const finalNetwork = workspace.network;
     if (finalNetwork) {

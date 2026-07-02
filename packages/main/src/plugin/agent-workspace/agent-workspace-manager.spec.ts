@@ -300,10 +300,18 @@ describe('create – OpenShell mode', () => {
     expect(result).toEqual({ id: 'my-sandbox' });
   });
 
-  test('calls openshellCli.enableV2Provider after createSandbox', async () => {
+  test('calls openshellCli.enableV2Provider when not globally enabled', async () => {
+    vi.mocked(openshellCli.isV2ProviderEnabled).mockResolvedValue(false);
     await manager.create(defaultOptions);
 
     expect(openshellCli.enableV2Provider).toHaveBeenCalledWith('my-sandbox');
+  });
+
+  test('skips openshellCli.enableV2Provider when globally enabled', async () => {
+    vi.mocked(openshellCli.isV2ProviderEnabled).mockResolvedValue(true);
+    await manager.create(defaultOptions);
+
+    expect(openshellCli.enableV2Provider).not.toHaveBeenCalled();
   });
 
   test('derives sandbox name from sourcePath basename when name is omitted', async () => {

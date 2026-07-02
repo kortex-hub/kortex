@@ -1153,6 +1153,60 @@ describe('setInference', () => {
   });
 });
 
+describe('isV2ProviderEnabled', () => {
+  const GLOBAL_SETTINGS = {
+    scope: 'global',
+    settings: {
+      agent_policy_proposals_enabled: '<unset>',
+      ocsf_json_enabled: '<unset>',
+      proposal_approval_mode: '<unset>',
+      providers_v2_enabled: '<unset>',
+    },
+    settings_revision: 0,
+  };
+
+  test('returns true when setting is globally enabled', async () => {
+    vi.mocked(exec.exec).mockResolvedValue(
+      mockExecResult(
+        JSON.stringify({ ...GLOBAL_SETTINGS, settings: { ...GLOBAL_SETTINGS.settings, providers_v2_enabled: true } }),
+      ),
+    );
+
+    const result = await openshellCli.isV2ProviderEnabled();
+
+    expect(result).toBe(true);
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['settings', 'get', '--global', '--json']);
+  });
+
+  test('returns true when value is string "true"', async () => {
+    vi.mocked(exec.exec).mockResolvedValue(
+      mockExecResult(
+        JSON.stringify({ ...GLOBAL_SETTINGS, settings: { ...GLOBAL_SETTINGS.settings, providers_v2_enabled: 'true' } }),
+      ),
+    );
+
+    const result = await openshellCli.isV2ProviderEnabled();
+
+    expect(result).toBe(true);
+  });
+
+  test('returns false when setting is unset', async () => {
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify(GLOBAL_SETTINGS)));
+
+    const result = await openshellCli.isV2ProviderEnabled();
+
+    expect(result).toBe(false);
+  });
+
+  test('returns false when command fails', async () => {
+    vi.mocked(exec.exec).mockRejectedValue(new Error('setting not found'));
+
+    const result = await openshellCli.isV2ProviderEnabled();
+
+    expect(result).toBe(false);
+  });
+});
+
 describe('enableV2Provider', () => {
   test('executes settings set with sandbox name', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
