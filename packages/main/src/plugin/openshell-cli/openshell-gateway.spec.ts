@@ -18,6 +18,8 @@
 
 import type { ChildProcess } from 'node:child_process';
 import { EventEmitter } from 'node:events';
+import { writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 
 import type { RunResult } from '@openkaiden/api';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -37,8 +39,6 @@ vi.mock(import('node:os'));
 vi.mock(import('/@/plugin/util/exec.js'));
 
 const { spawn } = await import('node:child_process');
-const { writeFile } = await import('node:fs/promises');
-const { tmpdir } = await import('node:os');
 
 const GATEWAY_BINARY = '/usr/local/bin/openshell-gateway';
 const CLI_BINARY = '/usr/local/bin/openshell';
@@ -266,13 +266,13 @@ describe('getGatewayBinaryPath', () => {
 });
 
 describe('start', () => {
-  test('spawns the gateway process with default args and pinned supervisor image', async () => {
+  test('spawns the gateway process with default args', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const proc = createMockChildProcess();
     vi.mocked(spawn).mockReturnValue(proc);
     vi.mocked(exec.exec)
       .mockResolvedValueOnce(mockExecResult('openshell-gateway 0.0.69'))
-      .mockResolvedValue(mockExecResult(''));
+      .mockResolvedValue(mockExecResult('connected'));
 
     await gateway.start();
 
@@ -289,7 +289,7 @@ describe('start', () => {
     vi.mocked(spawn).mockReturnValue(proc);
     vi.mocked(exec.exec)
       .mockResolvedValueOnce(mockExecResult('openshell-gateway 0.0.69'))
-      .mockResolvedValue(mockExecResult(''));
+      .mockResolvedValue(mockExecResult('connected'));
 
     await gateway.start({ port: 9999, bindAddress: '0.0.0.0' });
 
@@ -306,7 +306,7 @@ describe('start', () => {
     vi.mocked(spawn).mockReturnValue(proc);
     vi.mocked(exec.exec)
       .mockResolvedValueOnce(mockExecResult('openshell-gateway 0.0.69'))
-      .mockResolvedValue(mockExecResult(''));
+      .mockResolvedValue(mockExecResult('connected'));
 
     await gateway.start({ disableTls: false });
 
@@ -323,7 +323,7 @@ describe('start', () => {
     vi.mocked(spawn).mockReturnValue(proc);
     vi.mocked(exec.exec)
       .mockResolvedValueOnce(mockExecResult('openshell-gateway 0.0.69'))
-      .mockResolvedValue(mockExecResult(''));
+      .mockResolvedValue(mockExecResult('connected'));
 
     await gateway.start();
     await gateway.start();
@@ -397,9 +397,7 @@ describe('start', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const proc = createMockChildProcess();
     vi.mocked(spawn).mockReturnValue(proc);
-    vi.mocked(exec.exec)
-      .mockResolvedValueOnce(mockExecResult('openshell-gateway 0.0.69'))
-      .mockRejectedValue(new Error('connection refused'));
+    vi.mocked(exec.exec).mockRejectedValue(new Error('connection refused'));
 
     let caughtError: unknown;
     const startPromise = gateway.start().catch((err: unknown) => {
@@ -494,7 +492,7 @@ describe('supervisor image pinning', () => {
     expect(exec.exec).toHaveBeenCalledWith(GATEWAY_BINARY, ['--version']);
     expect(writeFile).toHaveBeenCalledWith(
       '/tmp/kaiden-gateway.toml',
-      expect.stringContaining('supervisor_image = "ghcr.io/nvidia/openshell/supervisor:0.0.69"'),
+      '[openshell.drivers.podman]\nsupervisor_image = "ghcr.io/nvidia/openshell/supervisor:0.0.69"\n',
       'utf-8',
     );
   });
@@ -509,9 +507,9 @@ describe('supervisor image pinning', () => {
 
     await gateway.start();
 
-    const configContent = vi.mocked(writeFile).mock.calls[0]?.[1] as string;
-    expect(configContent).toContain('[openshell.drivers.podman]');
-    expect(configContent).not.toContain('[openshell.drivers.docker]');
+    const writtenContent = vi.mocked(writeFile).mock.calls[0]?.[1] as string;
+    expect(writtenContent).toContain('[openshell.drivers.podman]');
+    expect(writtenContent).not.toContain('[openshell.drivers.docker]');
   });
 
   test('passes --config flag to spawned gateway process', async () => {
@@ -537,12 +535,12 @@ describe('supervisor image pinning', () => {
     vi.mocked(spawn).mockReturnValue(proc);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
 
-    await gateway.start({ supervisorImage: 'custom-registry.io/supervisor:1.2.3' });
+    await gateway.start({ supervisorImage: 'my-registry.io/supervisor:custom' });
 
     expect(exec.exec).not.toHaveBeenCalledWith(GATEWAY_BINARY, ['--version']);
     expect(writeFile).toHaveBeenCalledWith(
       '/tmp/kaiden-gateway.toml',
-      expect.stringContaining('supervisor_image = "custom-registry.io/supervisor:1.2.3"'),
+      '[openshell.drivers.podman]\nsupervisor_image = "my-registry.io/supervisor:custom"\n',
       'utf-8',
     );
   });
@@ -552,7 +550,7 @@ describe('supervisor image pinning', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const proc = createMockChildProcess();
     vi.mocked(spawn).mockReturnValue(proc);
-    vi.mocked(exec.exec).mockRejectedValueOnce(new Error('binary not found')).mockResolvedValue(mockExecResult(''));
+    vi.mocked(exec.exec).mockRejectedValueOnce(new Error('command not found')).mockResolvedValue(mockExecResult(''));
 
     await gateway.start();
 

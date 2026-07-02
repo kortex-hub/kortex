@@ -236,11 +236,6 @@ export class OpenshellGateway implements Disposable {
     return token;
   }
 
-  /**
-   * Writes a TOML config that pins the supervisor container image to the
-   * gateway binary's own version, preventing the `:latest` tag drift
-   * described in issue #2315.
-   */
   private async writeSupervisorConfig(binaryPath: string, supervisorImage?: string): Promise<string | undefined> {
     try {
       let image = supervisorImage;
