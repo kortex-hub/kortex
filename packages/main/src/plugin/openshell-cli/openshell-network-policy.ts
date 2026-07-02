@@ -19,7 +19,6 @@
 import z from 'zod';
 
 import type { NetworkConfiguration } from '/@api/agent-workspace-info.js';
-import type { PolicyUpdateOptions } from '/@api/openshell-gateway-info.js';
 
 // ── OpenShell sandbox policy schema ────────────────────────────────
 
@@ -129,47 +128,6 @@ export const OPENSHELL_CONTAINER_HOST = 'host.openshell.internal';
 
 const LOCALHOST_ALIASES = ['localhost', '127.0.0.1', '0.0.0.0', '::1', '[::1]'];
 
-export function buildNetworkPolicyEndpoints(network: NetworkConfiguration): string[] | undefined {
-  if (network.mode === 'allow') {
-    return undefined;
-  }
-
-  if (!network.hosts?.length) {
-    return [];
-  }
-
-  return network.hosts.flatMap(host => [`${host}:443:full`, `${host}:80:full`]);
-}
-
-export function buildNetworkPolicyOperations(
-  sandboxName: string,
-  network: NetworkConfiguration,
-): PolicyUpdateOptions[] {
-  const removeOp: PolicyUpdateOptions = {
-    sandboxName,
-    removeRule: NETWORK_RULE_NAME,
-  };
-
-  const endpoints = buildNetworkPolicyEndpoints(network);
-  if (!endpoints?.length) {
-    return [removeOp];
-  }
-
-  const operations = [removeOp];
-
-  for (const endpoint of endpoints) {
-    operations.push({
-      sandboxName,
-      ruleName: NETWORK_RULE_NAME,
-      addEndpoints: [endpoint],
-      binary: '/**',
-      wait: true,
-    });
-  }
-
-  return operations;
-}
-
 // ── Model endpoint policy ─────────────────────────────────────────
 
 export interface ModelEndpoint {
@@ -262,31 +220,4 @@ export function buildPolicyObject(network?: NetworkConfiguration, modelEndpoint?
   }
 
   return { version: 1, network_policies: networkPolicies };
-}
-
-/**
- * Builds {@link PolicyUpdateOptions} to allow the sandbox to reach
- * the model inference endpoint. Follows the pattern from the issue:
- * `openshell policy update <sandbox> --add-endpoint <host>:<port> --binary '**'`
- */
-export function buildModelPolicyOperations(sandboxName: string, endpoint: string): PolicyUpdateOptions[] {
-  const removeOp: PolicyUpdateOptions = {
-    sandboxName,
-    removeRule: MODEL_RULE_NAME,
-  };
-
-  const parsed = parseModelEndpoint(endpoint);
-  if (!parsed) {
-    return [removeOp];
-  }
-
-  const addOp: PolicyUpdateOptions = {
-    sandboxName,
-    ruleName: MODEL_RULE_NAME,
-    addEndpoints: [`${parsed.host}:${parsed.port}`],
-    binary: '/**',
-    wait: true,
-  };
-
-  return [removeOp, addOp];
 }

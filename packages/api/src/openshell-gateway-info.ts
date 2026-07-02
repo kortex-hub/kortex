@@ -94,15 +94,6 @@ export interface CreateSandboxOptions {
   policy?: string;
 }
 
-export interface PolicyUpdateOptions {
-  sandboxName: string;
-  ruleName?: string;
-  removeRule?: string;
-  addEndpoints?: string[];
-  binary?: string;
-  wait?: boolean;
-}
-
 export interface GatewayAddOptions {
   endpoint: string;
   name?: string;
