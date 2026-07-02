@@ -17,7 +17,8 @@
  ***********************************************************************/
 
 import type { OpenShellCLI, OpenShellGateway, ProviderConnectionStatus } from '@openkaiden/api';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, preDestroy } from 'inversify';
+import { IDisposable } from 'node-pty';
 
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { Event } from '/@api/event.js';
@@ -26,7 +27,7 @@ import { Emitter } from './events/emitter.js';
 import { Disposable } from './types/disposable.js';
 
 @injectable()
-export class OpenShellRegistry {
+export class OpenShellRegistry implements IDisposable {
   private intervalId: NodeJS.Timeout | undefined;
 
   constructor(@inject(ApiSenderType) private apiSender: ApiSenderType) {
@@ -106,6 +107,7 @@ export class OpenShellRegistry {
     }, 5000);
   }
 
+  @preDestroy()
   dispose(): void {
     if (this.intervalId) {
       clearInterval(this.intervalId);
