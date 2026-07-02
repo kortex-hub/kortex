@@ -23,6 +23,7 @@ import { basename, join, posix } from 'node:path';
 import type { Disposable, FileSystemWatcher } from '@openkaiden/api';
 import type { WebContents } from 'electron';
 import { inject, injectable, preDestroy } from 'inversify';
+import { dump } from 'js-yaml';
 import type { IPty } from 'node-pty';
 import { spawn } from 'node-pty';
 
@@ -32,11 +33,7 @@ import { WritableConfigurationFile } from '/@/plugin/agent-workspace/writable-co
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
-import {
-  buildModelPolicyOperations,
-  buildNetworkPolicyOperations,
-  rewriteLocalhostUrl,
-} from '/@/plugin/openshell-cli/openshell-network-policy.js';
+import { buildPolicyObject, rewriteLocalhostUrl } from '/@/plugin/openshell-cli/openshell-network-policy.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
@@ -50,7 +47,7 @@ import type {
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IConfigurationNode } from '/@api/configuration/models.js';
 import { IConfigurationRegistry } from '/@api/configuration/models.js';
-import type { GatewaySandboxes, PolicyUpdateOptions } from '/@api/openshell-gateway-info.js';
+import type { GatewaySandboxes } from '/@api/openshell-gateway-info.js';
 import { AGENT_LABEL, decodeWorkspaceLabels, WORKSPACE_LABEL } from '/@api/openshell-gateway-info.js';
 
 const HOME_VARIABLE = '${HOME}';
@@ -197,15 +194,29 @@ export class AgentWorkspaceManager implements Disposable {
 
     const t0 = performance.now();
 
-    await this.openshellCli.createSandbox({
-      name: sandboxName,
-      providers: options.secrets,
-      env: env && Object.keys(env).length > 0 ? env : undefined,
-      labels: { ...encodeWorkspaceLabels(options.sourcePath), [AGENT_LABEL]: options.agent },
-      uploads: uploads.length > 0 ? uploads : undefined,
-      noTty: true,
-      command: ['true'],
-    });
+    const policy = buildPolicyObject(workspace.network, endpoint);
+    let policyFile: string | undefined;
+    if (policy) {
+      policyFile = join(tmpdir(), `kaiden-policy-${sandboxName}-${Date.now()}.yaml`);
+      await writeFile(policyFile, dump(policy), 'utf-8');
+    }
+
+    try {
+      await this.openshellCli.createSandbox({
+        name: sandboxName,
+        providers: options.secrets,
+        env: env && Object.keys(env).length > 0 ? env : undefined,
+        labels: { ...encodeWorkspaceLabels(options.sourcePath), [AGENT_LABEL]: options.agent },
+        uploads: uploads.length > 0 ? uploads : undefined,
+        noTty: true,
+        command: ['true'],
+        policy: policyFile,
+      });
+    } finally {
+      if (policyFile) {
+        await rm(policyFile, { force: true }).catch(() => {});
+      }
+    }
 
     const tSandbox = performance.now();
     console.log(`[workspace-timing] createSandbox: ${(tSandbox - t0).toFixed(0)}ms`);
@@ -214,54 +225,9 @@ export class AgentWorkspaceManager implements Disposable {
 
     const tV2 = performance.now();
     console.log(`[workspace-timing] enableV2Provider: ${(tV2 - tSandbox).toFixed(0)}ms`);
-
-    const finalNetwork = workspace.network;
-    if (finalNetwork) {
-      const operations = buildNetworkPolicyOperations(sandboxName, finalNetwork);
-      await this.applyPolicyOperations(sandboxName, operations);
-    }
-
-    const tNetwork = performance.now();
-    console.log(`[workspace-timing] networkPolicy: ${(tNetwork - tV2).toFixed(0)}ms`);
-
-    if (endpoint) {
-      const modelOps = buildModelPolicyOperations(sandboxName, endpoint);
-      await this.applyPolicyOperations(sandboxName, modelOps);
-    }
-
-    const tModel = performance.now();
-    console.log(`[workspace-timing] modelPolicy: ${(tModel - tNetwork).toFixed(0)}ms`);
-    console.log(`[workspace-timing] total createOpenshell: ${(tModel - t0).toFixed(0)}ms`);
+    console.log(`[workspace-timing] total createOpenshell: ${(tV2 - t0).toFixed(0)}ms`);
 
     return { id: sandboxName };
-  }
-
-  /**
-   * Applies a sequence of policy operations to a sandbox, rolling back
-   * (deleting the sandbox) if any add-endpoint operation fails.
-   */
-  private async applyPolicyOperations(sandboxName: string, operations: PolicyUpdateOptions[]): Promise<void> {
-    for (const op of operations) {
-      if (op.removeRule && !op.addEndpoints) {
-        try {
-          await this.openshellCli.policyUpdate(op);
-        } catch {
-          // Rule may not exist on a fresh sandbox — ignore
-        }
-        continue;
-      }
-
-      try {
-        await this.openshellCli.policyUpdate(op);
-      } catch (err) {
-        try {
-          await this.openshellCli.deleteSandbox(sandboxName);
-        } catch {
-          // best-effort rollback; preserve original failure
-        }
-        throw err;
-      }
-    }
   }
 
   async checkWorkspaceConfigExists(sourcePath: string): Promise<boolean> {

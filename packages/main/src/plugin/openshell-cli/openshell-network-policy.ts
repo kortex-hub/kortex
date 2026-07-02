@@ -233,6 +233,37 @@ export function parseModelEndpoint(endpoint: string): ModelEndpoint | undefined 
   return { host: parsed.hostname, port };
 }
 
+export function buildPolicyObject(network?: NetworkConfiguration, modelEndpoint?: string): OpenshellPolicy | undefined {
+  const networkPolicies: Record<string, OpenshellNetworkPolicyEntry> = {};
+
+  if (network && network.mode !== 'allow' && network.hosts?.length) {
+    const endpoints: OpenshellEndpoint[] = network.hosts.flatMap(host => [
+      { host, port: 443, access: 'full' as const },
+      { host, port: 80, access: 'full' as const },
+    ]);
+    networkPolicies[NETWORK_RULE_NAME] = {
+      endpoints,
+      binaries: [{ path: '/**' }],
+    };
+  }
+
+  if (modelEndpoint) {
+    const parsed = parseModelEndpoint(modelEndpoint);
+    if (parsed) {
+      networkPolicies[MODEL_RULE_NAME] = {
+        endpoints: [{ host: parsed.host, port: parsed.port }],
+        binaries: [{ path: '/**' }],
+      };
+    }
+  }
+
+  if (Object.keys(networkPolicies).length === 0) {
+    return undefined;
+  }
+
+  return { version: 1, network_policies: networkPolicies };
+}
+
 /**
  * Builds {@link PolicyUpdateOptions} to allow the sandbox to reach
  * the model inference endpoint. Follows the pattern from the issue:

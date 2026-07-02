@@ -22,6 +22,7 @@ import {
   buildModelPolicyOperations,
   buildNetworkPolicyEndpoints,
   buildNetworkPolicyOperations,
+  buildPolicyObject,
   OPENSHELL_CONTAINER_HOST,
   parseModelEndpoint,
   rewriteLocalhostUrl,
@@ -201,6 +202,92 @@ describe('parseModelEndpoint', () => {
       host: 'files.example.com',
       port: 2121,
     });
+  });
+});
+
+describe('buildPolicyObject', () => {
+  test('returns undefined when no network and no model endpoint', () => {
+    expect(buildPolicyObject()).toBeUndefined();
+  });
+
+  test('returns undefined for allow mode with no model endpoint', () => {
+    expect(buildPolicyObject({ mode: 'allow' })).toBeUndefined();
+  });
+
+  test('returns undefined for deny mode with no hosts and no model endpoint', () => {
+    expect(buildPolicyObject({ mode: 'deny' })).toBeUndefined();
+  });
+
+  test('returns undefined for deny mode with empty hosts and no model endpoint', () => {
+    expect(buildPolicyObject({ mode: 'deny', hosts: [] })).toBeUndefined();
+  });
+
+  test('builds network rule for deny mode with hosts', () => {
+    const policy = buildPolicyObject({ mode: 'deny', hosts: ['registry.npmjs.org'] });
+
+    expect(policy).toEqual({
+      version: 1,
+      network_policies: {
+        'kdn-network': {
+          endpoints: [
+            { host: 'registry.npmjs.org', port: 443, access: 'full' },
+            { host: 'registry.npmjs.org', port: 80, access: 'full' },
+          ],
+          binaries: [{ path: '/**' }],
+        },
+      },
+    });
+  });
+
+  test('builds model rule for valid endpoint', () => {
+    const policy = buildPolicyObject(undefined, 'https://api.example.com/v1');
+
+    expect(policy).toEqual({
+      version: 1,
+      network_policies: {
+        'kdn-model': {
+          endpoints: [{ host: 'api.example.com', port: 443 }],
+          binaries: [{ path: '/**' }],
+        },
+      },
+    });
+  });
+
+  test('combines network and model rules', () => {
+    const policy = buildPolicyObject({ mode: 'deny', hosts: ['registry.npmjs.org'] }, 'http://localhost:11434/v1');
+
+    expect(policy).toEqual({
+      version: 1,
+      network_policies: {
+        'kdn-network': {
+          endpoints: [
+            { host: 'registry.npmjs.org', port: 443, access: 'full' },
+            { host: 'registry.npmjs.org', port: 80, access: 'full' },
+          ],
+          binaries: [{ path: '/**' }],
+        },
+        'kdn-model': {
+          endpoints: [{ host: OPENSHELL_CONTAINER_HOST, port: 11434 }],
+          binaries: [{ path: '/**' }],
+        },
+      },
+    });
+  });
+
+  test('rewrites localhost model endpoint', () => {
+    const policy = buildPolicyObject(undefined, 'http://localhost:11434/v1');
+
+    expect(policy!.network_policies!['kdn-model']!.endpoints[0]!.host).toBe(OPENSHELL_CONTAINER_HOST);
+  });
+
+  test('returns only model rule when network is allow mode', () => {
+    const policy = buildPolicyObject({ mode: 'allow' }, 'https://api.example.com/v1');
+
+    expect(Object.keys(policy!.network_policies!)).toEqual(['kdn-model']);
+  });
+
+  test('returns undefined for invalid model endpoint with no network', () => {
+    expect(buildPolicyObject(undefined, 'not-a-url')).toBeUndefined();
   });
 });
 

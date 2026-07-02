@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { access, readFile, writeFile } from 'node:fs/promises';
+import { access, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import type {
@@ -54,6 +54,7 @@ import type { TaskState, TaskStatus } from '/@api/taskInfo.js';
 import { AgentWorkspaceManager, encodeWorkspaceLabels } from './agent-workspace-manager.js';
 
 vi.mock(import('node:fs/promises'));
+vi.mock(import('js-yaml'));
 vi.mock(import('yaml'));
 vi.mock(import('node-pty'));
 
@@ -155,6 +156,7 @@ beforeEach(() => {
   mockTask.error = '';
   vi.mocked(filesystemMonitoring.createFileSystemWatcher).mockReturnValue(mockWatcher);
   vi.mocked(writeFile).mockResolvedValue(undefined);
+  vi.mocked(rm).mockResolvedValue(undefined);
   vi.mocked(readFile).mockResolvedValue('{}');
   vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
     get: vi.fn().mockReturnValue(undefined),
@@ -438,7 +440,7 @@ describe('create – OpenShell mode', () => {
     expect(openshellCli.createSandbox).not.toHaveBeenCalled();
   });
 
-  test('calls policyUpdate with one endpoint per call for deny mode with hosts', async () => {
+  test('passes policy file to createSandbox for deny mode with hosts', async () => {
     const options = {
       ...defaultOptions,
       network: { mode: 'deny' as const, hosts: ['registry.npmjs.org', 'pypi.python.org'] },
@@ -446,67 +448,28 @@ describe('create – OpenShell mode', () => {
 
     await manager.create(options);
 
-    expect(openshellCli.createSandbox).toHaveBeenCalled();
-    expect(openshellCli.policyUpdate).toHaveBeenCalledTimes(5);
-    expect(openshellCli.policyUpdate).toHaveBeenNthCalledWith(1, {
-      sandboxName: 'my-sandbox',
-      removeRule: 'kdn-network',
-    });
-    expect(openshellCli.policyUpdate).toHaveBeenNthCalledWith(2, {
-      sandboxName: 'my-sandbox',
-      addEndpoints: ['registry.npmjs.org:443:full'],
-      binary: '/**',
-      ruleName: 'kdn-network',
-      wait: true,
-    });
-    expect(openshellCli.policyUpdate).toHaveBeenNthCalledWith(3, {
-      sandboxName: 'my-sandbox',
-      addEndpoints: ['registry.npmjs.org:80:full'],
-      binary: '/**',
-      ruleName: 'kdn-network',
-      wait: true,
-    });
-    expect(openshellCli.policyUpdate).toHaveBeenNthCalledWith(4, {
-      sandboxName: 'my-sandbox',
-      addEndpoints: ['pypi.python.org:443:full'],
-      binary: '/**',
-      ruleName: 'kdn-network',
-      wait: true,
-    });
-    expect(openshellCli.policyUpdate).toHaveBeenNthCalledWith(5, {
-      sandboxName: 'my-sandbox',
-      addEndpoints: ['pypi.python.org:80:full'],
-      binary: '/**',
-      ruleName: 'kdn-network',
-      wait: true,
-    });
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({ policy: expect.stringContaining('kaiden-policy-my-sandbox') }),
+    );
   });
 
-  test('calls policyUpdate once for deny mode with no hosts: remove only', async () => {
+  test('does not pass policy for deny mode with no hosts and no model endpoint', async () => {
     const options = { ...defaultOptions, network: { mode: 'deny' as const } };
 
     await manager.create(options);
 
-    expect(openshellCli.policyUpdate).toHaveBeenCalledTimes(1);
-    expect(openshellCli.policyUpdate).toHaveBeenCalledWith({
-      sandboxName: 'my-sandbox',
-      removeRule: 'kdn-network',
-    });
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(expect.not.objectContaining({ policy: expect.anything() }));
   });
 
-  test('calls policyUpdate once for deny mode with empty hosts: remove only', async () => {
+  test('does not pass policy for deny mode with empty hosts and no model endpoint', async () => {
     const options = { ...defaultOptions, network: { mode: 'deny' as const, hosts: [] } };
 
     await manager.create(options);
 
-    expect(openshellCli.policyUpdate).toHaveBeenCalledTimes(1);
-    expect(openshellCli.policyUpdate).toHaveBeenCalledWith({
-      sandboxName: 'my-sandbox',
-      removeRule: 'kdn-network',
-    });
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(expect.not.objectContaining({ policy: expect.anything() }));
   });
 
-  test('calls policyUpdate once for allow mode: remove only', async () => {
+  test('does not pass policy for allow mode with no model endpoint', async () => {
     const options = {
       ...defaultOptions,
       network: { mode: 'allow' as const, hosts: ['registry.npmjs.org'] },
@@ -514,38 +477,36 @@ describe('create – OpenShell mode', () => {
 
     await manager.create(options);
 
-    expect(openshellCli.policyUpdate).toHaveBeenCalledTimes(1);
-    expect(openshellCli.policyUpdate).toHaveBeenCalledWith({
-      sandboxName: 'my-sandbox',
-      removeRule: 'kdn-network',
-    });
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(expect.not.objectContaining({ policy: expect.anything() }));
   });
 
-  test('does not call policyUpdate when network is undefined', async () => {
+  test('does not pass policy when network is undefined and no model endpoint', async () => {
     await manager.create(defaultOptions);
 
-    expect(openshellCli.policyUpdate).not.toHaveBeenCalled();
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(expect.not.objectContaining({ policy: expect.anything() }));
   });
 
-  test('swallows errors on remove-only policyUpdate', async () => {
-    vi.mocked(openshellCli.policyUpdate).mockRejectedValue(new Error('rule not found'));
+  test('cleans up policy temp file after successful createSandbox', async () => {
+    const options = {
+      ...defaultOptions,
+      network: { mode: 'deny' as const, hosts: ['registry.npmjs.org'] },
+    };
 
-    const options = { ...defaultOptions, network: { mode: 'deny' as const } };
+    await manager.create(options);
 
-    await expect(manager.create(options)).resolves.toEqual({ id: 'my-sandbox' });
+    expect(rm).toHaveBeenCalledWith(expect.stringContaining('kaiden-policy-my-sandbox'), { force: true });
   });
 
-  test('propagates errors on add-endpoints policyUpdate', async () => {
-    vi.mocked(openshellCli.policyUpdate)
-      .mockResolvedValueOnce(undefined)
-      .mockRejectedValueOnce(new Error('policy update failed'));
+  test('cleans up policy temp file after failed createSandbox', async () => {
+    vi.mocked(openshellCli.createSandbox).mockRejectedValue(new Error('sandbox create failed'));
 
     const options = {
       ...defaultOptions,
       network: { mode: 'deny' as const, hosts: ['registry.npmjs.org'] },
     };
 
-    await expect(manager.create(options)).rejects.toThrow('policy update failed');
+    await expect(manager.create(options)).rejects.toThrow('sandbox create failed');
+    expect(rm).toHaveBeenCalledWith(expect.stringContaining('kaiden-policy-my-sandbox'), { force: true });
   });
 
   test('attaches secret to sandbox when getSecretForModel returns a secret', async () => {
@@ -643,7 +604,7 @@ describe('create – OpenShell mode', () => {
     expect(call!.env).toBeUndefined();
   });
 
-  test('applies model endpoint policy when model has an endpoint', async () => {
+  test('passes policy file for model with endpoint', async () => {
     vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
       credentials: { api_key: 'sk-test' },
       llmMetadataName: 'openai',
@@ -654,17 +615,9 @@ describe('create – OpenShell mode', () => {
     const options = { ...defaultOptions, model: 'openai::gpt-4o::https://api.example.com/v1' };
     await manager.create(options);
 
-    expect(openshellCli.policyUpdate).toHaveBeenCalledWith({
-      sandboxName: 'my-sandbox',
-      removeRule: 'kdn-model',
-    });
-    expect(openshellCli.policyUpdate).toHaveBeenCalledWith({
-      sandboxName: 'my-sandbox',
-      ruleName: 'kdn-model',
-      addEndpoints: ['api.example.com:443'],
-      binary: '/**',
-      wait: true,
-    });
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({ policy: expect.stringContaining('kaiden-policy-my-sandbox') }),
+    );
   });
 
   test('rewrites localhost model endpoint to host.openshell.internal', async () => {
@@ -686,22 +639,12 @@ describe('create – OpenShell mode', () => {
         }),
       }),
     );
-    expect(openshellCli.policyUpdate).toHaveBeenCalledWith({
-      sandboxName: 'my-sandbox',
-      ruleName: 'kdn-model',
-      addEndpoints: ['host.openshell.internal:11434'],
-      binary: '/**',
-      wait: true,
-    });
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({ policy: expect.stringContaining('kaiden-policy-my-sandbox') }),
+    );
   });
 
-  test('does not apply model policy when no model is configured', async () => {
-    await manager.create(defaultOptions);
-
-    expect(openshellCli.policyUpdate).not.toHaveBeenCalled();
-  });
-
-  test('does not apply model policy when model has no endpoint', async () => {
+  test('does not pass policy when model has no endpoint', async () => {
     vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
       credentials: { api_key: 'sk-test' },
       llmMetadataName: 'anthropic',
@@ -711,58 +654,21 @@ describe('create – OpenShell mode', () => {
     const options = { ...defaultOptions, model: 'anthropic::claude-sonnet-4-20250514' };
     await manager.create(options);
 
-    expect(openshellCli.policyUpdate).not.toHaveBeenCalledWith(expect.objectContaining({ removeRule: 'kdn-model' }));
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(expect.not.objectContaining({ policy: expect.anything() }));
   });
 
-  test('extracts endpoint from model ID when connectionInfo is unavailable', async () => {
+  test('passes policy for endpoint extracted from model ID when connectionInfo is unavailable', async () => {
     vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue(undefined);
 
     const options = { ...defaultOptions, model: 'ollama::qwen3:0.6b::http://localhost:11434/v1' };
     await manager.create(options);
 
-    expect(openshellCli.policyUpdate).toHaveBeenCalledWith({
-      sandboxName: 'my-sandbox',
-      ruleName: 'kdn-model',
-      addEndpoints: ['host.openshell.internal:11434'],
-      binary: '/**',
-      wait: true,
-    });
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({ policy: expect.stringContaining('kaiden-policy-my-sandbox') }),
+    );
   });
 
-  test('swallows errors on model policy remove-only operation', async () => {
-    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
-      credentials: {},
-      llmMetadataName: 'ollama',
-      endpoint: 'http://localhost:11434/v1',
-    });
-    vi.mocked(openshellCli.policyUpdate).mockImplementation(async op => {
-      if (op.removeRule === 'kdn-model' && !op.addEndpoints) {
-        throw new Error('rule not found');
-      }
-    });
-
-    const options = { ...defaultOptions, model: 'ollama::qwen3::http://localhost:11434/v1' };
-    await expect(manager.create(options)).resolves.toEqual({ id: 'my-sandbox' });
-  });
-
-  test('deletes sandbox when model policy add fails', async () => {
-    vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
-      credentials: {},
-      llmMetadataName: 'ollama',
-      endpoint: 'http://localhost:11434/v1',
-    });
-    vi.mocked(openshellCli.policyUpdate).mockImplementation(async op => {
-      if (op.ruleName === 'kdn-model' && op.addEndpoints) {
-        throw new Error('policy add failed');
-      }
-    });
-
-    const options = { ...defaultOptions, model: 'ollama::qwen3::http://localhost:11434/v1' };
-    await expect(manager.create(options)).rejects.toThrow('policy add failed');
-    expect(openshellCli.deleteSandbox).toHaveBeenCalledWith('my-sandbox');
-  });
-
-  test('applies both network and model policies together', async () => {
+  test('passes policy with both network and model rules together', async () => {
     vi.mocked(providerRegistry.getInferenceConnectionCredentials).mockReturnValue({
       credentials: { api_key: 'sk-test' },
       llmMetadataName: 'openai',
@@ -778,13 +684,8 @@ describe('create – OpenShell mode', () => {
 
     await manager.create(options);
 
-    expect(openshellCli.policyUpdate).toHaveBeenCalledWith(expect.objectContaining({ removeRule: 'kdn-network' }));
-    expect(openshellCli.policyUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ ruleName: 'kdn-network', addEndpoints: expect.any(Array) }),
-    );
-    expect(openshellCli.policyUpdate).toHaveBeenCalledWith(expect.objectContaining({ removeRule: 'kdn-model' }));
-    expect(openshellCli.policyUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({ ruleName: 'kdn-model', addEndpoints: ['api.openai.com:443'] }),
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({ policy: expect.stringContaining('kaiden-policy-my-sandbox') }),
     );
   });
 });
