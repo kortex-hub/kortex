@@ -289,12 +289,17 @@ export class PluginSystem {
   private extensionLoader!: ExtensionLoader;
   private validExtList!: ExtensionInfo[];
 
+  private container: Container | undefined;
+
   constructor(
     private trayMenu: TrayMenu,
     private mainWindowDeferred: PromiseWithResolvers<BrowserWindow>,
   ) {
     app.on('before-quit', () => {
       this.isQuitting = true;
+      this.container
+        ?.unbindAll()
+        .catch((err: unknown) => console.error('[PluginSystem] failed to dispose container:', err));
     });
   }
 
@@ -513,7 +518,8 @@ export class PluginSystem {
     // init api sender
     const apiSender = this.getApiSender(this.getWebContentsSender());
     const webContentsSender = this.getWebContentsSender();
-    const container = new Container();
+    this.container = new Container();
+    const container = this.container;
     container.bind<ApiSenderType>(ApiSenderType).toConstantValue(apiSender);
     container.bind<IPCHandle>(IPCHandle).toConstantValue(this.ipcHandle);
     container.bind<IPCMainOn>(IPCMainOn).toConstantValue(this.ipcMainOn);
