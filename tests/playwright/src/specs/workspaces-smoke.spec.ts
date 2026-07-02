@@ -72,6 +72,7 @@ test.describe('Workspaces page - create wizard', { tag: '@smoke' }, () => {
 
   test.beforeEach(async ({ page, navigationBar }) => {
     await waitForNavigationReady(page);
+    await navigationBar.ensureExtensionsRunning();
     await navigationBar.navigateToWorkspacesPage();
   });
 

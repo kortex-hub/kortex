@@ -27,6 +27,7 @@ import { waitForNavigationReady } from '/@/utils/app-ready';
 test.describe('Settings page navigation', { tag: '@smoke' }, () => {
   test.beforeEach(async ({ page, navigationBar }) => {
     await waitForNavigationReady(page);
+    await navigationBar.ensureExtensionsRunning();
     await navigationBar.navigateToSettingsPage();
   });
 

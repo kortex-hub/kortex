@@ -70,6 +70,8 @@ export function registerWorkspaceLifecycleTests(
   let countsBefore: { activeSessions: number; totalSessions: number; configuredAgents: number };
 
   test.beforeAll(async ({ workerNavigationBar }) => {
+    await workerNavigationBar.ensureExtensionsRunning();
+
     if (config.requiredResource) {
       const provider = PROVIDERS[config.requiredResource];
       if (!('autoDetected' in provider && provider.autoDetected)) {

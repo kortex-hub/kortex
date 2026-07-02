@@ -18,6 +18,7 @@
 
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import { builtInExtensions, ExtensionStatus } from '/@/model/core/types';
 import { AgentWorkspacesPage } from '/@/model/pages/agent-workspaces-page';
 import type { BasePage } from '/@/model/pages/base-page';
 import { ChatPage } from '/@/model/pages/chat-page';
@@ -109,6 +110,15 @@ export class NavigationBar {
     const preferencesPage = await settingsPage.openPreferences();
     await preferencesPage.enableChatWindow();
     await expect(this.chatLink).toBeVisible();
+  }
+
+  async ensureExtensionsRunning(): Promise<void> {
+    const extensionsPage = await (await this.navigateToExtensionsPage()).openInstalledTab();
+    for (const extension of builtInExtensions) {
+      if ((await extensionsPage.getExtensionState(extension.locator)) !== ExtensionStatus.RUNNING) {
+        await extensionsPage.startExtensionAndVerify(extension.locator);
+      }
+    }
   }
 
   async navigateToWorkspacesPage(): Promise<AgentWorkspacesPage> {

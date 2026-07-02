@@ -26,11 +26,22 @@ export interface FlowParameters {
 
 export const builtInExtensions = [
   { name: 'Default MCP Registries', locator: 'kaiden.mcp-registries' },
+  { name: 'Claude', locator: 'kaiden.claude' },
+  { name: 'Codex', locator: 'kaiden.codex' },
+  { name: 'Cursor', locator: 'kaiden.cursor' },
+  { name: 'Docling Chunk Provider', locator: 'kaiden.docling' },
   { name: 'Gemini', locator: 'kaiden.gemini' },
+  { name: 'GitHub Copilot', locator: 'kaiden.copilot' },
+  { name: 'Goose', locator: 'kaiden.goose' },
+  { name: 'Milvus Knowledges Provider', locator: 'kaiden.milvus' },
+  { name: 'Mistral', locator: 'kaiden.mistral' },
   { name: 'Ollama', locator: 'kaiden.ollama' },
   { name: 'OpenAI Compatible', locator: 'kaiden.openai-compatible' },
-  { name: 'RamaLama', locator: 'kaiden.ramalama' },
+  { name: 'OpenClaw', locator: 'kaiden.openclaw' },
+  { name: 'OpenCode', locator: 'kaiden.opencode' },
   { name: 'OpenShift AI', locator: 'kaiden.openshift-ai' },
+  { name: 'RamaLama', locator: 'kaiden.ramalama' },
+  { name: 'Vertex AI', locator: 'kaiden.vertex-ai' },
 ] as const;
 
 export type ExtensionLocator = (typeof builtInExtensions)[number]['locator'];
