@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { OpenShellCLI, OpenShellGateway } from '@openkaiden/api';
+import type { OpenShellCLI, OpenShellGateway, ProviderConnectionStatus } from '@openkaiden/api';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
@@ -206,6 +206,83 @@ describe('OpenShellRegistry', () => {
   describe('getCLIs', () => {
     test('returns empty array when no CLIs registered', () => {
       expect(registry.getCLIs()).toEqual([]);
+    });
+  });
+
+  describe('gateway status polling', () => {
+    let pollingRegistry: OpenShellRegistry;
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      pollingRegistry = new OpenShellRegistry(apiSender);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    test('fires onDidUpdateGateway when gateway status changes', () => {
+      const listener = vi.fn();
+      pollingRegistry.onDidUpdateGateway(listener);
+
+      let currentStatus: ProviderConnectionStatus = 'started';
+      const gateway = createGateway({ status: () => currentStatus });
+      pollingRegistry.registerGateway(gateway);
+      vi.mocked(apiSender.send).mockClear();
+
+      currentStatus = 'stopped';
+      vi.advanceTimersByTime(5000);
+
+      expect(listener).toHaveBeenCalledWith(gateway);
+      expect(apiSender.send).toHaveBeenCalledWith('openshell-registry:gateway-update');
+    });
+
+    test('does not fire event when status stays the same', () => {
+      const listener = vi.fn();
+      pollingRegistry.onDidUpdateGateway(listener);
+
+      const gateway = createGateway({ status: () => 'started' });
+      pollingRegistry.registerGateway(gateway);
+
+      vi.advanceTimersByTime(5000);
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    test('dispose stops polling', () => {
+      const listener = vi.fn();
+      pollingRegistry.onDidUpdateGateway(listener);
+
+      let currentStatus: ProviderConnectionStatus = 'started';
+      const gateway = createGateway({ status: () => currentStatus });
+      pollingRegistry.registerGateway(gateway);
+      vi.mocked(apiSender.send).mockClear();
+
+      pollingRegistry.dispose();
+
+      currentStatus = 'stopped';
+      vi.advanceTimersByTime(5000);
+
+      expect(listener).not.toHaveBeenCalled();
+      expect(apiSender.send).not.toHaveBeenCalled();
+    });
+
+    test('does not poll disposed gateways', () => {
+      const listener = vi.fn();
+      pollingRegistry.onDidUpdateGateway(listener);
+
+      let currentStatus: ProviderConnectionStatus = 'started';
+      const gateway = createGateway({ status: () => currentStatus });
+      const disposable = pollingRegistry.registerGateway(gateway);
+
+      disposable.dispose();
+      vi.mocked(apiSender.send).mockClear();
+
+      currentStatus = 'stopped';
+      vi.advanceTimersByTime(5000);
+
+      expect(listener).not.toHaveBeenCalled();
+      expect(apiSender.send).not.toHaveBeenCalled();
     });
   });
 });

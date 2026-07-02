@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { OpenShellCLI, OpenShellGateway } from '@openkaiden/api';
+import type { OpenShellCLI, OpenShellGateway, ProviderConnectionStatus } from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
@@ -27,9 +27,14 @@ import { Disposable } from './types/disposable.js';
 
 @injectable()
 export class OpenShellRegistry {
-  constructor(@inject(ApiSenderType) private apiSender: ApiSenderType) {}
+  private intervalId: NodeJS.Timeout | undefined;
+
+  constructor(@inject(ApiSenderType) private apiSender: ApiSenderType) {
+    this.startGatewayStatusPolling();
+  }
 
   private gateways = new Map<string, OpenShellGateway>();
+  private gatewayStatuses = new Map<string, ProviderConnectionStatus>();
   private clis: OpenShellCLI[] = [];
 
   private readonly _onDidRegisterGateway = new Emitter<OpenShellGateway>();
@@ -53,11 +58,13 @@ export class OpenShellRegistry {
     }
 
     this.gateways.set(gateway.id, gateway);
+    this.gatewayStatuses.set(gateway.id, gateway.status());
     this.apiSender.send('openshell-registry:gateway-update');
     this._onDidRegisterGateway.fire(gateway);
 
     return Disposable.create(() => {
       this.gateways.delete(gateway.id);
+      this.gatewayStatuses.delete(gateway.id);
       this.apiSender.send('openshell-registry:gateway-update');
       this._onDidUnregisterGateway.fire(gateway);
     });
@@ -84,5 +91,25 @@ export class OpenShellRegistry {
 
   getCLIs(): readonly OpenShellCLI[] {
     return Array.from(this.clis);
+  }
+
+  startGatewayStatusPolling(): void {
+    this.intervalId = setInterval(() => {
+      for (const gateway of this.gateways.values()) {
+        const status = gateway.status();
+        if (status !== this.gatewayStatuses.get(gateway.id)) {
+          this.gatewayStatuses.set(gateway.id, status);
+          this.apiSender.send('openshell-registry:gateway-update');
+          this._onDidUpdateGateway.fire(gateway);
+        }
+      }
+    }, 5000);
+  }
+
+  dispose(): void {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = undefined;
+    }
   }
 }
