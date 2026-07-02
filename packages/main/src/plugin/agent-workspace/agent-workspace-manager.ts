@@ -195,6 +195,8 @@ export class AgentWorkspaceManager implements Disposable {
         return acc;
       }, {});
 
+    const t0 = performance.now();
+
     await this.openshellCli.createSandbox({
       name: sandboxName,
       providers: options.secrets,
@@ -205,7 +207,13 @@ export class AgentWorkspaceManager implements Disposable {
       command: ['true'],
     });
 
+    const tSandbox = performance.now();
+    console.log(`[workspace-timing] createSandbox: ${(tSandbox - t0).toFixed(0)}ms`);
+
     await this.openshellCli.enableV2Provider(sandboxName);
+
+    const tV2 = performance.now();
+    console.log(`[workspace-timing] enableV2Provider: ${(tV2 - tSandbox).toFixed(0)}ms`);
 
     const finalNetwork = workspace.network;
     if (finalNetwork) {
@@ -213,10 +221,17 @@ export class AgentWorkspaceManager implements Disposable {
       await this.applyPolicyOperations(sandboxName, operations);
     }
 
+    const tNetwork = performance.now();
+    console.log(`[workspace-timing] networkPolicy: ${(tNetwork - tV2).toFixed(0)}ms`);
+
     if (endpoint) {
       const modelOps = buildModelPolicyOperations(sandboxName, endpoint);
       await this.applyPolicyOperations(sandboxName, modelOps);
     }
+
+    const tModel = performance.now();
+    console.log(`[workspace-timing] modelPolicy: ${(tModel - tNetwork).toFixed(0)}ms`);
+    console.log(`[workspace-timing] total createOpenshell: ${(tModel - t0).toFixed(0)}ms`);
 
     return { id: sandboxName };
   }
