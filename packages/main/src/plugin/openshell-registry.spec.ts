@@ -63,11 +63,12 @@ function createCLI(overrides?: Partial<OpenShellCLI>): OpenShellCLI {
 
 describe('OpenShellRegistry', () => {
   beforeEach(() => {
+    vi.resetAllMocks();
     registry = new OpenShellRegistry(apiSender);
   });
 
   afterEach(() => {
-    vi.resetAllMocks();
+    registry.dispose();
   });
 
   describe('registerGateway', () => {
