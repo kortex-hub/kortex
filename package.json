@@ -208,7 +208,7 @@
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "^0.28.1",
-    "@ai-sdk/mcp": "^2.0.5",
+    "@ai-sdk/mcp": "^2.0.7",
     "@docker/extension-api-client-types": "0.4.2",
     "@expo/sudo-prompt": "^9.3.2",
     "@kubernetes/client-node": "^1.4.0",
@@ -220,7 +220,7 @@
     "@types/stream-json": "^1.7.8",
     "@types/winreg": "^1.2.36",
     "adm-zip": "^0.5.16",
-    "ai": "^7.0.11",
+    "ai": "^7.0.14",
     "bcrypt-ts": "^8.0.1",
     "better-sqlite3": "^12.11.1",
     "check-disk-space": "^3.4.0",
