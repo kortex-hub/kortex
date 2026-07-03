@@ -717,8 +717,8 @@ importers:
   extensions/openai-compatible:
     dependencies:
       '@ai-sdk/openai-compatible':
-        specifier: ^3.0.3
-        version: 3.0.3(zod@4.4.3)
+        specifier: ^3.0.5
+        version: 3.0.5(zod@4.4.3)
       '@openkaiden/api':
         specifier: workspace:*
         version: link:../../packages/extension-api
@@ -827,8 +827,8 @@ importers:
   extensions/openshift-ai:
     dependencies:
       '@ai-sdk/openai-compatible':
-        specifier: ^3.0.3
-        version: 3.0.3(zod@4.4.3)
+        specifier: ^3.0.5
+        version: 3.0.5(zod@4.4.3)
       '@kubernetes/client-node':
         specifier: ^1.3.0
         version: 1.4.0(encoding@0.1.13)
@@ -849,8 +849,8 @@ importers:
   extensions/ramalama:
     dependencies:
       '@ai-sdk/openai-compatible':
-        specifier: ^3.0.3
-        version: 3.0.3(zod@4.4.3)
+        specifier: ^3.0.5
+        version: 3.0.5(zod@4.4.3)
       inversify:
         specifier: ^7.7.1
         version: 7.11.0(reflect-metadata@0.2.2)
@@ -1187,6 +1187,12 @@ packages:
 
   '@ai-sdk/openai-compatible@3.0.3':
     resolution: {integrity: sha512-+mDaUS0q460pVs3oW2/Ps/vj4M2EZnYr1v6ng8TmzxnZPrYBuK7PGQIfckqFdWIdUI/gG8BXcaf8vukLKyGU6Q==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/openai-compatible@3.0.5':
+    resolution: {integrity: sha512-4UtDxT6Ga7U225o5fBEgtCFZHba4/iTDXRqMrU62yEfTrFks4o+F4jt0D3OWmUasR9LPFzLy0KnEITxFDtc89g==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -8213,6 +8219,12 @@ snapshots:
     dependencies:
       '@ai-sdk/provider': 4.0.1
       '@ai-sdk/provider-utils': 5.0.3(zod@4.4.3)
+      zod: 4.4.3
+
+  '@ai-sdk/openai-compatible@3.0.5(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.2
+      '@ai-sdk/provider-utils': 5.0.5(zod@4.4.3)
       zod: 4.4.3
 
   '@ai-sdk/provider-utils@4.0.27(zod@4.4.3)':
