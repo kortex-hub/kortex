@@ -39,6 +39,7 @@ vi.mock(import('node:fs/promises'));
 vi.mock(import('/@/plugin/util/exec.js'));
 
 const { spawn } = await import('node:child_process');
+const { mkdir, writeFile } = await import('node:fs/promises');
 
 const GATEWAY_BINARY = '/usr/local/bin/openshell-gateway';
 const KAIDEN_DATA_DIRECTORY = '/home/user/.local/share/kaiden';
@@ -62,6 +63,10 @@ function mockExecResult(stdout = ''): RunResult {
 let gateway: OpenshellGateway;
 
 const exec = new Exec({} as Proxy);
+const FAKE_DATA_DIR = '/fake-data-dir';
+const GATEWAY_DIR = join(FAKE_DATA_DIR, 'openshell-gateway');
+const CONFIG_PATH = join(GATEWAY_DIR, 'gateway.toml');
+
 const cliToolRegistry = {
   getCliToolInfos: vi.fn(),
 } as unknown as CliToolRegistry;
@@ -74,16 +79,21 @@ const openshellCli = {
 } as unknown as OpenshellCli;
 
 const directories = {
-  getDataDirectory: vi.fn(),
+  getDataDirectory: vi.fn().mockReturnValue(FAKE_DATA_DIR),
 } as unknown as Directories;
+
+const exec = {
+  exec: vi.fn(),
+} as unknown as Exec;
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(directories.getDataDirectory).mockReturnValue(FAKE_DATA_DIR);
   vi.mocked(cliToolRegistry.getCliToolInfos).mockReturnValue([
     { name: 'openshell-gateway', path: GATEWAY_BINARY },
   ] as unknown as CliToolInfo[]);
-  vi.mocked(directories.getDataDirectory).mockReturnValue(KAIDEN_DATA_DIRECTORY);
-  gateway = new OpenshellGateway(exec, cliToolRegistry, openshellCli, directories);
+  vi.mocked(exec.exec).mockResolvedValue({ command: '', stdout: '', stderr: '' });
+  gateway = new OpenshellGateway(cliToolRegistry, openshellCli, directories, exec);
 });
 
 describe('init', () => {
@@ -255,7 +265,7 @@ describe('getGatewayBinaryPath', () => {
 });
 
 describe('start', () => {
-  test('spawns the gateway process with default args', async () => {
+  test('spawns the gateway process with default args including config', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const proc = createMockChildProcess();
     vi.mocked(spawn).mockReturnValue(proc);
@@ -361,6 +371,59 @@ describe('start', () => {
 
     expect(spawn).toHaveBeenCalled();
     expect(openshellCli.addGateway).not.toHaveBeenCalled();
+  });
+
+  test('generates certs by calling the gateway binary with generate-certs', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValue(proc);
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
+
+    await gateway.start();
+
+    expect(mkdir).toHaveBeenCalledWith(GATEWAY_DIR, { recursive: true });
+    expect(exec.exec).toHaveBeenCalledWith(GATEWAY_BINARY, [
+      'generate-certs',
+      '--server-san',
+      '127.0.0.1',
+      '--server-san',
+      'localhost',
+      '--server-san',
+      'host.openshell.internal',
+      '--output-dir',
+      GATEWAY_DIR,
+    ]);
+  });
+
+  test('writes gateway.toml config with JWT paths', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValue(proc);
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
+
+    await gateway.start();
+
+    expect(writeFile).toHaveBeenCalledWith(CONFIG_PATH, expect.stringContaining('[openshell.gateway.gateway_jwt]'));
+    expect(writeFile).toHaveBeenCalledWith(CONFIG_PATH, expect.stringContaining('signing_key_path'));
+    expect(writeFile).toHaveBeenCalledWith(CONFIG_PATH, expect.stringContaining('public_key_path'));
+    expect(writeFile).toHaveBeenCalledWith(CONFIG_PATH, expect.stringContaining('kid_path'));
+  });
+
+  test('starts gateway without --config when cert generation fails', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValue(proc);
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
+    vi.mocked(exec.exec).mockRejectedValue(new Error('generate-certs failed'));
+
+    await gateway.start();
+
+    expect(spawn).toHaveBeenCalledWith(
+      GATEWAY_BINARY,
+      ['--port', '17670', '--bind-address', '127.0.0.1', '--disable-tls'],
+      expect.objectContaining({ detached: false }),
+    );
   });
 
   test('stops the spawned process when waitForReady fails', async () => {

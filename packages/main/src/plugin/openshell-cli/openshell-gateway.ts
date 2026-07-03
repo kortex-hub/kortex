@@ -63,6 +63,8 @@ export class OpenshellGateway implements Disposable {
     private readonly openshellCli: OpenshellCli,
     @inject(Directories)
     private readonly directories: Directories,
+    @inject(Exec)
+    private readonly exec: Exec,
   ) {}
 
   async init(): Promise<void> {
@@ -220,6 +222,27 @@ export class OpenshellGateway implements Disposable {
     this.stop().catch((err: unknown) => console.error('[openshell-gateway] failed to stop: ', err));
   }
 
+  private async generateCerts(binaryPath: string): Promise<string> {
+    const gatewayDir = join(this.directories.getDataDirectory(), 'openshell-gateway');
+    await mkdir(gatewayDir, { recursive: true });
+
+    console.log('[openshell-gateway] generating certificates');
+    await this.exec.exec(binaryPath, [
+      'generate-certs',
+      '--server-san',
+      '127.0.0.1',
+      '--server-san',
+      'localhost',
+      '--server-san',
+      'host.openshell.internal',
+      '--output-dir',
+      gatewayDir,
+    ]);
+    console.log(`[openshell-gateway] certificates generated in ${gatewayDir}`);
+
+    return gatewayDir;
+  }
+
   private buildArgs(disableTls: boolean, configPath?: string): string[] {
     const args: string[] = [];
     if (configPath) {
@@ -229,6 +252,9 @@ export class OpenshellGateway implements Disposable {
     args.push('--bind-address', this.#bindAddress);
     if (disableTls) {
       args.push('--disable-tls');
+    }
+    if (configPath) {
+      args.push('--config', configPath);
     }
     return args;
   }
