@@ -693,7 +693,7 @@ importers:
     dependencies:
       ollama-ai-provider-v2:
         specifier: ^3.5.0
-        version: 3.5.0(ai@7.0.11(zod@4.4.3))(zod@4.4.3)
+        version: 3.5.0(ai@7.0.14(zod@4.4.3))(zod@4.4.3)
     devDependencies:
       '@openkaiden/api':
         specifier: workspace:*
@@ -920,8 +920,8 @@ importers:
   packages/renderer:
     dependencies:
       '@ai-sdk/svelte':
-        specifier: ^5.0.9
-        version: 5.0.9(svelte@5.47.0)(zod@4.3.6)
+        specifier: ^5.0.14
+        version: 5.0.14(svelte@5.47.0)(zod@4.3.6)
       '@lucide/svelte':
         specifier: ^0.539.0
         version: 0.539.0(svelte@5.47.0)
@@ -1069,7 +1069,7 @@ importers:
         version: 5.47.0
       svelte-check:
         specifier: ^4.3.5
-        version: 4.4.4(picomatch@4.0.4)(svelte@5.47.0)(typescript@5.9.3)
+        version: 4.4.4(picomatch@4.0.5)(svelte@5.47.0)(typescript@5.9.3)
       svelte-eslint-parser:
         specifier: ^1.4.1
         version: 1.5.1(svelte@5.47.0)
@@ -1143,8 +1143,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/gateway@4.0.7':
-    resolution: {integrity: sha512-L0/CZwEL8AHO/Nxe5D0laNq9Q44mrKcth99tPgMNHqfsYbbNExwke4OYH18o/eLd3FLLBxs+03SuHP+Gcyp51Q==}
+  '@ai-sdk/gateway@4.0.11':
+    resolution: {integrity: sha512-ZdZzQnBxYfjJpWpSNkV+rRWycwTBhxyvwGvxcwx9g+WQoy3MK2xNahSySEgP9hD/X2xY9jkjd0xB67oDE3rLMA==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -1209,6 +1209,12 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/provider-utils@5.0.5':
+    resolution: {integrity: sha512-oI0t3dvCoqWNV1I8o1Rybi2DXDvHES5r/TrwtJW90tuFLVepgJlftPxrcjh8vaSvjqC2diTuA2vXyjKAyHJm4A==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/provider@3.0.10':
     resolution: {integrity: sha512-Q3BZ27qfpYqnCYGvE3vt+Qi6LGOF9R5Nmzn+9JoM1lCRsD9mYaIhfJLkSunN48nfGXJ6n+XNV0J/XVpqGQl7Dw==}
     engines: {node: '>=18'}
@@ -1221,8 +1227,12 @@ packages:
     resolution: {integrity: sha512-6p3C/vGqVIjcptBu1DnVd/BZJ2wWmV9TUv9192vT6ZvT9KNED8EwRTqyqFpoQZKgSbMDSvBSq3dqR524Nt/Crw==}
     engines: {node: '>=22'}
 
-  '@ai-sdk/svelte@5.0.9':
-    resolution: {integrity: sha512-Xb6wTwNHS246S8ONG+3coP9jMRJdu3vpQk9y7IGvF3xhF9WFx4Mqt48zWGMqEF5gYxjkQhfiIK9Yv/FqPTCQLA==}
+  '@ai-sdk/provider@4.0.2':
+    resolution: {integrity: sha512-pfPoy9J1B1xV7cqJ8MYHOsDYrMv5tR3+EMNfI249OhkD2uRakvav3Fo7XpD2luuN/YNCBY7KfEQc7vEV7KEtyw==}
+    engines: {node: '>=22'}
+
+  '@ai-sdk/svelte@5.0.14':
+    resolution: {integrity: sha512-DCoQshTLal++cXN43zdkZcXZLtqkR9uumO1QDTy0igcJ1H5U8jcKmJstOCqXwgDishyUaTbDoIOimg2/ieL1kA==}
     engines: {node: '>=22'}
     peerDependencies:
       svelte: ^5.31.0
@@ -3079,8 +3089,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  ai@7.0.9:
-    resolution: {integrity: sha512-yoxg/ousRxSX5Ko4+/8SH4vsc8BzoQqG7ywtS04L0kLH/+Ww71c+zqdTDXNVRQteDtKFGmt8+Q82ra/NbzjYqA==}
+  ai@7.0.14:
+    resolution: {integrity: sha512-qA82fZyD4xh9IDB+s3SvwbjwjR+GGRmJjTYMwON1uROj8vPDIQbPTZLLq6ZWTVESn9daeH1GMv0zKfVLwNU2sQ==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -6219,8 +6229,8 @@ packages:
     resolution: {integrity: sha512-KdHvFWZjEKDf0cakgFjebl371GPsISX2oZHcuyKqM7DtogIsHrqKeLTo8wBHxaXRAQlY2PsPlZmfo+9ZCxEREQ==}
     engines: {node: '>=10'}
 
-  node-abi@3.93.0:
-    resolution: {integrity: sha512-Cu6yUpX5Iavugm8BeX7c0wgU9CvOqfd1yM6A1d2q2ZMjym7GjpASv2GdRcTq3Fx+Sb5OgBkEEpw4VnAbY6Y5RA==}
+  node-abi@3.94.0:
+    resolution: {integrity: sha512-W5ZNO5KRPB5TkYmGVD9F6YqhsglXJzE6etpbmT+f6EQElhiX/UTG551cnsRGvLG3fyZEg9HwaDmNmj5nwJ4z9g==}
     engines: {node: '>=10'}
 
   node-abi@4.26.0:
@@ -6529,6 +6539,10 @@ packages:
 
   picomatch@4.0.4:
     resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
+    engines: {node: '>=12'}
+
+  picomatch@4.0.5:
+    resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
     engines: {node: '>=12'}
 
   pify@3.0.0:
@@ -8130,12 +8144,19 @@ snapshots:
       '@ai-sdk/provider-utils': 5.0.3(zod@4.4.3)
       zod: 4.4.3
 
-  '@ai-sdk/gateway@4.0.7(zod@4.3.6)':
+  '@ai-sdk/gateway@4.0.11(zod@4.3.6)':
     dependencies:
-      '@ai-sdk/provider': 4.0.1
-      '@ai-sdk/provider-utils': 5.0.2(zod@4.3.6)
+      '@ai-sdk/provider': 4.0.2
+      '@ai-sdk/provider-utils': 5.0.5(zod@4.3.6)
       '@vercel/oidc': 3.2.0
       zod: 4.3.6
+
+  '@ai-sdk/gateway@4.0.11(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.2
+      '@ai-sdk/provider-utils': 5.0.5(zod@4.4.3)
+      '@vercel/oidc': 3.2.0
+      zod: 4.4.3
 
   '@ai-sdk/gateway@4.0.8(zod@4.3.6)':
     dependencies:
@@ -8201,14 +8222,6 @@ snapshots:
       eventsource-parser: 3.1.0
       zod: 4.4.3
 
-  '@ai-sdk/provider-utils@5.0.2(zod@4.3.6)':
-    dependencies:
-      '@ai-sdk/provider': 4.0.1
-      '@standard-schema/spec': 1.1.0
-      '@workflow/serde': 4.1.0
-      eventsource-parser: 3.1.0
-      zod: 4.3.6
-
   '@ai-sdk/provider-utils@5.0.2(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 4.0.1
@@ -8233,6 +8246,22 @@ snapshots:
       eventsource-parser: 3.1.0
       zod: 4.4.3
 
+  '@ai-sdk/provider-utils@5.0.5(zod@4.3.6)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.2
+      '@standard-schema/spec': 1.1.0
+      '@workflow/serde': 4.1.0
+      eventsource-parser: 3.1.0
+      zod: 4.3.6
+
+  '@ai-sdk/provider-utils@5.0.5(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.2
+      '@standard-schema/spec': 1.1.0
+      '@workflow/serde': 4.1.0
+      eventsource-parser: 3.1.0
+      zod: 4.4.3
+
   '@ai-sdk/provider@3.0.10':
     dependencies:
       json-schema: 0.4.0
@@ -8245,10 +8274,14 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/svelte@5.0.9(svelte@5.47.0)(zod@4.3.6)':
+  '@ai-sdk/provider@4.0.2':
     dependencies:
-      '@ai-sdk/provider-utils': 5.0.2(zod@4.3.6)
-      ai: 7.0.9(zod@4.3.6)
+      json-schema: 0.4.0
+
+  '@ai-sdk/svelte@5.0.14(svelte@5.47.0)(zod@4.3.6)':
+    dependencies:
+      '@ai-sdk/provider-utils': 5.0.5(zod@4.3.6)
+      ai: 7.0.14(zod@4.3.6)
       svelte: 5.47.0
     transitivePeerDependencies:
       - zod
@@ -8562,7 +8595,7 @@ snapshots:
       detect-libc: 2.1.2
       fs-extra: 10.1.0
       got: 11.8.6
-      node-abi: 3.93.0
+      node-abi: 3.94.0
       node-api-version: 0.2.1
       node-gyp: 9.4.1
       ora: 5.4.1
@@ -10337,12 +10370,19 @@ snapshots:
       '@ai-sdk/provider-utils': 5.0.3(zod@4.4.3)
       zod: 4.4.3
 
-  ai@7.0.9(zod@4.3.6):
+  ai@7.0.14(zod@4.3.6):
     dependencies:
-      '@ai-sdk/gateway': 4.0.7(zod@4.3.6)
-      '@ai-sdk/provider': 4.0.1
-      '@ai-sdk/provider-utils': 5.0.2(zod@4.3.6)
+      '@ai-sdk/gateway': 4.0.11(zod@4.3.6)
+      '@ai-sdk/provider': 4.0.2
+      '@ai-sdk/provider-utils': 5.0.5(zod@4.3.6)
       zod: 4.3.6
+
+  ai@7.0.14(zod@4.4.3):
+    dependencies:
+      '@ai-sdk/gateway': 4.0.11(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.2
+      '@ai-sdk/provider-utils': 5.0.5(zod@4.4.3)
+      zod: 4.4.3
 
   ajv-formats@3.0.1(ajv@8.18.0):
     optionalDependencies:
@@ -12294,6 +12334,10 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.4
 
+  fdir@6.5.0(picomatch@4.0.5):
+    optionalDependencies:
+      picomatch: 4.0.5
+
   fecha@4.2.3: {}
 
   fetch-blob@3.2.0:
@@ -14102,7 +14146,7 @@ snapshots:
     dependencies:
       semver: 7.8.5
 
-  node-abi@3.93.0:
+  node-abi@3.94.0:
     dependencies:
       semver: 7.8.5
 
@@ -14262,11 +14306,11 @@ snapshots:
 
   obug@2.1.1: {}
 
-  ollama-ai-provider-v2@3.5.0(ai@7.0.11(zod@4.4.3))(zod@4.4.3):
+  ollama-ai-provider-v2@3.5.0(ai@7.0.14(zod@4.4.3))(zod@4.4.3):
     dependencies:
       '@ai-sdk/provider': 3.0.8
       '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
-      ai: 7.0.11(zod@4.4.3)
+      ai: 7.0.14(zod@4.4.3)
       zod: 4.4.3
 
   on-finished@2.4.1:
@@ -14442,6 +14486,8 @@ snapshots:
   picomatch@4.0.3: {}
 
   picomatch@4.0.4: {}
+
+  picomatch@4.0.5: {}
 
   pify@3.0.0: {}
 
@@ -15386,11 +15432,11 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-  svelte-check@4.4.4(picomatch@4.0.4)(svelte@5.47.0)(typescript@5.9.3):
+  svelte-check@4.4.4(picomatch@4.0.5)(svelte@5.47.0)(typescript@5.9.3):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       chokidar: 4.0.3
-      fdir: 6.5.0(picomatch@4.0.4)
+      fdir: 6.5.0(picomatch@4.0.5)
       picocolors: 1.1.1
       sade: 1.8.1
       svelte: 5.47.0
@@ -15619,8 +15665,8 @@ snapshots:
 
   tinyglobby@0.2.17:
     dependencies:
-      fdir: 6.5.0(picomatch@4.0.4)
-      picomatch: 4.0.4
+      fdir: 6.5.0(picomatch@4.0.5)
+      picomatch: 4.0.5
 
   tinyrainbow@3.0.3: {}
 
