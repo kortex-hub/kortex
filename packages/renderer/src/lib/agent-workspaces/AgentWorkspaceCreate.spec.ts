@@ -931,9 +931,20 @@ test('Expect use-all-defaults button disabled when no model available', async ()
   expect(screen.getByRole('button', { name: 'Use all defaults and create workspace' })).toBeDisabled();
 });
 
-test('Expect Start Workspace button disabled when no model available', async () => {
+test('Expect Continue button disabled on agent & model step when no model available', async () => {
   setProviders([]);
 
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+  await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+
+  expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+});
+
+test('Expect Start Workspace button disabled when no model available', async () => {
   render(AgentWorkspaceCreate);
 
   await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
@@ -944,7 +955,12 @@ test('Expect Start Workspace button disabled when no model available', async () 
     await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
   }
 
-  expect(screen.getByRole('button', { name: 'Start Workspace' })).toBeDisabled();
+  setProviders([]);
+  wizard.draft.selectedModel = undefined;
+
+  await vi.waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Start Workspace' })).toBeDisabled();
+  });
 });
 
 test('Expect first compatible model used when defaultWorkspaceSettings is undefined and providers exist', async () => {

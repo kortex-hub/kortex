@@ -248,11 +248,15 @@ let error = $state('');
 let currentStepId = $derived(wizardSteps[wizard.draft.currentStepIndex]?.id ?? '');
 let isLastStep = $derived(wizard.draft.currentStepIndex === wizardSteps.length - 1);
 let hasModel = $derived(wizard.draft.selectedModel !== undefined);
-let isCurrentStepComplete = $derived(
-  currentStepId === 'workspace'
-    ? wizard.draft.sessionName.trim() !== '' && wizard.draft.sourcePath.trim() !== ''
-    : true,
-);
+let isCurrentStepComplete = $derived.by(() => {
+  if (currentStepId === 'workspace') {
+    return wizard.draft.sessionName.trim() !== '' && wizard.draft.sourcePath.trim() !== '';
+  }
+  if (currentStepId === 'agent-model') {
+    return hasModel;
+  }
+  return true;
+});
 
 function goNext(): void {
   if (wizard.draft.currentStepIndex < wizardSteps.length - 1) wizard.draft.currentStepIndex++;
