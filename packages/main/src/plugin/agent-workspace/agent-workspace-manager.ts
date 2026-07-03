@@ -106,6 +106,10 @@ export class AgentWorkspaceManager implements Disposable {
     task.state = 'running';
     task.status = 'in-progress';
     try {
+      if (!options.model) {
+        throw new Error('model is required to create a workspace');
+      }
+
       if (options.replaceConfig) {
         const configPath = join(options.sourcePath, '.kaiden', 'workspace.json');
         await rm(configPath, { force: true });

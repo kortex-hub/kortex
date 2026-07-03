@@ -258,6 +258,11 @@ describe('watchInstancesFile', () => {
   });
 });
 
+test('rejects with a descriptive error when model is missing at runtime', async () => {
+  const options = { sourcePath: '/tmp/p', agent: 'claude' } as AgentWorkspaceCreateOptions;
+  await expect(manager.create(options)).rejects.toThrow(/model is required to create a workspace/);
+});
+
 describe('create – OpenShell mode', () => {
   const defaultOptions: AgentWorkspaceCreateOptions = {
     sourcePath: '/tmp/my-project',
