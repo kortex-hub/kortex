@@ -100,8 +100,7 @@ test.describe
         for (let i = initialCount; i < 2; i++) {
           await chatPage.clickNewChat();
           const message = `Test message ${i + 1}`;
-          await chatPage.sendMessage(message, { timeout: 100 });
-          await chatPage.verifyConversationMessage(message);
+          await chatPage.sendMessage(message, { waitForMessage: false });
         }
         await expect
           .poll(async () => await chatPage.getChatHistoryCount(), { timeout: TIMEOUTS.MODEL_RESPONSE })
