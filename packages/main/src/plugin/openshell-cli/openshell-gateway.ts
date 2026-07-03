@@ -18,16 +18,20 @@
 
 import type { ChildProcess } from 'node:child_process';
 import { spawn } from 'node:child_process';
-import { writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import type { Disposable } from '@openkaiden/api';
 import { inject, injectable, preDestroy } from 'inversify';
+import Mustache from 'mustache';
 
 import { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
+import { Directories } from '/@/plugin/directories.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
+import { Exec } from '/@/plugin/util/exec.js';
 import type { OpenshellGatewayStartOptions } from '/@api/openshell-gateway-info.js';
+
+import gatewayConfigTemplate from './openshell-gateway.toml.template?raw';
 
 const DEFAULT_PORT = 17670;
 const DEFAULT_BIND_ADDRESS = '127.0.0.1';
@@ -51,10 +55,14 @@ export class OpenshellGateway implements Disposable {
   #bindAddress: string = DEFAULT_BIND_ADDRESS;
 
   constructor(
+    @inject(Exec)
+    private readonly exec: Exec,
     @inject(CliToolRegistry)
     private readonly cliToolRegistry: CliToolRegistry,
     @inject(OpenshellCli)
     private readonly openshellCli: OpenshellCli,
+    @inject(Directories)
+    private readonly directories: Directories,
   ) {}
 
   async init(): Promise<void> {
@@ -134,7 +142,7 @@ export class OpenshellGateway implements Disposable {
       this.#bindAddress = options.bindAddress;
     }
 
-    const configPath = await this.writeSupervisorConfig(binaryPath, options?.supervisorImage);
+    const configPath = await this.createGatewayConfig(binaryPath, options?.supervisorImage);
     const args = this.buildArgs(options?.disableTls ?? true, configPath);
     console.log(`[openshell-gateway] starting: ${binaryPath} ${args.join(' ')}`);
 
@@ -236,22 +244,36 @@ export class OpenshellGateway implements Disposable {
     return token;
   }
 
-  private async writeSupervisorConfig(binaryPath: string, supervisorImage?: string): Promise<string | undefined> {
+  private async createGatewayConfig(binaryPath: string, supervisorImage?: string): Promise<string | undefined> {
     try {
       let image = supervisorImage;
       if (!image) {
-        const version = await this.getGatewayVersion(binaryPath);
-        image = `${SUPERVISOR_IMAGE_BASE}:${version}`;
+        try {
+          const version = await this.getGatewayVersion(binaryPath);
+          image = `${SUPERVISOR_IMAGE_BASE}:${version}`;
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          console.warn(`[openshell-gateway] unable to detect version for supervisor pinning: ${message}`);
+        }
       }
 
-      const configPath = join(tmpdir(), 'kaiden-gateway.toml');
-      const content = ['[openshell.drivers.podman]', `supervisor_image = "${image}"`, ''].join('\n');
-      await writeFile(configPath, content, 'utf-8');
-      console.log(`[openshell-gateway] supervisor image pinned to ${image}`);
+      const storageDirectory = join(this.directories.getDataDirectory(), 'openshell-gateway');
+      const configPath = join(storageDirectory, 'gateway.toml');
+      const config = Mustache.render(gatewayConfigTemplate, {
+        enableBindMounts: true,
+        supervisorImage: image,
+      });
+
+      await mkdir(storageDirectory, { recursive: true });
+      await writeFile(configPath, config, 'utf-8');
+      if (image) {
+        console.log(`[openshell-gateway] supervisor image pinned to ${image}`);
+      }
+      console.log(`[openshell-gateway] generated local gateway config at ${configPath}`);
       return configPath;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      console.warn(`[openshell-gateway] unable to pin supervisor image: ${message}`);
+      console.warn(`[openshell-gateway] failed to generate gateway config: ${message}`);
       return undefined;
     }
   }

@@ -1,0 +1,8 @@
+[openshell]
+version = 1
+
+[openshell.drivers.podman]
+enable_bind_mounts = {{enableBindMounts}}
+{{#supervisorImage}}
+supervisor_image = "{{{supervisorImage}}}"
+{{/supervisorImage}}
