@@ -38,11 +38,6 @@ export interface InlineConnectionField {
   value: string;
 }
 
-export interface EnsureModelReadyOptions {
-  providerName: string;
-  fields?: InlineConnectionField[];
-}
-
 export type AgentModelSetup = (createPage: AgentWorkspaceCreatePage) => Promise<void>;
 
 export interface ResolvedAgentModelSetup {
@@ -308,10 +303,6 @@ export class AgentWorkspaceCreatePage extends BasePage {
     return (await this.getModelTableRows().count()) > 0;
   }
 
-  async isInlineConnectionFormVisible(): Promise<boolean> {
-    return this.noModelsGate.isVisible();
-  }
-
   async selectConnectionProvider(providerName: string): Promise<void> {
     if (!(await this.providerPicker.isVisible())) {
       await expect(this.inlineConnectionForm).toBeVisible();
@@ -338,14 +329,12 @@ export class AgentWorkspaceCreatePage extends BasePage {
     await createButton.click();
   }
 
-  async ensureModelReady(options: EnsureModelReadyOptions): Promise<void> {
+  async ensureModelReady(setup: ResolvedAgentModelSetup): Promise<void> {
     if (await this.isModelCatalogVisible()) {
       await this.selectDefaultModel();
-    } else if (await this.isInlineConnectionFormVisible()) {
-      await this.selectConnectionProvider(options.providerName);
-      if (options.fields?.length) {
-        await this.fillInlineConnectionFields(options.fields);
-      }
+    } else if (await this.noModelsGate.isVisible()) {
+      await this.selectConnectionProvider(setup.providerName);
+      await this.fillInlineConnectionFields(setup.fields);
       await this.submitInlineConnection();
       await this.waitForModelCatalog();
       await this.selectDefaultModel();
@@ -354,6 +343,17 @@ export class AgentWorkspaceCreatePage extends BasePage {
       await this.selectDefaultModel();
     }
     await expect(this.continueButton).toBeEnabled();
+  }
+
+  async completeAvailableAgentModelStep(setup: ResolvedAgentModelSetup): Promise<void> {
+    await this.selectAgent(setup.agent);
+    await this.ensureModelReady(setup);
+  }
+
+  async completeAgentModelStepIfNeeded(setup: AgentModelSetup): Promise<void> {
+    if (await this.continueButton.isDisabled()) {
+      await setup(this);
+    }
   }
 
   private async selectRadio(radio: Locator): Promise<string> {

@@ -181,8 +181,6 @@ export const PROVIDERS = {
   mistral: {
     envVarName: 'MISTRAL_API_KEY',
     resourceId: 'mistral',
-    providerPickerName: 'Mistral',
-    inlineConnectionFields: [{ label: 'Enter your Mistral API key (MISTRAL_API_KEY)', useEnvVar: true }],
   },
   cursor: {
     envVarName: 'CURSOR_API_KEY',
@@ -207,8 +205,6 @@ export const PROVIDERS = {
 } as const satisfies Record<string, ResourceConfig>;
 
 export type ResourceId = keyof typeof PROVIDERS;
-
-export type WorkspaceInferenceProviderId = 'claude' | 'openai' | 'gemini' | 'cursor';
 
 export type WorkspaceInferenceProviderConfig = ResourceConfig & {
   readonly providerPickerName: string;
@@ -236,18 +232,20 @@ export const CODING_AGENT = {
 export const CODING_AGENTS = Object.values(CODING_AGENT);
 export type CodingAgent = (typeof CODING_AGENT)[keyof typeof CODING_AGENT];
 
-export interface AgentModelSetupConfig {
-  readonly agent: CodingAgent;
-  readonly providerId: WorkspaceInferenceProviderId;
-}
-
 /** Coding agents that require an inference provider connection in the workspace wizard. */
-export const AGENT_MODEL_SETUPS: readonly AgentModelSetupConfig[] = [
+export const AGENT_MODEL_SETUPS = [
   { agent: CODING_AGENT.CLAUDE, providerId: 'claude' },
   { agent: CODING_AGENT.CODEX, providerId: 'openai' },
   { agent: CODING_AGENT.GEMINI, providerId: 'gemini' },
   { agent: CODING_AGENT.CURSOR, providerId: 'cursor' },
 ] as const;
+
+export type WorkspaceInferenceProviderId = (typeof AGENT_MODEL_SETUPS)[number]['providerId'];
+
+export interface AgentModelSetupConfig {
+  readonly agent: CodingAgent;
+  readonly providerId: WorkspaceInferenceProviderId;
+}
 
 export const WIZARD_STEP = {
   WORKSPACE: 'Workspace',
