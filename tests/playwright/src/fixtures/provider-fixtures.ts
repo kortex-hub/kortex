@@ -85,6 +85,8 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
         return;
       }
 
+      await workerNavigationBar.ensureExtensionsRunning();
+
       try {
         const settingsPage = await workerNavigationBar.navigateToSettingsPage();
         await settingsPage.createResource(resource, credentials);
