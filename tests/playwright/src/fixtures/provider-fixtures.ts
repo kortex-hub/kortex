@@ -30,7 +30,6 @@ interface WorkerFixtures extends WorkerElectronFixtures {
   resourceSetup: void;
   mcpServers: MCPServerId[];
   mcpSetup: void;
-  gooseSetup: void;
   milvusConnectionName: string;
   milvusSetup: string;
   doclingConnectionName: string;
@@ -132,27 +131,6 @@ export const test = base.extend<ElectronFixtures, WorkerFixtures>({
             ),
           );
         }
-      }
-    },
-    { scope: 'worker', auto: false },
-  ],
-
-  gooseSetup: [
-    async ({ workerNavigationBar }, use): Promise<void> => {
-      if (process.env.CI && process.platform === 'win32' && process.arch === 'arm64') {
-        console.warn('Goose setup skipped: Windows ARM gha runners not supported');
-        await use();
-        return;
-      }
-
-      try {
-        const settingsPage = await workerNavigationBar.navigateToSettingsPage();
-        await settingsPage.installGoose();
-
-        await use();
-      } catch (error) {
-        console.warn('Goose setup failed:', error);
-        throw error;
       }
     },
     { scope: 'worker', auto: false },

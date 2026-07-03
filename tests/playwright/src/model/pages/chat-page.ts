@@ -22,7 +22,6 @@ import { TIMEOUTS } from '/@/model/core/types';
 import { clearAllToasts, handleDialogIfPresent } from '/@/utils/app-ready';
 
 import { BasePage } from './base-page';
-import { FlowsCreatePage } from './flows-create-page';
 
 export class ChatPage extends BasePage {
   readonly toggleSidebarButton: Locator;
@@ -47,7 +46,6 @@ export class ChatPage extends BasePage {
   readonly modelDropdownContent: Locator;
   readonly modelMenuItems: Locator;
   readonly activeModelMenuItem: Locator;
-  readonly exportAsFlowButton: Locator;
   readonly stopButton: Locator;
   readonly toolsSelectionButton: Locator;
   readonly configureMcpServersButton: Locator;
@@ -81,7 +79,6 @@ export class ChatPage extends BasePage {
     this.modelDropdownContent = page.locator('[data-slot="dropdown-menu-content"]');
     this.modelMenuItems = this.modelDropdownContent.getByRole('menuitem');
     this.activeModelMenuItem = this.modelDropdownContent.locator('[role="menuitem"][data-active="true"]');
-    this.exportAsFlowButton = page.getByRole('button', { name: 'Export as Flow' });
     this.stopButton = page.getByRole('button', { name: 'Stop generation' });
     this.toolsSelectionButton = page.getByRole('button', { name: 'Tools Selection' });
     this.configureMcpServersButton = page.getByRole('button', { name: 'Configure MCP servers' });
@@ -325,14 +322,6 @@ export class ChatPage extends BasePage {
   async clickStopButton(): Promise<void> {
     await expect(this.stopButton).toBeVisible();
     await this.stopButton.click();
-  }
-
-  async exportAsFlow(): Promise<FlowsCreatePage> {
-    await expect(this.exportAsFlowButton).toBeEnabled({ timeout: TIMEOUTS.STANDARD });
-    await this.exportAsFlowButton.click();
-    const flowCreatePage = new FlowsCreatePage(this.page);
-    await flowCreatePage.waitForLoad();
-    return flowCreatePage;
   }
 
   async ensureToolsSidebarVisible(): Promise<void> {

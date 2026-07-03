@@ -109,9 +109,7 @@ const config: PlaywrightTestConfig & {
       use: {
         resource: 'ollama',
       },
-      testIgnore: ollamaAvailable
-        ? ['**/provider-specs/flows-smoke.spec.ts'] // Flows not yet supported for Ollama
-        : ['**/*'], // Skip all if Ollama is not running
+      testIgnore: ollamaAvailable ? [] : ['**/*'], // Skip all if Ollama is not running
     },
     {
       name: 'RamaLama-Provider',
@@ -119,9 +117,7 @@ const config: PlaywrightTestConfig & {
       use: {
         resource: 'ramalama',
       },
-      testIgnore: ramaLamaAvailable
-        ? ['**/provider-specs/flows-smoke.spec.ts'] // Flows not yet supported for RamaLama
-        : ['**/*'], // Skip all if RamaLama is not running
+      testIgnore: ramaLamaAvailable ? [] : ['**/*'], // Skip all if RamaLama is not running
     },
     {
       name: 'Knowledge-Database',

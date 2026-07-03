@@ -29,7 +29,6 @@ import { NavigationBar } from '/@/model/navigation/navigation';
 import { AgentWorkspacesPage } from '/@/model/pages/agent-workspaces-page';
 import { ChatPage } from '/@/model/pages/chat-page';
 import { ExtensionsPage } from '/@/model/pages/extensions-page';
-import { FlowsPage } from '/@/model/pages/flows-page';
 import { KnowledgePage } from '/@/model/pages/knowledge-page';
 import { McpPage } from '/@/model/pages/mcp-page';
 import { SettingsPage } from '/@/model/pages/settings-page';
@@ -49,7 +48,6 @@ export interface ElectronFixtures {
   page: Page;
   navigationBar: NavigationBar;
   settingsPage: SettingsPage;
-  flowsPage: FlowsPage;
   knowledgePage: KnowledgePage;
   mcpPage: McpPage;
   skillsPage: SkillsPage;
@@ -111,11 +109,6 @@ export const test = base.extend<ElectronFixtures>({
   settingsPage: async ({ page }, use): Promise<void> => {
     const settingsPage = new SettingsPage(page);
     await use(settingsPage);
-  },
-
-  flowsPage: async ({ page }, use): Promise<void> => {
-    const flowsPage = new FlowsPage(page);
-    await use(flowsPage);
   },
 
   knowledgePage: async ({ page }, use): Promise<void> => {

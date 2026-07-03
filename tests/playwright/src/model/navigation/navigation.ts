@@ -23,7 +23,6 @@ import { AgentWorkspacesPage } from '/@/model/pages/agent-workspaces-page';
 import type { BasePage } from '/@/model/pages/base-page';
 import { ChatPage } from '/@/model/pages/chat-page';
 import { ExtensionsPage } from '/@/model/pages/extensions-page';
-import { FlowsPage } from '/@/model/pages/flows-page';
 import { KnowledgePage } from '/@/model/pages/knowledge-page';
 import { McpPage } from '/@/model/pages/mcp-page';
 import { SettingsPage } from '/@/model/pages/settings-page';
@@ -34,7 +33,6 @@ export class NavigationBar {
   readonly navigationLocator: Locator;
   readonly chatLink: Locator;
   readonly mcpLink: Locator;
-  readonly flowsLink: Locator;
   readonly skillsLink: Locator;
   readonly knowledgesLink: Locator;
   readonly extensionsLink: Locator;
@@ -47,7 +45,6 @@ export class NavigationBar {
     this.navigationLocator = this.page.getByRole('navigation', { name: 'AppNavigation' });
     this.chatLink = this.navigationLocator.getByRole('link', { name: 'Chat' });
     this.mcpLink = this.navigationLocator.getByRole('link', { name: 'MCP' });
-    this.flowsLink = this.navigationLocator.getByRole('link', { name: 'Flows', exact: true });
     this.skillsLink = this.navigationLocator.getByRole('link', { name: 'Skills', exact: true });
     this.knowledgesLink = this.navigationLocator.getByRole('link', { name: 'Knowledges', exact: true });
     this.extensionsLink = this.navigationLocator.getByRole('link', { name: 'Extensions', exact: true });
@@ -56,7 +53,6 @@ export class NavigationBar {
     this.links = [
       this.chatLink,
       this.mcpLink,
-      // this.flowsLink, // Flows feature removed (PR #1319)
       this.skillsLink,
       this.knowledgesLink,
       this.extensionsLink,
@@ -84,10 +80,6 @@ export class NavigationBar {
 
   async navigateToMCPPage(): Promise<McpPage> {
     return this.navigateTo(this.mcpLink, McpPage);
-  }
-
-  async navigateToFlowsPage(): Promise<FlowsPage> {
-    return this.navigateTo(this.flowsLink, FlowsPage);
   }
 
   async navigateToSkillsPage(): Promise<SkillsPage> {

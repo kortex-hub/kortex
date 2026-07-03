@@ -16,14 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-export interface FlowParameters {
-  description?: string;
-  model?: string;
-  mcpServer?: string;
-  prompt?: string;
-  instruction?: string;
-}
-
 export const builtInExtensions = [
   { name: 'Default MCP Registries', locator: 'kaiden.mcp-registries' },
   { name: 'Claude', locator: 'kaiden.claude' },
