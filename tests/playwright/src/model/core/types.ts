@@ -175,7 +175,7 @@ export const PROVIDERS = {
   claude: {
     envVarName: 'ANTHROPIC_API_KEY',
     resourceId: 'claude',
-    providerPickerName: 'Anthropic',
+    providerPickerName: 'Claude',
     inlineConnectionFields: [{ label: 'Enter your Claude API key (ANTHROPIC_API_KEY)', useEnvVar: true }],
   },
   mistral: {

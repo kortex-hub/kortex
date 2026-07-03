@@ -304,13 +304,13 @@ export class AgentWorkspaceCreatePage extends BasePage {
   }
 
   async selectConnectionProvider(providerName: string): Promise<void> {
-    if (!(await this.providerPicker.isVisible())) {
-      await expect(this.inlineConnectionForm).toBeVisible();
-      return;
+    if (await this.providerPicker.isVisible()) {
+      const button = this.providerPicker.getByRole('button', {
+        name: new RegExp(`Select ${providerName}`, 'i'),
+      });
+      await expect(button).toBeVisible();
+      await button.click();
     }
-    const button = this.page.getByRole('button', { name: new RegExp(`Select ${providerName}`, 'i') });
-    await expect(button).toBeVisible();
-    await button.click();
     await expect(this.inlineConnectionForm).toBeVisible();
   }
 
