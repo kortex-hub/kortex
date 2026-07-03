@@ -70,6 +70,7 @@ jobs:
     timeout-minutes: 60
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       GEMINI_API_KEY: ${{ !startsWith(inputs.instance, 'ubuntu') && secrets.GEMINI_API_KEY || '' }}
       PODMAN_ENABLED: ${{ startsWith(inputs.instance, 'ubuntu') && 'true' || '' }}
     steps:
