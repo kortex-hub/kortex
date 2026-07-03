@@ -101,6 +101,7 @@ export const resources = {
   ollama: { displayName: 'Ollama', hasCreateButton: false },
   ramalama: { displayName: 'RamaLama', hasCreateButton: false },
   mistral: { displayName: 'Mistral', hasCreateButton: true },
+  cursor: { displayName: 'Cursor', hasCreateButton: true },
   milvus: { displayName: 'Milvus Vector Database', hasCreateButton: true },
   docling: { displayName: 'Docling Chunk Provider', hasCreateButton: true },
 } as const;
@@ -128,23 +129,38 @@ export type MCPServerId = keyof typeof MCP_SERVERS;
 
 export type ConnectionType = 'inference' | 'rag' | 'chunk';
 
+export interface InlineConnectionFieldSpec {
+  readonly label: string;
+  readonly useEnvVar?: boolean;
+  readonly useBaseURL?: boolean;
+}
+
 export interface ResourceConfig {
   readonly envVarName: string;
   readonly resourceId?: SettingsResourceId;
   readonly baseURL?: string;
   readonly autoDetected?: boolean;
   readonly connectionType?: ConnectionType;
+  readonly providerPickerName?: string;
+  readonly inlineConnectionFields?: readonly InlineConnectionFieldSpec[];
 }
 
 export const PROVIDERS = {
   gemini: {
     envVarName: 'GEMINI_API_KEY',
     resourceId: 'gemini',
+    providerPickerName: 'Gemini',
+    inlineConnectionFields: [{ label: 'Enter your Gemini API key (GEMINI_API_KEY)', useEnvVar: true }],
   },
   openai: {
     envVarName: 'OPENAI_API_KEY',
     resourceId: 'openai',
     baseURL: 'https://api.openai.com/v1',
+    providerPickerName: 'OpenAI',
+    inlineConnectionFields: [
+      { label: 'baseURL', useBaseURL: true },
+      { label: 'apiKey', useEnvVar: true },
+    ],
   },
   ollama: {
     envVarName: 'OLLAMA_ENABLED',
@@ -159,10 +175,20 @@ export const PROVIDERS = {
   claude: {
     envVarName: 'ANTHROPIC_API_KEY',
     resourceId: 'claude',
+    providerPickerName: 'Anthropic',
+    inlineConnectionFields: [{ label: 'Enter your Claude API key (ANTHROPIC_API_KEY)', useEnvVar: true }],
   },
   mistral: {
     envVarName: 'MISTRAL_API_KEY',
     resourceId: 'mistral',
+    providerPickerName: 'Mistral',
+    inlineConnectionFields: [{ label: 'Enter your Mistral API key (MISTRAL_API_KEY)', useEnvVar: true }],
+  },
+  cursor: {
+    envVarName: 'CURSOR_API_KEY',
+    resourceId: 'cursor',
+    providerPickerName: 'Cursor',
+    inlineConnectionFields: [{ label: 'Enter your Cursor API key (CURSOR_API_KEY)', useEnvVar: true }],
   },
   'openshift-ai': {
     envVarName: 'OPENSHIFT_AI_TOKEN',
@@ -181,6 +207,13 @@ export const PROVIDERS = {
 } as const satisfies Record<string, ResourceConfig>;
 
 export type ResourceId = keyof typeof PROVIDERS;
+
+export type WorkspaceInferenceProviderId = 'claude' | 'openai' | 'gemini' | 'cursor';
+
+export type WorkspaceInferenceProviderConfig = ResourceConfig & {
+  readonly providerPickerName: string;
+  readonly inlineConnectionFields: readonly InlineConnectionFieldSpec[];
+};
 
 export interface DialogOptions {
   dialogName?: string;
@@ -202,6 +235,19 @@ export const CODING_AGENT = {
 } as const;
 export const CODING_AGENTS = Object.values(CODING_AGENT);
 export type CodingAgent = (typeof CODING_AGENT)[keyof typeof CODING_AGENT];
+
+export interface AgentModelSetupConfig {
+  readonly agent: CodingAgent;
+  readonly providerId: WorkspaceInferenceProviderId;
+}
+
+/** Coding agents that require an inference provider connection in the workspace wizard. */
+export const AGENT_MODEL_SETUPS: readonly AgentModelSetupConfig[] = [
+  { agent: CODING_AGENT.CLAUDE, providerId: 'claude' },
+  { agent: CODING_AGENT.CODEX, providerId: 'openai' },
+  { agent: CODING_AGENT.GEMINI, providerId: 'gemini' },
+  { agent: CODING_AGENT.CURSOR, providerId: 'cursor' },
+] as const;
 
 export const WIZARD_STEP = {
   WORKSPACE: 'Workspace',

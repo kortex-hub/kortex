@@ -21,7 +21,6 @@ import { fileURLToPath } from 'node:url';
 
 import { expect, workerTest as test } from '/@/fixtures/electron-app';
 import {
-  CODING_AGENT,
   CODING_AGENTS,
   FILE_ACCESS_LEVEL,
   FILE_ACCESS_LEVELS,
@@ -29,12 +28,28 @@ import {
   WIZARD_STEP,
   WIZARD_STEPS,
 } from '/@/model/core/types';
+import {
+  type AgentModelSetup,
+  agentModelSetupSkipMessage,
+  type AgentWorkspaceCreatePage,
+  resolveAgentModelConnection,
+} from '/@/model/pages/agent-workspace-create-page';
 import { waitForNavigationReady } from '/@/utils/app-ready';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEST_SKILL = {
   file: resolve(__dirname, '../../../../.agents/skills/playwright-testing/SKILL.md'),
   name: 'playwright-testing',
+};
+
+const completeAgentModelStep: AgentModelSetup = async (createPage: AgentWorkspaceCreatePage): Promise<void> => {
+  const connection = resolveAgentModelConnection();
+  test.skip(!connection, agentModelSetupSkipMessage());
+  await createPage.selectAgent(connection!.agent);
+  await createPage.ensureModelReady({
+    providerName: connection!.providerName,
+    fields: connection!.fields,
+  });
 };
 
 test.describe('Workspaces page - initial state', { tag: '@smoke' }, () => {
@@ -123,7 +138,7 @@ test.describe('Workspaces page - create wizard', { tag: '@smoke' }, () => {
     const createPage = await agentWorkspacesPage.openCreatePage();
 
     await createPage.workingDirInput.fill('/tmp/test');
-    await createPage.navigateToStep(WIZARD_STEP.TOOLS_SECRETS);
+    await createPage.navigateToStep(WIZARD_STEP.TOOLS_SECRETS, completeAgentModelStep);
 
     await expect(createPage.toolsSummary).toBeVisible();
     await expect(createPage.customizeExpandable).toBeVisible();
@@ -133,7 +148,7 @@ test.describe('Workspaces page - create wizard', { tag: '@smoke' }, () => {
     const createPage = await agentWorkspacesPage.openCreatePage();
 
     await createPage.workingDirInput.fill(testWorkspace.workingDir);
-    await createPage.navigateToStep(WIZARD_STEP.FILE_SYSTEM);
+    await createPage.navigateToStep(WIZARD_STEP.FILE_SYSTEM, completeAgentModelStep);
 
     await expect(createPage.fileAccessHeading).toBeVisible();
     for (const level of FILE_ACCESS_LEVELS) {
@@ -152,7 +167,7 @@ test.describe('Workspaces page - create wizard', { tag: '@smoke' }, () => {
     const createPage = await agentWorkspacesPage.openCreatePage();
 
     await createPage.workingDirInput.fill(testWorkspace.workingDir);
-    await createPage.navigateToStep(WIZARD_STEP.NETWORKING);
+    await createPage.navigateToStep(WIZARD_STEP.NETWORKING, completeAgentModelStep);
 
     await expect(createPage.submitButton).toBeVisible();
     await expect(createPage.submitButton).toBeEnabled();
@@ -177,7 +192,9 @@ test.describe('Workspaces page - create wizard', { tag: '@smoke' }, () => {
     await expect(agentWorkspacesPage.heading).toBeVisible();
   });
 
-  test('[WKS-WIZ-09] Use-defaults enables after folder is set', async ({ agentWorkspacesPage }) => {
+  test('[WKS-WIZ-09] Use-defaults enables after folder is set and model is available', async ({
+    agentWorkspacesPage,
+  }) => {
     const createPage = await agentWorkspacesPage.openCreatePage();
 
     await expect(createPage.continueButton).toBeDisabled();
@@ -186,6 +203,14 @@ test.describe('Workspaces page - create wizard', { tag: '@smoke' }, () => {
     await createPage.workingDirInput.fill(testWorkspace.workingDir);
 
     await expect(createPage.continueButton).toBeEnabled();
+
+    await createPage.continueToStep(WIZARD_STEP.AGENT_MODEL);
+    if (await createPage.continueButton.isDisabled()) {
+      await completeAgentModelStep(createPage);
+    }
+
+    await expect(createPage.continueButton).toBeEnabled();
+    await createPage.backToStep(WIZARD_STEP.WORKSPACE);
     await expect(createPage.useDefaultsButton).toBeEnabled();
   });
 
@@ -197,7 +222,7 @@ test.describe('Workspaces page - create wizard', { tag: '@smoke' }, () => {
     await createPage.fillDescription(testWorkspace.description);
     await createPage.continueToStep(WIZARD_STEP.AGENT_MODEL);
 
-    await createPage.selectAgent(CODING_AGENT.CLAUDE);
+    await completeAgentModelStep(createPage);
     await createPage.continueToStep(WIZARD_STEP.TOOLS_SECRETS);
 
     await createPage.continueToStep(WIZARD_STEP.FILE_SYSTEM);
@@ -236,7 +261,7 @@ test.describe('Workspaces page - skills integration', { tag: '@smoke' }, () => {
     const createPage = await agentWorkspacesPage.openCreatePage();
 
     await createPage.workingDirInput.fill('/tmp/test');
-    await createPage.navigateToStep(WIZARD_STEP.TOOLS_SECRETS);
+    await createPage.navigateToStep(WIZARD_STEP.TOOLS_SECRETS, completeAgentModelStep);
     await createPage.expandCustomize();
 
     await expect(createPage.getCardByName(TEST_SKILL.name)).toBeVisible();
@@ -272,7 +297,7 @@ test.describe('Workspaces page - MCP integration', { tag: '@smoke' }, () => {
     const createPage = await agentWorkspacesPage.openCreatePage();
 
     await createPage.workingDirInput.fill('/tmp/test');
-    await createPage.navigateToStep(WIZARD_STEP.TOOLS_SECRETS);
+    await createPage.navigateToStep(WIZARD_STEP.TOOLS_SECRETS, completeAgentModelStep);
     await createPage.expandCustomize();
 
     await expect(createPage.mcpServersPanel).toBeVisible();

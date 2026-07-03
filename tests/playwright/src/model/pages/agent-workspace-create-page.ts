@@ -19,15 +19,75 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
 import {
+  AGENT_MODEL_SETUPS,
   type CodingAgent,
   type FileAccessLevel,
+  PROVIDERS,
   TIMEOUTS,
   WIZARD_STEP,
   WIZARD_STEPS,
   type WizardStep,
+  type WorkspaceInferenceProviderConfig,
+  type WorkspaceInferenceProviderId,
 } from '/@/model/core/types';
 
 import { BasePage } from './base-page';
+
+export interface InlineConnectionField {
+  label: string;
+  value: string;
+}
+
+export interface EnsureModelReadyOptions {
+  providerName: string;
+  fields?: InlineConnectionField[];
+}
+
+export type AgentModelSetup = (createPage: AgentWorkspaceCreatePage) => Promise<void>;
+
+export interface ResolvedAgentModelSetup {
+  agent: CodingAgent;
+  providerName: string;
+  fields: InlineConnectionField[];
+}
+
+function getWorkspaceInferenceProvider(providerId: WorkspaceInferenceProviderId): WorkspaceInferenceProviderConfig {
+  return PROVIDERS[providerId] as WorkspaceInferenceProviderConfig;
+}
+
+function buildInlineConnectionFields(providerId: WorkspaceInferenceProviderId): InlineConnectionField[] {
+  const provider = getWorkspaceInferenceProvider(providerId);
+
+  return provider.inlineConnectionFields.map(field => {
+    const value = field.useBaseURL ? provider.baseURL : field.useEnvVar ? process.env[provider.envVarName] : undefined;
+    if (!value) {
+      throw new Error(`Missing value for inline connection field "${field.label}" on provider "${providerId}"`);
+    }
+    return { label: field.label, value };
+  });
+}
+
+export function resolveAgentModelConnection(): ResolvedAgentModelSetup | undefined {
+  for (const setup of AGENT_MODEL_SETUPS) {
+    const provider = getWorkspaceInferenceProvider(setup.providerId);
+    if (!process.env[provider.envVarName]) {
+      continue;
+    }
+    return {
+      agent: setup.agent,
+      providerName: provider.providerPickerName,
+      fields: buildInlineConnectionFields(setup.providerId),
+    };
+  }
+  return undefined;
+}
+
+export function agentModelSetupSkipMessage(): string {
+  const envVars = AGENT_MODEL_SETUPS.map(setup => getWorkspaceInferenceProvider(setup.providerId).envVarName).join(
+    ', ',
+  );
+  return `One of ${envVars} is required for workspace wizard model step`;
+}
 
 export class AgentWorkspaceCreatePage extends BasePage {
   readonly heading: Locator;
@@ -49,6 +109,9 @@ export class AgentWorkspaceCreatePage extends BasePage {
   readonly backButton: Locator;
   readonly submitButton: Locator;
   readonly useDefaultsButton: Locator;
+  readonly noModelsGate: Locator;
+  readonly providerPicker: Locator;
+  readonly inlineConnectionForm: Locator;
 
   constructor(page: Page) {
     super(page);
@@ -74,6 +137,9 @@ export class AgentWorkspaceCreatePage extends BasePage {
       name: 'Use all defaults and create workspace',
       exact: true,
     });
+    this.noModelsGate = this.page.getByTestId('no-models-create-connection');
+    this.providerPicker = this.page.getByTestId('provider-picker');
+    this.inlineConnectionForm = this.page.getByTestId('inline-connection-form');
   }
 
   async waitForLoad(): Promise<void> {
@@ -106,11 +172,14 @@ export class AgentWorkspaceCreatePage extends BasePage {
     await this.expectStepActive(step);
   }
 
-  async navigateToStep(step: WizardStep): Promise<void> {
+  async navigateToStep(step: WizardStep, agentModelSetup?: AgentModelSetup): Promise<void> {
     const targetIndex = WIZARD_STEPS.indexOf(step);
-    const steps = WIZARD_STEPS;
     for (let i = 0; i < targetIndex; i++) {
-      await this.continueToStep(steps[i + 1]);
+      const currentStep = WIZARD_STEPS[i]!;
+      if (currentStep === WIZARD_STEP.AGENT_MODEL && agentModelSetup) {
+        await agentModelSetup(this);
+      }
+      await this.continueToStep(WIZARD_STEPS[i + 1]!);
     }
   }
 
@@ -233,6 +302,58 @@ export class AgentWorkspaceCreatePage extends BasePage {
       await this.verifyModelRuntimes(verifyRuntime);
     }
     return this.selectDefaultModel();
+  }
+
+  async isModelCatalogVisible(): Promise<boolean> {
+    return (await this.getModelTableRows().count()) > 0;
+  }
+
+  async isInlineConnectionFormVisible(): Promise<boolean> {
+    return this.noModelsGate.isVisible();
+  }
+
+  async selectConnectionProvider(providerName: string): Promise<void> {
+    if (!(await this.providerPicker.isVisible())) {
+      await expect(this.inlineConnectionForm).toBeVisible();
+      return;
+    }
+    const button = this.page.getByRole('button', { name: new RegExp(`Select ${providerName}`, 'i') });
+    await expect(button).toBeVisible();
+    await button.click();
+    await expect(this.inlineConnectionForm).toBeVisible();
+  }
+
+  async fillInlineConnectionFields(fields: InlineConnectionField[]): Promise<void> {
+    for (const field of fields) {
+      const input = this.inlineConnectionForm.getByLabel(field.label);
+      await expect(input).toBeVisible();
+      await input.fill(field.value);
+      await expect(input).toHaveValue(field.value);
+    }
+  }
+
+  async submitInlineConnection(): Promise<void> {
+    const createButton = this.inlineConnectionForm.getByRole('button', { name: 'Create' });
+    await expect(createButton).toBeEnabled();
+    await createButton.click();
+  }
+
+  async ensureModelReady(options: EnsureModelReadyOptions): Promise<void> {
+    if (await this.isModelCatalogVisible()) {
+      await this.selectDefaultModel();
+    } else if (await this.isInlineConnectionFormVisible()) {
+      await this.selectConnectionProvider(options.providerName);
+      if (options.fields?.length) {
+        await this.fillInlineConnectionFields(options.fields);
+      }
+      await this.submitInlineConnection();
+      await this.waitForModelCatalog();
+      await this.selectDefaultModel();
+    } else {
+      await this.waitForModelCatalog();
+      await this.selectDefaultModel();
+    }
+    await expect(this.continueButton).toBeEnabled();
   }
 
   private async selectRadio(radio: Locator): Promise<string> {
