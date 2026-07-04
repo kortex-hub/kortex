@@ -27,8 +27,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { Directories } from '/@/plugin/directories.js';
 import type { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
-import type { Proxy } from '/@/plugin/proxy.js';
-import { Exec } from '/@/plugin/util/exec.js';
+import type { Exec } from '/@/plugin/util/exec.js';
 import type { CliToolInfo } from '/@api/cli-tool-info.js';
 import type { GatewayInfo } from '/@api/openshell-gateway-info.js';
 
@@ -39,7 +38,6 @@ vi.mock(import('node:fs/promises'));
 vi.mock(import('/@/plugin/util/exec.js'));
 
 const { spawn } = await import('node:child_process');
-const { mkdir, writeFile } = await import('node:fs/promises');
 
 const GATEWAY_BINARY = '/usr/local/bin/openshell-gateway';
 const KAIDEN_DATA_DIRECTORY = '/home/user/.local/share/kaiden';
@@ -62,11 +60,6 @@ function mockExecResult(stdout = ''): RunResult {
 
 let gateway: OpenshellGateway;
 
-const exec = new Exec({} as Proxy);
-const FAKE_DATA_DIR = '/fake-data-dir';
-const GATEWAY_DIR = join(FAKE_DATA_DIR, 'openshell-gateway');
-const CONFIG_PATH = join(GATEWAY_DIR, 'gateway.toml');
-
 const cliToolRegistry = {
   getCliToolInfos: vi.fn(),
 } as unknown as CliToolRegistry;
@@ -79,7 +72,7 @@ const openshellCli = {
 } as unknown as OpenshellCli;
 
 const directories = {
-  getDataDirectory: vi.fn().mockReturnValue(FAKE_DATA_DIR),
+  getDataDirectory: vi.fn().mockReturnValue(KAIDEN_DATA_DIRECTORY),
 } as unknown as Directories;
 
 const exec = {
@@ -88,7 +81,7 @@ const exec = {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  vi.mocked(directories.getDataDirectory).mockReturnValue(FAKE_DATA_DIR);
+  vi.mocked(directories.getDataDirectory).mockReturnValue(KAIDEN_DATA_DIRECTORY);
   vi.mocked(cliToolRegistry.getCliToolInfos).mockReturnValue([
     { name: 'openshell-gateway', path: GATEWAY_BINARY },
   ] as unknown as CliToolInfo[]);
@@ -381,7 +374,7 @@ describe('start', () => {
 
     await gateway.start();
 
-    expect(mkdir).toHaveBeenCalledWith(GATEWAY_DIR, { recursive: true });
+    expect(mkdir).toHaveBeenCalledWith(GATEWAY_STORAGE_DIRECTORY, { recursive: true });
     expect(exec.exec).toHaveBeenCalledWith(GATEWAY_BINARY, [
       'generate-certs',
       '--server-san',
@@ -391,7 +384,7 @@ describe('start', () => {
       '--server-san',
       'host.openshell.internal',
       '--output-dir',
-      GATEWAY_DIR,
+      GATEWAY_STORAGE_DIRECTORY,
     ]);
   });
 
@@ -403,10 +396,14 @@ describe('start', () => {
 
     await gateway.start();
 
-    expect(writeFile).toHaveBeenCalledWith(CONFIG_PATH, expect.stringContaining('[openshell.gateway.gateway_jwt]'));
-    expect(writeFile).toHaveBeenCalledWith(CONFIG_PATH, expect.stringContaining('signing_key_path'));
-    expect(writeFile).toHaveBeenCalledWith(CONFIG_PATH, expect.stringContaining('public_key_path'));
-    expect(writeFile).toHaveBeenCalledWith(CONFIG_PATH, expect.stringContaining('kid_path'));
+    expect(writeFile).toHaveBeenCalledWith(
+      GATEWAY_CONFIG_PATH,
+      expect.stringContaining('[openshell.gateway.gateway_jwt]'),
+      'utf-8',
+    );
+    expect(writeFile).toHaveBeenCalledWith(GATEWAY_CONFIG_PATH, expect.stringContaining('signing_key_path'), 'utf-8');
+    expect(writeFile).toHaveBeenCalledWith(GATEWAY_CONFIG_PATH, expect.stringContaining('public_key_path'), 'utf-8');
+    expect(writeFile).toHaveBeenCalledWith(GATEWAY_CONFIG_PATH, expect.stringContaining('kid_path'), 'utf-8');
   });
 
   test('starts gateway without --config when cert generation fails', async () => {
@@ -582,7 +579,7 @@ describe('gateway config generation', () => {
 
   test('still generates config when version detection fails', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    vi.mocked(exec.exec).mockRejectedValue(new Error('command not found'));
+    vi.mocked(exec.exec).mockRejectedValueOnce(new Error('command not found'));
 
     await gateway.start();
 

@@ -5,3 +5,12 @@ version = 1
 {{#supervisorImage}}
 supervisor_image = "{{{supervisorImage}}}"
 {{/supervisorImage}}
+
+[openshell.gateway.auth]
+allow_unauthenticated_users = true
+
+[openshell.gateway.gateway_jwt]
+signing_key_path = "{{{gatewayDir}}}/jwt/signing.pem"
+public_key_path = "{{{gatewayDir}}}/jwt/public.pem"
+kid_path = "{{{gatewayDir}}}/jwt/kid"
+ttl_secs = 3600

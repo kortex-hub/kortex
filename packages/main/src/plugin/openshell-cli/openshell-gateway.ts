@@ -55,8 +55,6 @@ export class OpenshellGateway implements Disposable {
   #bindAddress: string = DEFAULT_BIND_ADDRESS;
 
   constructor(
-    @inject(Exec)
-    private readonly exec: Exec,
     @inject(CliToolRegistry)
     private readonly cliToolRegistry: CliToolRegistry,
     @inject(OpenshellCli)
@@ -222,11 +220,7 @@ export class OpenshellGateway implements Disposable {
     this.stop().catch((err: unknown) => console.error('[openshell-gateway] failed to stop: ', err));
   }
 
-  private async generateCerts(binaryPath: string): Promise<string> {
-    const gatewayDir = join(this.directories.getDataDirectory(), 'openshell-gateway');
-    await mkdir(gatewayDir, { recursive: true });
-
-    console.log('[openshell-gateway] generating certificates');
+  private async generateCerts(binaryPath: string, gatewayDir: string): Promise<void> {
     await this.exec.exec(binaryPath, [
       'generate-certs',
       '--server-san',
@@ -238,9 +232,6 @@ export class OpenshellGateway implements Disposable {
       '--output-dir',
       gatewayDir,
     ]);
-    console.log(`[openshell-gateway] certificates generated in ${gatewayDir}`);
-
-    return gatewayDir;
   }
 
   private buildArgs(disableTls: boolean, configPath?: string): string[] {
@@ -252,9 +243,6 @@ export class OpenshellGateway implements Disposable {
     args.push('--bind-address', this.#bindAddress);
     if (disableTls) {
       args.push('--disable-tls');
-    }
-    if (configPath) {
-      args.push('--config', configPath);
     }
     return args;
   }
@@ -285,8 +273,11 @@ export class OpenshellGateway implements Disposable {
 
       const storageDirectory = join(this.directories.getDataDirectory(), 'openshell-gateway');
       const configPath = join(storageDirectory, 'gateway.toml');
+      await this.generateCerts(binaryPath, storageDirectory);
       const config = Mustache.render(gatewayConfigTemplate, {
         supervisorImage: image,
+        gatewayDir: storageDirectory,
+        q: '"',
       });
 
       await mkdir(storageDirectory, { recursive: true });
