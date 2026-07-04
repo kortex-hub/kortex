@@ -260,7 +260,6 @@ export class OpenshellGateway implements Disposable {
       const storageDirectory = join(this.directories.getDataDirectory(), 'openshell-gateway');
       const configPath = join(storageDirectory, 'gateway.toml');
       const config = Mustache.render(gatewayConfigTemplate, {
-        enableBindMounts: true,
         supervisorImage: image,
       });
 

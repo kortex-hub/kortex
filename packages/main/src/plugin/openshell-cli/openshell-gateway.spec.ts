@@ -458,7 +458,7 @@ describe('gateway config generation', () => {
     vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
   });
 
-  test('writes gateway config under the kaiden data directory with bind mounts enabled for podman', async () => {
+  test('writes gateway config under the kaiden data directory', async () => {
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
 
     await gateway.start();
@@ -466,7 +466,7 @@ describe('gateway config generation', () => {
     expect(mkdir).toHaveBeenCalledWith(GATEWAY_STORAGE_DIRECTORY, { recursive: true });
     expect(writeFile).toHaveBeenCalledWith(
       GATEWAY_CONFIG_PATH,
-      expect.stringContaining('[openshell.drivers.podman]\nenable_bind_mounts = true'),
+      expect.stringContaining('[openshell.drivers.podman]'),
       'utf-8',
     );
   });
@@ -517,17 +517,12 @@ describe('gateway config generation', () => {
     );
   });
 
-  test('still generates config with bind mounts when version detection fails', async () => {
+  test('still generates config when version detection fails', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockRejectedValue(new Error('command not found'));
 
     await gateway.start();
 
-    expect(writeFile).toHaveBeenCalledWith(
-      GATEWAY_CONFIG_PATH,
-      expect.stringContaining('enable_bind_mounts = true'),
-      'utf-8',
-    );
     expect(writeFile).toHaveBeenCalledWith(
       GATEWAY_CONFIG_PATH,
       expect.not.stringContaining('supervisor_image'),
@@ -540,17 +535,12 @@ describe('gateway config generation', () => {
     );
   });
 
-  test('still generates config with bind mounts when version output is unparseable', async () => {
+  test('still generates config when version output is unparseable', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult('unknown-format'));
 
     await gateway.start();
 
-    expect(writeFile).toHaveBeenCalledWith(
-      GATEWAY_CONFIG_PATH,
-      expect.stringContaining('enable_bind_mounts = true'),
-      'utf-8',
-    );
     expect(writeFile).toHaveBeenCalledWith(
       GATEWAY_CONFIG_PATH,
       expect.not.stringContaining('supervisor_image'),
