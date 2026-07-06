@@ -611,9 +611,17 @@ export class AgentWorkspaceManager implements Disposable {
         if (shouldExecuteCommand && workspace.labels) {
           const agentId = workspace.labels[AGENT_LABEL];
           if (agentId) {
-            const agent = await this.agentRegistry.getAgent(agentId);
-            agentCommand = agent?.command;
+            try {
+              const agent = await this.agentRegistry.getAgent(agentId);
+              agentCommand = agent?.command;
+            } catch (err: unknown) {
+              console.error(`Failed to resolve agent command for workspace "${id}":`, err);
+            }
           }
+        }
+
+        if (agentCommand) {
+          this.commandExecutedWorkspaces.add(id);
         }
 
         let commandSent = false;
@@ -625,7 +633,6 @@ export class AgentWorkspaceManager implements Disposable {
             }
             if (!commandSent && agentCommand) {
               commandSent = true;
-              this.commandExecutedWorkspaces.add(id);
               invocation.write(`${agentCommand}\n`);
             }
           },
