@@ -3762,6 +3762,13 @@ export class PluginSystem {
 
     this.markAsReady();
 
+    const openshellGateway = container.get<OpenshellGateway>(OpenshellGateway);
+    try {
+      await openshellGateway.init();
+    } catch (err: unknown) {
+      console.error('Unable to initialize openshell gateway', err);
+    }
+
     apiSender.send('starting-extensions', `${this.isReady}`);
     console.log('System ready. Loading extensions...');
     try {
@@ -3771,8 +3778,6 @@ export class PluginSystem {
       apiSender.send('extensions-started');
       this.markAsExtensionsStarted();
     }
-    const openshellGateway = container.get<OpenshellGateway>(OpenshellGateway);
-    openshellGateway.init().catch((err: unknown) => console.error('Unable to initialize openshell gateway', err));
 
     extensionsUpdater.init().catch((err: unknown) => console.error('Unable to perform extension updates', err));
     autoStartEngine.start().catch((err: unknown) => console.error('Unable to perform autostart', err));
