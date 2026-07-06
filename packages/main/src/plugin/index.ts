@@ -71,6 +71,7 @@ import { MenuRegistry } from '/@/plugin/menu-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
+import { OpenshellGatewayCli } from '/@/plugin/openshell-cli/openshell-gateway-cli.js';
 import { OpenshellImageBuilder } from '/@/plugin/openshell-cli/openshell-image-builder.js';
 import { OpenShellRegistry } from '/@/plugin/openshell-registry.js';
 import { RagEnvironmentRegistry } from '/@/plugin/rag-environment-registry.js';
@@ -599,6 +600,7 @@ export class PluginSystem {
     container.bind<CliToolRegistry>(CliToolRegistry).toSelf().inSingletonScope();
     container.bind<AgentRegistry>(AgentRegistry).toSelf().inSingletonScope();
     container.bind<OpenShellRegistry>(OpenShellRegistry).toSelf().inSingletonScope();
+    container.bind<OpenshellGatewayCli>(OpenshellGatewayCli).toSelf().inSingletonScope();
     container.bind<OpenshellCli>(OpenshellCli).toSelf().inSingletonScope();
     container.bind<OpenshellGateway>(OpenshellGateway).toSelf().inSingletonScope();
     container.bind<OpenshellImageBuilder>(OpenshellImageBuilder).toSelf().inSingletonScope();
@@ -925,7 +927,7 @@ export class PluginSystem {
     await ragEnvironmentRegistry.init();
 
     const workspaceProjectManager = container.get<WorkspaceProjectManager>(WorkspaceProjectManager);
-    await workspaceProjectManager.init();
+    workspaceProjectManager.init().catch(console.error);
 
     const semanticRouterManager = container.get<SemanticRouterManager>(SemanticRouterManager);
     await semanticRouterManager.init();

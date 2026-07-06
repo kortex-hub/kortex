@@ -20,6 +20,8 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
+import type { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
+import type { OpenshellGatewayCli } from '/@/plugin/openshell-cli/openshell-gateway-cli.js';
 import type { Exec } from '/@/plugin/util/exec.js';
 import type { SecretCreateOptions } from '/@api/secret-info.js';
 
@@ -28,7 +30,12 @@ import { OpenshellSecretAdapter } from './openshell-secret-adapter.js';
 vi.mock(import('/@/plugin/openshell-cli/openshell-cli.js'));
 
 let adapter: OpenshellSecretAdapter;
-const openshellCli = new OpenshellCli({} as Exec, {} as CliToolRegistry);
+const openshellCli = new OpenshellCli(
+  {} as Exec,
+  {} as CliToolRegistry,
+  {} as OpenshellGatewayCli,
+  {} as OpenshellGateway,
+);
 
 beforeEach(() => {
   vi.resetAllMocks();

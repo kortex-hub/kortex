@@ -27,7 +27,7 @@ import Mustache from 'mustache';
 
 import { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import { Directories } from '/@/plugin/directories.js';
-import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
+import { OpenshellGatewayCli } from '/@/plugin/openshell-cli/openshell-gateway-cli.js';
 import { Exec } from '/@/plugin/util/exec.js';
 import type { OpenshellGatewayStartOptions } from '/@api/openshell-gateway-info.js';
 
@@ -53,29 +53,35 @@ export class OpenshellGateway implements Disposable {
   #gatewayProcess: ChildProcess | undefined;
   #port: number = DEFAULT_PORT;
   #bindAddress: string = DEFAULT_BIND_ADDRESS;
+  #availablePromise: PromiseWithResolvers<void>;
+  #disposables: Disposable[] = [];
 
   constructor(
     @inject(CliToolRegistry)
     private readonly cliToolRegistry: CliToolRegistry,
-    @inject(OpenshellCli)
-    private readonly openshellCli: OpenshellCli,
+    @inject(OpenshellGatewayCli)
+    private readonly openshellGatewayCli: OpenshellGatewayCli,
     @inject(Directories)
     private readonly directories: Directories,
     @inject(Exec)
     private readonly exec: Exec,
-  ) {}
+  ) {
+    this.#availablePromise = Promise.withResolvers<void>();
+    this.#disposables.push(cliToolRegistry.onDidCliToolsChange(() => this.start().catch(console.error)));
+  }
 
   async init(): Promise<void> {
     try {
-      const gateways = await this.openshellCli.listGateways();
+      const gateways = await this.openshellGatewayCli.listGateways();
       const localGateways = gateways.filter(gw => gw.type === 'local' || this.isLocalEndpoint(gw.endpoint));
       if (localGateways.length > 0) {
         for (const gw of localGateways) {
           if (await this.isEndpointHealthy(gw.endpoint)) {
             if (!gw.active) {
-              await this.openshellCli.selectGateway(gw.name);
+              await this.openshellGatewayCli.selectGateway(gw.name);
             }
             console.log(`[openshell-gateway] gateway detected (${gw.endpoint}) and is healthy`);
+            this.#availablePromise.resolve(undefined);
             return;
           }
         }
@@ -95,6 +101,7 @@ export class OpenshellGateway implements Disposable {
     if (await this.isEndpointHealthy()) {
       console.log('[openshell-gateway] found healthy gateway on default port, registering');
       await this.registerWithCli();
+      this.#availablePromise.resolve(undefined);
       return;
     }
 
@@ -104,7 +111,7 @@ export class OpenshellGateway implements Disposable {
 
   private async isEndpointHealthy(endpoint?: string): Promise<boolean> {
     const target = endpoint ?? `http://${this.#bindAddress}:${this.#port}`;
-    return this.openshellCli.checkEndpointStatus(target);
+    return this.openshellGatewayCli.checkEndpointStatus(target);
   }
 
   private isLocalEndpoint(endpoint: string): boolean {
@@ -177,11 +184,13 @@ export class OpenshellGateway implements Disposable {
       });
       this.#port = previousPort;
       this.#bindAddress = previousBindAddress;
+      this.#availablePromise.reject(err);
       throw err;
     }
     if (!options?.skipRegistration) {
       await this.registerWithCli();
     }
+    this.#availablePromise.resolve(undefined);
   }
 
   async stop(): Promise<void> {
@@ -211,6 +220,10 @@ export class OpenshellGateway implements Disposable {
     this.#gatewayProcess = undefined;
   }
 
+  async checkAvailable(): Promise<void> {
+    return this.#availablePromise.promise;
+  }
+
   isRunning(): boolean {
     return this.#gatewayProcess !== undefined && typeof this.#gatewayProcess.exitCode !== 'number';
   }
@@ -218,6 +231,7 @@ export class OpenshellGateway implements Disposable {
   @preDestroy()
   dispose(): void {
     this.stop().catch((err: unknown) => console.error('[openshell-gateway] failed to stop: ', err));
+    this.#disposables.forEach(disposable => disposable.dispose());
   }
 
   private async generateCerts(binaryPath: string, gatewayDir: string): Promise<void> {
@@ -303,7 +317,7 @@ export class OpenshellGateway implements Disposable {
         throw new Error('Gateway process exited before becoming ready');
       }
 
-      if (await this.openshellCli.checkEndpointStatus(endpoint)) {
+      if (await this.openshellGatewayCli.checkEndpointStatus(endpoint)) {
         console.log('[openshell-gateway] server is ready');
         return;
       }
@@ -317,7 +331,7 @@ export class OpenshellGateway implements Disposable {
   private async registerWithCli(): Promise<void> {
     const endpoint = `http://${this.#bindAddress}:${this.#port}`;
     try {
-      await this.openshellCli.addGateway({ endpoint, local: true, name: 'kaiden-local' });
+      await this.openshellGatewayCli.addGateway({ endpoint, local: true, name: 'kaiden-local' });
       console.log(`[openshell-gateway] registered with CLI as kaiden-local at ${endpoint}`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);

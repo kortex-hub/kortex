@@ -28,6 +28,8 @@ import { Exec } from '/@/plugin/util/exec.js';
 import type { CliToolInfo } from '/@api/cli-tool-info.js';
 
 import { OpenshellCli } from './openshell-cli.js';
+import type { OpenshellGateway } from './openshell-gateway.js';
+import type { OpenshellGatewayCli } from './openshell-gateway-cli.js';
 
 vi.mock(import('node:fs'));
 vi.mock(import('/@/plugin/util/exec.js'));
@@ -40,6 +42,14 @@ const exec = new Exec({} as Proxy);
 const cliToolRegistry = {
   getCliToolInfos: vi.fn().mockReturnValue([{ name: 'openshell', path: OPENSHELL_CLI_PATH }]),
 } as unknown as CliToolRegistry;
+
+const openshellGatewayCli = {
+  listGateways: vi.fn(),
+} as unknown as OpenshellGatewayCli;
+
+const openshellGateway = {
+  checkAvailable: vi.fn().mockResolvedValue(undefined),
+} as unknown as OpenshellGateway;
 
 function mockExecResult(stdout: string): RunResult {
   return { command: OPENSHELL_CLI_PATH, stdout, stderr: '' };
@@ -61,7 +71,8 @@ beforeEach(() => {
   vi.mocked(cliToolRegistry.getCliToolInfos).mockReturnValue([
     { name: 'openshell', path: OPENSHELL_CLI_PATH },
   ] as unknown as CliToolInfo[]);
-  openshellCli = new OpenshellCli(exec, cliToolRegistry);
+  vi.mocked(openshellGateway.checkAvailable).mockResolvedValue(undefined);
+  openshellCli = new OpenshellCli(exec, cliToolRegistry, openshellGatewayCli, openshellGateway);
 });
 
 describe('getCliPath', () => {
@@ -523,122 +534,6 @@ describe('connectSandbox', () => {
   });
 });
 
-describe('addGateway', () => {
-  test('executes gateway add with endpoint', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
-
-    await openshellCli.addGateway({ endpoint: 'https://gw.example.com' });
-
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'add', 'https://gw.example.com'], undefined);
-  });
-
-  test('includes --name flag when provided', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
-
-    await openshellCli.addGateway({ endpoint: 'https://gw.example.com', name: 'my-gw' });
-
-    expect(exec.exec).toHaveBeenCalledWith(
-      OPENSHELL_CLI_PATH,
-      ['gateway', 'add', 'https://gw.example.com', '--name', 'my-gw'],
-      undefined,
-    );
-  });
-
-  test('includes --remote flag when provided', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
-
-    await openshellCli.addGateway({ endpoint: 'https://gw.example.com', remote: 'user@host' });
-
-    expect(exec.exec).toHaveBeenCalledWith(
-      OPENSHELL_CLI_PATH,
-      ['gateway', 'add', 'https://gw.example.com', '--remote', 'user@host'],
-      undefined,
-    );
-  });
-
-  test('includes --local flag when provided', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
-
-    await openshellCli.addGateway({ endpoint: 'https://127.0.0.1', local: true });
-
-    expect(exec.exec).toHaveBeenCalledWith(
-      OPENSHELL_CLI_PATH,
-      ['gateway', 'add', 'https://127.0.0.1', '--local'],
-      undefined,
-    );
-  });
-
-  test('extracts JSON error from stdout on failure', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const runError = mockRunError({
-      stdout: JSON.stringify({ error: 'invalid endpoint' }),
-    });
-    vi.mocked(exec.exec).mockRejectedValue(runError);
-
-    await expect(openshellCli.addGateway({ endpoint: 'bad' })).rejects.toThrow('invalid endpoint');
-  });
-});
-
-describe('removeGateway', () => {
-  test('executes gateway remove with name', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
-
-    await openshellCli.removeGateway('my-gw');
-
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'remove', 'my-gw'], undefined);
-  });
-
-  test('executes gateway remove without name for active gateway', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
-
-    await openshellCli.removeGateway();
-
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'remove'], undefined);
-  });
-});
-
-describe('selectGateway', () => {
-  test('executes gateway select with name', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
-
-    await openshellCli.selectGateway('my-gw');
-
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'select', 'my-gw'], undefined);
-  });
-
-  test('executes gateway select without name', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
-
-    await openshellCli.selectGateway();
-
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'select'], undefined);
-  });
-});
-
-describe('listGateways', () => {
-  test('executes gateway list with json output and returns parsed result', async () => {
-    const payload = [
-      { name: 'gw-1', endpoint: 'https://gw1.example.com' },
-      { name: 'gw-2', endpoint: 'https://gw2.example.com' },
-    ];
-    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify(payload)));
-
-    const result = await openshellCli.listGateways();
-
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'list', '-o', 'json'], undefined);
-    expect(result).toEqual(payload);
-  });
-});
-
 describe('listSandboxesForGateway', () => {
   test('lists sandboxes for a specific gateway using -g flag', async () => {
     const gateways = [
@@ -647,25 +542,24 @@ describe('listSandboxesForGateway', () => {
     ];
     const sandboxes = [{ id: 'sb-1', name: 'sb-1', phase: 'Ready' }];
 
-    vi.mocked(exec.exec)
-      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
-      .mockResolvedValueOnce(mockExecResult(JSON.stringify(sandboxes)));
+    vi.mocked(openshellGatewayCli.listGateways).mockResolvedValue(gateways);
+    vi.mocked(exec.exec).mockResolvedValueOnce(mockExecResult(JSON.stringify(sandboxes)));
 
     const result = await openshellCli.listSandboxesForGateway('gw-2');
 
     expect(result.gateway.name).toBe('gw-2');
     expect(result.sandboxes).toEqual(sandboxes);
+    expect(openshellGatewayCli.listGateways).toHaveBeenCalled();
     expect(exec.exec).toHaveBeenCalledWith(
       OPENSHELL_CLI_PATH,
       ['sandbox', 'list', '-g', 'gw-2', '-o', 'json'],
       undefined,
     );
-    expect(exec.exec).not.toHaveBeenCalledWith(OPENSHELL_CLI_PATH, expect.arrayContaining(['gateway', 'select']));
   });
 
   test('throws when gateway is not found', async () => {
     const gateways = [{ name: 'gw-1', endpoint: 'https://gw1.example.com', active: true }];
-    vi.mocked(exec.exec).mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)));
+    vi.mocked(openshellGatewayCli.listGateways).mockResolvedValue(gateways);
 
     await expect(openshellCli.listSandboxesForGateway('unknown')).rejects.toThrow('Gateway not found: unknown');
   });
@@ -680,8 +574,8 @@ describe('listSandboxesPerGateway', () => {
     const sandboxes1 = [{ id: 'sb-1', name: 'sb-1', phase: 'Ready' }];
     const sandboxes2 = [{ id: 'sb-2', name: 'sb-2', phase: 'Unknown' }];
 
+    vi.mocked(openshellGatewayCli.listGateways).mockResolvedValue(gateways);
     vi.mocked(exec.exec)
-      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(sandboxes1)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(sandboxes2)));
 
@@ -693,6 +587,7 @@ describe('listSandboxesPerGateway', () => {
     expect(first?.sandboxes).toEqual(sandboxes1);
     expect(second?.gateway.name).toBe('gw-2');
     expect(second?.sandboxes).toEqual(sandboxes2);
+    expect(openshellGatewayCli.listGateways).toHaveBeenCalled();
     expect(exec.exec).toHaveBeenCalledWith(
       OPENSHELL_CLI_PATH,
       ['sandbox', 'list', '-g', 'gw-1', '-o', 'json'],
@@ -703,11 +598,10 @@ describe('listSandboxesPerGateway', () => {
       ['sandbox', 'list', '-g', 'gw-2', '-o', 'json'],
       undefined,
     );
-    expect(exec.exec).not.toHaveBeenCalledWith(OPENSHELL_CLI_PATH, expect.arrayContaining(['gateway', 'select']));
   });
 
   test('returns empty array when no gateways exist', async () => {
-    vi.mocked(exec.exec).mockResolvedValueOnce(mockExecResult(JSON.stringify([])));
+    vi.mocked(openshellGatewayCli.listGateways).mockResolvedValue([]);
 
     const results = await openshellCli.listSandboxesPerGateway();
 
@@ -719,70 +613,13 @@ describe('listSandboxesPerGateway', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const gateways = [{ name: 'gw-1', endpoint: 'https://gw1.example.com', active: true }];
 
-    vi.mocked(exec.exec)
-      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
-      .mockRejectedValueOnce(new Error('connection refused'));
+    vi.mocked(openshellGatewayCli.listGateways).mockResolvedValue(gateways);
+    vi.mocked(exec.exec).mockRejectedValueOnce(new Error('connection refused'));
 
     const results = await openshellCli.listSandboxesPerGateway();
 
     expect(results).toHaveLength(1);
     expect(results.at(0)?.sandboxes).toEqual([]);
-  });
-});
-
-describe('checkEndpointStatus', () => {
-  test('returns true when endpoint is healthy', async () => {
-    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
-    expect(await openshellCli.checkEndpointStatus('https://127.0.0.1:8443')).toBe(true);
-    expect(exec.exec).toHaveBeenCalledWith(
-      OPENSHELL_CLI_PATH,
-      ['status', '--gateway-endpoint', 'https://127.0.0.1:8443'],
-      undefined,
-    );
-  });
-
-  test('returns false when endpoint is unreachable', async () => {
-    vi.mocked(exec.exec).mockRejectedValue(new Error('connection refused'));
-    expect(await openshellCli.checkEndpointStatus('http://127.0.0.1:17670')).toBe(false);
-  });
-
-  test('appends --gateway-insecure for http endpoints', async () => {
-    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
-    await openshellCli.checkEndpointStatus('http://127.0.0.1:17670');
-    expect(exec.exec).toHaveBeenCalledWith(
-      OPENSHELL_CLI_PATH,
-      ['status', '--gateway-endpoint', 'http://127.0.0.1:17670', '--gateway-insecure'],
-      undefined,
-    );
-  });
-
-  test('does not append --gateway-insecure for https endpoints', async () => {
-    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
-    await openshellCli.checkEndpointStatus('https://127.0.0.1:8443');
-    expect(exec.exec).toHaveBeenCalledWith(
-      OPENSHELL_CLI_PATH,
-      expect.not.arrayContaining(['--gateway-insecure']),
-      undefined,
-    );
-  });
-});
-
-describe('getGatewayStatus', () => {
-  test('executes status and returns trimmed output', async () => {
-    const statusText = 'Server Status\n\n  Gateway: openshell\n  Status: Connected\n';
-    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(statusText));
-
-    const result = await openshellCli.getGatewayStatus();
-
-    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['status']);
-    expect(result).toBe(statusText.trim());
-  });
-
-  test('rejects when no gateway is configured', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    vi.mocked(exec.exec).mockRejectedValue(new Error('no gateway configured'));
-
-    await expect(openshellCli.getGatewayStatus()).rejects.toThrow('no gateway configured');
   });
 });
 

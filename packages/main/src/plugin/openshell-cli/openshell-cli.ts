@@ -16,26 +16,26 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
-
-import type { RunError, RunOptions } from '@openkaiden/api';
+import { RunOptions } from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 import z from 'zod';
 
 import { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
+import { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
 import { Exec } from '/@/plugin/util/exec.js';
-import type {
+import {
   CreateProviderOptions,
   CreateSandboxOptions,
-  GatewayAddOptions,
-  GatewayInfo,
   GatewaySandboxes,
   OpenshellProviderInfo,
+  OpenshellProviderInfoSchema,
   SandboxInfo,
+  SandboxInfoSchema,
   SetInferenceOptions,
 } from '/@api/openshell-gateway-info.js';
-import { GatewayInfoSchema, OpenshellProviderInfoSchema, SandboxInfoSchema } from '/@api/openshell-gateway-info.js';
+
+import { OpenshellCliBase } from './openshell-cli-base.js';
+import { OpenshellGatewayCli } from './openshell-gateway-cli.js';
 
 const SettingValue = z.union([z.string(), z.boolean(), z.number()]);
 
@@ -65,79 +65,41 @@ const OpenshellSettingsSchema = z.looseObject({
  * Policy commands:
  *   - `openshell policy update`
  *
- * Gateway registration commands:
- *   - `openshell gateway add <endpoint>`
- *   - `openshell gateway remove [name]`
- *   - `openshell gateway select [name]`
- *   - `openshell gateway list`
- *   - `openshell status`
- *
  * Provider commands:
  *   - `openshell provider list`
  *   - `openshell provider delete <name>`
  *   - `openshell provider create`
  */
 @injectable()
-export class OpenshellCli {
+export class OpenshellCli extends OpenshellCliBase {
   constructor(
     @inject(Exec)
-    private readonly exec: Exec,
+    exec: Exec,
     @inject(CliToolRegistry)
-    private readonly cliToolRegistry: CliToolRegistry,
-  ) {}
-
-  getCliPath(): string {
-    const tool = this.cliToolRegistry.getCliToolInfos().find(t => t.name === 'openshell');
-    if (tool?.path) {
-      return tool.path;
-    }
-
-    const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
-    if (resourcesPath) {
-      const bundledPath = join(resourcesPath, 'openshell', 'openshell');
-      if (existsSync(bundledPath)) {
-        return bundledPath;
-      }
-    }
-
-    return 'openshell';
+    cliToolRegistry: CliToolRegistry,
+    @inject(OpenshellGatewayCli)
+    private readonly openshellGatewayCli: OpenshellGatewayCli,
+    @inject(OpenshellGateway)
+    private readonly openshellGateway: OpenshellGateway,
+  ) {
+    super(exec, cliToolRegistry);
   }
 
-  private extractCliError(err: unknown): string {
-    if (err instanceof Error && 'stdout' in err) {
-      const runErr = err as RunError;
-
-      const jsonError = this.tryExtractJsonError(runErr.stdout) ?? this.tryExtractJsonError(runErr.stderr);
-      if (jsonError) {
-        return jsonError;
-      }
-
-      if (runErr.stderr?.trim()) {
-        return `${err.message} (stderr: ${runErr.stderr.trim()})`;
-      }
-      if (runErr.stdout?.trim()) {
-        return `${err.message} (stdout: ${runErr.stdout.trim()})`;
-      }
-    }
-    return err instanceof Error ? err.message : String(err);
+  protected override async runCli(
+    args: string[],
+    options?: {
+      redact?: boolean;
+      env?: { [p: string]: string };
+      quiet?: boolean;
+    },
+  ): Promise<void> {
+    await this.openshellGateway.checkAvailable();
+    return super.runCli(args, options);
   }
 
-  private tryExtractJsonError(output: string | undefined): string | undefined {
-    if (typeof output !== 'string' || !output) {
-      return undefined;
-    }
-    try {
-      const parsed: unknown = JSON.parse(output);
-      if (typeof parsed === 'object' && parsed !== null && 'error' in parsed) {
-        const errorField = (parsed as { error: unknown }).error;
-        if (typeof errorField === 'string' && errorField) {
-          return errorField;
-        }
-      }
-    } catch {
-      // not JSON
-    }
-    return undefined;
+  protected override async execCLI<T>(args: string[], options?: RunOptions): Promise<T> {
+    await this.openshellGateway.checkAvailable();
+    return super.execCLI(args, options);
   }
 
   async getVersion(): Promise<string> {
@@ -244,7 +206,7 @@ export class OpenshellCli {
   }
 
   async listSandboxesForGateway(gatewayName: string): Promise<GatewaySandboxes> {
-    const gateways = await this.listGateways();
+    const gateways = await this.openshellGatewayCli.listGateways();
     const targetGateway = gateways.find(g => g.name === gatewayName);
     if (!targetGateway) {
       throw new Error(`Gateway not found: ${gatewayName}`);
@@ -255,7 +217,7 @@ export class OpenshellCli {
   }
 
   async listSandboxesPerGateway(): Promise<GatewaySandboxes[]> {
-    const gateways = await this.listGateways();
+    const gateways = await this.openshellGatewayCli.listGateways();
     if (gateways.length === 0) {
       return [];
     }
@@ -274,68 +236,6 @@ export class OpenshellCli {
     }
 
     return results;
-  }
-
-  // ── gateway registration commands ─────────────────────────────────
-
-  async addGateway(options: GatewayAddOptions): Promise<void> {
-    const args = ['gateway', 'add', options.endpoint];
-    if (options.name) {
-      args.push('--name', options.name);
-    }
-    if (options.remote) {
-      args.push('--remote', options.remote);
-    }
-    if (options.local) {
-      args.push('--local');
-    }
-    await this.runCli(args);
-  }
-
-  async removeGateway(name?: string): Promise<void> {
-    const args = ['gateway', 'remove'];
-    if (name) {
-      args.push(name);
-    }
-    await this.runCli(args);
-  }
-
-  async selectGateway(name?: string): Promise<void> {
-    const args = ['gateway', 'select'];
-    if (name) {
-      args.push(name);
-    }
-    await this.runCli(args);
-  }
-
-  async listGateways(): Promise<GatewayInfo[]> {
-    const data = await this.execCLI<unknown>(['gateway', 'list']);
-    return z.array(GatewayInfoSchema).parse(data);
-  }
-
-  async checkEndpointStatus(endpoint: string): Promise<boolean> {
-    const args = ['status', '--gateway-endpoint', endpoint];
-    if (endpoint.startsWith('http://')) {
-      args.push('--gateway-insecure');
-    }
-    try {
-      await this.runCli(args, { quiet: true });
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async getGatewayStatus(): Promise<string> {
-    const cliPath = this.getCliPath();
-    try {
-      const result = await this.exec.exec(cliPath, ['status']);
-      return result.stdout.trim();
-    } catch (err: unknown) {
-      const detail = this.extractCliError(err);
-      console.error(`openshell failed: ${cliPath} status — ${detail}`);
-      throw new Error(detail);
-    }
   }
 
   // ── provider commands ──────────────────────────────────────────────
@@ -390,49 +290,5 @@ export class OpenshellCli {
 
   async enableV2Provider(sandboxName: string): Promise<void> {
     return this.runCli(['settings', 'set', '--key', 'providers_v2_enabled', '--value', 'true', '--yes', sandboxName]);
-  }
-  // ── helpers ───────────────────────────────────────────────────────
-
-  private async runCli(
-    args: string[],
-    options?: { redact?: boolean; env?: { [p: string]: string }; quiet?: boolean },
-  ): Promise<void> {
-    const cliPath = this.getCliPath();
-    const displayArgs = options?.redact ? this.redactSensitiveArgs(args) : args;
-    if (!options?.quiet) {
-      console.log(`Executing: ${cliPath} ${displayArgs.join(' ')}`);
-    }
-    try {
-      await this.exec.exec(cliPath, args, options?.env ? { env: options.env } : undefined);
-    } catch (err: unknown) {
-      const detail = this.extractCliError(err);
-      if (!options?.quiet) {
-        console.error(`openshell failed: ${cliPath} ${displayArgs.join(' ')} — ${detail}`);
-      }
-      throw new Error(detail);
-    }
-  }
-
-  private redactSensitiveArgs(args: string[]): string[] {
-    const sensitiveFlags = new Set(['--credential', '--config', '--env']);
-    return args.map((arg, i) => {
-      if (i > 0 && sensitiveFlags.has(args[i - 1]!)) {
-        return '***';
-      }
-      return arg;
-    });
-  }
-
-  private async execCLI<T>(args: string[], options?: RunOptions): Promise<T> {
-    const cliPath = this.getCliPath();
-    const fullArgs = [...args, '-o', 'json'];
-    try {
-      const result = await this.exec.exec(cliPath, fullArgs, options);
-      return JSON.parse(result.stdout) as T;
-    } catch (err: unknown) {
-      const detail = this.extractCliError(err);
-      console.error(`openshell failed: ${cliPath} ${fullArgs.join(' ')} — ${detail}`);
-      throw new Error(detail);
-    }
   }
 }

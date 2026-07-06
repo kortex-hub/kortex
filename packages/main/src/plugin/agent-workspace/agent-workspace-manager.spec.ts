@@ -39,6 +39,8 @@ import type { IPCHandle } from '/@/plugin/api.js';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
+import type { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
+import type { OpenshellGatewayCli } from '/@/plugin/openshell-cli/openshell-gateway-cli.js';
 import type { ProviderImpl } from '/@/plugin/provider-impl.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
@@ -85,7 +87,12 @@ const apiSender: ApiSenderType = {
   receive: vi.fn(),
 };
 const ipcHandle: IPCHandle = vi.fn();
-const openshellCli = new OpenshellCli({} as Exec, {} as CliToolRegistry);
+const openshellCli = new OpenshellCli(
+  {} as Exec,
+  {} as CliToolRegistry,
+  {} as OpenshellGatewayCli,
+  {} as OpenshellGateway,
+);
 
 const agentRegistry = {
   getAgentRegistration: vi.fn(),
