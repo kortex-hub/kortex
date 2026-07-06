@@ -968,4 +968,29 @@ describe('gateway config generation', () => {
       expect.objectContaining({ detached: false }),
     );
   });
+
+  test('enables bind mounts when a local compute driver is detected', async () => {
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
+
+    await gateway.start();
+
+    const writtenContent = vi.mocked(writeFile).mock.calls[0]?.[1] as string;
+    expect(writtenContent).toContain('enable_bind_mounts = true');
+  });
+
+  test('generates config without bind mounts when no driver is available', async () => {
+    vi.mocked(exec.exec).mockImplementation(async (command: string, args?: string[]) => {
+      if (command === 'podman') throw new Error('podman not found');
+      if (command === 'docker') throw new Error('docker not found');
+      if (args?.[0] === '--version') return mockExecResult('openshell-gateway 0.0.69');
+      return mockExecResult('');
+    });
+
+    await gateway.start();
+
+    const writtenContent = vi.mocked(writeFile).mock.calls[0]?.[1] as string;
+    expect(writtenContent).toContain('[openshell.drivers.podman]');
+    expect(writtenContent).not.toContain('enable_bind_mounts');
+    expect(writtenContent).not.toContain('compute_drivers');
+  });
 });

@@ -46,6 +46,8 @@ const STOP_TIMEOUT_MS = 5000;
 const SUPERVISOR_IMAGE_BASE = 'ghcr.io/nvidia/openshell/supervisor';
 const GATEWAY_LOG_FILENAME = 'gateway.log';
 
+type LocalComputeDriver = 'docker' | 'podman';
+
 /**
  * Manages the `openshell-gateway` server binary lifecycle.
  *
@@ -320,6 +322,8 @@ export class OpenshellGateway implements Disposable {
         }
       }
 
+      const driver = await this.detectLocalComputeDriver();
+
       const storageDirectory = join(this.directories.getDataDirectory(), 'openshell-gateway');
       const configPath = join(storageDirectory, 'gateway.toml');
       await this.generateCerts(binaryPath, storageDirectory);
@@ -327,6 +331,7 @@ export class OpenshellGateway implements Disposable {
         supervisorImage: image,
         gatewayDir: storageDirectory,
         q: '"',
+        driver,
       });
 
       await mkdir(storageDirectory, { recursive: true });
@@ -340,6 +345,25 @@ export class OpenshellGateway implements Disposable {
       const message = err instanceof Error ? err.message : String(err);
       console.warn(`[openshell-gateway] failed to generate gateway config: ${message}`);
       return undefined;
+    }
+  }
+
+  private async detectLocalComputeDriver(): Promise<LocalComputeDriver | undefined> {
+    if (await this.isCommandAvailable('podman')) {
+      return 'podman';
+    }
+    if (await this.isCommandAvailable('docker')) {
+      return 'docker';
+    }
+    return undefined;
+  }
+
+  private async isCommandAvailable(command: string): Promise<boolean> {
+    try {
+      await this.exec.exec(command, ['--version']);
+      return true;
+    } catch {
+      return false;
     }
   }
 
