@@ -403,8 +403,8 @@ importers:
   extensions/claude:
     dependencies:
       '@ai-sdk/anthropic':
-        specifier: ^4.0.5
-        version: 4.0.5(zod@4.4.3)
+        specifier: ^4.0.8
+        version: 4.0.8(zod@4.4.3)
       '@anthropic-ai/sdk':
         specifier: ^0.88.0
         version: 0.88.0(zod@4.4.3)
@@ -1142,6 +1142,12 @@ packages:
 
   '@ai-sdk/anthropic@4.0.5':
     resolution: {integrity: sha512-JyJYKWGYz8vfoQ1pCm48a9zgX3Gvb2/6iGHb+8pEelpqnOiUq3aDHVq+nYMf9VepqcjCuH0JSOwBrKiPg/PD9w==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/anthropic@4.0.8':
+    resolution: {integrity: sha512-ZqT9kLxS2Cbo/4juwtEGbYyP0jNQTnUUKy2nQ8Vn28xqNu50+TukO/oCEWCpm18YbQq7N+hr6ClJs/ATTFpBTg==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -8142,6 +8148,12 @@ snapshots:
     dependencies:
       '@ai-sdk/provider': 4.0.1
       '@ai-sdk/provider-utils': 5.0.3(zod@4.4.3)
+      zod: 4.4.3
+
+  '@ai-sdk/anthropic@4.0.8(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.2
+      '@ai-sdk/provider-utils': 5.0.5(zod@4.4.3)
       zod: 4.4.3
 
   '@ai-sdk/gateway@4.0.11(zod@4.3.6)':
