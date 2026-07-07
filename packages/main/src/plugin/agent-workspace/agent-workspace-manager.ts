@@ -33,6 +33,7 @@ import { WritableConfigurationFile } from '/@/plugin/agent-workspace/writable-co
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
+import { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
 import { buildPolicyObject, rewriteLocalhostUrl } from '/@/plugin/openshell-cli/openshell-network-policy.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
@@ -102,6 +103,8 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly openshellCli: OpenshellCli,
     @inject(AgentRegistry)
     private readonly agentRegistry: AgentRegistry,
+    @inject(OpenshellGateway)
+    private readonly openshellGateway: OpenshellGateway,
   ) {}
 
   async create(options: AgentWorkspaceCreateOptions): Promise<AgentWorkspaceId> {
@@ -660,6 +663,10 @@ export class AgentWorkspaceManager implements Disposable {
       }
       this.terminalProcesses.delete(onDataId);
       this.terminalCallbacks.delete(onDataId);
+    });
+
+    this.openshellGateway.onDidGatewayStart(() => {
+      this.apiSender.send('agent-workspace-update');
     });
 
     this.watchInstancesFile();

@@ -39,6 +39,7 @@ import type { IPCHandle } from '/@/plugin/api.js';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
+import type { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
 import type { ProviderImpl } from '/@/plugin/provider-impl.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
@@ -136,6 +137,15 @@ const providerRegistry = {
   getProvider: vi.fn(),
 } as unknown as ProviderRegistry;
 
+let gatewayStartCallback: (() => void) | undefined;
+
+const openshellGateway = {
+  onDidGatewayStart: vi.fn((cb: () => void) => {
+    gatewayStartCallback = cb;
+    return { dispose: vi.fn() };
+  }),
+} as unknown as OpenshellGateway;
+
 const secretManager = {
   create: vi.fn(),
   init: vi.fn(),
@@ -179,6 +189,7 @@ beforeEach(() => {
       isSymbolicLink: () => false,
     } as Awaited<ReturnType<typeof lstat>>;
   });
+  gatewayStartCallback = undefined;
   manager = new AgentWorkspaceManager(
     apiSender,
     ipcHandle,
@@ -190,6 +201,7 @@ beforeEach(() => {
     secretManager,
     openshellCli,
     agentRegistry,
+    openshellGateway,
   );
   manager.init();
 });
@@ -241,6 +253,15 @@ describe('init', () => {
         }),
       }),
     ]);
+  });
+
+  test('subscribes to gateway start event', () => {
+    expect(openshellGateway.onDidGatewayStart).toHaveBeenCalled();
+  });
+
+  test('sends agent-workspace-update when gateway starts', () => {
+    gatewayStartCallback!();
+    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
   });
 });
 

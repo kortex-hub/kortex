@@ -23,6 +23,7 @@ import type { IPCHandle } from '/@/plugin/api.js';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
+import type { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
 import type { ProviderImpl } from '/@/plugin/provider-impl.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
@@ -46,6 +47,7 @@ const ipcHandle: IPCHandle = vi.fn();
 const openshellCli = new OpenshellCli({} as Exec, {} as CliToolRegistry);
 const openshellAdapter = new OpenshellSecretAdapter(openshellCli);
 
+let gatewayStartCallback: (() => void) | undefined;
 let registerInferenceCallback: ((event: RegisterInferenceConnectionEvent) => void) | undefined;
 let unregisterInferenceCallback:
   | ((event: { providerId: string; connection: InferenceProviderConnection }) => void)
@@ -77,6 +79,13 @@ const safeStorageRegistry = {
   getExtensionStorage: vi.fn().mockReturnValue(extensionStorageMock),
 } as unknown as SafeStorageRegistry;
 
+const openshellGateway = {
+  onDidGatewayStart: vi.fn((cb: () => void) => {
+    gatewayStartCallback = cb;
+    return { dispose: vi.fn() };
+  }),
+} as unknown as OpenshellGateway;
+
 const mockWatcher = {
   onDidChange: vi.fn(),
   onDidCreate: vi.fn(),
@@ -89,6 +98,7 @@ const filesystemMonitoring = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  gatewayStartCallback = undefined;
   registerInferenceCallback = undefined;
   unregisterInferenceCallback = undefined;
   vi.mocked(filesystemMonitoring.createFileSystemWatcher).mockReturnValue(mockWatcher);
@@ -100,6 +110,7 @@ beforeEach(() => {
     providerRegistry,
     configurationRegistry,
     safeStorageRegistry,
+    openshellGateway,
   );
   manager.init();
 });
@@ -121,6 +132,15 @@ describe('init', () => {
     expect(providerRegistry.onDidRegisterInferenceConnection).toHaveBeenCalled();
     expect(providerRegistry.onDidUnregisterInferenceConnection).toHaveBeenCalled();
   });
+
+  test('subscribes to gateway start event', () => {
+    expect(openshellGateway.onDidGatewayStart).toHaveBeenCalled();
+  });
+
+  test('sends secret-manager-update when gateway starts', () => {
+    gatewayStartCallback!();
+    expect(apiSender.send).toHaveBeenCalledWith('secret-manager-update');
+  });
 });
 
 describe('openshellAdapter', () => {
@@ -136,6 +156,7 @@ describe('openshellAdapter', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
+    gatewayStartCallback = undefined;
     registerInferenceCallback = undefined;
     unregisterInferenceCallback = undefined;
     vi.mocked(filesystemMonitoring.createFileSystemWatcher).mockReturnValue(mockWatcher);
@@ -147,6 +168,7 @@ describe('openshellAdapter', () => {
       providerRegistry,
       configurationRegistry,
       safeStorageRegistry,
+      openshellGateway,
     );
     manager.init();
   });

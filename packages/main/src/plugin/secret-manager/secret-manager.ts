@@ -25,6 +25,7 @@ import type {
 import { inject, injectable } from 'inversify';
 
 import { IPCHandle } from '/@/plugin/api.js';
+import { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
 import { ProviderImpl } from '/@/plugin/provider-impl.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
@@ -60,6 +61,8 @@ export class SecretManager {
     private readonly configurationRegistry: IConfigurationRegistry,
     @inject(SafeStorageRegistry)
     private readonly safeStorageRegistry: SafeStorageRegistry,
+    @inject(OpenshellGateway)
+    private readonly openshellGateway: OpenshellGateway,
   ) {}
 
   private get cli(): SecretCliBackend {
@@ -218,6 +221,10 @@ export class SecretManager {
       this.onInferenceConnectionUnregistered(event).catch((err: unknown) => {
         console.error('Failed to delete openshell provider for inference connection:', err);
       });
+    });
+
+    this.openshellGateway.onDidGatewayStart(() => {
+      this.apiSender.send('secret-manager-update');
     });
 
     this.ipcHandle(
