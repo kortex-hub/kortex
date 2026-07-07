@@ -16,39 +16,53 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { AgentWorkspaceContext, ExtensionContext } from '@openkaiden/api';
+import type { AgentWorkspaceContext, ExtensionContext, ModelType } from '@openkaiden/api';
 import { agents } from '@openkaiden/api';
 import { dump, load } from 'js-yaml';
+import { z } from 'zod';
 
 export const GOOSE_CONFIG_PATH = '.config/goose/config.yaml';
 
 const GOOSE_PROVIDER_MAPPING: Record<string, string> = {
   gemini: 'google',
-  vertexai: 'gcp-vertex',
 };
 
-interface GooseExtensionEntry {
-  name: string;
-  type: string;
-  enabled: boolean;
-  cmd?: string;
-  args?: string[];
-  envs?: Record<string, string>;
-  url?: string;
-  timeout?: number;
-}
+const GooseExtensionEntrySchema = z.looseObject({
+  name: z.string(),
+  type: z.string(),
+  enabled: z.boolean(),
+  cmd: z.string().optional(),
+  args: z.array(z.string()).optional(),
+  envs: z.record(z.string(), z.string()).optional(),
+  url: z.string().optional(),
+  timeout: z.number().optional(),
+});
 
-interface GooseConfig {
-  [key: string]: unknown;
-  extensions?: Record<string, GooseExtensionEntry>;
-}
+type GooseExtensionEntry = z.infer<typeof GooseExtensionEntrySchema>;
 
-function parseGooseConfig(content: string): GooseConfig {
-  if (!content.trim()) {
-    return {};
-  }
-  return (load(content) as GooseConfig) ?? {};
-}
+const GooseConfigSchema = z.looseObject({
+  extensions: z.record(z.string(), GooseExtensionEntrySchema).optional(),
+});
+
+const GooseConfigCodec = z.codec(z.string(), GooseConfigSchema, {
+  decode: (yamlString, ctx) => {
+    if (!yamlString.trim()) {
+      return {};
+    }
+    try {
+      return (load(yamlString) as Record<string, unknown>) ?? {};
+    } catch (err: unknown) {
+      ctx.issues.push({
+        code: 'invalid_format',
+        format: 'yaml',
+        input: yamlString,
+        message: err instanceof Error ? err.message : 'Invalid YAML',
+      });
+      return z.NEVER;
+    }
+  },
+  encode: value => dump(value),
+});
 
 export async function activate(extensionContext: ExtensionContext): Promise<void> {
   const disposable = agents.registerAgent({
@@ -60,8 +74,6 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       logo: { dark: './icon_dark.png', light: './icon_light.png' },
     },
     command: 'goose',
-    // TODO: replace with official image once available — temporary testing image
-    baseImage: 'quay.io/bmahabir/openkaiden/openshell-goose:latest',
     acp: { args: ['acp'] },
     configurationFiles: [
       {
@@ -72,25 +84,54 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       },
     ],
     destinationSkillsFolder: '${HOME}/.agents/skills',
-    isSupportedModelType(): boolean {
-      return true;
+    isSupportedRuntime(runtime): boolean {
+      return runtime === 'podman';
+    },
+    isSupportedModelType(type: ModelType): boolean {
+      // Vertex AI setup is prepared below, but it is disabled until Kaiden injects it for Goose as Anthropic.
+      return type.name !== 'vertexai';
     },
     async preWorkspaceStart(context: AgentWorkspaceContext): Promise<void> {
+      const provider = context.model.llmMetadata?.name;
+
+      // Vertex AI + Goose: route through the openshell inference proxy as an
+      // Anthropic endpoint. We set GOOSE_PROVIDER=anthropic and ANTHROPIC_HOST
+      // here, but openshell overrides GOOSE_PROVIDER with gcp_vertex_ai because
+      // Kaiden creates a google-vertex-ai provider secret. Openshell injects
+      // its own env vars for that provider type and they win over --env flags.
+      // Workaround: pass `--provider anthropic` on the goose CLI to override
+      // the openshell-injected GOOSE_PROVIDER at runtime.
+      if (provider === 'vertexai') {
+        const envVars = [
+          { name: 'GOOSE_PROVIDER', value: 'anthropic' },
+          { name: 'ANTHROPIC_HOST', value: 'https://inference.local' },
+          { name: 'ANTHROPIC_API_KEY', value: 'unused' },
+        ];
+
+        context.workspace.environment ??= [];
+        for (const envVar of envVars) {
+          const index = context.workspace.environment.findIndex(e => e.name === envVar.name);
+          if (index >= 0) {
+            context.workspace.environment.splice(index, 1);
+          }
+          context.workspace.environment.push(envVar);
+        }
+      }
+
       const configFile = context.configurationFiles.find(f => f.path === GOOSE_CONFIG_PATH);
       if (!configFile) {
         return;
       }
 
-      const config = parseGooseConfig(await configFile.read());
+      const config = GooseConfigCodec.decode(await configFile.read());
       config.GOOSE_MODEL = context.model.model.label;
 
-      const provider = context.model.llmMetadata?.name;
       if (provider) {
-        config.GOOSE_PROVIDER = GOOSE_PROVIDER_MAPPING[provider] ?? provider;
+        config.GOOSE_PROVIDER = provider === 'vertexai' ? 'anthropic' : (GOOSE_PROVIDER_MAPPING[provider] ?? provider);
       }
 
       const endpoint = context.model.endpoint;
-      if (endpoint) {
+      if (endpoint && provider !== 'vertexai') {
         config.OPENAI_BASE_URL = endpoint;
       }
 
@@ -124,7 +165,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
         config.extensions = extensions;
       }
 
-      await configFile.update(dump(config));
+      await configFile.update(GooseConfigCodec.encode(config));
     },
   });
   extensionContext.subscriptions.push(disposable);

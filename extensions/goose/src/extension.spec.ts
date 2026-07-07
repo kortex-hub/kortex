@@ -61,12 +61,14 @@ describe('activate', () => {
 
   // TODO: enable openshell runtime once goose is wired into the image builder
 
-  test('registered agent supports all model types', async () => {
+  test('registered agent supports non-vertexai model types', async () => {
     await activate(extensionContextMock);
 
     const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-    expect(agent.isSupportedModelType!({ name: 'gemini' })).toBe(true);
-    expect(agent.isSupportedModelType!({ name: 'openai' })).toBe(true);
+    expect(agent.isSupportedModelType!({ name: 'gemini' })).toBeTruthy();
+    expect(agent.isSupportedModelType!({ name: 'openai' })).toBeTruthy();
+    expect(agent.isSupportedModelType!({ name: 'anthropic' })).toBeTruthy();
+    expect(agent.isSupportedModelType!({ name: 'vertexai' })).toBeFalsy();
   });
 
   test('registers agent with config.yaml configuration file', async () => {
@@ -187,19 +189,6 @@ describe('activate', () => {
       expect(written.GOOSE_PROVIDER).toBe('google');
     });
 
-    test('maps vertexai provider to gcp-vertex', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
-      const configFile = createConfigFile();
-      await agent.preWorkspaceStart(
-        createContext([configFile], { provider: 'vertexai', modelLabel: 'gemini-2.5-pro' }),
-      );
-
-      const written = parseWritten(configFile.updateMock);
-      expect(written.GOOSE_PROVIDER).toBe('gcp-vertex');
-    });
-
     test('passes through unknown providers as-is', async () => {
       await activate(extensionContextMock);
       const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
@@ -237,6 +226,49 @@ describe('activate', () => {
 
       const written = parseWritten(configFile.updateMock);
       expect(written.OPENAI_BASE_URL).toBeUndefined();
+    });
+
+    test('sets vertexai env vars to route through inference proxy', async () => {
+      await activate(extensionContextMock);
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile = createConfigFile();
+      const context = createContext([configFile], { provider: 'vertexai', modelLabel: 'claude-sonnet-4' });
+      await agent.preWorkspaceStart(context);
+
+      const env = context.workspace.environment!;
+      expect(env).toEqual(
+        expect.arrayContaining([
+          { name: 'GOOSE_PROVIDER', value: 'anthropic' },
+          { name: 'ANTHROPIC_HOST', value: 'https://inference.local' },
+          { name: 'ANTHROPIC_API_KEY', value: 'unused' },
+        ]),
+      );
+    });
+
+    test('sets GOOSE_PROVIDER to anthropic in config for vertexai', async () => {
+      await activate(extensionContextMock);
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], { provider: 'vertexai', modelLabel: 'claude-sonnet-4' }),
+      );
+
+      const written = parseWritten(configFile.updateMock);
+      expect(written.GOOSE_PROVIDER).toBe('anthropic');
+      expect(written.OPENAI_BASE_URL).toBeUndefined();
+    });
+
+    test('does not set vertexai env vars for non-vertexai providers', async () => {
+      await activate(extensionContextMock);
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile = createConfigFile();
+      const context = createContext([configFile], { provider: 'anthropic', modelLabel: 'claude-sonnet-4' });
+      await agent.preWorkspaceStart(context);
+
+      expect(context.workspace.environment).toBeUndefined();
     });
 
     test('does nothing when config file is not in context', async () => {

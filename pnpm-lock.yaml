@@ -607,6 +607,9 @@ importers:
       js-yaml:
         specifier: ^4.1.1
         version: 4.3.0
+      zod:
+        specifier: ^4.3.5
+        version: 4.4.3
     devDependencies:
       adm-zip:
         specifier: ^0.5.16
