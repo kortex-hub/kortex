@@ -451,7 +451,7 @@ describe('createSecretForConnection', () => {
   test('creates secret and returns SecretInfo when none exists', async () => {
     setupConfigMocksForCreate('cursor');
 
-    const result = await manager.createSecretForConnection('kaiden.cursor', mockConnection);
+    const result = await manager.createSecretForConnection('kaiden.cursor', mockConnection, false);
 
     expect(openshellCli.createProvider).toHaveBeenCalledWith({
       name: 'kaiden.cursor-conn-456',
@@ -472,7 +472,7 @@ describe('createSecretForConnection', () => {
       extensionId: 'kaiden.cursor',
     } as unknown as ProviderImpl);
 
-    const result = await manager.createSecretForConnection('kaiden.cursor', mockConnection);
+    const result = await manager.createSecretForConnection('kaiden.cursor', mockConnection, false);
 
     expect(result).toBeUndefined();
     expect(openshellCli.createProvider).not.toHaveBeenCalled();
@@ -482,7 +482,7 @@ describe('createSecretForConnection', () => {
     setupConfigMocksForCreate('cursor');
     vi.mocked(openshellCli.listProviders).mockResolvedValue([{ name: 'kaiden.cursor-conn-456', type: 'cursor' }]);
 
-    const result = await manager.createSecretForConnection('kaiden.cursor', mockConnection);
+    const result = await manager.createSecretForConnection('kaiden.cursor', mockConnection, true);
 
     expect(result).toBeUndefined();
     expect(openshellCli.createProvider).not.toHaveBeenCalled();

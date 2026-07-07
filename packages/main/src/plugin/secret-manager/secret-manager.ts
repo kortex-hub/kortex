@@ -105,12 +105,13 @@ export class SecretManager {
     const info = this.providerRegistry.getInferenceConnection(modelId);
     if (!info) return undefined;
 
-    return this.createSecretForConnection(info.providerId, info.connection);
+    return this.createSecretForConnection(info.providerId, info.connection, false);
   }
 
   async createSecretForConnection(
     providerId: string,
     connection: InferenceProviderConnection,
+    checkDuplicates: boolean,
   ): Promise<SecretInfo | undefined> {
     const provider = this.providerRegistry.getProvider(providerId);
     const { config, connectionProperties } = this.getConnectionProperties(connection, provider);
@@ -163,8 +164,10 @@ export class SecretManager {
 
     const secretName = `${providerId}-${connection.id}`;
 
-    const existingSecrets = await this.list();
-    if (existingSecrets.some(s => s.name === secretName)) return undefined;
+    if (checkDuplicates) {
+      const existingSecrets = await this.list();
+      if (existingSecrets.some(s => s.name === secretName)) return undefined;
+    }
 
     await this.create({
       name: secretName,
@@ -176,7 +179,7 @@ export class SecretManager {
   }
 
   private async onInferenceConnectionRegistered(event: RegisterInferenceConnectionEvent): Promise<void> {
-    await this.createSecretForConnection(event.providerId, event.connection);
+    await this.createSecretForConnection(event.providerId, event.connection, true);
   }
 
   public getConnectionProperties(
