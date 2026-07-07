@@ -140,6 +140,7 @@ const secretManager = {
   create: vi.fn(),
   init: vi.fn(),
   getSecretForModel: vi.fn(),
+  ensureSecretForModel: vi.fn(),
   getConnectionProperties: vi.fn(),
 } as unknown as SecretManager;
 
@@ -585,8 +586,8 @@ describe('create – OpenShell mode', () => {
     expect(rm).toHaveBeenCalledWith(expect.stringContaining('kaiden-policy-my-sandbox'), { force: true });
   });
 
-  test('attaches secret to sandbox when getSecretForModel returns a secret', async () => {
-    vi.mocked(secretManager.getSecretForModel).mockResolvedValue({ name: 'vertex-ai-conn-1', type: 'vertex-ai' });
+  test('attaches secret to sandbox when ensureSecretForModel returns a secret', async () => {
+    vi.mocked(secretManager.ensureSecretForModel).mockResolvedValue({ name: 'vertex-ai-conn-1', type: 'vertex-ai' });
 
     const options = { ...defaultOptions, model: 'vertexai::claude-sonnet-4::' };
     await manager.create(options);
@@ -629,7 +630,7 @@ describe('create – OpenShell mode', () => {
   });
 
   test('calls setInference during create when secret type requires it', async () => {
-    vi.mocked(secretManager.getSecretForModel).mockResolvedValue({ name: 'vertex-ai-conn-1', type: 'vertex-ai' });
+    vi.mocked(secretManager.ensureSecretForModel).mockResolvedValue({ name: 'vertex-ai-conn-1', type: 'vertex-ai' });
     vi.mocked(secretManager.getConnectionProperties).mockReturnValue({
       config: {} as Configuration,
       connectionProperties: [['kaiden.vertexai._flags', {} as IConfigurationPropertyRecordedSchema]],
@@ -801,11 +802,11 @@ describe('ensureModelSecret', () => {
     } as AgentWorkspaceCreateOptions;
     await manager.ensureModelSecret(options);
 
-    expect(secretManager.getSecretForModel).not.toHaveBeenCalled();
+    expect(secretManager.ensureSecretForModel).not.toHaveBeenCalled();
   });
 
-  test('skips when getSecretForModel returns undefined (no registered provider)', async () => {
-    vi.mocked(secretManager.getSecretForModel).mockResolvedValue(undefined);
+  test('skips when ensureSecretForModel returns undefined (no registered provider)', async () => {
+    vi.mocked(secretManager.ensureSecretForModel).mockResolvedValue(undefined);
 
     const options = { ...baseOptions, model: 'unknown::model::' };
     await manager.ensureModelSecret(options);
@@ -814,7 +815,7 @@ describe('ensureModelSecret', () => {
   });
 
   test('adds secret name to options.secrets when found', async () => {
-    vi.mocked(secretManager.getSecretForModel).mockResolvedValue({ name: 'cursor-conn-123', type: 'cursor' });
+    vi.mocked(secretManager.ensureSecretForModel).mockResolvedValue({ name: 'cursor-conn-123', type: 'cursor' });
 
     const options = { ...baseOptions, model: 'cursor::gpt-4o::https://api.cursor.com' };
     await manager.ensureModelSecret(options);
@@ -823,7 +824,7 @@ describe('ensureModelSecret', () => {
   });
 
   test('does not call setInference when secret type is not in SET_INFERENCE_TYPES', async () => {
-    vi.mocked(secretManager.getSecretForModel).mockResolvedValue({ name: 'cursor-conn-123', type: 'cursor' });
+    vi.mocked(secretManager.ensureSecretForModel).mockResolvedValue({ name: 'cursor-conn-123', type: 'cursor' });
 
     const options = { ...baseOptions, model: 'cursor::gpt-4o::https://api.cursor.com' };
     await manager.ensureModelSecret(options);

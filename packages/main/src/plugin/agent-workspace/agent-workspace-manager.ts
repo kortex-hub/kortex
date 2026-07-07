@@ -381,7 +381,7 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   private async ensureModelSecretFromConfig(options: AgentWorkspaceCreateOptions): Promise<string | undefined> {
-    const secret = await this.secretManager.getSecretForModel(options.model);
+    const secret = await this.secretManager.ensureSecretForModel(options.model);
     if (!secret) return undefined;
 
     options.secrets = [...new Set([...(options.secrets ?? []), secret.name])];
