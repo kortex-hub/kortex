@@ -31,14 +31,8 @@ import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import { IConfigurationPropertyRecordedSchema, IConfigurationRegistry } from '/@api/configuration/models.js';
-import type {
-  SecretCliBackend,
-  SecretCreateOptions,
-  SecretInfo,
-  SecretName,
-  SecretService,
-  SecretValue,
-} from '/@api/secret-info.js';
+import type { OpenshellProfile } from '/@api/openshell-gateway-info.js';
+import type { SecretCliBackend, SecretCreateOptions, SecretInfo, SecretName, SecretValue } from '/@api/secret-info.js';
 
 import { OpenshellSecretAdapter } from './openshell-secret-adapter.js';
 
@@ -85,7 +79,7 @@ export class SecretManager {
     return result;
   }
 
-  async listServices(): Promise<SecretService[]> {
+  async listServices(): Promise<OpenshellProfile[]> {
     return this.cli.listServices();
   }
 
@@ -245,7 +239,7 @@ export class SecretManager {
       return this.remove(name);
     });
 
-    this.ipcHandle('secret-manager:list-services', async (): Promise<SecretService[]> => {
+    this.ipcHandle('secret-manager:list-services', async (): Promise<OpenshellProfile[]> => {
       return this.listServices();
     });
   }

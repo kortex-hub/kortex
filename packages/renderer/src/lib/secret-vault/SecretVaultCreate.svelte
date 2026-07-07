@@ -10,11 +10,12 @@ import FormPage from '/@/lib/ui/FormPage.svelte';
 import PasswordInput from '/@/lib/ui/PasswordInput.svelte';
 import { handleNavigation } from '/@/navigation';
 import { NavigationPage } from '/@api/navigation-page';
-import type { SecretCreateOptions, SecretService } from '/@api/secret-info';
+import type { OpenshellProfile } from '/@api/openshell-gateway-info';
+import type { SecretCreateOptions } from '/@api/secret-info';
 
-import { getServiceIcon, getServiceLabel, OTHER_TYPE } from './secret-vault-utils';
+import { getServiceIcon, OTHER_TYPE } from './secret-vault-utils';
 
-let services = $state<SecretService[]>([]);
+let services = $state<OpenshellProfile[]>([]);
 let loading = $state(true);
 
 let type = $state(OTHER_TYPE);
@@ -29,14 +30,14 @@ let injectionOpen = $state(true);
 let saving = $state(false);
 let error = $state('');
 
-let serviceMap = $derived(new Map(services.map(s => [s.name, s])));
+let serviceMap = $derived(new Map(services.map(s => [s.id, s])));
 
 let typeOptions = $derived<CardSelectorOption[]>([
   ...services.map(s => ({
-    title: getServiceLabel(s.name),
-    badge: getServiceLabel(s.name),
-    value: s.name,
-    icon: getServiceIcon(s.name),
+    title: s.display_name,
+    badge: s.display_name,
+    value: s.id,
+    icon: getServiceIcon(s.id),
   })),
   {
     title: 'Other',
@@ -54,7 +55,7 @@ let title = $derived.by(() => {
   if (isOther) return 'Other Secret';
   const svc = serviceMap.get(effectiveType);
   if (!svc) return 'Other Secret';
-  return `${getServiceLabel(svc.name)} Secret`;
+  return `${svc.display_name} Secret`;
 });
 
 let subtitle = $derived.by(() => {

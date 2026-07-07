@@ -25,17 +25,21 @@ import z from 'zod';
 
 import { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import { Exec } from '/@/plugin/util/exec.js';
-import type {
-  CreateProviderOptions,
-  CreateSandboxOptions,
-  GatewayAddOptions,
-  GatewayInfo,
-  GatewaySandboxes,
-  OpenshellProviderInfo,
-  SandboxInfo,
-  SetInferenceOptions,
+import {
+  type CreateProviderOptions,
+  type CreateSandboxOptions,
+  type GatewayAddOptions,
+  type GatewayInfo,
+  GatewayInfoSchema,
+  type GatewaySandboxes,
+  type OpenshellProfile,
+  OpenshellProfileSchema,
+  type OpenshellProviderInfo,
+  OpenshellProviderInfoSchema,
+  type SandboxInfo,
+  SandboxInfoSchema,
+  type SetInferenceOptions,
 } from '/@api/openshell-gateway-info.js';
-import { GatewayInfoSchema, OpenshellProviderInfoSchema, SandboxInfoSchema } from '/@api/openshell-gateway-info.js';
 
 const SettingValue = z.union([z.string(), z.boolean(), z.number()]);
 
@@ -343,6 +347,11 @@ export class OpenshellCli {
   async listProviders(): Promise<OpenshellProviderInfo[]> {
     const data = await this.execCLI<unknown>(['provider', 'list']);
     return z.array(OpenshellProviderInfoSchema).parse(data);
+  }
+
+  async listProfiles(): Promise<OpenshellProfile[]> {
+    const data = await this.execCLI<unknown>(['provider', 'list-profiles']);
+    return z.array(OpenshellProfileSchema).parse(data);
   }
 
   async deleteProvider(name: string): Promise<void> {

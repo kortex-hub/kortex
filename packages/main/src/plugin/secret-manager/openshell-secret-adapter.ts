@@ -19,13 +19,8 @@
 import { inject, injectable } from 'inversify';
 
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
-import type {
-  SecretCliBackend,
-  SecretCreateOptions,
-  SecretInfo,
-  SecretName,
-  SecretService,
-} from '/@api/secret-info.js';
+import type { OpenshellProfile } from '/@api/openshell-gateway-info.js';
+import type { SecretCliBackend, SecretCreateOptions, SecretInfo, SecretName } from '/@api/secret-info.js';
 
 /**
  * Adapts {@link OpenshellCli} provider commands to the
@@ -36,7 +31,7 @@ import type {
  *   - `createSecret`  → `openshell provider create`
  *   - `listSecrets`   → `openshell provider list`
  *   - `removeSecret`  → `openshell provider delete`
- *   - `listServices`  → returns `[]` (not supported by OpenShell)
+ *   - `listServices`  → `openshell provider list-profiles`
  */
 @injectable()
 export class OpenshellSecretAdapter implements SecretCliBackend {
@@ -69,7 +64,7 @@ export class OpenshellSecretAdapter implements SecretCliBackend {
     return { name };
   }
 
-  async listServices(): Promise<SecretService[]> {
-    return [];
+  async listServices(): Promise<OpenshellProfile[]> {
+    return this.openshellCli.listProfiles();
   }
 }
