@@ -11,7 +11,7 @@ import PasswordInput from '/@/lib/ui/PasswordInput.svelte';
 import { handleNavigation } from '/@/navigation';
 import { NavigationPage } from '/@api/navigation-page';
 import type { OpenshellProfile } from '/@api/openshell-gateway-info';
-import type { SecretCreateOptions } from '/@api/secret-info';
+import type { SecretCreateOptions, SecretValue } from '/@api/secret-info';
 
 import { getServiceIcon, OTHER_TYPE } from './secret-vault-utils';
 
@@ -29,6 +29,7 @@ let valueFormat = $state('');
 let injectionOpen = $state(true);
 let saving = $state(false);
 let error = $state('');
+let credentialValues = $state<Record<string, string>>({});
 
 let serviceMap = $derived(new Map(services.map(s => [s.id, s])));
 
@@ -50,23 +51,38 @@ let typeOptions = $derived<CardSelectorOption[]>([
 
 let effectiveType = $derived(type || OTHER_TYPE);
 let isOther = $derived(!serviceMap.has(effectiveType));
+let selectedProfile = $derived(serviceMap.get(effectiveType));
+
+$effect(() => {
+  effectiveType;
+  credentialValues = {};
+});
+
+function formatCredentialLabel(credName: string): string {
+  return credName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
 
 let title = $derived.by(() => {
   if (isOther) return 'Other Secret';
-  const svc = serviceMap.get(effectiveType);
-  if (!svc) return 'Other Secret';
-  return `${svc.display_name} Secret`;
+  if (!selectedProfile) return 'Other Secret';
+  return `${selectedProfile.display_name} Secret`;
 });
 
 let subtitle = $derived.by(() => {
   if (isOther) return 'Configure a custom secret to inject as a header into matching requests.';
-  return '';
+  return selectedProfile?.description ?? '';
 });
 
 let canSave = $derived.by(() => {
   if (loading) return false;
-  if (!name.trim() || !secret.trim()) return false;
-  if (isOther && (!hostPattern.trim() || !headerName.trim())) return false;
+  if (!name.trim()) return false;
+  if (isOther) {
+    if (!secret.trim() || !hostPattern.trim() || !headerName.trim()) return false;
+  } else {
+    const creds = selectedProfile?.credentials ?? [];
+    const requiredFilled = creds.filter(c => c.required).every(c => credentialValues[c.name]?.trim());
+    if (!requiredFilled) return false;
+  }
   return true;
 });
 
@@ -93,17 +109,31 @@ async function addSecret(): Promise<void> {
   saving = true;
   error = '';
   try {
+    let value: string | SecretValue;
+
+    if (isOther) {
+      value = secret;
+    } else {
+      const creds = selectedProfile?.credentials ?? [];
+      value = {
+        credentials: Object.fromEntries(
+          creds
+            .filter(c => credentialValues[c.name]?.trim())
+            .map(c => [c.env_vars?.[0] ?? c.name, credentialValues[c.name]!.trim()]),
+        ),
+      };
+    }
+
     const options: SecretCreateOptions = {
       name: name.trim(),
       type: effectiveType,
-      value: secret,
+      value,
     };
 
-    if (description.trim()) {
-      options.description = description.trim();
-    }
-
     if (isOther) {
+      if (description.trim()) {
+        options.description = description.trim();
+      }
       options.hosts = [hostPattern.trim()];
       options.header = headerName.trim();
       if (pathPattern.trim()) {
@@ -150,25 +180,48 @@ async function addSecret(): Promise<void> {
             <Input bind:value={name} placeholder="e.g. GitHub Token" aria-label="Name" />
           </div>
 
-          <div>
-            <span class="block text-sm font-semibold text-(--pd-modal-text) mb-2">Secret value</span>
-            <PasswordInput
-              bind:password={secret}
-              placeholder="Enter secret value"
-              aria-label="Secret value"
-            />
-            <p class="text-xs text-(--pd-content-card-text) opacity-60 mt-1.5">
-              Encrypted at rest. You won't be able to view this value again.
-            </p>
-          </div>
+          {#if isOther}
+            <div>
+              <span class="block text-sm font-semibold text-(--pd-modal-text) mb-2">Secret value</span>
+              <PasswordInput
+                bind:password={secret}
+                placeholder="Enter secret value"
+                aria-label="Secret value"
+              />
+              <p class="text-xs text-(--pd-content-card-text) opacity-60 mt-1.5">
+                Encrypted at rest. You won't be able to view this value again.
+              </p>
+            </div>
 
-          <div>
-            <span class="block text-sm font-semibold text-(--pd-modal-text) mb-2">
-              Description
-              <span class="font-normal text-(--pd-content-card-text) opacity-60">(optional)</span>
-            </span>
-            <Input bind:value={description} placeholder="What this secret is used for" aria-label="Description" />
-          </div>
+            <div>
+              <span class="block text-sm font-semibold text-(--pd-modal-text) mb-2">
+                Description
+                <span class="font-normal text-(--pd-content-card-text) opacity-60">(optional)</span>
+              </span>
+              <Input bind:value={description} placeholder="What this secret is used for" aria-label="Description" />
+            </div>
+          {:else if selectedProfile?.credentials}
+            {#each selectedProfile.credentials as credential (credential.name)}
+              <div>
+                <span class="block text-sm font-semibold text-(--pd-modal-text) mb-2">
+                  {formatCredentialLabel(credential.name)}
+                  {#if !credential.required}
+                    <span class="font-normal text-(--pd-content-card-text) opacity-60">(optional)</span>
+                  {/if}
+                </span>
+                <PasswordInput
+                  bind:password={credentialValues[credential.name]}
+                  placeholder="Enter {credential.name.replace(/_/g, ' ')}"
+                  aria-label={formatCredentialLabel(credential.name)}
+                />
+                {#if credential.description}
+                  <p class="text-xs text-(--pd-content-card-text) opacity-60 mt-1.5">
+                    {credential.description}
+                  </p>
+                {/if}
+              </div>
+            {/each}
+          {/if}
 
           {#if isOther}
             <div>
