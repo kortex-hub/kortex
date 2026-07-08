@@ -45,6 +45,7 @@ import type {
   ProviderUpdate,
   RagProviderConnection,
   RagProviderConnectionFactory,
+  SemanticRouterFactory,
   VmProviderConnection,
   VmProviderConnectionFactory,
 } from '@openkaiden/api';
@@ -75,6 +76,7 @@ export class ProviderImpl implements Provider, IDisposable {
   private _inferenceProviderConnectionFactory: InferenceProviderConnectionFactory | undefined = undefined;
   private _ragProviderConnectionFactory: RagProviderConnectionFactory | undefined = undefined;
   private _chunkProviderConnectionFactory: ChunkProviderConnectionFactory | undefined = undefined;
+  private _semanticRouterConnectionFactory: SemanticRouterFactory | undefined = undefined;
 
   private _connectionAuditor: Auditor | undefined = undefined;
 
@@ -160,6 +162,10 @@ export class ProviderImpl implements Provider, IDisposable {
 
   get chunkProviderConnectionFactory(): ChunkProviderConnectionFactory | undefined {
     return this._chunkProviderConnectionFactory;
+  }
+
+  get semanticRouterConnectionFactory(): SemanticRouterFactory | undefined {
+    return this._semanticRouterConnectionFactory;
   }
 
   get connectionAuditor(): Auditor | undefined {
@@ -356,6 +362,18 @@ export class ProviderImpl implements Provider, IDisposable {
     this._connectionAuditor = connectionAuditor;
     return Disposable.create(() => {
       this._chunkProviderConnectionFactory = undefined;
+      this._connectionAuditor = undefined;
+    });
+  }
+
+  setSemanticRouterConnectionFactory(
+    semanticRouterConnectionFactory: SemanticRouterFactory,
+    connectionAuditor?: Auditor,
+  ): Disposable {
+    this._semanticRouterConnectionFactory = semanticRouterConnectionFactory;
+    this._connectionAuditor = connectionAuditor;
+    return Disposable.create(() => {
+      this._semanticRouterConnectionFactory = undefined;
       this._connectionAuditor = undefined;
     });
   }
