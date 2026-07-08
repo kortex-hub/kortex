@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { access, lstat, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, lstat, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -325,6 +325,7 @@ describe('create – OpenShell mode', () => {
     vi.mocked(openshellCli.createSandbox).mockResolvedValue(undefined);
     vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue(mockAgent);
     vi.mocked(readFile).mockRejectedValue(mockEnoent());
+    vi.mocked(realpath).mockImplementation(async (p: unknown) => p as string);
   });
 
   test('calls openshellCli.createSandbox with name, providers, workspace label, and agent label', async () => {
