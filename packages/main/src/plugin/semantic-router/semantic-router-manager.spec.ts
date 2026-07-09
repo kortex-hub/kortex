@@ -20,10 +20,12 @@ import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
+import type { SemanticRouterFactory } from '@openkaiden/api';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import type { IPCHandle } from '/@/plugin/api.js';
 import type { Directories } from '/@/plugin/directories.js';
+import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { SemanticRouterConfigInfo } from '/@api/semantic-router-info.js';
 
@@ -45,8 +47,13 @@ const directories = {
   getSemanticRoutersDirectory: vi.fn().mockReturnValue(ROUTERS_DIR),
 } as unknown as Directories;
 
+const providerRegistry = {
+  getSemanticRouterFactory: vi.fn().mockReturnValue(undefined),
+  deleteInferenceConnectionBySemanticRouter: vi.fn().mockResolvedValue(undefined),
+} as unknown as ProviderRegistry;
+
 function createManager(): SemanticRouterManager {
-  return new SemanticRouterManager(apiSender, ipcHandle, directories);
+  return new SemanticRouterManager(apiSender, ipcHandle, directories, providerRegistry);
 }
 
 const sampleConfig: SemanticRouterConfigInfo = {
@@ -293,4 +300,48 @@ test('remove throws when name not found', async () => {
   await manager.init();
 
   await expect(manager.remove('nonexistent')).rejects.toThrow('Semantic router "nonexistent" not found');
+});
+
+test('remove calls deleteInferenceConnectionBySemanticRouter with the router name', async () => {
+  mockDirWithConfigs(sampleConfig);
+  const manager = createManager();
+  await manager.init();
+
+  await manager.remove('my-router');
+
+  expect(providerRegistry.deleteInferenceConnectionBySemanticRouter).toHaveBeenCalledWith('my-router');
+});
+
+test('create calls semantic router factory when a provider has one', async () => {
+  mockEmptyDir();
+  const factory: SemanticRouterFactory = {
+    type: 'semantic-router',
+    create: vi.fn().mockResolvedValue(undefined),
+  };
+  vi.mocked(providerRegistry.getSemanticRouterFactory).mockReturnValue({ internalId: 'provider-1', factory });
+
+  const manager = createManager();
+  await manager.init();
+
+  await manager.create(sampleConfig);
+
+  expect(factory.create).toHaveBeenCalledWith({
+    name: 'my-router',
+    config: expect.any(String),
+  });
+  const callArgs = vi.mocked(factory.create).mock.calls[0]!;
+  expect(JSON.parse(callArgs[0].config)).toMatchObject({ name: 'my-router' });
+});
+
+test('create succeeds when no provider has a semantic router factory', async () => {
+  mockEmptyDir();
+  vi.mocked(providerRegistry.getSemanticRouterFactory).mockReturnValue(undefined);
+
+  const manager = createManager();
+  await manager.init();
+
+  const result = await manager.create(sampleConfig);
+
+  expect(result.name).toBe('my-router');
+  expect(writeFile).toHaveBeenCalled();
 });

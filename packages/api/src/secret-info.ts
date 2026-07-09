@@ -18,6 +18,8 @@
 
 import type { components } from '@openkaiden/kdn-api';
 
+import type { OpenshellProfile } from './openshell-gateway-info.js';
+
 /**
  * Returned by secret create/remove commands to confirm which secret was affected.
  */
@@ -27,8 +29,6 @@ export type SecretName = components['schemas']['SecretName'];
  * Secret metadata returned by `kdn secret list`.
  */
 export type SecretInfo = components['schemas']['SecretInfo'];
-
-export type SecretService = components['schemas']['SecretService'];
 
 /**
  * Options for creating a new secret via `kdn secret create`.
@@ -54,5 +54,5 @@ export interface SecretCliBackend {
   createSecret(options: SecretCreateOptions): Promise<SecretName>;
   listSecrets(): Promise<SecretInfo[]>;
   removeSecret(name: string): Promise<SecretName>;
-  listServices(): Promise<SecretService[]>;
+  listServices(): Promise<OpenshellProfile[]>;
 }

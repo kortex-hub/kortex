@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { access, lstat, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, lstat, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import { basename, isAbsolute, join, posix, resolve } from 'node:path';
 
@@ -81,6 +81,7 @@ export class AgentWorkspaceManager implements Disposable {
     { write: (param: string) => void; resize: (w: number, h: number) => void }
   >();
   private readonly terminalProcesses = new Map<number, IPty>();
+  private readonly commandExecutedWorkspaces = new Set<string>();
 
   constructor(
     @inject(ApiSenderType)
@@ -171,7 +172,7 @@ export class AgentWorkspaceManager implements Disposable {
         uploads.push({ local: file.localPath, remote: file.path });
       }
 
-      const skillUploads = this.buildOpenshellSkillUploads(options.skills, agent.destinationSkillsFolder);
+      const skillUploads = await this.buildOpenshellSkillUploads(options.skills, agent.destinationSkillsFolder);
       uploads.push(...skillUploads);
     } else {
       throw new Error(`Unable to create workspace: agent ${options.agent} not registered`);
@@ -253,16 +254,17 @@ export class AgentWorkspaceManager implements Disposable {
     }
   }
 
-  private buildOpenshellSkillUploads(skills: string[] | undefined, destinationSkillsFolder: string): OpenshellUpload[] {
+  private async buildOpenshellSkillUploads(
+    skills: string[] | undefined,
+    destinationSkillsFolder: string,
+  ): Promise<OpenshellUpload[]> {
     if (!skills?.length) {
       return [];
     }
 
     const remoteBase = this.resolveOpenshellSkillsDestination(destinationSkillsFolder);
-    return skills.map(skillPath => ({
-      local: skillPath,
-      remote: remoteBase,
-    }));
+    const resolved = await Promise.all(skills.map(skillPath => realpath(skillPath)));
+    return resolved.map(local => ({ local, remote: remoteBase }));
   }
 
   private async buildOpenshellFilesystemUploads(
@@ -401,6 +403,7 @@ export class AgentWorkspaceManager implements Disposable {
     task.status = 'in-progress';
     try {
       await this.openshellCli.deleteSandbox(workspaceName);
+      this.commandExecutedWorkspaces.delete(id);
       this.apiSender.send('agent-workspace-update');
       task.status = 'success';
       return { id };
@@ -606,11 +609,35 @@ export class AgentWorkspaceManager implements Disposable {
         if (!workspace) {
           throw new Error(`workspace "${id}" not found. Use "workspace list" to see available workspaces.`);
         }
+
+        const shouldExecuteCommand = !this.commandExecutedWorkspaces.has(id);
+        let agentCommand: string | undefined;
+        if (shouldExecuteCommand && workspace.labels) {
+          const agentId = workspace.labels[AGENT_LABEL];
+          if (agentId) {
+            try {
+              const agent = await this.agentRegistry.getAgent(agentId);
+              agentCommand = agent?.command;
+            } catch (err: unknown) {
+              console.error(`Failed to resolve agent command for workspace "${id}":`, err);
+            }
+          }
+        }
+
+        if (agentCommand) {
+          this.commandExecutedWorkspaces.add(id);
+        }
+
+        let commandSent = false;
         const invocation = this.shellInAgentWorkspace(
           workspace.name,
           (content: string) => {
             if (!this.webContents.isDestroyed()) {
               this.webContents.send('agent-workspace:terminal-onData', onDataId, content);
+            }
+            if (!commandSent && agentCommand) {
+              commandSent = true;
+              invocation.write(`${agentCommand}\n`);
             }
           },
           (error: string) => {
@@ -696,5 +723,6 @@ export class AgentWorkspaceManager implements Disposable {
     }
     this.terminalProcesses.clear();
     this.terminalCallbacks.clear();
+    this.commandExecutedWorkspaces.clear();
   }
 }

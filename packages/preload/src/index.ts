@@ -128,7 +128,7 @@ import type { NavigationRequest } from '/@api/navigation-request';
 import type { NetworkInspectInfo } from '/@api/network-info';
 import type { NotificationCard, NotificationCardOptions } from '/@api/notification';
 import type { OnboardingInfo, OnboardingStatus } from '/@api/onboarding';
-import type { GatewaySandboxes } from '/@api/openshell-gateway-info';
+import type { GatewaySandboxes, OpenshellProfile } from '/@api/openshell-gateway-info';
 import type { V1Route } from '/@api/openshift-types';
 import type { PodCreateOptions, PodInfo, PodInspectInfo } from '/@api/pod-info';
 import type {
@@ -144,7 +144,7 @@ import type { PullEvent } from '/@api/pull-event';
 import type { RagEnvironment } from '/@api/rag/rag-environment';
 import type { ExtensionBanner, RecommendedRegistry } from '/@api/recommendations/recommendations';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info';
-import type { SecretCreateOptions, SecretInfo, SecretName, SecretService } from '/@api/secret-info';
+import type { SecretCreateOptions, SecretInfo, SecretName } from '/@api/secret-info';
 import type { SemanticRouterConfigInfo } from '/@api/semantic-router-info';
 import type { SkillFileContent, SkillFolderInfo, SkillInfo, SkillResourceEntry } from '/@api/skill/skill-info';
 import type { StatusBarEntryDescriptor } from '/@api/status-bar';
@@ -461,7 +461,7 @@ export function initExposure(): void {
     return ipcInvoke('secret-manager:remove', name);
   });
 
-  contextBridge.exposeInMainWorld('listSecretServices', async (): Promise<SecretService[]> => {
+  contextBridge.exposeInMainWorld('listSecretServices', async (): Promise<OpenshellProfile[]> => {
     return ipcInvoke('secret-manager:list-services');
   });
 

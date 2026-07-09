@@ -24,6 +24,7 @@ import { inject, injectable } from 'inversify';
 
 import { IPCHandle } from '/@/plugin/api.js';
 import { Directories } from '/@/plugin/directories.js';
+import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { SemanticRouterConfigInfo } from '/@api/semantic-router-info.js';
 import { SemanticRouterConfigSchema } from '/@api/semantic-router-info.js';
@@ -36,6 +37,7 @@ export class SemanticRouterManager {
     @inject(ApiSenderType) private readonly apiSender: ApiSenderType,
     @inject(IPCHandle) private readonly ipcHandle: IPCHandle,
     @inject(Directories) private readonly directories: Directories,
+    @inject(ProviderRegistry) private readonly providerRegistry: ProviderRegistry,
   ) {}
 
   async init(): Promise<void> {
@@ -89,6 +91,12 @@ export class SemanticRouterManager {
     await this.saveToDisk(parsed);
     this.configs.set(parsed.name, parsed);
     this.apiSender.send('semantic-router-update');
+
+    const result = this.providerRegistry.getSemanticRouterFactory();
+    if (result) {
+      await result.factory.create({ name: parsed.name, config: JSON.stringify(parsed) });
+    }
+
     return parsed;
   }
 
@@ -99,6 +107,7 @@ export class SemanticRouterManager {
     await rm(this.getFilePath(name));
     this.configs.delete(name);
     this.apiSender.send('semantic-router-update');
+    await this.providerRegistry.deleteInferenceConnectionBySemanticRouter(name);
   }
 
   private async loadFromDisk(): Promise<void> {

@@ -125,6 +125,24 @@ export const OpenshellProviderInfoSchema = z.object({
 
 export type OpenshellProviderInfo = z.output<typeof OpenshellProviderInfoSchema>;
 
+export const OpenshellProfileCredentialSchema = z.looseObject({
+  name: z.string(),
+  required: z.boolean(),
+  description: z.string().optional(),
+  env_vars: z.array(z.string()).optional(),
+});
+
+export type OpenshellProfileCredential = z.output<typeof OpenshellProfileCredentialSchema>;
+
+export const OpenshellProfileSchema = z.looseObject({
+  id: z.string(),
+  display_name: z.string(),
+  description: z.string().optional(),
+  credentials: z.array(OpenshellProfileCredentialSchema).optional(),
+});
+
+export type OpenshellProfile = z.output<typeof OpenshellProfileSchema>;
+
 export interface CreateProviderOptions {
   name: string;
   type: string;

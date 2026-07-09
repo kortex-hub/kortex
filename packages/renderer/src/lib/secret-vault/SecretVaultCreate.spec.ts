@@ -21,26 +21,28 @@ import '@testing-library/jest-dom/vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { beforeEach, expect, test, vi } from 'vitest';
 
-import type { SecretService } from '/@api/secret-info';
+import type { OpenshellProfile } from '/@api/openshell-gateway-info';
 
 import SecretVaultCreate from './SecretVaultCreate.svelte';
 
 vi.mock(import('/@/navigation'));
 
-const MOCK_SERVICES: SecretService[] = [
+const MOCK_SERVICES: OpenshellProfile[] = [
   {
-    name: 'github',
-    hostPattern: 'api.github.com',
-    headerName: 'Authorization',
-    headerTemplate: 'Bearer ${value}',
-    envVars: ['GH_TOKEN', 'GITHUB_TOKEN'],
+    id: 'github',
+    display_name: 'GitHub',
+    description: 'GitHub API provider',
+    credentials: [
+      { name: 'token', required: true, description: 'Personal access token', env_vars: ['GH_TOKEN', 'GITHUB_TOKEN'] },
+    ],
   },
   {
-    name: 'gemini',
-    hostPattern: 'generativelanguage.googleapis.com',
-    headerName: 'x-goog-api-key',
-    headerTemplate: '${value}',
-    envVars: ['GEMINI_API_KEY', 'GOOGLE_API_KEY'],
+    id: 'gemini',
+    display_name: 'Gemini',
+    description: 'Google Gemini API provider',
+    credentials: [
+      { name: 'api_key', required: true, description: 'API key', env_vars: ['GEMINI_API_KEY', 'GOOGLE_API_KEY'] },
+    ],
   },
 ];
 

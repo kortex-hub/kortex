@@ -816,6 +816,45 @@ describe('listProviders', () => {
   });
 });
 
+describe('listProfiles', () => {
+  test('executes provider list-profiles with json output and returns parsed result', async () => {
+    const payload = [
+      {
+        id: 'openai',
+        display_name: 'OpenAI',
+        description: 'OpenAI API provider',
+        credentials: [{ name: 'api_key', required: true, description: 'API key', env_vars: ['OPENAI_API_KEY'] }],
+      },
+      {
+        id: 'anthropic',
+        display_name: 'Anthropic',
+        credentials: [{ name: 'api_key', required: true, env_vars: ['ANTHROPIC_API_KEY'] }],
+      },
+    ];
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify(payload)));
+
+    const result = await openshellCli.listProfiles();
+
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['provider', 'list-profiles', '-o', 'json'], undefined);
+    expect(result).toEqual(payload);
+  });
+
+  test('returns empty array when no profiles exist', async () => {
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify([])));
+
+    const result = await openshellCli.listProfiles();
+
+    expect(result).toEqual([]);
+  });
+
+  test('rejects when CLI fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockRejectedValue(new Error('no gateway configured'));
+
+    await expect(openshellCli.listProfiles()).rejects.toThrow('no gateway configured');
+  });
+});
+
 describe('deleteProvider', () => {
   test('executes provider delete with name', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);

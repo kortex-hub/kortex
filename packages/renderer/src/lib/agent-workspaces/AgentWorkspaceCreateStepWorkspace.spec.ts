@@ -155,3 +155,18 @@ test('selects replace radio when clicked', async () => {
 
   expect(screen.getByLabelText('Replace existing')).toBeChecked();
 });
+
+test('shows name error when errors.name is set', () => {
+  render(AgentWorkspaceCreateStepWorkspace, {
+    ...defaultProps,
+    errors: { name: 'A workspace with this name already exists. Please choose a different name.' },
+  });
+
+  expect(screen.getByText(/workspace with this name already exists/)).toBeInTheDocument();
+});
+
+test('hides name error when errors is empty', () => {
+  render(AgentWorkspaceCreateStepWorkspace, { ...defaultProps, errors: {} });
+
+  expect(screen.queryByText(/workspace with this name already exists/)).not.toBeInTheDocument();
+});

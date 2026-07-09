@@ -103,7 +103,6 @@ export class OpenshellCliManager implements Disposable {
 
     if (!gwResult) {
       console.warn('[openshell-gateway] CLI not found, registering installer-only entry');
-      return;
     }
 
     this.registerCliTool(

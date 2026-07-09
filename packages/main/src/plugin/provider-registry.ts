@@ -59,6 +59,7 @@ import type {
   RegisterKubernetesConnectionEvent,
   RegisterRagConnectionEvent,
   RegisterVmConnectionEvent,
+  SemanticRouterFactory,
   UnregisterChunkProviderConnectionEvent,
   UnregisterContainerConnectionEvent,
   UnregisterFlowConnectionEvent,
@@ -1772,6 +1773,27 @@ export class ProviderRegistry {
       }
     });
     return factories;
+  }
+
+  getSemanticRouterFactory(): { internalId: string; factory: SemanticRouterFactory } | undefined {
+    for (const [internalId, provider] of this.providers) {
+      if (provider.semanticRouterConnectionFactory) {
+        return { internalId, factory: provider.semanticRouterConnectionFactory };
+      }
+    }
+    return undefined;
+  }
+
+  async deleteInferenceConnectionBySemanticRouter(semanticRouterName: string): Promise<void> {
+    for (const [, provider] of this.providers) {
+      const connection = provider.inferenceConnections.find(
+        c => c.name === semanticRouterName && c.llmMetadata?.semanticRouter,
+      );
+      if (connection?.lifecycle?.delete) {
+        await connection.lifecycle.delete();
+        return;
+      }
+    }
   }
 
   onDidRegisterVmConnectionCallback(provider: ProviderImpl, vmProviderConnection: VmProviderConnection): void {
