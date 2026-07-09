@@ -62,6 +62,10 @@ function formatCredentialLabel(credName: string): string {
   return credName.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
+function formatCredentialPlaceholder(credName: string): string {
+  return `Enter ${credName.replace(/_/g, ' ')}`;
+}
+
 let title = $derived.by(() => {
   if (isOther) return 'Other Secret';
   if (!selectedProfile) return 'Other Secret';
@@ -215,9 +219,6 @@ async function addSecret(): Promise<void> {
                 </span>
                 <PasswordInput
                   bind:password={credentialValues[credential.name]}
-  function formatCredentialPlaceholder(credName: string): string {
-  return `Enter ${credName.replace(/_/g, ' ')}`;
-}
                   placeholder={formatCredentialPlaceholder(credential.name)}
                   aria-label={formatCredentialLabel(credential.name)}
                 />
