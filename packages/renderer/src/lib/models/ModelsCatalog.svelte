@@ -30,7 +30,7 @@ import {
 } from '/@/stores/inference-connection-summaries';
 import { cloudCatalogModels, inHouseCatalogModels, localCatalogModels } from '/@/stores/models';
 import { semanticRouterInfos } from '/@/stores/semantic-routers';
-import type { SemanticRouterConfigInfo } from '/@api/semantic-router-info';
+import type { SemanticRouterInfo } from '/@api/semantic-router-info';
 
 type ModelSelectable = CatalogModelInfo & { selected: boolean };
 type Category = 'cloud' | 'corporate' | 'local' | 'router';
@@ -89,8 +89,8 @@ let filteredLocalConnections: InferenceConnectionSummary[] = $derived(
   filterConnectionsBySearch(localConnections, searchTerm),
 );
 
-let semanticRouters: SemanticRouterConfigInfo[] = $derived($semanticRouterInfos as SemanticRouterConfigInfo[]);
-let filteredRouters: SemanticRouterConfigInfo[] = $derived(filterRoutersBySearch(semanticRouters, searchTerm));
+let semanticRouters: SemanticRouterInfo[] = $derived($semanticRouterInfos as SemanticRouterInfo[]);
+let filteredRouters: SemanticRouterInfo[] = $derived(filterRoutersBySearch(semanticRouters, searchTerm));
 
 let activeSubtitle: string = $derived(categories.find(c => c.id === activeCategory)?.subtitle ?? '');
 
@@ -148,7 +148,7 @@ function filterConnectionsBySearch(conns: InferenceConnectionSummary[], term: st
   );
 }
 
-function filterRoutersBySearch(routers: SemanticRouterConfigInfo[], term: string): SemanticRouterConfigInfo[] {
+function filterRoutersBySearch(routers: SemanticRouterInfo[], term: string): SemanticRouterInfo[] {
   if (!term.trim()) return routers;
   const q = term.trim().toLowerCase();
   return routers.filter(

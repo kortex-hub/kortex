@@ -792,9 +792,13 @@ declare module '@openkaiden/api' {
     config: string;
   }
 
+  export interface SemanticRouter {
+    connectionId: string;
+  }
+
   export interface SemanticRouterFactory extends ProviderConnectionFactory {
     readonly type: string;
-    create(params: SemanticRouterCreateParams, logger?: Logger, token?: CancellationToken): Promise<void>;
+    create(params: SemanticRouterCreateParams, logger?: Logger, token?: CancellationToken): Promise<SemanticRouter>;
   }
 
   // create a kubernetes provider

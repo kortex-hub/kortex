@@ -69,3 +69,12 @@ export const SemanticRouterConfigSchema = z.object({
 });
 
 export type SemanticRouterConfigInfo = z.output<typeof SemanticRouterConfigSchema>;
+
+export interface SemanticRouterConnectionInfo {
+  providerId: string;
+  connectionId: string;
+}
+
+export type SemanticRouterInfo = SemanticRouterConfigInfo & {
+  connection?: SemanticRouterConnectionInfo;
+};

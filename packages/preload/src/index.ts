@@ -145,7 +145,7 @@ import type { RagEnvironment } from '/@api/rag/rag-environment';
 import type { ExtensionBanner, RecommendedRegistry } from '/@api/recommendations/recommendations';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info';
 import type { SecretCreateOptions, SecretInfo, SecretName } from '/@api/secret-info';
-import type { SemanticRouterConfigInfo } from '/@api/semantic-router-info';
+import type { SemanticRouterConfigInfo, SemanticRouterInfo } from '/@api/semantic-router-info';
 import type { SkillFileContent, SkillFolderInfo, SkillInfo, SkillResourceEntry } from '/@api/skill/skill-info';
 import type { StatusBarEntryDescriptor } from '/@api/status-bar';
 import type { PinOption } from '/@api/status-bar/pin-option';
@@ -563,20 +563,20 @@ export function initExposure(): void {
   );
 
   // Semantic Routers
-  contextBridge.exposeInMainWorld('listSemanticRouters', async (): Promise<SemanticRouterConfigInfo[]> => {
+  contextBridge.exposeInMainWorld('listSemanticRouters', async (): Promise<SemanticRouterInfo[]> => {
     return ipcInvoke('semantic-router-manager:list');
   });
 
   contextBridge.exposeInMainWorld(
     'findSemanticRouterByName',
-    async (name: string): Promise<SemanticRouterConfigInfo | undefined> => {
+    async (name: string): Promise<SemanticRouterInfo | undefined> => {
       return ipcInvoke('semantic-router-manager:findByName', name);
     },
   );
 
   contextBridge.exposeInMainWorld(
     'createSemanticRouter',
-    async (config: SemanticRouterConfigInfo): Promise<SemanticRouterConfigInfo> => {
+    async (config: SemanticRouterConfigInfo): Promise<SemanticRouterInfo> => {
       return ipcInvoke('semantic-router-manager:create', config);
     },
   );
