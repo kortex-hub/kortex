@@ -218,7 +218,7 @@ async function addSecret(): Promise<void> {
   function formatCredentialPlaceholder(credName: string): string {
   return `Enter ${credName.replace(/_/g, ' ')}`;
 }
-                  placeholder="formatCredentialPlaceholder(credential.name)"
+                  placeholder={formatCredentialPlaceholder(credential.name)}
                   aria-label={formatCredentialLabel(credential.name)}
                 />
               </div>
