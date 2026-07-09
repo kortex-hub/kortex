@@ -80,6 +80,13 @@ describe('activate', () => {
   });
 
   describe('preWorkspaceStart', () => {
+    let agent: ReturnType<typeof vi.mocked<typeof agents.registerAgent>>['mock']['calls'][0][0];
+
+    beforeEach(async () => {
+      await activate(extensionContextMock);
+      agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+    });
+
     function createContext(
       configFiles: AgentConfigurationFile[],
       options: {
@@ -100,18 +107,18 @@ describe('activate', () => {
           endpoint,
         },
         configurationFiles: configFiles,
-        workspace: { ...(mcp ? { mcp } : {}) },
+        workspace: { mcp },
       };
     }
 
     function createConfigFile(content = ''): AgentConfigurationFile & { updateMock: ReturnType<typeof vi.fn> } {
       const updateMock = vi.fn();
-      const file: AgentConfigurationFile = {
+      return {
         path: GOOSE_CONFIG_PATH,
         read: vi.fn().mockResolvedValue(content),
         update: updateMock,
+        updateMock,
       };
-      return Object.assign(file, { updateMock });
     }
 
     function parseWritten(updateMock: ReturnType<typeof vi.fn>): Record<string, unknown> {
@@ -119,9 +126,6 @@ describe('activate', () => {
     }
 
     test('writes model configuration into config.yaml', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(createContext([configFile]));
 
@@ -131,9 +135,6 @@ describe('activate', () => {
     });
 
     test('preserves existing configuration fields', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile('GOOSE_PROVIDER: openai\nGOOSE_MODEL: old-model\n');
       await agent.preWorkspaceStart(createContext([configFile], { modelLabel: 'claude-sonnet' }));
 
@@ -143,9 +144,6 @@ describe('activate', () => {
     });
 
     test('handles empty config file', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile('');
       await agent.preWorkspaceStart(createContext([configFile], { modelLabel: 'gemini-2.5-pro' }));
 
@@ -154,9 +152,6 @@ describe('activate', () => {
     });
 
     test('does not set GOOSE_PROVIDER when no provider is given', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(createContext([configFile]));
 
@@ -165,9 +160,6 @@ describe('activate', () => {
     });
 
     test('sets GOOSE_PROVIDER from llmMetadata', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(
         createContext([configFile], { provider: 'anthropic', modelLabel: 'claude-sonnet' }),
@@ -179,9 +171,6 @@ describe('activate', () => {
     });
 
     test('maps gemini provider to google', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(createContext([configFile], { provider: 'gemini', modelLabel: 'gemini-2.5-pro' }));
 
@@ -190,9 +179,6 @@ describe('activate', () => {
     });
 
     test('passes through unknown providers as-is', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(createContext([configFile], { provider: 'ollama', modelLabel: 'llama3' }));
 
@@ -201,9 +187,6 @@ describe('activate', () => {
     });
 
     test('sets OPENAI_BASE_URL when endpoint is provided', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(
         createContext([configFile], {
@@ -218,9 +201,6 @@ describe('activate', () => {
     });
 
     test('does not set OPENAI_BASE_URL when no endpoint', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(createContext([configFile], { provider: 'openai', modelLabel: 'gpt-4o' }));
 
@@ -229,9 +209,6 @@ describe('activate', () => {
     });
 
     test('sets vertexai env vars to route through inference proxy', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       const context = createContext([configFile], { provider: 'vertexai', modelLabel: 'claude-sonnet-4' });
       await agent.preWorkspaceStart(context);
@@ -247,9 +224,6 @@ describe('activate', () => {
     });
 
     test('sets GOOSE_PROVIDER to anthropic in config for vertexai', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(
         createContext([configFile], { provider: 'vertexai', modelLabel: 'claude-sonnet-4' }),
@@ -261,9 +235,6 @@ describe('activate', () => {
     });
 
     test('does not set vertexai env vars for non-vertexai providers', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       const context = createContext([configFile], { provider: 'anthropic', modelLabel: 'claude-sonnet-4' });
       await agent.preWorkspaceStart(context);
@@ -272,9 +243,6 @@ describe('activate', () => {
     });
 
     test('does nothing when config file is not in context', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const updateMock = vi.fn();
       const otherFile: AgentConfigurationFile = {
         path: 'some/other/path.yaml',
@@ -288,9 +256,6 @@ describe('activate', () => {
     });
 
     test('writes remote MCP servers as streamable_http extensions', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(
         createContext([configFile], {
@@ -311,9 +276,6 @@ describe('activate', () => {
     });
 
     test('writes remote MCP servers with headers as envs', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(
         createContext([configFile], {
@@ -341,9 +303,6 @@ describe('activate', () => {
     });
 
     test('writes local MCP commands as stdio extensions', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(
         createContext([configFile], {
@@ -365,9 +324,6 @@ describe('activate', () => {
     });
 
     test('writes local MCP commands with env variables', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(
         createContext([configFile], {
@@ -397,9 +353,6 @@ describe('activate', () => {
     });
 
     test('writes both remote and local MCP servers together', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(
         createContext([configFile], {
@@ -428,9 +381,6 @@ describe('activate', () => {
     });
 
     test('merges MCP extensions with existing extensions', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const existingConfig =
         'GOOSE_MODEL: old\nextensions:\n  existing:\n    name: existing\n    type: stdio\n    cmd: existing-cmd\n    enabled: true\n';
       const configFile = createConfigFile(existingConfig);
@@ -460,9 +410,6 @@ describe('activate', () => {
     });
 
     test('does not write extensions key when workspace has no MCP config', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(createContext([configFile]));
 
@@ -471,9 +418,6 @@ describe('activate', () => {
     });
 
     test('preserves existing extensions when workspace has no MCP config', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const existingConfig =
         'extensions:\n  existing:\n    name: existing\n    type: stdio\n    cmd: my-cmd\n    enabled: true\n';
       const configFile = createConfigFile(existingConfig);
@@ -490,9 +434,6 @@ describe('activate', () => {
     });
 
     test('omits envs when remote MCP server has empty headers', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(
         createContext([configFile], {
@@ -508,9 +449,6 @@ describe('activate', () => {
     });
 
     test('omits envs when local MCP command has empty env', async () => {
-      await activate(extensionContextMock);
-      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(
         createContext([configFile], {

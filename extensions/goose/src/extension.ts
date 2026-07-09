@@ -38,8 +38,6 @@ const GooseExtensionEntrySchema = z.looseObject({
   timeout: z.number().optional(),
 });
 
-type GooseExtensionEntry = z.infer<typeof GooseExtensionEntrySchema>;
-
 const GooseConfigSchema = z.looseObject({
   extensions: z.record(z.string(), GooseExtensionEntrySchema).optional(),
 });
@@ -56,13 +54,17 @@ const GooseConfigCodec = z.codec(z.string(), GooseConfigSchema, {
         code: 'invalid_format',
         format: 'yaml',
         input: yamlString,
-        message: err instanceof Error ? err.message : 'Invalid YAML',
+        message: String(err),
       });
       return z.NEVER;
     }
   },
   encode: value => dump(value),
 });
+
+function nonEmpty(obj: Record<string, string> | undefined): Record<string, string> | undefined {
+  return obj && Object.keys(obj).length > 0 ? obj : undefined;
+}
 
 export async function activate(extensionContext: ExtensionContext): Promise<void> {
   const disposable = agents.registerAgent({
@@ -73,6 +75,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       icon: { dark: './icon_dark.png', light: './icon_light.png' },
       logo: { dark: './icon_dark.png', light: './icon_light.png' },
     },
+    tags: ['Local'],
     command: 'goose',
     acp: { args: ['acp'] },
     configurationFiles: [
@@ -139,30 +142,28 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       const mcpCommands = context.workspace.mcp?.commands;
 
       if (mcpServers?.length || mcpCommands?.length) {
-        const extensions: Record<string, GooseExtensionEntry> = { ...config.extensions };
+        config.extensions ??= {};
 
         for (const server of mcpServers ?? []) {
-          extensions[server.name] = {
+          config.extensions[server.name] = {
             name: server.name,
             type: 'streamable_http',
             url: server.url,
             enabled: true,
-            ...(server.headers && Object.keys(server.headers).length > 0 ? { envs: server.headers } : {}),
+            envs: nonEmpty(server.headers),
           };
         }
 
         for (const cmd of mcpCommands ?? []) {
-          extensions[cmd.name] = {
+          config.extensions[cmd.name] = {
             name: cmd.name,
             type: 'stdio',
             cmd: cmd.command,
             args: cmd.args ?? [],
             enabled: true,
-            ...(cmd.env && Object.keys(cmd.env).length > 0 ? { envs: cmd.env } : {}),
+            envs: nonEmpty(cmd.env),
           };
         }
-
-        config.extensions = extensions;
       }
 
       await configFile.update(GooseConfigCodec.encode(config));
