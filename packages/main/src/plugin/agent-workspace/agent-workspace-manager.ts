@@ -82,6 +82,7 @@ export class AgentWorkspaceManager implements Disposable {
   >();
   private readonly terminalProcesses = new Map<number, IPty>();
   private readonly commandExecutedWorkspaces = new Set<string>();
+  private readonly activeWorkspaceTerminals = new Map<string, { callbackRef: { id: number } }>();
 
   constructor(
     @inject(ApiSenderType)
@@ -610,6 +611,24 @@ export class AgentWorkspaceManager implements Disposable {
           throw new Error(`workspace "${id}" not found. Use "workspace list" to see available workspaces.`);
         }
 
+        const existing = this.activeWorkspaceTerminals.get(id);
+        if (existing && this.terminalProcesses.has(existing.callbackRef.id)) {
+          const oldId = existing.callbackRef.id;
+          const proc = this.terminalProcesses.get(oldId)!;
+          const cb = this.terminalCallbacks.get(oldId);
+
+          this.terminalProcesses.delete(oldId);
+          this.terminalCallbacks.delete(oldId);
+
+          this.terminalProcesses.set(onDataId, proc);
+          if (cb) {
+            this.terminalCallbacks.set(onDataId, cb);
+          }
+
+          existing.callbackRef.id = onDataId;
+          return onDataId;
+        }
+
         const shouldExecuteCommand = !this.commandExecutedWorkspaces.has(id);
         let agentCommand: string | undefined;
         if (shouldExecuteCommand && workspace.labels) {
@@ -628,12 +647,15 @@ export class AgentWorkspaceManager implements Disposable {
           this.commandExecutedWorkspaces.add(id);
         }
 
+        const callbackRef = { id: onDataId };
+        this.activeWorkspaceTerminals.set(id, { callbackRef });
+
         let commandSent = false;
         const invocation = this.shellInAgentWorkspace(
           workspace.name,
           (content: string) => {
             if (!this.webContents.isDestroyed()) {
-              this.webContents.send('agent-workspace:terminal-onData', onDataId, content);
+              this.webContents.send('agent-workspace:terminal-onData', callbackRef.id, content);
             }
             if (!commandSent && agentCommand) {
               commandSent = true;
@@ -642,15 +664,16 @@ export class AgentWorkspaceManager implements Disposable {
           },
           (error: string) => {
             if (!this.webContents.isDestroyed()) {
-              this.webContents.send('agent-workspace:terminal-onError', onDataId, error);
+              this.webContents.send('agent-workspace:terminal-onError', callbackRef.id, error);
             }
           },
           () => {
             if (!this.webContents.isDestroyed()) {
-              this.webContents.send('agent-workspace:terminal-onEnd', onDataId);
+              this.webContents.send('agent-workspace:terminal-onEnd', callbackRef.id);
             }
-            this.terminalCallbacks.delete(onDataId);
-            this.terminalProcesses.delete(onDataId);
+            this.terminalCallbacks.delete(callbackRef.id);
+            this.terminalProcesses.delete(callbackRef.id);
+            this.activeWorkspaceTerminals.delete(id);
           },
         );
         this.terminalCallbacks.set(onDataId, { write: invocation.write, resize: invocation.resize });
@@ -690,6 +713,12 @@ export class AgentWorkspaceManager implements Disposable {
       }
       this.terminalProcesses.delete(onDataId);
       this.terminalCallbacks.delete(onDataId);
+      for (const [wsId, entry] of this.activeWorkspaceTerminals) {
+        if (entry.callbackRef.id === onDataId) {
+          this.activeWorkspaceTerminals.delete(wsId);
+          break;
+        }
+      }
     });
 
     this.openshellGateway.onDidGatewayStart(() => {
@@ -724,5 +753,6 @@ export class AgentWorkspaceManager implements Disposable {
     this.terminalProcesses.clear();
     this.terminalCallbacks.clear();
     this.commandExecutedWorkspaces.clear();
+    this.activeWorkspaceTerminals.clear();
   }
 }

@@ -1373,6 +1373,184 @@ describe('terminal agent command execution', () => {
   });
 });
 
+describe('terminal reconnection on page refresh', () => {
+  const SANDBOXES_WITH_AGENT: GatewaySandboxes[] = [
+    {
+      gateway: { name: 'kaiden', endpoint: 'http://localhost:10080' },
+      sandboxes: [
+        {
+          id: 'ws-agent',
+          name: 'agent-workspace',
+          phase: 'Ready',
+          labels: { [AGENT_LABEL]: 'test-agent' },
+        },
+      ],
+    },
+  ];
+
+  function createTerminalMockPty(): { pty: IPty; triggerData: (data: string) => void; triggerExit: () => void } {
+    let onDataCb: ((data: string) => void) | undefined;
+    let onExitCb: (() => void) | undefined;
+    const pty = {
+      onData: vi.fn((cb: (data: string) => void) => {
+        onDataCb = cb;
+        return { dispose: vi.fn() };
+      }),
+      onExit: vi.fn((cb: () => void) => {
+        onExitCb = cb;
+        return { dispose: vi.fn() };
+      }),
+      write: vi.fn(),
+      resize: vi.fn(),
+      kill: vi.fn(),
+      pid: 789,
+    } as unknown as IPty;
+    return {
+      pty,
+      triggerData: (data: string): void => {
+        onDataCb?.(data);
+      },
+      triggerExit: (): void => {
+        onExitCb?.();
+      },
+    };
+  }
+
+  function getIpcHandler<T>(channel: string): T {
+    return vi.mocked(ipcHandle).mock.calls.find(call => call[0] === channel)![1] as T;
+  }
+
+  test('reuses existing PTY on reconnect instead of spawning a new one', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(SANDBOXES_WITH_AGENT);
+    vi.mocked(agentRegistry.getAgent).mockResolvedValue({
+      id: 'test-agent',
+      name: 'Test Agent',
+      description: '',
+      command: '/usr/bin/agent start',
+      destinationSkillsFolder: '~/.agent',
+    });
+    const { pty, triggerData } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty);
+
+    type TerminalHandler = (_listener: unknown, id: string, onDataId: number) => Promise<number>;
+    await getIpcHandler<TerminalHandler>('agent-workspace:terminal')({}, 'ws-agent', 10);
+    triggerData('$ ');
+
+    vi.mocked(spawn).mockClear();
+
+    await getIpcHandler<TerminalHandler>('agent-workspace:terminal')({}, 'ws-agent', 20);
+
+    expect(spawn).not.toHaveBeenCalled();
+  });
+
+  test('forwards data using the new callbackId after reconnect', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(SANDBOXES_WITH_AGENT);
+    vi.mocked(agentRegistry.getAgent).mockResolvedValue({
+      id: 'test-agent',
+      name: 'Test Agent',
+      description: '',
+      command: '/usr/bin/agent start',
+      destinationSkillsFolder: '~/.agent',
+    });
+    const { pty, triggerData } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty);
+
+    type TerminalHandler = (_listener: unknown, id: string, onDataId: number) => Promise<number>;
+    await getIpcHandler<TerminalHandler>('agent-workspace:terminal')({}, 'ws-agent', 10);
+    triggerData('$ ');
+    vi.mocked(webContents.send).mockClear();
+
+    await getIpcHandler<TerminalHandler>('agent-workspace:terminal')({}, 'ws-agent', 20);
+
+    triggerData('agent output');
+
+    expect(webContents.send).toHaveBeenCalledWith('agent-workspace:terminal-onData', 20, 'agent output');
+    expect(webContents.send).not.toHaveBeenCalledWith('agent-workspace:terminal-onData', 10, expect.anything());
+  });
+
+  test('cleans up old callbackId entries from maps on reconnect', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(SANDBOXES_WITH_AGENT);
+    vi.mocked(agentRegistry.getAgent).mockResolvedValue({
+      id: 'test-agent',
+      name: 'Test Agent',
+      description: '',
+      command: '/usr/bin/agent start',
+      destinationSkillsFolder: '~/.agent',
+    });
+    const { pty, triggerData } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty);
+
+    type TerminalHandler = (_listener: unknown, id: string, onDataId: number) => Promise<number>;
+    await getIpcHandler<TerminalHandler>('agent-workspace:terminal')({}, 'ws-agent', 10);
+    triggerData('$ ');
+
+    await getIpcHandler<TerminalHandler>('agent-workspace:terminal')({}, 'ws-agent', 20);
+
+    type SendHandler = (_listener: unknown, onDataId: number, content: string) => Promise<void>;
+    const sendHandler = getIpcHandler<SendHandler>('agent-workspace:terminalSend');
+
+    await sendHandler({}, 10, 'should not reach pty');
+    expect(pty.write).not.toHaveBeenCalledWith('should not reach pty');
+
+    await sendHandler({}, 20, 'should reach pty');
+    expect(pty.write).toHaveBeenCalledWith('should reach pty');
+  });
+
+  test('terminalClose cleans up activeWorkspaceTerminals so next request spawns a new PTY', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(SANDBOXES_WITH_AGENT);
+    vi.mocked(agentRegistry.getAgent).mockResolvedValue({
+      id: 'test-agent',
+      name: 'Test Agent',
+      description: '',
+      command: '/usr/bin/agent start',
+      destinationSkillsFolder: '~/.agent',
+    });
+    const { pty, triggerData } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty);
+
+    type TerminalHandler = (_listener: unknown, id: string, onDataId: number) => Promise<number>;
+    type CloseHandler = (_listener: unknown, onDataId: number) => Promise<void>;
+    await getIpcHandler<TerminalHandler>('agent-workspace:terminal')({}, 'ws-agent', 10);
+    triggerData('$ ');
+
+    await getIpcHandler<CloseHandler>('agent-workspace:terminalClose')({}, 10);
+
+    const { pty: pty2 } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty2);
+
+    await getIpcHandler<TerminalHandler>('agent-workspace:terminal')({}, 'ws-agent', 20);
+
+    expect(spawn).toHaveBeenCalledTimes(2);
+  });
+
+  test('PTY exit cleans up activeWorkspaceTerminals entry', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(SANDBOXES_WITH_AGENT);
+    vi.mocked(agentRegistry.getAgent).mockResolvedValue({
+      id: 'test-agent',
+      name: 'Test Agent',
+      description: '',
+      command: '/usr/bin/agent start',
+      destinationSkillsFolder: '~/.agent',
+    });
+    const { pty, triggerData, triggerExit } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty);
+
+    type TerminalHandler = (_listener: unknown, id: string, onDataId: number) => Promise<number>;
+    await getIpcHandler<TerminalHandler>('agent-workspace:terminal')({}, 'ws-agent', 10);
+    triggerData('$ ');
+
+    triggerExit();
+
+    const { pty: pty2, triggerData: triggerData2 } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty2);
+
+    await getIpcHandler<TerminalHandler>('agent-workspace:terminal')({}, 'ws-agent', 20);
+    triggerData2('$ ');
+
+    expect(spawn).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe('encodeWorkspaceLabels', () => {
   test('returns single label for short paths', () => {
     const labels = encodeWorkspaceLabels('/tmp/my-project');
