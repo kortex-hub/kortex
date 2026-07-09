@@ -204,7 +204,7 @@ async function addSecret(): Promise<void> {
             {#each selectedProfile.credentials as credential (credential.name)}
               <div>
                 <span class="block text-sm font-semibold text-(--pd-modal-text) mb-2">
-                  {formatCredentialLabel(credential.name)}
+                  {formatCredentialLabel(credential.name)} {#if credential.description}({credential.description}){/if}
                   {#if !credential.required}
                     <span class="font-normal text-(--pd-content-card-text) opacity-60">(optional)</span>
                   {/if}
@@ -214,11 +214,6 @@ async function addSecret(): Promise<void> {
                   placeholder="Enter {credential.name.replace(/_/g, ' ')}"
                   aria-label={formatCredentialLabel(credential.name)}
                 />
-                {#if credential.description}
-                  <p class="text-xs text-(--pd-content-card-text) opacity-60 mt-1.5">
-                    {credential.description}
-                  </p>
-                {/if}
               </div>
             {/each}
           {/if}

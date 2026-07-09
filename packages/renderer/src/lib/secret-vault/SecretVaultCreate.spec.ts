@@ -93,7 +93,8 @@ test('hides injection fields and shows credential fields when a predefined servi
   expect(screen.getByText('GitHub Secret')).toBeInTheDocument();
   expect(screen.getByLabelText('Name')).toBeInTheDocument();
   expect(screen.getByLabelText('Token')).toBeInTheDocument();
-  expect(screen.getByText('Personal access token')).toBeInTheDocument();
+  screen.debug(undefined, 16384);
+  expect(screen.getByText('Token (Personal access token)')).toBeInTheDocument();
   expect(screen.queryByLabelText('Secret value')).not.toBeInTheDocument();
   expect(screen.queryByLabelText('Description')).not.toBeInTheDocument();
   expect(screen.queryByLabelText('Host pattern')).not.toBeInTheDocument();
