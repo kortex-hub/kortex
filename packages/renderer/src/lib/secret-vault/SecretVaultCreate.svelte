@@ -215,7 +215,10 @@ async function addSecret(): Promise<void> {
                 </span>
                 <PasswordInput
                   bind:password={credentialValues[credential.name]}
-                  placeholder="Enter {credential.name.replace(/_/g, ' ')}"
+  function formatCredentialPlaceholder(credName: string): string {
+  return `Enter ${credName.replace(/_/g, ' ')}`;
+}
+                  placeholder="formatCredentialPlaceholder(credential.name)"
                   aria-label={formatCredentialLabel(credential.name)}
                 />
               </div>
