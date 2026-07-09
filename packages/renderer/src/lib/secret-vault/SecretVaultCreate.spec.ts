@@ -330,6 +330,36 @@ test('credentials reset when switching between service types', async () => {
   expect(screen.getByLabelText('Api Key')).toHaveValue('');
 });
 
+test('filters out profiles without credentials from type options', async () => {
+  const services: OpenshellProfile[] = [
+    {
+      id: 'has-creds',
+      display_name: 'With Creds',
+      credentials: [{ name: 'key', required: true }],
+    },
+    {
+      id: 'no-creds',
+      display_name: 'No Creds',
+    },
+    {
+      id: 'empty-creds',
+      display_name: 'Empty Creds',
+      credentials: [],
+    },
+  ];
+  vi.mocked(window.listSecretServices).mockResolvedValue(services);
+
+  render(SecretVaultCreate);
+
+  await waitFor(() => {
+    expect(screen.getByLabelText('With Creds')).toBeInTheDocument();
+  });
+
+  expect(screen.queryByLabelText('No Creds')).not.toBeInTheDocument();
+  expect(screen.queryByLabelText('Empty Creds')).not.toBeInTheDocument();
+  expect(screen.getByLabelText('Other')).toBeInTheDocument();
+});
+
 test('uses credential name as fallback key when env_vars is empty', async () => {
   const services: OpenshellProfile[] = [
     {

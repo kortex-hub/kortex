@@ -88,7 +88,7 @@ let canSave = $derived.by(() => {
 
 onMount(async () => {
   try {
-    services = await window.listSecretServices();
+    services = (await window.listSecretServices()).filter(s => s.credentials?.length);
   } catch (err: unknown) {
     console.error('Failed to load secret services', err);
   } finally {
