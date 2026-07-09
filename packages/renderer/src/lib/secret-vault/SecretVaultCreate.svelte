@@ -119,7 +119,11 @@ async function addSecret(): Promise<void> {
         credentials: Object.fromEntries(
           creds
             .filter(c => credentialValues[c.name]?.trim())
-            .map(c => [c.env_vars?.[0] ?? c.name, credentialValues[c.name]!.trim()]),
+            .flatMap(c => {
+              const val = credentialValues[c.name]!.trim();
+              const keys = c.env_vars?.length ? c.env_vars : [c.name];
+              return keys.map(k => [k, val]);
+            }),
         ),
       };
     }

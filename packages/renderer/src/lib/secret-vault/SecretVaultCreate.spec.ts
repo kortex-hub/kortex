@@ -244,6 +244,7 @@ test('submits predefined service type with credential fields as SecretValue', as
     value: {
       credentials: {
         GH_TOKEN: 'ghp_abc123',
+        GITHUB_TOKEN: 'ghp_abc123',
       },
     },
   });
