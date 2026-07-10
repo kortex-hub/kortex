@@ -404,6 +404,42 @@ describe('createSandbox', () => {
   });
 });
 
+describe('updatePolicy', () => {
+  test('executes policy update with --add-endpoint flags', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.updatePolicy('my-sandbox', ['api.example.com:443:full:rest', 'host.local:11434']);
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      [
+        'policy',
+        'update',
+        'my-sandbox',
+        '--add-endpoint',
+        'api.example.com:443:full:rest',
+        '--add-endpoint',
+        'host.local:11434',
+      ],
+      undefined,
+    );
+  });
+
+  test('includes --binary flags when provided', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.updatePolicy('my-sandbox', ['api.example.com:443'], ['/**']);
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['policy', 'update', 'my-sandbox', '--add-endpoint', 'api.example.com:443', '--binary', '/**'],
+      undefined,
+    );
+  });
+});
+
 describe('listSandboxes', () => {
   test('executes openshell sandbox list with json output', async () => {
     const payload = [{ id: 'sb-1', name: 'sb-1', phase: 'Ready' }];
@@ -1173,15 +1209,15 @@ describe('isV2ProviderEnabled', () => {
 });
 
 describe('enableV2Provider', () => {
-  test('executes settings set with sandbox name', async () => {
+  test('executes settings set with --global flag', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
 
-    await openshellCli.enableV2Provider('my-sandbox');
+    await openshellCli.enableV2Provider();
 
     expect(exec.exec).toHaveBeenCalledWith(
       OPENSHELL_CLI_PATH,
-      ['settings', 'set', '--key', 'providers_v2_enabled', '--value', 'true', '--yes', 'my-sandbox'],
+      ['settings', 'set', '--global', '--key', 'providers_v2_enabled', '--value', 'true', '--yes'],
       undefined,
     );
   });
@@ -1189,8 +1225,8 @@ describe('enableV2Provider', () => {
   test('rejects when CLI fails', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    vi.mocked(exec.exec).mockRejectedValue(new Error('sandbox not found'));
+    vi.mocked(exec.exec).mockRejectedValue(new Error('settings update failed'));
 
-    await expect(openshellCli.enableV2Provider('unknown')).rejects.toThrow('sandbox not found');
+    await expect(openshellCli.enableV2Provider()).rejects.toThrow('settings update failed');
   });
 });

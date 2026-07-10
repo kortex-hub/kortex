@@ -20,6 +20,9 @@ import { describe, expect, test } from 'vitest';
 
 import {
   buildPolicyObject,
+  collectBinaryFlags,
+  collectEndpointFlags,
+  formatEndpointFlag,
   OPENSHELL_CONTAINER_HOST,
   parseModelEndpoint,
   rewriteLocalhostUrl,
@@ -186,5 +189,150 @@ describe('buildPolicyObject', () => {
 
   test('returns undefined for invalid model endpoint with no network', () => {
     expect(buildPolicyObject(undefined, 'not-a-url')).toBeUndefined();
+  });
+});
+
+describe('formatEndpointFlag', () => {
+  test('formats host and port only', () => {
+    expect(formatEndpointFlag({ host: 'api.example.com', port: 443 })).toBe('api.example.com:443');
+  });
+
+  test('formats with access and protocol', () => {
+    expect(formatEndpointFlag({ host: 'api.example.com', port: 443, access: 'full', protocol: 'rest' })).toBe(
+      'api.example.com:443:full:rest',
+    );
+  });
+
+  test('formats with enforcement', () => {
+    expect(
+      formatEndpointFlag({
+        host: 'api.example.com',
+        port: 443,
+        access: 'read-only',
+        protocol: 'rest',
+        enforcement: 'enforce',
+      }),
+    ).toBe('api.example.com:443:read-only:rest:enforce');
+  });
+
+  test('ignores allow_encoded_slash (not supported by --add-endpoint)', () => {
+    expect(
+      formatEndpointFlag({
+        host: 'registry.npmjs.org',
+        port: 443,
+        access: 'full',
+        protocol: 'rest',
+        allow_encoded_slash: true,
+      }),
+    ).toBe('registry.npmjs.org:443:full:rest');
+  });
+
+  test('appends websocket-credential-rewrite option', () => {
+    expect(
+      formatEndpointFlag({
+        host: 'ws.example.com',
+        port: 443,
+        access: 'read-write',
+        protocol: 'websocket',
+        enforcement: 'enforce',
+        websocket_credential_rewrite: true,
+      }),
+    ).toBe('ws.example.com:443:read-write:websocket:enforce:websocket-credential-rewrite');
+  });
+
+  test('combines multiple options', () => {
+    expect(
+      formatEndpointFlag({
+        host: 'api.example.com',
+        port: 443,
+        access: 'full',
+        protocol: 'rest',
+        enforcement: 'enforce',
+        websocket_credential_rewrite: true,
+        request_body_credential_rewrite: true,
+      }),
+    ).toBe('api.example.com:443:full:rest:enforce:websocket-credential-rewrite,request-body-credential-rewrite');
+  });
+});
+
+describe('collectEndpointFlags', () => {
+  test('returns empty array when no network_policies', () => {
+    expect(collectEndpointFlags({ version: 1 })).toEqual([]);
+  });
+
+  test('collects endpoints from all rules', () => {
+    const flags = collectEndpointFlags({
+      version: 1,
+      network_policies: {
+        'kdn-network': {
+          endpoints: [
+            { host: 'registry.npmjs.org', port: 443, access: 'full', protocol: 'rest', allow_encoded_slash: true },
+          ],
+          binaries: [{ path: '/**' }],
+        },
+        'kdn-model': {
+          endpoints: [{ host: 'api.example.com', port: 443 }],
+          binaries: [{ path: '/**' }],
+        },
+      },
+    });
+
+    expect(flags).toEqual(['registry.npmjs.org:443:full:rest', 'api.example.com:443']);
+  });
+});
+
+describe('collectBinaryFlags', () => {
+  test('returns empty array when no network_policies', () => {
+    expect(collectBinaryFlags({ version: 1 })).toEqual([]);
+  });
+
+  test('collects binary paths from all rules', () => {
+    const flags = collectBinaryFlags({
+      version: 1,
+      network_policies: {
+        'kdn-network': {
+          endpoints: [{ host: 'registry.npmjs.org', port: 443 }],
+          binaries: [{ path: '/**' }],
+        },
+        'kdn-model': {
+          endpoints: [{ host: 'api.example.com', port: 443 }],
+          binaries: [{ path: '/**' }],
+        },
+      },
+    });
+
+    expect(flags).toEqual(['/**']);
+  });
+
+  test('deduplicates binary paths', () => {
+    const flags = collectBinaryFlags({
+      version: 1,
+      network_policies: {
+        rule1: {
+          endpoints: [{ host: 'a.com', port: 443 }],
+          binaries: [{ path: '/**' }, { path: '/usr/bin/curl' }],
+        },
+        rule2: {
+          endpoints: [{ host: 'b.com', port: 443 }],
+          binaries: [{ path: '/**' }],
+        },
+      },
+    });
+
+    expect(flags).toEqual(['/**', '/usr/bin/curl']);
+  });
+
+  test('handles rules with empty binaries', () => {
+    const flags = collectBinaryFlags({
+      version: 1,
+      network_policies: {
+        rule1: {
+          endpoints: [{ host: 'a.com', port: 443 }],
+          binaries: [],
+        },
+      },
+    });
+
+    expect(flags).toEqual([]);
   });
 });
