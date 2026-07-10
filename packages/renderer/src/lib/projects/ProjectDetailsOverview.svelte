@@ -11,6 +11,7 @@ import {
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import { secretVaultInfos } from '/@/stores/secret-vault';
 import type { WorkspaceProjectInfo } from '/@api/workspace-project-info';
 
 interface Props {
@@ -23,6 +24,14 @@ const networkLabel = $derived(project.network.mode === 'allow' ? 'Unrestricted' 
 
 function mcpServerName(id: string): string {
   return $mcpRemoteServerInfos.find(s => s.id === id)?.name ?? id;
+}
+
+function secretName(id: string): string {
+  return $secretVaultInfos.find(s => s.id === id)?.name ?? id;
+}
+
+function secretType(id: string): string | undefined {
+  return $secretVaultInfos.find(s => s.id === id)?.type;
 }
 
 const filesystemBadge = $derived.by((): string => {
@@ -82,6 +91,12 @@ const filesystemBadge = $derived.by((): string => {
           <div class="text-[10px] text-[var(--pd-content-text)] opacity-60 uppercase tracking-wider">MCP Servers</div>
           <div class="text-[13px] font-semibold text-[var(--pd-content-card-header-text)]">
             {project.mcpServers.length}
+          </div>
+        </div>
+        <div class="flex flex-col gap-0.5" aria-label="Secrets count">
+          <div class="text-[10px] text-[var(--pd-content-text)] opacity-60 uppercase tracking-wider">Secrets</div>
+          <div class="text-[13px] font-semibold text-[var(--pd-content-card-header-text)]">
+            {project.secrets.length}
           </div>
         </div>
       </div>
@@ -200,7 +215,10 @@ const filesystemBadge = $derived.by((): string => {
                   class="w-7 h-7 rounded-md flex items-center justify-center shrink-0 bg-[var(--pd-status-terminated)]/15 text-[var(--pd-status-terminated)]">
                   <Icon icon={faKey} size="sm" />
                 </div>
-                <span class="flex-1 min-w-0 text-[13px] font-medium text-[var(--pd-content-card-header-text)] truncate">{secret}</span>
+                <span class="flex-1 min-w-0 text-[13px] font-medium text-[var(--pd-content-card-header-text)] truncate">{secretName(secret)}</span>
+                {#if secretType(secret)}
+                  <span class="text-[11px] shrink-0 text-[var(--pd-content-text)] opacity-60">{secretType(secret)}</span>
+                {/if}
               </div>
             {/each}
           {:else}
