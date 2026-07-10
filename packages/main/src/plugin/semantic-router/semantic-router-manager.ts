@@ -92,20 +92,26 @@ export class SemanticRouterManager {
 
     const entry: SemanticRouterInfo = { ...parsed };
     this.configs.set(parsed.name, entry);
-    this.apiSender.send('semantic-router-update');
 
     const factoryResult = this.providerRegistry.getSemanticRouterFactory();
     if (factoryResult) {
-      const semanticRouter = await factoryResult.factory.create({
-        name: parsed.name,
-        config: JSON.stringify(parsed),
-      });
-      entry.connection = {
-        providerId: factoryResult.internalId,
-        connectionId: semanticRouter.connectionId,
-      };
+      try {
+        const semanticRouter = await factoryResult.factory.create({
+          name: parsed.name,
+          config: JSON.stringify(parsed),
+        });
+        entry.connection = {
+          providerId: factoryResult.internalId,
+          connectionId: semanticRouter.connectionId,
+        };
+      } catch (err: unknown) {
+        this.configs.delete(parsed.name);
+        await rm(this.getFilePath(parsed.name));
+        throw err;
+      }
     }
 
+    this.apiSender.send('semantic-router-update');
     return entry;
   }
 

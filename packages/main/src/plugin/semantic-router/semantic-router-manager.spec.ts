@@ -338,6 +338,42 @@ test('create calls semantic router factory when a provider has one', async () =>
   });
 });
 
+test('create sends update event after factory.create succeeds', async () => {
+  mockEmptyDir();
+  const factory: SemanticRouterFactory = {
+    type: 'semantic-router',
+    create: vi.fn().mockResolvedValue({ connectionId: 'conn-1' }),
+  };
+  vi.mocked(providerRegistry.getSemanticRouterFactory).mockReturnValue({ internalId: 'provider-1', factory });
+
+  const manager = createManager();
+  await manager.init();
+
+  await manager.create(sampleConfig);
+
+  const createOrder = vi.mocked(factory.create).mock.invocationCallOrder[0]!;
+  const sendOrder = vi.mocked(apiSender.send).mock.invocationCallOrder[0]!;
+  expect(createOrder).toBeLessThan(sendOrder);
+});
+
+test('create rolls back on factory.create failure', async () => {
+  mockEmptyDir();
+  const factory: SemanticRouterFactory = {
+    type: 'semantic-router',
+    create: vi.fn().mockRejectedValue(new Error('factory failed')),
+  };
+  vi.mocked(providerRegistry.getSemanticRouterFactory).mockReturnValue({ internalId: 'provider-1', factory });
+
+  const manager = createManager();
+  await manager.init();
+
+  await expect(manager.create(sampleConfig)).rejects.toThrow('factory failed');
+
+  expect(manager.findByName('my-router')).toBeUndefined();
+  expect(rm).toHaveBeenCalledWith(join(ROUTERS_DIR, 'my-router.json'));
+  expect(apiSender.send).not.toHaveBeenCalled();
+});
+
 test('create succeeds when no provider has a semantic router factory', async () => {
   mockEmptyDir();
   vi.mocked(providerRegistry.getSemanticRouterFactory).mockReturnValue(undefined);
