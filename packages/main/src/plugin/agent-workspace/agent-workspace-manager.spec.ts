@@ -1549,6 +1549,39 @@ describe('terminal reconnection on page refresh', () => {
 
     expect(spawn).toHaveBeenCalledTimes(2);
   });
+
+  test('stale PTY exit does not remove newer active terminal entry', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(SANDBOXES_WITH_AGENT);
+    vi.mocked(agentRegistry.getAgent).mockResolvedValue({
+      id: 'test-agent',
+      name: 'Test Agent',
+      description: '',
+      command: '/usr/bin/agent start',
+      destinationSkillsFolder: '~/.agent',
+    });
+    const { pty: pty1, triggerData: triggerData1, triggerExit: triggerExit1 } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty1);
+
+    type TerminalHandler = (_listener: unknown, id: string, onDataId: number) => Promise<number>;
+    type CloseHandler = (_listener: unknown, onDataId: number) => Promise<void>;
+    await getIpcHandler<TerminalHandler>('agent-workspace:terminal')({}, 'ws-agent', 10);
+    triggerData1('$ ');
+
+    await getIpcHandler<CloseHandler>('agent-workspace:terminalClose')({}, 10);
+
+    const { pty: pty2, triggerData: triggerData2 } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty2);
+
+    await getIpcHandler<TerminalHandler>('agent-workspace:terminal')({}, 'ws-agent', 20);
+    triggerData2('$ ');
+
+    triggerExit1();
+
+    vi.mocked(spawn).mockClear();
+    await getIpcHandler<TerminalHandler>('agent-workspace:terminal')({}, 'ws-agent', 30);
+
+    expect(spawn).not.toHaveBeenCalled();
+  });
 });
 
 describe('encodeWorkspaceLabels', () => {

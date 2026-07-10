@@ -673,7 +673,9 @@ export class AgentWorkspaceManager implements Disposable {
             }
             this.terminalCallbacks.delete(callbackRef.id);
             this.terminalProcesses.delete(callbackRef.id);
-            this.activeWorkspaceTerminals.delete(id);
+            if (this.activeWorkspaceTerminals.get(id)?.callbackRef === callbackRef) {
+              this.activeWorkspaceTerminals.delete(id);
+            }
           },
         );
         this.terminalCallbacks.set(onDataId, { write: invocation.write, resize: invocation.resize });
