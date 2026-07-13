@@ -342,7 +342,7 @@ export class AgentWorkspaceManager implements Disposable {
     if (path.startsWith(`${MOUNT_HOME_PREFIX}/`)) {
       return posix.join('~', path.slice(MOUNT_HOME_PREFIX.length + 1));
     }
-    if (path.startsWith('/')) {
+    if (path.length > 0) {
       return path;
     }
     return undefined;

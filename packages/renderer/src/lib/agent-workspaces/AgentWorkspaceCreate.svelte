@@ -395,7 +395,8 @@ function buildMountsFrom(fileAccess: string, mounts: CustomMount[]): AgentWorksp
         .map(m => {
           const host = m.host.trim();
           const trimmedTarget = m.target.trim();
-          const target = trimmedTarget !== '' ? trimmedTarget : host;
+          const basename = host.split('/').filter(Boolean).pop();
+          const target = trimmedTarget !== '' ? trimmedTarget : (basename ?? host);
           return { host, target, ro: m.ro };
         });
       return filtered.length > 0 ? filtered : undefined;

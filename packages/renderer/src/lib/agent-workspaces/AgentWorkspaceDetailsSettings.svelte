@@ -109,7 +109,13 @@ function buildMountsFromSelection(fileAccess: string, mounts: CustomMount[]): Ag
     case 'custom': {
       const filtered = mounts
         .filter(m => m.host.trim() !== '')
-        .map(m => ({ host: m.host.trim(), target: m.target.trim() ?? m.host.trim(), ro: m.ro }));
+        .map(m => {
+          const host = m.host.trim();
+          const trimmedTarget = m.target.trim();
+          const basename = host.split('/').filter(Boolean).pop();
+          const target = trimmedTarget !== '' ? trimmedTarget : (basename ?? host);
+          return { host, target, ro: m.ro };
+        });
       return filtered.length > 0 ? filtered : undefined;
     }
   }

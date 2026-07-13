@@ -490,6 +490,24 @@ describe('create – OpenShell mode', () => {
     );
   });
 
+  test('uploads custom path mounts with relative sandbox target', async () => {
+    vi.mocked(lstat).mockResolvedValue({
+      isDirectory: () => true,
+      isFile: () => false,
+      isSymbolicLink: () => false,
+    } as Awaited<ReturnType<typeof lstat>>);
+    await manager.create({
+      ...defaultOptions,
+      mounts: [{ host: '/Users/fbricon/Dev/projects/gh-dashboard', target: 'gh-dashboard', ro: false }],
+    });
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uploads: expect.arrayContaining([{ local: '/Users/fbricon/Dev/projects/gh-dashboard', remote: '.' }]),
+      }),
+    );
+  });
+
   test('uploads safe resolved mounts to the openshell sandbox', async () => {
     await manager.create({
       ...defaultOptions,
