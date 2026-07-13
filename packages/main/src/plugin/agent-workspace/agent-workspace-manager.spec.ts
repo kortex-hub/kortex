@@ -16,8 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import type { Stats } from 'node:fs';
 import { access, lstat, readFile, realpath, rm, writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 import type {
@@ -55,6 +56,7 @@ import type { TaskState, TaskStatus } from '/@api/taskInfo.js';
 import { AgentWorkspaceManager, encodeWorkspaceLabels } from './agent-workspace-manager.js';
 
 vi.mock(import('node:fs/promises'));
+vi.mock(import('node:os'));
 vi.mock(import('js-yaml'));
 vi.mock(import('yaml'));
 vi.mock(import('node-pty'));
@@ -169,6 +171,7 @@ beforeEach(() => {
   vi.mocked(writeFile).mockResolvedValue(undefined);
   vi.mocked(rm).mockResolvedValue(undefined);
   vi.mocked(readFile).mockResolvedValue('{}');
+  vi.mocked(realpath).mockImplementation(async (p: unknown) => p as string);
   vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
     get: vi.fn().mockReturnValue(undefined),
   } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
@@ -187,8 +190,10 @@ beforeEach(() => {
       isDirectory: () => isDirectory,
       isFile: () => !isDirectory,
       isSymbolicLink: () => false,
-    } as Awaited<ReturnType<typeof lstat>>;
+    } as Stats;
   });
+  vi.mocked(homedir).mockReturnValue('/home/testuser');
+  vi.mocked(tmpdir).mockReturnValue('/tmp');
   gatewayStartCallback = undefined;
   gatewayInitFailedCallback = undefined;
   sandboxListChangeCallback = undefined;
@@ -311,7 +316,6 @@ describe('create – OpenShell mode', () => {
     vi.mocked(openshellCli.createSandbox).mockResolvedValue(undefined);
     vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue(mockAgent);
     vi.mocked(readFile).mockRejectedValue(mockEnoent());
-    vi.mocked(realpath).mockImplementation(async (p: unknown) => p as string);
   });
 
   test('calls openshellCli.createSandbox with gateway, name, providers, workspace label, and agent label', async () => {
@@ -397,6 +401,71 @@ describe('create – OpenShell mode', () => {
     expect(openshellCli.createSandbox).toHaveBeenCalledWith(
       expect.objectContaining({
         from: 'registry.example.com/agent-base:v1',
+      }),
+    );
+  });
+
+  test('resolves tilde in sourcePath to home directory', async () => {
+    vi.mocked(lstat).mockResolvedValue({
+      isDirectory: () => true,
+      isFile: () => false,
+      isSymbolicLink: () => false,
+    } as Stats);
+    const options: AgentWorkspaceCreateOptions = {
+      ...defaultOptions,
+      sourcePath: '~/my-project',
+    };
+    await manager.create(options);
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uploads: expect.arrayContaining([{ local: join(homedir(), 'my-project'), remote: '.' }]),
+        labels: expect.objectContaining(encodeWorkspaceLabels(join(homedir(), 'my-project'))),
+      }),
+    );
+  });
+
+  test('resolves symlinks in sourcePath via realpath', async () => {
+    vi.mocked(realpath).mockImplementation(async (p: unknown) => {
+      if (String(p) === '/tmp/symlinked-project') return '/real/path/project' as never;
+      return p as string;
+    });
+    vi.mocked(lstat).mockResolvedValue({
+      isDirectory: () => true,
+      isFile: () => false,
+      isSymbolicLink: () => false,
+    } as Stats);
+    const options: AgentWorkspaceCreateOptions = {
+      ...defaultOptions,
+      sourcePath: '/tmp/symlinked-project',
+    };
+    await manager.create(options);
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uploads: expect.arrayContaining([{ local: '/real/path/project', remote: '.' }]),
+      }),
+    );
+  });
+
+  test('resolves symlinks in mount host paths via realpath', async () => {
+    vi.mocked(realpath).mockImplementation(async (p: unknown) => {
+      if (String(p) === resolve(homedir(), 'linked-dir')) return '/real/linked-dir' as never;
+      return p as string;
+    });
+    vi.mocked(lstat).mockResolvedValue({
+      isDirectory: () => true,
+      isFile: () => false,
+      isSymbolicLink: () => false,
+    } as Stats);
+    await manager.create({
+      ...defaultOptions,
+      mounts: [{ host: '$HOME/linked-dir', target: '$HOME/linked-dir', ro: false }],
+    });
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        uploads: expect.arrayContaining([{ local: '/real/linked-dir', remote: '~' }]),
       }),
     );
   });
@@ -506,7 +575,7 @@ describe('create – OpenShell mode', () => {
       isDirectory: () => true,
       isFile: () => false,
       isSymbolicLink: () => false,
-    } as Awaited<ReturnType<typeof lstat>>);
+    } as Stats);
     await manager.create({
       ...defaultOptions,
       mounts: [{ host: '/Users/fbricon/Dev/projects/gh-dashboard', target: 'gh-dashboard', ro: false }],
@@ -533,7 +602,7 @@ describe('create – OpenShell mode', () => {
         uploads: expect.arrayContaining([
           { local: '/tmp/my-project', remote: '.' },
           { local: resolve('/tmp/my-project', './subdir'), remote: 'subdir' },
-          { local: join(homedir(), '.gitconfig'), remote: '~/.gitconfig' },
+          { local: resolve(homedir(), '.gitconfig'), remote: '~/.gitconfig' },
         ]),
       }),
     );
@@ -994,6 +1063,15 @@ describe('checkWorkspaceConfigExists', () => {
 
     expect(result).toBe(false);
     expect(access).not.toHaveBeenCalled();
+  });
+
+  test('resolves tilde in sourcePath before checking', async () => {
+    vi.mocked(access).mockResolvedValue(undefined);
+
+    const result = await manager.checkWorkspaceConfigExists('~/my-project');
+
+    expect(result).toBe(true);
+    expect(access).toHaveBeenCalledWith(join('/home/testuser/my-project', '.kaiden', 'workspace.json'));
   });
 });
 
