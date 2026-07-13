@@ -20,7 +20,15 @@ import { type ElectronApplication, expect, type Locator, type Page } from '@play
 
 import { type DialogOptions, SELECTORS, TIMEOUTS } from '/@/model/core/types';
 
-export async function waitForAppReady(page: Page, timeout: number = TIMEOUTS.DEFAULT): Promise<void> {
+export interface AppReadyOptions {
+  dismissWelcome?: boolean;
+}
+
+export async function waitForAppReady(
+  page: Page,
+  timeout: number = TIMEOUTS.DEFAULT,
+  options: AppReadyOptions = {},
+): Promise<void> {
   try {
     await expect(page.locator(SELECTORS.MAIN_ANY).first()).toBeVisible({ timeout });
   } catch (error) {
@@ -33,11 +41,17 @@ export async function waitForAppReady(page: Page, timeout: number = TIMEOUTS.DEF
   await waitForInitializingScreenToDisappear(page);
   await expect(page.locator(SELECTORS.MAIN_APP_CONTAINER)).toBeVisible({ timeout });
   await expect(page.locator(SELECTORS.TITLE_BAR)).toBeVisible({ timeout });
-  await handleWelcomePageIfPresent(page);
+  if (options.dismissWelcome !== false) {
+    await handleWelcomePageIfPresent(page);
+  }
 }
 
-export async function waitForNavigationReady(page: Page, timeout: number = TIMEOUTS.DEFAULT): Promise<void> {
-  await waitForAppReady(page, timeout);
+export async function waitForNavigationReady(
+  page: Page,
+  timeout: number = TIMEOUTS.DEFAULT,
+  options: AppReadyOptions = {},
+): Promise<void> {
+  await waitForAppReady(page, timeout, options);
   await expect(page.getByRole(SELECTORS.NAVIGATION.role, { name: SELECTORS.NAVIGATION.name })).toBeVisible({
     timeout,
   });

@@ -58,6 +58,8 @@
     "test:e2e:workspaces:opencode": "xvfb-maybe --auto-servernum --server-args='-screen 0 1280x960x24' -- npx playwright test -c tests/playwright/playwright.config.ts --project=Workspace-Provider workspaces/workspace-opencode-smoke",
     "test:e2e:workspaces:goose": "xvfb-maybe --auto-servernum --server-args='-screen 0 1280x960x24' -- npx playwright test -c tests/playwright/playwright.config.ts --project=Workspace-Provider workspaces/workspace-goose-smoke",
     "test:e2e:workspaces:openclaw": "xvfb-maybe --auto-servernum --server-args='-screen 0 1280x960x24' -- npx playwright test -c tests/playwright/playwright.config.ts --project=Workspace-Provider workspaces/workspace-openclaw-smoke",
+    "test:e2e:onboarding": "pnpm run test:e2e:build && pnpm run test:e2e:onboarding:run",
+    "test:e2e:onboarding:run": "xvfb-maybe --auto-servernum --server-args='-screen 0 1280x960x24' -- npx playwright test -c tests/playwright/playwright.config.ts specs/guided-setup-smoke.spec.ts",
     "test:e2e:pde2e:install": "pnpm install --filter @openkaiden/tests-playwright... --ignore-scripts && pnpm exec playwright install chromium",
     "test:e2e:pde2e:workspaces:run": "pnpm run test:e2e:pde2e:install && pwsh -NoProfile -ExecutionPolicy Bypass -File .github/scripts/pde2e/run-with-test-secrets.ps1 test:e2e:workspaces:run",
     "test:e2e:pde2e:workspaces:claude": "pnpm run test:e2e:pde2e:install && pwsh -NoProfile -ExecutionPolicy Bypass -File .github/scripts/pde2e/run-with-test-secrets.ps1 test:e2e:workspaces:claude",

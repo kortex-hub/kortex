@@ -19,70 +19,30 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
 import {
-  AGENT_MODEL_SETUPS,
   type CodingAgent,
   type FileAccessLevel,
-  PROVIDERS,
   TIMEOUTS,
   WIZARD_STEP,
   WIZARD_STEPS,
   type WizardStep,
-  type WorkspaceInferenceProviderConfig,
-  type WorkspaceInferenceProviderId,
 } from '/@/model/core/types';
 
+import type { InlineConnectionField, ResolvedAgentModelSetup } from './agent-model-setup';
 import { BasePage } from './base-page';
-
-export interface InlineConnectionField {
-  label: string;
-  value: string;
-}
 
 export type AgentModelSetup = (createPage: AgentWorkspaceCreatePage) => Promise<void>;
 
-export interface ResolvedAgentModelSetup {
-  agent: CodingAgent;
-  providerName: string;
-  fields: InlineConnectionField[];
-}
-
-function getWorkspaceInferenceProvider(providerId: WorkspaceInferenceProviderId): WorkspaceInferenceProviderConfig {
-  return PROVIDERS[providerId] as WorkspaceInferenceProviderConfig;
-}
-
-function buildInlineConnectionFields(providerId: WorkspaceInferenceProviderId): InlineConnectionField[] {
-  const provider = getWorkspaceInferenceProvider(providerId);
-
-  return provider.inlineConnectionFields.map(field => {
-    const value = field.useBaseURL ? provider.baseURL : field.useEnvVar ? process.env[provider.envVarName] : undefined;
-    if (!value) {
-      throw new Error(`Missing value for inline connection field "${field.label}" on provider "${providerId}"`);
-    }
-    return { label: field.label, value };
-  });
-}
-
-export function resolveAgentModelConnection(): ResolvedAgentModelSetup | undefined {
-  for (const setup of AGENT_MODEL_SETUPS) {
-    const provider = getWorkspaceInferenceProvider(setup.providerId);
-    if (!process.env[provider.envVarName]) {
-      continue;
-    }
-    return {
-      agent: setup.agent,
-      providerName: provider.providerPickerName,
-      fields: buildInlineConnectionFields(setup.providerId),
-    };
-  }
-  return undefined;
-}
-
-export function agentModelSetupSkipMessage(): string {
-  const envVars = AGENT_MODEL_SETUPS.map(setup => getWorkspaceInferenceProvider(setup.providerId).envVarName).join(
-    ', ',
-  );
-  return `One of ${envVars} is required for workspace wizard model step`;
-}
+export {
+  agentModelSetupSkipMessage,
+  agentModelSetupSkipMessageFor,
+  buildInlineConnectionFields,
+  type InlineConnectionField,
+  isAgentModelSetupAvailable,
+  isOpenCodeModelSetupAvailable,
+  resolveAgentModelConnection,
+  resolveAgentModelConnectionFor,
+  type ResolvedAgentModelSetup,
+} from './agent-model-setup';
 
 export class AgentWorkspaceCreatePage extends BasePage {
   readonly heading: Locator;
@@ -198,6 +158,28 @@ export class AgentWorkspaceCreatePage extends BasePage {
       await card.click();
     }
     await expect(card).toHaveAttribute('aria-selected', 'true');
+  }
+
+  async expectAgentSelected(agent: CodingAgent): Promise<void> {
+    await expect(this.getAgentCard(agent)).toHaveAttribute('aria-selected', 'true');
+  }
+
+  async getSelectedModelLabel(): Promise<string> {
+    const selected = this.page.getByTestId('selected-model');
+    if (await selected.isVisible()) {
+      const text = await selected.textContent();
+      return text?.replace(/^Selected:\s*/, '').trim() ?? '';
+    }
+    const checked = this.page.locator('input[name="modelSelection"]:checked');
+    await expect(checked).toBeVisible();
+    const ariaLabel = await checked.getAttribute('aria-label');
+    return ariaLabel?.replace(/^Use\s+/, '') ?? '';
+  }
+
+  async expectModelSelected(modelLabel: string): Promise<void> {
+    const row = this.page.getByTestId(`model-row-${modelLabel}`);
+    await expect(row.locator('input[name="modelSelection"]')).toBeChecked();
+    await expect(this.page.getByTestId('selected-model')).toHaveText(`Selected: ${modelLabel}`);
   }
 
   async expandCustomize(): Promise<void> {

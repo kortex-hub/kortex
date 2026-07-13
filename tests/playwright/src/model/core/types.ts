@@ -224,6 +224,12 @@ export const CODING_AGENT = {
 export const CODING_AGENTS = Object.values(CODING_AGENT);
 export type CodingAgent = (typeof CODING_AGENT)[keyof typeof CODING_AGENT];
 
+/** Coding agents enabled by default; other agent extensions are disabled in extension-loader. */
+export const ENABLED_CODING_AGENTS = [
+  CODING_AGENT.OPENCODE,
+  CODING_AGENT.CLAUDE,
+] as const satisfies readonly CodingAgent[];
+
 /** Coding agents that require an inference provider connection in the workspace wizard. */
 export const AGENT_MODEL_SETUPS = [
   { agent: CODING_AGENT.CLAUDE, providerId: 'claude' },
