@@ -42,6 +42,7 @@ import {
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
+import { resolveHomePath } from '/@/plugin/util/resolve-home-path.js';
 import { AgentWorkspaceSettings } from '/@api/agent-workspace/agent-workspace-settings.js';
 import type {
   AgentWorkspaceConfiguration,
@@ -129,6 +130,9 @@ export class AgentWorkspaceManager implements Disposable {
     task.state = 'running';
     task.status = 'in-progress';
     try {
+      if (options.sourcePath) {
+        options.sourcePath = resolveHomePath(options.sourcePath);
+      }
       if (!options.model) {
         throw new Error('model is required to create a workspace');
       }
@@ -282,7 +286,7 @@ export class AgentWorkspaceManager implements Disposable {
   async checkWorkspaceConfigExists(sourcePath: string): Promise<boolean> {
     if (!sourcePath) return false;
     try {
-      await access(join(sourcePath, '.kaiden', 'workspace.json'));
+      await access(join(resolveHomePath(sourcePath), '.kaiden', 'workspace.json'));
       return true;
     } catch {
       return false;
@@ -318,17 +322,23 @@ export class AgentWorkspaceManager implements Disposable {
   ): Promise<OpenshellUpload[]> {
     const uploads: OpenshellUpload[] = [];
     if (sourcePath) {
-      uploads.push({ local: sourcePath, remote: '.' });
+      uploads.push({ local: await realpath(sourcePath), remote: '.' });
     }
 
     for (const mount of workspace.mounts ?? []) {
-      const local = this.resolveHostPath(mount.host, sourcePath);
+      const raw = this.resolveHostPath(mount.host, sourcePath);
       const remote = this.resolveOpenshellSandboxPath(mount.target, sourcePath);
-      if (!local || !remote) {
+      if (!raw || !remote) {
         console.warn(
           `[AgentWorkspaceManager] skipping mount "${mount.host}" → "${mount.target}": cannot resolve without a project folder`,
         );
         continue;
+      }
+      let local: string;
+      try {
+        local = await realpath(raw);
+      } catch {
+        throw new Error(`Mount host path does not exist: ${raw}`);
       }
       const resolvedRemote = await this.resolveUploadRemotePath(local, remote);
       uploads.push({ local, remote: resolvedRemote });
@@ -364,8 +374,8 @@ export class AgentWorkspaceManager implements Disposable {
     if (path.startsWith(`${MOUNT_HOME_PREFIX}/`)) {
       return resolve(homedir(), path.slice(MOUNT_HOME_PREFIX.length + 1));
     }
-    if (path.startsWith('~/')) {
-      return resolve(homedir(), path.slice(2));
+    if (path === '~' || path.startsWith('~/')) {
+      return resolveHomePath(path);
     }
     if (isAbsolute(path)) {
       return path;

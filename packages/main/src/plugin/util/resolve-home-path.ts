@@ -20,6 +20,9 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 export function resolveHomePath(inputPath: string): string {
+  if (inputPath === '~') {
+    return homedir();
+  }
   if (inputPath.startsWith('~/')) {
     return join(homedir(), inputPath.slice(2));
   }
