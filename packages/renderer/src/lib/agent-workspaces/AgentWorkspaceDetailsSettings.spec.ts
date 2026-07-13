@@ -68,7 +68,6 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.resetAllMocks();
   vi.mocked(router).subscribe.mockImplementation(routerStore.subscribe);
-  vi.mocked(window.updateAgentWorkspaceSummary).mockResolvedValue(undefined);
   vi.mocked(window.updateAgentWorkspaceConfiguration).mockResolvedValue(undefined);
   vi.mocked(skillsStore).skillInfos = writable<readonly SkillInfo[]>([]);
   vi.mocked(ragStore).ragEnvironments = writable<RagEnvironment[]>([]);
@@ -103,64 +102,11 @@ test('Expect all settings nav sections are rendered', () => {
   }
 });
 
-test('Expect workspace name input is editable', async () => {
+test('Expect workspace name input is readonly', () => {
   render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
 
   const nameInput = screen.getByRole('textbox', { name: 'Workspace Name' });
-  expect(nameInput).not.toHaveAttribute('readonly');
-  await fireEvent.input(nameInput, { target: { value: 'new-name' } });
-  expect(nameInput).toHaveValue('new-name');
-});
-
-test('Expect save/discard bar shown when workspace name is modified', async () => {
-  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
-
-  const nameInput = screen.getByRole('textbox', { name: 'Workspace Name' });
-  await fireEvent.input(nameInput, { target: { value: 'renamed' } });
-
-  expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Save changes' })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Discard changes' })).toBeInTheDocument();
-});
-
-test('Expect save/discard bar not shown when workspace name matches original', async () => {
-  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
-
-  const nameInput = screen.getByRole('textbox', { name: 'Workspace Name' });
-  await fireEvent.input(nameInput, { target: { value: 'api-refactor' } });
-
-  expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
-});
-
-test('Expect clicking Save changes calls updateAgentWorkspaceSummary', async () => {
-  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
-
-  const nameInput = screen.getByRole('textbox', { name: 'Workspace Name' });
-  await fireEvent.input(nameInput, { target: { value: 'renamed' } });
-  await fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
-
-  expect(window.updateAgentWorkspaceSummary).toHaveBeenCalledWith('ws-1', { name: 'renamed' });
-});
-
-test('Expect clicking Discard changes resets workspace name to original', async () => {
-  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
-
-  const nameInput = screen.getByRole('textbox', { name: 'Workspace Name' });
-  await fireEvent.input(nameInput, { target: { value: 'renamed' } });
-  await fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }));
-
-  expect(nameInput).toHaveValue('api-refactor');
-  expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
-  expect(window.updateAgentWorkspaceSummary).not.toHaveBeenCalled();
-});
-
-test('Expect no save when workspace name has not changed', async () => {
-  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
-
-  const nameInput = screen.getByRole('textbox', { name: 'Workspace Name' });
-  await fireEvent.input(nameInput, { target: { value: 'api-refactor' } });
-
-  expect(window.updateAgentWorkspaceSummary).not.toHaveBeenCalled();
+  expect(nameInput).toHaveAttribute('readonly');
 });
 
 test('Expect working directory input is readonly', () => {
@@ -317,19 +263,6 @@ test('Expect Manage Skills button navigates to skills page', async () => {
   await fireEvent.click(screen.getByRole('button', { name: 'Manage Skills' }));
 
   expect(handleNavigation).toHaveBeenCalledWith({ page: 'skills' });
-});
-
-test('Expect name save failure rolls back workspace name', async () => {
-  vi.mocked(window.updateAgentWorkspaceSummary).mockRejectedValueOnce(new Error('network error'));
-
-  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
-
-  const nameInput = screen.getByRole('textbox', { name: 'Workspace Name' });
-  await fireEvent.input(nameInput, { target: { value: 'renamed' } });
-  await fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
-
-  expect(nameInput).toHaveValue('api-refactor');
-  expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
 });
 
 test('Expect skills save failure rolls back skill selection', async () => {

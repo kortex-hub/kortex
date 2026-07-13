@@ -20,7 +20,7 @@ import { access, lstat, readFile, realpath, rm, writeFile } from 'node:fs/promis
 import { homedir, tmpdir } from 'node:os';
 import { basename, isAbsolute, join, posix, resolve } from 'node:path';
 
-import type { Disposable, FileSystemWatcher } from '@openkaiden/api';
+import type { Disposable } from '@openkaiden/api';
 import type { WebContents } from 'electron';
 import { inject, injectable, preDestroy } from 'inversify';
 import type { IPty } from 'node-pty';
@@ -30,7 +30,6 @@ import { AgentRegistry } from '/@/plugin/agent-registry.js';
 import { updateWorkspaceConfig, writeWorkspaceConfig } from '/@/plugin/agent-workspace/workspace-config-writer.js';
 import { WritableConfigurationFile } from '/@/plugin/agent-workspace/writable-configuration-file.js';
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
-import { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
 import {
@@ -87,7 +86,6 @@ export function encodeWorkspaceLabels(sourcePath: string): Record<string, string
  */
 @injectable()
 export class AgentWorkspaceManager implements Disposable {
-  private instancesWatcher: FileSystemWatcher | undefined;
   private readonly workspaceTerminals = new Map<string, WorkspaceTerminalSession>();
 
   constructor(
@@ -97,8 +95,6 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly ipcHandle: IPCHandle,
     @inject(TaskManager)
     private readonly taskManager: TaskManager,
-    @inject(FilesystemMonitoring)
-    private readonly filesystemMonitoring: FilesystemMonitoring,
     @inject(WebContentsType)
     private readonly webContents: WebContents,
     @inject(IConfigurationRegistry)
@@ -750,25 +746,10 @@ export class AgentWorkspaceManager implements Disposable {
       this.apiSender.send('agent-gateway-update');
       this.apiSender.send('agent-workspace-update');
     });
-
-    this.watchInstancesFile();
-  }
-
-  private watchInstancesFile(): void {
-    this.instancesWatcher?.dispose();
-    const instancesPath = join(homedir(), '.kdn', 'instances.json');
-    this.instancesWatcher = this.filesystemMonitoring.createFileSystemWatcher(instancesPath);
-    const notify = (): void => {
-      this.apiSender.send('agent-workspace-update');
-    };
-    this.instancesWatcher.onDidChange(notify);
-    this.instancesWatcher.onDidCreate(notify);
-    this.instancesWatcher.onDidDelete(notify);
   }
 
   @preDestroy()
   dispose(): void {
-    this.instancesWatcher?.dispose();
     for (const session of this.workspaceTerminals.values()) {
       try {
         session.pty.kill();

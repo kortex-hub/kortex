@@ -25,7 +25,6 @@ import type {
   AgentWorkspaceConfiguration,
   AISDKInferenceProvider,
   Configuration,
-  FileSystemWatcher,
   ProviderConnectionStatus,
 } from '@openkaiden/api';
 import type { IpcMainInvokeEvent, WebContents } from 'electron';
@@ -37,7 +36,6 @@ import type { AgentRegistry } from '/@/plugin/agent-registry.js';
 import * as configWriter from '/@/plugin/agent-workspace/workspace-config-writer.js';
 import type { IPCHandle } from '/@/plugin/api.js';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
-import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import type { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
 import type { ProviderImpl } from '/@/plugin/provider-impl.js';
@@ -108,16 +106,6 @@ const taskManager = {
   createTask: vi.fn().mockReturnValue(mockTask),
 } as unknown as TaskManager;
 
-const mockWatcher = {
-  onDidChange: vi.fn(),
-  onDidCreate: vi.fn(),
-  onDidDelete: vi.fn(),
-  dispose: vi.fn(),
-} as unknown as FileSystemWatcher;
-const filesystemMonitoring = {
-  createFileSystemWatcher: vi.fn().mockReturnValue(mockWatcher),
-} as unknown as FilesystemMonitoring;
-
 const webContents = {
   send: vi.fn(),
   receive: vi.fn(),
@@ -167,7 +155,6 @@ beforeEach(() => {
   mockTask.state = '' as TaskState;
   mockTask.status = '' as TaskStatus;
   mockTask.error = '';
-  vi.mocked(filesystemMonitoring.createFileSystemWatcher).mockReturnValue(mockWatcher);
   vi.mocked(writeFile).mockResolvedValue(undefined);
   vi.mocked(rm).mockResolvedValue(undefined);
   vi.mocked(readFile).mockResolvedValue('{}');
@@ -195,7 +182,6 @@ beforeEach(() => {
     apiSender,
     ipcHandle,
     taskManager,
-    filesystemMonitoring,
     webContents,
     configurationRegistry,
     providerRegistry,
@@ -253,37 +239,6 @@ describe('init', () => {
     gatewayStartCallback!();
     expect(apiSender.send).toHaveBeenCalledWith('agent-gateway-update');
     expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
-  });
-});
-
-describe('watchInstancesFile', () => {
-  test('watches ~/.kdn/instances.json on init', () => {
-    expect(filesystemMonitoring.createFileSystemWatcher).toHaveBeenCalledWith(
-      expect.stringMatching(/\.kdn[\\/]instances\.json$/),
-    );
-  });
-
-  test('sends agent-workspace-update on file change', () => {
-    const changeCallback = vi.mocked(mockWatcher.onDidChange).mock.calls[0]![0] as () => void;
-    changeCallback();
-    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
-  });
-
-  test('sends agent-workspace-update on file create', () => {
-    const createCallback = vi.mocked(mockWatcher.onDidCreate).mock.calls[0]![0] as () => void;
-    createCallback();
-    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
-  });
-
-  test('sends agent-workspace-update on file delete', () => {
-    const deleteCallback = vi.mocked(mockWatcher.onDidDelete).mock.calls[0]![0] as () => void;
-    deleteCallback();
-    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
-  });
-
-  test('disposes watcher on dispose', () => {
-    manager.dispose();
-    expect(mockWatcher.dispose).toHaveBeenCalled();
   });
 });
 
@@ -1086,47 +1041,6 @@ describe('updateConfiguration', () => {
     vi.mocked(configWriter.updateWorkspaceConfig).mockRejectedValue(new Error('permission denied'));
 
     await expect(manager.updateConfiguration('ws-1', {})).rejects.toThrow('permission denied');
-  });
-});
-
-describe('updateSummary', () => {
-  const INSTANCES_JSON = [
-    { id: 'ws-1', name: 'old-name', paths: { source: '/tmp/ws1' } },
-    { id: 'ws-2', name: 'other-workspace', paths: { source: '/tmp/ws2' } },
-  ];
-
-  test('updates the name of the matching workspace in instances.json', async () => {
-    vi.mocked(readFile).mockResolvedValue(JSON.stringify(INSTANCES_JSON));
-
-    await manager.updateSummary('ws-1', { name: 'new-name' });
-
-    expect(writeFile).toHaveBeenCalledWith(
-      expect.stringMatching(/\.kdn[\\/]instances\.json$/),
-      expect.any(String),
-      'utf-8',
-    );
-    const written = JSON.parse(vi.mocked(writeFile).mock.calls[0]![1] as string) as { id: string; name: string }[];
-    expect(written.find(w => w.id === 'ws-1')?.name).toBe('new-name');
-    expect(written.find(w => w.id === 'ws-2')?.name).toBe('other-workspace');
-  });
-
-  test('throws when workspace id is not found', async () => {
-    vi.mocked(readFile).mockResolvedValue(JSON.stringify(INSTANCES_JSON));
-
-    await expect(manager.updateSummary('unknown-id', { name: 'x' })).rejects.toThrow(
-      'workspace "unknown-id" not found in instances.json',
-    );
-    expect(writeFile).not.toHaveBeenCalled();
-  });
-
-  test('propagates file read errors', async () => {
-    vi.mocked(readFile).mockRejectedValue(new Error('EACCES: permission denied'));
-
-    await expect(manager.updateSummary('ws-1', { name: 'x' })).rejects.toThrow('EACCES: permission denied');
-  });
-
-  test('registers IPC handler for updateSummary', () => {
-    expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:updateSummary', expect.any(Function));
   });
 });
 

@@ -51,8 +51,7 @@ const sections: SectionConfig[] = [
 let activeSection: SettingsSection = $state('general');
 const activeLabel = $derived(sections.find(s => s.id === activeSection)?.label ?? '');
 
-const originalName = $derived(workspaceSummary?.name ?? '');
-let workspaceName = $state(originalName);
+const workspaceName = $derived(workspaceSummary?.name ?? '');
 
 let skillItems: ChecklistItem[] = $derived(
   $skillInfos.map(s => ({
@@ -75,7 +74,6 @@ function onSkillsChange(updated: string[]): void {
   pendingSkillIds = updated;
 }
 
-const hasNameChanges = $derived(workspaceName.trim() !== originalName && workspaceName.trim().length > 0);
 const hasSkillChanges = $derived(
   pendingSkillIds.length !== originalSkillIds.length || pendingSkillIds.some(id => !originalSkillIds.includes(id)),
 );
@@ -273,15 +271,12 @@ function updateCustomHost(index: number, value: string): void {
 }
 
 const hasChanges = $derived(
-  hasNameChanges || hasMountChanges || hasSkillChanges || hasKnowledgeChanges || hasMcpChanges || hasNetworkChanges,
+  hasMountChanges || hasSkillChanges || hasKnowledgeChanges || hasMcpChanges || hasNetworkChanges,
 );
 
 // --- Save / Discard ---
 async function saveChanges(): Promise<void> {
   try {
-    if (hasNameChanges) {
-      await window.updateAgentWorkspaceSummary(workspaceId, { name: workspaceName.trim() });
-    }
     if (hasMountChanges) {
       const newMounts = buildMountsFromSelection(pendingFileAccess, pendingCustomMounts);
       await window.updateAgentWorkspaceConfiguration(workspaceId, { mounts: newMounts });
@@ -394,7 +389,6 @@ function buildUnmanagedMcpConfig(): AgentWorkspaceMcpConfig {
 }
 
 function discardChanges(): void {
-  workspaceName = originalName;
   pendingFileAccess = originalFileAccess;
   pendingCustomMounts = originalCustomMounts.map(m => ({ ...m }));
   pendingSkillIds = [...originalSkillIds];
@@ -513,7 +507,8 @@ function handleDeleteWorkspace(): void {
                   <Input
                     id="input-workspace-name"
                     aria-label="Workspace Name"
-                    bind:value={workspaceName} />
+                    value={workspaceName}
+                    readonly />
                 </div>
                 <div class="flex flex-col gap-2">
                   <label for="input-working-directory" class="text-[13px] font-semibold text-[var(--pd-content-card-header-text)]">Working Directory</label>
