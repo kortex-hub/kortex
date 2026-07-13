@@ -196,8 +196,8 @@ export function buildPolicyObject(network?: NetworkConfiguration, modelEndpoint?
 
   if (network && network.mode !== 'allow' && network.hosts?.length) {
     const endpoints: OpenshellEndpoint[] = network.hosts.flatMap(host => [
-      { host, port: 443, access: 'full' as const },
-      { host, port: 80, access: 'full' as const },
+      { host, port: 443, protocol: 'rest' as const, access: 'full' as const, allow_encoded_slash: true },
+      { host, port: 80, protocol: 'rest' as const, access: 'full' as const, allow_encoded_slash: true },
     ]);
     networkPolicies[NETWORK_RULE_NAME] = {
       endpoints,

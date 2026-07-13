@@ -2935,3 +2935,84 @@ test('rejects duplicate inference connection id for the same provider', () => {
     /an inference connection with id 'conn-0' is already registered for provider 'provider-a'/,
   );
 });
+
+test('getSemanticRouterFactory returns undefined when no provider has a factory', () => {
+  providerRegistry.createProvider('id', 'name', {
+    id: 'provider-a',
+    name: 'Provider A',
+    status: 'installed',
+  });
+
+  expect(providerRegistry.getSemanticRouterFactory()).toBeUndefined();
+});
+
+test('getSemanticRouterFactory returns factory when a provider has one set', () => {
+  const provider = providerRegistry.createProvider('id', 'name', {
+    id: 'provider-a',
+    name: 'Provider A',
+    status: 'installed',
+  });
+
+  const factory = {
+    type: 'semantic-router',
+    create: vi.fn(),
+  };
+  provider.setSemanticRouterConnectionFactory(factory);
+
+  const result = providerRegistry.getSemanticRouterFactory();
+  expect(result).toBeDefined();
+  expect(result!.factory).toBe(factory);
+});
+
+test('getSemanticRouterFactory returns undefined after factory disposable is disposed', () => {
+  const provider = providerRegistry.createProvider('id', 'name', {
+    id: 'provider-a',
+    name: 'Provider A',
+    status: 'installed',
+  });
+
+  const factory = {
+    type: 'semantic-router',
+    create: vi.fn(),
+  };
+  const disposable = provider.setSemanticRouterConnectionFactory(factory);
+
+  disposable.dispose();
+
+  expect(providerRegistry.getSemanticRouterFactory()).toBeUndefined();
+});
+
+test('deleteInferenceConnectionBySemanticRouter calls lifecycle.delete on matching connection', async () => {
+  const provider = providerRegistry.createProvider('id', 'name', {
+    id: 'provider-a',
+    name: 'Provider A',
+    status: 'installed',
+  });
+
+  const deleteMock = vi.fn().mockResolvedValue(undefined);
+  provider.registerInferenceProviderConnection({
+    id: 'conn-1',
+    name: 'my-router',
+    type: 'cloud',
+    llmMetadata: { name: 'test', semanticRouter: 'my-router' },
+    sdk: {} as never,
+    credentials: (): Record<string, string> => ({}),
+    lifecycle: { delete: deleteMock },
+    status: (): ProviderConnectionStatus => 'started',
+    models: [],
+  });
+
+  await providerRegistry.deleteInferenceConnectionBySemanticRouter('my-router');
+
+  expect(deleteMock).toHaveBeenCalled();
+});
+
+test('deleteInferenceConnectionBySemanticRouter does nothing when no matching connection exists', async () => {
+  providerRegistry.createProvider('id', 'name', {
+    id: 'provider-a',
+    name: 'Provider A',
+    status: 'installed',
+  });
+
+  await expect(providerRegistry.deleteInferenceConnectionBySemanticRouter('nonexistent')).resolves.toBeUndefined();
+});

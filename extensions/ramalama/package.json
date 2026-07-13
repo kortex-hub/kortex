@@ -2,7 +2,7 @@
   "name": "ramalama",
   "displayName": "RamaLama",
   "description": "Register RamaLama models to Kaiden.",
-  "version": "0.3.0-next",
+  "version": "0.4.0-next",
   "icon": "icon.png",
   "publisher": "kaiden",
   "license": "Apache-2.0",
@@ -21,7 +21,7 @@
     "watch": "vite build --watch"
   },
   "dependencies": {
-    "@ai-sdk/openai-compatible": "^3.0.5",
+    "@ai-sdk/openai-compatible": "^3.0.6",
     "inversify": "^7.7.1"
   },
   "devDependencies": {

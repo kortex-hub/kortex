@@ -21,6 +21,7 @@ interface Props {
   projects?: WorkspaceProjectInfo[];
   selectedProjectId?: string;
   onProjectSelect?: (project: WorkspaceProjectInfo | undefined) => void;
+  errors?: { name?: string };
 }
 
 let {
@@ -38,6 +39,7 @@ let {
   projects = [],
   selectedProjectId,
   onProjectSelect,
+  errors = {},
 }: Props = $props();
 
 function markNameEdited(): void {
@@ -131,6 +133,8 @@ function toggleProject(): void {
       placeholder="e.g., Frontend Refactoring"
       class="w-full"
       oninput={markNameEdited}
+      error={errors?.name ?? ''}
+      aria-invalid={!!errors?.name}
     />
   </div>
 

@@ -11,3 +11,6 @@ create_issues:
         repos:
             - openkaiden/kaiden
             - fullsend-ai/fullsend
+allowed_remote_resources:
+    - https://raw.githubusercontent.com/fullsend-ai/fullsend/
+    - https://raw.githubusercontent.com/fullsend-ai/agents/

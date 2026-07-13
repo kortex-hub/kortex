@@ -27,8 +27,10 @@ import Mustache from 'mustache';
 
 import { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import { Directories } from '/@/plugin/directories.js';
+import { Emitter } from '/@/plugin/events/emitter.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import { Exec } from '/@/plugin/util/exec.js';
+import type { Event } from '/@api/event.js';
 import type { OpenshellGatewayStartOptions } from '/@api/openshell-gateway-info.js';
 
 import gatewayConfigTemplate from './openshell-gateway.toml.template?raw';
@@ -54,6 +56,9 @@ export class OpenshellGateway implements Disposable {
   #port: number = DEFAULT_PORT;
   #bindAddress: string = DEFAULT_BIND_ADDRESS;
 
+  private readonly _onDidGatewayStart = new Emitter<void>();
+  readonly onDidGatewayStart: Event<void> = this._onDidGatewayStart.event;
+
   constructor(
     @inject(CliToolRegistry)
     private readonly cliToolRegistry: CliToolRegistry,
@@ -76,6 +81,7 @@ export class OpenshellGateway implements Disposable {
               await this.openshellCli.selectGateway(gw.name);
             }
             console.log(`[openshell-gateway] gateway detected (${gw.endpoint}) and is healthy`);
+            this._onDidGatewayStart.fire();
             return;
           }
         }
@@ -95,11 +101,13 @@ export class OpenshellGateway implements Disposable {
     if (await this.isEndpointHealthy()) {
       console.log('[openshell-gateway] found healthy gateway on default port, registering');
       await this.registerWithCli();
+      this._onDidGatewayStart.fire();
       return;
     }
 
     console.log('[openshell-gateway] no existing gateways found, auto-starting local gateway');
     await this.start();
+    this._onDidGatewayStart.fire();
   }
 
   private async isEndpointHealthy(endpoint?: string): Promise<boolean> {
@@ -218,6 +226,7 @@ export class OpenshellGateway implements Disposable {
   @preDestroy()
   dispose(): void {
     this.stop().catch((err: unknown) => console.error('[openshell-gateway] failed to stop: ', err));
+    this._onDidGatewayStart.dispose();
   }
 
   private async generateCerts(binaryPath: string, gatewayDir: string): Promise<void> {

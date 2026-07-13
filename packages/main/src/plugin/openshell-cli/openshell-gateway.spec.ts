@@ -508,6 +508,77 @@ describe('dispose', () => {
   });
 });
 
+describe('onDidGatewayStart', () => {
+  test('fires when existing gateway is healthy and active', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(openshellCli.listGateways).mockResolvedValue([
+      { name: 'local-gw', endpoint: 'https://127.0.0.1:8443', active: true, type: 'local' },
+    ]);
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
+
+    const listener = vi.fn();
+    gateway.onDidGatewayStart(listener);
+    await gateway.init();
+
+    expect(listener).toHaveBeenCalledOnce();
+  });
+
+  test('fires when existing gateway is healthy but not active', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(openshellCli.listGateways).mockResolvedValue([
+      { name: 'kaiden-alt', endpoint: 'http://127.0.0.1:18080', active: false },
+    ]);
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
+
+    const listener = vi.fn();
+    gateway.onDidGatewayStart(listener);
+    await gateway.init();
+
+    expect(listener).toHaveBeenCalledOnce();
+  });
+
+  test('fires when orphan gateway found on default port', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.mocked(openshellCli.listGateways).mockResolvedValue([]);
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
+
+    const listener = vi.fn();
+    gateway.onDidGatewayStart(listener);
+    await gateway.init();
+
+    expect(listener).toHaveBeenCalledOnce();
+  });
+
+  test('fires when auto-start succeeds', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.mocked(openshellCli.listGateways).mockResolvedValue([]);
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValue(proc);
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValueOnce(false).mockResolvedValue(true);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
+
+    const listener = vi.fn();
+    gateway.onDidGatewayStart(listener);
+    await gateway.init();
+
+    expect(listener).toHaveBeenCalledOnce();
+  });
+
+  test('does not fire when no binary and no gateways', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.mocked(openshellCli.listGateways).mockRejectedValue(new Error('CLI not found'));
+    vi.mocked(cliToolRegistry.getCliToolInfos).mockReturnValue([] as unknown as CliToolInfo[]);
+
+    const listener = vi.fn();
+    gateway.onDidGatewayStart(listener);
+    await gateway.init();
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+});
+
 describe('gateway config generation', () => {
   let proc: ReturnType<typeof createMockChildProcess>;
 

@@ -128,8 +128,8 @@ describe('buildPolicyObject', () => {
       network_policies: {
         'kdn-network': {
           endpoints: [
-            { host: 'registry.npmjs.org', port: 443, access: 'full' },
-            { host: 'registry.npmjs.org', port: 80, access: 'full' },
+            { host: 'registry.npmjs.org', port: 443, protocol: 'rest', access: 'full', allow_encoded_slash: true },
+            { host: 'registry.npmjs.org', port: 80, protocol: 'rest', access: 'full', allow_encoded_slash: true },
           ],
           binaries: [{ path: '/**' }],
         },
@@ -159,8 +159,8 @@ describe('buildPolicyObject', () => {
       network_policies: {
         'kdn-network': {
           endpoints: [
-            { host: 'registry.npmjs.org', port: 443, access: 'full' },
-            { host: 'registry.npmjs.org', port: 80, access: 'full' },
+            { host: 'registry.npmjs.org', port: 443, protocol: 'rest', access: 'full', allow_encoded_slash: true },
+            { host: 'registry.npmjs.org', port: 80, protocol: 'rest', access: 'full', allow_encoded_slash: true },
           ],
           binaries: [{ path: '/**' }],
         },

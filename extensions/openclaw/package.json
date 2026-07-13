@@ -2,7 +2,7 @@
   "name": "openclaw",
   "displayName": "OpenClaw",
   "description": "OpenClaw coding agent",
-  "version": "0.3.0-next",
+  "version": "0.4.0-next",
   "icon": "icon.png",
   "publisher": "kaiden",
   "license": "Apache-2.0",
@@ -20,7 +20,8 @@
     "watch": "vite build --watch"
   },
   "dependencies": {
-    "@openkaiden/api": "workspace:*"
+    "@openkaiden/api": "workspace:*",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "adm-zip": "^0.5.16",

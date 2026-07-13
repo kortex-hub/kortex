@@ -7,6 +7,7 @@ import FormPage from '/@/lib/ui/FormPage.svelte';
 import WizardStepper from '/@/lib/ui/WizardStepper.svelte';
 import { handleNavigation } from '/@/navigation';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
+import { secretVaultInfos } from '/@/stores/secret-vault';
 import { skillInfos } from '/@/stores/skills';
 import { NavigationPage } from '/@api/navigation-page';
 import type { WorkspaceProjectAnalysis } from '/@api/workspace-project-info';
@@ -14,6 +15,7 @@ import type { WorkspaceProjectAnalysis } from '/@api/workspace-project-info';
 import { extractRepoName, extractRepoSlug, formatGitUrl } from './git-url-utils';
 import ProjectCreateStepMcpServers, { type McpServerItem } from './ProjectCreateStepMcpServers.svelte';
 import ProjectCreateStepReview from './ProjectCreateStepReview.svelte';
+import ProjectCreateStepSecrets from './ProjectCreateStepSecrets.svelte';
 import ProjectCreateStepSkills from './ProjectCreateStepSkills.svelte';
 import ProjectCreateStepSource from './ProjectCreateStepSource.svelte';
 
@@ -21,6 +23,7 @@ const wizardSteps = [
   { id: 'source', title: 'Source' },
   { id: 'review', title: 'Review' },
   { id: 'mcp-servers', title: 'MCP Servers' },
+  { id: 'secrets', title: 'Secrets' },
   { id: 'skills', title: 'Skills' },
 ];
 
@@ -40,6 +43,7 @@ let cloneTo = $state('');
 let error = $state('');
 
 let selectedSkillIds = $state<string[]>([]);
+let selectedSecretIds = $state<string[]>([]);
 
 let skillItems: ChecklistItem[] = $derived(
   $skillInfos
@@ -133,6 +137,10 @@ function initializeSkillSelection(): void {
   selectedSkillIds = $skillInfos.filter(s => s.enabled).map(s => s.name);
 }
 
+function initializeSecretSelection(): void {
+  selectedSecretIds = $secretVaultInfos.map(s => s.id);
+}
+
 async function handleAnalyze(): Promise<void> {
   if (isGitSource) {
     projectName = extractRepoName(gitUrl);
@@ -140,6 +148,7 @@ async function handleAnalyze(): Promise<void> {
     cloneTo = '';
     analysis = undefined;
     initializeSkillSelection();
+    initializeSecretSelection();
     currentStepIndex = 1;
     return;
   }
@@ -154,6 +163,7 @@ async function handleAnalyze(): Promise<void> {
     projectName = result.name;
     projectDescription = result.description ?? '';
     initializeSkillSelection();
+    initializeSecretSelection();
     currentStepIndex = 1;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
@@ -192,7 +202,7 @@ async function createProject(): Promise<void> {
       skills: [...selectedSkillIds],
       mcpServers: [...selectedMcpIds],
       knowledges: [],
-      secrets: [],
+      secrets: [...selectedSecretIds],
       filesystem: { mode: 'project', mounts: [] },
       network: { mode: 'allow' },
     });
@@ -252,6 +262,10 @@ async function createProject(): Promise<void> {
               <ProjectCreateStepMcpServers
                 {mcpItems}
                 bind:selectedMcpIds={selectedMcpIds}
+              />
+            {:else if currentStepId === 'secrets'}
+              <ProjectCreateStepSecrets
+                bind:selectedSecretIds={selectedSecretIds}
               />
             {/if}
           </div>

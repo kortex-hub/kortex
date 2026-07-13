@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { access, lstat, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, lstat, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -39,6 +39,7 @@ import type { IPCHandle } from '/@/plugin/api.js';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
+import type { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
 import type { ProviderImpl } from '/@/plugin/provider-impl.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
@@ -89,6 +90,7 @@ const openshellCli = new OpenshellCli({} as Exec, {} as CliToolRegistry);
 
 const agentRegistry = {
   getAgentRegistration: vi.fn(),
+  getAgent: vi.fn(),
 } as unknown as AgentRegistry;
 
 const mockTask = {
@@ -136,10 +138,20 @@ const providerRegistry = {
   getProvider: vi.fn(),
 } as unknown as ProviderRegistry;
 
+let gatewayStartCallback: (() => void) | undefined;
+
+const openshellGateway = {
+  onDidGatewayStart: vi.fn((cb: () => void) => {
+    gatewayStartCallback = cb;
+    return { dispose: vi.fn() };
+  }),
+} as unknown as OpenshellGateway;
+
 const secretManager = {
   create: vi.fn(),
   init: vi.fn(),
   getSecretForModel: vi.fn(),
+  ensureSecretForModel: vi.fn(),
   getConnectionProperties: vi.fn(),
 } as unknown as SecretManager;
 
@@ -178,6 +190,7 @@ beforeEach(() => {
       isSymbolicLink: () => false,
     } as Awaited<ReturnType<typeof lstat>>;
   });
+  gatewayStartCallback = undefined;
   manager = new AgentWorkspaceManager(
     apiSender,
     ipcHandle,
@@ -189,6 +202,7 @@ beforeEach(() => {
     secretManager,
     openshellCli,
     agentRegistry,
+    openshellGateway,
   );
   manager.init();
 });
@@ -240,6 +254,15 @@ describe('init', () => {
         }),
       }),
     ]);
+  });
+
+  test('subscribes to gateway start event', () => {
+    expect(openshellGateway.onDidGatewayStart).toHaveBeenCalled();
+  });
+
+  test('sends agent-workspace-update when gateway starts', () => {
+    gatewayStartCallback!();
+    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
   });
 });
 
@@ -302,6 +325,7 @@ describe('create – OpenShell mode', () => {
     vi.mocked(openshellCli.createSandbox).mockResolvedValue(undefined);
     vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue(mockAgent);
     vi.mocked(readFile).mockRejectedValue(mockEnoent());
+    vi.mocked(realpath).mockImplementation(async (p: unknown) => p as string);
   });
 
   test('calls openshellCli.createSandbox with name, providers, workspace label, and agent label', async () => {
@@ -349,6 +373,21 @@ describe('create – OpenShell mode', () => {
 
     expect(openshellCli.createSandbox).toHaveBeenCalledWith(expect.objectContaining({ name: 'my-project' }));
     expect(result).toEqual({ id: 'my-project' });
+  });
+
+  test('passes agent baseImage as from option to createSandbox', async () => {
+    vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue({
+      ...mockAgent,
+      baseImage: 'registry.example.com/agent-base:v1',
+    });
+
+    await manager.create(defaultOptions);
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: 'registry.example.com/agent-base:v1',
+      }),
+    );
   });
 
   test('calls agent.preWorkspaceStart with correct context', async () => {
@@ -585,8 +624,8 @@ describe('create – OpenShell mode', () => {
     expect(rm).toHaveBeenCalledWith(expect.stringContaining('kaiden-policy-my-sandbox'), { force: true });
   });
 
-  test('attaches secret to sandbox when getSecretForModel returns a secret', async () => {
-    vi.mocked(secretManager.getSecretForModel).mockResolvedValue({ name: 'vertex-ai-conn-1', type: 'vertex-ai' });
+  test('attaches secret to sandbox when ensureSecretForModel returns a secret', async () => {
+    vi.mocked(secretManager.ensureSecretForModel).mockResolvedValue({ name: 'vertex-ai-conn-1', type: 'vertex-ai' });
 
     const options = { ...defaultOptions, model: 'vertexai::claude-sonnet-4::' };
     await manager.create(options);
@@ -629,7 +668,7 @@ describe('create – OpenShell mode', () => {
   });
 
   test('calls setInference during create when secret type requires it', async () => {
-    vi.mocked(secretManager.getSecretForModel).mockResolvedValue({ name: 'vertex-ai-conn-1', type: 'vertex-ai' });
+    vi.mocked(secretManager.ensureSecretForModel).mockResolvedValue({ name: 'vertex-ai-conn-1', type: 'vertex-ai' });
     vi.mocked(secretManager.getConnectionProperties).mockReturnValue({
       config: {} as Configuration,
       connectionProperties: [['kaiden.vertexai._flags', {} as IConfigurationPropertyRecordedSchema]],
@@ -801,11 +840,11 @@ describe('ensureModelSecret', () => {
     } as AgentWorkspaceCreateOptions;
     await manager.ensureModelSecret(options);
 
-    expect(secretManager.getSecretForModel).not.toHaveBeenCalled();
+    expect(secretManager.ensureSecretForModel).not.toHaveBeenCalled();
   });
 
-  test('skips when getSecretForModel returns undefined (no registered provider)', async () => {
-    vi.mocked(secretManager.getSecretForModel).mockResolvedValue(undefined);
+  test('skips when ensureSecretForModel returns undefined (no registered provider)', async () => {
+    vi.mocked(secretManager.ensureSecretForModel).mockResolvedValue(undefined);
 
     const options = { ...baseOptions, model: 'unknown::model::' };
     await manager.ensureModelSecret(options);
@@ -814,7 +853,7 @@ describe('ensureModelSecret', () => {
   });
 
   test('adds secret name to options.secrets when found', async () => {
-    vi.mocked(secretManager.getSecretForModel).mockResolvedValue({ name: 'cursor-conn-123', type: 'cursor' });
+    vi.mocked(secretManager.ensureSecretForModel).mockResolvedValue({ name: 'cursor-conn-123', type: 'cursor' });
 
     const options = { ...baseOptions, model: 'cursor::gpt-4o::https://api.cursor.com' };
     await manager.ensureModelSecret(options);
@@ -823,7 +862,7 @@ describe('ensureModelSecret', () => {
   });
 
   test('does not call setInference when secret type is not in SET_INFERENCE_TYPES', async () => {
-    vi.mocked(secretManager.getSecretForModel).mockResolvedValue({ name: 'cursor-conn-123', type: 'cursor' });
+    vi.mocked(secretManager.ensureSecretForModel).mockResolvedValue({ name: 'cursor-conn-123', type: 'cursor' });
 
     const options = { ...baseOptions, model: 'cursor::gpt-4o::https://api.cursor.com' };
     await manager.ensureModelSecret(options);
@@ -1203,6 +1242,149 @@ describe('dispose', () => {
     onExitCallback!();
 
     expect(webContents.send).not.toHaveBeenCalled();
+  });
+});
+
+describe('terminal agent command execution', () => {
+  const SANDBOXES_WITH_AGENT: GatewaySandboxes[] = [
+    {
+      gateway: { name: 'kaiden', endpoint: 'http://localhost:10080' },
+      sandboxes: [
+        {
+          id: 'ws-agent',
+          name: 'agent-workspace',
+          phase: 'Ready',
+          labels: { [AGENT_LABEL]: 'test-agent' },
+        },
+        {
+          id: 'ws-no-label',
+          name: 'no-label-workspace',
+          phase: 'Ready',
+        },
+      ],
+    },
+  ];
+
+  function createTerminalMockPty(): { pty: IPty; triggerData: (data: string) => void } {
+    let onDataCb: ((data: string) => void) | undefined;
+    const pty = {
+      onData: vi.fn((cb: (data: string) => void) => {
+        onDataCb = cb;
+        return { dispose: vi.fn() };
+      }),
+      onExit: vi.fn(() => ({ dispose: vi.fn() })),
+      write: vi.fn(),
+      resize: vi.fn(),
+      kill: vi.fn(),
+      pid: 456,
+    } as unknown as IPty;
+    return {
+      pty,
+      triggerData: (data: string): void => {
+        onDataCb?.(data);
+      },
+    };
+  }
+
+  function getTerminalHandler(): (_listener: unknown, id: string, onDataId: number) => Promise<number> {
+    return vi.mocked(ipcHandle).mock.calls.find(call => call[0] === 'agent-workspace:terminal')![1] as (
+      _listener: unknown,
+      id: string,
+      onDataId: number,
+    ) => Promise<number>;
+  }
+
+  test('executes agent command on first terminal data', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(SANDBOXES_WITH_AGENT);
+    vi.mocked(agentRegistry.getAgent).mockResolvedValue({
+      id: 'test-agent',
+      name: 'Test Agent',
+      description: '',
+      command: '/usr/bin/agent start',
+      destinationSkillsFolder: '~/.agent',
+    });
+    const { pty, triggerData } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty);
+
+    await getTerminalHandler()({}, 'ws-agent', 10);
+    triggerData('$ ');
+
+    expect(pty.write).toHaveBeenCalledWith('/usr/bin/agent start\n');
+  });
+
+  test('does not execute agent command on subsequent connections', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(SANDBOXES_WITH_AGENT);
+    vi.mocked(agentRegistry.getAgent).mockResolvedValue({
+      id: 'test-agent',
+      name: 'Test Agent',
+      description: '',
+      command: '/usr/bin/agent start',
+      destinationSkillsFolder: '~/.agent',
+    });
+    const { pty: pty1, triggerData: triggerData1 } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty1);
+
+    await getTerminalHandler()({}, 'ws-agent', 10);
+    triggerData1('$ ');
+
+    const { pty: pty2, triggerData: triggerData2 } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty2);
+
+    await getTerminalHandler()({}, 'ws-agent', 11);
+    triggerData2('$ ');
+
+    expect(pty2.write).not.toHaveBeenCalled();
+  });
+
+  test('does not execute command when workspace has no agent label', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(SANDBOXES_WITH_AGENT);
+    const { pty, triggerData } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty);
+
+    await getTerminalHandler()({}, 'ws-no-label', 10);
+    triggerData('$ ');
+
+    expect(pty.write).not.toHaveBeenCalled();
+    expect(agentRegistry.getAgent).not.toHaveBeenCalled();
+  });
+
+  test('does not execute command when agent has no command', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(SANDBOXES_WITH_AGENT);
+    vi.mocked(agentRegistry.getAgent).mockResolvedValue({
+      id: 'test-agent',
+      name: 'Test Agent',
+      description: '',
+      command: '',
+      destinationSkillsFolder: '~/.agent',
+    });
+    const { pty, triggerData } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty);
+
+    await getTerminalHandler()({}, 'ws-agent', 10);
+    triggerData('$ ');
+
+    expect(pty.write).not.toHaveBeenCalled();
+  });
+
+  test('executes agent command only once despite multiple data events', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(SANDBOXES_WITH_AGENT);
+    vi.mocked(agentRegistry.getAgent).mockResolvedValue({
+      id: 'test-agent',
+      name: 'Test Agent',
+      description: '',
+      command: '/usr/bin/agent start',
+      destinationSkillsFolder: '~/.agent',
+    });
+    const { pty, triggerData } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty);
+
+    await getTerminalHandler()({}, 'ws-agent', 10);
+    triggerData('$ ');
+    triggerData('more output');
+    triggerData('even more output');
+
+    expect(pty.write).toHaveBeenCalledTimes(1);
+    expect(pty.write).toHaveBeenCalledWith('/usr/bin/agent start\n');
   });
 });
 
