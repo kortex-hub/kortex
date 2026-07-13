@@ -20,7 +20,7 @@
     "publish:next": "pnpm publish  --registry=https://registry.npmjs.org/ --no-git-tag-version --new-version 0.0.1-\"$(date +%s)\""
   },
   "dependencies": {
-    "@ai-sdk/provider": "^4.0.2",
+    "@ai-sdk/provider": "^4.0.3",
     "@openkaiden/workspace-configuration": "^0.14.0"
   }
 }
