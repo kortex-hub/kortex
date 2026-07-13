@@ -664,8 +664,8 @@ importers:
   extensions/mistral:
     dependencies:
       '@ai-sdk/mistral':
-        specifier: ^4.0.7
-        version: 4.0.7(zod@4.4.3)
+        specifier: ^4.0.8
+        version: 4.0.8(zod@4.4.3)
       '@mistralai/mistralai':
         specifier: ^2.2.0
         version: 2.2.0
@@ -1191,8 +1191,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/mistral@4.0.7':
-    resolution: {integrity: sha512-HhXtQBZyQBUWvh3q4wtQoq99WUOjb7dgGnTgedkdISHiNRZ4OkSQ1kYVFlbNG4XRddvIUf4CJd2fKzq+sYedAQ==}
+  '@ai-sdk/mistral@4.0.8':
+    resolution: {integrity: sha512-iE6qBA/m21msgz94G5D6/7BGm/aMoWCLTeYbPsoLN6Lb5kOTkE5k2jLudQeqgFt7/9kTsa9hASi+fMGpULLuEg==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -8223,10 +8223,10 @@ snapshots:
       pkce-challenge: 5.0.1
       zod: 4.3.6
 
-  '@ai-sdk/mistral@4.0.7(zod@4.4.3)':
+  '@ai-sdk/mistral@4.0.8(zod@4.4.3)':
     dependencies:
-      '@ai-sdk/provider': 4.0.2
-      '@ai-sdk/provider-utils': 5.0.6(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.3
+      '@ai-sdk/provider-utils': 5.0.7(zod@4.4.3)
       zod: 4.4.3
 
   '@ai-sdk/openai-compatible@3.0.5(zod@4.4.3)':
