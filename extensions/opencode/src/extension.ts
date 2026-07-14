@@ -128,7 +128,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
 
           providerEntry.name = provider;
           providerEntry.npm = NATIVE_PROVIDER_SDKS[provider] ?? '@ai-sdk/openai-compatible';
-          providerEntry.options = { ...providerEntry.options, baseURL: endpoint };
+          providerEntry.options = { apiKey: '{env:OPENAI_API_KEY}', ...providerEntry.options, baseURL: endpoint };
 
           providerEntry.models ??= {};
           providerEntry.models[modelName] ??= { _launch: true, name: modelName };

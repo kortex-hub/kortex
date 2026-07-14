@@ -28,14 +28,20 @@
         "gemini.connection._type": {
           "type": "string",
           "scope": "InferenceProviderConnection",
-          "description": "Gemini provider type",
+          "description": "OpenShell provider type",
           "hidden": true
         },
-        "gemini.connection.GEMINI_API_KEY": {
+        "gemini.connection.OPENAI_API_KEY": {
           "type": "string",
           "scope": "InferenceProviderConnection",
           "description": "API key secret reference",
           "format": "password",
+          "hidden": true
+        },
+        "gemini.connection.OPENAI_BASE_URL": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "Gemini OpenAI-compatible base URL",
           "hidden": true
         }
       }
