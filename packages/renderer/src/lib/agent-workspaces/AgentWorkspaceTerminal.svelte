@@ -130,6 +130,31 @@ function handleResize(): void {
   }
 }
 
+let skipBeforeUnload = false;
+
+function handleBeforeUnload(event: BeforeUnloadEvent): void {
+  if (sendCallbackId && !skipBeforeUnload) {
+    event.preventDefault();
+  }
+}
+
+function handleConfirmReload(): void {
+  window
+    .showMessageBox({
+      title: 'Reload Application',
+      message: 'An agent terminal session is active. Reloading will disconnect it and you will need to reconnect.',
+      type: 'warning',
+      buttons: ['Reload', 'Cancel'],
+    })
+    .then(result => {
+      if (result?.response === 0) {
+        skipBeforeUnload = true;
+        location.reload();
+      }
+    })
+    .catch((err: unknown) => console.error('Error showing reload confirmation', err));
+}
+
 function createDataCallback(): (data: string) => void {
   return (data: string) => {
     shellTerminal.write(data);
@@ -230,18 +255,24 @@ async function refreshTerminal(): Promise<void> {
   window.dispatchEvent(new Event('resize'));
 }
 
+let confirmReloadDisposable: { dispose: () => void } | undefined;
+
 onMount(async () => {
   reconnect = manualReconnect;
   reconnectExhausted = false;
   reconnectCount = 0;
   await refreshTerminal();
   window.addEventListener('resize', handleResize);
+  window.addEventListener('beforeunload', handleBeforeUnload);
+  confirmReloadDisposable = window.events?.receive('agent-terminal:confirm-reload', handleConfirmReload);
   await executeShellInWorkspace();
 });
 
 onDestroy(() => {
   clearReconnectTimer();
   window.removeEventListener('resize', handleResize);
+  window.removeEventListener('beforeunload', handleBeforeUnload);
+  confirmReloadDisposable?.dispose();
   onDataDisposable?.dispose();
   const terminalContent = serializeAddon?.serialize() ?? '';
   registerTerminal({ workspaceId, callbackId: sendCallbackId, terminal: terminalContent });
