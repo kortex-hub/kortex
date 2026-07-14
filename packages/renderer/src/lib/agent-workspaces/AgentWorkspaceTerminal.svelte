@@ -135,7 +135,7 @@ function handleResize(): void {
 let skipBeforeUnload = false;
 
 function handleBeforeUnload(event: BeforeUnloadEvent): void {
-  if (sendCallbackId && hasAgent && !skipBeforeUnload) {
+  if (sendCallbackId !== undefined && hasAgent && !skipBeforeUnload) {
     event.preventDefault();
   }
 }
