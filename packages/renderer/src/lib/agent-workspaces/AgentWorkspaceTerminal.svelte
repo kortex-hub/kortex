@@ -13,6 +13,7 @@ import { getTerminalTheme } from '/@/lib/terminal/terminal-theme';
 import NoLogIcon from '/@/lib/ui/NoLogIcon.svelte';
 import { getExistingTerminal, registerTerminal } from '/@/stores/agent-workspace-terminal-store';
 import { allOpenshellSandboxes } from '/@/stores/openshell-sandboxes';
+import { AGENT_LABEL } from '/@api/openshell-gateway-info';
 import { TerminalSettings } from '/@api/terminal/terminal-settings';
 
 const MAX_RECONNECT_ATTEMPTS = 30;
@@ -44,6 +45,7 @@ let reconnectCount = 0;
 const workspaceSummary = $derived($allOpenshellSandboxes.find(ws => ws.id === workspaceId));
 const status = $derived(workspaceSummary?.phase ?? 'Provisioning');
 const isRunning = $derived(status === 'Ready');
+const hasAgent = $derived(Boolean(workspaceSummary?.labels?.[AGENT_LABEL]));
 let lastStatus = $state('');
 
 function registerInputHandler(callbackId: number): void {
@@ -133,7 +135,7 @@ function handleResize(): void {
 let skipBeforeUnload = false;
 
 function handleBeforeUnload(event: BeforeUnloadEvent): void {
-  if (sendCallbackId && !skipBeforeUnload) {
+  if (sendCallbackId && hasAgent && !skipBeforeUnload) {
     event.preventDefault();
   }
 }
@@ -142,7 +144,8 @@ function handleConfirmReload(): void {
   window
     .showMessageBox({
       title: 'Reload Application',
-      message: 'An agent terminal session is active. Reloading will disconnect it and you will need to reconnect.',
+      message:
+        'If an agent session is active, reloading will disconnect it and the agent terminal will be lost. Do you want to continue?',
       type: 'warning',
       buttons: ['Reload', 'Cancel'],
     })
