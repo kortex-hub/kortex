@@ -28,10 +28,10 @@ function handleClick(value: string): void {
   {#if label}
     <span class="block my-2 text-sm font-bold text-[var(--pd-modal-text)]">{label}</span>
   {/if}
-  <div class="flex flex-row gap-2 w-full">
+  <div class="grid gap-2 w-full grid-cols-[repeat(auto-fill,minmax(12rem,1fr))]">
     {#each options as option (option.value)}
       <button
-        class="rounded-md bg-[var(--pd-content-card-inset-bg)] p-3 flex-1 min-w-0 min-h-24 cursor-pointer
+        class="rounded-md bg-[var(--pd-content-card-inset-bg)] p-3 min-w-0 min-h-24 cursor-pointer
           hover:bg-[var(--pd-content-card-hover-inset-bg)]
           {selected === option.value ? 'border-[var(--pd-content-card-border-selected)]' : 'border-[var(--pd-content-card-border)]'}
           border-2 flex flex-col overflow-hidden"

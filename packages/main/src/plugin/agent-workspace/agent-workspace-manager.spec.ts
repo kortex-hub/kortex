@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { access, lstat, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, lstat, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -90,6 +90,7 @@ const openshellCli = new OpenshellCli({} as Exec, {} as CliToolRegistry);
 
 const agentRegistry = {
   getAgentRegistration: vi.fn(),
+  getAgent: vi.fn(),
 } as unknown as AgentRegistry;
 
 const mockTask = {
@@ -324,6 +325,7 @@ describe('create – OpenShell mode', () => {
     vi.mocked(openshellCli.createSandbox).mockResolvedValue(undefined);
     vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue(mockAgent);
     vi.mocked(readFile).mockRejectedValue(mockEnoent());
+    vi.mocked(realpath).mockImplementation(async (p: unknown) => p as string);
   });
 
   test('calls openshellCli.createSandbox with name, providers, workspace label, and agent label', async () => {
@@ -393,6 +395,21 @@ describe('create – OpenShell mode', () => {
 
     await expect(manager.create(options)).rejects.toThrow(/must not exceed 64 characters/);
     expect(openshellCli.createSandbox).not.toHaveBeenCalled();
+  });
+
+  test('passes agent baseImage as from option to createSandbox', async () => {
+    vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue({
+      ...mockAgent,
+      baseImage: 'registry.example.com/agent-base:v1',
+    });
+
+    await manager.create(defaultOptions);
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: 'registry.example.com/agent-base:v1',
+      }),
+    );
   });
 
   test('calls agent.preWorkspaceStart with correct context', async () => {
@@ -1247,6 +1264,149 @@ describe('dispose', () => {
     onExitCallback!();
 
     expect(webContents.send).not.toHaveBeenCalled();
+  });
+});
+
+describe('terminal agent command execution', () => {
+  const SANDBOXES_WITH_AGENT: GatewaySandboxes[] = [
+    {
+      gateway: { name: 'kaiden', endpoint: 'http://localhost:10080' },
+      sandboxes: [
+        {
+          id: 'ws-agent',
+          name: 'agent-workspace',
+          phase: 'Ready',
+          labels: { [AGENT_LABEL]: 'test-agent' },
+        },
+        {
+          id: 'ws-no-label',
+          name: 'no-label-workspace',
+          phase: 'Ready',
+        },
+      ],
+    },
+  ];
+
+  function createTerminalMockPty(): { pty: IPty; triggerData: (data: string) => void } {
+    let onDataCb: ((data: string) => void) | undefined;
+    const pty = {
+      onData: vi.fn((cb: (data: string) => void) => {
+        onDataCb = cb;
+        return { dispose: vi.fn() };
+      }),
+      onExit: vi.fn(() => ({ dispose: vi.fn() })),
+      write: vi.fn(),
+      resize: vi.fn(),
+      kill: vi.fn(),
+      pid: 456,
+    } as unknown as IPty;
+    return {
+      pty,
+      triggerData: (data: string): void => {
+        onDataCb?.(data);
+      },
+    };
+  }
+
+  function getTerminalHandler(): (_listener: unknown, id: string, onDataId: number) => Promise<number> {
+    return vi.mocked(ipcHandle).mock.calls.find(call => call[0] === 'agent-workspace:terminal')![1] as (
+      _listener: unknown,
+      id: string,
+      onDataId: number,
+    ) => Promise<number>;
+  }
+
+  test('executes agent command on first terminal data', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(SANDBOXES_WITH_AGENT);
+    vi.mocked(agentRegistry.getAgent).mockResolvedValue({
+      id: 'test-agent',
+      name: 'Test Agent',
+      description: '',
+      command: '/usr/bin/agent start',
+      destinationSkillsFolder: '~/.agent',
+    });
+    const { pty, triggerData } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty);
+
+    await getTerminalHandler()({}, 'ws-agent', 10);
+    triggerData('$ ');
+
+    expect(pty.write).toHaveBeenCalledWith('/usr/bin/agent start\n');
+  });
+
+  test('does not execute agent command on subsequent connections', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(SANDBOXES_WITH_AGENT);
+    vi.mocked(agentRegistry.getAgent).mockResolvedValue({
+      id: 'test-agent',
+      name: 'Test Agent',
+      description: '',
+      command: '/usr/bin/agent start',
+      destinationSkillsFolder: '~/.agent',
+    });
+    const { pty: pty1, triggerData: triggerData1 } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty1);
+
+    await getTerminalHandler()({}, 'ws-agent', 10);
+    triggerData1('$ ');
+
+    const { pty: pty2, triggerData: triggerData2 } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty2);
+
+    await getTerminalHandler()({}, 'ws-agent', 11);
+    triggerData2('$ ');
+
+    expect(pty2.write).not.toHaveBeenCalled();
+  });
+
+  test('does not execute command when workspace has no agent label', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(SANDBOXES_WITH_AGENT);
+    const { pty, triggerData } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty);
+
+    await getTerminalHandler()({}, 'ws-no-label', 10);
+    triggerData('$ ');
+
+    expect(pty.write).not.toHaveBeenCalled();
+    expect(agentRegistry.getAgent).not.toHaveBeenCalled();
+  });
+
+  test('does not execute command when agent has no command', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(SANDBOXES_WITH_AGENT);
+    vi.mocked(agentRegistry.getAgent).mockResolvedValue({
+      id: 'test-agent',
+      name: 'Test Agent',
+      description: '',
+      command: '',
+      destinationSkillsFolder: '~/.agent',
+    });
+    const { pty, triggerData } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty);
+
+    await getTerminalHandler()({}, 'ws-agent', 10);
+    triggerData('$ ');
+
+    expect(pty.write).not.toHaveBeenCalled();
+  });
+
+  test('executes agent command only once despite multiple data events', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(SANDBOXES_WITH_AGENT);
+    vi.mocked(agentRegistry.getAgent).mockResolvedValue({
+      id: 'test-agent',
+      name: 'Test Agent',
+      description: '',
+      command: '/usr/bin/agent start',
+      destinationSkillsFolder: '~/.agent',
+    });
+    const { pty, triggerData } = createTerminalMockPty();
+    vi.mocked(spawn).mockReturnValue(pty);
+
+    await getTerminalHandler()({}, 'ws-agent', 10);
+    triggerData('$ ');
+    triggerData('more output');
+    triggerData('even more output');
+
+    expect(pty.write).toHaveBeenCalledTimes(1);
+    expect(pty.write).toHaveBeenCalledWith('/usr/bin/agent start\n');
   });
 });
 

@@ -17,6 +17,7 @@ import { agentWorkspaceRuntime } from '/@/stores/agentworkspace-runtime';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import { disabledModels, isModelEnabled, modelKey } from '/@/stores/model-catalog';
 import { catalogModels } from '/@/stores/models';
+import { allOpenshellSandboxes } from '/@/stores/openshell-sandboxes';
 import { providerInfos } from '/@/stores/providers';
 import { ragEnvironments } from '/@/stores/rag-environments';
 import { secretVaultInfos } from '/@/stores/secret-vault';
@@ -217,6 +218,10 @@ function getEffectiveWorkspaceName(): string {
   return wizard.draft.sessionName.trim() || getDefaultSessionName(wizard.draft.sourcePath);
 }
 
+function getEffectiveWorkspaceNameFromSnapshot(draft: { sessionName: string; sourcePath: string }): string {
+  return draft.sessionName.trim() || getDefaultSessionName(draft.sourcePath);
+}
+
 function isWorkspaceNameValid(): boolean {
   return getSandboxNameValidationError(getEffectiveWorkspaceName()) === undefined;
 }
@@ -257,9 +262,22 @@ let error = $state('');
 let currentStepId = $derived(wizardSteps[wizard.draft.currentStepIndex]?.id ?? '');
 let isLastStep = $derived(wizard.draft.currentStepIndex === wizardSteps.length - 1);
 let hasModel = $derived(wizard.draft.selectedModel !== undefined);
+let validationErrors = $derived.by(() => {
+  const errors: { name?: string } = {};
+  const name = wizard.draft.sessionName.trim().toLowerCase();
+  if (name && $allOpenshellSandboxes.some(s => s.name.toLowerCase() === name)) {
+    errors.name = 'A workspace with this name already exists. Please choose a different name.';
+  }
+  return errors;
+});
 let isCurrentStepComplete = $derived.by(() => {
   if (currentStepId === 'workspace') {
-    return getEffectiveWorkspaceName() !== '' && wizard.draft.sourcePath.trim() !== '' && isWorkspaceNameValid();
+    return (
+      getEffectiveWorkspaceName() !== '' &&
+      wizard.draft.sourcePath.trim() !== '' &&
+      isWorkspaceNameValid() &&
+      !validationErrors.name
+    );
   }
   if (currentStepId === 'agent-model') {
     return hasModel;
@@ -406,7 +424,14 @@ function buildMountsFrom(fileAccess: string, mounts: CustomMount[]): AgentWorksp
 }
 
 async function startAsIs(): Promise<void> {
-  if (!wizard.draft.sourcePath.trim() || !wizard.draft.selectedModel || !isWorkspaceNameValid()) return;
+  if (
+    !wizard.draft.sourcePath.trim() ||
+    !wizard.draft.selectedModel ||
+    !isWorkspaceNameValid() ||
+    validationErrors.name
+  ) {
+    return;
+  }
 
   const draftSnapshot = $state.snapshot(wizard.draft);
 
@@ -416,7 +441,7 @@ async function startAsIs(): Promise<void> {
       runtime: $agentWorkspaceRuntime,
       agent: draftSnapshot.selectedAgent,
       model: getModelId(draftSnapshot.selectedModel!),
-      name: draftSnapshot.sessionName || getDefaultSessionName(draftSnapshot.sourcePath),
+      name: getEffectiveWorkspaceNameFromSnapshot(draftSnapshot),
       project: draftSnapshot.selectedProjectId,
     });
     resetDraft();
@@ -440,7 +465,8 @@ async function startWorkspace(): Promise<void> {
     !getEffectiveWorkspaceName() ||
     !wizard.draft.sourcePath.trim() ||
     !wizard.draft.selectedModel ||
-    !isWorkspaceNameValid()
+    !isWorkspaceNameValid() ||
+    validationErrors.name
   ) {
     return;
   }
@@ -476,7 +502,7 @@ async function startWorkspace(): Promise<void> {
       runtime: $agentWorkspaceRuntime,
       agent: draftSnapshot.selectedAgent,
       model: getModelId(draftSnapshot.selectedModel!),
-      name: draftSnapshot.sessionName,
+      name: getEffectiveWorkspaceNameFromSnapshot(draftSnapshot),
       skills: selectedSkillPaths.length > 0 ? selectedSkillPaths : undefined,
       network,
       secrets: draftSnapshot.selectedSecretIds.length > 0 ? [...draftSnapshot.selectedSecretIds] : undefined,
@@ -545,7 +571,8 @@ async function startWorkspace(): Promise<void> {
                 startAsIsDisabled={!hasModel}
                 projects={[...$workspaceProjectInfos]}
                 selectedProjectId={wizard.draft.selectedProjectId}
-                onProjectSelect={handleProjectSelect} />
+                onProjectSelect={handleProjectSelect}
+                errors={validationErrors} />
             {:else if currentStepId === 'agent-model'}
               <AgentWorkspaceCreateStepAgentModel bind:selectedAgent={wizard.draft.selectedAgent} bind:selectedModel={wizard.draft.selectedModel} />
             {:else if currentStepId === 'tools-secrets'}

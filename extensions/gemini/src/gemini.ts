@@ -33,6 +33,14 @@ import { configuration } from '@openkaiden/api';
 export const PROVIDER_ID = 'gemini';
 export const TOKENS_KEY = 'gemini:tokens';
 
+// OpenShell has no dedicated "gemini" provider type — it only understands
+// protocol families (openai, anthropic, ...). Google publishes an
+// OpenAI-compatible endpoint that accepts a plain Bearer API key, so the
+// connection is registered with OpenShell as an "openai" provider pointed
+// at that endpoint.
+const OPENSHELL_PROVIDER_TYPE = 'openai';
+const OPENAI_COMPAT_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/';
+
 export interface StoredConnection {
   id: string;
   token: string;
@@ -66,7 +74,7 @@ export class Gemini implements Disposable {
     // register MCP Provider connection factory
     this.provider?.setInferenceProviderConnectionFactory({
       connectionTypes: ['cloud'],
-      llmMetadata: { name: 'gemini' },
+      llmMetadata: { name: PROVIDER_ID },
       create: this.mcpFactory.bind(this),
     });
 
@@ -126,8 +134,9 @@ export class Gemini implements Disposable {
     await this.secrets.store(secretName, token);
 
     const config = configuration.getConfiguration(undefined, connection);
-    await config.update('gemini.connection._type', PROVIDER_ID);
-    await config.update('gemini.connection.GEMINI_API_KEY', secretName);
+    await config.update('gemini.connection._type', OPENSHELL_PROVIDER_TYPE);
+    await config.update('gemini.connection.OPENAI_API_KEY', secretName);
+    await config.update('gemini.connection.OPENAI_BASE_URL', OPENAI_COMPAT_BASE_URL);
   }
 
   private async clearConnectionConfiguration(connection: InferenceProviderConnection): Promise<void> {
@@ -136,7 +145,8 @@ export class Gemini implements Disposable {
 
     const config = configuration.getConfiguration(undefined, connection);
     await config.update('gemini.connection._type', undefined);
-    await config.update('gemini.connection.GEMINI_API_KEY', undefined);
+    await config.update('gemini.connection.OPENAI_API_KEY', undefined);
+    await config.update('gemini.connection.OPENAI_BASE_URL', undefined);
   }
 
   private async registerInferenceProviderConnection({ id, token }: { id: string; token: string }): Promise<void> {
@@ -165,7 +175,8 @@ export class Gemini implements Disposable {
       id,
       name: this.maskKey(token),
       type: 'cloud',
-      llmMetadata: { name: 'gemini' },
+      llmMetadata: { name: PROVIDER_ID },
+      endpoint: OPENAI_COMPAT_BASE_URL,
       sdk: google,
       status(): ProviderConnectionStatus {
         return status;

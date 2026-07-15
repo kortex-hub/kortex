@@ -68,6 +68,26 @@ beforeEach(() => {
 });
 
 describe('OpenshellCliManager', () => {
+  test('registers gateway CLI tool even when binary is not found', async () => {
+    vi.mocked(existsSync).mockReturnValue(false);
+
+    const manager = createManager();
+    await manager.init();
+
+    const createCalls = vi.mocked(cli.createCliTool).mock.calls;
+    const registeredNames = createCalls.map(call => call[0].name);
+
+    expect(registeredNames).toContain('openshell');
+    expect(registeredNames).toContain('openshell-image-builder');
+    expect(registeredNames).toContain('openshell-gateway');
+
+    const gwCall = createCalls.find(call => call[0].name === 'openshell-gateway');
+    expect(gwCall).toBeDefined();
+    expect(gwCall![0].installationSource).toBe('extension');
+    expect(gwCall![0].path).toBeUndefined();
+    expect(gwCall![0].version).toBeUndefined();
+  });
+
   describe('binary discovery priority', () => {
     test('prefers bundled resource over system PATH', async () => {
       const bundledPath = join('/resources', 'openshell', 'openshell');

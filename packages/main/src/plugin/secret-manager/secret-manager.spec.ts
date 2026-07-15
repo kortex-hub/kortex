@@ -208,10 +208,13 @@ describe('openshellAdapter', () => {
     expect(result).toEqual({ name: 'my-openai' });
   });
 
-  test('listServices returns empty array', async () => {
+  test('listServices delegates to openshellAdapter', async () => {
+    const profiles = [{ id: 'openai', display_name: 'OpenAI', description: 'OpenAI API provider' }];
+    vi.mocked(openshellCli.listProfiles).mockResolvedValue(profiles);
+
     const result = await manager.listServices();
 
-    expect(result).toEqual([]);
+    expect(result).toEqual(profiles);
   });
 
   test('skips file watching', () => {

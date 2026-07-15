@@ -24,18 +24,20 @@ import { inject, injectable } from 'inversify';
 
 import { IPCHandle } from '/@/plugin/api.js';
 import { Directories } from '/@/plugin/directories.js';
+import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
-import type { SemanticRouterConfigInfo } from '/@api/semantic-router-info.js';
+import type { SemanticRouterConfigInfo, SemanticRouterInfo } from '/@api/semantic-router-info.js';
 import { SemanticRouterConfigSchema } from '/@api/semantic-router-info.js';
 
 @injectable()
 export class SemanticRouterManager {
-  private configs: Map<string, SemanticRouterConfigInfo> = new Map();
+  private configs: Map<string, SemanticRouterInfo> = new Map();
 
   constructor(
     @inject(ApiSenderType) private readonly apiSender: ApiSenderType,
     @inject(IPCHandle) private readonly ipcHandle: IPCHandle,
     @inject(Directories) private readonly directories: Directories,
+    @inject(ProviderRegistry) private readonly providerRegistry: ProviderRegistry,
   ) {}
 
   async init(): Promise<void> {
@@ -46,20 +48,20 @@ export class SemanticRouterManager {
 
     await this.loadFromDisk();
 
-    this.ipcHandle('semantic-router-manager:list', async (): Promise<SemanticRouterConfigInfo[]> => {
+    this.ipcHandle('semantic-router-manager:list', async (): Promise<SemanticRouterInfo[]> => {
       return this.list();
     });
 
     this.ipcHandle(
       'semantic-router-manager:findByName',
-      async (_listener: unknown, name: string): Promise<SemanticRouterConfigInfo | undefined> => {
+      async (_listener: unknown, name: string): Promise<SemanticRouterInfo | undefined> => {
         return this.findByName(name);
       },
     );
 
     this.ipcHandle(
       'semantic-router-manager:create',
-      async (_listener: unknown, config: SemanticRouterConfigInfo): Promise<SemanticRouterConfigInfo> => {
+      async (_listener: unknown, config: SemanticRouterConfigInfo): Promise<SemanticRouterInfo> => {
         return this.create(config);
       },
     );
@@ -69,15 +71,15 @@ export class SemanticRouterManager {
     });
   }
 
-  list(): SemanticRouterConfigInfo[] {
+  list(): SemanticRouterInfo[] {
     return Array.from(this.configs.values());
   }
 
-  findByName(name: string): SemanticRouterConfigInfo | undefined {
+  findByName(name: string): SemanticRouterInfo | undefined {
     return this.configs.get(name);
   }
 
-  async create(config: SemanticRouterConfigInfo): Promise<SemanticRouterConfigInfo> {
+  async create(config: SemanticRouterConfigInfo): Promise<SemanticRouterInfo> {
     const parsed = {
       ...SemanticRouterConfigSchema.parse(config),
       name: this.getSafeName(config.name),
@@ -87,9 +89,30 @@ export class SemanticRouterManager {
       throw new Error(`Semantic router "${parsed.name}" already exists`);
     }
     await this.saveToDisk(parsed);
-    this.configs.set(parsed.name, parsed);
+
+    const entry: SemanticRouterInfo = { ...parsed };
+    this.configs.set(parsed.name, entry);
+
+    const factoryResult = this.providerRegistry.getSemanticRouterFactory();
+    if (factoryResult) {
+      try {
+        const semanticRouter = await factoryResult.factory.create({
+          name: parsed.name,
+          config: JSON.stringify(parsed),
+        });
+        entry.connection = {
+          providerId: factoryResult.internalId,
+          connectionId: semanticRouter.connectionId,
+        };
+      } catch (err: unknown) {
+        this.configs.delete(parsed.name);
+        await rm(this.getFilePath(parsed.name));
+        throw err;
+      }
+    }
+
     this.apiSender.send('semantic-router-update');
-    return parsed;
+    return entry;
   }
 
   async remove(name: string): Promise<void> {
@@ -99,6 +122,7 @@ export class SemanticRouterManager {
     await rm(this.getFilePath(name));
     this.configs.delete(name);
     this.apiSender.send('semantic-router-update');
+    await this.providerRegistry.deleteInferenceConnectionBySemanticRouter(name);
   }
 
   private async loadFromDisk(): Promise<void> {

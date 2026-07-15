@@ -169,7 +169,7 @@ describe('activate', () => {
           ollama: {
             name: 'ollama',
             npm: '@ai-sdk/openai-compatible',
-            options: { baseURL: 'http://localhost:11434/v1' },
+            options: { apiKey: '{env:OPENAI_API_KEY}', baseURL: 'http://localhost:11434/v1' },
             models: {
               llama3: { _launch: true, name: 'llama3' },
             },

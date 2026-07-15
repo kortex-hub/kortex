@@ -19,11 +19,11 @@
 import type { Writable } from 'svelte/store';
 import { writable } from 'svelte/store';
 
-import type { SemanticRouterConfigInfo } from '/@api/semantic-router-info';
+import type { SemanticRouterInfo } from '/@api/semantic-router-info';
 
 import { EventStore } from './event-store';
 
-export const semanticRouterInfos: Writable<readonly SemanticRouterConfigInfo[]> = writable([]);
+export const semanticRouterInfos: Writable<readonly SemanticRouterInfo[]> = writable([]);
 
 let readyToUpdate = false;
 
@@ -34,11 +34,11 @@ async function checkForUpdate(eventName: string): Promise<boolean> {
   return readyToUpdate;
 }
 
-const listSemanticRouters = (): Promise<readonly SemanticRouterConfigInfo[]> => {
+const listSemanticRouters = (): Promise<readonly SemanticRouterInfo[]> => {
   return window.listSemanticRouters();
 };
 
-export const semanticRoutersEventStore = new EventStore<readonly SemanticRouterConfigInfo[]>(
+export const semanticRoutersEventStore = new EventStore<readonly SemanticRouterInfo[]>(
   'semantic-routers',
   semanticRouterInfos,
   checkForUpdate,

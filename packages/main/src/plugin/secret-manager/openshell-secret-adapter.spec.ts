@@ -142,9 +142,39 @@ describe('removeSecret', () => {
 });
 
 describe('listServices', () => {
-  test('returns empty array (not supported by OpenShell)', async () => {
+  test('delegates to openshellCli.listProfiles', async () => {
+    const profiles = [
+      {
+        id: 'openai',
+        display_name: 'OpenAI',
+        description: 'OpenAI API provider',
+        credentials: [{ name: 'api_key', required: true, env_vars: ['OPENAI_API_KEY'] }],
+      },
+      {
+        id: 'anthropic',
+        display_name: 'Anthropic',
+        credentials: [{ name: 'api_key', required: true, env_vars: ['ANTHROPIC_API_KEY'] }],
+      },
+    ];
+    vi.mocked(openshellCli.listProfiles).mockResolvedValue(profiles);
+
+    const result = await adapter.listServices();
+
+    expect(openshellCli.listProfiles).toHaveBeenCalled();
+    expect(result).toEqual(profiles);
+  });
+
+  test('returns empty array when no profiles exist', async () => {
+    vi.mocked(openshellCli.listProfiles).mockResolvedValue([]);
+
     const result = await adapter.listServices();
 
     expect(result).toEqual([]);
+  });
+
+  test('rejects when openshellCli.listProfiles fails', async () => {
+    vi.mocked(openshellCli.listProfiles).mockRejectedValue(new Error('no gateway configured'));
+
+    await expect(adapter.listServices()).rejects.toThrow('no gateway configured');
   });
 });

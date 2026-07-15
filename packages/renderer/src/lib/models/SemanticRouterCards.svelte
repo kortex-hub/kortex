@@ -6,10 +6,10 @@ import { SvelteSet } from 'svelte/reactivity';
 
 import type { CatalogModelInfo } from '/@/lib/models/models-utils';
 import { catalogModels } from '/@/stores/models';
-import type { SemanticRouterConfigInfo } from '/@api/semantic-router-info';
+import type { SemanticRouterInfo } from '/@api/semantic-router-info';
 
 interface Props {
-  routers: SemanticRouterConfigInfo[];
+  routers: SemanticRouterInfo[];
 }
 
 let { routers }: Props = $props();
@@ -32,7 +32,7 @@ async function removeRouter(name: string): Promise<void> {
   }
 }
 
-function getEndpoint(router: SemanticRouterConfigInfo): string {
+function getEndpoint(router: SemanticRouterInfo): string {
   const listener = router.listeners[0];
   if (!listener) return '';
   const addr = listener.address === '0.0.0.0' ? 'localhost' : listener.address;
@@ -43,7 +43,7 @@ function getBackendType(providerId: string): InferenceProviderConnectionType {
   return providerTypeMap.get(providerId) ?? 'cloud';
 }
 
-function getUniqueModelRefs(router: SemanticRouterConfigInfo): ModelRef[] {
+function getUniqueModelRefs(router: SemanticRouterInfo): ModelRef[] {
   const seen = new SvelteSet<string>();
   const refs: ModelRef[] = [];
   for (const decision of router.routing.decisions) {
@@ -60,7 +60,7 @@ function getUniqueModelRefs(router: SemanticRouterConfigInfo): ModelRef[] {
   return refs;
 }
 
-function getKeywordGroupNames(router: SemanticRouterConfigInfo): string[] {
+function getKeywordGroupNames(router: SemanticRouterInfo): string[] {
   return router.routing.keywords.map(k => k.name);
 }
 </script>

@@ -787,6 +787,20 @@ declare module '@openkaiden/api' {
     create(params: { [key: string]: any }, logger?: Logger, token?: CancellationToken): Promise<void>;
   }
 
+  export interface SemanticRouterCreateParams {
+    name: string;
+    config: string;
+  }
+
+  export interface SemanticRouter {
+    connectionId: string;
+  }
+
+  export interface SemanticRouterFactory extends ProviderConnectionFactory {
+    readonly type: string;
+    create(params: SemanticRouterCreateParams, logger?: Logger, token?: CancellationToken): Promise<SemanticRouter>;
+  }
+
   // create a kubernetes provider
   export interface KubernetesProviderConnectionFactory extends ProviderConnectionFactory {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -996,6 +1010,11 @@ declare module '@openkaiden/api' {
 
     setChunkProviderConnectionFactory(
       chunkProviderConnectionFactory: ChunkProviderConnectionFactory,
+      connectionAuditor?: Auditor,
+    ): Disposable;
+
+    setSemanticRouterConnectionFactory(
+      semanticRouterConnectionFactory: SemanticRouterFactory,
       connectionAuditor?: Auditor,
     ): Disposable;
 

@@ -418,6 +418,7 @@ export class ExtensionLoader implements IAsyncDisposable {
         'kaiden.goose',
         'kaiden.gemini',
         'kaiden.cursor',
+        'kaiden.mistral',
       ]);
   }
 

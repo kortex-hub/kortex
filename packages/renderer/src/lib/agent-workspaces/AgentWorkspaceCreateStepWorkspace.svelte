@@ -1,6 +1,6 @@
 <script lang="ts">
 import { faChevronDown, faFolder, faFolderOpen, faInfoCircle, faRocket } from '@fortawesome/free-solid-svg-icons';
-import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
+import { Button, Input } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
 import { Textarea } from '/@/lib/chat/components/ui/textarea';
@@ -22,6 +22,7 @@ interface Props {
   projects?: WorkspaceProjectInfo[];
   selectedProjectId?: string;
   onProjectSelect?: (project: WorkspaceProjectInfo | undefined) => void;
+  errors?: { name?: string };
 }
 
 let {
@@ -39,6 +40,7 @@ let {
   projects = [],
   selectedProjectId,
   onProjectSelect,
+  errors = {},
 }: Props = $props();
 
 function markNameEdited(): void {
@@ -62,9 +64,8 @@ function getEffectiveWorkspaceName(name: string, path: string): string {
   return normalized.split(/[\\/]/).filter(Boolean).at(-1) ?? '';
 }
 
-let sessionNameError = $derived(
-  getSandboxNameValidationError(getEffectiveWorkspaceName(sessionName, sourcePath)) ?? '',
-);
+let sessionNameError = $derived(getSandboxNameValidationError(getEffectiveWorkspaceName(sessionName, sourcePath)));
+let nameInputError = $derived(sessionNameError ?? errors?.name ?? '');
 </script>
 
 <h2 class="text-lg font-semibold text-[var(--pd-modal-text)] mb-1">Workspace</h2>
@@ -144,12 +145,10 @@ let sessionNameError = $derived(
       bind:value={sessionName}
       placeholder="e.g., Frontend Refactoring"
       class="w-full"
-      aria-invalid={sessionNameError !== ''}
       oninput={markNameEdited}
+      error={nameInputError}
+      aria-invalid={nameInputError !== ''}
     />
-    {#if sessionNameError}
-      <ErrorMessage error={sessionNameError} />
-    {/if}
   </div>
 
   <div class="rounded-xl border border-[var(--pd-content-card-border)]/85 bg-[var(--pd-content-card-bg)]/35 overflow-hidden">

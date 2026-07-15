@@ -29,6 +29,7 @@ import * as agentWorkspaceRuntimeStore from '/@/stores/agentworkspace-runtime';
 import * as mcpStore from '/@/stores/mcp-remote-servers';
 import * as modelCatalogStore from '/@/stores/model-catalog';
 import * as modelsStore from '/@/stores/models';
+import * as openshellSandboxesStore from '/@/stores/openshell-sandboxes';
 import * as providerStore from '/@/stores/providers';
 import * as ragStore from '/@/stores/rag-environments';
 import * as secretVaultStore from '/@/stores/secret-vault';
@@ -37,6 +38,7 @@ import * as workspaceProjectsStore from '/@/stores/workspace-projects';
 import type { AgentInfo } from '/@api/agent-info';
 import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info';
 import type { CatalogModelInfo } from '/@api/model-registry-info';
+import type { SandboxInfo } from '/@api/openshell-gateway-info';
 import type { ProviderInfo } from '/@api/provider-info';
 import type { RagEnvironment } from '/@api/rag/rag-environment';
 import type { SecretVaultInfo } from '/@api/secret-vault/secret-vault-info';
@@ -55,6 +57,7 @@ vi.mock(import('/@/stores/providers'));
 vi.mock(import('/@/stores/rag-environments'));
 vi.mock(import('/@/stores/model-catalog'));
 vi.mock(import('/@/stores/models'));
+vi.mock(import('/@/stores/openshell-sandboxes'));
 vi.mock(import('/@/stores/workspace-projects'));
 
 function buildCatalogModels(providers: ProviderInfo[]): CatalogModelInfo[] {
@@ -174,6 +177,7 @@ beforeEach(() => {
     (providerId: string, connectionId: string, label: string): string => `${providerId}::${connectionId}::${label}`,
   );
   vi.mocked(workspaceProjectsStore).workspaceProjectInfos = writable<readonly WorkspaceProjectInfo[]>([]);
+  vi.mocked(openshellSandboxesStore).allOpenshellSandboxes = writable<(SandboxInfo & { gatewayName: string })[]>([]);
   vi.mocked(window.checkAgentWorkspaceConfigExists).mockResolvedValue(false);
   vi.mocked(window.showMessageBox).mockResolvedValue({ response: 0 });
   resetDraft();
