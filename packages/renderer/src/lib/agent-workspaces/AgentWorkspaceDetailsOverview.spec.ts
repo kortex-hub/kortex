@@ -161,8 +161,8 @@ test('Expect filesystem shows workspace source path', () => {
 test('Expect mounts are displayed with access type', () => {
   render(AgentWorkspaceDetailsOverview, { workspaceSummary, configuration });
 
-  expect(screen.getByText('/workspace/shared-lib')).toBeInTheDocument();
-  expect(screen.getByText('/workspace/.gitconfig')).toBeInTheDocument();
+  expect(screen.getByText('$SOURCES/../shared-lib')).toBeInTheDocument();
+  expect(screen.getByText('$HOME/.gitconfig')).toBeInTheDocument();
 });
 
 test('Expect no skills message when configuration has no skills', () => {

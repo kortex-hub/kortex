@@ -283,7 +283,7 @@ function formatRelativeTime(ts: string | undefined): string {
                 <Icon icon={faFolder} size="sm" />
               </div>
               <span class="flex-1 min-w-0 text-[13px] font-medium text-[var(--pd-content-card-header-text)] truncate">
-                {mount.target}
+                {mount.host}
               </span>
               <span class="text-[11px] shrink-0 {mount.ro ? 'text-[var(--pd-content-text)] opacity-60' : 'text-[var(--pd-status-running)]'}">
                 {mount.ro ? 'read-only' : 'read-write'}
