@@ -605,7 +605,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/extension-api
       js-yaml:
-        specifier: ^4.1.1
+        specifier: ^4.3.0
         version: 4.3.0
       zod:
         specifier: ^4.3.5

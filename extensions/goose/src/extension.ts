@@ -54,7 +54,7 @@ const GooseConfigCodec = z.codec(z.string(), GooseConfigSchema, {
         code: 'invalid_format',
         format: 'yaml',
         input: yamlString,
-        message: String(err),
+        message: err instanceof Error ? err.message : String(err),
       });
       return z.NEVER;
     }
@@ -64,6 +64,18 @@ const GooseConfigCodec = z.codec(z.string(), GooseConfigSchema, {
 
 function nonEmpty(obj: Record<string, string> | undefined): Record<string, string> | undefined {
   return obj && Object.keys(obj).length > 0 ? obj : undefined;
+}
+
+function setEnvironmentVariable(
+  environment: NonNullable<AgentWorkspaceContext['workspace']['environment']>,
+  name: string,
+  value: string,
+): void {
+  const index = environment.findIndex(entry => entry.name === name);
+  if (index >= 0) {
+    environment.splice(index, 1);
+  }
+  environment.push({ name, value });
 }
 
 export async function activate(extensionContext: ExtensionContext): Promise<void> {
@@ -87,9 +99,6 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       },
     ],
     destinationSkillsFolder: '${HOME}/.agents/skills',
-    isSupportedRuntime(runtime): boolean {
-      return runtime === 'podman';
-    },
     isSupportedModelType(type: ModelType): boolean {
       // Vertex AI setup is prepared below, but it is disabled until Kaiden injects it for Goose as Anthropic.
       return type.name !== 'vertexai';
@@ -113,11 +122,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
 
         context.workspace.environment ??= [];
         for (const envVar of envVars) {
-          const index = context.workspace.environment.findIndex(e => e.name === envVar.name);
-          if (index >= 0) {
-            context.workspace.environment.splice(index, 1);
-          }
-          context.workspace.environment.push(envVar);
+          setEnvironmentVariable(context.workspace.environment, envVar.name, envVar.value);
         }
       }
 
