@@ -272,22 +272,22 @@ test('Expect Continue button disabled when workspace name exceeds hostname limit
     target: { value: '/home/user/my-repo' },
   });
   await fireEvent.input(screen.getByPlaceholderText('e.g., Frontend Refactoring'), {
-    target: { value: 'a'.repeat(65) },
+    target: { value: 'a'.repeat(57) },
   });
 
   expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-  expect(screen.getByText(/must not exceed 64 characters/)).toBeInTheDocument();
+  expect(screen.getByText(/must not exceed 56 characters/)).toBeInTheDocument();
 });
 
 test('Expect Continue button disabled when basename-derived name exceeds hostname limit', async () => {
   render(AgentWorkspaceCreate);
 
   await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
-    target: { value: `/home/user/${'a'.repeat(65)}` },
+    target: { value: `/home/user/${'a'.repeat(57)}` },
   });
 
   expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-  expect(screen.getByText(/must not exceed 64 characters/)).toBeInTheDocument();
+  expect(screen.getByText(/must not exceed 56 characters/)).toBeInTheDocument();
 });
 
 test('Expect use-all-defaults button on step 1', async () => {
