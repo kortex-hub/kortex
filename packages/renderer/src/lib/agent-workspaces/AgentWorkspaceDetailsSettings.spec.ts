@@ -449,6 +449,40 @@ test('Expect saving custom mounts calls updateAgentWorkspaceConfiguration', asyn
   });
 });
 
+test('Expect saving custom mount with empty target defaults to basename of host', async () => {
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: {} });
+
+  const fileAccessNav = screen.getByRole('link', { name: 'File Access' });
+  await fireEvent.click(fileAccessNav);
+
+  await fireEvent.click(screen.getByRole('button', { name: 'Custom Paths' }));
+  const hostInput = screen.getByRole('textbox', { name: 'Host path 1' });
+  await fireEvent.input(hostInput, { target: { value: '/home/user/data' } });
+
+  await fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+  expect(window.updateAgentWorkspaceConfiguration).toHaveBeenCalledWith('ws-1', {
+    mounts: [{ host: '/home/user/data', target: 'data', ro: false }],
+  });
+});
+
+test('Expect saving custom mount with trailing separator derives correct basename', async () => {
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: {} });
+
+  const fileAccessNav = screen.getByRole('link', { name: 'File Access' });
+  await fireEvent.click(fileAccessNav);
+
+  await fireEvent.click(screen.getByRole('button', { name: 'Custom Paths' }));
+  const hostInput = screen.getByRole('textbox', { name: 'Host path 1' });
+  await fireEvent.input(hostInput, { target: { value: '/home/user/data/' } });
+
+  await fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+  expect(window.updateAgentWorkspaceConfiguration).toHaveBeenCalledWith('ws-1', {
+    mounts: [{ host: '/home/user/data/', target: 'data', ro: false }],
+  });
+});
+
 test('Expect discarding file access changes resets to original mode', async () => {
   render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
 

@@ -33,7 +33,7 @@ import { KnowledgePage } from '/@/model/pages/knowledge-page';
 import { McpPage } from '/@/model/pages/mcp-page';
 import { SettingsPage } from '/@/model/pages/settings-page';
 import { SkillsPage } from '/@/model/pages/skills-page';
-import { waitForAppReady } from '/@/utils/app-ready';
+import { type AppReadyOptions, waitForAppReady } from '/@/utils/app-ready';
 import { saveTestArtifacts } from '/@/utils/test-artifacts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -60,6 +60,8 @@ export interface WorkerElectronFixtures {
   workerElectronApp: ElectronApplication;
   workerPage: Page;
 }
+
+export type { AppReadyOptions } from '/@/utils/app-ready';
 
 export const test = base.extend<ElectronFixtures>({
   // eslint-disable-next-line no-empty-pattern
@@ -406,7 +408,10 @@ async function waitForUsablePage(electronApp: ElectronApplication): Promise<Page
   return page;
 }
 
-export async function getFirstPage(electronApp: ElectronApplication): Promise<Page> {
+export async function getFirstPage(
+  electronApp: ElectronApplication,
+  appReadyOptions: AppReadyOptions = {},
+): Promise<Page> {
   const deadline = Date.now() + TIMEOUTS.DEFAULT;
   let lastError: unknown;
 
@@ -427,7 +432,7 @@ export async function getFirstPage(electronApp: ElectronApplication): Promise<Pa
       };
       page.on('close', onPageClose);
       try {
-        await waitForAppReady(page, remaining);
+        await waitForAppReady(page, remaining, appReadyOptions);
       } finally {
         page.off('close', onPageClose);
       }

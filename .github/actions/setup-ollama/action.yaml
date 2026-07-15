@@ -16,7 +16,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 name: Setup Ollama
-description: Install Ollama, pull a model, and serve it. Sets OLLAMA_ENABLED in the environment on success.
+description: Install Ollama, pull a model, and serve it. Sets OLLAMA_ENABLED, INFERENCE_MODEL, and optionally INFERENCE_SECOND_MODEL in the environment on success.
 
 inputs:
   model:
@@ -94,6 +94,7 @@ runs:
         # Pull primary model
         if pull_model "${{ inputs.model }}"; then
           echo "OLLAMA_ENABLED=true" >> "$GITHUB_ENV"
+          echo "INFERENCE_MODEL=${{ inputs.model }}" >> "$GITHUB_ENV"
           echo "enabled=true" >> "$GITHUB_OUTPUT"
         else
           echo "::warning::Failed to pull ${{ inputs.model }} model after 5 attempts - Ollama tests will be skipped"
@@ -104,6 +105,7 @@ runs:
         # Pull second model if specified
         if [ -n "${{ inputs.second_model }}" ]; then
           if pull_model "${{ inputs.second_model }}"; then
+            echo "INFERENCE_SECOND_MODEL=${{ inputs.second_model }}" >> "$GITHUB_ENV"
             echo "second_model_enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "::warning::Failed to pull ${{ inputs.second_model }} after 5 attempts - second model tests will be skipped"

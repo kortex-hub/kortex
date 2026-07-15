@@ -191,6 +191,41 @@ export function parseModelEndpoint(endpoint: string): ModelEndpoint | undefined 
   return { host: parsed.hostname, port };
 }
 
+/**
+ * Formats an {@link OpenshellEndpoint} as a CLI `--add-endpoint` string:
+ * `host:port[:access[:protocol[:enforcement[:options]]]]`
+ */
+export function formatEndpointFlag(ep: OpenshellEndpoint): string {
+  const parts: string[] = [ep.host, String(ep.port)];
+  if (ep.access) parts.push(ep.access);
+  if (ep.protocol) parts.push(ep.protocol);
+  if (ep.enforcement) parts.push(ep.enforcement);
+
+  const options: string[] = [];
+  if (ep.websocket_credential_rewrite) options.push('websocket-credential-rewrite');
+  if (ep.request_body_credential_rewrite) options.push('request-body-credential-rewrite');
+  if (options.length) {
+    if (!ep.enforcement) parts.push('enforce');
+    parts.push(options.join(','));
+  }
+
+  return parts.join(':');
+}
+
+/**
+ * Collects all endpoints from a policy's network_policies into CLI
+ * `--add-endpoint` formatted strings.
+ */
+export function collectEndpointFlags(policy: OpenshellPolicy): string[] {
+  if (!policy.network_policies) return [];
+  return Object.values(policy.network_policies).flatMap(rule => rule.endpoints.map(formatEndpointFlag));
+}
+
+export function collectBinaryFlags(policy: OpenshellPolicy): string[] {
+  if (!policy.network_policies) return [];
+  return [...new Set(Object.values(policy.network_policies).flatMap(rule => (rule.binaries ?? []).map(b => b.path)))];
+}
+
 export function buildPolicyObject(network?: NetworkConfiguration, modelEndpoint?: string): OpenshellPolicy | undefined {
   const networkPolicies: Record<string, OpenshellNetworkPolicyEntry> = {};
 

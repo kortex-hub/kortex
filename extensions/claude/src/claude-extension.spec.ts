@@ -398,7 +398,9 @@ describe('ClaudeExtension', () => {
       await agent.preWorkspaceStart(context);
 
       expect(workspace.environment).toContainEqual({ name: 'CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS', value: '1' });
-      expect(workspace.environment).toContainEqual({ name: 'CLAUDE_CODE_SIMPLE', value: '1' });
+      expect(workspace.environment).not.toEqual(
+        expect.arrayContaining([expect.objectContaining({ name: 'CLAUDE_CODE_SIMPLE' })]),
+      );
       expect(workspace.environment).toContainEqual({ name: 'ANTHROPIC_BASE_URL', value: 'https://inference.local' });
       expect(workspace.environment).toContainEqual({ name: 'ANTHROPIC_API_KEY', value: 'unused' });
     });
@@ -462,8 +464,7 @@ describe('ClaudeExtension', () => {
         name: 'CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS',
         value: '1',
       });
-      expect(claudeCodeUseSimple).toHaveLength(1);
-      expect(claudeCodeUseSimple[0]).toEqual({ name: 'CLAUDE_CODE_SIMPLE', value: '1' });
+      expect(claudeCodeUseSimple).toHaveLength(0);
       expect(anthropicBaseURL).toHaveLength(1);
       expect(anthropicBaseURL[0]).toEqual({ name: 'ANTHROPIC_BASE_URL', value: 'https://inference.local' });
       expect(anthropicKey).toHaveLength(1);

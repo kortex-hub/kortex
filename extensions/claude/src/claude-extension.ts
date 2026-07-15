@@ -124,7 +124,6 @@ export class ClaudeExtension {
         if (context.model.llmMetadata?.name === 'vertexai') {
           // Add Claude Code-specific environment variables for Vertex AI
           const claudeEnvVars = [
-            { name: 'CLAUDE_CODE_SIMPLE', value: '1' },
             { name: 'CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS', value: '1' },
             { name: 'ANTHROPIC_BASE_URL', value: 'https://inference.local' },
             { name: 'ANTHROPIC_API_KEY', value: 'unused' },
@@ -139,6 +138,9 @@ export class ClaudeExtension {
             }
             context.workspace.environment.push(envVar);
           }
+
+          // CLAUDE_CODE_SIMPLE prevents Claude Code from indexing user-installed skills.
+          context.workspace.environment = context.workspace.environment.filter(e => e.name !== 'CLAUDE_CODE_SIMPLE');
         }
 
         const settingsFile = context.configurationFiles.find(f => f.path === CLAUDE_SETTINGS_PATH);

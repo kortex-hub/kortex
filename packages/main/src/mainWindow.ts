@@ -92,6 +92,10 @@ async function createWindow(): Promise<BrowserWindow> {
   };
   browserWindow.setBounds(initialBounds);
 
+  browserWindow.webContents.on('will-prevent-unload', () => {
+    browserWindow.webContents.send('api-sender', 'agent-terminal:confirm-reload', {});
+  });
+
   /**
    * If you install `show: true` then it can cause issues when trying to close the window.
    * Use `show: false` and listener events `ready-to-show` to fix these issues.

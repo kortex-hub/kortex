@@ -13,6 +13,7 @@ import { getTerminalTheme } from '/@/lib/terminal/terminal-theme';
 import NoLogIcon from '/@/lib/ui/NoLogIcon.svelte';
 import { getExistingTerminal, registerTerminal } from '/@/stores/agent-workspace-terminal-store';
 import { allOpenshellSandboxes } from '/@/stores/openshell-sandboxes';
+import { AGENT_LABEL } from '/@api/openshell-gateway-info';
 import { TerminalSettings } from '/@api/terminal/terminal-settings';
 
 const MAX_RECONNECT_ATTEMPTS = 30;
@@ -44,6 +45,7 @@ let reconnectCount = 0;
 const workspaceSummary = $derived($allOpenshellSandboxes.find(ws => ws.id === workspaceId));
 const status = $derived(workspaceSummary?.phase ?? 'Provisioning');
 const isRunning = $derived(status === 'Ready');
+const hasAgent = $derived(Boolean(workspaceSummary?.labels?.[AGENT_LABEL]));
 let lastStatus = $state('');
 
 function registerInputHandler(callbackId: number): void {
@@ -128,6 +130,32 @@ function handleResize(): void {
         ?.catch((err: unknown) => console.error(`Error resizing terminal for workspace ${workspaceId}`, err));
     }
   }
+}
+
+let skipBeforeUnload = false;
+
+function handleBeforeUnload(event: BeforeUnloadEvent): void {
+  if (sendCallbackId !== undefined && hasAgent && !skipBeforeUnload) {
+    event.preventDefault();
+  }
+}
+
+function handleConfirmReload(): void {
+  window
+    .showMessageBox({
+      title: 'Reload Application',
+      message:
+        'If an agent session is active, reloading will disconnect it and the agent terminal will be lost. Do you want to continue?',
+      type: 'warning',
+      buttons: ['Reload', 'Cancel'],
+    })
+    .then(result => {
+      if (result?.response === 0) {
+        skipBeforeUnload = true;
+        location.reload();
+      }
+    })
+    .catch((err: unknown) => console.error('Error showing reload confirmation', err));
 }
 
 function createDataCallback(): (data: string) => void {
@@ -230,18 +258,24 @@ async function refreshTerminal(): Promise<void> {
   window.dispatchEvent(new Event('resize'));
 }
 
+let confirmReloadDisposable: { dispose: () => void } | undefined;
+
 onMount(async () => {
   reconnect = manualReconnect;
   reconnectExhausted = false;
   reconnectCount = 0;
   await refreshTerminal();
   window.addEventListener('resize', handleResize);
+  window.addEventListener('beforeunload', handleBeforeUnload);
+  confirmReloadDisposable = window.events?.receive('agent-terminal:confirm-reload', handleConfirmReload);
   await executeShellInWorkspace();
 });
 
 onDestroy(() => {
   clearReconnectTimer();
   window.removeEventListener('resize', handleResize);
+  window.removeEventListener('beforeunload', handleBeforeUnload);
+  confirmReloadDisposable?.dispose();
   onDataDisposable?.dispose();
   const terminalContent = serializeAddon?.serialize() ?? '';
   registerTerminal({ workspaceId, callbackId: sendCallbackId, terminal: terminalContent });
