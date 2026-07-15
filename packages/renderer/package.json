@@ -56,7 +56,7 @@
     "yaml": "^2.8.2"
   },
   "dependencies": {
-    "@ai-sdk/svelte": "^5.0.26",
+    "@ai-sdk/svelte": "^5.0.28",
     "@lucide/svelte": "^0.539.0",
     "@podman-desktop/ui-svelte": "^1.25.0",
     "@sejohnson/svelte-themes": "^0.0.6",
