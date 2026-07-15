@@ -1,9 +1,10 @@
 <script lang="ts">
 import { faChevronDown, faFolder, faFolderOpen, faInfoCircle, faRocket } from '@fortawesome/free-solid-svg-icons';
-import { Button, Input } from '@podman-desktop/ui-svelte';
+import { Button, ErrorMessage, Input } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
 import { Textarea } from '/@/lib/chat/components/ui/textarea';
+import { getSandboxNameValidationError } from '/@api/agent-workspace-info';
 import type { WorkspaceProjectInfo } from '/@api/workspace-project-info';
 
 interface Props {
@@ -51,6 +52,19 @@ function toggleDescription(): void {
 function toggleProject(): void {
   projectOpen = !projectOpen;
 }
+
+function getEffectiveWorkspaceName(name: string, path: string): string {
+  const trimmed = name.trim();
+  if (trimmed) {
+    return trimmed;
+  }
+  const normalized = path.trim().replace(/[\\/]+$/, '');
+  return normalized.split(/[\\/]/).filter(Boolean).at(-1) ?? '';
+}
+
+let sessionNameError = $derived(
+  getSandboxNameValidationError(getEffectiveWorkspaceName(sessionName, sourcePath)) ?? '',
+);
 </script>
 
 <h2 class="text-lg font-semibold text-[var(--pd-modal-text)] mb-1">Workspace</h2>
@@ -130,8 +144,12 @@ function toggleProject(): void {
       bind:value={sessionName}
       placeholder="e.g., Frontend Refactoring"
       class="w-full"
+      aria-invalid={sessionNameError !== ''}
       oninput={markNameEdited}
     />
+    {#if sessionNameError}
+      <ErrorMessage error={sessionNameError} />
+    {/if}
   </div>
 
   <div class="rounded-xl border border-[var(--pd-content-card-border)]/85 bg-[var(--pd-content-card-bg)]/35 overflow-hidden">

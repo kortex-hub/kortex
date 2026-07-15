@@ -58,6 +58,16 @@ export type AgentWorkspaceMcpConfig = configComponents['schemas']['McpConfigurat
 
 export type AgentWorkspaceMount = configComponents['schemas']['Mount'];
 
+/** Maximum sandbox name length. Linux hostnames are limited to 64 characters. */
+export const SANDBOX_NAME_MAX_LENGTH = 64;
+
+export function getSandboxNameValidationError(name: string): string | undefined {
+  if (name.length > SANDBOX_NAME_MAX_LENGTH) {
+    return `Workspace name must not exceed ${SANDBOX_NAME_MAX_LENGTH} characters`;
+  }
+  return undefined;
+}
+
 /**
  * Options for creating (initializing) a new workspace via `kdn init`.
  */

@@ -373,6 +373,28 @@ describe('create – OpenShell mode', () => {
     expect(result).toEqual({ id: 'my-project' });
   });
 
+  test('rejects workspace names longer than the hostname limit', async () => {
+    const options: AgentWorkspaceCreateOptions = {
+      ...defaultOptions,
+      name: 'a'.repeat(65),
+    };
+
+    await expect(manager.create(options)).rejects.toThrow(/must not exceed 64 characters/);
+    expect(openshellCli.createSandbox).not.toHaveBeenCalled();
+  });
+
+  test('rejects basename-derived names longer than the hostname limit', async () => {
+    const longBasename = 'a'.repeat(65);
+    const options: AgentWorkspaceCreateOptions = {
+      sourcePath: `/tmp/${longBasename}`,
+      agent: 'claude',
+      model: 'ramalama::granite-4::',
+    };
+
+    await expect(manager.create(options)).rejects.toThrow(/must not exceed 64 characters/);
+    expect(openshellCli.createSandbox).not.toHaveBeenCalled();
+  });
+
   test('calls agent.preWorkspaceStart with correct context', async () => {
     const preWorkspaceStart = vi.fn();
     vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue({ ...mockAgent, preWorkspaceStart });
