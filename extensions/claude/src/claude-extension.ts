@@ -125,6 +125,7 @@ export class ClaudeExtension {
           // Add Claude Code-specific environment variables for Vertex AI
           const claudeEnvVars = [
             { name: 'CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS', value: '1' },
+            { name: 'CLAUDE_CODE_USE_VERTEX', value: '1' },
             { name: 'ANTHROPIC_BASE_URL', value: 'https://inference.local' },
             { name: 'ANTHROPIC_API_KEY', value: 'unused' },
           ];

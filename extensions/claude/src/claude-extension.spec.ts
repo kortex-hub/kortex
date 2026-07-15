@@ -401,6 +401,7 @@ describe('ClaudeExtension', () => {
       expect(workspace.environment).not.toEqual(
         expect.arrayContaining([expect.objectContaining({ name: 'CLAUDE_CODE_SIMPLE' })]),
       );
+      expect(workspace.environment).toContainEqual({ name: 'CLAUDE_CODE_USE_VERTEX', value: '1' });
       expect(workspace.environment).toContainEqual({ name: 'ANTHROPIC_BASE_URL', value: 'https://inference.local' });
       expect(workspace.environment).toContainEqual({ name: 'ANTHROPIC_API_KEY', value: 'unused' });
     });
@@ -435,6 +436,7 @@ describe('ClaudeExtension', () => {
       const workspace = {
         environment: [
           { name: 'CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS', value: '0' },
+          { name: 'CLAUDE_CODE_USE_VERTEX', value: 'old' },
           { name: 'CLAUDE_CODE_SIMPLE', value: '1' },
           { name: 'ANTHROPIC_BASE_URL', value: 'https://api.anthropic.com' },
           { name: 'ANTHROPIC_API_KEY', value: 'mykey' },
@@ -455,6 +457,7 @@ describe('ClaudeExtension', () => {
       const claudeCodeDisableExperimentalBetas = workspace.environment.filter(
         e => e.name === 'CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS',
       );
+      const claudeCodeUseVertex = workspace.environment.filter(e => e.name === 'CLAUDE_CODE_USE_VERTEX');
       const claudeCodeUseSimple = workspace.environment.filter(e => e.name === 'CLAUDE_CODE_SIMPLE');
       const anthropicBaseURL = workspace.environment.filter(e => e.name === 'ANTHROPIC_BASE_URL');
       const anthropicKey = workspace.environment.filter(e => e.name === 'ANTHROPIC_API_KEY');
@@ -464,6 +467,8 @@ describe('ClaudeExtension', () => {
         name: 'CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS',
         value: '1',
       });
+      expect(claudeCodeUseVertex).toHaveLength(1);
+      expect(claudeCodeUseVertex[0]).toEqual({ name: 'CLAUDE_CODE_USE_VERTEX', value: '1' });
       expect(claudeCodeUseSimple).toHaveLength(0);
       expect(anthropicBaseURL).toHaveLength(1);
       expect(anthropicBaseURL[0]).toEqual({ name: 'ANTHROPIC_BASE_URL', value: 'https://inference.local' });
