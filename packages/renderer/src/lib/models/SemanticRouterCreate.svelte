@@ -25,6 +25,7 @@ let currentStepId = $derived(WIZARD_STEPS[currentStepIndex]?.id ?? '');
 let isLastStep = $derived(currentStepIndex === WIZARD_STEPS.length - 1);
 
 let selectedModels: CatalogModelInfo[] = $state([]);
+let defaultModel: CatalogModelInfo | undefined = $state(undefined);
 
 let error = $state('');
 let creating = $state(false);
@@ -71,6 +72,14 @@ function handleStepClick(index: number): void {
   routerWizard.draft.currentStepIndex = index;
 }
 
+function resolveDefaultModelRef():
+  | { providerId: string; connectionId: string; label: string; useReasoning: boolean }
+  | undefined {
+  const target = defaultModel ?? selectedModels[0];
+  if (!target) return undefined;
+  return { providerId: target.providerId, connectionId: target.connectionId, label: target.label, useReasoning: false };
+}
+
 function buildConfig(): SemanticRouterConfigInfo {
   const d = $state.snapshot(routerWizard.draft);
   const modelRefs = buildModelRefs();
@@ -86,6 +95,7 @@ function buildConfig(): SemanticRouterConfigInfo {
           : modelRefs.length > 0
             ? [{ name: 'default', priority: 0, rules: [{ operator: 'OR', conditions: [], modelRefs }] }]
             : [],
+      defaultModelRef: resolveDefaultModelRef(),
     },
   };
 }
@@ -206,7 +216,7 @@ function cancel(): void {
               </div>
             </div>
             {:else if currentStepId === 'models'}
-              <SemanticRouterCreateStepModels bind:selectedModels={selectedModels} />
+              <SemanticRouterCreateStepModels bind:selectedModels={selectedModels} bind:defaultModel={defaultModel} />
             {:else if currentStepId === 'signals'}
               <SemanticRouterCreateStepSignals
                 bind:keywords={routerWizard.draft.keywords}

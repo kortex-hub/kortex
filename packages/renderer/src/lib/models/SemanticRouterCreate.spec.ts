@@ -265,6 +265,12 @@ describe('create flow', () => {
               ],
             },
           ],
+          defaultModelRef: {
+            providerId: 'claude',
+            connectionId: 'conn-0',
+            label: 'claude-sonnet-4',
+            useReasoning: false,
+          },
         }),
       }),
     );

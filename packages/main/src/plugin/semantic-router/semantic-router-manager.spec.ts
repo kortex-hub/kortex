@@ -386,3 +386,60 @@ test('create succeeds when no provider has a semantic router factory', async () 
   expect(result.name).toBe('my-router');
   expect(writeFile).toHaveBeenCalled();
 });
+
+test('create persists defaultModelRef when provided', async () => {
+  mockEmptyDir();
+  const configWithDefault: SemanticRouterConfigInfo = {
+    ...sampleConfig,
+    routing: {
+      ...sampleConfig.routing,
+      defaultModelRef: { providerId: 'openai', connectionId: 'conn-1', label: 'GPT-4', useReasoning: false },
+    },
+  };
+
+  const manager = createManager();
+  await manager.init();
+
+  const result = await manager.create(configWithDefault);
+
+  expect(result.routing.defaultModelRef).toEqual({
+    providerId: 'openai',
+    connectionId: 'conn-1',
+    label: 'GPT-4',
+    useReasoning: false,
+  });
+  const written = vi.mocked(writeFile).mock.calls[0]![1] as string;
+  expect(JSON.parse(written).routing.defaultModelRef).toBeDefined();
+});
+
+test('create works without defaultModelRef for backward compatibility', async () => {
+  mockEmptyDir();
+  const manager = createManager();
+  await manager.init();
+
+  const result = await manager.create(sampleConfig);
+
+  expect(result.routing.defaultModelRef).toBeUndefined();
+});
+
+test('loadFromDisk loads configs with defaultModelRef', async () => {
+  const configWithDefault: SemanticRouterConfigInfo = {
+    ...sampleConfig,
+    routing: {
+      ...sampleConfig.routing,
+      defaultModelRef: { providerId: 'openai', connectionId: 'conn-1', label: 'GPT-4', useReasoning: false },
+    },
+  };
+  mockDirWithConfigs(configWithDefault);
+
+  const manager = createManager();
+  await manager.init();
+
+  const result = manager.findByName('my-router');
+  expect(result?.routing.defaultModelRef).toEqual({
+    providerId: 'openai',
+    connectionId: 'conn-1',
+    label: 'GPT-4',
+    useReasoning: false,
+  });
+});
