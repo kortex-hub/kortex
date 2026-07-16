@@ -746,7 +746,12 @@ export class AgentWorkspaceManager implements Disposable {
       this.apiSender.send('agent-gateway-update');
       this.apiSender.send('agent-workspace-update');
     });
-  }
+
+    this.openshellCli.onDidSandboxListChange(() => {
+      this.apiSender.send('agent-workspace-update');
+    });
+
+s  }
 
   @preDestroy()
   dispose(): void {

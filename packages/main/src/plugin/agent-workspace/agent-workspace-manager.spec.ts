@@ -127,6 +127,7 @@ const providerRegistry = {
 } as unknown as ProviderRegistry;
 
 let gatewayStartCallback: (() => void) | undefined;
+let sandboxListChangeCallback: (() => void) | undefined;
 
 const openshellGateway = {
   onDidGatewayStart: vi.fn((cb: () => void) => {
@@ -178,6 +179,15 @@ beforeEach(() => {
     } as Awaited<ReturnType<typeof lstat>>;
   });
   gatewayStartCallback = undefined;
+  sandboxListChangeCallback = undefined;
+  Object.defineProperty(openshellCli, 'onDidSandboxListChange', {
+    value: vi.fn((cb: () => void) => {
+      sandboxListChangeCallback = cb;
+      return { dispose: vi.fn() };
+    }),
+    writable: true,
+    configurable: true,
+  });
   manager = new AgentWorkspaceManager(
     apiSender,
     ipcHandle,
@@ -238,6 +248,15 @@ describe('init', () => {
   test('sends gateway and workspace update events when gateway starts', () => {
     gatewayStartCallback!();
     expect(apiSender.send).toHaveBeenCalledWith('agent-gateway-update');
+    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
+  });
+
+  test('subscribes to sandbox list change event', () => {
+    expect(openshellCli.onDidSandboxListChange).toHaveBeenCalled();
+  });
+
+  test('sends agent-workspace-update when sandbox list changes from polling', () => {
+    sandboxListChangeCallback!();
     expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
   });
 });

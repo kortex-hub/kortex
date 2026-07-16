@@ -20,7 +20,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 import type { RunError, RunResult } from '@openkaiden/api';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { Proxy } from '/@/plugin/proxy.js';
@@ -763,6 +763,163 @@ describe('listSandboxesPerGateway', () => {
 
     expect(results).toHaveLength(1);
     expect(results.at(0)?.sandboxes).toEqual([]);
+  });
+});
+
+describe('listSandboxesPerGateway auto-refresh', () => {
+  const gateways = [{ name: 'gw-1', endpoint: 'https://gw1.example.com', active: true }];
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    openshellCli.dispose();
+    vi.useRealTimers();
+  });
+
+  test('schedules re-list 5s after detecting a Deleting sandbox and fires emitter', async () => {
+    const deletingSandboxes = [{ id: 'sb-1', name: 'sb-1', phase: 'Deleting' }];
+    const readySandboxes = [{ id: 'sb-1', name: 'sb-1', phase: 'Ready' }];
+
+    vi.mocked(exec.exec)
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(readySandboxes)));
+
+    const listener = vi.fn();
+    openshellCli.onDidSandboxListChange(listener);
+
+    await openshellCli.listSandboxesPerGateway();
+
+    expect(listener).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(5000);
+
+    expect(listener).toHaveBeenCalledOnce();
+    expect(listener).toHaveBeenCalledWith([{ gateway: gateways[0], sandboxes: readySandboxes }]);
+  });
+
+  test('does not schedule poll when no sandbox is in Deleting state', async () => {
+    const readySandboxes = [{ id: 'sb-1', name: 'sb-1', phase: 'Ready' }];
+
+    vi.mocked(exec.exec)
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(readySandboxes)));
+
+    const listener = vi.fn();
+    openshellCli.onDidSandboxListChange(listener);
+
+    await openshellCli.listSandboxesPerGateway();
+    await vi.advanceTimersByTimeAsync(10000);
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  test('does not schedule a second timer if one is already pending', async () => {
+    const deletingSandboxes = [{ id: 'sb-1', name: 'sb-1', phase: 'Deleting' }];
+    const readySandboxes = [{ id: 'sb-1', name: 'sb-1', phase: 'Ready' }];
+
+    vi.mocked(exec.exec)
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(readySandboxes)));
+
+    const listener = vi.fn();
+    openshellCli.onDidSandboxListChange(listener);
+
+    await openshellCli.listSandboxesPerGateway();
+    await openshellCli.listSandboxesPerGateway();
+
+    await vi.advanceTimersByTimeAsync(5000);
+
+    expect(listener).toHaveBeenCalledOnce();
+  });
+
+  test('does not fire emitter when sandbox counts are unchanged', async () => {
+    const deletingSandboxes = [{ id: 'sb-1', name: 'sb-1', phase: 'Deleting' }];
+
+    vi.mocked(exec.exec)
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)));
+
+    const listener = vi.fn();
+    openshellCli.onDidSandboxListChange(listener);
+
+    await openshellCli.listSandboxesPerGateway();
+    await vi.advanceTimersByTimeAsync(5000);
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  test('continues polling while Deleting sandboxes remain and fires only on change', async () => {
+    const deletingSandboxes = [{ id: 'sb-1', name: 'sb-1', phase: 'Deleting' }];
+    const readySandboxes = [{ id: 'sb-1', name: 'sb-1', phase: 'Ready' }];
+
+    vi.mocked(exec.exec)
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(readySandboxes)));
+
+    const listener = vi.fn();
+    openshellCli.onDidSandboxListChange(listener);
+
+    await openshellCli.listSandboxesPerGateway();
+
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(listener).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(listener).toHaveBeenCalledOnce();
+
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(listener).toHaveBeenCalledOnce();
+  });
+
+  test('handles errors in the polling re-list gracefully', async () => {
+    const deletingSandboxes = [{ id: 'sb-1', name: 'sb-1', phase: 'Deleting' }];
+
+    vi.mocked(exec.exec)
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)))
+      .mockRejectedValueOnce(new Error('connection lost'));
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const listener = vi.fn();
+    openshellCli.onDidSandboxListChange(listener);
+
+    await openshellCli.listSandboxesPerGateway();
+    await vi.advanceTimersByTimeAsync(5000);
+
+    expect(listener).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('deleting-poll refresh failed'));
+  });
+
+  test('dispose clears pending poll timer', async () => {
+    const deletingSandboxes = [{ id: 'sb-1', name: 'sb-1', phase: 'Deleting' }];
+
+    vi.mocked(exec.exec)
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)));
+
+    const listener = vi.fn();
+    openshellCli.onDidSandboxListChange(listener);
+
+    await openshellCli.listSandboxesPerGateway();
+    openshellCli.dispose();
+    await vi.advanceTimersByTimeAsync(10000);
+
+    expect(listener).not.toHaveBeenCalled();
   });
 });
 
