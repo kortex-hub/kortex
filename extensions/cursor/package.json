@@ -52,7 +52,7 @@
     "watch": "vite build --watch"
   },
   "dependencies": {
-    "ai": "^7.0.28",
+    "ai": "^7.0.30",
     "inversify": "^7.7.1",
     "zod": "^4.3.5"
   },
