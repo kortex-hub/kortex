@@ -696,7 +696,7 @@ importers:
     dependencies:
       ollama-ai-provider-v2:
         specifier: ^3.5.0
-        version: 3.5.0(ai@7.0.28(zod@4.4.3))(zod@4.4.3)
+        version: 3.5.0(ai@7.0.30(zod@4.4.3))(zod@4.4.3)
     devDependencies:
       '@openkaiden/api':
         specifier: workspace:*
@@ -926,8 +926,8 @@ importers:
   packages/renderer:
     dependencies:
       '@ai-sdk/svelte':
-        specifier: ^5.0.28
-        version: 5.0.28(svelte@5.47.0)(zod@4.3.6)
+        specifier: ^5.0.30
+        version: 5.0.30(svelte@5.47.0)(zod@4.3.6)
       '@lucide/svelte':
         specifier: ^0.539.0
         version: 0.539.0(svelte@5.47.0)
@@ -1161,6 +1161,12 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/gateway@4.0.22':
+    resolution: {integrity: sha512-KdXJLa6O25fltJC/Lh8gnB1VaYMdX2mEKIalkohuItS+Ig523XxwK9e/Uuc66AvtrLIf7G51cDg3rDpP9mrxwQ==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/google-vertex@5.0.21':
     resolution: {integrity: sha512-mJqlIrU8IzquJY3kpJ7EDGtRXFnyr1SrnsrFM814+/auqXv99jfFLzIuoIWm+LwLn7/LpecJ+wuQYHz9pUwHvQ==}
     engines: {node: '>=22'}
@@ -1227,8 +1233,8 @@ packages:
     resolution: {integrity: sha512-e0CpNWJUY7OxAFAnCZkw+ri9QOHWwTs1tXP42782KFGCU07qt8NiXCrCVowyCB5dP2r5/Uls+g2oPd8kOJn9dw==}
     engines: {node: '>=22'}
 
-  '@ai-sdk/svelte@5.0.28':
-    resolution: {integrity: sha512-JnShc8cQN0ApMevl8IbAGJuLsc5uDaweWn8849n8ARhDX/ZP5bgTkNPX9GqTrB5eqH29W3lzjtQ/ABrZrkZsbg==}
+  '@ai-sdk/svelte@5.0.30':
+    resolution: {integrity: sha512-WGL6RY8uSvre9JTD/HbVuq8T1wRhZFUxgpp/AfD5AGzMPF8yTwGNnbzUQw680lNx3nUy4mPe4YHVkQG4k0PZqg==}
     engines: {node: '>=22'}
     peerDependencies:
       svelte: ^5.31.0
@@ -3084,6 +3090,12 @@ packages:
 
   ai@7.0.28:
     resolution: {integrity: sha512-RtynA4e6rWH2YiMX0OJz2h2i+sdJgiItuwqmstYZAiTZ0ZkZzQ8s4KVh7tQfZuDCfzIhRTg+q1h1xirT8AClkw==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  ai@7.0.30:
+    resolution: {integrity: sha512-tm0gTAHSWBdDfW4P2mj+LlglGCUQTSA9ktyS2PsPgVhxNO9gYWTSnRAehiJ3h1lYsJBp1Zgbz3RH2lezJXagiw==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -8157,6 +8169,20 @@ snapshots:
       '@vercel/oidc': 3.2.0
       zod: 4.4.3
 
+  '@ai-sdk/gateway@4.0.22(zod@4.3.6)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.3
+      '@ai-sdk/provider-utils': 5.0.10(zod@4.3.6)
+      '@vercel/oidc': 3.2.0
+      zod: 4.3.6
+
+  '@ai-sdk/gateway@4.0.22(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.3
+      '@ai-sdk/provider-utils': 5.0.10(zod@4.4.3)
+      '@vercel/oidc': 3.2.0
+      zod: 4.4.3
+
   '@ai-sdk/google-vertex@5.0.21(zod@4.4.3)':
     dependencies:
       '@ai-sdk/anthropic': 4.0.15(zod@4.4.3)
@@ -8243,10 +8269,10 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/svelte@5.0.28(svelte@5.47.0)(zod@4.3.6)':
+  '@ai-sdk/svelte@5.0.30(svelte@5.47.0)(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider-utils': 5.0.10(zod@4.3.6)
-      ai: 7.0.28(zod@4.3.6)
+      ai: 7.0.30(zod@4.3.6)
       svelte: 5.47.0
     transitivePeerDependencies:
       - zod
@@ -10333,6 +10359,20 @@ snapshots:
   ai@7.0.28(zod@4.4.3):
     dependencies:
       '@ai-sdk/gateway': 4.0.20(zod@4.4.3)
+      '@ai-sdk/provider': 4.0.3
+      '@ai-sdk/provider-utils': 5.0.10(zod@4.4.3)
+      zod: 4.4.3
+
+  ai@7.0.30(zod@4.3.6):
+    dependencies:
+      '@ai-sdk/gateway': 4.0.22(zod@4.3.6)
+      '@ai-sdk/provider': 4.0.3
+      '@ai-sdk/provider-utils': 5.0.10(zod@4.3.6)
+      zod: 4.3.6
+
+  ai@7.0.30(zod@4.4.3):
+    dependencies:
+      '@ai-sdk/gateway': 4.0.22(zod@4.4.3)
       '@ai-sdk/provider': 4.0.3
       '@ai-sdk/provider-utils': 5.0.10(zod@4.4.3)
       zod: 4.4.3
@@ -14259,11 +14299,11 @@ snapshots:
 
   obug@2.1.1: {}
 
-  ollama-ai-provider-v2@3.5.0(ai@7.0.28(zod@4.4.3))(zod@4.4.3):
+  ollama-ai-provider-v2@3.5.0(ai@7.0.30(zod@4.4.3))(zod@4.4.3):
     dependencies:
       '@ai-sdk/provider': 3.0.8
       '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
-      ai: 7.0.28(zod@4.4.3)
+      ai: 7.0.30(zod@4.4.3)
       zod: 4.4.3
 
   on-finished@2.4.1:
