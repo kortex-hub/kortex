@@ -89,6 +89,18 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       return true;
     },
     async preWorkspaceStart(context: AgentWorkspaceContext): Promise<void> {
+      // OpenCode 1.x contacts models.dev for model metadata; Developer Preset deny-lists omit it.
+      if (context.workspace.network?.mode === 'deny') {
+        const hosts = context.workspace.network.hosts ?? [];
+        if (!hosts.includes('models.dev')) {
+          context.workspace.network = {
+            ...context.workspace.network,
+            mode: 'deny',
+            hosts: [...hosts, 'models.dev'],
+          };
+        }
+      }
+
       if (context.model.llmMetadata?.name === 'vertexai') {
         const envVars = [
           { name: 'ANTHROPIC_BASE_URL', value: 'https://inference.local/v1' },

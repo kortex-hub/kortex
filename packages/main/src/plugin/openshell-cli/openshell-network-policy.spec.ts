@@ -23,6 +23,7 @@ import {
   collectBinaryFlags,
   collectEndpointFlags,
   formatEndpointFlag,
+  OPENSHELL_AGENT_BINARIES,
   OPENSHELL_CONTAINER_HOST,
   parseModelEndpoint,
   rewriteLocalhostUrl,
@@ -134,7 +135,7 @@ describe('buildPolicyObject', () => {
             { host: 'registry.npmjs.org', port: 443, protocol: 'rest', access: 'full', allow_encoded_slash: true },
             { host: 'registry.npmjs.org', port: 80, protocol: 'rest', access: 'full', allow_encoded_slash: true },
           ],
-          binaries: [{ path: '/**' }],
+          binaries: OPENSHELL_AGENT_BINARIES.map(path => ({ path })),
         },
       },
     });
@@ -148,7 +149,7 @@ describe('buildPolicyObject', () => {
       network_policies: {
         'kdn-model': {
           endpoints: [{ host: 'api.example.com', port: 443 }],
-          binaries: [{ path: '/**' }],
+          binaries: OPENSHELL_AGENT_BINARIES.map(path => ({ path })),
         },
       },
     });
@@ -165,11 +166,11 @@ describe('buildPolicyObject', () => {
             { host: 'registry.npmjs.org', port: 443, protocol: 'rest', access: 'full', allow_encoded_slash: true },
             { host: 'registry.npmjs.org', port: 80, protocol: 'rest', access: 'full', allow_encoded_slash: true },
           ],
-          binaries: [{ path: '/**' }],
+          binaries: OPENSHELL_AGENT_BINARIES.map(path => ({ path })),
         },
         'kdn-model': {
           endpoints: [{ host: OPENSHELL_CONTAINER_HOST, port: 11434 }],
-          binaries: [{ path: '/**' }],
+          binaries: OPENSHELL_AGENT_BINARIES.map(path => ({ path })),
         },
       },
     });

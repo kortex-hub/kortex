@@ -85,13 +85,14 @@ describe('activate', () => {
         modelLabel?: string;
         provider?: string;
         endpoint?: string;
+        network?: { mode: 'allow' | 'deny'; hosts?: string[] };
         mcp?: {
           servers?: { name: string; url: string; headers?: Record<string, string> }[];
           commands?: { name: string; command: string; args?: string[]; env?: Record<string, string> }[];
         };
       } = {},
     ): AgentWorkspaceContext {
-      const { modelLabel = 'gpt-4o', provider, endpoint, mcp } = options;
+      const { modelLabel = 'gpt-4o', provider, endpoint, network, mcp } = options;
       return {
         model: {
           model: { label: modelLabel },
@@ -99,7 +100,7 @@ describe('activate', () => {
           endpoint,
         },
         configurationFiles: configFiles,
-        workspace: { ...(mcp ? { mcp } : {}) },
+        workspace: { ...(mcp ? { mcp } : {}), ...(network ? { network } : {}) },
       };
     }
 
@@ -112,6 +113,25 @@ describe('activate', () => {
       };
       return Object.assign(file, { updateMock });
     }
+
+    test('adds models.dev to deny-mode network hosts for OpenCode metadata', async () => {
+      await activate(extensionContextMock);
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile = createConfigFile();
+      const context = createContext([configFile], {
+        provider: 'ollama',
+        modelLabel: 'llama3',
+        endpoint: 'http://localhost:11434/v1',
+        network: { mode: 'deny', hosts: ['registry.npmjs.org', 'pypi.python.org'] },
+      });
+      await agent.preWorkspaceStart(context);
+
+      expect(context.workspace.network).toEqual({
+        mode: 'deny',
+        hosts: ['registry.npmjs.org', 'pypi.python.org', 'models.dev'],
+      });
+    });
 
     test('writes model name when no provider is specified', async () => {
       await activate(extensionContextMock);

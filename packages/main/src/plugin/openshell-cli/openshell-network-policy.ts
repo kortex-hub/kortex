@@ -124,6 +124,19 @@ export type OpenshellPolicy = z.output<typeof OpenshellPolicySchema>;
 const NETWORK_RULE_NAME = 'kdn-network';
 const MODEL_RULE_NAME = 'kdn-model';
 
+/**
+ * OpenShell reports some agent binaries with a leading double-slash (e.g.
+ * `//usr/lib/node_modules/opencode-ai/bin/.opencode`). A bare `/**` glob does
+ * not always match those paths, so policy updates must list them explicitly.
+ */
+export const OPENSHELL_AGENT_BINARIES = [
+  '/**',
+  '//usr/lib/node_modules/opencode-ai/bin/.opencode',
+  '/usr/lib/node_modules/opencode-ai/bin/.opencode',
+  '/usr/local/bin/opencode',
+  '/usr/bin/node',
+] as const;
+
 export const OPENSHELL_CONTAINER_HOST = 'host.openshell.internal';
 
 const LOCALHOST_ALIASES = ['localhost', '127.0.0.1', '0.0.0.0', '::1', '[::1]'];
@@ -236,7 +249,7 @@ export function buildPolicyObject(network?: NetworkConfiguration, modelEndpoint?
     ]);
     networkPolicies[NETWORK_RULE_NAME] = {
       endpoints,
-      binaries: [{ path: '/**' }],
+      binaries: OPENSHELL_AGENT_BINARIES.map(path => ({ path })),
     };
   }
 
@@ -245,7 +258,7 @@ export function buildPolicyObject(network?: NetworkConfiguration, modelEndpoint?
     if (parsed) {
       networkPolicies[MODEL_RULE_NAME] = {
         endpoints: [{ host: parsed.host, port: parsed.port }],
-        binaries: [{ path: '/**' }],
+        binaries: OPENSHELL_AGENT_BINARIES.map(path => ({ path })),
       };
     }
   }
