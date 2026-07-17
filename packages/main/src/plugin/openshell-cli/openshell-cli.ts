@@ -404,7 +404,9 @@ export class OpenshellCli {
   // ── policy commands ──────────────────────────────────────────────
 
   async updatePolicy(sandboxName: string, endpoints: string[], binaries?: string[]): Promise<void> {
-    const args = ['policy', 'update', sandboxName];
+    // Wait until the revision is loaded; otherwise the agent can start and
+    // hit the network under the previous (deny) policy.
+    const args = ['policy', 'update', sandboxName, '--wait'];
     for (const ep of endpoints) {
       args.push('--add-endpoint', ep);
     }

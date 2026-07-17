@@ -417,6 +417,7 @@ describe('updatePolicy', () => {
         'policy',
         'update',
         'my-sandbox',
+        '--wait',
         '--add-endpoint',
         'api.example.com:443:full:rest',
         '--add-endpoint',
@@ -434,7 +435,7 @@ describe('updatePolicy', () => {
 
     expect(exec.exec).toHaveBeenCalledWith(
       OPENSHELL_CLI_PATH,
-      ['policy', 'update', 'my-sandbox', '--add-endpoint', 'api.example.com:443', '--binary', '/**'],
+      ['policy', 'update', 'my-sandbox', '--wait', '--add-endpoint', 'api.example.com:443', '--binary', '/**'],
       undefined,
     );
   });
