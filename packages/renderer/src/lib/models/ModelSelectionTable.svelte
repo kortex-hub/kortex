@@ -96,6 +96,13 @@ function getModelStatus(model: CatalogModelInfo): string {
 function navigateToModels(): void {
   handleNavigation({ page: NavigationPage.MODELS });
 }
+
+function onDefaultClick(event: MouseEvent, key: string): void {
+  event.stopPropagation();
+  if (defaultModelKey === key) {
+    event.preventDefault();
+  }
+}
 </script>
 
 <!-- Toolbar -->
@@ -211,7 +218,7 @@ function navigateToModels(): void {
                           checked={defaultModelKey === key}
                           disabled={!selected}
                           aria-label="Set {model.label} as default"
-                          onclick={(e: MouseEvent): void => e.stopPropagation()}
+                          onclick={(event): void => onDefaultClick(event, key)}
                           onchange={ondefaultchange?.bind(undefined, model)} />
                       </td>
                     {/if}
