@@ -40,6 +40,7 @@ import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import type { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
+import { OPENSHELL_AGENT_BINARIES } from '/@/plugin/openshell-cli/openshell-network-policy.js';
 import type { ProviderImpl } from '/@/plugin/provider-impl.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
@@ -574,7 +575,7 @@ describe('create – OpenShell mode', () => {
         'pypi.python.org:443:full:rest',
         'pypi.python.org:80:full:rest',
       ]),
-      ['/**'],
+      [...OPENSHELL_AGENT_BINARIES],
     );
   });
 
@@ -737,7 +738,7 @@ describe('create – OpenShell mode', () => {
     expect(openshellCli.updatePolicy).toHaveBeenCalledWith(
       'my-sandbox',
       expect.arrayContaining(['api.example.com:443']),
-      ['/**'],
+      [...OPENSHELL_AGENT_BINARIES],
     );
   });
 
@@ -763,7 +764,7 @@ describe('create – OpenShell mode', () => {
     expect(openshellCli.updatePolicy).toHaveBeenCalledWith(
       'my-sandbox',
       expect.arrayContaining(['host.openshell.internal:11434']),
-      ['/**'],
+      [...OPENSHELL_AGENT_BINARIES],
     );
   });
 
@@ -789,7 +790,7 @@ describe('create – OpenShell mode', () => {
     expect(openshellCli.updatePolicy).toHaveBeenCalledWith(
       'my-sandbox',
       expect.arrayContaining(['host.openshell.internal:11434']),
-      ['/**'],
+      [...OPENSHELL_AGENT_BINARIES],
     );
   });
 
@@ -812,7 +813,7 @@ describe('create – OpenShell mode', () => {
     expect(openshellCli.updatePolicy).toHaveBeenCalledWith(
       'my-sandbox',
       expect.arrayContaining(['registry.npmjs.org:443:full:rest', 'api.openai.com:443']),
-      ['/**'],
+      [...OPENSHELL_AGENT_BINARIES],
     );
   });
 });

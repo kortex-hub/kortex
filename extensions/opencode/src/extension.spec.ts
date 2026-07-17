@@ -133,6 +133,19 @@ describe('activate', () => {
       });
     });
 
+    test('does not add models.dev when deny mode has no hosts (Deny All)', async () => {
+      await activate(extensionContextMock);
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile = createConfigFile();
+      const context = createContext([configFile], {
+        network: { mode: 'deny' },
+      });
+      await agent.preWorkspaceStart(context);
+
+      expect(context.workspace.network).toEqual({ mode: 'deny' });
+    });
+
     test('writes model name when no provider is specified', async () => {
       await activate(extensionContextMock);
       const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];

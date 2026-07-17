@@ -90,9 +90,10 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     },
     async preWorkspaceStart(context: AgentWorkspaceContext): Promise<void> {
       // OpenCode 1.x contacts models.dev for model metadata; Developer Preset deny-lists omit it.
+      // Only amend allow-lists that already have hosts — leave Deny All (no hosts) unchanged.
       if (context.workspace.network?.mode === 'deny') {
         const hosts = context.workspace.network.hosts ?? [];
-        if (!hosts.includes('models.dev')) {
+        if (hosts.length > 0 && !hosts.includes('models.dev')) {
           context.workspace.network = {
             ...context.workspace.network,
             mode: 'deny',
