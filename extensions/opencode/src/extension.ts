@@ -63,6 +63,10 @@ const NATIVE_PROVIDER_SDKS: Record<string, string> = {
   anthropic: '@ai-sdk/anthropic',
 };
 
+const PROVIDER_ALIASES: Record<string, string> = {
+  vertexai: 'anthropic',
+};
+
 export async function activate(extensionContext: ExtensionContext): Promise<void> {
   const disposable = agents.registerAgent({
     id: 'opencode',
@@ -113,7 +117,8 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       const config = OpenCodeConfigSchema.parse(JSON.parse(await configFile.read()));
 
       const modelName = context.model.model.label;
-      const provider = context.model.llmMetadata?.name;
+      const providerName = context.model.llmMetadata?.name;
+      const provider = providerName ? (PROVIDER_ALIASES[providerName] ?? providerName) : undefined;
       const endpoint = context.model.endpoint;
 
       if (provider) {
