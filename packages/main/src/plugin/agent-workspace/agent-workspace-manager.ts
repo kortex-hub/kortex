@@ -745,7 +745,7 @@ export class AgentWorkspaceManager implements Disposable {
 
     this.disposables.push(
       this.openshellGateway.onDidGatewayStart(() => {
-      this.apiSender.send('agent-gateway-update');
+        this.apiSender.send('agent-gateway-update');
         this.apiSender.send('agent-workspace-update');
       }),
     );
@@ -755,8 +755,7 @@ export class AgentWorkspaceManager implements Disposable {
         this.apiSender.send('agent-workspace-update');
       }),
     );
-
-   }
+  }
 
   @preDestroy()
   dispose(): void {
