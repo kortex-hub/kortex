@@ -16,8 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
+  preprocess: [vitePreprocess({ script: true })],
   compilerOptions: {
     hmr: !process.env.VITEST,
     experimental: {
