@@ -100,6 +100,8 @@ jobs:
 
       - name: Update existing PR
         if: steps.compare.outputs.needs_update == 'true' && steps.existing_pr.outputs.exists == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
         run: |
           CURRENT="${{ steps.current.outputs.version }}"
           NEW="${{ steps.latest.outputs.version }}"
@@ -129,6 +131,8 @@ jobs:
 
       - name: Create new PR
         if: steps.compare.outputs.needs_update == 'true' && steps.existing_pr.outputs.exists == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
         run: |
           CURRENT="${{ steps.current.outputs.version }}"
           NEW="${{ steps.latest.outputs.version }}"
