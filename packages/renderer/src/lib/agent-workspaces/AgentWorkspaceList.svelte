@@ -11,6 +11,7 @@ import {
   TableRow,
 } from '@podman-desktop/ui-svelte';
 
+import NotificationsBox from '/@/lib/dashboard/NotificationsBox.svelte';
 import NoLogIcon from '/@/lib/ui/NoLogIcon.svelte';
 import { handleNavigation } from '/@/navigation';
 import {
@@ -100,6 +101,7 @@ const sandboxColumns = [
 
   {#snippet content()}
     <div class="flex flex-col min-w-full h-full">
+      <NotificationsBox />
       <div class="px-5 pt-4 pb-4">
         <AgentWorkspaceStatCards sandboxes={$allOpenshellSandboxes} />
         <SearchInput bind:searchTerm={searchTerm} title="Agentic Workspaces" />

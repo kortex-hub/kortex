@@ -21,7 +21,9 @@ import '@testing-library/jest-dom/vitest';
 import { render, screen, within } from '@testing-library/svelte';
 import { beforeEach, expect, test, vi } from 'vitest';
 
+import { notificationQueue } from '/@/stores/notifications';
 import { openshellSandboxes } from '/@/stores/openshell-sandboxes';
+import type { NotificationCard } from '/@api/notification';
 import type { GatewaySandboxes } from '/@api/openshell-gateway-info';
 
 import AgentWorkspaceList from './AgentWorkspaceList.svelte';
@@ -29,6 +31,7 @@ import AgentWorkspaceList from './AgentWorkspaceList.svelte';
 beforeEach(() => {
   vi.resetAllMocks();
   openshellSandboxes.set([]);
+  notificationQueue.set([]);
 });
 
 test('Expect empty screen when no workspaces', () => {
@@ -101,4 +104,28 @@ test('Expect page title to be Agentic Workspaces', () => {
   render(AgentWorkspaceList);
 
   expect(screen.getByText('Agentic Workspaces')).toBeInTheDocument();
+});
+
+test('Expect NotificationsBox to be hidden when there are no notifications', () => {
+  render(AgentWorkspaceList);
+
+  const notificationsBox = screen.queryByLabelText('Notifications Box');
+  expect(notificationsBox).not.toBeInTheDocument();
+});
+
+test('Expect NotificationsBox to be visible when there are highlighted notifications', () => {
+  const notification: NotificationCard = {
+    id: 1,
+    extensionId: 'extension',
+    title: 'Test notification',
+    body: 'Test body',
+    type: 'info',
+    highlight: true,
+  };
+  notificationQueue.set([notification]);
+
+  render(AgentWorkspaceList);
+
+  const notificationsBox = screen.queryByLabelText('Notifications Box');
+  expect(notificationsBox).toBeInTheDocument();
 });
