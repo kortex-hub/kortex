@@ -307,6 +307,7 @@ export class OpenshellCli {
         })
         .catch((err: unknown) => {
           console.warn(`[openshell] deleting-poll refresh failed: ${err instanceof Error ? err.message : String(err)}`);
+          this.scheduleDeletingPollIfNeeded(results);
         });
     }, 5000);
   }
