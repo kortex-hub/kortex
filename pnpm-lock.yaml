@@ -8164,20 +8164,6 @@ snapshots:
       '@vercel/oidc': 3.2.0
       zod: 4.4.3
 
-  '@ai-sdk/gateway@4.0.22(zod@4.3.6)':
-    dependencies:
-      '@ai-sdk/provider': 4.0.3
-      '@ai-sdk/provider-utils': 5.0.10(zod@4.3.6)
-      '@vercel/oidc': 3.2.0
-      zod: 4.3.6
-
-  '@ai-sdk/gateway@4.0.22(zod@4.4.3)':
-    dependencies:
-      '@ai-sdk/provider': 4.0.3
-      '@ai-sdk/provider-utils': 5.0.10(zod@4.4.3)
-      '@vercel/oidc': 3.2.0
-      zod: 4.4.3
-
   '@ai-sdk/google-vertex@5.0.21(zod@4.4.3)':
     dependencies:
       '@ai-sdk/anthropic': 4.0.15(zod@4.4.3)
@@ -10350,20 +10336,6 @@ snapshots:
       '@ai-sdk/provider': 4.0.3
       '@ai-sdk/provider-utils': 5.0.10(zod@4.3.6)
       zod: 4.3.6
-
-  ai@7.0.30(zod@4.3.6):
-    dependencies:
-      '@ai-sdk/gateway': 4.0.22(zod@4.3.6)
-      '@ai-sdk/provider': 4.0.3
-      '@ai-sdk/provider-utils': 5.0.10(zod@4.3.6)
-      zod: 4.3.6
-
-  ai@7.0.30(zod@4.4.3):
-    dependencies:
-      '@ai-sdk/gateway': 4.0.22(zod@4.4.3)
-      '@ai-sdk/provider': 4.0.3
-      '@ai-sdk/provider-utils': 5.0.10(zod@4.4.3)
-      zod: 4.4.3
 
   ai@7.0.30(zod@4.3.6):
     dependencies:
