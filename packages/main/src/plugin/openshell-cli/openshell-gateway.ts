@@ -29,6 +29,7 @@ import { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import { Directories } from '/@/plugin/directories.js';
 import { Emitter } from '/@/plugin/events/emitter.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
+import { NotificationRegistry } from '/@/plugin/tasks/notification-registry.js';
 import { Exec } from '/@/plugin/util/exec.js';
 import type { Event } from '/@api/event.js';
 import type { OpenshellGatewayStartOptions } from '/@api/openshell-gateway-info.js';
@@ -59,6 +60,9 @@ export class OpenshellGateway implements Disposable {
   private readonly _onDidGatewayStart = new Emitter<void>();
   readonly onDidGatewayStart: Event<void> = this._onDidGatewayStart.event;
 
+  private readonly _onDidGatewayInitFailed = new Emitter<string>();
+  readonly onDidGatewayInitFailed: Event<string> = this._onDidGatewayInitFailed.event;
+
   constructor(
     @inject(CliToolRegistry)
     private readonly cliToolRegistry: CliToolRegistry,
@@ -68,6 +72,8 @@ export class OpenshellGateway implements Disposable {
     private readonly directories: Directories,
     @inject(Exec)
     private readonly exec: Exec,
+    @inject(NotificationRegistry)
+    private readonly notificationRegistry: NotificationRegistry,
   ) {}
 
   async init(): Promise<void> {
@@ -106,8 +112,22 @@ export class OpenshellGateway implements Disposable {
     }
 
     console.log('[openshell-gateway] no existing gateways found, auto-starting local gateway');
-    await this.start();
-    this._onDidGatewayStart.fire();
+    try {
+      await this.start();
+      this._onDidGatewayStart.fire();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[openshell-gateway] auto-start failed: ${message}`);
+      this._onDidGatewayInitFailed.fire(message);
+      this.notificationRegistry.addNotification({
+        title: 'OpenShell Gateway failed to start',
+        body: message,
+        extensionId: 'core',
+        type: 'error',
+        highlight: true,
+        silent: false,
+      });
+    }
   }
 
   private async isEndpointHealthy(endpoint?: string): Promise<boolean> {
@@ -163,8 +183,11 @@ export class OpenshellGateway implements Disposable {
       console.log(`[openshell-gateway] ${data.toString().trimEnd()}`);
     });
 
+    const stderrChunks: string[] = [];
     this.#gatewayProcess.stderr?.on('data', (data: Buffer) => {
-      console.error(`[openshell-gateway] ${data.toString().trimEnd()}`);
+      const text = data.toString().trimEnd();
+      console.error(`[openshell-gateway] ${text}`);
+      stderrChunks.push(text);
     });
 
     this.#gatewayProcess.on('exit', (code, signal) => {
@@ -185,7 +208,9 @@ export class OpenshellGateway implements Disposable {
       });
       this.#port = previousPort;
       this.#bindAddress = previousBindAddress;
-      throw err;
+      const stderrOutput = stderrChunks.join('\n').trim();
+      const baseMessage = err instanceof Error ? err.message : String(err);
+      throw new Error(stderrOutput ? `${baseMessage}: ${stderrOutput}` : baseMessage);
     }
     if (!options?.skipRegistration) {
       await this.registerWithCli();
@@ -227,6 +252,7 @@ export class OpenshellGateway implements Disposable {
   dispose(): void {
     this.stop().catch((err: unknown) => console.error('[openshell-gateway] failed to stop: ', err));
     this._onDidGatewayStart.dispose();
+    this._onDidGatewayInitFailed.dispose();
   }
 
   private async generateCerts(binaryPath: string, gatewayDir: string): Promise<void> {

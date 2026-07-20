@@ -27,6 +27,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { Directories } from '/@/plugin/directories.js';
 import type { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
+import type { NotificationRegistry } from '/@/plugin/tasks/notification-registry.js';
 import type { Exec } from '/@/plugin/util/exec.js';
 import type { CliToolInfo } from '/@api/cli-tool-info.js';
 import type { GatewayInfo } from '/@api/openshell-gateway-info.js';
@@ -79,6 +80,10 @@ const exec = {
   exec: vi.fn(),
 } as unknown as Exec;
 
+const notificationRegistry = {
+  addNotification: vi.fn(),
+} as unknown as NotificationRegistry;
+
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(directories.getDataDirectory).mockReturnValue(KAIDEN_DATA_DIRECTORY);
@@ -86,7 +91,7 @@ beforeEach(() => {
     { name: 'openshell-gateway', path: GATEWAY_BINARY },
   ] as unknown as CliToolInfo[]);
   vi.mocked(exec.exec).mockResolvedValue({ command: '', stdout: '', stderr: '' });
-  gateway = new OpenshellGateway(cliToolRegistry, openshellCli, directories, exec);
+  gateway = new OpenshellGateway(cliToolRegistry, openshellCli, directories, exec, notificationRegistry);
 });
 
 describe('init', () => {
@@ -576,6 +581,109 @@ describe('onDidGatewayStart', () => {
     await gateway.init();
 
     expect(listener).not.toHaveBeenCalled();
+  });
+});
+
+describe('onDidGatewayInitFailed', () => {
+  test('fires with error message when auto-start fails because process exits', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(openshellCli.listGateways).mockResolvedValue([]);
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(false);
+
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockImplementation(() => {
+      setTimeout(() => {
+        Object.defineProperty(proc, 'exitCode', { value: 1, configurable: true });
+        proc.emit('exit', 1, undefined);
+      }, 0);
+      return proc;
+    });
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
+
+    const failListener = vi.fn();
+    const startListener = vi.fn();
+    gateway.onDidGatewayInitFailed(failListener);
+    gateway.onDidGatewayStart(startListener);
+
+    await gateway.init();
+
+    expect(failListener).toHaveBeenCalledOnce();
+    expect(failListener).toHaveBeenCalledWith(expect.stringContaining('Gateway process exited before becoming ready'));
+    expect(startListener).not.toHaveBeenCalled();
+  });
+
+  test('creates error notification when auto-start fails', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(openshellCli.listGateways).mockResolvedValue([]);
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(false);
+
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockImplementation(() => {
+      setTimeout(() => {
+        Object.defineProperty(proc, 'exitCode', { value: 1, configurable: true });
+        proc.emit('exit', 1, undefined);
+      }, 0);
+      return proc;
+    });
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
+
+    await gateway.init();
+
+    expect(notificationRegistry.addNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'OpenShell Gateway failed to start',
+        type: 'error',
+        extensionId: 'core',
+      }),
+    );
+  });
+
+  test('includes stderr output in notification body', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(openshellCli.listGateways).mockResolvedValue([]);
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(false);
+
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockImplementation(() => {
+      setTimeout(() => {
+        proc._stderr.emit('data', Buffer.from('Socket not found: /var/run/docker.sock'));
+        Object.defineProperty(proc, 'exitCode', { value: 1, configurable: true });
+        proc.emit('exit', 1, undefined);
+      }, 0);
+      return proc;
+    });
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
+
+    await gateway.init();
+
+    expect(notificationRegistry.addNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.stringContaining('Socket not found: /var/run/docker.sock'),
+      }),
+    );
+  });
+
+  test('does not fire on successful init', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.mocked(openshellCli.listGateways).mockResolvedValue([]);
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValue(proc);
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValueOnce(false).mockResolvedValue(true);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
+
+    const failListener = vi.fn();
+    gateway.onDidGatewayInitFailed(failListener);
+    await gateway.init();
+
+    expect(failListener).not.toHaveBeenCalled();
+    expect(notificationRegistry.addNotification).not.toHaveBeenCalled();
   });
 });
 

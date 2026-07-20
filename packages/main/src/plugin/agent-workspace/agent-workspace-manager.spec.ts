@@ -127,11 +127,16 @@ const providerRegistry = {
 } as unknown as ProviderRegistry;
 
 let gatewayStartCallback: (() => void) | undefined;
+let gatewayInitFailedCallback: ((message: string) => void) | undefined;
 let sandboxListChangeCallback: (() => void) | undefined;
 
 const openshellGateway = {
   onDidGatewayStart: vi.fn((cb: () => void) => {
     gatewayStartCallback = cb;
+    return { dispose: vi.fn() };
+  }),
+  onDidGatewayInitFailed: vi.fn((cb: (message: string) => void) => {
+    gatewayInitFailedCallback = cb;
     return { dispose: vi.fn() };
   }),
 } as unknown as OpenshellGateway;
@@ -179,6 +184,7 @@ beforeEach(() => {
     } as Awaited<ReturnType<typeof lstat>>;
   });
   gatewayStartCallback = undefined;
+  gatewayInitFailedCallback = undefined;
   sandboxListChangeCallback = undefined;
   Object.defineProperty(openshellCli, 'onDidSandboxListChange', {
     value: vi.fn((cb: () => void) => {
@@ -249,6 +255,15 @@ describe('init', () => {
     gatewayStartCallback!();
     expect(apiSender.send).toHaveBeenCalledWith('agent-gateway-update');
     expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
+  });
+
+  test('subscribes to gateway init failed event', () => {
+    expect(openshellGateway.onDidGatewayInitFailed).toHaveBeenCalled();
+  });
+
+  test('sends gateway update event when gateway init fails', () => {
+    gatewayInitFailedCallback!('Socket not found');
+    expect(apiSender.send).toHaveBeenCalledWith('agent-gateway-update');
   });
 
   test('subscribes to sandbox list change event', () => {
