@@ -21,6 +21,7 @@ let providerTypeMap: Map<string, InferenceProviderConnectionType> = $derived(
 interface ModelRef {
   label: string;
   providerId: string;
+  connectionId: string;
   type: InferenceProviderConnectionType;
   isDefault: boolean;
 }
@@ -44,9 +45,12 @@ function getBackendType(providerId: string): InferenceProviderConnectionType {
   return providerTypeMap.get(providerId) ?? 'cloud';
 }
 
-function isDefaultModel(router: SemanticRouterInfo, ref: { providerId: string; label: string }): boolean {
+function isDefaultModel(
+  router: SemanticRouterInfo,
+  ref: { providerId: string; connectionId: string; label: string },
+): boolean {
   const d = router.routing.defaultModelRef;
-  return d?.providerId === ref.providerId && d.label === ref.label;
+  return d?.providerId === ref.providerId && d?.connectionId === ref.connectionId && d?.label === ref.label;
 }
 
 function getUniqueModelRefs(router: SemanticRouterInfo): ModelRef[] {
@@ -55,12 +59,13 @@ function getUniqueModelRefs(router: SemanticRouterInfo): ModelRef[] {
   for (const decision of router.routing.decisions) {
     for (const rule of decision.rules) {
       for (const ref of rule.modelRefs) {
-        const key = `${ref.providerId}::${ref.label}`;
+        const key = `${ref.providerId}::${ref.connectionId}::${ref.label}`;
         if (!seen.has(key)) {
           seen.add(key);
           refs.push({
             label: ref.label,
             providerId: ref.providerId,
+            connectionId: ref.connectionId,
             type: getBackendType(ref.providerId),
             isDefault: isDefaultModel(router, ref),
           });
