@@ -36,7 +36,15 @@ export const SandboxInfoSchema = z.object({
   id: z.string(),
   name: z.string(),
   phase: z.enum(['Provisioning', 'Ready', 'Error', 'Deleting', 'Unknown', 'Unspecified']),
-  created_at: z.string().optional(),
+  created_at: z
+    .string()
+    .transform(ts => {
+      if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(ts) && !/Z$/i.test(ts) && !/[+-]\d{2}:?\d{2}$/.test(ts)) {
+        return `${ts.replace(' ', 'T')}Z`;
+      }
+      return ts;
+    })
+    .optional(),
   current_policy_version: z.number().optional(),
   labels: z.record(z.string(), z.string()).optional(),
   resource_version: z.number().optional(),
