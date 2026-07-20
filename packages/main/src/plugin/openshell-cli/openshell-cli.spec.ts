@@ -402,6 +402,70 @@ describe('createSandbox', () => {
 
     await expect(openshellCli.createSandbox()).rejects.toThrow('command failed (stdout: unexpected output)');
   });
+
+  test('uses SDK when no CLI-only options are present', async () => {
+    const gateways = [{ name: 'gw-1', endpoint: 'http://127.0.0.1:17670', active: true }];
+    const mockSdkClient = {
+      sandbox: { create: vi.fn().mockResolvedValue({ id: 'sb-1', name: 'test', phase: 'provisioning' }) },
+    };
+
+    vi.mocked(exec.exec).mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)));
+    openshellCli.getSdkClient = vi.fn().mockResolvedValue(mockSdkClient);
+
+    await openshellCli.createSandbox({
+      name: 'test',
+      from: 'ubuntu:latest',
+      gpu: true,
+      providers: ['openai'],
+      env: { FOO: 'bar' },
+      labels: { team: 'dev' },
+    });
+
+    expect(mockSdkClient.sandbox.create).toHaveBeenCalledWith({
+      name: 'test',
+      image: 'ubuntu:latest',
+      gpu: true,
+      providers: ['openai'],
+      environment: { FOO: 'bar' },
+      labels: { team: 'dev' },
+    });
+    expect(exec.exec).toHaveBeenCalledTimes(1);
+  });
+
+  test('falls back to CLI when uploads are present', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.createSandbox({
+      name: 'test',
+      uploads: [{ local: '/tmp/file', remote: '/workspace/file' }],
+    });
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      expect.arrayContaining(['--upload', '/tmp/file:/workspace/file']),
+      undefined,
+    );
+  });
+
+  test('falls back to CLI when SDK fails', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const gateways = [{ name: 'gw-1', endpoint: 'http://127.0.0.1:17670', active: true }];
+
+    vi.mocked(exec.exec)
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(''));
+    openshellCli.getSdkClient = vi.fn().mockRejectedValue(new Error('connection refused'));
+
+    await openshellCli.createSandbox({ name: 'test' });
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      expect.arrayContaining(['sandbox', 'create', '--name', 'test']),
+      undefined,
+    );
+  });
 });
 
 describe('updatePolicy', () => {
@@ -449,6 +513,42 @@ describe('listSandboxes', () => {
 
     expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'list', '-o', 'json'], undefined);
     expect(result).toEqual(payload);
+  });
+
+  test('uses SDK when gateway endpoint is resolvable', async () => {
+    const gateways = [{ name: 'gw-1', endpoint: 'http://127.0.0.1:17670', active: true }];
+    const sdkRefs = [
+      { id: 'sdk-1', name: 'sdk-sandbox', phase: 'ready', labels: { env: 'test' }, resourceVersion: '42' },
+    ];
+    const mockSdkClient = { sandbox: { list: vi.fn().mockResolvedValue(sdkRefs) } };
+
+    vi.mocked(exec.exec).mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)));
+
+    openshellCli.getSdkClient = vi.fn().mockResolvedValue(mockSdkClient);
+
+    const result = await openshellCli.listSandboxes();
+
+    expect(openshellCli.getSdkClient).toHaveBeenCalledWith('http://127.0.0.1:17670');
+    expect(mockSdkClient.sandbox.list).toHaveBeenCalled();
+    expect(result).toEqual([
+      { id: 'sdk-1', name: 'sdk-sandbox', phase: 'Ready', labels: { env: 'test' }, resource_version: 42 },
+    ]);
+  });
+
+  test('falls back to CLI when SDK fails', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const gateways = [{ name: 'gw-1', endpoint: 'http://127.0.0.1:17670', active: true }];
+    const cliPayload = [{ id: 'cli-1', name: 'cli-sandbox', phase: 'Ready' }];
+
+    vi.mocked(exec.exec)
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(cliPayload)));
+
+    openshellCli.getSdkClient = vi.fn().mockRejectedValue(new Error('connection refused'));
+
+    const result = await openshellCli.listSandboxes();
+
+    expect(result).toEqual(cliPayload);
   });
 
   test('rejects when CLI fails', async () => {
@@ -501,6 +601,38 @@ describe('deleteSandbox', () => {
   test('executes openshell sandbox delete with name', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.deleteSandbox('my-sandbox');
+
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['sandbox', 'delete', 'my-sandbox'], undefined);
+  });
+
+  test('uses SDK when gateway endpoint is resolvable', async () => {
+    const gateways = [{ name: 'gw-1', endpoint: 'http://127.0.0.1:17670', active: true }];
+    const mockSdkClient = {
+      sandbox: { delete: vi.fn().mockResolvedValue(true), waitDeleted: vi.fn().mockResolvedValue(undefined) },
+    };
+
+    vi.mocked(exec.exec).mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)));
+    openshellCli.getSdkClient = vi.fn().mockResolvedValue(mockSdkClient);
+
+    await openshellCli.deleteSandbox('my-sandbox');
+
+    expect(openshellCli.getSdkClient).toHaveBeenCalledWith('http://127.0.0.1:17670');
+    expect(mockSdkClient.sandbox.delete).toHaveBeenCalledWith('my-sandbox');
+    expect(mockSdkClient.sandbox.waitDeleted).toHaveBeenCalledWith('my-sandbox', 30);
+    expect(exec.exec).toHaveBeenCalledTimes(1);
+  });
+
+  test('falls back to CLI when SDK fails', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const gateways = [{ name: 'gw-1', endpoint: 'http://127.0.0.1:17670', active: true }];
+
+    vi.mocked(exec.exec)
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(''));
+    openshellCli.getSdkClient = vi.fn().mockRejectedValue(new Error('connection refused'));
 
     await openshellCli.deleteSandbox('my-sandbox');
 
@@ -685,6 +817,7 @@ describe('listSandboxesForGateway', () => {
 
     vi.mocked(exec.exec)
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(sandboxes)));
 
     const result = await openshellCli.listSandboxesForGateway('gw-2');
@@ -718,7 +851,9 @@ describe('listSandboxesPerGateway', () => {
 
     vi.mocked(exec.exec)
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(sandboxes1)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(sandboxes2)));
 
     const results = await openshellCli.listSandboxesPerGateway();
@@ -771,6 +906,7 @@ describe('listSandboxesPerGateway auto-refresh', () => {
 
   beforeEach(() => {
     vi.useFakeTimers();
+    openshellCli.getSdkClient = vi.fn().mockRejectedValue(new Error('sdk unavailable'));
   });
 
   afterEach(() => {
@@ -784,7 +920,9 @@ describe('listSandboxesPerGateway auto-refresh', () => {
 
     vi.mocked(exec.exec)
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(readySandboxes)));
 
@@ -806,6 +944,7 @@ describe('listSandboxesPerGateway auto-refresh', () => {
 
     vi.mocked(exec.exec)
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(readySandboxes)));
 
     const listener = vi.fn();
@@ -823,9 +962,12 @@ describe('listSandboxesPerGateway auto-refresh', () => {
 
     vi.mocked(exec.exec)
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
-      .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(readySandboxes)));
 
@@ -845,7 +987,9 @@ describe('listSandboxesPerGateway auto-refresh', () => {
 
     vi.mocked(exec.exec)
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)));
 
@@ -864,9 +1008,12 @@ describe('listSandboxesPerGateway auto-refresh', () => {
 
     vi.mocked(exec.exec)
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
-      .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(readySandboxes)));
 
@@ -890,6 +1037,7 @@ describe('listSandboxesPerGateway auto-refresh', () => {
 
     vi.mocked(exec.exec)
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)))
       .mockRejectedValueOnce(new Error('connection lost'));
 
@@ -910,6 +1058,7 @@ describe('listSandboxesPerGateway auto-refresh', () => {
 
     vi.mocked(exec.exec)
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
+      .mockResolvedValueOnce(mockExecResult(JSON.stringify(gateways)))
       .mockResolvedValueOnce(mockExecResult(JSON.stringify(deletingSandboxes)));
 
     const listener = vi.fn();
@@ -927,19 +1076,41 @@ describe('checkEndpointStatus', () => {
   test('returns true when endpoint is healthy', async () => {
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
     expect(await openshellCli.checkEndpointStatus('https://127.0.0.1:8443')).toBe(true);
+  });
+
+  test('returns true via SDK health check', async () => {
+    const mockSdkClient = { health: vi.fn().mockResolvedValue({ status: 'serving', version: '0.5.0' }) };
+    openshellCli.getSdkClient = vi.fn().mockResolvedValue(mockSdkClient);
+
+    expect(await openshellCli.checkEndpointStatus('http://127.0.0.1:17670')).toBe(true);
+
+    expect(openshellCli.getSdkClient).toHaveBeenCalledWith('http://127.0.0.1:17670');
+    expect(mockSdkClient.health).toHaveBeenCalled();
+    expect(exec.exec).not.toHaveBeenCalled();
+  });
+
+  test('falls back to CLI when SDK health fails', async () => {
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+    openshellCli.getSdkClient = vi.fn().mockRejectedValue(new Error('connection refused'));
+
+    expect(await openshellCli.checkEndpointStatus('http://127.0.0.1:17670')).toBe(true);
+
     expect(exec.exec).toHaveBeenCalledWith(
       OPENSHELL_CLI_PATH,
-      ['status', '--gateway-endpoint', 'https://127.0.0.1:8443'],
+      ['status', '--gateway-endpoint', 'http://127.0.0.1:17670', '--gateway-insecure'],
       undefined,
     );
   });
 
-  test('returns false when endpoint is unreachable', async () => {
+  test('returns false when both SDK and CLI fail', async () => {
+    openshellCli.getSdkClient = vi.fn().mockRejectedValue(new Error('connection refused'));
     vi.mocked(exec.exec).mockRejectedValue(new Error('connection refused'));
+
     expect(await openshellCli.checkEndpointStatus('http://127.0.0.1:17670')).toBe(false);
   });
 
   test('appends --gateway-insecure for http endpoints', async () => {
+    openshellCli.getSdkClient = vi.fn().mockRejectedValue(new Error('force CLI'));
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
     await openshellCli.checkEndpointStatus('http://127.0.0.1:17670');
     expect(exec.exec).toHaveBeenCalledWith(
@@ -950,6 +1121,7 @@ describe('checkEndpointStatus', () => {
   });
 
   test('does not append --gateway-insecure for https endpoints', async () => {
+    openshellCli.getSdkClient = vi.fn().mockRejectedValue(new Error('force CLI'));
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
     await openshellCli.checkEndpointStatus('https://127.0.0.1:8443');
     expect(exec.exec).toHaveBeenCalledWith(

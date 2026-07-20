@@ -19,6 +19,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { OpenShellClient, type SandboxRef } from '@nvidia/openshell-sdk';
 import type { RunError, RunOptions } from '@openkaiden/api';
 import { inject, injectable, preDestroy } from 'inversify';
 import z from 'zod';
@@ -42,6 +43,25 @@ import {
   SandboxInfoSchema,
   type SetInferenceOptions,
 } from '/@api/openshell-gateway-info.js';
+
+const PHASE_MAP: Record<string, SandboxInfo['phase']> = {
+  provisioning: 'Provisioning',
+  ready: 'Ready',
+  error: 'Error',
+  deleting: 'Deleting',
+  unknown: 'Unknown',
+  unspecified: 'Unspecified',
+};
+
+function sandboxRefToInfo(ref: SandboxRef): SandboxInfo {
+  return {
+    id: ref.id,
+    name: ref.name,
+    phase: PHASE_MAP[ref.phase] ?? 'Unknown',
+    labels: ref.labels,
+    resource_version: Number(ref.resourceVersion) || undefined,
+  };
+}
 
 const SettingValue = z.union([z.string(), z.boolean(), z.number()]);
 
@@ -85,6 +105,7 @@ const OpenshellSettingsSchema = z.looseObject({
  */
 @injectable()
 export class OpenshellCli {
+  #sdkClients = new Map<string, OpenShellClient>();
   private readonly _onDidSandboxListChange = new Emitter<GatewaySandboxes[]>();
   readonly onDidSandboxListChange: Event<GatewaySandboxes[]> = this._onDidSandboxListChange.event;
   private _deletingPollTimer: ReturnType<typeof setTimeout> | undefined;
@@ -95,6 +116,23 @@ export class OpenshellCli {
     @inject(CliToolRegistry)
     private readonly cliToolRegistry: CliToolRegistry,
   ) {}
+
+  async getSdkClient(gatewayEndpoint: string): Promise<OpenShellClient> {
+    const existing = this.#sdkClients.get(gatewayEndpoint);
+    if (existing) {
+      return existing;
+    }
+    const gateway =
+      gatewayEndpoint.startsWith('http://') || gatewayEndpoint.startsWith('https://')
+        ? gatewayEndpoint
+        : `http://${gatewayEndpoint}`;
+    const client = await OpenShellClient.connect({
+      gateway,
+      insecureSkipVerify: gateway.startsWith('https://'),
+    });
+    this.#sdkClients.set(gatewayEndpoint, client);
+    return client;
+  }
 
   getCliPath(): string {
     const tool = this.cliToolRegistry.getCliToolInfos().find(t => t.name === 'openshell');
@@ -165,6 +203,43 @@ export class OpenshellCli {
   // ── sandbox commands ──────────────────────────────────────────────
 
   async createSandbox(options: CreateSandboxOptions = {}): Promise<void> {
+    const requiresCli = !!(
+      options.uploads?.length ??
+      options.command?.length ??
+      options.policy ??
+      options.gpuDevice ??
+      options.cpu ??
+      options.memory
+    );
+
+    if (!requiresCli) {
+      const gateway = options.gateway
+        ? await this.resolveGatewayEndpoint(options.gateway)
+        : await this.resolveGatewayEndpoint();
+      if (gateway) {
+        try {
+          const client = await this.getSdkClient(gateway);
+          const labels = { ...options.labels };
+          if (options.gateway) {
+            labels['gateway'] = options.gateway;
+          }
+          await client.sandbox.create({
+            name: options.name,
+            image: options.from,
+            labels: Object.keys(labels).length > 0 ? labels : undefined,
+            environment: options.env,
+            providers: options.providers,
+            gpu: options.gpu,
+          });
+          return;
+        } catch (err: unknown) {
+          console.warn(
+            `[openshell] SDK createSandbox failed, falling back to CLI: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
+      }
+    }
+
     const args = ['sandbox', 'create'];
     if (options.name) {
       args.push('--name', options.name);
@@ -221,12 +296,35 @@ export class OpenshellCli {
   }
 
   async listSandboxes(gatewayName?: string): Promise<SandboxInfo[]> {
+    const gateway = await this.resolveGatewayEndpoint(gatewayName);
+    if (gateway) {
+      try {
+        const client = await this.getSdkClient(gateway);
+        const refs = await client.sandbox.list();
+        return refs.map(sandboxRefToInfo);
+      } catch (err: unknown) {
+        console.warn(
+          `[openshell] SDK listSandboxes failed, falling back to CLI: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
     const args = ['sandbox', 'list'];
     if (gatewayName) {
       args.push('-g', gatewayName);
     }
     const data = await this.execCLI<unknown>(args);
     return z.array(SandboxInfoSchema).parse(data);
+  }
+
+  private async resolveGatewayEndpoint(gatewayName?: string): Promise<string | undefined> {
+    try {
+      const gateways = await this.listGateways();
+      const target = gatewayName ? gateways.find(g => g.name === gatewayName) : gateways.find(g => g.active);
+      return target?.endpoint;
+    } catch {
+      return undefined;
+    }
   }
 
   async startSandbox(name: string): Promise<void> {
@@ -238,6 +336,19 @@ export class OpenshellCli {
   }
 
   async deleteSandbox(name: string): Promise<void> {
+    const gateway = await this.resolveGatewayEndpoint();
+    if (gateway) {
+      try {
+        const client = await this.getSdkClient(gateway);
+        await client.sandbox.delete(name);
+        await client.sandbox.waitDeleted(name, 30);
+        return;
+      } catch (err: unknown) {
+        console.warn(
+          `[openshell] SDK deleteSandbox failed, falling back to CLI: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
     await this.runCli(['sandbox', 'delete', name]);
   }
 
@@ -350,6 +461,14 @@ export class OpenshellCli {
   }
 
   async checkEndpointStatus(endpoint: string): Promise<boolean> {
+    try {
+      const client = await this.getSdkClient(endpoint);
+      await client.health();
+      return true;
+    } catch {
+      // SDK failed — fall back to CLI
+    }
+
     const args = ['status', '--gateway-endpoint', endpoint];
     if (endpoint.startsWith('http://')) {
       args.push('--gateway-insecure');
