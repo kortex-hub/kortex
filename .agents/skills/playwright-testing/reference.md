@@ -127,13 +127,14 @@ interface WorkerFixtures {
 
 ## Playwright Config Projects
 
-| Project             | testMatch                                     | Condition              | resource   |
-| ------------------- | --------------------------------------------- | ---------------------- | ---------- |
-| `Kaiden-App-Core`   | `**/*.spec.ts` (ignores provider-specs)       | Always                 | —          |
-| `Gemini-Provider`   | `**/provider-specs/*.spec.ts`                 | `GEMINI_API_KEY` set   | `gemini`   |
-| `OpenAI-Provider`   | `**/provider-specs/*.spec.ts`                 | `OPENAI_API_KEY` set   | `openai`   |
-| `Ollama-Provider`   | `**/provider-specs/*.spec.ts` (ignores flows) | `OLLAMA_ENABLED` set   | `ollama`   |
-| `RamaLama-Provider` | `**/provider-specs/*.spec.ts` (ignores flows) | `RAMALAMA_ENABLED` set | `ramalama` |
+| Project              | testMatch                                     | Condition                   | resource   |
+| -------------------- | --------------------------------------------- | --------------------------- | ---------- |
+| `Kaiden-App-Core`    | `**/*.spec.ts` (ignores provider-specs)       | Always                      | —          |
+| `Gemini-Provider`    | `**/provider-specs/*.spec.ts`                 | `GEMINI_API_KEY` set        | `gemini`   |
+| `OpenAI-Provider`    | `**/provider-specs/*.spec.ts`                 | `OPENAI_API_KEY` set        | `openai`   |
+| `Workspace-Provider` | `**/provider-specs/workspaces/*.spec.ts`      | `PODMAN_ENABLED` + API keys | —          |
+| `Ollama-Provider`    | `**/provider-specs/*.spec.ts` (ignores flows) | `OLLAMA_ENABLED` set        | `ollama`   |
+| `RamaLama-Provider`  | `**/provider-specs/*.spec.ts` (ignores flows) | `RAMALAMA_ENABLED` set      | `ramalama` |
 
 ## Locator Cheatsheet
 
@@ -253,6 +254,4 @@ npx playwright show-trace path/to/trace.zip
 
 ## Workspace Provider E2E
 
-Coding Agent Workspace lifecycle and sandbox matrix tests live under `provider-specs/workspaces/`. They use page objects `agent-workspaces-page.ts`, `agent-workspace-create-page.ts`, and `agent-workspace-terminal-page.ts`.
-
-Full structure, run commands, tag taxonomy, and coverage boundaries: [workspace-provider-e2e.md](./workspace-provider-e2e.md).
+Coding Agent Workspace lifecycle and sandbox matrix tests: [workspace-provider-e2e.md](./workspace-provider-e2e.md).

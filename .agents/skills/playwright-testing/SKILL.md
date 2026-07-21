@@ -42,6 +42,8 @@ tests/playwright/
 │   │       ├── extensions-page.ts    # Extension browsing
 │   │       ├── agent-workspaces-page.ts      # Workspace list + lifecycle entry
 │   │       ├── agent-workspace-create-page.ts # Create wizard (FS + network steps)
+│   │       ├── agent-workspace-details-page.ts # Workspace details shell
+│   │       ├── agent-workspace-overview-page.ts # Overview tab
 │   │       ├── agent-workspace-terminal-page.ts
 │   │       └── *-tab-page.ts         # Sub-page/tab objects
 │   ├── specs/
@@ -51,7 +53,6 @@ tests/playwright/
 │   │   ├── workspaces-smoke.spec.ts  # Workspace wizard UI (Kaiden-App-Core, @smoke)
 │   │   └── provider-specs/           # Provider-specific tests
 │   │       ├── chat-smoke.spec.ts    # Chat functionality (gold standard)
-│   │       ├── flows-smoke.spec.ts   # Flow execution
 │   │       ├── mcp-smoke.spec.ts     # MCP servers
 │   │       └── workspaces/           # Coding Agent Workspace lifecycle (Workspace-Provider)
 │   └── utils/

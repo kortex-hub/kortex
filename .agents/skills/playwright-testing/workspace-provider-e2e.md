@@ -56,11 +56,10 @@ pnpm exec playwright test -c tests/playwright/playwright.config.ts \
   --project=Workspace-Provider \
   tests/playwright/src/specs/provider-specs/workspaces/workspace-filesystem-network-smoke.spec.ts \
   --grep "FS-NONE-NET-DEVELOPER" \
-  --grep "\\[01\\] creation" \
   --timeout=600000
 ```
 
-Expect **5 passed** (not 5 skipped). Then scale up to `--grep @workspace-sandbox` or the full project.
+Expect passes (not skips). Then scale up to `--grep @workspace-sandbox` or the full project.
 
 ### Troubleshooting
 
@@ -176,7 +175,7 @@ tests/playwright/src/specs/provider-specs/workspaces/
 
 **Test IDs:** Scenario in describe title (`FS-NONE-NET-DEVELOPER`); steps as `[01] creation` … `[05] removal`. Skips: `[SKIP] FS-FULL-NET-DEVELOPER — …`. Filter: `--grep FS-NONE-NET-DEVELOPER` or `--grep "\\[01\\] creation"`.
 
-`workspace-filesystem-network-smoke.spec.ts` defines **16 scenarios** × **2 agents** (OpenCode + Claude Code) = **160 tests**.
+`workspace-filesystem-network-smoke.spec.ts` defines scenarios × agents (OpenCode + Claude Code). Skipped scenarios emit 1 skip-marker test instead of 5 steps — use `--list | tail -1` for the current count.
 
 Scenarios use a single `SANDBOX_SCENARIOS` array grouped by comments (core matrix, extended combos, edge cases, known skips).
 
@@ -209,11 +208,7 @@ Agent lifecycle specs use `@workspace-provider` only.
 
 ### Expected results on OpenShell (macOS + Podman)
 
-| Result  | Count | Reason                                                             |
-| ------- | ----- | ------------------------------------------------------------------ |
-| Passed  | 110   | Runnable FS/network combos (11 scenarios × 2 agents × 5 steps)     |
-| Skipped | 10    | Full-system + unrestricted scenarios (1 skip test each × 2 agents) |
-| Total   | 120   | Listed in `--list` and HTML report under agent → scenario → step   |
+Most scenarios pass; full-system and unrestricted scenarios are skipped (see [Skip Conditions](#skip-conditions)). Use `--list | tail -1` for the current total.
 
 **Report hierarchy (HTML):** `OpenCode` → `FS-NONE-NET-DEVELOPER` → `[01] creation` … `[05] removal` (no duplicated scenario ID in step titles).
 
@@ -236,30 +231,7 @@ pnpm exec playwright show-report tests/playwright/output/html-report
 
 ## Running Tests
 
-See [Agent runbook](#agent-runbook-read-this-before-running) for pre-flight checks, troubleshooting, and the canonical command. Quick reference:
-
-### Prerequisites
-
-```bash
-export CI=true
-export PODMAN_ENABLED=true
-export WORKSPACE_TESTS_CI=true
-export KAIDEN_BINARY="/path/to/Kaiden.app/Contents/MacOS/Kaiden"
-# OPENAI_API_KEY / ANTHROPIC_API_KEY must be in the environment — do not embed in commands
-```
-
-### Run all workspace provider tests
-
-No `@workspace` parent tag is needed — the Playwright project scopes by path:
-
-```bash
-pnpm run test:e2e:workspaces:run
-
-# Or directly (add --timeout=600000 for full suite)
-pnpm exec playwright test -c tests/playwright/playwright.config.ts \
-  --project=Workspace-Provider \
-  --timeout=600000
-```
+See [Agent runbook](#agent-runbook-read-this-before-running) for pre-flight checks, env exports, troubleshooting, and the canonical run command.
 
 ### Run subsets
 
@@ -300,16 +272,7 @@ PDE2E variants (`test:e2e:pde2e:workspaces:*`) restore deferred API keys from `~
 
 ## Playwright Project Config
 
-```typescript
-// playwright.config.ts
-{
-  name: 'Workspace-Provider',
-  testMatch: ['**/provider-specs/workspaces/*.spec.ts'],
-  testIgnore: podmanAvailable && (!process.env.CI || process.env.WORKSPACE_TESTS_CI) ? [] : ['**/*'],
-}
-```
-
-If `PODMAN_ENABLED` is unset on non-Linux, **all** workspace provider tests are ignored (Playwright reports "No tests found").
+The `Workspace-Provider` project is defined in `tests/playwright/playwright.config.ts`. It matches `**/provider-specs/workspaces/*.spec.ts` and is gated by `PODMAN_ENABLED` (plus `WORKSPACE_TESTS_CI` when `CI=true`). If the gate is unmet, Playwright reports "No tests found."
 
 ## Skip Conditions
 
@@ -331,10 +294,8 @@ If `PODMAN_ENABLED` is unset on non-Linux, **all** workspace provider tests are 
 2. Tags are auto-derived from `fileAccess` / `network` — modifier tags apply when mounts/hosts need them.
 3. Use `host: ''` in `customMounts` to get a temp dir from the lifecycle helper; use `$SOURCES/...` hosts for sandbox-safe paths.
 4. Set `skipReason` if the combo is known broken on OpenShell until upstream fixes land.
-5. Registration asserts `openshell-sandbox-{agent}-{slug}-e2e` ≤ 64 chars (Podman/crun hostname limit).
-6. Run the single scenario step: `--grep "FS-HOME-NET-DENY" --grep "\\[01\\] creation"`.
-
-Workspace names are `{agent}-{slug}-e2e` (≤ 46 chars so `openshell-sandbox-…` stays within Podman's 64-char hostname limit). Use `workspaceSlug` when the tag-aligned `id` is too long.
+5. Workspace names are `{agent}-{slug}-e2e` (≤ 46 chars so `openshell-sandbox-…` stays within Podman's 64-char hostname limit). Use `workspaceSlug` when `id` is too long — registration asserts the constraint.
+6. Run the single scenario: `--grep "FS-HOME-NET-DENY"`.
 
 ## Custom Mount Conventions
 
