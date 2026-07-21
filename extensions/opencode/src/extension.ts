@@ -67,6 +67,11 @@ const PROVIDER_ALIASES: Record<string, string> = {
   vertexai: 'anthropic',
 };
 
+// OpenCode built-in provider IDs whose custom loaders call sdk.responses()
+// unconditionally. Using these IDs with @ai-sdk/openai-compatible causes
+// "sdk.responses is not a function". We suffix them to avoid the collision.
+const OPENCODE_RESPONSES_ONLY_LOADERS = new Set(['openai', 'azure', 'azure-cognitive-services']);
+
 export async function activate(extensionContext: ExtensionContext): Promise<void> {
   const disposable = agents.registerAgent({
     id: 'opencode',
@@ -122,21 +127,32 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       const endpoint = context.model.endpoint;
 
       if (provider) {
-        config.model = `${provider}/${modelName}`;
-
         if ((!NATIVE_PROVIDERS.has(provider) || provider in NATIVE_PROVIDER_SDKS) && endpoint) {
+          const npm = NATIVE_PROVIDER_SDKS[provider] ?? '@ai-sdk/openai-compatible';
+
+          // Avoid provider IDs that trigger OpenCode's built-in loaders which
+          // unconditionally call sdk.responses() (unsupported by openai-compatible).
+          const configId =
+            npm === '@ai-sdk/openai-compatible' && OPENCODE_RESPONSES_ONLY_LOADERS.has(provider)
+              ? `${provider}-compat`
+              : provider;
+
+          config.model = `${configId}/${modelName}`;
+
           const providers = config.provider ?? {};
-          const providerEntry = providers[provider] ?? {};
+          const providerEntry = providers[configId] ?? {};
 
           providerEntry.name = provider;
-          providerEntry.npm = NATIVE_PROVIDER_SDKS[provider] ?? '@ai-sdk/openai-compatible';
+          providerEntry.npm = npm;
           providerEntry.options = { apiKey: '{env:OPENAI_API_KEY}', ...providerEntry.options, baseURL: endpoint };
 
           providerEntry.models ??= {};
           providerEntry.models[modelName] ??= { _launch: true, name: modelName };
 
-          providers[provider] = providerEntry;
+          providers[configId] = providerEntry;
           config.provider = providers;
+        } else {
+          config.model = `${provider}/${modelName}`;
         }
       } else {
         config.model = modelName;

@@ -234,6 +234,32 @@ describe('activate', () => {
       expect(written.provider.anthropic.options.baseURL).toBe('https://custom.anthropic.example.com');
     });
 
+    test('renames openai provider ID to avoid OpenCode built-in loader collision', async () => {
+      await activate(extensionContextMock);
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          provider: 'openai',
+          modelLabel: 'Qwen3.6-35B-A3B',
+          endpoint: 'https://litellm.example.com/v1',
+        }),
+      );
+
+      const written = JSON.parse(configFile.updateMock.mock.calls[0]![0] as string);
+      expect(written.model).toBe('openai-compat/Qwen3.6-35B-A3B');
+      expect(written.provider['openai-compat']).toEqual({
+        name: 'openai',
+        npm: '@ai-sdk/openai-compatible',
+        options: { apiKey: '{env:OPENAI_API_KEY}', baseURL: 'https://litellm.example.com/v1' },
+        models: {
+          'Qwen3.6-35B-A3B': { _launch: true, name: 'Qwen3.6-35B-A3B' },
+        },
+      });
+      expect(written.provider).not.toHaveProperty('openai');
+    });
+
     test('does not add provider block for native provider with endpoint', async () => {
       await activate(extensionContextMock);
       const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
