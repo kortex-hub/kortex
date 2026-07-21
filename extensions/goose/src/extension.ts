@@ -32,9 +32,6 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     acp: { args: ['acp'] },
     configurationFiles: [],
     destinationSkillsFolder: '${HOME}/.agents/skills',
-    isSupportedRuntime(runtime): boolean {
-      return runtime === 'podman';
-    },
     isSupportedModelType(): boolean {
       return true;
     },

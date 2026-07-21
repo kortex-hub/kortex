@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ModelType, ProviderImages, Runtime } from '@openkaiden/api';
+import type { ModelType, ProviderImages } from '@openkaiden/api';
 
 export interface AcpConfigurationInfo {
   args: ReadonlyArray<string>;
@@ -33,5 +33,4 @@ export interface AgentInfo {
   baseImage?: string;
   destinationSkillsFolder: string;
   supportedModelTypes?: ReadonlyArray<ModelType>;
-  supportedRuntimes?: ReadonlyArray<Runtime>;
 }

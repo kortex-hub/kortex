@@ -9,7 +9,6 @@ import { getCompatibleModels } from '/@/lib/models/compatible-connections';
 import CompatibleConnectionGate from '/@/lib/models/CompatibleConnectionGate.svelte';
 import type { CatalogModelInfo } from '/@/lib/models/models-utils';
 import { agentInfos } from '/@/stores/agents';
-import { agentWorkspaceRuntime } from '/@/stores/agentworkspace-runtime';
 import { disabledModels, isModelEnabled, modelSelectionKey } from '/@/stores/model-catalog';
 import { catalogModels } from '/@/stores/models';
 import type { DefaultWorkspaceModelSettings } from '/@api/onboarding-settings-info';
@@ -21,16 +20,12 @@ let { title, description, onboarding = $bindable() }: GuidedSetupStepProps = $pr
 let validationError = $state('');
 
 let filteredAgents = $derived(
-  $agentInfos
-    .filter(
-      agent => !agent.supportedRuntimes || agent.supportedRuntimes.some(runtime => runtime === $agentWorkspaceRuntime),
-    )
-    .toSorted((a, b) => {
-      const aRecommended = a.tags?.includes('Recommended') ? 1 : 0;
-      const bRecommended = b.tags?.includes('Recommended') ? 1 : 0;
-      if (aRecommended !== bRecommended) return bRecommended - aRecommended;
-      return a.name.localeCompare(b.name);
-    }),
+  $agentInfos.toSorted((a, b) => {
+    const aRecommended = a.tags?.includes('Recommended') ? 1 : 0;
+    const bRecommended = b.tags?.includes('Recommended') ? 1 : 0;
+    if (aRecommended !== bRecommended) return bRecommended - aRecommended;
+    return a.name.localeCompare(b.name);
+  }),
 );
 
 let selectedAgentInfo = $derived(filteredAgents.find(agent => agent.id === onboarding.agent) ?? filteredAgents[0]);

@@ -128,7 +128,7 @@ import type { NavigationRequest } from '/@api/navigation-request';
 import type { NetworkInspectInfo } from '/@api/network-info';
 import type { NotificationCard, NotificationCardOptions } from '/@api/notification';
 import type { OnboardingInfo, OnboardingStatus } from '/@api/onboarding';
-import type { GatewaySandboxes, OpenshellProfile } from '/@api/openshell-gateway-info';
+import type { GatewayInfo, GatewaySandboxes, OpenshellProfile } from '/@api/openshell-gateway-info';
 import type { V1Route } from '/@api/openshift-types';
 import type { PodCreateOptions, PodInfo, PodInspectInfo } from '/@api/pod-info';
 import type {
@@ -375,6 +375,10 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld('listOpenshellSandboxes', async (): Promise<GatewaySandboxes[]> => {
     return ipcInvoke('agent-workspace:listOpenshellSandboxes');
+  });
+
+  contextBridge.exposeInMainWorld('listOpenshellGateways', async (): Promise<GatewayInfo[]> => {
+    return ipcInvoke('agent-workspace:listOpenshellGateways');
   });
 
   contextBridge.exposeInMainWorld('deleteOpenshellSandbox', async (name: string): Promise<void> => {

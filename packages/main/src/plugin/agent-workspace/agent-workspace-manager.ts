@@ -20,7 +20,7 @@ import { access, lstat, readFile, realpath, rm, writeFile } from 'node:fs/promis
 import { homedir, tmpdir } from 'node:os';
 import { basename, isAbsolute, join, posix, resolve } from 'node:path';
 
-import type { Disposable, FileSystemWatcher } from '@openkaiden/api';
+import type { Disposable } from '@openkaiden/api';
 import type { WebContents } from 'electron';
 import { inject, injectable, preDestroy } from 'inversify';
 import type { IPty } from 'node-pty';
@@ -30,7 +30,6 @@ import { AgentRegistry } from '/@/plugin/agent-registry.js';
 import { updateWorkspaceConfig, writeWorkspaceConfig } from '/@/plugin/agent-workspace/workspace-config-writer.js';
 import { WritableConfigurationFile } from '/@/plugin/agent-workspace/writable-configuration-file.js';
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
-import { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
 import {
@@ -53,7 +52,7 @@ import { getSandboxNameValidationError } from '/@api/agent-workspace-info.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IConfigurationNode } from '/@api/configuration/models.js';
 import { IConfigurationRegistry } from '/@api/configuration/models.js';
-import type { GatewaySandboxes } from '/@api/openshell-gateway-info.js';
+import type { GatewayInfo, GatewaySandboxes } from '/@api/openshell-gateway-info.js';
 import { AGENT_LABEL, decodeWorkspaceLabels, WORKSPACE_LABEL } from '/@api/openshell-gateway-info.js';
 
 const HOME_VARIABLE = '${HOME}';
@@ -62,6 +61,14 @@ const SOURCES_VARIABLE = '$SOURCES';
 const MOUNT_HOME_PREFIX = '$HOME';
 
 type OpenshellUpload = { local: string; remote: string };
+
+interface WorkspaceTerminalSession {
+  callbackId: number;
+  pty: IPty;
+  write: (param: string) => void;
+  resize: (w: number, h: number) => void;
+  commandExecuted: boolean;
+}
 
 export function encodeWorkspaceLabels(sourcePath: string): Record<string, string> {
   const encoded = Buffer.from(sourcePath).toString('base64url');
@@ -80,13 +87,8 @@ export function encodeWorkspaceLabels(sourcePath: string): Record<string, string
  */
 @injectable()
 export class AgentWorkspaceManager implements Disposable {
-  private instancesWatcher: FileSystemWatcher | undefined;
-  private readonly terminalCallbacks = new Map<
-    number,
-    { write: (param: string) => void; resize: (w: number, h: number) => void }
-  >();
-  private readonly terminalProcesses = new Map<number, IPty>();
-  private readonly commandExecutedWorkspaces = new Set<string>();
+  private readonly workspaceTerminals = new Map<string, WorkspaceTerminalSession>();
+  private readonly disposables: Disposable[] = [];
 
   constructor(
     @inject(ApiSenderType)
@@ -95,8 +97,6 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly ipcHandle: IPCHandle,
     @inject(TaskManager)
     private readonly taskManager: TaskManager,
-    @inject(FilesystemMonitoring)
-    private readonly filesystemMonitoring: FilesystemMonitoring,
     @inject(WebContentsType)
     private readonly webContents: WebContents,
     @inject(IConfigurationRegistry)
@@ -415,7 +415,7 @@ export class AgentWorkspaceManager implements Disposable {
     task.status = 'in-progress';
     try {
       await this.openshellCli.deleteSandbox(workspaceName);
-      this.commandExecutedWorkspaces.delete(id);
+      this.closeWorkspaceTerminal(id);
       this.apiSender.send('agent-workspace-update');
       task.status = 'success';
       return { id };
@@ -491,6 +491,10 @@ export class AgentWorkspaceManager implements Disposable {
     return results;
   }
 
+  async listOpenshellGateways(): Promise<GatewayInfo[]> {
+    return this.openshellCli.listGateways();
+  }
+
   async deleteOpenshellSandbox(name: string): Promise<void> {
     const task = this.taskManager.createTask({ title: `Deleting workspace ${name}` });
     task.state = 'running';
@@ -543,18 +547,39 @@ export class AgentWorkspaceManager implements Disposable {
     };
   }
 
+  private getWorkspaceTerminalByCallbackId(callbackId: number): WorkspaceTerminalSession | undefined {
+    return Array.from(this.workspaceTerminals.values()).find(session => session.callbackId === callbackId);
+  }
+
+  private closeWorkspaceTerminal(workspaceId: string): void {
+    const session = this.workspaceTerminals.get(workspaceId);
+    if (!session) {
+      return;
+    }
+    try {
+      session.pty.kill();
+    } catch {
+      /* already exited */
+    }
+    this.workspaceTerminals.delete(workspaceId);
+  }
+
+  private closeWorkspaceTerminalByCallbackId(callbackId: number): void {
+    const entry = Array.from(this.workspaceTerminals.entries()).find(
+      ([, session]) => session.callbackId === callbackId,
+    );
+    if (!entry) {
+      return;
+    }
+    this.closeWorkspaceTerminal(entry[0]);
+  }
+
   init(): void {
     const runtimeConfiguration: IConfigurationNode = {
       id: `preferences.${AgentWorkspaceSettings.SectionName}`,
       title: 'Agent Workspace',
       type: 'object',
       properties: {
-        [`${AgentWorkspaceSettings.SectionName}.${AgentWorkspaceSettings.Runtime}`]: {
-          description: 'Override the container runtime used when creating agent workspaces.',
-          type: 'string',
-          enum: ['podman', 'openshell'],
-          default: 'podman',
-        },
         [`${AgentWorkspaceSettings.SectionName}.${AgentWorkspaceSettings.DefaultBaseImage}`]: {
           description: 'Default base image for agent workspaces when the agent does not specify one.',
           type: 'string',
@@ -606,6 +631,10 @@ export class AgentWorkspaceManager implements Disposable {
       return this.listOpenshellSandboxes();
     });
 
+    this.ipcHandle('agent-workspace:listOpenshellGateways', async (): Promise<GatewayInfo[]> => {
+      return this.listOpenshellGateways();
+    });
+
     this.ipcHandle(
       'agent-workspace:deleteOpenshellSandbox',
       async (_listener: unknown, name: string): Promise<void> => {
@@ -622,7 +651,13 @@ export class AgentWorkspaceManager implements Disposable {
           throw new Error(`workspace "${id}" not found. Use "workspace list" to see available workspaces.`);
         }
 
-        const shouldExecuteCommand = !this.commandExecutedWorkspaces.has(id);
+        const existingSession = this.workspaceTerminals.get(id);
+        const commandExecuted = existingSession?.commandExecuted ?? false;
+        if (existingSession) {
+          this.closeWorkspaceTerminal(id);
+        }
+
+        const shouldExecuteCommand = !commandExecuted;
         let agentCommand: string | undefined;
         if (shouldExecuteCommand && workspace.labels) {
           const agentId = workspace.labels[AGENT_LABEL];
@@ -636,37 +671,55 @@ export class AgentWorkspaceManager implements Disposable {
           }
         }
 
-        if (agentCommand) {
-          this.commandExecutedWorkspaces.add(id);
-        }
-
         let commandSent = false;
         const invocation = this.shellInAgentWorkspace(
           workspace.name,
           (content: string) => {
+            const session = this.workspaceTerminals.get(id);
+            if (session && session.pty !== invocation.ptyProcess) {
+              return;
+            }
             if (!this.webContents.isDestroyed()) {
-              this.webContents.send('agent-workspace:terminal-onData', onDataId, content);
+              this.webContents.send('agent-workspace:terminal-onData', session?.callbackId ?? onDataId, content);
             }
             if (!commandSent && agentCommand) {
               commandSent = true;
               invocation.write(`${agentCommand}\n`);
+              const activeSession = this.workspaceTerminals.get(id);
+              if (activeSession?.pty === invocation.ptyProcess) {
+                activeSession.commandExecuted = true;
+              }
             }
           },
           (error: string) => {
+            const session = this.workspaceTerminals.get(id);
+            if (session && session.pty !== invocation.ptyProcess) {
+              return;
+            }
             if (!this.webContents.isDestroyed()) {
-              this.webContents.send('agent-workspace:terminal-onError', onDataId, error);
+              this.webContents.send('agent-workspace:terminal-onError', session?.callbackId ?? onDataId, error);
             }
           },
           () => {
-            if (!this.webContents.isDestroyed()) {
-              this.webContents.send('agent-workspace:terminal-onEnd', onDataId);
+            const session = this.workspaceTerminals.get(id);
+            if (session && session.pty !== invocation.ptyProcess) {
+              return;
             }
-            this.terminalCallbacks.delete(onDataId);
-            this.terminalProcesses.delete(onDataId);
+            if (!this.webContents.isDestroyed()) {
+              this.webContents.send('agent-workspace:terminal-onEnd', session?.callbackId ?? onDataId);
+            }
+            if (session?.pty === invocation.ptyProcess) {
+              this.workspaceTerminals.delete(id);
+            }
           },
         );
-        this.terminalCallbacks.set(onDataId, { write: invocation.write, resize: invocation.resize });
-        this.terminalProcesses.set(onDataId, invocation.ptyProcess);
+        this.workspaceTerminals.set(id, {
+          callbackId: onDataId,
+          pty: invocation.ptyProcess,
+          write: invocation.write,
+          resize: invocation.resize,
+          commandExecuted,
+        });
         return onDataId;
       },
     );
@@ -674,9 +727,9 @@ export class AgentWorkspaceManager implements Disposable {
     this.ipcHandle(
       'agent-workspace:terminalSend',
       async (_listener: unknown, onDataId: number, content: string): Promise<void> => {
-        const callback = this.terminalCallbacks.get(onDataId);
-        if (callback) {
-          callback.write(content);
+        const session = this.getWorkspaceTerminalByCallbackId(onDataId);
+        if (session) {
+          session.write(content);
         }
       },
     );
@@ -684,57 +737,41 @@ export class AgentWorkspaceManager implements Disposable {
     this.ipcHandle(
       'agent-workspace:terminalResize',
       async (_listener: unknown, onDataId: number, width: number, height: number): Promise<void> => {
-        const callback = this.terminalCallbacks.get(onDataId);
-        if (callback) {
-          callback.resize(width, height);
+        const session = this.getWorkspaceTerminalByCallbackId(onDataId);
+        if (session) {
+          session.resize(width, height);
         }
       },
     );
 
     this.ipcHandle('agent-workspace:terminalClose', async (_listener: unknown, onDataId: number): Promise<void> => {
-      const proc = this.terminalProcesses.get(onDataId);
-      if (proc) {
-        try {
-          proc.kill();
-        } catch {
-          /* already exited */
-        }
-      }
-      this.terminalProcesses.delete(onDataId);
-      this.terminalCallbacks.delete(onDataId);
+      this.closeWorkspaceTerminalByCallbackId(onDataId);
     });
 
-    this.openshellGateway.onDidGatewayStart(() => {
-      this.apiSender.send('agent-workspace-update');
-    });
+    this.disposables.push(
+      this.openshellGateway.onDidGatewayStart(() => {
+        this.apiSender.send('agent-gateway-update');
+        this.apiSender.send('agent-workspace-update');
+      }),
+    );
 
-    this.watchInstancesFile();
-  }
-
-  private watchInstancesFile(): void {
-    this.instancesWatcher?.dispose();
-    const instancesPath = join(homedir(), '.kdn', 'instances.json');
-    this.instancesWatcher = this.filesystemMonitoring.createFileSystemWatcher(instancesPath);
-    const notify = (): void => {
-      this.apiSender.send('agent-workspace-update');
-    };
-    this.instancesWatcher.onDidChange(notify);
-    this.instancesWatcher.onDidCreate(notify);
-    this.instancesWatcher.onDidDelete(notify);
+    this.disposables.push(
+      this.openshellCli.onDidSandboxListChange(() => {
+        this.apiSender.send('agent-workspace-update');
+      }),
+    );
   }
 
   @preDestroy()
   dispose(): void {
-    this.instancesWatcher?.dispose();
-    for (const proc of this.terminalProcesses.values()) {
+    for (const session of this.workspaceTerminals.values()) {
       try {
-        proc.kill();
+        session.pty.kill();
       } catch {
         /* already exited */
       }
     }
-    this.terminalProcesses.clear();
-    this.terminalCallbacks.clear();
-    this.commandExecutedWorkspaces.clear();
+    this.workspaceTerminals.clear();
+    this.disposables.forEach(disposable => disposable.dispose());
   }
 }

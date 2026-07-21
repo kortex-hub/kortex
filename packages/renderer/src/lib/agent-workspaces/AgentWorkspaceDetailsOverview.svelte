@@ -75,8 +75,6 @@ const statusStyle = $derived.by(() => {
 const referenceTime = $derived(workspaceSummary ? getReferenceTime(workspaceSummary) : undefined);
 const timeLabel = $derived(workspaceSummary && isActiveWorkspace(workspaceSummary) ? 'Started' : 'Created');
 
-const runtimeLabel = 'Runtime not available';
-
 const networkMode = $derived(configuration?.network?.mode ?? 'deny');
 const networkHosts = $derived(configuration?.network?.hosts ?? []);
 const networkLabel = $derived.by(() => {
@@ -176,12 +174,6 @@ function formatRelativeTime(ts: string | undefined): string {
           <div class="text-[10px] text-[var(--pd-content-text)] opacity-60 uppercase tracking-wider">{timeLabel}</div>
           <div class="text-[13px] font-semibold text-[var(--pd-content-card-header-text)]">
             {formatRelativeTime(referenceTime)}
-          </div>
-        </div>
-        <div class="flex flex-col gap-0.5" aria-label="Runtime">
-          <div class="text-[10px] text-(--pd-content-text) opacity-60 uppercase tracking-wider">Runtime</div>
-          <div class="text-[13px] font-semibold text-(--pd-content-card-header-text)">
-            {runtimeLabel}
           </div>
         </div>
         <div class="flex flex-col gap-0.5" aria-label="Network">

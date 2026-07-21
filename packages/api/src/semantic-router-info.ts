@@ -59,6 +59,7 @@ export const DecisionConfigSchema = z.object({
 export const RoutingConfigSchema = z.object({
   keywords: z.array(KeywordGroupSchema),
   decisions: z.array(DecisionConfigSchema),
+  defaultModelRef: ModelRefSchema.optional(),
 });
 
 export const SemanticRouterConfigSchema = z.object({

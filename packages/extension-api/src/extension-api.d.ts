@@ -5567,8 +5567,6 @@ declare module '@openkaiden/api' {
     constructor(url: string);
   }
 
-  export type Runtime = 'openshell' | 'podman';
-
   export interface ModelType {
     readonly name: string;
   }
@@ -5613,7 +5611,6 @@ declare module '@openkaiden/api' {
      */
     readonly destinationSkillsFolder: string;
     isSupportedModelType?(type: ModelType): boolean | Promise<boolean>;
-    isSupportedRuntime?(runtime: Runtime): boolean | Promise<boolean>;
     preWorkspaceStart(context: AgentWorkspaceContext): Promise<void>;
   }
 

@@ -188,6 +188,26 @@ test('should show in-house badge for self-hosted provider', () => {
   expect(screen.getByText('in-house')).toBeInTheDocument();
 });
 
+test('should show default badge for the default model', () => {
+  const routerWithDefault: SemanticRouterConfigInfo = {
+    ...mockRouter,
+    routing: {
+      ...mockRouter.routing,
+      defaultModelRef: { providerId: 'gemini', connectionId: 'conn-1', label: 'gemini-2.5-pro', useReasoning: false },
+    },
+  };
+
+  render(SemanticRouterCards, { routers: [routerWithDefault] });
+
+  expect(screen.getByText('default')).toBeInTheDocument();
+});
+
+test('should not show default badge when no defaultModelRef is set', () => {
+  render(SemanticRouterCards, { routers: [mockRouter] });
+
+  expect(screen.queryByText('default')).not.toBeInTheDocument();
+});
+
 test('should deduplicate model refs across rules', () => {
   const routerWithDuplicates: SemanticRouterConfigInfo = {
     name: 'dup-router',

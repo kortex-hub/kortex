@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Agent, AgentRegisteredEvent, AgentUnregisteredEvent, ModelType, Runtime } from '@openkaiden/api';
+import type { Agent, AgentRegisteredEvent, AgentUnregisteredEvent, ModelType } from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 
 import { ModelRegistry } from '/@/plugin/model-registry.js';
@@ -90,22 +90,10 @@ export class AgentRegistry {
     this.apiSender.send('agent-registry:updated');
   }
 
-  async getRuntimes(isSupportedRuntime: (runtime: Runtime) => boolean | Promise<boolean>): Promise<Runtime[]> {
-    const runtimes: Runtime[] = [];
-    if (await isSupportedRuntime('podman')) {
-      runtimes.push('podman');
-    }
-    if (await isSupportedRuntime('openshell')) {
-      runtimes.push('openshell');
-    }
-    return runtimes;
-  }
-
   async toAgentInfo(agent: Agent): Promise<AgentInfo> {
     const supportedModelTypes = agent.isSupportedModelType
       ? await this.getModelTypes(agent.isSupportedModelType)
       : undefined;
-    const supportedRuntimes = agent.isSupportedRuntime ? await this.getRuntimes(agent.isSupportedRuntime) : undefined;
     return {
       id: agent.id,
       name: agent.name,
@@ -117,7 +105,6 @@ export class AgentRegistry {
       baseImage: agent.baseImage,
       destinationSkillsFolder: agent.destinationSkillsFolder,
       supportedModelTypes,
-      supportedRuntimes,
     };
   }
 

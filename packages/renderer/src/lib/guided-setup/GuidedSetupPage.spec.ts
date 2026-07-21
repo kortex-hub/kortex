@@ -23,7 +23,6 @@ import { writable } from 'svelte/store';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import * as agentsStore from '/@/stores/agents';
-import * as agentWorkspaceRuntimeStore from '/@/stores/agentworkspace-runtime';
 import * as configurationPropertiesStore from '/@/stores/configurationProperties';
 import * as inferenceConnectionSummariesStore from '/@/stores/inference-connection-summaries';
 import * as modelCatalogStore from '/@/stores/model-catalog';
@@ -40,7 +39,6 @@ vi.mock(import('/@/stores/agents'));
 vi.mock(import('/@/stores/providers'));
 vi.mock(import('/@/stores/model-catalog'));
 vi.mock(import('/@/stores/models'));
-vi.mock(import('/@/stores/agentworkspace-runtime'));
 vi.mock(import('/@/stores/inference-connection-summaries'));
 vi.mock(import('/@/stores/configurationProperties'));
 vi.mock(import('/@/lib/preferences/PreferencesConnectionCreationOrEditRendering.svelte'));
@@ -70,7 +68,6 @@ const mockAgentInfos: AgentInfo[] = [
     description: 'Autonomous coding agent.',
     command: 'goose',
     destinationSkillsFolder: '/home/test/.agents/skills',
-    supportedRuntimes: ['podman'],
     supportedModelTypes: [{ name: 'ollama' }],
   },
 ];
@@ -193,7 +190,6 @@ beforeEach(() => {
   catalogModelsWritable = writable([]);
   connectionSummariesWritable = writable([]);
   vi.mocked(agentsStore).agentInfos = writable(mockAgentInfos);
-  vi.mocked(agentWorkspaceRuntimeStore).agentWorkspaceRuntime = writable('podman');
   vi.mocked(configurationPropertiesStore).configurationProperties = writable([]);
   vi.mocked(modelCatalogStore).disabledModels = writable(new Set<string>());
   vi.mocked(providersStore).providerInfos = providerInfosWritable;
@@ -326,7 +322,7 @@ test('renders agent selection above the model section inside a compact step card
   });
 });
 
-test('renders all shared-store agents for the active runtime', async () => {
+test('renders all shared-store agents', async () => {
   const onboarding: OnboardingState = {
     agent: 'opencode',
     workspaceSetting: {},

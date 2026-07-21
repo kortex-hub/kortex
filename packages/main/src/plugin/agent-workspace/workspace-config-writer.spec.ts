@@ -37,7 +37,6 @@ const defaultOptions: AgentWorkspaceCreateOptions = {
   sourcePath: '/tmp/my-project',
   agent: 'claude',
   model: 'anthropic::claude-sonnet-4::',
-  runtime: 'podman',
 };
 
 beforeEach(() => {

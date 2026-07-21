@@ -3,8 +3,6 @@ import { faPlus, faShieldHalved } from '@fortawesome/free-solid-svg-icons';
 import { Button, Input } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
-import { agentWorkspaceRuntime } from '/@/stores/agentworkspace-runtime';
-
 export interface NetworkAccessOption {
   value: string;
   name: string;
@@ -15,7 +13,7 @@ export interface NetworkAccessOption {
   disabled?: boolean;
 }
 
-const baseNetworkOptions: NetworkAccessOption[] = [
+const networkOptions: NetworkAccessOption[] = [
   {
     value: 'blocked',
     name: 'Deny All',
@@ -50,13 +48,6 @@ const baseNetworkOptions: NetworkAccessOption[] = [
     disabled: false,
   },
 ];
-
-let networkOptions = $derived(
-  baseNetworkOptions.map(option => ({
-    ...option,
-    disabled: option.value === 'open' && $agentWorkspaceRuntime === 'openshell' ? true : option.disabled,
-  })),
-);
 
 interface Props {
   selectedNetwork: string;

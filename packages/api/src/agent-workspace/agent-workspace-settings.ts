@@ -18,6 +18,5 @@
 
 export enum AgentWorkspaceSettings {
   SectionName = 'agentWorkspace',
-  Runtime = 'runtime',
   DefaultBaseImage = 'defaultBaseImage',
 }

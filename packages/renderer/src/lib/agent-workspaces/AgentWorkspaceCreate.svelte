@@ -13,7 +13,6 @@ import WizardStepper from '/@/lib/ui/WizardStepper.svelte';
 import { handleNavigation } from '/@/navigation';
 import { resetDraft, wizard } from '/@/stores/agent-workspace-create-draft.svelte';
 import { agentInfos } from '/@/stores/agents';
-import { agentWorkspaceRuntime } from '/@/stores/agentworkspace-runtime';
 import { mcpRemoteServerInfos } from '/@/stores/mcp-remote-servers';
 import { disabledModels, isModelEnabled, modelKey } from '/@/stores/model-catalog';
 import { catalogModels } from '/@/stores/models';
@@ -89,7 +88,7 @@ function isRegistryPreset(hosts: string[]): boolean {
 function applyNetworkFromProject(net: NetworkConfiguration | undefined): void {
   if (!net) return;
   if (net.mode === 'allow') {
-    wizard.draft.selectedNetwork = $agentWorkspaceRuntime === 'openshell' ? 'registries' : 'open';
+    wizard.draft.selectedNetwork = 'open';
     return;
   }
   const hosts = net.hosts ?? [];
@@ -439,7 +438,6 @@ async function startAsIs(): Promise<void> {
   try {
     await window.createAgentWorkspace({
       sourcePath: draftSnapshot.sourcePath,
-      runtime: $agentWorkspaceRuntime,
       agent: draftSnapshot.selectedAgent,
       model: getModelId(draftSnapshot.selectedModel!),
       name: getEffectiveWorkspaceNameFromSnapshot(draftSnapshot),
@@ -500,7 +498,6 @@ async function startWorkspace(): Promise<void> {
 
     await window.createAgentWorkspace({
       sourcePath: draftSnapshot.sourcePath,
-      runtime: $agentWorkspaceRuntime,
       agent: draftSnapshot.selectedAgent,
       model: getModelId(draftSnapshot.selectedModel!),
       name: getEffectiveWorkspaceNameFromSnapshot(draftSnapshot),

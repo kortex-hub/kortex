@@ -306,33 +306,6 @@ describe('AgentRegistry', () => {
     });
   });
 
-  describe('getRuntimes', () => {
-    test('returns podman when isSupportedRuntime returns true for podman', async () => {
-      const result = await agentRegistry.getRuntimes(runtime => runtime === 'podman');
-      expect(result).toEqual(['podman']);
-    });
-
-    test('returns openshell when isSupportedRuntime returns true for openshell', async () => {
-      const result = await agentRegistry.getRuntimes(runtime => runtime === 'openshell');
-      expect(result).toEqual(['openshell']);
-    });
-
-    test('returns both runtimes when both supported', async () => {
-      const result = await agentRegistry.getRuntimes(() => true);
-      expect(result).toEqual(['podman', 'openshell']);
-    });
-
-    test('returns empty array when none supported', async () => {
-      const result = await agentRegistry.getRuntimes(() => false);
-      expect(result).toEqual([]);
-    });
-
-    test('supports async callback', async () => {
-      const result = await agentRegistry.getRuntimes(async runtime => runtime === 'podman');
-      expect(result).toEqual(['podman']);
-    });
-  });
-
   describe('toAgentInfo', () => {
     test('returns agent info without supported types when callbacks absent', async () => {
       const agent = createAgent();
@@ -349,7 +322,6 @@ describe('AgentRegistry', () => {
         baseImage: undefined,
         destinationSkillsFolder: '/home/test/.test-agent/skills',
         supportedModelTypes: undefined,
-        supportedRuntimes: undefined,
       });
     });
 
@@ -391,15 +363,6 @@ describe('AgentRegistry', () => {
 
       const info = await agentRegistry.toAgentInfo(agent);
       expect(info.supportedModelTypes).toEqual([{ name: 'anthropic' }]);
-    });
-
-    test('populates supportedRuntimes when isSupportedRuntime is provided', async () => {
-      const agent = createAgent({
-        isSupportedRuntime: runtime => runtime === 'podman',
-      });
-
-      const info = await agentRegistry.toAgentInfo(agent);
-      expect(info.supportedRuntimes).toEqual(['podman']);
     });
 
     test('passes through skillsFolder', async () => {

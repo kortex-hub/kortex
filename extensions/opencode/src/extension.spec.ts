@@ -51,7 +51,6 @@ describe('activate', () => {
         tags: ['Recommended'],
         destinationSkillsFolder: '${HOME}/.opencode/skills',
         isSupportedModelType: expect.any(Function),
-        isSupportedRuntime: expect.any(Function),
       }),
     );
   });
@@ -60,14 +59,6 @@ describe('activate', () => {
     await activate(extensionContextMock);
 
     expect(extensionContextMock.subscriptions).toContain(AGENT_DISPOSABLE_MOCK);
-  });
-
-  test('registered agent supports all runtimes', async () => {
-    await activate(extensionContextMock);
-
-    const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-    expect(agent.isSupportedRuntime!('podman')).toBe(true);
-    expect(agent.isSupportedRuntime!('openshell')).toBe(true);
   });
 
   test('registered agent supports all model types including vertexai', async () => {
@@ -513,6 +504,36 @@ describe('activate', () => {
       const written = JSON.parse(configFile.updateMock.mock.calls[0]![0] as string);
       expect(written.mcp['minimal']).toEqual({ type: 'local', command: ['my-server'], enabled: true });
       expect(written.mcp['minimal']).not.toHaveProperty('environment');
+    });
+
+    test('maps vertexai to anthropic provider with correct config and env vars', async () => {
+      await activate(extensionContextMock);
+      const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+
+      const configFile = createConfigFile();
+      const workspace = {
+        environment: [] as { name: string; value: string }[],
+      };
+      const context: AgentWorkspaceContext = {
+        model: {
+          llmMetadata: { name: 'vertexai' },
+          model: { label: 'claude-sonnet-4-20250514' },
+          endpoint: 'https://custom.vertex.example.com',
+        },
+        configurationFiles: [configFile],
+        workspace,
+      };
+
+      await agent.preWorkspaceStart(context);
+
+      const written = JSON.parse(configFile.updateMock.mock.calls[0]![0] as string);
+      expect(written.model).toBe('anthropic/claude-sonnet-4-20250514');
+      expect(written.provider.anthropic.npm).toBe('@ai-sdk/anthropic');
+      expect(written.provider.anthropic.options.baseURL).toBe('https://custom.vertex.example.com');
+      expect(written.provider).not.toHaveProperty('vertexai');
+
+      expect(workspace.environment).toContainEqual({ name: 'ANTHROPIC_BASE_URL', value: 'https://inference.local/v1' });
+      expect(workspace.environment).toContainEqual({ name: 'ANTHROPIC_API_KEY', value: 'unused' });
     });
 
     test('adds Vertex AI environment variables when using vertexai model', async () => {

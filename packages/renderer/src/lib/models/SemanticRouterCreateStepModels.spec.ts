@@ -222,3 +222,69 @@ test('no selected count shown when nothing selected', () => {
 
   expect(screen.queryByTestId('selected-count')).not.toBeInTheDocument();
 });
+
+test('shows Default column header once a model is selected', async () => {
+  vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(mockCloudModels);
+
+  render(SemanticRouterCreateStepModels);
+
+  expect(screen.queryByText('Default')).not.toBeInTheDocument();
+
+  await fireEvent.click(screen.getByRole('checkbox', { name: 'Use claude-sonnet-4' }));
+
+  expect(screen.getByText('Default')).toBeInTheDocument();
+});
+
+test('default checkbox is disabled for unselected models', async () => {
+  vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(mockCloudModels);
+
+  render(SemanticRouterCreateStepModels);
+
+  await fireEvent.click(screen.getByRole('checkbox', { name: 'Use claude-sonnet-4' }));
+
+  const defaultCheckbox = screen.getByRole('checkbox', { name: 'Set gemini-2.5-pro as default' });
+  expect(defaultCheckbox).toBeDisabled();
+});
+
+test('first selected model is automatically the default', async () => {
+  vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(mockCloudModels);
+
+  render(SemanticRouterCreateStepModels);
+
+  await fireEvent.click(screen.getByRole('checkbox', { name: 'Use claude-sonnet-4' }));
+
+  const defaultCheckbox = screen.getByRole('checkbox', { name: 'Set claude-sonnet-4 as default' });
+  expect(defaultCheckbox).toBeChecked();
+});
+
+test('user can change default model via default checkbox', async () => {
+  vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>(mockCloudModels);
+
+  render(SemanticRouterCreateStepModels);
+
+  await fireEvent.click(screen.getByRole('checkbox', { name: 'Use claude-sonnet-4' }));
+  await fireEvent.click(screen.getByRole('checkbox', { name: 'Use gemini-2.5-pro' }));
+
+  const geminiDefault = screen.getByRole('checkbox', { name: 'Set gemini-2.5-pro as default' });
+  await fireEvent.click(geminiDefault);
+
+  expect(geminiDefault).toBeChecked();
+  expect(screen.getByRole('checkbox', { name: 'Set claude-sonnet-4 as default' })).not.toBeChecked();
+});
+
+test('deselecting the default model promotes the next model', async () => {
+  vi.mocked(modelsStore).catalogModels = writable<CatalogModelInfo[]>([...mockCloudModels, mockLocalModel]);
+
+  render(SemanticRouterCreateStepModels);
+
+  await fireEvent.click(screen.getByRole('checkbox', { name: 'Use claude-sonnet-4' }));
+  await fireEvent.click(screen.getByRole('checkbox', { name: 'Use gemini-2.5-pro' }));
+  await fireEvent.click(screen.getByRole('checkbox', { name: 'Use llama3.2:3b' }));
+
+  expect(screen.getByRole('checkbox', { name: 'Set claude-sonnet-4 as default' })).toBeChecked();
+
+  await fireEvent.click(screen.getByRole('checkbox', { name: 'Use claude-sonnet-4' }));
+
+  const geminiDefault = screen.getByRole('checkbox', { name: 'Set gemini-2.5-pro as default' });
+  expect(geminiDefault).toBeChecked();
+});
