@@ -577,8 +577,8 @@ importers:
   extensions/gemini:
     dependencies:
       '@ai-sdk/google':
-        specifier: ^4.0.16
-        version: 4.0.16(zod@4.4.3)
+        specifier: ^4.0.19
+        version: 4.0.19(zod@4.4.3)
       '@google/genai':
         specifier: ^1.25.0
         version: 1.43.0(@modelcontextprotocol/sdk@1.29.0(zod@4.4.3))
@@ -1173,14 +1173,14 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/google@4.0.16':
-    resolution: {integrity: sha512-6Iol15lTCUvLJ4jNGbtyT5b3xsF2mbcMkcaQTYFQiRijrFjTMrge0e6Xl5V9n+7g7KfrD377bk5yRFViHTvYUQ==}
+  '@ai-sdk/google@4.0.17':
+    resolution: {integrity: sha512-90YMrWWIz7HVqrtthaP60fqGhsTT8OXHskxJ9sPmD/bFBHqdbOBrtS9oKBWjO0XBAY8eo2Rd7Ai8zGKCTvPn9Q==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/google@4.0.17':
-    resolution: {integrity: sha512-90YMrWWIz7HVqrtthaP60fqGhsTT8OXHskxJ9sPmD/bFBHqdbOBrtS9oKBWjO0XBAY8eo2Rd7Ai8zGKCTvPn9Q==}
+  '@ai-sdk/google@4.0.19':
+    resolution: {integrity: sha512-GoSEKdvBIFhM9Sbl0ubnd0XFtbZv53tWJPng4PjbjNBKD9T8tqC672k8SmRYritlc8+U9Z8ENrjCzTZZZji8Wg==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -8194,16 +8194,16 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@ai-sdk/google@4.0.16(zod@4.4.3)':
+  '@ai-sdk/google@4.0.17(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 4.0.3
       '@ai-sdk/provider-utils': 5.0.10(zod@4.4.3)
       zod: 4.4.3
 
-  '@ai-sdk/google@4.0.17(zod@4.4.3)':
+  '@ai-sdk/google@4.0.19(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 4.0.3
-      '@ai-sdk/provider-utils': 5.0.10(zod@4.4.3)
+      '@ai-sdk/provider-utils': 5.0.11(zod@4.4.3)
       zod: 4.4.3
 
   '@ai-sdk/mcp@2.0.15(zod@4.3.6)':
