@@ -36,8 +36,8 @@ importers:
   .:
     dependencies:
       '@agentclientprotocol/sdk':
-        specifier: ^0.28.1
-        version: 0.28.1(zod@4.3.6)
+        specifier: ^1.2.1
+        version: 1.2.1(zod@4.3.6)
       '@ai-sdk/mcp':
         specifier: ^2.0.16
         version: 2.0.16(zod@4.3.6)
@@ -1138,8 +1138,8 @@ packages:
   '@adobe/css-tools@4.4.3':
     resolution: {integrity: sha512-VQKMkwriZbaOgVCby1UDY/LDk5fIjhQicCvVPFqfe+69fWaPWydbWJ3wRt59/YzIwda1I81loas3oCoHxnqvdA==}
 
-  '@agentclientprotocol/sdk@0.28.1':
-    resolution: {integrity: sha512-Z2Frs6YtPhnZZ+XwFXyQkRDXY0fn8FjCalEs0W4yUhQnY4TztmNq0/RnfzWdFN3vqT3h0jTz5klzYbZHGxCDyQ==}
+  '@agentclientprotocol/sdk@1.2.1':
+    resolution: {integrity: sha512-jwYUdOQR7tc+Zfch53VL4JJyUNK/46q03uUTYb+PjECsmnNl94XFXOfYLJ8RBpMNidXd1rpOAVgb0vqD98xImA==}
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
 
@@ -8151,7 +8151,7 @@ snapshots:
 
   '@adobe/css-tools@4.4.3': {}
 
-  '@agentclientprotocol/sdk@0.28.1(zod@4.3.6)':
+  '@agentclientprotocol/sdk@1.2.1(zod@4.3.6)':
     dependencies:
       zod: 4.3.6
 
@@ -9258,7 +9258,7 @@ snapshots:
 
   '@npmcli/fs@4.0.0':
     dependencies:
-      semver: 7.8.5
+      semver: 7.7.3
 
   '@npmcli/move-file@1.1.2':
     dependencies:
