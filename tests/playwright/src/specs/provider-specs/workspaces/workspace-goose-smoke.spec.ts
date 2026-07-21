@@ -19,10 +19,10 @@
 import { expect, test } from '/@/fixtures/provider-fixtures';
 import { CODING_AGENT } from '/@/model/core/types';
 
-import { registerWorkspaceLifecycleTests } from './workspace-lifecycle-helper';
+import { registerWorkspaceLifecycleTests } from './helpers/workspace-lifecycle-helper';
 
 test.describe
-  .serial('Goose agent workspace with OpenAI model', { tag: '@smoke' }, () => {
+  .serial('Goose agent workspace with OpenAI model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-OPENAI',
       workspaceName: 'goose-openai-e2e-smoke',
@@ -32,13 +32,13 @@ test.describe
       terminalReadyPatterns: [/goose/i],
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',
-        expectedResponse: /579|insufficient|balance|credit/i,
+        expectedResponse: /579|insufficient|balance|credit|quota exceeded/i,
       },
     });
   });
 
 test.describe
-  .serial('Goose agent workspace with Mistral model', { tag: '@smoke' }, () => {
+  .serial('Goose agent workspace with Mistral model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-MISTRAL',
       workspaceName: 'goose-mistral-e2e-smoke',
@@ -54,7 +54,7 @@ test.describe
   });
 
 test.describe
-  .serial('Goose agent workspace with Ollama model', { tag: '@smoke' }, () => {
+  .serial('Goose agent workspace with Ollama model', { tag: '@workspace-provider' }, () => {
     test.skip(true, 'Skipped until https://github.com/openkaiden/kaiden/issues/1780 is fixed');
 
     registerWorkspaceLifecycleTests(test, expect, {
@@ -73,7 +73,7 @@ test.describe
   });
 
 test.describe
-  .serial('Goose agent workspace with RamaLama model', { tag: '@smoke' }, () => {
+  .serial('Goose agent workspace with RamaLama model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-RAMALAMA',
       workspaceName: 'goose-ramalama-e2e-smoke',

@@ -36,6 +36,10 @@ if (podmanAvailable) {
   console.log('Podman enabled - running container-dependent tests');
 }
 
+const useCompactListReporter =
+  process.env.KAIDEN_E2E_COMPACT_REPORTER === 'true' ||
+  (process.env.WORKSPACE_TESTS_CI === 'true' && process.env.KAIDEN_E2E_COMPACT_REPORTER !== 'false');
+
 const config: PlaywrightTestConfig & {
   projects?: Array<{
     use?: { resource?: ResourceId };
@@ -49,10 +53,10 @@ const config: PlaywrightTestConfig & {
   workers: 1,
 
   reporter: [
+    useCompactListReporter ? ['./src/reporters/compact-list-reporter.ts'] : ['list'],
     ['html', { outputFolder: './output/html-report' }],
     ['json', { outputFile: './output/test-results.json' }],
     ['junit', { outputFile: './output/junit-results.xml' }],
-    ['list'],
   ],
 
   use: {

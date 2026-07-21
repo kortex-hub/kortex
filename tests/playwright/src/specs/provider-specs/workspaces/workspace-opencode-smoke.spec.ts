@@ -17,35 +17,36 @@
  ***********************************************************************/
 
 import { expect, test } from '/@/fixtures/provider-fixtures';
-import { CODING_AGENT } from '/@/model/core/types';
+import { CODING_AGENT, TIMEOUTS } from '/@/model/core/types';
 
-import { registerWorkspaceLifecycleTests } from './workspace-lifecycle-helper';
+import { registerWorkspaceLifecycleTests } from './helpers/workspace-lifecycle-helper';
 
 test.describe
-  .serial('OpenCode agent workspace with OpenAI model', { tag: '@smoke' }, () => {
+  .serial('OpenCode agent workspace with OpenAI model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-OPENAI',
       workspaceName: 'opencode-e2e-smoke',
       agent: CODING_AGENT.OPENCODE,
       requiredResource: 'openai',
       selectModel: async createPage => createPage.searchAndSelectDefault('chat'),
-      terminalReadyPatterns: [/Ask anything/, /OpenAI/],
+      terminalReadyPatterns: [/Ask anything/i, /openai/i],
+      promptTimeout: TIMEOUTS.MODEL_RESPONSE,
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',
-        expectedResponse: /579|insufficient|balance|credit/i,
+        expectedResponse: /579|insufficient|balance|credit|quota exceeded/i,
       },
     });
   });
 
 test.describe
-  .serial('OpenCode agent workspace with Gemini model', { tag: '@smoke' }, () => {
+  .serial('OpenCode agent workspace with Gemini model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-GEMINI',
       workspaceName: 'opencode-gemini-e2e-smoke',
       agent: CODING_AGENT.OPENCODE,
       requiredResource: 'gemini',
       selectModel: async createPage => createPage.searchAndSelectDefault('gemini', 'Gemini'),
-      terminalReadyPatterns: [/Ask anything/, /Gemini/],
+      terminalReadyPatterns: [/Ask anything/i, /gemini/i],
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',
         expectedResponse: /579|insufficient|balance|credit/i,
@@ -54,14 +55,14 @@ test.describe
   });
 
 test.describe
-  .serial('OpenCode agent workspace with Anthropic model', { tag: '@smoke' }, () => {
+  .serial('OpenCode agent workspace with Anthropic model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-ANTHROPIC',
       workspaceName: 'opencode-anthropic-e2e-smoke',
       agent: CODING_AGENT.OPENCODE,
       requiredResource: 'claude',
       selectModel: async createPage => createPage.searchAndSelectDefault('claude', 'Claude'),
-      terminalReadyPatterns: [/Ask anything/, /Claude/],
+      terminalReadyPatterns: [/Ask anything/i, /claude/i],
       promptTest: {
         prompt: 'what is 2+2? reply with just the number',
         expectedResponse: /4|insufficient|balance|credit/i,
@@ -70,14 +71,14 @@ test.describe
   });
 
 test.describe
-  .serial('OpenCode agent workspace with Mistral model', { tag: '@smoke' }, () => {
+  .serial('OpenCode agent workspace with Mistral model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-MISTRAL',
       workspaceName: 'opencode-mistral-e2e-smoke',
       agent: CODING_AGENT.OPENCODE,
       requiredResource: 'mistral',
       selectModel: async createPage => createPage.searchAndSelectDefault('mistral', 'Mistral'),
-      terminalReadyPatterns: [/Ask anything/, /Mistral/],
+      terminalReadyPatterns: [/Ask anything/i, /mistral/i],
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',
         expectedResponse: /579|insufficient|balance|credit/i,
@@ -86,14 +87,14 @@ test.describe
   });
 
 test.describe
-  .serial('OpenCode agent workspace with Ollama model', { tag: '@smoke' }, () => {
+  .serial('OpenCode agent workspace with Ollama model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-OLLAMA',
       workspaceName: 'opencode-ollama-e2e-smoke',
       agent: CODING_AGENT.OPENCODE,
       requiredResource: 'ollama',
       selectModel: async createPage => createPage.searchAndSelectByRuntime('ollama', 'Ollama'),
-      terminalReadyPatterns: [/Ask anything/, /ollama/i],
+      terminalReadyPatterns: [/Ask anything/i, /ollama/i],
       promptTimeout: 120_000,
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',

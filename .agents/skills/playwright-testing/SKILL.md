@@ -1,6 +1,6 @@
 ---
 name: playwright-testing
-description: Guide for writing, organizing, and maintaining Playwright end-to-end tests using the Page Object Model pattern
+description: Guide for writing, organizing, and maintaining Playwright end-to-end tests using the Page Object Model pattern. Workspace provider lifecycle and sandbox matrix tests are documented in workspace-provider-e2e.md.
 ---
 
 # Playwright Test Automation Guide for Kaiden
@@ -40,15 +40,20 @@ tests/playwright/
 │   │       ├── settings-page.ts      # Main settings hub
 │   │       ├── mcp-page.ts           # MCP server management
 │   │       ├── extensions-page.ts    # Extension browsing
+│   │       ├── agent-workspaces-page.ts      # Workspace list + lifecycle entry
+│   │       ├── agent-workspace-create-page.ts # Create wizard (FS + network steps)
+│   │       ├── agent-workspace-terminal-page.ts
 │   │       └── *-tab-page.ts         # Sub-page/tab objects
 │   ├── specs/
 │   │   ├── dashboard.spec.ts         # App startup and navigation
 │   │   ├── extensions-smoke.spec.ts  # Extension management
 │   │   ├── settings-smoke.spec.ts    # Settings pages
+│   │   ├── workspaces-smoke.spec.ts  # Workspace wizard UI (Kaiden-App-Core, @smoke)
 │   │   └── provider-specs/           # Provider-specific tests
 │   │       ├── chat-smoke.spec.ts    # Chat functionality (gold standard)
 │   │       ├── flows-smoke.spec.ts   # Flow execution
-│   │       └── mcp-smoke.spec.ts     # MCP servers
+│   │       ├── mcp-smoke.spec.ts     # MCP servers
+│   │       └── workspaces/           # Coding Agent Workspace lifecycle (Workspace-Provider)
 │   └── utils/
 │       ├── app-ready.ts              # waitForAppReady(), waitForNavigationReady(), handleDialogIfPresent()
 │       └── test-artifacts.ts         # Trace, screenshot, video capture on failure
@@ -57,14 +62,15 @@ tests/playwright/
 
 ## Naming Conventions
 
-| Artifact       | Pattern                          | Example                          |
-| -------------- | -------------------------------- | -------------------------------- |
-| Page object    | `*-page.ts`                      | `chat-page.ts`                   |
-| Tab sub-page   | `*-tab-page.ts`                  | `settings-resources-tab-page.ts` |
-| Spec file      | `*-smoke.spec.ts` or `*.spec.ts` | `extensions-smoke.spec.ts`       |
-| Test ID        | `[FEATURE-SCENARIO-NUM]`         | `[CHAT-HIST-01]`, `[EXT-03]`     |
-| Provider specs | `provider-specs/*.spec.ts`       | `chat-smoke.spec.ts`             |
-| Fixtures       | camelCase with purpose           | `resourceSetup`, `mcpSetup`      |
+| Artifact       | Pattern                                            | Example                                       |
+| -------------- | -------------------------------------------------- | --------------------------------------------- |
+| Page object    | `*-page.ts`                                        | `chat-page.ts`                                |
+| Tab sub-page   | `*-tab-page.ts`                                    | `settings-resources-tab-page.ts`              |
+| Spec file      | `*-smoke.spec.ts` or `*.spec.ts`                   | `extensions-smoke.spec.ts`                    |
+| Test ID        | `[FEATURE-SCENARIO-NUM]`                           | `[CHAT-HIST-01]`, `[EXT-03]`                  |
+| Provider specs | `provider-specs/*.spec.ts`                         | `chat-smoke.spec.ts`                          |
+| Workspace IDs  | `[{STEP}] {action}` under `{SCENARIO-ID}` describe | `[01] creation` under `FS-NONE-NET-DEVELOPER` |
+| Fixtures       | camelCase with purpose                             | `resourceSetup`, `mcpSetup`                   |
 
 ## Page Object Conventions
 
@@ -207,14 +213,15 @@ Located in `src/utils/app-ready.ts`:
 
 ### Test Projects
 
-| Project                 | Tests                           | Condition                   |
-| ----------------------- | ------------------------------- | --------------------------- |
-| `Kaiden-App-Core`       | All specs except provider-specs | Always runs                 |
-| `Gemini-Provider`       | provider-specs                  | Requires `GEMINI_API_KEY`   |
-| `OpenAI-Provider`       | provider-specs                  | Requires `OPENAI_API_KEY`   |
-| `Ollama-Provider`       | provider-specs (except flows)   | Requires `OLLAMA_ENABLED`   |
-| `RamaLama-Provider`     | provider-specs (except flows)   | Requires `RAMALAMA_ENABLED` |
-| `OpenShift-AI-Provider` | provider-specs                  | Currently disabled          |
+| Project                 | Tests                           | Condition                                                                                                |
+| ----------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `Kaiden-App-Core`       | All specs except provider-specs | Always runs                                                                                              |
+| `Gemini-Provider`       | provider-specs                  | Requires `GEMINI_API_KEY`                                                                                |
+| `OpenAI-Provider`       | provider-specs                  | Requires `OPENAI_API_KEY`                                                                                |
+| `Workspace-Provider`    | `provider-specs/workspaces/`    | `PODMAN_ENABLED` + API keys; not PR smoke — see [workspace-provider-e2e.md](./workspace-provider-e2e.md) |
+| `Ollama-Provider`       | provider-specs (except flows)   | Requires `OLLAMA_ENABLED`                                                                                |
+| `RamaLama-Provider`     | provider-specs (except flows)   | Requires `RAMALAMA_ENABLED`                                                                              |
+| `OpenShift-AI-Provider` | provider-specs                  | Currently disabled                                                                                       |
 
 ## Running Tests
 
@@ -236,7 +243,12 @@ npx playwright test --debug
 
 # Show report
 pnpm run test:e2e:report
+
+# Workspace provider tests (OpenShell; not PR smoke)
+pnpm run test:e2e:workspaces:run
 ```
+
+See [workspace-provider-e2e.md](./workspace-provider-e2e.md) for sandbox matrix structure, tags, env vars, and coverage notes.
 
 ## Conditional Test Skipping
 

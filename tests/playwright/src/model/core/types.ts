@@ -264,6 +264,27 @@ export const FILE_ACCESS_LEVEL = {
 export const FILE_ACCESS_LEVELS = Object.values(FILE_ACCESS_LEVEL);
 export type FileAccessLevel = (typeof FILE_ACCESS_LEVEL)[keyof typeof FILE_ACCESS_LEVEL];
 
+export const FILESYSTEM_BADGE = {
+  STRICT: 'Strict',
+  HOME: 'Home',
+  CUSTOM: 'Custom',
+} as const;
+export type FilesystemBadge = (typeof FILESYSTEM_BADGE)[keyof typeof FILESYSTEM_BADGE];
+
+export const NETWORK_ACCESS_LEVEL = {
+  DENY_ALL: 'Deny All',
+  DEVELOPER_PRESET: 'Developer Preset',
+  UNRESTRICTED: 'Unrestricted',
+} as const;
+export const NETWORK_ACCESS_LEVELS = Object.values(NETWORK_ACCESS_LEVEL);
+export type NetworkAccessLevel = (typeof NETWORK_ACCESS_LEVEL)[keyof typeof NETWORK_ACCESS_LEVEL];
+
+export interface WorkspaceCustomMount {
+  host: string;
+  target?: string;
+  readOnly?: boolean;
+}
+
 export const SELECTORS = {
   MAIN_ANY: 'main',
   MAIN_INITIALIZING: 'main.flex.flex-row.w-screen.h-screen.justify-center',

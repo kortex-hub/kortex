@@ -20,11 +20,15 @@ import { expect, type Locator, type Page } from '@playwright/test';
 
 import {
   type CodingAgent,
+  FILE_ACCESS_LEVEL,
   type FileAccessLevel,
+  NETWORK_ACCESS_LEVEL,
+  type NetworkAccessLevel,
   TIMEOUTS,
   WIZARD_STEP,
   WIZARD_STEPS,
   type WizardStep,
+  type WorkspaceCustomMount,
 } from '/@/model/core/types';
 
 import type { InlineConnectionField, ResolvedAgentModelSetup } from './agent-model-setup';
@@ -197,6 +201,115 @@ export class AgentWorkspaceCreatePage extends BasePage {
 
   async selectFileAccess(level: FileAccessLevel): Promise<void> {
     await this.getFileAccessOption(level).click();
+    await expect(this.page.getByRole('radio', { name: `Use ${level}` })).toBeChecked();
+  }
+
+  getCustomMountHostInput(index = 0): Locator {
+    return this.page.getByLabel(`Host path ${index + 1}`);
+  }
+
+  getCustomMountTargetInput(index = 0): Locator {
+    return this.page.getByLabel(`Target path ${index + 1}`);
+  }
+
+  async fillCustomMount(mount: WorkspaceCustomMount, index = 0): Promise<void> {
+    await this.getCustomMountHostInput(index).fill(mount.host);
+    if (mount.target !== undefined) {
+      await this.getCustomMountTargetInput(index).fill(mount.target);
+    }
+    if (mount.readOnly) {
+      const toggle = this.page.getByRole('button', { name: `Toggle read-only for mount ${index + 1}` });
+      const label = await toggle.textContent();
+      if (label?.includes('read-write')) {
+        await toggle.click();
+      }
+    }
+  }
+
+  async configureCustomMount(mount: WorkspaceCustomMount, index = 0): Promise<void> {
+    await this.selectFileAccess(FILE_ACCESS_LEVEL.CUSTOM_PATHS);
+    await this.fillCustomMount(mount, index);
+  }
+
+  getNetworkOption(level: NetworkAccessLevel): Locator {
+    return this.page.getByRole('radio', { name: `Use ${level}` });
+  }
+
+  async selectNetwork(level: NetworkAccessLevel): Promise<void> {
+    const option = this.getNetworkOption(level);
+    await expect(option).toBeEnabled();
+    await option.click();
+    await expect(option).toBeChecked();
+  }
+
+  getCustomHostInput(index: number): Locator {
+    return this.page.getByLabel(`Custom host ${index + 1}`);
+  }
+
+  async fillCustomHost(index: number, value: string): Promise<void> {
+    await this.getCustomHostInput(index).fill(value);
+  }
+
+  async addCustomHost(): Promise<void> {
+    await this.page.getByRole('button', { name: 'Add Another Host' }).click();
+  }
+
+  async configureNetworkingStep(
+    network: NetworkAccessLevel,
+    options?: { denyHosts?: string[]; additionalHosts?: string[] },
+  ): Promise<void> {
+    await this.selectNetwork(network);
+
+    if (network === NETWORK_ACCESS_LEVEL.DENY_ALL && options?.denyHosts?.length) {
+      for (let index = 0; index < options.denyHosts.length; index++) {
+        if (index > 0) {
+          await this.addCustomHost();
+        }
+        await this.fillCustomHost(index, options.denyHosts[index]!);
+      }
+    }
+
+    if (network === NETWORK_ACCESS_LEVEL.DEVELOPER_PRESET && options?.additionalHosts?.length) {
+      let hostIndex = await this.page.getByLabel(/^Custom host \d+$/).count();
+      for (const host of options.additionalHosts) {
+        await this.addCustomHost();
+        await this.fillCustomHost(hostIndex, host);
+        hostIndex++;
+      }
+    }
+  }
+
+  async configureFileSystemStep(fileAccess: FileAccessLevel, customMounts?: WorkspaceCustomMount[]): Promise<void> {
+    if (fileAccess === FILE_ACCESS_LEVEL.CUSTOM_PATHS) {
+      const mounts = customMounts ?? [];
+      if (mounts.length === 0) {
+        throw new Error('Custom Paths requires at least one mount');
+      }
+      await this.configureCustomMount(mounts[0]!, 0);
+      for (let index = 1; index < mounts.length; index++) {
+        await this.addPathButton.click();
+        await this.fillCustomMount(mounts[index]!, index);
+      }
+      return;
+    }
+    await this.selectFileAccess(fileAccess);
+  }
+
+  async completeSandboxWizardSteps(options: {
+    fileAccess: FileAccessLevel;
+    customMounts?: WorkspaceCustomMount[];
+    network: NetworkAccessLevel;
+    denyHosts?: string[];
+    additionalHosts?: string[];
+  }): Promise<void> {
+    await this.continueToStep(WIZARD_STEP.TOOLS_SECRETS);
+    await this.continueToStep(WIZARD_STEP.FILE_SYSTEM);
+    await this.configureFileSystemStep(options.fileAccess, options.customMounts);
+    await this.continueToStep(WIZARD_STEP.NETWORKING);
+    await this.configureNetworkingStep(options.network, {
+      denyHosts: options.denyHosts,
+      additionalHosts: options.additionalHosts,
+    });
   }
 
   async cancel(): Promise<void> {

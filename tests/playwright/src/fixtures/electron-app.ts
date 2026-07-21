@@ -42,6 +42,8 @@ const repoRoot = resolve(__dirname, '../../../..');
 const DEVTOOLS_URL_PREFIX = 'devtools://';
 const isProductionMode = !!process.env.KAIDEN_BINARY;
 const CDP_POLL_INTERVAL_MS = 250;
+/** When true, forward Electron main stderr and renderer console between Playwright test titles. */
+const verboseElectronLogs = process.env.KAIDEN_E2E_VERBOSE_LOGS === 'true';
 
 export interface ElectronFixtures {
   electronApp: ElectronApplication;
@@ -440,10 +442,12 @@ export async function getFirstPage(
         throw new Error('Target page closed during waitForAppReady');
       }
 
-      page.on('console', msg => console.log(`[${msg.type()}] ${msg.text()}`));
-      electronApp.process().stderr?.on('data', data => {
-        console.log(`STDERR: ${data}`);
-      });
+      if (verboseElectronLogs) {
+        page.on('console', msg => console.log(`[${msg.type()}] ${msg.text()}`));
+        electronApp.process().stderr?.on('data', data => {
+          console.log(`STDERR: ${data}`);
+        });
+      }
 
       return page;
     } catch (error) {

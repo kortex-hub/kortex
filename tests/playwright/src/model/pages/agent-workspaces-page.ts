@@ -35,7 +35,7 @@ export class AgentWorkspacesPage extends BaseTablePage {
   readonly searchInput: Locator;
 
   constructor(page: Page) {
-    super(page, 'agent-workspaces');
+    super(page, 'openshell-workspaces');
     this.header = this.page.getByRole('region', { name: 'header' });
     this.heading = this.header.getByRole('heading', { name: 'Agentic Workspaces' });
     this.additionalActionsButtonGroup = this.header.getByRole('group', { name: 'additionalActions' });
@@ -50,24 +50,59 @@ export class AgentWorkspacesPage extends BaseTablePage {
     await expect(this.heading).toBeVisible({ timeout: TIMEOUTS.SHORT });
   }
 
-  private getStatCardValue(label: string): Locator {
-    return this.content.getByText(label, { exact: true }).locator('..').locator('span').first();
+  async expectWorkspaceCreated(workspaceName: string): Promise<void> {
+    await this.waitForLoad();
+    const creationError = this.page.getByText(/Error while creating workspace/i);
+    if (await creationError.isVisible()) {
+      const detail = (await creationError.textContent()) ?? 'unknown error';
+      const okButton = this.page.getByRole('button', { name: 'OK' });
+      if (await okButton.isVisible()) {
+        await okButton.click();
+      }
+      throw new Error(`Workspace creation failed: ${detail}`);
+    }
+    await this.ensureRowExists(workspaceName, TIMEOUTS.WORKSPACE_READY);
+  }
+
+  private getStatCardValue(label: 'Active Sessions' | 'Total Sessions' | 'Configured Agents'): Locator {
+    return this.content
+      .locator('div.flex.flex-col')
+      .filter({ has: this.page.getByText(label, { exact: true }) })
+      .locator('span')
+      .first();
   }
 
   async getStatCardCount(label: 'Active Sessions' | 'Total Sessions' | 'Configured Agents'): Promise<number> {
     const valueSpan = this.getStatCardValue(label);
-    await expect(valueSpan).toBeVisible();
+    await expect(valueSpan).toBeVisible({ timeout: TIMEOUTS.SHORT });
     const text = await valueSpan.textContent();
     return Number.parseInt(text ?? '0', 10);
   }
 
   async getStatCounts(): Promise<{ activeSessions: number; totalSessions: number; configuredAgents: number }> {
+    await this.waitForLoad();
     const [activeSessions, totalSessions, configuredAgents] = await Promise.all([
       this.getStatCardCount('Active Sessions'),
       this.getStatCardCount('Total Sessions'),
       this.getStatCardCount('Configured Agents'),
     ]);
     return { activeSessions, totalSessions, configuredAgents };
+  }
+
+  async waitForStatCounts(
+    expected: { totalSessions: number; activeSessions: number; configuredAgents?: number },
+    timeout: number = TIMEOUTS.SHORT,
+  ): Promise<void> {
+    await expect
+      .poll(async () => this.getStatCounts(), {
+        timeout,
+        message: 'Workspace stat cards did not reach expected counts',
+      })
+      .toMatchObject({
+        totalSessions: expected.totalSessions,
+        activeSessions: expected.activeSessions,
+        ...(expected.configuredAgents !== undefined ? { configuredAgents: expected.configuredAgents } : {}),
+      });
   }
 
   async openCreatePage(): Promise<AgentWorkspaceCreatePage> {
@@ -83,10 +118,6 @@ export class AgentWorkspacesPage extends BaseTablePage {
     await this.searchInput.fill(term);
   }
 
-  getWorkspaceTerminalButton(name: string): Locator {
-    return this.page.getByRole('button', { name: `Open terminal for workspace ${name}` });
-  }
-
   async openWorkspaceDetails(name: string): Promise<AgentWorkspaceDetailsPage> {
     const row = await this.getRowLocatorByName(name);
     await row.getByText(name).click();
@@ -95,16 +126,17 @@ export class AgentWorkspacesPage extends BaseTablePage {
     return detailsPage;
   }
 
+  /** Opens the workspace terminal tab (replaces the removed list-row terminal button from kdn era). */
   async openWorkspaceTerminal(name: string): Promise<AgentWorkspaceDetailsPage> {
-    const terminalButton = this.getWorkspaceTerminalButton(name);
-    await expect(terminalButton).toBeVisible();
-    await terminalButton.click();
-    const detailsPage = new AgentWorkspaceDetailsPage(this.page);
+    const detailsPage = await this.openWorkspaceDetails(name);
+    const openTerminalButton = detailsPage.header.getByRole('button', { name: 'Open Terminal' });
+    await expect(openTerminalButton).toBeVisible();
+    await openTerminalButton.click();
     await detailsPage.waitForLoad();
     return detailsPage;
   }
 
-  async removeWorkspace(name: string): Promise<void> {
+  async removeWorkspace(name: string, timeout: number = TIMEOUTS.WORKSPACE_READY): Promise<void> {
     const row = await this.getRowLocatorByName(name);
     const removeButton = row.getByRole('button', { name: 'Remove workspace' });
     await expect(removeButton).toBeVisible();
@@ -112,6 +144,33 @@ export class AgentWorkspacesPage extends BaseTablePage {
     const confirmButton = this.page.getByRole('button', { name: 'Yes' });
     await expect(confirmButton).toBeVisible({ timeout: TIMEOUTS.SHORT });
     await confirmButton.click();
+    await this.waitForWorkspaceRemoved(name, timeout);
+  }
+
+  /** Wait until the workspace row is gone or total session count drops. */
+  async waitForWorkspaceRemoved(name: string, timeout: number = TIMEOUTS.WORKSPACE_READY): Promise<void> {
+    const totalBefore = await this.getStatCardCount('Total Sessions');
+    await expect
+      .poll(
+        async () => {
+          const row = await this.getTableRowByName(name);
+          if (!row) {
+            return true;
+          }
+          const totalNow = await this.getStatCardCount('Total Sessions');
+          return totalNow < totalBefore;
+        },
+        { timeout, message: `Workspace "${name}" was not removed from the list` },
+      )
+      .toBe(true);
+  }
+
+  async removeWorkspaceIfPresent(name: string): Promise<void> {
+    const row = await this.getTableRowByName(name);
+    if (!row) {
+      return;
+    }
+    await this.removeWorkspace(name);
   }
 
   async waitForWorkspaceStatus(

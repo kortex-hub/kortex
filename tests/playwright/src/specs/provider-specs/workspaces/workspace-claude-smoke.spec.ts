@@ -19,10 +19,10 @@
 import { expect, test } from '/@/fixtures/provider-fixtures';
 import { CODING_AGENT } from '/@/model/core/types';
 
-import { registerWorkspaceLifecycleTests } from './workspace-lifecycle-helper';
+import { registerWorkspaceLifecycleTests } from './helpers/workspace-lifecycle-helper';
 
 test.describe
-  .serial('Claude Code agent workspace with Anthropic model', { tag: '@smoke' }, () => {
+  .serial('Claude Code agent workspace with Anthropic model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-CLAUDE',
       workspaceName: 'claude-e2e-smoke',
