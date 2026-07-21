@@ -19,6 +19,7 @@
 import '@testing-library/jest-dom/vitest';
 
 import { render, screen } from '@testing-library/svelte';
+import userEvent from '@testing-library/user-event';
 import { writable } from 'svelte/store';
 import { beforeEach, expect, test, vi } from 'vitest';
 
@@ -66,6 +67,22 @@ const SANDBOX_WITHOUT_LABEL: SandboxInfoWithGateway = {
   gatewayName: 'test-gateway',
 };
 
+const SANDBOX_WITH_NON_ACP_AGENT: SandboxInfoWithGateway = {
+  id: 'sb-3',
+  name: 'non-acp-sandbox',
+  phase: 'Ready',
+  labels: { [AGENT_LABEL]: 'claude' },
+  gatewayName: 'test-gateway',
+};
+
+const SANDBOX_WITH_UNKNOWN_AGENT: SandboxInfoWithGateway = {
+  id: 'sb-4',
+  name: 'unknown-agent-sandbox',
+  phase: 'Ready',
+  labels: { [AGENT_LABEL]: 'nonexistent-agent' },
+  gatewayName: 'test-gateway',
+};
+
 beforeEach(() => {
   vi.resetAllMocks();
 });
@@ -102,4 +119,42 @@ test('only shows ACP-capable agents in dropdown', () => {
 
   expect(screen.queryByText('OpenClaw')).toBeInTheDocument();
   expect(screen.queryByText('Claude Code')).not.toBeInTheDocument();
+});
+
+test('shows warning and disables button when sandbox agent does not support ACP', async () => {
+  vi.mocked(openshellSandboxesStore).allOpenshellSandboxes = writable<SandboxInfoWithGateway[]>([
+    SANDBOX_WITH_NON_ACP_AGENT,
+  ]);
+  vi.mocked(agentsStore).agentInfos = writable<AgentInfo[]>([ACP_AGENT, NON_ACP_AGENT]);
+
+  render(AcpSessionCreate, { onclose: vi.fn() });
+
+  expect(screen.getByText('Claude Code')).toBeInTheDocument();
+  expect(screen.getByText('(set by workspace)')).toBeInTheDocument();
+  expect(screen.getByText(/does not support ACP sessions/)).toBeInTheDocument();
+
+  const promptInput = screen.getByPlaceholderText("Describe what you'd like the agent to do...");
+  await userEvent.type(promptInput, 'test prompt');
+
+  const startButton = screen.getByRole('button', { name: 'Start Session' });
+  expect(startButton).toBeDisabled();
+});
+
+test('shows warning when sandbox label points to unknown agent', async () => {
+  vi.mocked(openshellSandboxesStore).allOpenshellSandboxes = writable<SandboxInfoWithGateway[]>([
+    SANDBOX_WITH_UNKNOWN_AGENT,
+  ]);
+  vi.mocked(agentsStore).agentInfos = writable<AgentInfo[]>([ACP_AGENT, NON_ACP_AGENT]);
+
+  render(AcpSessionCreate, { onclose: vi.fn() });
+
+  expect(screen.getByText('nonexistent-agent')).toBeInTheDocument();
+  expect(screen.getByText('(set by workspace)')).toBeInTheDocument();
+  expect(screen.getByText(/does not support ACP sessions/)).toBeInTheDocument();
+
+  const promptInput = screen.getByPlaceholderText("Describe what you'd like the agent to do...");
+  await userEvent.type(promptInput, 'test prompt');
+
+  const startButton = screen.getByRole('button', { name: 'Start Session' });
+  expect(startButton).toBeDisabled();
 });

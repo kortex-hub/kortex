@@ -25,6 +25,8 @@ const acpAgents = $derived($agentInfos.filter(a => a.acp !== undefined));
 
 const selectedSandbox = $derived(readySandboxes.find(s => s.name === selectedSandboxName));
 const sandboxAgentId = $derived(selectedSandbox?.labels?.[AGENT_LABEL]);
+const sandboxAgentInfo = $derived(sandboxAgentId ? $agentInfos.find(a => a.id === sandboxAgentId) : undefined);
+const sandboxAgentSupportsAcp = $derived(!sandboxAgentId || sandboxAgentInfo?.acp !== undefined);
 const needsAgentSelection = $derived(!sandboxAgentId);
 const effectiveAgentId = $derived(sandboxAgentId ?? selectedAgentId);
 
@@ -40,7 +42,9 @@ $effect(() => {
   }
 });
 
-const canCreate = $derived(!!selectedSandbox && prompt.trim() !== '' && effectiveAgentId !== '');
+const canCreate = $derived(
+  !!selectedSandbox && prompt.trim() !== '' && effectiveAgentId !== '' && sandboxAgentSupportsAcp,
+);
 
 async function handleCreate(): Promise<void> {
   if (!canCreate || creating) return;
@@ -55,6 +59,7 @@ async function handleCreate(): Promise<void> {
     onclose();
     router.goto(`/acp-sessions/${encodeURIComponent(session.id)}`);
   } catch (err: unknown) {
+    console.error('Failed to create ACP session', err);
     error = err instanceof Error ? err.message : String(err);
     creating = false;
   }
@@ -99,9 +104,12 @@ async function handleCreate(): Promise<void> {
           {/if}
         {:else}
           <p class="text-sm text-[var(--pd-content-card-text)]">
-            {acpAgents.find(a => a.id === sandboxAgentId)?.name ?? sandboxAgentId}
+            {sandboxAgentInfo?.name ?? sandboxAgentId}
             <span class="opacity-60">(set by workspace)</span>
           </p>
+          {#if !sandboxAgentSupportsAcp}
+            <ErrorMessage error={`Agent "${sandboxAgentInfo?.name ?? sandboxAgentId}" does not support ACP sessions.`} />
+          {/if}
         {/if}
       </div>
 
