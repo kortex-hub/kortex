@@ -182,6 +182,7 @@ beforeEach(() => {
   vi.mocked(openshellSandboxesStore).allOpenshellSandboxes = writable<(SandboxInfo & { gatewayName: string })[]>([]);
   vi.mocked(window.checkAgentWorkspaceConfigExists).mockResolvedValue(false);
   vi.mocked(window.checkAgentWorkspaceGlobalConfigExists).mockResolvedValue(false);
+  vi.mocked(window.createAgentWorkspace).mockResolvedValue({ id: 'ws-1' });
   vi.mocked(window.showMessageBox).mockResolvedValue({ response: 0 });
   resetDraft();
 });

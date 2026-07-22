@@ -56,15 +56,35 @@ export interface SandboxInfoWithGateway extends SandboxInfo {
   gatewayName: string;
 }
 
+// Workaround: the Podman driver's event watcher can briefly report a sandbox as
+// Provisioning between Deleting and actual removal (stop event → inspect →
+// derive_phase returns Provisioning before the remove event arrives).
+// Pin the phase to Deleting once observed until the sandbox disappears.
+const deletingSandboxIds = new Set<string>();
+
 // Derived store: flatten all sandboxes across gateways and add gateway name for easier UI consumption
 export const allOpenshellSandboxes = derived(openshellSandboxes, $sandboxes => {
   const flattened: SandboxInfoWithGateway[] = [];
+  const currentIds = new Set<string>();
   for (const gatewaySandboxes of $sandboxes) {
     for (const sandbox of gatewaySandboxes.sandboxes) {
+      currentIds.add(sandbox.id);
+      if (sandbox.phase === 'Deleting') {
+        deletingSandboxIds.add(sandbox.id);
+      } else if (sandbox.phase !== 'Provisioning' && deletingSandboxIds.has(sandbox.id)) {
+        deletingSandboxIds.delete(sandbox.id);
+      }
+      const phase = deletingSandboxIds.has(sandbox.id) ? 'Deleting' : sandbox.phase;
       flattened.push({
         ...sandbox,
+        phase,
         gatewayName: gatewaySandboxes.gateway.name,
       });
+    }
+  }
+  for (const id of deletingSandboxIds) {
+    if (!currentIds.has(id)) {
+      deletingSandboxIds.delete(id);
     }
   }
   return flattened;

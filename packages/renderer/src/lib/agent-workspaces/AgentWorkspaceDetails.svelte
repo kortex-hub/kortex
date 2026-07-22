@@ -25,7 +25,7 @@ let configurationError: string | undefined = $state(undefined);
 
 const workspaceSummary = $derived($allOpenshellSandboxes.find(ws => ws.id === workspaceId));
 
-const status = $derived(workspaceSummary?.phase ?? 'Provisioning');
+const status = $derived(workspaceSummary?.phase ?? 'Unknown');
 const isRunning = $derived(status === 'Ready' || status === 'Deleting');
 const inProgress = $derived(status === 'Provisioning' || status === 'Deleting');
 
@@ -36,6 +36,15 @@ const isOnTerminalTab = $derived(isTabSelected($router.path, 'terminal'));
 $effect(() => {
   if (status === 'Unknown') {
     removeTerminal(workspaceId);
+  }
+});
+
+let wasFound = false;
+$effect(() => {
+  if (workspaceSummary) {
+    wasFound = true;
+  } else if (wasFound) {
+    router.goto('/agent-workspaces');
   }
 });
 
@@ -69,16 +78,13 @@ async function handleTerminal(): Promise<void> {
 
 function handleRemove(): void {
   withConfirmation(
-    async () => {
-      try {
-        if (!workspaceSummary) {
-          throw new Error(`workspace "${workspaceId}" not found`);
-        }
-        await window.removeAgentWorkspace(workspaceId, workspaceSummary.gatewayName);
-        router.goto('/agent-workspaces');
-      } catch (error: unknown) {
-        console.error('Failed to remove agent workspace', error);
+    () => {
+      if (workspaceSummary) {
+        window.removeAgentWorkspace(workspaceId, workspaceSummary.gatewayName).catch((error: unknown) => {
+          console.error('Failed to remove agent workspace', error);
+        });
       }
+      router.goto('/agent-workspaces');
     },
     `remove workspace ${workspaceSummary?.name ?? workspaceId}`,
   );

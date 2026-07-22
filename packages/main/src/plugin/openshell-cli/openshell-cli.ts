@@ -85,11 +85,17 @@ const OpenshellSettingsSchema = z.looseObject({
  *   - `openshell provider delete <name>`
  *   - `openshell provider create`
  */
+const TRANSITIONAL_PHASES = new Set(['Deleting', 'Provisioning']);
+const TRANSITIONAL_POLL_INTERVAL_MS = 5_000;
+const EARLY_POLL_DELAY_MS = 500;
+const MAX_TRANSITIONAL_POLL_RETRIES = 3;
+
 @injectable()
 export class OpenshellCli {
   private readonly _onDidSandboxListChange = new Emitter<GatewaySandboxes[]>();
   readonly onDidSandboxListChange: Event<GatewaySandboxes[]> = this._onDidSandboxListChange.event;
-  private _deletingPollTimer: ReturnType<typeof setTimeout> | undefined;
+  private _transitionalPollTimer: ReturnType<typeof setTimeout> | undefined;
+  private readonly _delayedRefreshTimers = new Set<ReturnType<typeof setTimeout>>();
 
   constructor(
     @inject(Exec)
@@ -219,7 +225,7 @@ export class OpenshellCli {
     if (options.command?.length) {
       args.push('--', ...options.command);
     }
-    await this.runCli(args, { redact: true });
+    await this.runCliWithOperationPoll(args, { redact: true });
   }
 
   async listSandboxes(gatewayName?: string): Promise<SandboxInfo[]> {
@@ -244,7 +250,7 @@ export class OpenshellCli {
     if (gatewayName) {
       args.push('-g', gatewayName);
     }
-    await this.runCli(args);
+    await this.runCliWithOperationPoll(args);
   }
 
   async deleteAllSandboxes(gatewayName?: string): Promise<void> {
@@ -297,33 +303,82 @@ export class OpenshellCli {
       }
     }
 
-    this.scheduleDeletingPollIfNeeded(results);
+    this.scheduleTransitionalPollIfNeeded(results);
     return results;
   }
 
-  private scheduleDeletingPollIfNeeded(results: GatewaySandboxes[]): void {
+  private snapshotPhases(sandboxes: SandboxInfo[]): string {
+    return sandboxes
+      .map(s => `${s.id}:${s.phase}`)
+      .sort((a, b) => a.localeCompare(b))
+      .join(',');
+  }
+
+  private scheduleTransitionalPollIfNeeded(results: GatewaySandboxes[], retries = 0): void {
     const allSandboxes = results.flatMap(entry => entry.sandboxes);
-    const deletingCount = allSandboxes.filter(s => s.phase === 'Deleting').length;
-    if (deletingCount === 0 || this._deletingPollTimer !== undefined) {
+    const transitionalCount = allSandboxes.filter(s => TRANSITIONAL_PHASES.has(s.phase)).length;
+    if (
+      transitionalCount === 0 ||
+      retries > MAX_TRANSITIONAL_POLL_RETRIES ||
+      this._transitionalPollTimer !== undefined
+    ) {
       return;
     }
-    const sandboxCount = allSandboxes.length;
-    this._deletingPollTimer = setTimeout(() => {
-      this._deletingPollTimer = undefined;
+    const previousSnapshot = this.snapshotPhases(allSandboxes);
+    this._transitionalPollTimer = setTimeout(() => {
+      this._transitionalPollTimer = undefined;
       this.listSandboxesPerGateway()
         .then(updated => {
           const updatedSandboxes = updated.flatMap(entry => entry.sandboxes);
-          const newSandboxCount = updatedSandboxes.length;
-          const newDeletingCount = updatedSandboxes.filter(s => s.phase === 'Deleting').length;
-          if (newSandboxCount !== sandboxCount || newDeletingCount !== deletingCount) {
+          if (this.snapshotPhases(updatedSandboxes) !== previousSnapshot) {
             this._onDidSandboxListChange.fire(updated);
           }
         })
         .catch((err: unknown) => {
-          console.warn(`[openshell] deleting-poll refresh failed: ${err instanceof Error ? err.message : String(err)}`);
-          this.scheduleDeletingPollIfNeeded(results);
+          console.warn(
+            `[openshell] transitional-poll refresh failed: ${err instanceof Error ? err.message : String(err)}`,
+          );
+          this.scheduleTransitionalPollIfNeeded(results, retries + 1);
         });
-    }, 5000);
+    }, TRANSITIONAL_POLL_INTERVAL_MS);
+  }
+
+  // Operation poll for create/delete: two targeted refreshes instead of
+  // continuous polling. The emitter update causes the renderer to re-fetch
+  // via listSandboxesPerGateway(), which activates the 5s transitional poll
+  // if transitional sandboxes are present. This is desirable: after the CLI
+  // completes, the transitional poll keeps monitoring until the sandbox
+  // reaches its final state (e.g. actually disappears after deletion).
+  private async runCliWithOperationPoll(
+    args: string[],
+    options?: { redact?: boolean; env?: { [p: string]: string }; quiet?: boolean },
+  ): Promise<void> {
+    let cliDone = false;
+    const earlyPoll = setTimeout(() => {
+      if (cliDone) return;
+      this.listSandboxesPerGateway()
+        .then(updated => this._onDidSandboxListChange.fire(updated))
+        .catch(() => {});
+    }, EARLY_POLL_DELAY_MS);
+    try {
+      await this.runCli(args, options);
+    } finally {
+      cliDone = true;
+      clearTimeout(earlyPoll);
+      this.listSandboxesPerGateway()
+        .then(updated => this._onDidSandboxListChange.fire(updated))
+        .catch(() => {});
+      // Delayed refresh — the server may not have fully processed the
+      // operation when the CLI returns (e.g. sandbox still briefly visible
+      // as Deleting after the delete command completes).
+      const delayedRefresh = setTimeout(() => {
+        this._delayedRefreshTimers.delete(delayedRefresh);
+        this.listSandboxesPerGateway()
+          .then(updated => this._onDidSandboxListChange.fire(updated))
+          .catch(() => {});
+      }, EARLY_POLL_DELAY_MS);
+      this._delayedRefreshTimers.add(delayedRefresh);
+    }
   }
 
   // ── gateway registration commands ─────────────────────────────────
@@ -519,10 +574,14 @@ export class OpenshellCli {
 
   @preDestroy()
   dispose(): void {
-    if (this._deletingPollTimer !== undefined) {
-      clearTimeout(this._deletingPollTimer);
-      this._deletingPollTimer = undefined;
+    if (this._transitionalPollTimer !== undefined) {
+      clearTimeout(this._transitionalPollTimer);
+      this._transitionalPollTimer = undefined;
     }
+    for (const timer of this._delayedRefreshTimers) {
+      clearTimeout(timer);
+    }
+    this._delayedRefreshTimers.clear();
     this._onDidSandboxListChange.dispose();
   }
 }

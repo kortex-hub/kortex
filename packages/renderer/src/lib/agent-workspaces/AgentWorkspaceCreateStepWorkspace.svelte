@@ -20,7 +20,7 @@ interface Props {
   onBrowseSource: () => Promise<void>;
   configExists?: boolean;
   configAction?: 'merge' | 'replace';
-  onStartAsIs?: () => Promise<void>;
+  onStartAsIs?: () => void;
   startAsIsDisabled?: boolean;
   projects?: WorkspaceProjectInfo[];
   selectedProjectId?: string;
