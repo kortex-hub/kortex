@@ -213,7 +213,7 @@ test('Expect clicking terminal redirects to terminal', async () => {
   expect(router.goto).toHaveBeenCalledWith('/agent-workspaces/ws-1/terminal');
 });
 
-test('Expect no navigation when removal fails', async () => {
+test('Expect navigation even when removal fails', async () => {
   vi.mocked(window.showMessageBox).mockResolvedValue({ response: 0 });
   vi.mocked(window.removeAgentWorkspace).mockRejectedValue(new Error('removal failed'));
 
@@ -230,7 +230,7 @@ test('Expect no navigation when removal fails', async () => {
     expect(window.removeAgentWorkspace).toHaveBeenCalledWith('ws-1', 'kaiden');
   });
 
-  expect(router.goto).not.toHaveBeenCalled();
+  expect(router.goto).toHaveBeenCalledWith('/agent-workspaces');
 });
 
 test('Expect files tab is not present', async () => {

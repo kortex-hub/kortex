@@ -20,7 +20,7 @@ import '@testing-library/jest-dom/vitest';
 
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { router } from 'tinro';
-import { beforeEach, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import type { SandboxInfo } from '/@api/openshell-gateway-info';
 
@@ -38,6 +38,11 @@ const mockSandbox: SandboxInfo = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 test('Expect sandbox name is displayed', () => {
@@ -163,4 +168,20 @@ test('Expect button is clickable and accessible', () => {
   const button = screen.getByRole('button');
   expect(button).toBeInTheDocument();
   expect(button).toHaveClass('flex', 'items-start');
+});
+
+test('Expect button is disabled when sandbox is Deleting', () => {
+  render(SandboxName, { object: { ...mockSandbox, phase: 'Deleting' } });
+
+  const button = screen.getByRole('button');
+  expect(button).toBeDisabled();
+});
+
+test('Expect clicking does not navigate when sandbox is Deleting', async () => {
+  render(SandboxName, { object: { ...mockSandbox, phase: 'Deleting' } });
+
+  const button = screen.getByRole('button');
+  await fireEvent.click(button);
+
+  expect(router.goto).not.toHaveBeenCalled();
 });

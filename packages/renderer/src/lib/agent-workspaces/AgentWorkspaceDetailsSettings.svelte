@@ -453,20 +453,17 @@ function navigateToMcp(): void {
 
 function handleDeleteWorkspace(): void {
   withConfirmation(
-    async (err?: unknown) => {
+    (err?: unknown) => {
       if (err) {
         console.error('Confirmation dialog failed', err);
         return;
       }
-      try {
-        if (!workspaceSummary) {
-          throw new Error(`workspace "${workspaceId}" not found`);
-        }
-        await window.removeAgentWorkspace(workspaceId, workspaceSummary.gatewayName);
-        router.goto('/agent-workspaces');
-      } catch (error: unknown) {
-        console.error('Failed to remove agent workspace', error);
+      if (workspaceSummary) {
+        window.removeAgentWorkspace(workspaceId, workspaceSummary.gatewayName).catch((error: unknown) => {
+          console.error('Failed to remove agent workspace', error);
+        });
       }
+      router.goto('/agent-workspaces');
     },
     `remove workspace ${workspaceSummary?.name ?? workspaceId}`,
   );

@@ -11,6 +11,8 @@ interface Props {
 
 let { object }: Props = $props();
 
+const isDeleting = $derived(object.phase === 'Deleting');
+
 function handleRemove(): void {
   withConfirmation(
     () => window.deleteOpenshellSandbox(object.name, object.gatewayName).catch(console.error),
@@ -19,4 +21,4 @@ function handleRemove(): void {
 }
 </script>
 
-<ListItemButtonIcon title="Remove workspace" icon={faTrash} onClick={handleRemove} />
+<ListItemButtonIcon title="Remove workspace" icon={faTrash} onClick={handleRemove} enabled={!isDeleting} />

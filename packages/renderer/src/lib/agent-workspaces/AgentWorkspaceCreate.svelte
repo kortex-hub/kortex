@@ -470,7 +470,7 @@ function buildMountsFrom(fileAccess: string, mounts: CustomMount[]): AgentWorksp
   }
 }
 
-async function startAsIs(): Promise<void> {
+function startAsIs(): void {
   if (
     !wizard.draft.selectedGateway ||
     !wizard.draft.selectedModel ||
@@ -482,8 +482,8 @@ async function startAsIs(): Promise<void> {
 
   const draftSnapshot = $state.snapshot(wizard.draft);
 
-  try {
-    await window.createAgentWorkspace({
+  window
+    .createAgentWorkspace({
       sourcePath: draftSnapshot.sourcePath.trim() || undefined,
       agent: draftSnapshot.selectedAgent,
       model: getModelId(draftSnapshot.selectedModel!),
@@ -491,24 +491,23 @@ async function startAsIs(): Promise<void> {
       name: getEffectiveWorkspaceNameFromSnapshot(draftSnapshot),
       description: draftSnapshot.description || undefined,
       project: draftSnapshot.selectedProjectId,
+    })
+    .then(() => resetDraft())
+    .catch((err: unknown) => {
+      console.error('Failed to create agent workspace (as-is)', err);
+      window
+        .showMessageBox({
+          title: 'Agent Workspace',
+          type: 'error',
+          message: `Error while creating workspace: ${err instanceof Error ? err.message : String(err)}`,
+          buttons: ['OK'],
+        })
+        .catch(console.error);
     });
-    resetDraft();
-  } catch (err: unknown) {
-    console.error('Failed to create agent workspace (as-is)', err);
-    window
-      .showMessageBox({
-        title: 'Agent Workspace',
-        type: 'error',
-        message: `Error while creating workspace: ${err instanceof Error ? err.message : String(err)}`,
-        buttons: ['OK'],
-      })
-      .catch(console.error);
-  } finally {
-    handleNavigation({ page: NavigationPage.AGENT_WORKSPACES });
-  }
+  handleNavigation({ page: NavigationPage.AGENT_WORKSPACES });
 }
 
-async function startWorkspace(): Promise<void> {
+function startWorkspace(): void {
   if (
     !wizard.draft.selectedGateway ||
     !getEffectiveWorkspaceName() ||
@@ -521,31 +520,29 @@ async function startWorkspace(): Promise<void> {
 
   const draftSnapshot = $state.snapshot(wizard.draft);
 
-  try {
-    const selectedSkillPaths = $skillInfos
-      .filter(s => draftSnapshot.selectedSkillIds.includes(s.name))
-      .map(s => s.path);
-    const network = mapNetworkSelection(
-      draftSnapshot.selectedNetwork,
-      draftSnapshot.hostsByMode[draftSnapshot.selectedNetwork] ?? [],
-    );
-    const mounts = buildMountsFrom(draftSnapshot.selectedFileAccess, draftSnapshot.customMounts);
+  const selectedSkillPaths = $skillInfos.filter(s => draftSnapshot.selectedSkillIds.includes(s.name)).map(s => s.path);
+  const network = mapNetworkSelection(
+    draftSnapshot.selectedNetwork,
+    draftSnapshot.hostsByMode[draftSnapshot.selectedNetwork] ?? [],
+  );
+  const mounts = buildMountsFrom(draftSnapshot.selectedFileAccess, draftSnapshot.customMounts);
 
-    const selected = $mcpRemoteServerInfos.filter(m => draftSnapshot.selectedMcpIds.includes(m.id));
-    const remoteServers = selected
-      .filter(m => m.setupType === 'remote' || (!m.setupType && m.url))
-      .map(m => ({ name: m.name, url: m.url }));
-    const commandServers = selected
-      .filter(m => m.setupType === 'package' && m.commandSpec)
-      .map(m => ({
-        name: m.name,
-        command: m.commandSpec!.command,
-        args: m.commandSpec!.args,
-        env: m.commandSpec!.env,
-      }));
-    const hasMcp = remoteServers.length > 0 || commandServers.length > 0;
+  const selected = $mcpRemoteServerInfos.filter(m => draftSnapshot.selectedMcpIds.includes(m.id));
+  const remoteServers = selected
+    .filter(m => m.setupType === 'remote' || (!m.setupType && m.url))
+    .map(m => ({ name: m.name, url: m.url }));
+  const commandServers = selected
+    .filter(m => m.setupType === 'package' && m.commandSpec)
+    .map(m => ({
+      name: m.name,
+      command: m.commandSpec!.command,
+      args: m.commandSpec!.args,
+      env: m.commandSpec!.env,
+    }));
+  const hasMcp = remoteServers.length > 0 || commandServers.length > 0;
 
-    await window.createAgentWorkspace({
+  window
+    .createAgentWorkspace({
       sourcePath: draftSnapshot.sourcePath.trim() || undefined,
       agent: draftSnapshot.selectedAgent,
       model: getModelId(draftSnapshot.selectedModel!),
@@ -565,21 +562,20 @@ async function startWorkspace(): Promise<void> {
       workspaceConfiguration: getAgentWorkspaceConfiguration(draftSnapshot.selectedAgent),
       replaceConfig: draftSnapshot.configExists && draftSnapshot.configAction === 'replace' ? true : undefined,
       project: draftSnapshot.selectedProjectId,
+    })
+    .then(() => resetDraft())
+    .catch((err: unknown) => {
+      console.error('Failed to create agent workspace', err);
+      window
+        .showMessageBox({
+          title: 'Agent Workspace',
+          type: 'error',
+          message: `Error while creating workspace: ${err instanceof Error ? err.message : String(err)}`,
+          buttons: ['OK'],
+        })
+        .catch(console.error);
     });
-    resetDraft();
-  } catch (err: unknown) {
-    console.error('Failed to create agent workspace', err);
-    window
-      .showMessageBox({
-        title: 'Agent Workspace',
-        type: 'error',
-        message: `Error while creating workspace: ${err instanceof Error ? err.message : String(err)}`,
-        buttons: ['OK'],
-      })
-      .catch(console.error);
-  } finally {
-    handleNavigation({ page: NavigationPage.AGENT_WORKSPACES });
-  }
+  handleNavigation({ page: NavigationPage.AGENT_WORKSPACES });
 }
 </script>
 
