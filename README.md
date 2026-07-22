@@ -84,7 +84,7 @@ pnpm watch
 ### Configure your Gemini API Key
 
 Go to `Settings > Resources`, the Gemini provider should be listed. Click on `Grab a key` if you don't have an existing
-Gemini API key. If you already have one, enter it and click the `Create` button. If you go the Chat
+Gemini API key. If you already have one, enter it and click the `Create` button. If you go to the Chat
 window, you should see a list of Gemini models being listed.
 
 ### Configure the GitHub MCP server
@@ -92,14 +92,14 @@ window, you should see a list of Gemini models being listed.
 Click the `MCP` icon on the left toolbar. The `Install` tab should be selected and the GitHub MCP server should be
 listed. Click the `Install Remote Server` button on the left. Enter your GitHub Personal Access Token (PAT) if
 you have one or go to https://github.com/settings/personal-access-tokens/new to create a new one. Then click
-the `Create` button. If you go the Chat window, you should see the server listed.
+the `Create` button. If you go to the Chat window, you should see the server listed.
 
 ### Configure the Goose flow runtime
 
 Kaiden uses the Goose as a flow provider. So there are two options here:
 
 - use Goose for the local PATH if you have already installed Goose on your workstation.
-- install Goose locally though the Goose extension. Go to the `Settings > CLI` tab and search for `goose`. If no Goose
+- install Goose locally through the Goose extension. Go to the `Settings > CLI` tab and search for `goose`. If no Goose
   executable is found, you can click the `Install` button to install it locally.
 
 ## Contributing

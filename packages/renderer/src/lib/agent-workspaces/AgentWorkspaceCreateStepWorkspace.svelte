@@ -4,6 +4,7 @@ import { Button, Input } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
 import { Textarea } from '/@/lib/chat/components/ui/textarea';
+import { getSandboxNameValidationError } from '/@api/agent-workspace-info';
 import type { WorkspaceProjectInfo } from '/@api/workspace-project-info';
 
 interface Props {
@@ -53,6 +54,18 @@ function toggleDescription(): void {
 function toggleProject(): void {
   projectOpen = !projectOpen;
 }
+
+function getEffectiveWorkspaceName(name: string, path: string): string {
+  const trimmed = name.trim();
+  if (trimmed) {
+    return trimmed;
+  }
+  const normalized = path.trim().replace(/[\\/]+$/, '');
+  return normalized.split(/[\\/]/).filter(Boolean).at(-1) ?? '';
+}
+
+let sessionNameError = $derived(getSandboxNameValidationError(getEffectiveWorkspaceName(sessionName, sourcePath)));
+let nameInputError = $derived(sessionNameError ?? errors?.name ?? '');
 </script>
 
 <h2 class="text-lg font-semibold text-[var(--pd-modal-text)] mb-1">Workspace</h2>
@@ -133,8 +146,8 @@ function toggleProject(): void {
       placeholder="e.g., Frontend Refactoring"
       class="w-full"
       oninput={markNameEdited}
-      error={errors?.name ?? ''}
-      aria-invalid={!!errors?.name}
+      error={nameInputError}
+      aria-invalid={nameInputError !== ''}
     />
   </div>
 

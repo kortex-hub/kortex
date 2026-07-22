@@ -1,4 +1,4 @@
-# Guidelines for Podman Desktop Code
+# Guidelines for Kaiden Code
 
 ## Production code
 
@@ -275,9 +275,9 @@ it's up to you to decide if you want to mock them or not, depending on the cover
 
 #### Mock a complete module
 
-Mock completely an imported module with `vi.mock('/path/to/module)`, and define mock implementation for each test with `vi.mocked(function).mock...()`.
+Mock completely an imported module with `vi.mock('/path/to/module')`, and define mock implementation for each test with `vi.mocked(function).mock...()`.
 
-Use `vi.resetAllMocks()` in the top-level `beforeEach` to reset all mocks to a no-op function returning `undefined` before to start each test.
+Use `vi.resetAllMocks()` in the top-level `beforeEach` to reset all mocks to a no-op function returning `undefined` before starting each test.
 
 ```ts
 import { existsSync } from 'node:fs';

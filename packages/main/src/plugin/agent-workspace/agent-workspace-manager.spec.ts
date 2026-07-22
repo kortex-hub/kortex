@@ -25,10 +25,9 @@ import type {
   AgentWorkspaceConfiguration,
   AISDKInferenceProvider,
   Configuration,
-  FileSystemWatcher,
   ProviderConnectionStatus,
 } from '@openkaiden/api';
-import type { WebContents } from 'electron';
+import type { IpcMainInvokeEvent, WebContents } from 'electron';
 import type { IPty } from 'node-pty';
 import { spawn } from 'node-pty';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -37,7 +36,6 @@ import type { AgentRegistry } from '/@/plugin/agent-registry.js';
 import * as configWriter from '/@/plugin/agent-workspace/workspace-config-writer.js';
 import type { IPCHandle } from '/@/plugin/api.js';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
-import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import type { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
 import type { ProviderImpl } from '/@/plugin/provider-impl.js';
@@ -49,7 +47,7 @@ import type { Exec } from '/@/plugin/util/exec.js';
 import type { AgentWorkspaceCreateOptions } from '/@api/agent-workspace-info.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IConfigurationPropertyRecordedSchema, IConfigurationRegistry } from '/@api/configuration/models.js';
-import type { GatewaySandboxes } from '/@api/openshell-gateway-info.js';
+import type { GatewayInfo, GatewaySandboxes } from '/@api/openshell-gateway-info.js';
 import { AGENT_LABEL, decodeWorkspaceLabels } from '/@api/openshell-gateway-info.js';
 import type { TaskState, TaskStatus } from '/@api/taskInfo.js';
 
@@ -108,16 +106,6 @@ const taskManager = {
   createTask: vi.fn().mockReturnValue(mockTask),
 } as unknown as TaskManager;
 
-const mockWatcher = {
-  onDidChange: vi.fn(),
-  onDidCreate: vi.fn(),
-  onDidDelete: vi.fn(),
-  dispose: vi.fn(),
-} as unknown as FileSystemWatcher;
-const filesystemMonitoring = {
-  createFileSystemWatcher: vi.fn().mockReturnValue(mockWatcher),
-} as unknown as FilesystemMonitoring;
-
 const webContents = {
   send: vi.fn(),
   receive: vi.fn(),
@@ -139,10 +127,16 @@ const providerRegistry = {
 } as unknown as ProviderRegistry;
 
 let gatewayStartCallback: (() => void) | undefined;
+let gatewayInitFailedCallback: ((message: string) => void) | undefined;
+let sandboxListChangeCallback: (() => void) | undefined;
 
 const openshellGateway = {
   onDidGatewayStart: vi.fn((cb: () => void) => {
     gatewayStartCallback = cb;
+    return { dispose: vi.fn() };
+  }),
+  onDidGatewayInitFailed: vi.fn((cb: (message: string) => void) => {
+    gatewayInitFailedCallback = cb;
     return { dispose: vi.fn() };
   }),
 } as unknown as OpenshellGateway;
@@ -167,7 +161,6 @@ beforeEach(() => {
   mockTask.state = '' as TaskState;
   mockTask.status = '' as TaskStatus;
   mockTask.error = '';
-  vi.mocked(filesystemMonitoring.createFileSystemWatcher).mockReturnValue(mockWatcher);
   vi.mocked(writeFile).mockResolvedValue(undefined);
   vi.mocked(rm).mockResolvedValue(undefined);
   vi.mocked(readFile).mockResolvedValue('{}');
@@ -191,11 +184,20 @@ beforeEach(() => {
     } as Awaited<ReturnType<typeof lstat>>;
   });
   gatewayStartCallback = undefined;
+  gatewayInitFailedCallback = undefined;
+  sandboxListChangeCallback = undefined;
+  Object.defineProperty(openshellCli, 'onDidSandboxListChange', {
+    value: vi.fn((cb: () => void) => {
+      sandboxListChangeCallback = cb;
+      return { dispose: vi.fn() };
+    }),
+    writable: true,
+    configurable: true,
+  });
   manager = new AgentWorkspaceManager(
     apiSender,
     ipcHandle,
     taskManager,
-    filesystemMonitoring,
     webContents,
     configurationRegistry,
     providerRegistry,
@@ -228,6 +230,10 @@ describe('init', () => {
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:updateConfiguration', expect.any(Function));
   });
 
+  test('registers IPC handler for listOpenshellGateways', () => {
+    expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:listOpenshellGateways', expect.any(Function));
+  });
+
   test('registers defaultBaseImage configuration', () => {
     expect(configurationRegistry.registerConfigurations).toHaveBeenCalledWith([
       expect.objectContaining({
@@ -245,40 +251,28 @@ describe('init', () => {
     expect(openshellGateway.onDidGatewayStart).toHaveBeenCalled();
   });
 
-  test('sends agent-workspace-update when gateway starts', () => {
+  test('sends gateway and workspace update events when gateway starts', () => {
     gatewayStartCallback!();
-    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
-  });
-});
-
-describe('watchInstancesFile', () => {
-  test('watches ~/.kdn/instances.json on init', () => {
-    expect(filesystemMonitoring.createFileSystemWatcher).toHaveBeenCalledWith(
-      expect.stringMatching(/\.kdn[\\/]instances\.json$/),
-    );
-  });
-
-  test('sends agent-workspace-update on file change', () => {
-    const changeCallback = vi.mocked(mockWatcher.onDidChange).mock.calls[0]![0] as () => void;
-    changeCallback();
+    expect(apiSender.send).toHaveBeenCalledWith('agent-gateway-update');
     expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
   });
 
-  test('sends agent-workspace-update on file create', () => {
-    const createCallback = vi.mocked(mockWatcher.onDidCreate).mock.calls[0]![0] as () => void;
-    createCallback();
-    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
+  test('subscribes to gateway init failed event', () => {
+    expect(openshellGateway.onDidGatewayInitFailed).toHaveBeenCalled();
   });
 
-  test('sends agent-workspace-update on file delete', () => {
-    const deleteCallback = vi.mocked(mockWatcher.onDidDelete).mock.calls[0]![0] as () => void;
-    deleteCallback();
-    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
+  test('sends gateway update event when gateway init fails', () => {
+    gatewayInitFailedCallback!('Socket not found');
+    expect(apiSender.send).toHaveBeenCalledWith('agent-gateway-update');
   });
 
-  test('disposes watcher on dispose', () => {
-    manager.dispose();
-    expect(mockWatcher.dispose).toHaveBeenCalled();
+  test('subscribes to sandbox list change event', () => {
+    expect(openshellCli.onDidSandboxListChange).toHaveBeenCalled();
+  });
+
+  test('sends agent-workspace-update when sandbox list changes from polling', () => {
+    sandboxListChangeCallback!();
+    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
   });
 });
 
@@ -357,6 +351,28 @@ describe('create – OpenShell mode', () => {
 
     expect(openshellCli.createSandbox).toHaveBeenCalledWith(expect.objectContaining({ name: 'my-project' }));
     expect(result).toEqual({ id: 'my-project' });
+  });
+
+  test('rejects workspace names longer than the hostname limit', async () => {
+    const options: AgentWorkspaceCreateOptions = {
+      ...defaultOptions,
+      name: 'a'.repeat(57),
+    };
+
+    await expect(manager.create(options)).rejects.toThrow(/must not exceed 56 characters/);
+    expect(openshellCli.createSandbox).not.toHaveBeenCalled();
+  });
+
+  test('rejects basename-derived names longer than the hostname limit', async () => {
+    const longBasename = 'a'.repeat(57);
+    const options: AgentWorkspaceCreateOptions = {
+      sourcePath: `/tmp/${longBasename}`,
+      agent: 'claude',
+      model: 'ramalama::granite-4::',
+    };
+
+    await expect(manager.create(options)).rejects.toThrow(/must not exceed 56 characters/);
+    expect(openshellCli.createSandbox).not.toHaveBeenCalled();
   });
 
   test('passes agent baseImage as from option to createSandbox', async () => {
@@ -901,6 +917,55 @@ describe('list', () => {
   });
 });
 
+describe('listOpenshellGateways', () => {
+  const TEST_GATEWAYS: GatewayInfo[] = [
+    {
+      name: 'kaiden-local',
+      endpoint: 'http://127.0.0.1:17670',
+      active: true,
+      auth: 'plaintext',
+      type: 'local',
+      source: 'user',
+    },
+    {
+      name: 'remote-vm',
+      endpoint: 'https://127.0.0.1:17670',
+      active: false,
+      auth: 'mtls',
+      type: 'remote',
+      source: 'user',
+      is_remote: true,
+      remote_host: 'user@gateway-alias',
+      resolved_host: '10.0.0.5',
+    },
+  ];
+
+  test('delegates to openshellCli.listGateways and returns registered gateways', async () => {
+    vi.mocked(openshellCli.listGateways).mockResolvedValue(TEST_GATEWAYS);
+
+    const result = await manager.listOpenshellGateways();
+
+    expect(openshellCli.listGateways).toHaveBeenCalled();
+    expect(result).toEqual(TEST_GATEWAYS);
+  });
+
+  test('rejects when openshellCli.listGateways fails', async () => {
+    vi.mocked(openshellCli.listGateways).mockRejectedValue(new Error('command not found'));
+
+    await expect(manager.listOpenshellGateways()).rejects.toThrow('command not found');
+  });
+
+  test('IPC handler returns OpenShell gateways', async () => {
+    vi.mocked(openshellCli.listGateways).mockResolvedValue(TEST_GATEWAYS);
+    const handler = vi
+      .mocked(ipcHandle)
+      .mock.calls.find(([channel]) => channel === 'agent-workspace:listOpenshellGateways')?.[1];
+
+    expect(handler).toBeDefined();
+    await expect(handler?.({} as IpcMainInvokeEvent)).resolves.toEqual(TEST_GATEWAYS);
+  });
+});
+
 describe('remove', () => {
   test('delegates to kdnCli.remove and returns the workspace id', async () => {
     vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
@@ -1032,47 +1097,6 @@ describe('updateConfiguration', () => {
     vi.mocked(configWriter.updateWorkspaceConfig).mockRejectedValue(new Error('permission denied'));
 
     await expect(manager.updateConfiguration('ws-1', {})).rejects.toThrow('permission denied');
-  });
-});
-
-describe('updateSummary', () => {
-  const INSTANCES_JSON = [
-    { id: 'ws-1', name: 'old-name', paths: { source: '/tmp/ws1' } },
-    { id: 'ws-2', name: 'other-workspace', paths: { source: '/tmp/ws2' } },
-  ];
-
-  test('updates the name of the matching workspace in instances.json', async () => {
-    vi.mocked(readFile).mockResolvedValue(JSON.stringify(INSTANCES_JSON));
-
-    await manager.updateSummary('ws-1', { name: 'new-name' });
-
-    expect(writeFile).toHaveBeenCalledWith(
-      expect.stringMatching(/\.kdn[\\/]instances\.json$/),
-      expect.any(String),
-      'utf-8',
-    );
-    const written = JSON.parse(vi.mocked(writeFile).mock.calls[0]![1] as string) as { id: string; name: string }[];
-    expect(written.find(w => w.id === 'ws-1')?.name).toBe('new-name');
-    expect(written.find(w => w.id === 'ws-2')?.name).toBe('other-workspace');
-  });
-
-  test('throws when workspace id is not found', async () => {
-    vi.mocked(readFile).mockResolvedValue(JSON.stringify(INSTANCES_JSON));
-
-    await expect(manager.updateSummary('unknown-id', { name: 'x' })).rejects.toThrow(
-      'workspace "unknown-id" not found in instances.json',
-    );
-    expect(writeFile).not.toHaveBeenCalled();
-  });
-
-  test('propagates file read errors', async () => {
-    vi.mocked(readFile).mockRejectedValue(new Error('EACCES: permission denied'));
-
-    await expect(manager.updateSummary('ws-1', { name: 'x' })).rejects.toThrow('EACCES: permission denied');
-  });
-
-  test('registers IPC handler for updateSummary', () => {
-    expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:updateSummary', expect.any(Function));
   });
 });
 

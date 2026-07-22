@@ -20,11 +20,13 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 import type { RunError, RunOptions } from '@openkaiden/api';
-import { inject, injectable } from 'inversify';
+import { inject, injectable, preDestroy } from 'inversify';
 import z from 'zod';
 
 import { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
+import { Emitter } from '/@/plugin/events/emitter.js';
 import { Exec } from '/@/plugin/util/exec.js';
+import type { Event } from '/@api/event.js';
 import {
   type CreateProviderOptions,
   type CreateSandboxOptions,
@@ -83,6 +85,10 @@ const OpenshellSettingsSchema = z.looseObject({
  */
 @injectable()
 export class OpenshellCli {
+  private readonly _onDidSandboxListChange = new Emitter<GatewaySandboxes[]>();
+  readonly onDidSandboxListChange: Event<GatewaySandboxes[]> = this._onDidSandboxListChange.event;
+  private _deletingPollTimer: ReturnType<typeof setTimeout> | undefined;
+
   constructor(
     @inject(Exec)
     private readonly exec: Exec,
@@ -277,7 +283,33 @@ export class OpenshellCli {
       }
     }
 
+    this.scheduleDeletingPollIfNeeded(results);
     return results;
+  }
+
+  private scheduleDeletingPollIfNeeded(results: GatewaySandboxes[]): void {
+    const allSandboxes = results.flatMap(entry => entry.sandboxes);
+    const deletingCount = allSandboxes.filter(s => s.phase === 'Deleting').length;
+    if (deletingCount === 0 || this._deletingPollTimer !== undefined) {
+      return;
+    }
+    const sandboxCount = allSandboxes.length;
+    this._deletingPollTimer = setTimeout(() => {
+      this._deletingPollTimer = undefined;
+      this.listSandboxesPerGateway()
+        .then(updated => {
+          const updatedSandboxes = updated.flatMap(entry => entry.sandboxes);
+          const newSandboxCount = updatedSandboxes.length;
+          const newDeletingCount = updatedSandboxes.filter(s => s.phase === 'Deleting').length;
+          if (newSandboxCount !== sandboxCount || newDeletingCount !== deletingCount) {
+            this._onDidSandboxListChange.fire(updated);
+          }
+        })
+        .catch((err: unknown) => {
+          console.warn(`[openshell] deleting-poll refresh failed: ${err instanceof Error ? err.message : String(err)}`);
+          this.scheduleDeletingPollIfNeeded(results);
+        });
+    }, 5000);
   }
 
   // ── gateway registration commands ─────────────────────────────────
@@ -457,5 +489,14 @@ export class OpenshellCli {
       console.error(`openshell failed: ${cliPath} ${fullArgs.join(' ')} — ${detail}`);
       throw new Error(detail);
     }
+  }
+
+  @preDestroy()
+  dispose(): void {
+    if (this._deletingPollTimer !== undefined) {
+      clearTimeout(this._deletingPollTimer);
+      this._deletingPollTimer = undefined;
+    }
+    this._onDidSandboxListChange.dispose();
   }
 }

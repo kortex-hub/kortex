@@ -59,11 +59,17 @@ const ClaudeProjectSchema = z.looseObject({
   hasTrustDialogAccepted: z.boolean().optional(),
 });
 
+const ClaudeCustomApiKeyResponsesSchema = z.looseObject({
+  approved: z.array(z.string()).optional(),
+  rejected: z.array(z.string()).optional(),
+});
+
 const ClaudeJsonCodec = jsonCodec(
   z.looseObject({
     hasCompletedOnboarding: z.boolean().optional(),
     projects: z.record(z.string(), ClaudeProjectSchema).optional(),
     mcpServers: z.record(z.string(), z.unknown()).optional(),
+    customApiKeyResponses: ClaudeCustomApiKeyResponsesSchema.optional(),
   }),
 );
 
@@ -160,6 +166,11 @@ export class ClaudeExtension {
           project.hasTrustDialogAccepted = true;
           projects[WORKSPACE_SOURCES_PATH] = project;
           config.projects = projects;
+
+          config.customApiKeyResponses = {
+            approved: Array.from(new Set([...(config.customApiKeyResponses?.approved ?? []), 'unused'])),
+            rejected: config.customApiKeyResponses?.rejected?.filter(response => response !== 'unused') ?? [],
+          };
 
           const mcpServers = context.workspace.mcp?.servers;
           const mcpCommands = context.workspace.mcp?.commands;

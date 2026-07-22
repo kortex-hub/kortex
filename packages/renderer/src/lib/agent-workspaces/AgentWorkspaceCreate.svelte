@@ -27,6 +27,7 @@ import type {
   AgentWorkspaceMount,
   NetworkConfiguration,
 } from '/@api/agent-workspace-info';
+import { getSandboxNameValidationError } from '/@api/agent-workspace-info';
 import { NavigationPage } from '/@api/navigation-page';
 import type { DefaultWorkspaceSettings } from '/@api/onboarding-settings-info';
 import type { FilesystemConfiguration, WorkspaceProjectInfo } from '/@api/workspace-project-info';
@@ -212,6 +213,18 @@ function getDefaultSessionName(path: string): string {
   return normalized.split(/[\\/]/).filter(Boolean).at(-1) ?? '';
 }
 
+function getEffectiveWorkspaceName(): string {
+  return wizard.draft.sessionName.trim() || getDefaultSessionName(wizard.draft.sourcePath);
+}
+
+function getEffectiveWorkspaceNameFromSnapshot(draft: { sessionName: string; sourcePath: string }): string {
+  return draft.sessionName.trim() || getDefaultSessionName(draft.sourcePath);
+}
+
+function isWorkspaceNameValid(): boolean {
+  return getSandboxNameValidationError(getEffectiveWorkspaceName()) === undefined;
+}
+
 $effect(() => {
   if (wizard.draft.nameManuallyEdited) return;
   const last = getDefaultSessionName(wizard.draft.sourcePath);
@@ -258,7 +271,12 @@ let validationErrors = $derived.by(() => {
 });
 let isCurrentStepComplete = $derived.by(() => {
   if (currentStepId === 'workspace') {
-    return wizard.draft.sessionName.trim() !== '' && wizard.draft.sourcePath.trim() !== '' && !validationErrors.name;
+    return (
+      getEffectiveWorkspaceName() !== '' &&
+      wizard.draft.sourcePath.trim() !== '' &&
+      isWorkspaceNameValid() &&
+      !validationErrors.name
+    );
   }
   if (currentStepId === 'agent-model') {
     return hasModel;
@@ -406,7 +424,14 @@ function buildMountsFrom(fileAccess: string, mounts: CustomMount[]): AgentWorksp
 }
 
 async function startAsIs(): Promise<void> {
-  if (!wizard.draft.sourcePath.trim() || !wizard.draft.selectedModel) return;
+  if (
+    !wizard.draft.sourcePath.trim() ||
+    !wizard.draft.selectedModel ||
+    !isWorkspaceNameValid() ||
+    validationErrors.name
+  ) {
+    return;
+  }
 
   const draftSnapshot = $state.snapshot(wizard.draft);
 
@@ -415,7 +440,7 @@ async function startAsIs(): Promise<void> {
       sourcePath: draftSnapshot.sourcePath,
       agent: draftSnapshot.selectedAgent,
       model: getModelId(draftSnapshot.selectedModel!),
-      name: draftSnapshot.sessionName || getDefaultSessionName(draftSnapshot.sourcePath),
+      name: getEffectiveWorkspaceNameFromSnapshot(draftSnapshot),
       project: draftSnapshot.selectedProjectId,
     });
     resetDraft();
@@ -435,7 +460,15 @@ async function startAsIs(): Promise<void> {
 }
 
 async function startWorkspace(): Promise<void> {
-  if (!wizard.draft.sessionName.trim() || !wizard.draft.sourcePath.trim() || !wizard.draft.selectedModel) return;
+  if (
+    !getEffectiveWorkspaceName() ||
+    !wizard.draft.sourcePath.trim() ||
+    !wizard.draft.selectedModel ||
+    !isWorkspaceNameValid() ||
+    validationErrors.name
+  ) {
+    return;
+  }
 
   const draftSnapshot = $state.snapshot(wizard.draft);
 
@@ -467,7 +500,7 @@ async function startWorkspace(): Promise<void> {
       sourcePath: draftSnapshot.sourcePath,
       agent: draftSnapshot.selectedAgent,
       model: getModelId(draftSnapshot.selectedModel!),
-      name: draftSnapshot.sessionName,
+      name: getEffectiveWorkspaceNameFromSnapshot(draftSnapshot),
       skills: selectedSkillPaths.length > 0 ? selectedSkillPaths : undefined,
       network,
       secrets: draftSnapshot.selectedSecretIds.length > 0 ? [...draftSnapshot.selectedSecretIds] : undefined,

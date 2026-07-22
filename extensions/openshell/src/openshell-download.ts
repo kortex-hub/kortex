@@ -17,7 +17,7 @@
  **********************************************************************/
 
 import { createWriteStream, existsSync } from 'node:fs';
-import { chmod, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { join, normalize } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 
@@ -25,84 +25,114 @@ import * as tar from 'tar';
 
 import { sha256 } from './sha256';
 
-const OPENSHELL_REPO = 'NVIDIA/OpenShell';
-
 export interface ReleaseInfo {
   version: string;
   digests: Map<string, string>;
 }
 
 interface AssetSpec {
-  component: string;
   assetName: string;
   binaryName: string;
   subdir?: string;
 }
 
-const ASSET_MAP: Record<string, AssetSpec[]> = {
-  'darwin-arm64': [
-    { component: 'openshell', assetName: 'openshell-aarch64-apple-darwin.tar.gz', binaryName: 'openshell' },
-    {
-      component: 'openshell-gateway',
-      assetName: 'openshell-gateway-aarch64-apple-darwin.tar.gz',
-      binaryName: 'openshell-gateway',
-    },
-    {
-      component: 'openshell-driver-vm',
-      assetName: 'openshell-driver-vm-aarch64-apple-darwin.tar.gz',
-      binaryName: 'openshell-driver-vm',
-    },
-  ],
-  'linux-x64': [
-    { component: 'openshell', assetName: 'openshell-x86_64-unknown-linux-musl.tar.gz', binaryName: 'openshell' },
-    {
-      component: 'openshell-gateway',
-      assetName: 'openshell-gateway-x86_64-unknown-linux-gnu.tar.gz',
-      binaryName: 'openshell-gateway',
-    },
-    {
-      component: 'openshell-sandbox',
-      assetName: 'openshell-sandbox-x86_64-unknown-linux-gnu.tar.gz',
-      binaryName: 'openshell-sandbox',
-    },
-    {
-      component: 'openshell-driver-vm',
-      assetName: 'openshell-driver-vm-x86_64-unknown-linux-gnu.tar.gz',
-      binaryName: 'openshell-driver-vm',
-    },
-  ],
-  'linux-arm64': [
-    { component: 'openshell', assetName: 'openshell-aarch64-unknown-linux-musl.tar.gz', binaryName: 'openshell' },
-    {
-      component: 'openshell-gateway',
-      assetName: 'openshell-gateway-aarch64-unknown-linux-gnu.tar.gz',
-      binaryName: 'openshell-gateway',
-    },
-    {
-      component: 'openshell-sandbox',
-      assetName: 'openshell-sandbox-aarch64-unknown-linux-gnu.tar.gz',
-      binaryName: 'openshell-sandbox',
-    },
-    {
-      component: 'openshell-driver-vm',
-      assetName: 'openshell-driver-vm-aarch64-unknown-linux-gnu.tar.gz',
-      binaryName: 'openshell-driver-vm',
-    },
-  ],
+export interface GitHubArtifactDownload {
+  name: string;
+  repository: string;
+  assets: Record<string, AssetSpec[]>;
+}
+
+export const OPENSHELL_DOWNLOAD: GitHubArtifactDownload = {
+  name: 'openshell',
+  repository: 'NVIDIA/OpenShell',
+  assets: {
+    'darwin-arm64': [
+      { assetName: 'openshell-aarch64-apple-darwin.tar.gz', binaryName: 'openshell' },
+      {
+        assetName: 'openshell-gateway-aarch64-apple-darwin.tar.gz',
+        binaryName: 'openshell-gateway',
+      },
+      {
+        assetName: 'openshell-driver-vm-aarch64-apple-darwin.tar.gz',
+        binaryName: 'openshell-driver-vm',
+      },
+    ],
+    'linux-x64': [
+      { assetName: 'openshell-x86_64-unknown-linux-musl.tar.gz', binaryName: 'openshell' },
+      {
+        assetName: 'openshell-gateway-x86_64-unknown-linux-gnu.tar.gz',
+        binaryName: 'openshell-gateway',
+      },
+      {
+        assetName: 'openshell-sandbox-x86_64-unknown-linux-gnu.tar.gz',
+        binaryName: 'openshell-sandbox',
+      },
+      {
+        assetName: 'openshell-driver-vm-x86_64-unknown-linux-gnu.tar.gz',
+        binaryName: 'openshell-driver-vm',
+      },
+    ],
+    'linux-arm64': [
+      { assetName: 'openshell-aarch64-unknown-linux-musl.tar.gz', binaryName: 'openshell' },
+      {
+        assetName: 'openshell-gateway-aarch64-unknown-linux-gnu.tar.gz',
+        binaryName: 'openshell-gateway',
+      },
+      {
+        assetName: 'openshell-sandbox-aarch64-unknown-linux-gnu.tar.gz',
+        binaryName: 'openshell-sandbox',
+      },
+      {
+        assetName: 'openshell-driver-vm-aarch64-unknown-linux-gnu.tar.gz',
+        binaryName: 'openshell-driver-vm',
+      },
+    ],
+  },
 };
 
-export async function getRelease(version: string): Promise<ReleaseInfo> {
+export const OPENSHELL_IMAGE_BUILDER_DOWNLOAD: GitHubArtifactDownload = {
+  name: 'openshell-image-builder',
+  repository: 'openkaiden/openshell-image-builder',
+  assets: {
+    'darwin-arm64': [
+      {
+        assetName: 'openshell-image-builder-aarch64-apple-darwin',
+        binaryName: 'openshell-image-builder',
+      },
+    ],
+    'linux-x64': [
+      {
+        assetName: 'openshell-image-builder-x86_64-unknown-linux-gnu',
+        binaryName: 'openshell-image-builder',
+      },
+    ],
+    'linux-arm64': [
+      {
+        assetName: 'openshell-image-builder-aarch64-unknown-linux-gnu',
+        binaryName: 'openshell-image-builder',
+      },
+    ],
+    'win32-x64': [
+      {
+        assetName: 'openshell-image-builder-x86_64-pc-windows-msvc.exe',
+        binaryName: 'openshell-image-builder.exe',
+      },
+    ],
+  },
+};
+
+export async function getRelease(downloadConfig: GitHubArtifactDownload, version: string): Promise<ReleaseInfo> {
   const headers: Record<string, string> = { Accept: 'application/vnd.github.v3+json' };
   const token = process.env['GITHUB_TOKEN'];
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  const res = await fetch(`https://api.github.com/repos/${OPENSHELL_REPO}/releases/tags/v${version}`, {
+  const res = await fetch(`https://api.github.com/repos/${downloadConfig.repository}/releases/tags/v${version}`, {
     headers,
     redirect: 'follow',
   });
   if (!res.ok) {
-    throw new Error(`failed to fetch OpenShell release v${version}: ${res.status} ${res.statusText}`);
+    throw new Error(`failed to fetch ${downloadConfig.name} release v${version}: ${res.status} ${res.statusText}`);
   }
   const data = (await res.json()) as { tag_name: string; assets: { name: string; digest: string | null }[] };
   const resolvedVersion = data.tag_name.replace(/^v/, '');
@@ -115,7 +145,7 @@ export async function getRelease(version: string): Promise<ReleaseInfo> {
   return { version: resolvedVersion, digests };
 }
 
-export async function download(url: string, dest: string): Promise<void> {
+async function download(url: string, dest: string): Promise<void> {
   const res = await fetch(url, { redirect: 'follow' });
   if (!res.ok || !res.body) {
     throw new Error(`failed to download ${url}: ${res.status} ${res.statusText}`);
@@ -123,11 +153,7 @@ export async function download(url: string, dest: string): Promise<void> {
   await pipeline(res.body, createWriteStream(dest));
 }
 
-export async function verifyChecksum(
-  digests: Map<string, string>,
-  assetFileName: string,
-  filePath: string,
-): Promise<void> {
+async function verifyChecksum(digests: Map<string, string>, assetFileName: string, filePath: string): Promise<void> {
   const expected = digests.get(assetFileName);
   if (!expected) {
     throw new Error(`no digest found for ${assetFileName} in release assets`);
@@ -145,7 +171,7 @@ function isSafePath(entryName: string): boolean {
   return !normalized.startsWith('..') && !normalized.startsWith('/');
 }
 
-export async function extract(archive: string, outDir: string): Promise<void> {
+async function extract(archive: string, outDir: string): Promise<void> {
   await tar.extract({
     file: archive,
     cwd: outDir,
@@ -153,7 +179,8 @@ export async function extract(archive: string, outDir: string): Promise<void> {
   });
 }
 
-export async function downloadOpenshellBinaries(
+export async function downloadBinaries(
+  downloadConfig: GitHubArtifactDownload,
   version: string,
   platform: string,
   arch: string,
@@ -161,25 +188,23 @@ export async function downloadOpenshellBinaries(
   digests: Map<string, string>,
 ): Promise<void> {
   const key = `${platform}-${arch}`;
-  const assets = ASSET_MAP[key];
+  const assets = downloadConfig.assets[key];
   if (!assets) {
-    throw new Error(`unsupported target: ${key}. Supported: ${Object.keys(ASSET_MAP).join(', ')}`);
+    throw new Error(`unsupported target: ${key}. Supported: ${Object.keys(downloadConfig.assets).join(', ')}`);
   }
 
-  const versionFile = join(outputDir, '.openshell-version');
+  const versionFile = join(outputDir, `.${downloadConfig.name}-version`);
   const versionMarker = `${version}-${platform}-${arch}`;
 
   if (existsSync(versionFile)) {
     const existing = await readFile(versionFile, { encoding: 'utf-8' });
-    if (existing.trim() === versionMarker) {
-      const allPresent = assets.every(a => {
-        const dir = a.subdir ? join(outputDir, a.subdir) : outputDir;
-        return existsSync(join(dir, a.binaryName));
-      });
-      if (allPresent) {
-        console.log(`openshell ${version} for ${platform}/${arch} already downloaded`);
-        return;
-      }
+    const allPresent = assets.every(asset => {
+      const dir = asset.subdir ? join(outputDir, asset.subdir) : outputDir;
+      return existsSync(join(dir, asset.binaryName));
+    });
+    if (existing.trim() === versionMarker && allPresent) {
+      console.log(`${downloadConfig.name} ${version} for ${platform}/${arch} already downloaded`);
+      return;
     }
   }
 
@@ -187,27 +212,33 @@ export async function downloadOpenshellBinaries(
   await mkdir(outputDir, { recursive: true });
 
   for (const asset of assets) {
-    const extractDir = asset.subdir ? join(outputDir, asset.subdir) : outputDir;
-    await mkdir(extractDir, { recursive: true });
+    const assetDir = asset.subdir ? join(outputDir, asset.subdir) : outputDir;
+    await mkdir(assetDir, { recursive: true });
 
-    const url = `https://github.com/${OPENSHELL_REPO}/releases/download/v${version}/${asset.assetName}`;
-    const archivePath = join(extractDir, asset.assetName);
+    const url = `https://github.com/${downloadConfig.repository}/releases/download/v${version}/${asset.assetName}`;
+    const downloadPath = join(assetDir, asset.assetName);
+    const binaryPath = join(assetDir, asset.binaryName);
 
-    console.log(`downloading ${asset.component} ${version} for ${platform}/${arch}...`);
-    await download(url, archivePath);
-    await verifyChecksum(digests, asset.assetName, archivePath);
+    console.log(`downloading ${asset.binaryName} ${version} for ${platform}/${arch}...`);
+    await download(url, downloadPath);
+    await verifyChecksum(digests, asset.assetName, downloadPath);
 
-    console.log(`extracting ${asset.component}...`);
-    await extract(archivePath, extractDir);
-    await rm(archivePath);
-
-    const binaryPath = join(extractDir, asset.binaryName);
-    if (!existsSync(binaryPath)) {
-      throw new Error(`expected extracted binary at ${binaryPath}`);
+    if (asset.assetName.endsWith('.tar.gz')) {
+      console.log(`extracting ${asset.binaryName}...`);
+      await extract(downloadPath, assetDir);
+      await rm(downloadPath);
+    } else if (downloadPath !== binaryPath) {
+      await rename(downloadPath, binaryPath);
     }
-    await chmod(binaryPath, 0o755);
+
+    if (!existsSync(binaryPath)) {
+      throw new Error(`expected binary at ${binaryPath}`);
+    }
+    if (platform !== 'win32') {
+      await chmod(binaryPath, 0o755);
+    }
   }
 
   await writeFile(versionFile, versionMarker, { encoding: 'utf-8' });
-  console.log(`openshell ${version} for ${platform}/${arch} ready`);
+  console.log(`${downloadConfig.name} ${version} for ${platform}/${arch} ready`);
 }

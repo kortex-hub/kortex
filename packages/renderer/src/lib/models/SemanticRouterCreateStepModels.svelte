@@ -1,4 +1,5 @@
 <script lang="ts">
+import { untrack } from 'svelte';
 import { SvelteSet } from 'svelte/reactivity';
 
 import { disabledModels, isModelEnabled, modelKey, modelSelectionKey } from '/@/stores/model-catalog';
@@ -9,9 +10,10 @@ import ModelSelectionTable from './ModelSelectionTable.svelte';
 
 interface Props {
   selectedModels?: CatalogModelInfo[];
+  defaultModel?: CatalogModelInfo;
 }
 
-let { selectedModels = $bindable([]) }: Props = $props();
+let { selectedModels = $bindable([]), defaultModel = $bindable() }: Props = $props();
 
 let selectedKeys = new SvelteSet<string>(
   selectedModels.map(m => modelSelectionKey(m.providerId, m.connectionId, m.label)),
@@ -35,6 +37,25 @@ $effect(() => {
   );
 });
 
+$effect(() => {
+  const models = selectedModels;
+  if (models.length > 0) {
+    const current = untrack(() => defaultModel);
+    const defaultStillSelected =
+      current !== undefined &&
+      models.some(
+        m =>
+          modelSelectionKey(m.providerId, m.connectionId, m.label) ===
+          modelSelectionKey(current.providerId, current.connectionId, current.label),
+      );
+    if (!defaultStillSelected) {
+      defaultModel = models[0]!;
+    }
+  } else {
+    defaultModel = undefined;
+  }
+});
+
 function toggleModel(model: CatalogModelInfo): void {
   const key = modelSelectionKey(model.providerId, model.connectionId, model.label);
   if (selectedKeys.has(key)) {
@@ -42,6 +63,10 @@ function toggleModel(model: CatalogModelInfo): void {
   } else {
     selectedKeys.add(key);
   }
+}
+
+function setDefaultModel(model: CatalogModelInfo): void {
+  defaultModel = model;
 }
 </script>
 
@@ -56,5 +81,7 @@ function toggleModel(model: CatalogModelInfo): void {
     models={eligibleModels}
     multiSelect={true}
     selectedKeys={selectedKeys}
-    ontoggle={toggleModel} />
+    defaultModel={defaultModel}
+    ontoggle={toggleModel}
+    ondefaultchange={setDefaultModel} />
 </div>

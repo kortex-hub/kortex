@@ -21,7 +21,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { cli, configuration, process as extensionProcess } from '@openkaiden/api';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { OpenshellCliManager } from './openshell-cli-manager';
 
@@ -82,17 +82,16 @@ describe('OpenshellCliManager', () => {
     expect(registeredNames).toContain('openshell-gateway');
 
     const gwCall = createCalls.find(call => call[0].name === 'openshell-gateway');
-    expect(gwCall).toBeDefined();
-    expect(gwCall![0].installationSource).toBe('extension');
-    expect(gwCall![0].path).toBeUndefined();
-    expect(gwCall![0].version).toBeUndefined();
+    assert(gwCall);
+    expect(gwCall[0].installationSource).toBe('extension');
+    expect(gwCall[0].path).toBeUndefined();
+    expect(gwCall[0].version).toBeUndefined();
   });
 
   describe('binary discovery priority', () => {
     test('prefers bundled resource over system PATH', async () => {
-      const bundledPath = join('/resources', 'openshell', 'openshell');
-
-      Object.defineProperty(process, 'resourcesPath', { value: '/resources', configurable: true });
+      const platformArch = `${process.platform}-${process.arch}`;
+      const bundledPath = join(EXTENSION_URI, 'assets', platformArch, 'openshell');
 
       vi.mocked(existsSync).mockImplementation((p: PathLike) => {
         return String(p) === bundledPath;
@@ -118,13 +117,9 @@ describe('OpenshellCliManager', () => {
       expect(extensionProcess.exec).not.toHaveBeenCalledWith('openshell', expect.anything());
       // only the bundled binary should have been version-checked
       expect(extensionProcess.exec).toHaveBeenCalledWith(bundledPath, ['--version']);
-
-      Object.defineProperty(process, 'resourcesPath', { value: undefined, configurable: true });
     });
 
     test('falls back to system PATH when no bundled resource exists', async () => {
-      Object.defineProperty(process, 'resourcesPath', { value: '/resources', configurable: true });
-
       // no binary exists on disk
       vi.mocked(existsSync).mockReturnValue(false);
 
@@ -143,15 +138,12 @@ describe('OpenshellCliManager', () => {
       await manager.init();
 
       expect(manager.getRegisteredPath()).toBe('/usr/local/bin/openshell');
-
-      Object.defineProperty(process, 'resourcesPath', { value: undefined, configurable: true });
     });
 
     test('prefers extension storage over bundled resource when resolution is storage,bundled,system', async () => {
       const storageBinPath = join(STORAGE_PATH, 'bin', 'openshell');
-      const bundledPath = join('/resources', 'openshell', 'openshell');
-
-      Object.defineProperty(process, 'resourcesPath', { value: '/resources', configurable: true });
+      const platformArch = `${process.platform}-${process.arch}`;
+      const bundledPath = join(EXTENSION_URI, 'assets', platformArch, 'openshell');
 
       vi.mocked(configuration.getConfiguration).mockReturnValue({
         get: vi.fn().mockImplementation((key: string) => {
@@ -183,14 +175,11 @@ describe('OpenshellCliManager', () => {
       expect(manager.getRegisteredPath()).toBe(storageBinPath);
       // bundled binary should not have been checked
       expect(extensionProcess.exec).not.toHaveBeenCalledWith(bundledPath, expect.anything());
-
-      Object.defineProperty(process, 'resourcesPath', { value: undefined, configurable: true });
     });
 
     test('prefers system PATH over bundled resource when resolution is system,bundled,storage', async () => {
-      const bundledPath = join('/resources', 'openshell', 'openshell');
-
-      Object.defineProperty(process, 'resourcesPath', { value: '/resources', configurable: true });
+      const platformArch = `${process.platform}-${process.arch}`;
+      const bundledPath = join(EXTENSION_URI, 'assets', platformArch, 'openshell');
 
       vi.mocked(configuration.getConfiguration).mockReturnValue({
         get: vi.fn().mockImplementation((key: string) => {
@@ -221,8 +210,81 @@ describe('OpenshellCliManager', () => {
       expect(manager.getRegisteredPath()).toBe('/usr/local/bin/openshell');
       // bundled binary should NOT have been version-checked because system PATH was found first
       expect(extensionProcess.exec).not.toHaveBeenCalledWith(bundledPath, expect.anything());
+    });
+
+    test('uses process.resourcesPath with original subdir in production mode', async () => {
+      vi.stubEnv('PROD', true);
+      const bundledPath = join('/resources', 'openshell', 'openshell');
+
+      Object.defineProperty(process, 'resourcesPath', { value: '/resources', configurable: true });
+
+      vi.mocked(existsSync).mockImplementation((p: PathLike) => {
+        return String(p) === bundledPath;
+      });
+
+      vi.mocked(extensionProcess.exec).mockImplementation(async (cmd: string) => {
+        if (cmd === bundledPath) {
+          return { stdout: 'openshell 0.2.0', stderr: '', command: cmd };
+        }
+        throw new Error(`unexpected exec: ${cmd}`);
+      });
+
+      const manager = createManager();
+      await manager.init();
+
+      expect(manager.getRegisteredPath()).toBe(bundledPath);
 
       Object.defineProperty(process, 'resourcesPath', { value: undefined, configurable: true });
+      vi.unstubAllEnvs();
+    });
+
+    test('uses assets folder with platform-arch subdir in development mode', async () => {
+      const platformArch = `${process.platform}-${process.arch}`;
+      const bundledPath = join(EXTENSION_URI, 'assets', platformArch, 'openshell');
+
+      vi.mocked(existsSync).mockImplementation((p: PathLike) => {
+        return String(p) === bundledPath;
+      });
+
+      vi.mocked(extensionProcess.exec).mockImplementation(async (cmd: string) => {
+        if (cmd === bundledPath) {
+          return { stdout: 'openshell 0.2.0', stderr: '', command: cmd };
+        }
+        throw new Error(`unexpected exec: ${cmd}`);
+      });
+
+      const manager = createManager();
+      await manager.init();
+
+      expect(manager.getRegisteredPath()).toBe(bundledPath);
+      expect(extensionProcess.exec).toHaveBeenCalledWith(bundledPath, ['--version']);
+    });
+
+    test('uses assets/image-builder subdir for image builder in development mode', async () => {
+      const platformArch = `${process.platform}-${process.arch}`;
+      const ibBundledPath = join(EXTENSION_URI, 'assets', 'image-builder', platformArch, 'openshell-image-builder');
+
+      vi.mocked(existsSync).mockImplementation((p: PathLike) => {
+        return String(p) === ibBundledPath;
+      });
+
+      vi.mocked(extensionProcess.exec).mockImplementation(async (cmd: string) => {
+        if (cmd === ibBundledPath) {
+          return { stdout: 'openshell-image-builder 0.9.0', stderr: '', command: cmd };
+        }
+        throw new Error(`unexpected exec: ${cmd}`);
+      });
+
+      const manager = createManager();
+      await manager.init();
+
+      expect(extensionProcess.exec).toHaveBeenCalledWith(ibBundledPath, ['--version']);
+
+      const createCalls = vi.mocked(cli.createCliTool).mock.calls;
+      const ibCall = createCalls.find(call => call[0].name === 'openshell-image-builder');
+      assert(ibCall);
+      expect(ibCall[0].path).toBe(ibBundledPath);
+      expect(ibCall[0].version).toBe('0.9.0');
     });
 
     test('prefers custom config path over all others', async () => {

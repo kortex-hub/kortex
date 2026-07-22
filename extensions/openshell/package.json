@@ -57,11 +57,11 @@
     }
   },
   "scripts": {
-    "build": "vite build && node ./scripts/build.js && tsx ./scripts/download.ts && tsx ./scripts/download-image-builder.ts",
-    "download": "tsx ./scripts/download.ts",
-    "download:all": "tsx ./scripts/download.ts --all",
-    "download:image-builder": "tsx ./scripts/download-image-builder.ts",
-    "download:image-builder:all": "tsx ./scripts/download-image-builder.ts --all",
+    "build": "vite build && node ./scripts/build.js && tsx ./scripts/download.ts",
+    "download": "tsx ./scripts/download.ts --component openshell",
+    "download:all": "tsx ./scripts/download.ts --component openshell --all",
+    "download:image-builder": "tsx ./scripts/download.ts --component image-builder",
+    "download:image-builder:all": "tsx ./scripts/download.ts --component image-builder --all",
     "test": "vitest run --coverage",
     "test:watch": "vitest watch --coverage",
     "watch": "vite build --watch"

@@ -73,6 +73,7 @@ export class OpenshellCliManager implements Disposable {
       'openshell-image-builder',
       'imageBuilder.binary.path',
       'openshell-image-builder',
+      'image-builder',
     );
     const ibRegistration: BinaryDiscoveryResult = ibResult ?? {
       installationSource: 'extension',
@@ -139,6 +140,7 @@ export class OpenshellCliManager implements Disposable {
     binaryBaseName: string,
     configKey: string,
     resourceSubdir: string,
+    assetsSubdir?: string,
   ): Promise<BinaryDiscoveryResult | undefined> {
     const binDir = join(this.extensionContext.storagePath, 'bin');
     const binaryName = extensionApi.env.isWindows ? `${binaryBaseName}.exe` : binaryBaseName;
@@ -167,7 +169,7 @@ export class OpenshellCliManager implements Disposable {
           result = await this.discoverFromExtensionStorage(binaryBaseName, localBinaryPath);
           break;
         case 'bundled':
-          result = await this.discoverFromBundledResources(binaryBaseName, binaryName, resourceSubdir);
+          result = await this.discoverFromBundledResources(binaryBaseName, binaryName, resourceSubdir, assetsSubdir);
           break;
         case 'system':
           result = await this.discoverFromSystemPath(binaryBaseName);
@@ -198,10 +200,24 @@ export class OpenshellCliManager implements Disposable {
     binaryBaseName: string,
     binaryName: string,
     resourceSubdir: string,
+    assetsSubdir?: string,
   ): Promise<BinaryDiscoveryResult | undefined> {
-    const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
+    let resourcesPath: string | undefined;
+    let bundledResourceSubdir: string;
+    if (import.meta.env.PROD) {
+      resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
+      bundledResourceSubdir = resourceSubdir;
+    } else {
+      // In development mode, use the path used by download scripts in assets folder
+      const parts: string[] = [this.extensionContext.extensionUri.fsPath, 'assets'];
+      if (assetsSubdir) {
+        parts.push(assetsSubdir);
+      }
+      resourcesPath = join(...parts);
+      bundledResourceSubdir = `${process.platform}-${process.arch}`;
+    }
     if (resourcesPath) {
-      const bundledBinaryPath = join(resourcesPath, resourceSubdir, binaryName);
+      const bundledBinaryPath = join(resourcesPath, bundledResourceSubdir, binaryName);
       console.log(`[${binaryBaseName}] checking bundled resources at ${bundledBinaryPath}`);
       if (existsSync(bundledBinaryPath)) {
         const version = await this.getVersion(bundledBinaryPath);

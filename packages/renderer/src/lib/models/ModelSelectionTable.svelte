@@ -32,8 +32,10 @@ interface Props {
   selectedKeys?: Set<string>;
   multiSelect?: boolean;
   showCatalogLink?: boolean;
+  defaultModel?: CatalogModelInfo;
   onselect?: (model: CatalogModelInfo) => void;
   ontoggle?: (model: CatalogModelInfo) => void;
+  ondefaultchange?: (model: CatalogModelInfo) => void;
 }
 
 let {
@@ -42,9 +44,14 @@ let {
   selectedKeys,
   multiSelect = false,
   showCatalogLink = true,
+  defaultModel,
   onselect,
   ontoggle,
+  ondefaultchange,
 }: Props = $props();
+
+let defaultModelKey: string = $derived(defaultModel ? getKey(defaultModel) : '');
+let showDefaultColumn: boolean = $derived(multiSelect && defaultModel !== undefined);
 
 let searchTerm = $state('');
 
@@ -88,6 +95,13 @@ function getModelStatus(model: CatalogModelInfo): string {
 
 function navigateToModels(): void {
   handleNavigation({ page: NavigationPage.MODELS });
+}
+
+function onDefaultClick(event: MouseEvent, key: string): void {
+  event.stopPropagation();
+  if (defaultModelKey === key) {
+    event.preventDefault();
+  }
 }
 </script>
 
@@ -137,6 +151,7 @@ function navigateToModels(): void {
                 <col class="w-16" />
                 <col class="w-24" />
                 <col class="w-14" />
+                {#if showDefaultColumn}<col class="w-16" />{/if}
               </colgroup>
               <thead>
                 <tr class="border-b border-(--pd-content-card-border) bg-(--pd-content-card-inset-bg)">
@@ -145,6 +160,9 @@ function navigateToModels(): void {
                   <th class="px-3 py-2 text-left text-xs font-medium text-(--pd-content-card-text) opacity-60">Size</th>
                   <th class="px-3 py-2 text-left text-xs font-medium text-(--pd-content-card-text) opacity-60">Runtime</th>
                   <th class="px-3 py-2 text-center text-xs font-medium text-(--pd-content-card-text) opacity-60">Use</th>
+                  {#if showDefaultColumn}
+                    <th class="px-3 py-2 text-center text-xs font-medium text-(--pd-content-card-text) opacity-60">Default</th>
+                  {/if}
                 </tr>
               </thead>
               <tbody>
@@ -193,6 +211,17 @@ function navigateToModels(): void {
                           onchange={onselect?.bind(undefined, model)} />
                       {/if}
                     </td>
+                    {#if showDefaultColumn}
+                      <td class="px-3 py-2 text-center">
+                        <input
+                          type="checkbox"
+                          checked={defaultModelKey === key}
+                          disabled={!selected}
+                          aria-label="Set {model.label} as default"
+                          onclick={(event): void => onDefaultClick(event, key)}
+                          onchange={ondefaultchange?.bind(undefined, model)} />
+                      </td>
+                    {/if}
                   </tr>
                 {/each}
               </tbody>

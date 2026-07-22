@@ -22,7 +22,13 @@ import type { CliTool, Logger } from '@openkaiden/api';
 import { env } from '@openkaiden/api';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { downloadOpenshellBinaries, getRelease } from './openshell-download';
+import {
+  downloadBinaries,
+  getRelease,
+  OPENSHELL_DOWNLOAD,
+  OPENSHELL_IMAGE_BUILDER_DOWNLOAD,
+} from './openshell-download';
+import { OpenshellImageBuilderInstaller } from './openshell-image-builder-installer';
 import { OpenshellInstaller } from './openshell-installer';
 
 vi.mock(import('./openshell-download'));
@@ -43,7 +49,7 @@ beforeEach(() => {
     version: '0.0.55',
     digests: new Map([['openshell-x86_64-unknown-linux-musl.tar.gz', 'abc123']]),
   });
-  vi.mocked(downloadOpenshellBinaries).mockResolvedValue();
+  vi.mocked(downloadBinaries).mockResolvedValue();
 });
 
 describe('OpenshellInstaller', () => {
@@ -54,7 +60,7 @@ describe('OpenshellInstaller', () => {
       const version = await installer.selectVersion();
 
       expect(version).toBe('0.0.55');
-      expect(getRelease).toHaveBeenCalledWith('0.0.55');
+      expect(getRelease).toHaveBeenCalledWith(OPENSHELL_DOWNLOAD, '0.0.55');
     });
 
     test('caches version on subsequent calls', async () => {
@@ -84,8 +90,9 @@ describe('OpenshellInstaller', () => {
       const installer = new OpenshellInstaller(cliTool, '0.0.55', '/tmp/storage');
       await installer.doInstall(logger);
 
-      expect(getRelease).toHaveBeenCalledWith('0.0.55');
-      expect(downloadOpenshellBinaries).toHaveBeenCalledWith(
+      expect(getRelease).toHaveBeenCalledWith(OPENSHELL_DOWNLOAD, '0.0.55');
+      expect(downloadBinaries).toHaveBeenCalledWith(
+        OPENSHELL_DOWNLOAD,
         '0.0.55',
         'linux',
         expect.any(String),
@@ -106,7 +113,8 @@ describe('OpenshellInstaller', () => {
       const installer = new OpenshellInstaller(cliTool, '0.0.55', '/tmp/storage');
       await installer.doInstall(logger);
 
-      expect(downloadOpenshellBinaries).toHaveBeenCalledWith(
+      expect(downloadBinaries).toHaveBeenCalledWith(
+        OPENSHELL_DOWNLOAD,
         '0.0.55',
         'darwin',
         expect.any(String),
@@ -141,11 +149,50 @@ describe('OpenshellInstaller', () => {
     test('logs error and rethrows on download failure', async () => {
       vi.mocked(env).isMac = false;
       vi.mocked(env).isLinux = true;
-      vi.mocked(downloadOpenshellBinaries).mockRejectedValue(new Error('network error'));
+      vi.mocked(downloadBinaries).mockRejectedValue(new Error('network error'));
 
       const installer = new OpenshellInstaller(cliTool, '0.0.55', '/tmp/storage');
       await expect(installer.doInstall(logger)).rejects.toThrow('network error');
       expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('network error'));
+    });
+  });
+});
+
+describe('OpenshellImageBuilderInstaller', () => {
+  beforeEach(() => {
+    vi.mocked(getRelease).mockResolvedValue({
+      version: '0.9.0',
+      digests: new Map([['openshell-image-builder-x86_64-unknown-linux-gnu', 'abc123']]),
+    });
+  });
+
+  test('uses the image builder repository when selecting a version', async () => {
+    const installer = new OpenshellImageBuilderInstaller(cliTool, '0.9.0', '/tmp/storage');
+
+    const version = await installer.selectVersion();
+
+    expect(version).toBe('0.9.0');
+    expect(getRelease).toHaveBeenCalledWith(OPENSHELL_IMAGE_BUILDER_DOWNLOAD, '0.9.0');
+  });
+
+  test('uses the shared downloader to install the image builder', async () => {
+    vi.mocked(env).isMac = false;
+    vi.mocked(env).isLinux = true;
+
+    const installer = new OpenshellImageBuilderInstaller(cliTool, '0.9.0', '/tmp/storage');
+    await installer.doInstall(logger);
+
+    expect(downloadBinaries).toHaveBeenCalledWith(
+      OPENSHELL_IMAGE_BUILDER_DOWNLOAD,
+      '0.9.0',
+      'linux',
+      expect.any(String),
+      join('/tmp/storage', 'bin'),
+      expect.any(Map),
+    );
+    expect(cliTool.updateVersion).toHaveBeenCalledWith({
+      version: '0.9.0',
+      path: join('/tmp/storage', 'bin', 'openshell-image-builder'),
     });
   });
 });

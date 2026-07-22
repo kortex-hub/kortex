@@ -22,7 +22,13 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
-import { getRelease, downloadOpenshellBinaries } from '../src/openshell-download';
+import {
+  downloadBinaries,
+  getRelease,
+  OPENSHELL_DOWNLOAD,
+  OPENSHELL_IMAGE_BUILDER_DOWNLOAD,
+  type GitHubArtifactDownload,
+} from '../src/openshell-download';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ASSETS_DIR = resolve(__dirname, '..', 'assets');
@@ -33,15 +39,50 @@ const SUPPORTED_TARGETS: { platform: string; arch: string }[] = [
   { platform: 'linux', arch: 'arm64' },
 ];
 
+interface PackageJson {
+  openshellVersion: string;
+  openshellImageBuilderVersion: string;
+}
+
+interface DownloadEntry {
+  id: string;
+  config: GitHubArtifactDownload;
+  versionProperty: keyof PackageJson;
+  outputSubdirectory?: string;
+}
+
+const DOWNLOADS: DownloadEntry[] = [
+  {
+    id: 'openshell',
+    config: OPENSHELL_DOWNLOAD,
+    versionProperty: 'openshellVersion',
+  },
+  {
+    id: 'image-builder',
+    config: OPENSHELL_IMAGE_BUILDER_DOWNLOAD,
+    versionProperty: 'openshellImageBuilderVersion',
+    outputSubdirectory: 'image-builder',
+  },
+];
+
 const { values } = parseArgs({
   args: process.argv.slice(2),
   options: {
     all: { type: 'boolean', default: false },
     platform: { type: 'string' },
     arch: { type: 'string' },
+    component: { type: 'string' },
   },
   strict: true,
 });
+
+const selectedDownloads = values.component ? DOWNLOADS.filter(entry => entry.id === values.component) : DOWNLOADS;
+if (selectedDownloads.length === 0) {
+  console.error(
+    `Unsupported component "${values.component}". Use one of: ${DOWNLOADS.map(entry => entry.id).join(', ')}`,
+  );
+  process.exit(1);
+}
 
 let targets: { platform: string; arch: string }[];
 
@@ -73,18 +114,23 @@ if (targets.length === 0) {
 
 (async () => {
   const pkgPath = resolve(__dirname, '..', 'package.json');
-  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')) as { openshellVersion: string };
-  const pinnedVersion = pkg.openshellVersion;
-  if (!pinnedVersion) {
-    console.error('missing "openshellVersion" in package.json');
-    process.exit(1);
-  }
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')) as PackageJson;
 
-  const { version, digests } = await getRelease(pinnedVersion);
-  console.log(`openshell pinned release: v${version}`);
+  for (const downloadEntry of selectedDownloads) {
+    const pinnedVersion = pkg[downloadEntry.versionProperty];
+    if (!pinnedVersion) {
+      console.error(`missing "${downloadEntry.versionProperty}" in package.json`);
+      process.exit(1);
+    }
 
-  for (const { platform, arch } of targets) {
-    const outputDir = resolve(ASSETS_DIR, `${platform}-${arch}`);
-    await downloadOpenshellBinaries(version, platform, arch, outputDir, digests);
+    const { version, digests } = await getRelease(downloadEntry.config, pinnedVersion);
+    console.log(`${downloadEntry.config.name} pinned release: v${version}`);
+
+    for (const { platform, arch } of targets) {
+      const outputDir = downloadEntry.outputSubdirectory
+        ? resolve(ASSETS_DIR, downloadEntry.outputSubdirectory, `${platform}-${arch}`)
+        : resolve(ASSETS_DIR, `${platform}-${arch}`);
+      await downloadBinaries(downloadEntry.config, version, platform, arch, outputDir, digests);
+    }
   }
 })();

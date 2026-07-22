@@ -17,14 +17,19 @@
  **********************************************************************/
 
 import { existsSync } from 'node:fs';
-import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { PassThrough } from 'node:stream';
 
 import * as tar from 'tar';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { downloadOpenshellBinaries, getRelease } from './openshell-download';
+import {
+  downloadBinaries,
+  getRelease,
+  OPENSHELL_DOWNLOAD,
+  OPENSHELL_IMAGE_BUILDER_DOWNLOAD,
+} from './openshell-download';
 import { sha256 } from './sha256';
 
 vi.mock(import('node:fs'));
@@ -39,7 +44,7 @@ function normPath(p: string): string {
   return path.posix.normalize(String(p).replace(/\\/g, '/'));
 }
 
-function stubFetch(): void {
+function stubDownloadFetch(): void {
   vi.stubGlobal(
     'fetch',
     vi.fn(() =>
@@ -51,12 +56,24 @@ function stubFetch(): void {
   );
 }
 
+function stubOpenShellExtraction(): void {
+  vi.mocked(tar.extract).mockImplementation(async (opts: { cwd?: string; file?: string }) => {
+    const cwd = opts.cwd ?? '';
+    const archive = path.basename(opts.file ?? '').replace(/\.tar\.gz$/, '');
+    const binaryName = archive.replace(/-(?:x86_64|aarch64)-.*/, '');
+    fileMap.set(normPath(path.join(cwd, binaryName)), true);
+  });
+}
+
 beforeEach(() => {
   vi.resetAllMocks();
   fileMap = new Map();
   vi.mocked(existsSync).mockImplementation(p => fileMap.get(normPath(String(p))) ?? false);
   vi.mocked(sha256).mockResolvedValue('abc123');
-  vi.mocked(writeFile).mockImplementation(async (p: Parameters<typeof writeFile>[0]) => {
+  vi.mocked(rename).mockImplementation(async (_oldPath, newPath) => {
+    fileMap.set(normPath(String(newPath)), true);
+  });
+  vi.mocked(writeFile).mockImplementation(async p => {
     fileMap.set(normPath(String(p)), true);
   });
 });
@@ -65,8 +82,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('downloadOpenshellBinaries', () => {
-  test('skips download when cached', async () => {
+describe('downloadBinaries', () => {
+  test('skips OpenShell download when the version and all binaries are cached', async () => {
     fileMap.set('/output/.openshell-version', true);
     fileMap.set('/output/openshell', true);
     fileMap.set('/output/openshell-gateway', true);
@@ -80,14 +97,25 @@ describe('downloadOpenshellBinaries', () => {
       }),
     );
 
-    await downloadOpenshellBinaries('0.0.55', 'linux', 'x64', '/output', new Map());
+    await downloadBinaries(OPENSHELL_DOWNLOAD, '0.0.55', 'linux', 'x64', '/output', new Map());
   });
 
-  test('re-downloads when binary is missing but version marker exists', async () => {
+  test('skips image builder download when cached', async () => {
+    fileMap.set('/output/.openshell-image-builder-version', true);
+    fileMap.set('/output/openshell-image-builder', true);
+    vi.mocked(readFile).mockResolvedValue('0.9.0-linux-x64');
+
+    await downloadBinaries(OPENSHELL_IMAGE_BUILDER_DOWNLOAD, '0.9.0', 'linux', 'x64', '/output', new Map());
+
+    expect(rename).not.toHaveBeenCalled();
+  });
+
+  test('re-downloads OpenShell when a binary is missing but the version marker exists', async () => {
     fileMap.set('/output/.openshell-version', true);
     fileMap.set('/output/openshell', false);
     vi.mocked(readFile).mockResolvedValue('0.0.55-linux-x64');
-    stubFetch();
+    stubDownloadFetch();
+    stubOpenShellExtraction();
     const digests = new Map([
       ['openshell-x86_64-unknown-linux-musl.tar.gz', 'abc123'],
       ['openshell-gateway-x86_64-unknown-linux-gnu.tar.gz', 'abc123'],
@@ -95,21 +123,14 @@ describe('downloadOpenshellBinaries', () => {
       ['openshell-driver-vm-x86_64-unknown-linux-gnu.tar.gz', 'abc123'],
     ]);
 
-    vi.mocked(tar.extract).mockImplementation(async (opts: { cwd?: string }) => {
-      const cwd = opts.cwd ?? '';
-      fileMap.set(normPath(path.join(cwd, 'openshell')), true);
-      fileMap.set(normPath(path.join(cwd, 'openshell-gateway')), true);
-      fileMap.set(normPath(path.join(cwd, 'openshell-sandbox')), true);
-      fileMap.set(normPath(path.join(cwd, 'openshell-driver-vm')), true);
-    });
-
-    await downloadOpenshellBinaries('0.0.55', 'linux', 'x64', '/output', digests);
+    await downloadBinaries(OPENSHELL_DOWNLOAD, '0.0.55', 'linux', 'x64', '/output', digests);
 
     expect(vi.mocked(tar.extract)).toHaveBeenCalled();
   });
 
-  test('extracts tar.gz and writes version marker', async () => {
-    stubFetch();
+  test('extracts OpenShell archives and writes its version marker', async () => {
+    stubDownloadFetch();
+    stubOpenShellExtraction();
     const digests = new Map([
       ['openshell-x86_64-unknown-linux-musl.tar.gz', 'abc123'],
       ['openshell-gateway-x86_64-unknown-linux-gnu.tar.gz', 'abc123'],
@@ -117,15 +138,7 @@ describe('downloadOpenshellBinaries', () => {
       ['openshell-driver-vm-x86_64-unknown-linux-gnu.tar.gz', 'abc123'],
     ]);
 
-    vi.mocked(tar.extract).mockImplementation(async (opts: { cwd?: string }) => {
-      const cwd = opts.cwd ?? '';
-      fileMap.set(normPath(path.join(cwd, 'openshell')), true);
-      fileMap.set(normPath(path.join(cwd, 'openshell-gateway')), true);
-      fileMap.set(normPath(path.join(cwd, 'openshell-sandbox')), true);
-      fileMap.set(normPath(path.join(cwd, 'openshell-driver-vm')), true);
-    });
-
-    await downloadOpenshellBinaries('0.0.55', 'linux', 'x64', '/output', digests);
+    await downloadBinaries(OPENSHELL_DOWNLOAD, '0.0.55', 'linux', 'x64', '/output', digests);
 
     expect(vi.mocked(tar.extract)).toHaveBeenCalledTimes(4);
     expect(writeFile).toHaveBeenCalledWith(
@@ -136,45 +149,57 @@ describe('downloadOpenshellBinaries', () => {
     expect(chmod).toHaveBeenCalledTimes(4);
   });
 
+  test('renames a direct image builder artifact and writes its version marker', async () => {
+    stubDownloadFetch();
+    const digests = new Map([['openshell-image-builder-x86_64-unknown-linux-gnu', 'abc123']]);
+
+    await downloadBinaries(OPENSHELL_IMAGE_BUILDER_DOWNLOAD, '0.9.0', 'linux', 'x64', '/output', digests);
+
+    expect(tar.extract).not.toHaveBeenCalled();
+    expect(rename).toHaveBeenCalledWith(
+      path.join('/output', 'openshell-image-builder-x86_64-unknown-linux-gnu'),
+      path.join('/output', 'openshell-image-builder'),
+    );
+    expect(writeFile).toHaveBeenCalledWith(
+      expect.stringContaining('.openshell-image-builder-version'),
+      '0.9.0-linux-x64',
+      expect.any(Object),
+    );
+    expect(chmod).toHaveBeenCalledWith(path.join('/output', 'openshell-image-builder'), 0o755);
+  });
+
   test('throws on checksum mismatch', async () => {
-    stubFetch();
+    stubDownloadFetch();
     const digests = new Map([['openshell-x86_64-unknown-linux-musl.tar.gz', 'wrongchecksum']]);
 
-    await expect(downloadOpenshellBinaries('0.0.55', 'linux', 'x64', '/output', digests)).rejects.toThrow(
+    await expect(downloadBinaries(OPENSHELL_DOWNLOAD, '0.0.55', 'linux', 'x64', '/output', digests)).rejects.toThrow(
       'checksum mismatch',
     );
   });
 
   test('throws on unsupported target', async () => {
-    await expect(downloadOpenshellBinaries('0.0.55', 'win32', 'x64', '/output', new Map())).rejects.toThrow(
+    await expect(downloadBinaries(OPENSHELL_DOWNLOAD, '0.0.55', 'win32', 'x64', '/output', new Map())).rejects.toThrow(
       'unsupported target',
     );
   });
 
-  test('handles darwin-arm64', async () => {
-    stubFetch();
+  test('handles darwin-arm64 OpenShell archives', async () => {
+    stubDownloadFetch();
+    stubOpenShellExtraction();
     const digests = new Map([
       ['openshell-aarch64-apple-darwin.tar.gz', 'abc123'],
       ['openshell-gateway-aarch64-apple-darwin.tar.gz', 'abc123'],
-      ['openshell-sandbox-aarch64-unknown-linux-gnu.tar.gz', 'abc123'],
       ['openshell-driver-vm-aarch64-apple-darwin.tar.gz', 'abc123'],
     ]);
 
-    vi.mocked(tar.extract).mockImplementation(async (opts: { cwd?: string }) => {
-      const cwd = opts.cwd ?? '';
-      fileMap.set(normPath(path.join(cwd, 'openshell')), true);
-      fileMap.set(normPath(path.join(cwd, 'openshell-gateway')), true);
-      fileMap.set(normPath(path.join(cwd, 'openshell-driver-vm')), true);
-    });
-
-    await downloadOpenshellBinaries('0.0.55', 'darwin', 'arm64', '/output', digests);
+    await downloadBinaries(OPENSHELL_DOWNLOAD, '0.0.55', 'darwin', 'arm64', '/output', digests);
 
     expect(mkdir).toHaveBeenCalledWith('/output', { recursive: true });
   });
 });
 
 describe('getRelease', () => {
-  test('strips v prefix and builds digest map', async () => {
+  test('strips the tag prefix and builds the digest map', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -190,12 +215,27 @@ describe('getRelease', () => {
       }),
     );
 
-    const release = await getRelease('0.0.55');
+    const release = await getRelease(OPENSHELL_DOWNLOAD, '0.0.55');
 
     expect(release.version).toBe('0.0.55');
     expect(release.digests.get('openshell-x86_64-unknown-linux-musl.tar.gz')).toBe('abc123');
     expect(release.digests.get('openshell-gateway-x86_64-unknown-linux-gnu.tar.gz')).toBe('def456');
     expect(release.digests.has('no-digest-asset.txt')).toBe(false);
+  });
+
+  test('uses the configured GitHub repository', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => ({ tag_name: 'v0.9.0', assets: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await getRelease(OPENSHELL_IMAGE_BUILDER_DOWNLOAD, '0.9.0');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.github.com/repos/openkaiden/openshell-image-builder/releases/tags/v0.9.0',
+      expect.any(Object),
+    );
   });
 
   test('throws on fetch failure', async () => {
@@ -208,6 +248,6 @@ describe('getRelease', () => {
       }),
     );
 
-    await expect(getRelease('0.0.99')).rejects.toThrow('failed to fetch OpenShell release v0.0.99');
+    await expect(getRelease(OPENSHELL_DOWNLOAD, '0.0.99')).rejects.toThrow('failed to fetch openshell release v0.0.99');
   });
 });

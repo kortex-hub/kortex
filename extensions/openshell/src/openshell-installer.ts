@@ -22,7 +22,7 @@ import { join } from 'node:path';
 import type { CliTool, CliToolInstaller, Logger } from '@openkaiden/api';
 import * as extensionApi from '@openkaiden/api';
 
-import { downloadOpenshellBinaries, getRelease } from './openshell-download';
+import { downloadBinaries, getRelease, OPENSHELL_DOWNLOAD } from './openshell-download';
 
 export class OpenshellInstaller implements CliToolInstaller {
   private selectedVersion: string | undefined;
@@ -56,8 +56,8 @@ export class OpenshellInstaller implements CliToolInstaller {
     logger.log(`Installing OpenShell ${version} for ${platform}/${arch}...`);
 
     try {
-      const release = await getRelease(version);
-      await downloadOpenshellBinaries(release.version, platform, arch, binDir, release.digests);
+      const release = await getRelease(OPENSHELL_DOWNLOAD, version);
+      await downloadBinaries(OPENSHELL_DOWNLOAD, release.version, platform, arch, binDir, release.digests);
       logger.log('OpenShell installation completed successfully');
       this.#cliTool.updateVersion({
         version: release.version,
@@ -87,7 +87,7 @@ export class OpenshellInstaller implements CliToolInstaller {
   }
 
   private async fetchPinnedVersion(): Promise<string> {
-    const release = await getRelease(this.#openshellVersion);
+    const release = await getRelease(OPENSHELL_DOWNLOAD, this.#openshellVersion);
     return release.version;
   }
 }

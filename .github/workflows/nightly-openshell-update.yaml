@@ -40,7 +40,7 @@ jobs:
     if: github.event.repository.fork == false
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Get latest OpenShell release version
         id: latest
@@ -100,6 +100,8 @@ jobs:
 
       - name: Update existing PR
         if: steps.compare.outputs.needs_update == 'true' && steps.existing_pr.outputs.exists == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
         run: |
           CURRENT="${{ steps.current.outputs.version }}"
           NEW="${{ steps.latest.outputs.version }}"
@@ -129,6 +131,8 @@ jobs:
 
       - name: Create new PR
         if: steps.compare.outputs.needs_update == 'true' && steps.existing_pr.outputs.exists == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
         run: |
           CURRENT="${{ steps.current.outputs.version }}"
           NEW="${{ steps.latest.outputs.version }}"

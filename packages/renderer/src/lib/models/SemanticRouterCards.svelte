@@ -21,7 +21,9 @@ let providerTypeMap: Map<string, InferenceProviderConnectionType> = $derived(
 interface ModelRef {
   label: string;
   providerId: string;
+  connectionId: string;
   type: InferenceProviderConnectionType;
+  isDefault: boolean;
 }
 
 async function removeRouter(name: string): Promise<void> {
@@ -43,16 +45,30 @@ function getBackendType(providerId: string): InferenceProviderConnectionType {
   return providerTypeMap.get(providerId) ?? 'cloud';
 }
 
+function isDefaultModel(
+  router: SemanticRouterInfo,
+  ref: { providerId: string; connectionId: string; label: string },
+): boolean {
+  const d = router.routing.defaultModelRef;
+  return d?.providerId === ref.providerId && d?.connectionId === ref.connectionId && d?.label === ref.label;
+}
+
 function getUniqueModelRefs(router: SemanticRouterInfo): ModelRef[] {
   const seen = new SvelteSet<string>();
   const refs: ModelRef[] = [];
   for (const decision of router.routing.decisions) {
     for (const rule of decision.rules) {
       for (const ref of rule.modelRefs) {
-        const key = `${ref.providerId}::${ref.label}`;
+        const key = `${ref.providerId}::${ref.connectionId}::${ref.label}`;
         if (!seen.has(key)) {
           seen.add(key);
-          refs.push({ label: ref.label, providerId: ref.providerId, type: getBackendType(ref.providerId) });
+          refs.push({
+            label: ref.label,
+            providerId: ref.providerId,
+            connectionId: ref.connectionId,
+            type: getBackendType(ref.providerId),
+            isDefault: isDefaultModel(router, ref),
+          });
         }
       }
     }
@@ -146,6 +162,9 @@ function getKeywordGroupNames(router: SemanticRouterInfo): string[] {
                 class:bg-[var(--pd-state-warning)]={ref.type === 'self-hosted'}>
               </span>
               <span class="text-xs font-mono text-[var(--pd-content-card-text)] truncate">{ref.label}</span>
+              {#if ref.isDefault}
+                <span class="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--pd-button-primary-bg)_12%,transparent)] text-[var(--pd-button-primary-bg)] border border-[color-mix(in_srgb,var(--pd-button-primary-bg)_25%,transparent)]">default</span>
+              {/if}
               <span
                 class="ml-auto text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0 border"
                 class:bg-[color-mix(in_srgb,var(--pd-status-running)_10%,transparent)]={ref.type === 'local'}

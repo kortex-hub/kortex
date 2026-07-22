@@ -103,6 +103,36 @@ test('Expect workspace name input renders initial value', () => {
   expect((screen.getByPlaceholderText('e.g., Frontend Refactoring') as HTMLInputElement).value).toBe('my-workspace');
 });
 
+test('shows validation error when workspace name exceeds hostname limit', () => {
+  render(AgentWorkspaceCreateStepWorkspace, {
+    ...defaultProps,
+    sessionName: 'a'.repeat(57),
+  });
+
+  expect(screen.getByText(/must not exceed 56 characters/)).toBeInTheDocument();
+  expect(screen.getByPlaceholderText('e.g., Frontend Refactoring')).toHaveAttribute('aria-invalid', 'true');
+});
+
+test('shows validation error when basename-derived name exceeds hostname limit', () => {
+  render(AgentWorkspaceCreateStepWorkspace, {
+    ...defaultProps,
+    sourcePath: `/home/user/${'a'.repeat(57)}`,
+    sessionName: '',
+  });
+
+  expect(screen.getByText(/must not exceed 56 characters/)).toBeInTheDocument();
+});
+
+test('accepts workspace name at exactly the hostname limit', () => {
+  render(AgentWorkspaceCreateStepWorkspace, {
+    ...defaultProps,
+    sessionName: 'a'.repeat(56),
+  });
+
+  expect(screen.queryByText(/must not exceed 56 characters/)).not.toBeInTheDocument();
+  expect(screen.getByPlaceholderText('e.g., Frontend Refactoring')).toHaveAttribute('aria-invalid', 'false');
+});
+
 test('shows config-exists notification when configExists is true', () => {
   render(AgentWorkspaceCreateStepWorkspace, {
     ...defaultProps,

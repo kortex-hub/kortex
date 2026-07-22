@@ -22,7 +22,7 @@ import { join } from 'node:path';
 import type { CliTool, CliToolInstaller, Logger } from '@openkaiden/api';
 import * as extensionApi from '@openkaiden/api';
 
-import { downloadImageBuilderBinary, getImageBuilderRelease } from './openshell-image-builder-download';
+import { downloadBinaries, getRelease, OPENSHELL_IMAGE_BUILDER_DOWNLOAD } from './openshell-download';
 
 export class OpenshellImageBuilderInstaller implements CliToolInstaller {
   private selectedVersion: string | undefined;
@@ -56,8 +56,15 @@ export class OpenshellImageBuilderInstaller implements CliToolInstaller {
     logger.log(`Installing openshell-image-builder ${version} for ${platform}/${arch}...`);
 
     try {
-      const release = await getImageBuilderRelease(version);
-      await downloadImageBuilderBinary(release.version, platform, arch, binDir, release.digests);
+      const release = await getRelease(OPENSHELL_IMAGE_BUILDER_DOWNLOAD, version);
+      await downloadBinaries(
+        OPENSHELL_IMAGE_BUILDER_DOWNLOAD,
+        release.version,
+        platform,
+        arch,
+        binDir,
+        release.digests,
+      );
       logger.log('openshell-image-builder installation completed successfully');
       this.#cliTool.updateVersion({
         version: release.version,
@@ -88,7 +95,7 @@ export class OpenshellImageBuilderInstaller implements CliToolInstaller {
   }
 
   private async fetchPinnedVersion(): Promise<string> {
-    const release = await getImageBuilderRelease(this.#imageBuilderVersion);
+    const release = await getRelease(OPENSHELL_IMAGE_BUILDER_DOWNLOAD, this.#imageBuilderVersion);
     return release.version;
   }
 }
