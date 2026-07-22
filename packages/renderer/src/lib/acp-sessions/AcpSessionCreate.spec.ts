@@ -133,7 +133,7 @@ test('shows warning and disables button when sandbox agent does not support ACP'
   expect(screen.getByText('(set by workspace)')).toBeInTheDocument();
   expect(screen.getByText(/does not support ACP sessions/)).toBeInTheDocument();
 
-  const promptInput = screen.getByPlaceholderText("Describe what you'd like the agent to do...");
+  const promptInput = screen.getByPlaceholderText(`Describe what you'd like the agent to do...`);
   await userEvent.type(promptInput, 'test prompt');
 
   const startButton = screen.getByRole('button', { name: 'Start Session' });
@@ -152,7 +152,7 @@ test('shows warning when sandbox label points to unknown agent', async () => {
   expect(screen.getByText('(set by workspace)')).toBeInTheDocument();
   expect(screen.getByText(/does not support ACP sessions/)).toBeInTheDocument();
 
-  const promptInput = screen.getByPlaceholderText("Describe what you'd like the agent to do...");
+  const promptInput = screen.getByPlaceholderText(`Describe what you'd like the agent to do...`);
   await userEvent.type(promptInput, 'test prompt');
 
   const startButton = screen.getByRole('button', { name: 'Start Session' });
