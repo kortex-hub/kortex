@@ -110,6 +110,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git fetch origin "$BRANCH_NAME"
+          git restore extensions/openshell/package.json
           git checkout "$BRANCH_NAME"
           git checkout main -- extensions/openshell/package.json
 
