@@ -27,6 +27,8 @@ export class AgentWorkspaceTerminalPage extends BasePage {
   readonly terminalContainer: Locator;
   readonly emptyTerminalMessage: Locator;
 
+  private static readonly ANTHROPIC_API_KEY_PROMPT = /Do you want to use this API key\?/i;
+  private static readonly ANTHROPIC_API_KEY_YES_SELECTED = />\s*1\.\s*Yes/i;
   /** Offset from bottom of xterm screen to target the last visible row. */
   private static readonly XTERM_BOTTOM_ROW_OFFSET_PX = 24;
 
@@ -54,6 +56,7 @@ export class AgentWorkspaceTerminalPage extends BasePage {
       .poll(
         async () => {
           const text = await this.getTerminalText();
+          await this.dismissAnthropicApiKeyPromptIfVisible(text);
           return matches(text);
         },
         {
@@ -61,6 +64,35 @@ export class AgentWorkspaceTerminalPage extends BasePage {
           message: `Terminal did not show expected content: ${String(textOrRegex)}`,
         },
       )
+      .toBe(true);
+  }
+
+  /**
+   * Claude Code may prompt to use ANTHROPIC_API_KEY from the sandbox environment.
+   * Select "Yes" when the prompt is visible so the agent session can start.
+   */
+  async dismissAnthropicApiKeyPromptIfVisible(preReadText?: string): Promise<void> {
+    const text = preReadText ?? (await this.getTerminalText());
+    if (!AgentWorkspaceTerminalPage.ANTHROPIC_API_KEY_PROMPT.test(text)) {
+      return;
+    }
+
+    await this.focusTerminalInput();
+
+    const yesSelected = AgentWorkspaceTerminalPage.ANTHROPIC_API_KEY_YES_SELECTED.test(text);
+    if (!yesSelected) {
+      // Default highlight is "No (recommended)" — move up to "Yes".
+      await this.page.keyboard.press('ArrowUp');
+    }
+
+    // Send Enter immediately — no poll/read between ArrowUp and Enter (that breaks xterm focus).
+    await this.page.keyboard.press('Enter');
+
+    await expect
+      .poll(async () => !AgentWorkspaceTerminalPage.ANTHROPIC_API_KEY_PROMPT.test(await this.getTerminalText()), {
+        timeout: TIMEOUTS.STANDARD,
+        message: 'Anthropic API key prompt did not dismiss after selecting Yes',
+      })
       .toBe(true);
   }
 
@@ -93,6 +125,8 @@ export class AgentWorkspaceTerminalPage extends BasePage {
 
   async sendPrompt(options: { prompt: string; expectedResponse?: string | RegExp; timeout?: number }): Promise<void> {
     const { prompt, expectedResponse, timeout = TIMEOUTS.MODEL_RESPONSE } = options;
+
+    await this.dismissAnthropicApiKeyPromptIfVisible();
 
     const textarea = await this.focusTerminalInput();
     await textarea.pressSequentially(prompt, { delay: 50 });
