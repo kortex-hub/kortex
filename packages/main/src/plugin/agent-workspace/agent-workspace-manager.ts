@@ -130,7 +130,6 @@ export class AgentWorkspaceManager implements Disposable {
 
       const secretName = await this.ensureModelSecret(options);
       const workspaceId = await this.createOpenshell(options, secretName);
-      this.apiSender.send('agent-workspace-update');
       task.status = 'success';
       return workspaceId;
     } catch (err: unknown) {
@@ -139,6 +138,7 @@ export class AgentWorkspaceManager implements Disposable {
       task.error = `Failed to create workspace: ${detail}`;
       throw new Error(detail);
     } finally {
+      this.apiSender.send('agent-workspace-update');
       task.state = 'completed';
     }
   }

@@ -644,6 +644,25 @@ describe('create – OpenShell mode', () => {
     expect(openshellCli.deleteSandbox).toHaveBeenCalledWith('my-sandbox');
   });
 
+  test('emits agent-workspace-update even when creation fails', async () => {
+    const options = {
+      ...defaultOptions,
+      network: { mode: 'deny' as const, hosts: ['registry.npmjs.org'] },
+    };
+    vi.mocked(openshellCli.updatePolicy).mockRejectedValue(new Error('policy update failed'));
+    vi.mocked(openshellCli.deleteSandbox).mockResolvedValue(undefined);
+
+    await expect(manager.create(options)).rejects.toThrow('policy update failed');
+
+    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
+  });
+
+  test('emits agent-workspace-update on successful creation', async () => {
+    await manager.create(defaultOptions);
+
+    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
+  });
+
   test('attaches secret to sandbox when ensureSecretForModel returns a secret', async () => {
     vi.mocked(secretManager.ensureSecretForModel).mockResolvedValue({ name: 'vertex-ai-conn-1', type: 'vertex-ai' });
 
