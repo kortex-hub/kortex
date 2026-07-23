@@ -22,7 +22,7 @@ let { title, onclose, icon, content, validation, buttons }: Props = $props();
     <CloseButton onclick={onclose} />
   </div>
 
-  <div class="relative max-h-80 overflow-auto text-[var(--pd-modal-text)] px-10 py-4">
+  <div class="relative max-h-[70vh] overflow-auto text-[var(--pd-modal-text)] px-10 py-4">
     {@render content?.()}
   </div>
 
