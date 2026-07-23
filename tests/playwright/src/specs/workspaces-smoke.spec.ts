@@ -76,7 +76,7 @@ test.describe('Workspaces page - initial state', { tag: '@smoke' }, () => {
 
 test.describe('Workspaces page - create wizard', { tag: '@smoke' }, () => {
   const testWorkspace = {
-    name: 'Test Workspace',
+    name: 'test-workspace',
     workingDir: '/tmp/test-project',
     description: 'A test workspace',
   };

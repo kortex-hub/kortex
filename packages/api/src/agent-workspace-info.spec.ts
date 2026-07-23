@@ -18,7 +18,7 @@
 
 import { expect, test } from 'vitest';
 
-import { getSandboxNameValidationError, SANDBOX_NAME_MAX_LENGTH } from './agent-workspace-info.js';
+import { getSandboxNameValidationError, SANDBOX_NAME_MAX_LENGTH, sanitizeDns1123Label } from './agent-workspace-info.js';
 
 test('accepts valid lowercase names', () => {
   expect(getSandboxNameValidationError('my-workspace')).toBeUndefined();
@@ -80,4 +80,29 @@ test('rejects names with consecutive hyphens', () => {
   expect(getSandboxNameValidationError('my--workspace')).toBe(
     'Workspace name must not contain consecutive hyphens (--)',
   );
+});
+
+test('sanitizeDns1123Label lowercases and replaces spaces', () => {
+  expect(sanitizeDns1123Label('My App')).toBe('my-app');
+});
+
+test('sanitizeDns1123Label replaces special characters with hyphens', () => {
+  expect(sanitizeDns1123Label('my_app!v2')).toBe('my-app-v2');
+});
+
+test('sanitizeDns1123Label collapses consecutive hyphens', () => {
+  expect(sanitizeDns1123Label('my  app')).toBe('my-app');
+});
+
+test('sanitizeDns1123Label strips leading and trailing hyphens', () => {
+  expect(sanitizeDns1123Label(' My App ')).toBe('my-app');
+});
+
+test('sanitizeDns1123Label truncates to max length', () => {
+  const long = 'a'.repeat(30);
+  expect(sanitizeDns1123Label(long)).toBe('a'.repeat(SANDBOX_NAME_MAX_LENGTH));
+});
+
+test('sanitizeDns1123Label returns empty for empty input', () => {
+  expect(sanitizeDns1123Label('')).toBe('');
 });

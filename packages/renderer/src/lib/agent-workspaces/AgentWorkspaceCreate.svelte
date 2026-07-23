@@ -28,7 +28,7 @@ import type {
   AgentWorkspaceMount,
   NetworkConfiguration,
 } from '/@api/agent-workspace-info';
-import { getSandboxNameValidationError } from '/@api/agent-workspace-info';
+import { getSandboxNameValidationError, sanitizeDns1123Label } from '/@api/agent-workspace-info';
 import { NavigationPage } from '/@api/navigation-page';
 import type { DefaultWorkspaceSettings } from '/@api/onboarding-settings-info';
 import type { FilesystemConfiguration, WorkspaceProjectInfo } from '/@api/workspace-project-info';
@@ -108,7 +108,7 @@ function applyNetworkFromProject(net: NetworkConfiguration | undefined): void {
 function applyProject(project: WorkspaceProjectInfo): void {
   wizard.draft.selectedProjectId = project.id;
   wizard.draft.sourcePath = project.folder;
-  wizard.draft.sessionName = project.name;
+  wizard.draft.sessionName = sanitizeDns1123Label(project.name);
   wizard.draft.nameManuallyEdited = true;
   wizard.draft.selectedSkillIds = [...project.skills];
   wizard.draft.selectedMcpIds = [...project.mcpServers];

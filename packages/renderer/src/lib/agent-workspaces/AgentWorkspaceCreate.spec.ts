@@ -1819,7 +1819,7 @@ describe('when projects exist', () => {
     await fireEvent.click(screen.getByRole('button', { name: /Saved project/ }));
     await fireEvent.click(screen.getByRole('option', { name: /My App/ }));
 
-    expect((screen.getByPlaceholderText('e.g., front-refactor') as HTMLInputElement).value).toBe('My App');
+    expect((screen.getByPlaceholderText('e.g., front-refactor') as HTMLInputElement).value).toBe('my-app');
   });
 
   test('Expect createAgentWorkspace called with project id', async () => {

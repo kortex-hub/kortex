@@ -61,6 +61,20 @@ export type AgentWorkspaceMount = configComponents['schemas']['Mount'];
 /** Maximum sandbox name length for OpenShell. */
 export const SANDBOX_NAME_MAX_LENGTH = 19;
 
+/**
+ * Sanitize a display name into a DNS-1123 label.
+ * Lowercases, replaces invalid characters with hyphens, collapses consecutive
+ * hyphens, strips leading/trailing hyphens, and truncates to the maximum length.
+ */
+export function sanitizeDns1123Label(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, SANDBOX_NAME_MAX_LENGTH);
+}
+
 export function getSandboxNameValidationError(name: string): string | undefined {
   if (name.length === 0) {
     return undefined;
