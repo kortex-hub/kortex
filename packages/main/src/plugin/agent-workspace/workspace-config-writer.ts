@@ -27,7 +27,10 @@ import type { AgentWorkspaceCreateOptions } from '/@api/agent-workspace-info.js'
 
 export type WorkspaceConfiguration = workspaceComponents['schemas']['WorkspaceConfiguration'];
 
-export async function writeWorkspaceConfig(options: AgentWorkspaceCreateOptions): Promise<WorkspaceConfiguration> {
+export async function writeWorkspaceConfig(
+  options: AgentWorkspaceCreateOptions,
+  overrideConfigDir?: string,
+): Promise<WorkspaceConfiguration> {
   const mcpServers = options.mcp?.servers;
   const mcpCommands = options.mcp?.commands;
   const hasSkills = !!options.skills?.length;
@@ -35,7 +38,10 @@ export async function writeWorkspaceConfig(options: AgentWorkspaceCreateOptions)
   const hasWsConfig = !!options.workspaceConfiguration;
   const hasMounts = !!options.mounts?.length;
 
-  const configDir = join(options.sourcePath, '.kaiden');
+  if (!overrideConfigDir && !options.sourcePath) {
+    throw new Error('writeWorkspaceConfig requires either options.sourcePath or overrideConfigDir');
+  }
+  const configDir = overrideConfigDir ?? join(options.sourcePath!, '.kaiden');
   const configPath = join(configDir, 'workspace.json');
   await mkdir(configDir, { recursive: true });
 

@@ -79,7 +79,7 @@ let nameInputError = $derived(sessionNameError ?? errors?.name ?? '');
 
 <h2 class="text-lg font-semibold text-[var(--pd-modal-text)] mb-1">Workspace</h2>
 <p class="text-sm text-[var(--pd-content-card-text)] opacity-60 mb-5">
-  Point to a local project folder to set up your workspace.
+  Point to a local project folder, or leave it empty for a sandbox-only workspace.
 </p>
 
 <div class="space-y-4">
@@ -101,7 +101,7 @@ let nameInputError = $derived(sessionNameError ?? errors?.name ?? '');
 
   <div>
     <label for="workspace-source" class="block text-sm font-semibold text-[var(--pd-modal-text)] mb-2">
-      Project folder
+      Project folder <span class="text-xs font-normal opacity-50">(optional)</span>
     </label>
     <div class="flex gap-2 items-stretch">
       <Input
@@ -113,7 +113,7 @@ let nameInputError = $derived(sessionNameError ?? errors?.name ?? '');
       <Button onclick={onBrowseSource} aria-label="Browse for folder" icon={faFolderOpen} />
     </div>
     <p class="text-xs text-[var(--pd-content-card-text)] opacity-50 mt-1.5">
-      Select a local directory to use as the workspace source.
+      Select a local directory, or leave empty for a sandbox-only workspace.
     </p>
   </div>
 

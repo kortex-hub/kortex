@@ -36,6 +36,7 @@ import type { AgentRegistry } from '/@/plugin/agent-registry.js';
 import * as configWriter from '/@/plugin/agent-workspace/workspace-config-writer.js';
 import type { IPCHandle } from '/@/plugin/api.js';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
+import type { Directories } from '/@/plugin/directories.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import type { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
 import type { ProviderImpl } from '/@/plugin/provider-impl.js';
@@ -149,6 +150,10 @@ const secretManager = {
   getConnectionProperties: vi.fn(),
 } as unknown as SecretManager;
 
+const directories = {
+  getAgentWorkspacesConfigDirectory: vi.fn().mockReturnValue('/mock/data/agent-workspaces'),
+} as unknown as Directories;
+
 function mockEnoent(): NodeJS.ErrnoException {
   const err: NodeJS.ErrnoException = new Error('ENOENT');
   err.code = 'ENOENT';
@@ -168,6 +173,7 @@ beforeEach(() => {
     get: vi.fn().mockReturnValue(undefined),
   } as unknown as ReturnType<IConfigurationRegistry['getConfiguration']>);
   vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({});
+  vi.mocked(directories.getAgentWorkspacesConfigDirectory).mockReturnValue('/mock/data/agent-workspaces');
   vi.mocked(lstat).mockImplementation(async path => {
     const value = String(path);
     const isDirectory =
@@ -205,6 +211,7 @@ beforeEach(() => {
     openshellCli,
     agentRegistry,
     openshellGateway,
+    directories,
   );
   manager.init();
 });
@@ -856,6 +863,114 @@ describe('create – OpenShell mode', () => {
   });
 });
 
+describe('create – no-folder workspace', () => {
+  const noFolderOptions: AgentWorkspaceCreateOptions = {
+    agent: 'claude',
+    name: 'empty-sandbox',
+    model: 'ramalama::granite-4.6::',
+    gateway: 'kaiden',
+  };
+
+  const mockAgent: Agent = {
+    id: 'claude',
+    name: 'Claude Code',
+    description: 'Test agent',
+    command: 'claude',
+    configurationFiles: [],
+    destinationSkillsFolder: '${HOME}/.claude/skills',
+    async preWorkspaceStart(): Promise<void> {},
+  };
+
+  beforeEach(() => {
+    vi.mocked(openshellCli.createSandbox).mockResolvedValue(undefined);
+    vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue(mockAgent);
+    vi.mocked(readFile).mockRejectedValue(mockEnoent());
+    vi.mocked(realpath).mockImplementation(async (p: unknown) => p as string);
+  });
+
+  test('rejects workspace name containing path-traversal characters', async () => {
+    await expect(manager.create({ ...noFolderOptions, name: '../../etc' })).rejects.toThrow(
+      'Workspace name must contain only lowercase letters (a-z), digits (0-9), and hyphens (-)',
+    );
+    expect(openshellCli.createSandbox).not.toHaveBeenCalled();
+  });
+
+  test('throws when sourcePath is absent and name is not provided', async () => {
+    await expect(manager.create({ ...noFolderOptions, name: undefined })).rejects.toThrow(
+      'workspace name is required when no project folder is specified',
+    );
+    expect(openshellCli.createSandbox).not.toHaveBeenCalled();
+  });
+
+  test('creates sandbox without source file uploads when sourcePath is absent', async () => {
+    await manager.create(noFolderOptions);
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'empty-sandbox',
+        gateway: 'kaiden',
+      }),
+    );
+    const callArg = vi.mocked(openshellCli.createSandbox).mock.calls[0]![0]!;
+    expect(callArg.uploads).toBeUndefined();
+  });
+
+  test('does not add WORKSPACE_LABEL when sourcePath is absent', async () => {
+    await manager.create(noFolderOptions);
+
+    const callArg = vi.mocked(openshellCli.createSandbox).mock.calls[0]![0]!;
+    expect(callArg.labels).toEqual({ [AGENT_LABEL]: 'claude' });
+  });
+
+  test('writes config to global directory scoped by gateway and name', async () => {
+    const spy = vi.spyOn(configWriter, 'writeWorkspaceConfig');
+    await manager.create(noFolderOptions);
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'empty-sandbox', gateway: 'kaiden' }),
+      join('/mock/data/agent-workspaces', 'kaiden', 'empty-sandbox'),
+    );
+  });
+
+  test('replaceConfig removes config from global directory when sourcePath is absent', async () => {
+    await manager.create({ ...noFolderOptions, replaceConfig: true });
+
+    expect(rm).toHaveBeenCalledWith(join('/mock/data/agent-workspaces', 'kaiden', 'empty-sandbox', 'workspace.json'), {
+      force: true,
+    });
+  });
+
+  test('uploads mounts with absolute paths and warns about skipped $SOURCES mounts', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const spy = vi.spyOn(configWriter, 'writeWorkspaceConfig').mockResolvedValue({
+      mounts: [
+        { host: '/Users/me/repos/lib', target: 'lib', ro: false },
+        { host: '$SOURCES/sub', target: 'sub', ro: true },
+      ],
+    } as AgentWorkspaceConfiguration);
+
+    await manager.create(noFolderOptions);
+
+    const callArg = vi.mocked(openshellCli.createSandbox).mock.calls[0]![0]!;
+    expect(callArg.uploads).toEqual([{ local: '/Users/me/repos/lib', remote: 'lib' }]);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('skipping mount "$SOURCES/sub"'));
+    spy.mockRestore();
+    warnSpy.mockRestore();
+  });
+
+  test('merges into existing config at global directory', async () => {
+    vi.mocked(readFile).mockResolvedValue(JSON.stringify({ skills: ['/existing/skill'] }));
+    const spy = vi.spyOn(configWriter, 'writeWorkspaceConfig');
+
+    await manager.create({ ...noFolderOptions, network: { mode: 'allow' } });
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ network: { mode: 'allow' } }),
+      join('/mock/data/agent-workspaces', 'kaiden', 'empty-sandbox'),
+    );
+  });
+});
+
 describe('checkWorkspaceConfigExists', () => {
   test('returns true when workspace.json exists', async () => {
     vi.mocked(access).mockResolvedValue(undefined);
@@ -872,6 +987,13 @@ describe('checkWorkspaceConfigExists', () => {
     const result = await manager.checkWorkspaceConfigExists('/tmp/my-project');
 
     expect(result).toBe(false);
+  });
+
+  test('returns false for empty sourcePath', async () => {
+    const result = await manager.checkWorkspaceConfigExists('');
+
+    expect(result).toBe(false);
+    expect(access).not.toHaveBeenCalled();
   });
 });
 
@@ -1049,6 +1171,18 @@ describe('remove', () => {
 
     expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
   });
+
+  test('cleans up global config directory after sandbox deletion', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(openshellCli.deleteSandbox).mockResolvedValue(undefined);
+
+    await manager.remove('ws-1', 'kaiden');
+
+    expect(rm).toHaveBeenCalledWith(join('/mock/data/agent-workspaces', 'kaiden', 'test-workspace-1'), {
+      recursive: true,
+      force: true,
+    });
+  });
 });
 
 describe('deleteOpenshellSandbox', () => {
@@ -1058,6 +1192,17 @@ describe('deleteOpenshellSandbox', () => {
     await manager.deleteOpenshellSandbox('shared-name', 'remote-gateway');
 
     expect(openshellCli.deleteSandbox).toHaveBeenCalledWith('shared-name', 'remote-gateway');
+  });
+
+  test('cleans up global config directory after sandbox deletion', async () => {
+    vi.mocked(openshellCli.deleteSandbox).mockResolvedValue(undefined);
+
+    await manager.deleteOpenshellSandbox('my-workspace', 'kaiden');
+
+    expect(rm).toHaveBeenCalledWith(join('/mock/data/agent-workspaces', 'kaiden', 'my-workspace'), {
+      recursive: true,
+      force: true,
+    });
   });
 });
 
@@ -1098,6 +1243,28 @@ describe('getConfiguration', () => {
 
     await expect(manager.getConfiguration('ws-1')).rejects.toThrow('EACCES: permission denied');
   });
+
+  test('reads from global directory for no-folder workspaces', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(readFile).mockResolvedValue('{"network":{"mode":"allow"}}');
+
+    const result = await manager.getConfiguration('ws-2');
+
+    expect(readFile).toHaveBeenCalledWith(
+      join('/mock/data/agent-workspaces', 'kaiden', 'test-workspace-2', 'workspace.json'),
+      'utf-8',
+    );
+    expect(result).toEqual({ network: { mode: 'allow' } });
+  });
+
+  test('returns empty config when global directory file does not exist for no-folder workspace', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(readFile).mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
+
+    const result = await manager.getConfiguration('ws-2');
+
+    expect(result).toEqual({});
+  });
 });
 
 describe('updateConfiguration', () => {
@@ -1131,6 +1298,18 @@ describe('updateConfiguration', () => {
     vi.mocked(configWriter.updateWorkspaceConfig).mockRejectedValue(new Error('permission denied'));
 
     await expect(manager.updateConfiguration('ws-1', {})).rejects.toThrow('permission denied');
+  });
+
+  test('writes to global directory for no-folder workspaces', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
+    const spy = vi.spyOn(configWriter, 'updateWorkspaceConfig');
+
+    await manager.updateConfiguration('ws-2', { skills: ['/new/skill'] });
+
+    expect(spy).toHaveBeenCalledWith(join('/mock/data/agent-workspaces', 'kaiden', 'test-workspace-2'), {
+      skills: ['/new/skill'],
+    });
+    expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
   });
 });
 

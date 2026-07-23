@@ -30,4 +30,5 @@ export interface Directories {
   getSkillsDirectory(): string;
   getWorkspaceProjectsDirectory(): string;
   getSemanticRoutersDirectory(): string;
+  getAgentWorkspacesConfigDirectory(): string;
 }
