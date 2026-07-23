@@ -24,6 +24,7 @@ import type { IconSize } from 'svelte-fa';
 import { configurationProperties } from '/@/stores/configurationProperties';
 import { EventStore } from '/@/stores/event-store';
 
+import { createNavigationAcpSessionsEntry } from './navigation-registry-acp-sessions.svelte';
 import { createNavigationAgentWorkspacesEntry } from './navigation-registry-agent-workspaces.svelte';
 import { createNavigationCodingAgentsEntry } from './navigation-registry-coding-agents.svelte';
 import { createNavigationExtensionEntry, createNavigationExtensionGroup } from './navigation-registry-extension.svelte';
@@ -65,6 +66,7 @@ let hiddenItems: string[] = [];
 let values: NavigationRegistryEntry[] = [];
 let initialized = false;
 const init = (): void => {
+  values.push(createNavigationAcpSessionsEntry());
   values.push(createNavigationAgentWorkspacesEntry());
   values.push(createNavigationProjectsEntry());
   values.push(createNavigationCodingAgentsEntry());

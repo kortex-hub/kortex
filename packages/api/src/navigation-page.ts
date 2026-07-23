@@ -75,4 +75,7 @@ export enum NavigationPage {
   PROJECTS = 'projects',
   PROJECT_DETAILS = 'project-details',
   PROJECT_CREATE = 'project-create',
+  ACP_SESSIONS = 'acp-sessions',
+  ACP_SESSION_CREATE = 'acp-session-create',
+  ACP_SESSION_DETAILS = 'acp-session-details',
 }

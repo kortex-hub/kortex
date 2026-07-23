@@ -52,6 +52,8 @@ import type { IpcMainInvokeEvent } from 'electron/main';
 import { Container } from 'inversify';
 import { lookup } from 'mime-types';
 
+import { AcpIPCHandler } from '/@/plugin/acp/acp-ipc-handler.js';
+import { AcpSessionManager } from '/@/plugin/acp/acp-session-manager.js';
 import { AgentRegistry } from '/@/plugin/agent-registry.js';
 import { AgentWorkspaceManager } from '/@/plugin/agent-workspace/agent-workspace-manager.js';
 import { IPCHandle, IPCMainOn, WebContentsType } from '/@/plugin/api.js';
@@ -604,6 +606,8 @@ export class PluginSystem {
     container.bind<OpenshellImageBuilder>(OpenshellImageBuilder).toSelf().inSingletonScope();
     container.bind<AgentWorkspaceManager>(AgentWorkspaceManager).toSelf().inSingletonScope();
     container.bind<OpenshellSecretAdapter>(OpenshellSecretAdapter).toSelf().inSingletonScope();
+    container.bind<AcpSessionManager>(AcpSessionManager).toSelf().inSingletonScope();
+    container.bind<AcpIPCHandler>(AcpIPCHandler).toSelf().inSingletonScope();
     container.bind<SecretManager>(SecretManager).toSelf().inSingletonScope();
     container.bind<FlowManager>(FlowManager).toSelf().inSingletonScope();
     container.bind<SkillManager>(SkillManager).toSelf().inSingletonScope();
@@ -932,6 +936,9 @@ export class PluginSystem {
 
     const mcpIPCHandler = container.get<MCPIPCHandler>(MCPIPCHandler);
     mcpIPCHandler.init();
+
+    const acpIPCHandler = container.get<AcpIPCHandler>(AcpIPCHandler);
+    acpIPCHandler.init();
 
     await schedulerRegistry.init();
     await this.setupSecurityRestrictionsOnLinks(messageBox);
