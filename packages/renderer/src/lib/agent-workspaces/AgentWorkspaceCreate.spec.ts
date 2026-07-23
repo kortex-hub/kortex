@@ -217,7 +217,7 @@ test('Expect source input rendered with correct placeholder', () => {
 test('Expect workspace name input rendered', () => {
   render(AgentWorkspaceCreate);
 
-  expect(screen.getByPlaceholderText('e.g., Frontend Refactoring')).toBeInTheDocument();
+  expect(screen.getByPlaceholderText('e.g., frontend-refactoring')).toBeInTheDocument();
 });
 
 test('Expect description section is collapsed by default', () => {
@@ -241,7 +241,7 @@ test('Expect workspace name auto-suggested from source path', async () => {
     target: { value: '/home/user/my-project' },
   });
 
-  expect((screen.getByPlaceholderText('e.g., Frontend Refactoring') as HTMLInputElement).value).toBe('my-project');
+  expect((screen.getByPlaceholderText('e.g., frontend-refactoring') as HTMLInputElement).value).toBe('my-project');
 });
 
 test('Expect gateway selector hidden when only one gateway is available', () => {
@@ -316,7 +316,7 @@ test('Expect Continue button disabled when workspace name exceeds hostname limit
   await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
     target: { value: '/home/user/my-repo' },
   });
-  await fireEvent.input(screen.getByPlaceholderText('e.g., Frontend Refactoring'), {
+  await fireEvent.input(screen.getByPlaceholderText('e.g., frontend-refactoring'), {
     target: { value: 'a'.repeat(57) },
   });
 
@@ -1819,7 +1819,7 @@ describe('when projects exist', () => {
     await fireEvent.click(screen.getByRole('button', { name: /Saved project/ }));
     await fireEvent.click(screen.getByRole('option', { name: /My App/ }));
 
-    expect((screen.getByPlaceholderText('e.g., Frontend Refactoring') as HTMLInputElement).value).toBe('My App');
+    expect((screen.getByPlaceholderText('e.g., frontend-refactoring') as HTMLInputElement).value).toBe('My App');
   });
 
   test('Expect createAgentWorkspace called with project id', async () => {

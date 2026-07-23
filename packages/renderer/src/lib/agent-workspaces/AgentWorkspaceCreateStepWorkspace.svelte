@@ -164,7 +164,7 @@ let nameInputError = $derived(sessionNameError ?? errors?.name ?? '');
     <Input
       id="workspace-name"
       bind:value={sessionName}
-      placeholder="e.g., Frontend Refactoring"
+      placeholder="e.g., frontend-refactoring"
       class="w-full"
       oninput={markNameEdited}
       error={nameInputError}

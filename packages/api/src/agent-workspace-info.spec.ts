@@ -20,6 +20,18 @@ import { expect, test } from 'vitest';
 
 import { getSandboxNameValidationError, SANDBOX_NAME_MAX_LENGTH } from './agent-workspace-info.js';
 
+test('accepts valid lowercase names', () => {
+  expect(getSandboxNameValidationError('my-workspace')).toBeUndefined();
+});
+
+test('accepts names with digits', () => {
+  expect(getSandboxNameValidationError('test123')).toBeUndefined();
+});
+
+test('accepts single character name', () => {
+  expect(getSandboxNameValidationError('a')).toBeUndefined();
+});
+
 test('accepts names at exactly the maximum length', () => {
   const name = 'a'.repeat(SANDBOX_NAME_MAX_LENGTH);
 
@@ -31,5 +43,41 @@ test('rejects names exceeding the maximum length', () => {
 
   expect(getSandboxNameValidationError(name)).toBe(
     `Workspace name must not exceed ${SANDBOX_NAME_MAX_LENGTH} characters`,
+  );
+});
+
+test('accepts empty name', () => {
+  expect(getSandboxNameValidationError('')).toBeUndefined();
+});
+
+test('rejects names with spaces', () => {
+  expect(getSandboxNameValidationError('Frontend Refactoring')).toBe(
+    'Workspace name must contain only lowercase letters (a-z), digits (0-9), and hyphens (-)',
+  );
+});
+
+test('rejects names with uppercase letters', () => {
+  expect(getSandboxNameValidationError('MyWorkspace')).toBe(
+    'Workspace name must contain only lowercase letters (a-z), digits (0-9), and hyphens (-)',
+  );
+});
+
+test('rejects names with special characters', () => {
+  expect(getSandboxNameValidationError('my_workspace!')).toBe(
+    'Workspace name must contain only lowercase letters (a-z), digits (0-9), and hyphens (-)',
+  );
+});
+
+test('rejects names with leading hyphen', () => {
+  expect(getSandboxNameValidationError('-workspace')).toBe('Workspace name must not start or end with a hyphen');
+});
+
+test('rejects names with trailing hyphen', () => {
+  expect(getSandboxNameValidationError('workspace-')).toBe('Workspace name must not start or end with a hyphen');
+});
+
+test('rejects names with consecutive hyphens', () => {
+  expect(getSandboxNameValidationError('my--workspace')).toBe(
+    'Workspace name must not contain consecutive hyphens (--)',
   );
 });

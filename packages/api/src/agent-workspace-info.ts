@@ -62,8 +62,20 @@ export type AgentWorkspaceMount = configComponents['schemas']['Mount'];
 export const SANDBOX_NAME_MAX_LENGTH = 56;
 
 export function getSandboxNameValidationError(name: string): string | undefined {
+  if (name.length === 0) {
+    return undefined;
+  }
   if (name.length > SANDBOX_NAME_MAX_LENGTH) {
     return `Workspace name must not exceed ${SANDBOX_NAME_MAX_LENGTH} characters`;
+  }
+  if (!/^[a-z0-9-]+$/.test(name)) {
+    return 'Workspace name must contain only lowercase letters (a-z), digits (0-9), and hyphens (-)';
+  }
+  if (name.startsWith('-') || name.endsWith('-')) {
+    return 'Workspace name must not start or end with a hyphen';
+  }
+  if (name.includes('--')) {
+    return 'Workspace name must not contain consecutive hyphens (--)';
   }
   return undefined;
 }

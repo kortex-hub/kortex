@@ -59,7 +59,7 @@ test('Expect project folder label and input are rendered', () => {
 test('Expect workspace name input is rendered', () => {
   render(AgentWorkspaceCreateStepWorkspace, defaultProps);
 
-  expect(screen.getByPlaceholderText('e.g., Frontend Refactoring')).toBeInTheDocument();
+  expect(screen.getByPlaceholderText('e.g., frontend-refactoring')).toBeInTheDocument();
 });
 
 test('Expect description section is collapsed by default', () => {
@@ -100,7 +100,7 @@ test('Expect source input renders initial value', () => {
 test('Expect workspace name input renders initial value', () => {
   render(AgentWorkspaceCreateStepWorkspace, { ...defaultProps, sessionName: 'my-workspace' });
 
-  expect((screen.getByPlaceholderText('e.g., Frontend Refactoring') as HTMLInputElement).value).toBe('my-workspace');
+  expect((screen.getByPlaceholderText('e.g., frontend-refactoring') as HTMLInputElement).value).toBe('my-workspace');
 });
 
 test('shows validation error when workspace name exceeds hostname limit', () => {
@@ -110,7 +110,7 @@ test('shows validation error when workspace name exceeds hostname limit', () => 
   });
 
   expect(screen.getByText(/must not exceed 56 characters/)).toBeInTheDocument();
-  expect(screen.getByPlaceholderText('e.g., Frontend Refactoring')).toHaveAttribute('aria-invalid', 'true');
+  expect(screen.getByPlaceholderText('e.g., frontend-refactoring')).toHaveAttribute('aria-invalid', 'true');
 });
 
 test('shows validation error when basename-derived name exceeds hostname limit', () => {
@@ -130,7 +130,53 @@ test('accepts workspace name at exactly the hostname limit', () => {
   });
 
   expect(screen.queryByText(/must not exceed 56 characters/)).not.toBeInTheDocument();
-  expect(screen.getByPlaceholderText('e.g., Frontend Refactoring')).toHaveAttribute('aria-invalid', 'false');
+  expect(screen.getByPlaceholderText('e.g., frontend-refactoring')).toHaveAttribute('aria-invalid', 'false');
+});
+
+test('shows validation error when workspace name contains uppercase letters', () => {
+  render(AgentWorkspaceCreateStepWorkspace, {
+    ...defaultProps,
+    sessionName: 'MyWorkspace',
+  });
+
+  expect(screen.getByText(/must contain only lowercase letters/)).toBeInTheDocument();
+  expect(screen.getByPlaceholderText('e.g., frontend-refactoring')).toHaveAttribute('aria-invalid', 'true');
+});
+
+test('shows validation error when workspace name contains spaces', () => {
+  render(AgentWorkspaceCreateStepWorkspace, {
+    ...defaultProps,
+    sessionName: 'my workspace',
+  });
+
+  expect(screen.getByText(/must contain only lowercase letters/)).toBeInTheDocument();
+});
+
+test('shows validation error when workspace name has leading hyphen', () => {
+  render(AgentWorkspaceCreateStepWorkspace, {
+    ...defaultProps,
+    sessionName: '-workspace',
+  });
+
+  expect(screen.getByText(/must not start or end with a hyphen/)).toBeInTheDocument();
+});
+
+test('shows validation error when workspace name has trailing hyphen', () => {
+  render(AgentWorkspaceCreateStepWorkspace, {
+    ...defaultProps,
+    sessionName: 'workspace-',
+  });
+
+  expect(screen.getByText(/must not start or end with a hyphen/)).toBeInTheDocument();
+});
+
+test('shows validation error when workspace name has consecutive hyphens', () => {
+  render(AgentWorkspaceCreateStepWorkspace, {
+    ...defaultProps,
+    sessionName: 'my--workspace',
+  });
+
+  expect(screen.getByText(/must not contain consecutive hyphens/)).toBeInTheDocument();
 });
 
 test('shows config-exists notification when configExists is true', () => {
