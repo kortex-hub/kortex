@@ -64,7 +64,7 @@
     "download:image-builder:all": "tsx ./scripts/download.ts --component image-builder --all",
     "test": "vitest run --coverage",
     "test:watch": "vitest watch --coverage",
-    "watch": "tsx ./scripts/download.ts && vite build --watch"
+    "watch": "tsx ./scripts/download.ts --component openshell && vite build --watch"
   },
   "dependencies": {
     "inversify": "^7.10.4",
