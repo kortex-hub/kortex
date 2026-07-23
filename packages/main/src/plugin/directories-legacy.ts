@@ -49,6 +49,7 @@ export class LegacyDirectories implements Directories {
   private readonly skillsDirectory: string;
   private readonly workspaceProjectsDirectory: string;
   private readonly semanticRoutersDirectory: string;
+  private readonly agentWorkspacesConfigDirectory: string;
 
   constructor() {
     // Check for custom directory override
@@ -73,6 +74,7 @@ export class LegacyDirectories implements Directories {
     this.skillsDirectory = path.resolve(this.desktopAppHomeDir, 'skills');
     this.workspaceProjectsDirectory = path.resolve(this.desktopAppHomeDir, 'workspace-projects');
     this.semanticRoutersDirectory = path.resolve(this.desktopAppHomeDir, 'semantic-routers');
+    this.agentWorkspacesConfigDirectory = path.resolve(this.desktopAppHomeDir, 'agent-workspaces');
   }
 
   getConfigurationDirectory(): string {
@@ -135,5 +137,9 @@ export class LegacyDirectories implements Directories {
 
   getSemanticRoutersDirectory(): string {
     return this.semanticRoutersDirectory;
+  }
+
+  getAgentWorkspacesConfigDirectory(): string {
+    return this.agentWorkspacesConfigDirectory;
   }
 }

@@ -42,6 +42,7 @@ export class LinuxXDGDirectories implements Directories {
   private readonly skillsDirectory: string;
   private readonly workspaceProjectsDirectory: string;
   private readonly semanticRoutersDirectory: string;
+  private readonly agentWorkspacesConfigDirectory: string;
 
   constructor() {
     // XDG_CONFIG_HOME: user-specific configuration files
@@ -64,6 +65,7 @@ export class LinuxXDGDirectories implements Directories {
     this.skillsDirectory = path.resolve(this.dataDirectory, 'skills');
     this.workspaceProjectsDirectory = path.resolve(this.dataDirectory, 'workspace-projects');
     this.semanticRoutersDirectory = path.resolve(this.dataDirectory, 'semantic-routers');
+    this.agentWorkspacesConfigDirectory = path.resolve(this.dataDirectory, 'agent-workspaces');
   }
 
   getConfigurationDirectory(): string {
@@ -116,5 +118,9 @@ export class LinuxXDGDirectories implements Directories {
 
   getSemanticRoutersDirectory(): string {
     return this.semanticRoutersDirectory;
+  }
+
+  getAgentWorkspacesConfigDirectory(): string {
+    return this.agentWorkspacesConfigDirectory;
   }
 }

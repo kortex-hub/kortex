@@ -268,7 +268,24 @@ $effect(() => {
         }
       });
   } else {
-    wizard.draft.configExists = false;
+    const name = getEffectiveWorkspaceName();
+    const gateway = wizard.draft.selectedGateway;
+    if (name && gateway && !getSandboxNameValidationError(name)) {
+      window
+        .checkAgentWorkspaceGlobalConfigExists(gateway, name)
+        .then(exists => {
+          if (token === configCheckToken) {
+            wizard.draft.configExists = exists;
+          }
+        })
+        .catch(() => {
+          if (token === configCheckToken) {
+            wizard.draft.configExists = false;
+          }
+        });
+    } else {
+      wizard.draft.configExists = false;
+    }
   }
 });
 
@@ -297,7 +314,6 @@ let isCurrentStepComplete = $derived.by(() => {
     return (
       wizard.draft.selectedGateway !== '' &&
       getEffectiveWorkspaceName() !== '' &&
-      wizard.draft.sourcePath.trim() !== '' &&
       isWorkspaceNameValid() &&
       !validationErrors.name
     );
@@ -450,7 +466,6 @@ function buildMountsFrom(fileAccess: string, mounts: CustomMount[]): AgentWorksp
 async function startAsIs(): Promise<void> {
   if (
     !wizard.draft.selectedGateway ||
-    !wizard.draft.sourcePath.trim() ||
     !wizard.draft.selectedModel ||
     !isWorkspaceNameValid() ||
     validationErrors.name
@@ -462,7 +477,7 @@ async function startAsIs(): Promise<void> {
 
   try {
     await window.createAgentWorkspace({
-      sourcePath: draftSnapshot.sourcePath,
+      sourcePath: draftSnapshot.sourcePath.trim() || undefined,
       agent: draftSnapshot.selectedAgent,
       model: getModelId(draftSnapshot.selectedModel!),
       gateway: draftSnapshot.selectedGateway,
@@ -489,7 +504,6 @@ async function startWorkspace(): Promise<void> {
   if (
     !wizard.draft.selectedGateway ||
     !getEffectiveWorkspaceName() ||
-    !wizard.draft.sourcePath.trim() ||
     !wizard.draft.selectedModel ||
     !isWorkspaceNameValid() ||
     validationErrors.name
@@ -524,7 +538,7 @@ async function startWorkspace(): Promise<void> {
     const hasMcp = remoteServers.length > 0 || commandServers.length > 0;
 
     await window.createAgentWorkspace({
-      sourcePath: draftSnapshot.sourcePath,
+      sourcePath: draftSnapshot.sourcePath.trim() || undefined,
       agent: draftSnapshot.selectedAgent,
       model: getModelId(draftSnapshot.selectedModel!),
       gateway: draftSnapshot.selectedGateway,
@@ -573,7 +587,7 @@ async function startWorkspace(): Promise<void> {
             </span>
             <h1 class="text-2xl font-bold text-[var(--pd-modal-text)] mb-1">Create Coding Agent Workspace</h1>
             <p class="text-sm text-[var(--pd-content-card-text)] opacity-70 max-w-2xl leading-relaxed">
-              Add your code location first, then agent, tools, and sandbox filesystem & networking.
+              Choose a code location or start empty, then configure agent, tools, and sandbox settings.
             </p>
           </div>
 

@@ -30,6 +30,7 @@ import { AgentRegistry } from '/@/plugin/agent-registry.js';
 import { updateWorkspaceConfig, writeWorkspaceConfig } from '/@/plugin/agent-workspace/workspace-config-writer.js';
 import { WritableConfigurationFile } from '/@/plugin/agent-workspace/writable-configuration-file.js';
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
+import { Directories } from '/@/plugin/directories.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
 import {
@@ -111,7 +112,16 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly agentRegistry: AgentRegistry,
     @inject(OpenshellGateway)
     private readonly openshellGateway: OpenshellGateway,
+    @inject(Directories)
+    private readonly directories: Directories,
   ) {}
+
+  private getGlobalConfigDir(gateway: string, sandboxName: string): string {
+    if (/[\\/]|\.\./.test(gateway) || /[\\/]|\.\./.test(sandboxName)) {
+      throw new Error(`Invalid workspace identifier: "${gateway}/${sandboxName}"`);
+    }
+    return join(this.directories.getAgentWorkspacesConfigDirectory(), gateway, sandboxName);
+  }
 
   async create(options: AgentWorkspaceCreateOptions): Promise<AgentWorkspaceId> {
     const suffix = options.name ? ` "${options.name}"` : '';
@@ -124,8 +134,11 @@ export class AgentWorkspaceManager implements Disposable {
       }
 
       if (options.replaceConfig) {
-        const configPath = join(options.sourcePath, '.kaiden', 'workspace.json');
-        await rm(configPath, { force: true });
+        if (options.sourcePath) {
+          await rm(join(options.sourcePath, '.kaiden', 'workspace.json'), { force: true });
+        } else if (options.name) {
+          await rm(join(this.getGlobalConfigDir(options.gateway, options.name), 'workspace.json'), { force: true });
+        }
       }
 
       const secretName = await this.ensureModelSecret(options);
@@ -150,7 +163,17 @@ export class AgentWorkspaceManager implements Disposable {
     const rawEndpoint = connectionInfo?.endpoint ?? options.model.split('::')[2] ?? undefined;
     const endpoint = rawEndpoint ? rewriteLocalhostUrl(rawEndpoint) : undefined;
 
-    const workspace = await writeWorkspaceConfig(options);
+    const sandboxName = options.name ?? (options.sourcePath ? basename(options.sourcePath) : undefined);
+    if (!sandboxName) {
+      throw new Error('workspace name is required when no project folder is specified');
+    }
+    const sandboxNameError = getSandboxNameValidationError(sandboxName);
+    if (sandboxNameError) {
+      throw new Error(sandboxNameError);
+    }
+
+    const configDir = options.sourcePath ? undefined : this.getGlobalConfigDir(options.gateway, sandboxName);
+    const workspace = await writeWorkspaceConfig(options, configDir);
     const agent = this.agentRegistry.getAgentRegistration(options.agent);
     const uploads: OpenshellUpload[] = [];
 
@@ -200,11 +223,6 @@ export class AgentWorkspaceManager implements Disposable {
 
     uploads.push(...(await this.buildOpenshellFilesystemUploads(options.sourcePath, workspace)));
 
-    const sandboxName = options.name ?? basename(options.sourcePath);
-    const sandboxNameError = getSandboxNameValidationError(sandboxName);
-    if (sandboxNameError) {
-      throw new Error(sandboxNameError);
-    }
     const env = workspace.environment
       ?.filter(entry => typeof entry.value === 'string' && entry.value !== '')
       .reduce<Record<string, string>>((acc, entry) => {
@@ -229,7 +247,10 @@ export class AgentWorkspaceManager implements Disposable {
       from: agent.baseImage,
       providers: options.secrets,
       env: env && Object.keys(env).length > 0 ? env : undefined,
-      labels: { ...encodeWorkspaceLabels(options.sourcePath), [AGENT_LABEL]: options.agent },
+      labels: {
+        ...(options.sourcePath ? encodeWorkspaceLabels(options.sourcePath) : {}),
+        [AGENT_LABEL]: options.agent,
+      },
       uploads: dedupedUploads.length > 0 ? dedupedUploads : undefined,
       noTty: true,
       command: ['true'],
@@ -259,8 +280,19 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   async checkWorkspaceConfigExists(sourcePath: string): Promise<boolean> {
+    if (!sourcePath) return false;
     try {
       await access(join(sourcePath, '.kaiden', 'workspace.json'));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async checkGlobalWorkspaceConfigExists(gateway: string, name: string): Promise<boolean> {
+    if (!gateway || getSandboxNameValidationError(name)) return false;
+    try {
+      await access(join(this.getGlobalConfigDir(gateway, name), 'workspace.json'));
       return true;
     } catch {
       return false;
@@ -281,15 +313,21 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   private async buildOpenshellFilesystemUploads(
-    sourcePath: string,
+    sourcePath: string | undefined,
     workspace: AgentWorkspaceConfiguration,
   ): Promise<OpenshellUpload[]> {
-    const uploads: OpenshellUpload[] = [{ local: sourcePath, remote: '.' }];
+    const uploads: OpenshellUpload[] = [];
+    if (sourcePath) {
+      uploads.push({ local: sourcePath, remote: '.' });
+    }
 
     for (const mount of workspace.mounts ?? []) {
       const local = this.resolveHostPath(mount.host, sourcePath);
       const remote = this.resolveOpenshellSandboxPath(mount.target, sourcePath);
       if (!local || !remote) {
+        console.warn(
+          `[AgentWorkspaceManager] skipping mount "${mount.host}" → "${mount.target}": cannot resolve without a project folder`,
+        );
         continue;
       }
       const resolvedRemote = await this.resolveUploadRemotePath(local, remote);
@@ -313,12 +351,12 @@ export class AgentWorkspaceManager implements Disposable {
     return remote;
   }
 
-  private resolveHostPath(path: string, sourcePath: string): string | undefined {
+  private resolveHostPath(path: string, sourcePath: string | undefined): string | undefined {
     if (path === SOURCES_VARIABLE) {
       return sourcePath;
     }
     if (path.startsWith(`${SOURCES_VARIABLE}/`)) {
-      return resolve(sourcePath, path.slice(SOURCES_VARIABLE.length + 1));
+      return sourcePath ? resolve(sourcePath, path.slice(SOURCES_VARIABLE.length + 1)) : undefined;
     }
     if (path === MOUNT_HOME_PREFIX) {
       return homedir();
@@ -335,7 +373,7 @@ export class AgentWorkspaceManager implements Disposable {
     return undefined;
   }
 
-  private resolveOpenshellSandboxPath(path: string, _sourcePath: string): string | undefined {
+  private resolveOpenshellSandboxPath(path: string, _sourcePath: string | undefined): string | undefined {
     if (path === SOURCES_VARIABLE) {
       return '.';
     }
@@ -420,6 +458,7 @@ export class AgentWorkspaceManager implements Disposable {
     try {
       await this.openshellCli.deleteSandbox(workspaceName, gateway);
       this.closeWorkspaceTerminal(id);
+      await rm(this.getGlobalConfigDir(gateway, workspaceName), { recursive: true, force: true });
       this.apiSender.send('agent-workspace-update');
       task.status = 'success';
       return { id };
@@ -433,37 +472,51 @@ export class AgentWorkspaceManager implements Disposable {
     }
   }
 
+  private findSandboxWithGateway(
+    workspaces: GatewaySandboxes[],
+    id: string,
+  ): { sandbox: GatewaySandboxes['sandboxes'][number]; gatewayName: string } | undefined {
+    for (const gw of workspaces) {
+      const sandbox = gw.sandboxes.find(ws => ws.id === id);
+      if (sandbox) {
+        return { sandbox, gatewayName: gw.gateway.name };
+      }
+    }
+    return undefined;
+  }
+
+  private resolveConfigDir(sandbox: { sourcePath?: string; name: string }, gatewayName: string): string {
+    return sandbox.sourcePath
+      ? join(sandbox.sourcePath, '.kaiden')
+      : this.getGlobalConfigDir(gatewayName, sandbox.name);
+  }
+
   async getConfiguration(id: string): Promise<AgentWorkspaceConfiguration> {
     const workspaces = await this.listOpenshellSandboxes();
-    const workspace = workspaces.flatMap(gw => gw.sandboxes).find(ws => ws.id === id);
-    if (!workspace) {
+    const match = this.findSandboxWithGateway(workspaces, id);
+    if (!match) {
       throw new Error(`workspace "${id}" not found. Use "workspace list" to see available workspaces.`);
     }
-    if (workspace.sourcePath) {
-      try {
-        const content = await readFile(join(workspace.sourcePath, '.kaiden', 'workspace.json'), 'utf-8');
-        return JSON.parse(content) as AgentWorkspaceConfiguration;
-      } catch (error: unknown) {
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-          return {} as AgentWorkspaceConfiguration;
-        }
-        throw error;
+    const configPath = join(this.resolveConfigDir(match.sandbox, match.gatewayName), 'workspace.json');
+    try {
+      const content = await readFile(configPath, 'utf-8');
+      return JSON.parse(content) as AgentWorkspaceConfiguration;
+    } catch (error: unknown) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return {} as AgentWorkspaceConfiguration;
       }
-    } else {
-      return {};
+      throw error;
     }
   }
 
   async updateConfiguration(id: string, config: Partial<AgentWorkspaceConfiguration>): Promise<void> {
     const workspaces = await this.listOpenshellSandboxes();
-    const workspace = workspaces.flatMap(gw => gw.sandboxes).find(ws => ws.id === id);
-    if (!workspace) {
+    const match = this.findSandboxWithGateway(workspaces, id);
+    if (!match) {
       throw new Error(`workspace "${id}" not found. Use "workspace list" to see available workspaces.`);
     }
-    if (workspace.sourcePath) {
-      await updateWorkspaceConfig(join(workspace.sourcePath, '.kaiden'), config);
-      this.apiSender.send('agent-workspace-update');
-    }
+    await updateWorkspaceConfig(this.resolveConfigDir(match.sandbox, match.gatewayName), config);
+    this.apiSender.send('agent-workspace-update');
   }
 
   async updateSummary(id: string, update: Pick<AgentWorkspaceSummary, 'name'>): Promise<void> {
@@ -505,6 +558,7 @@ export class AgentWorkspaceManager implements Disposable {
     task.status = 'in-progress';
     try {
       await this.openshellCli.deleteSandbox(name, gateway);
+      await rm(this.getGlobalConfigDir(gateway, name), { recursive: true, force: true });
       this.apiSender.send('agent-workspace-update');
       task.status = 'success';
     } catch (err: unknown) {
@@ -596,6 +650,13 @@ export class AgentWorkspaceManager implements Disposable {
       'agent-workspace:checkConfigExists',
       async (_listener: unknown, sourcePath: string): Promise<boolean> => {
         return this.checkWorkspaceConfigExists(sourcePath);
+      },
+    );
+
+    this.ipcHandle(
+      'agent-workspace:checkGlobalConfigExists',
+      async (_listener: unknown, gateway: string, name: string): Promise<boolean> => {
+        return this.checkGlobalWorkspaceConfigExists(gateway, name);
       },
     );
 

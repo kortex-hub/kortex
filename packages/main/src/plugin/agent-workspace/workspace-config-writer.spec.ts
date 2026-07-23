@@ -441,6 +441,53 @@ describe('writeWorkspaceConfig', () => {
     ]);
   });
 
+  test('writes workspace.json to overrideConfigDir when provided', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(readFile).mockRejectedValue(mockEnoent());
+
+    await writeWorkspaceConfig(
+      { ...defaultOptions, sourcePath: undefined, skills: ['/path/to/skill'] },
+      '/global/agent-workspaces/gw/my-sandbox',
+    );
+
+    expect(mkdir).toHaveBeenCalledWith('/global/agent-workspaces/gw/my-sandbox', { recursive: true });
+    expect(writeFile).toHaveBeenCalledWith(
+      join('/global/agent-workspaces/gw/my-sandbox', 'workspace.json'),
+      expect.any(String),
+      'utf-8',
+    );
+    const parsed = JSON.parse(vi.mocked(writeFile).mock.calls[0]![1] as string);
+    expect(parsed.skills).toEqual(['/path/to/skill']);
+  });
+
+  test('falls back to sourcePath/.kaiden when overrideConfigDir is not provided', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(readFile).mockRejectedValue(mockEnoent());
+
+    await writeWorkspaceConfig(defaultOptions);
+
+    expect(mkdir).toHaveBeenCalledWith(join('/tmp/my-project', '.kaiden'), { recursive: true });
+    expect(writeFile).toHaveBeenCalledWith(
+      join('/tmp/my-project', '.kaiden', 'workspace.json'),
+      expect.any(String),
+      'utf-8',
+    );
+  });
+
+  test('merges into existing config at overrideConfigDir', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(readFile).mockResolvedValue(JSON.stringify({ skills: ['/existing/skill'] }));
+
+    await writeWorkspaceConfig(
+      { ...defaultOptions, sourcePath: undefined, network: { mode: 'allow' } },
+      '/global/agent-workspaces/gw/my-sandbox',
+    );
+
+    const parsed = JSON.parse(vi.mocked(writeFile).mock.calls[0]![1] as string);
+    expect(parsed.skills).toEqual(['/existing/skill']);
+    expect(parsed.network).toEqual({ mode: 'allow' });
+  });
+
   test('preserves existing workspace.json secrets when no secrets provided', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.mocked(readFile).mockResolvedValue(

@@ -99,7 +99,7 @@ export function getSandboxNameValidationError(name: string): string | undefined 
  * Options for creating (initializing) a new workspace via `kdn init`.
  */
 export interface AgentWorkspaceCreateOptions {
-  sourcePath: string;
+  sourcePath?: string;
   agent: string;
   model: string;
   gateway: string;
