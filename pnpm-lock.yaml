@@ -75,8 +75,8 @@ importers:
         specifier: ^0.5.16
         version: 0.5.16
       ai:
-        specifier: ^7.0.34
-        version: 7.0.34(zod@4.3.6)
+        specifier: ^7.0.35
+        version: 7.0.35(zod@4.3.6)
       bcrypt-ts:
         specifier: ^9.0.1
         version: 9.0.1
@@ -527,8 +527,8 @@ importers:
   extensions/cursor:
     dependencies:
       ai:
-        specifier: ^7.0.34
-        version: 7.0.34(zod@4.4.3)
+        specifier: ^7.0.35
+        version: 7.0.35(zod@4.4.3)
       inversify:
         specifier: ^7.7.1
         version: 7.11.0(reflect-metadata@0.2.2)
@@ -696,7 +696,7 @@ importers:
     dependencies:
       ollama-ai-provider-v2:
         specifier: ^3.5.0
-        version: 3.5.0(ai@7.0.34(zod@4.4.3))(zod@4.4.3)
+        version: 3.5.0(ai@7.0.35(zod@4.4.3))(zod@4.4.3)
     devDependencies:
       '@openkaiden/api':
         specifier: workspace:*
@@ -1155,8 +1155,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  '@ai-sdk/gateway@4.0.26':
-    resolution: {integrity: sha512-b/nc3COKtk8IxzgcCi418IoZFky/Bw+Jg8+J0/SBBnu/mOXA4bkIKCu81coEtJAWuH2g5Fvvsa0ar7EpmzNWTw==}
+  '@ai-sdk/gateway@4.0.27':
+    resolution: {integrity: sha512-gqTMvV0N8/JirIZ3OzwjSZRYxzwZu/PeOFCKb8NB9fstWH39tI+L6CkeMNVou5/HCKEYAw6RCOHW59Vhquv8vA==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -1691,9 +1691,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@eslint-community/eslint-utils@4.10.0':
-    resolution: {integrity: sha512-rd6n9Sefya1R1Vd594TRwzeHq2VnmICbvh3jebyt1Hs/6OoCSYNVpjGRRsKSTwAq3SKl09w0AfRCU57hoDLmxg==}
-    engines: {node: ^20.19.0 || ^22.13.0 || >=24}
+  '@eslint-community/eslint-utils@4.10.1':
+    resolution: {integrity: sha512-cuadcxVFE8sDK6iWJbs8Sn0av2Nrh2QSGQhVlBW9AaAHqHwjWsZHT8LJ4hFGPh7ASBV2deFdM7H/DPjulmh8rg==}
+    engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
     peerDependencies:
       eslint: ^6.0.0 || ^7.0.0 || >=8.0.0
 
@@ -3106,8 +3106,8 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
-  ai@7.0.34:
-    resolution: {integrity: sha512-jDqclWYqPGFKcUG4CQiKcBiwi5XqVMqvYy6eJdujVpvE1SDoB6j7RtjrGYz3Bn5B1dzTj1StAlrOebY//WK9/Q==}
+  ai@7.0.35:
+    resolution: {integrity: sha512-en8xnTNoVJVWk/Y7TsXuTkc463ehuQUqrofjPs/TAd4O3h14QKmq4rWWG3/Eb05r3f2MvvxfCuXNnvhTdzyoTg==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -8168,14 +8168,14 @@ snapshots:
       '@vercel/oidc': 3.2.0
       zod: 4.3.6
 
-  '@ai-sdk/gateway@4.0.26(zod@4.3.6)':
+  '@ai-sdk/gateway@4.0.27(zod@4.3.6)':
     dependencies:
       '@ai-sdk/provider': 4.0.3
       '@ai-sdk/provider-utils': 5.0.12(zod@4.3.6)
       '@vercel/oidc': 3.2.0
       zod: 4.3.6
 
-  '@ai-sdk/gateway@4.0.26(zod@4.4.3)':
+  '@ai-sdk/gateway@4.0.27(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 4.0.3
       '@ai-sdk/provider-utils': 5.0.12(zod@4.4.3)
@@ -8765,10 +8765,10 @@ snapshots:
   '@esbuild/win32-x64@0.25.12':
     optional: true
 
-  '@eslint-community/eslint-utils@4.10.0(eslint@9.39.5(jiti@2.6.1))':
+  '@eslint-community/eslint-utils@4.10.1(eslint@9.39.5(jiti@2.6.1))':
     dependencies:
       eslint: 9.39.5(jiti@2.6.1)
-      eslint-visitor-keys: 5.0.1
+      eslint-visitor-keys: 3.4.3
 
   '@eslint-community/eslint-utils@4.7.0(eslint@9.39.3(jiti@2.6.1))':
     dependencies:
@@ -10382,16 +10382,16 @@ snapshots:
       '@ai-sdk/provider-utils': 5.0.11(zod@4.3.6)
       zod: 4.3.6
 
-  ai@7.0.34(zod@4.3.6):
+  ai@7.0.35(zod@4.3.6):
     dependencies:
-      '@ai-sdk/gateway': 4.0.26(zod@4.3.6)
+      '@ai-sdk/gateway': 4.0.27(zod@4.3.6)
       '@ai-sdk/provider': 4.0.3
       '@ai-sdk/provider-utils': 5.0.12(zod@4.3.6)
       zod: 4.3.6
 
-  ai@7.0.34(zod@4.4.3):
+  ai@7.0.35(zod@4.4.3):
     dependencies:
-      '@ai-sdk/gateway': 4.0.26(zod@4.4.3)
+      '@ai-sdk/gateway': 4.0.27(zod@4.4.3)
       '@ai-sdk/provider': 4.0.3
       '@ai-sdk/provider-utils': 5.0.12(zod@4.4.3)
       zod: 4.4.3
@@ -12113,7 +12113,7 @@ snapshots:
 
   eslint@9.39.5(jiti@2.6.1):
     dependencies:
-      '@eslint-community/eslint-utils': 4.10.0(eslint@9.39.5(jiti@2.6.1))
+      '@eslint-community/eslint-utils': 4.10.1(eslint@9.39.5(jiti@2.6.1))
       '@eslint-community/regexpp': 4.12.2
       '@eslint/config-array': 0.21.2
       '@eslint/config-helpers': 0.4.2
@@ -14318,11 +14318,11 @@ snapshots:
 
   obug@2.1.1: {}
 
-  ollama-ai-provider-v2@3.5.0(ai@7.0.34(zod@4.4.3))(zod@4.4.3):
+  ollama-ai-provider-v2@3.5.0(ai@7.0.35(zod@4.4.3))(zod@4.4.3):
     dependencies:
       '@ai-sdk/provider': 3.0.8
       '@ai-sdk/provider-utils': 4.0.27(zod@4.4.3)
-      ai: 7.0.34(zod@4.4.3)
+      ai: 7.0.35(zod@4.4.3)
       zod: 4.4.3
 
   on-finished@2.4.1:
