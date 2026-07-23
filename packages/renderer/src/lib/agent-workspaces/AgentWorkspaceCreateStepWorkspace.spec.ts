@@ -59,7 +59,7 @@ test('Expect project folder label and input are rendered', () => {
 test('Expect workspace name input is rendered', () => {
   render(AgentWorkspaceCreateStepWorkspace, defaultProps);
 
-  expect(screen.getByPlaceholderText('e.g., frontend-refactoring')).toBeInTheDocument();
+  expect(screen.getByPlaceholderText('e.g., front-refactor')).toBeInTheDocument();
 });
 
 test('Expect description section is collapsed by default', () => {
@@ -100,37 +100,37 @@ test('Expect source input renders initial value', () => {
 test('Expect workspace name input renders initial value', () => {
   render(AgentWorkspaceCreateStepWorkspace, { ...defaultProps, sessionName: 'my-workspace' });
 
-  expect((screen.getByPlaceholderText('e.g., frontend-refactoring') as HTMLInputElement).value).toBe('my-workspace');
+  expect((screen.getByPlaceholderText('e.g., front-refactor') as HTMLInputElement).value).toBe('my-workspace');
 });
 
 test('shows validation error when workspace name exceeds hostname limit', () => {
   render(AgentWorkspaceCreateStepWorkspace, {
     ...defaultProps,
-    sessionName: 'a'.repeat(57),
+    sessionName: 'a'.repeat(20),
   });
 
-  expect(screen.getByText(/must not exceed 56 characters/)).toBeInTheDocument();
-  expect(screen.getByPlaceholderText('e.g., frontend-refactoring')).toHaveAttribute('aria-invalid', 'true');
+  expect(screen.getByText(/must not exceed 19 characters/)).toBeInTheDocument();
+  expect(screen.getByPlaceholderText('e.g., front-refactor')).toHaveAttribute('aria-invalid', 'true');
 });
 
 test('shows validation error when basename-derived name exceeds hostname limit', () => {
   render(AgentWorkspaceCreateStepWorkspace, {
     ...defaultProps,
-    sourcePath: `/home/user/${'a'.repeat(57)}`,
+    sourcePath: `/home/user/${'a'.repeat(20)}`,
     sessionName: '',
   });
 
-  expect(screen.getByText(/must not exceed 56 characters/)).toBeInTheDocument();
+  expect(screen.getByText(/must not exceed 19 characters/)).toBeInTheDocument();
 });
 
 test('accepts workspace name at exactly the hostname limit', () => {
   render(AgentWorkspaceCreateStepWorkspace, {
     ...defaultProps,
-    sessionName: 'a'.repeat(56),
+    sessionName: 'a'.repeat(19),
   });
 
-  expect(screen.queryByText(/must not exceed 56 characters/)).not.toBeInTheDocument();
-  expect(screen.getByPlaceholderText('e.g., frontend-refactoring')).toHaveAttribute('aria-invalid', 'false');
+  expect(screen.queryByText(/must not exceed 19 characters/)).not.toBeInTheDocument();
+  expect(screen.getByPlaceholderText('e.g., front-refactor')).toHaveAttribute('aria-invalid', 'false');
 });
 
 test('shows validation error when workspace name contains uppercase letters', () => {
@@ -140,7 +140,7 @@ test('shows validation error when workspace name contains uppercase letters', ()
   });
 
   expect(screen.getByText(/must contain only lowercase letters/)).toBeInTheDocument();
-  expect(screen.getByPlaceholderText('e.g., frontend-refactoring')).toHaveAttribute('aria-invalid', 'true');
+  expect(screen.getByPlaceholderText('e.g., front-refactor')).toHaveAttribute('aria-invalid', 'true');
 });
 
 test('shows validation error when workspace name contains spaces', () => {

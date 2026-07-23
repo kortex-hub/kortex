@@ -217,7 +217,7 @@ test('Expect source input rendered with correct placeholder', () => {
 test('Expect workspace name input rendered', () => {
   render(AgentWorkspaceCreate);
 
-  expect(screen.getByPlaceholderText('e.g., frontend-refactoring')).toBeInTheDocument();
+  expect(screen.getByPlaceholderText('e.g., front-refactor')).toBeInTheDocument();
 });
 
 test('Expect description section is collapsed by default', () => {
@@ -241,7 +241,7 @@ test('Expect workspace name auto-suggested from source path', async () => {
     target: { value: '/home/user/my-project' },
   });
 
-  expect((screen.getByPlaceholderText('e.g., frontend-refactoring') as HTMLInputElement).value).toBe('my-project');
+  expect((screen.getByPlaceholderText('e.g., front-refactor') as HTMLInputElement).value).toBe('my-project');
 });
 
 test('Expect gateway selector hidden when only one gateway is available', () => {
@@ -316,23 +316,23 @@ test('Expect Continue button disabled when workspace name exceeds hostname limit
   await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
     target: { value: '/home/user/my-repo' },
   });
-  await fireEvent.input(screen.getByPlaceholderText('e.g., frontend-refactoring'), {
-    target: { value: 'a'.repeat(57) },
+  await fireEvent.input(screen.getByPlaceholderText('e.g., front-refactor'), {
+    target: { value: 'a'.repeat(20) },
   });
 
   expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-  expect(screen.getByText(/must not exceed 56 characters/)).toBeInTheDocument();
+  expect(screen.getByText(/must not exceed 19 characters/)).toBeInTheDocument();
 });
 
 test('Expect Continue button disabled when basename-derived name exceeds hostname limit', async () => {
   render(AgentWorkspaceCreate);
 
   await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
-    target: { value: `/home/user/${'a'.repeat(57)}` },
+    target: { value: `/home/user/${'a'.repeat(20)}` },
   });
 
   expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-  expect(screen.getByText(/must not exceed 56 characters/)).toBeInTheDocument();
+  expect(screen.getByText(/must not exceed 19 characters/)).toBeInTheDocument();
 });
 
 test('Expect use-all-defaults button on step 1', async () => {
@@ -1819,7 +1819,7 @@ describe('when projects exist', () => {
     await fireEvent.click(screen.getByRole('button', { name: /Saved project/ }));
     await fireEvent.click(screen.getByRole('option', { name: /My App/ }));
 
-    expect((screen.getByPlaceholderText('e.g., frontend-refactoring') as HTMLInputElement).value).toBe('My App');
+    expect((screen.getByPlaceholderText('e.g., front-refactor') as HTMLInputElement).value).toBe('My App');
   });
 
   test('Expect createAgentWorkspace called with project id', async () => {

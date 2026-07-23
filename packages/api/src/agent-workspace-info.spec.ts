@@ -51,7 +51,7 @@ test('accepts empty name', () => {
 });
 
 test('rejects names with spaces', () => {
-  expect(getSandboxNameValidationError('Frontend Refactoring')).toBe(
+  expect(getSandboxNameValidationError('my workspace')).toBe(
     'Workspace name must contain only lowercase letters (a-z), digits (0-9), and hyphens (-)',
   );
 });

@@ -58,8 +58,8 @@ export type AgentWorkspaceMcpConfig = configComponents['schemas']['McpConfigurat
 
 export type AgentWorkspaceMount = configComponents['schemas']['Mount'];
 
-/** Maximum sandbox name length for OpenShell. Podman/crun hostname composition leaves a conservative 56-char limit. */
-export const SANDBOX_NAME_MAX_LENGTH = 56;
+/** Maximum sandbox name length for OpenShell. */
+export const SANDBOX_NAME_MAX_LENGTH = 19;
 
 export function getSandboxNameValidationError(name: string): string | undefined {
   if (name.length === 0) {
