@@ -5,18 +5,18 @@ import { Button, FilteredEmptyScreen, NavPage, Table, TableColumn, TableRow } fr
 import SkillEnabledColumn from '/@/lib/skills/columns/SkillEnabledColumn.svelte';
 import SkillNameColumn from '/@/lib/skills/columns/SkillNameColumn.svelte';
 import NoLogIcon from '/@/lib/ui/NoLogIcon.svelte';
+import { handleNavigation } from '/@/navigation';
 import { filteredSkillInfos, skillSearchPattern } from '/@/stores/skills';
+import { NavigationPage } from '/@api/navigation-page';
 import type { SkillInfo } from '/@api/skill/skill-info';
 
 import { SkillDescriptionColumn } from './columns/skill-columns';
 import SkillActions from './SkillActions.svelte';
-import SkillCreate from './SkillCreate.svelte';
 import SkillEmptyScreen from './SkillEmptyScreen.svelte';
 
 type SkillSelectable = SkillInfo & { selected: boolean };
 
 let searchTerm = $state('');
-let showCreateDialog = $state(false);
 
 $effect(() => {
   skillSearchPattern.set(searchTerm);
@@ -47,18 +47,14 @@ const columns = [nameColumn, new SkillDescriptionColumn(), enabledColumn, action
 
 const skills: SkillSelectable[] = $derived($filteredSkillInfos.map(skill => ({ ...skill, selected: false })));
 
-function openCreateDialog(): void {
-  showCreateDialog = true;
-}
-
-function closeCreateDialog(): void {
-  showCreateDialog = false;
+function openCreatePage(): void {
+  handleNavigation({ page: NavigationPage.SKILL_CREATE });
 }
 </script>
 
 <NavPage bind:searchTerm={searchTerm} title="Skills">
   {#snippet additionalActions()}
-    <Button icon={faPlus} onclick={openCreateDialog}>
+    <Button icon={faPlus} onclick={openCreatePage}>
       New skill
     </Button>
   {/snippet}
@@ -69,7 +65,7 @@ function closeCreateDialog(): void {
         {#if searchTerm}
           <FilteredEmptyScreen icon={NoLogIcon} kind="skills" bind:searchTerm={searchTerm} />
         {:else}
-          <SkillEmptyScreen onclick={openCreateDialog} />
+          <SkillEmptyScreen onclick={openCreatePage} />
         {/if}
       {:else}
         <Table
@@ -83,7 +79,3 @@ function closeCreateDialog(): void {
     </div>
   {/snippet}
 </NavPage>
-
-{#if showCreateDialog}
-  <SkillCreate onclose={closeCreateDialog} />
-{/if}

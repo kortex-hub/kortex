@@ -197,6 +197,9 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
     case NavigationPage.SKILLS:
       router.goto('/skills');
       break;
+    case NavigationPage.SKILL_CREATE:
+      router.goto('/skills/create');
+      break;
     case NavigationPage.SECRET_VAULT:
       router.goto('/secret-vault');
       break;
