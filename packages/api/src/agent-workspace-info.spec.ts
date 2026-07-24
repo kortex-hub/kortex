@@ -18,7 +18,11 @@
 
 import { expect, test } from 'vitest';
 
-import { getSandboxNameValidationError, SANDBOX_NAME_MAX_LENGTH, sanitizeDns1123Label } from './agent-workspace-info.js';
+import {
+  getSandboxNameValidationError,
+  SANDBOX_NAME_MAX_LENGTH,
+  sanitizeDns1123Label,
+} from './agent-workspace-info.js';
 
 test('accepts valid lowercase names', () => {
   expect(getSandboxNameValidationError('my-workspace')).toBeUndefined();
@@ -46,8 +50,8 @@ test('rejects names exceeding the maximum length', () => {
   );
 });
 
-test('accepts empty name', () => {
-  expect(getSandboxNameValidationError('')).toBeUndefined();
+test('rejects empty name', () => {
+  expect(getSandboxNameValidationError('')).toBe('Workspace name must not be empty');
 });
 
 test('rejects names with spaces', () => {

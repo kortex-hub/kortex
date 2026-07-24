@@ -224,7 +224,9 @@ function getDefaultSessionName(path: string): string {
 }
 
 function getEffectiveWorkspaceName(): string {
-  return wizard.draft.sessionName.trim() || getDefaultSessionName(wizard.draft.sourcePath);
+  const trimmed = wizard.draft.sessionName.trim();
+  if (wizard.draft.nameManuallyEdited) return trimmed;
+  return trimmed || getDefaultSessionName(wizard.draft.sourcePath);
 }
 
 function getEffectiveWorkspaceNameFromSnapshot(draft: { sessionName: string; sourcePath: string }): string {
@@ -235,10 +237,16 @@ function isWorkspaceNameValid(): boolean {
   return getSandboxNameValidationError(getEffectiveWorkspaceName()) === undefined;
 }
 
+let previousSourcePath = '';
 $effect(() => {
-  if (wizard.draft.nameManuallyEdited) return;
-  const last = getDefaultSessionName(wizard.draft.sourcePath);
-  if (last) wizard.draft.sessionName = sanitizeDns1123Label(last);
+  const currentPath = wizard.draft.sourcePath;
+  const pathChanged = currentPath !== previousSourcePath;
+  previousSourcePath = currentPath;
+  if (wizard.draft.nameManuallyEdited && !(pathChanged && !wizard.draft.sessionName.trim())) return;
+  const last = getDefaultSessionName(currentPath);
+  if (!last) return;
+  wizard.draft.nameManuallyEdited = false;
+  wizard.draft.sessionName = sanitizeDns1123Label(last);
 });
 
 let configCheckToken = 0;

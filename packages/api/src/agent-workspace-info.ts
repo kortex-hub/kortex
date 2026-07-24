@@ -71,14 +71,14 @@ export function sanitizeDns1123Label(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, '-')
     .replace(/-{2,}/g, '-')
-    .replace(/^-+/, '')
-    .replace(/-+$/, '')
+    .replace(/^-/, '')
+    .replace(/-$/, '')
     .slice(0, SANDBOX_NAME_MAX_LENGTH);
 }
 
 export function getSandboxNameValidationError(name: string): string | undefined {
   if (name.length === 0) {
-    return undefined;
+    return 'Workspace name must not be empty';
   }
   if (name.length > SANDBOX_NAME_MAX_LENGTH) {
     return `Workspace name must not exceed ${SANDBOX_NAME_MAX_LENGTH} characters`;
