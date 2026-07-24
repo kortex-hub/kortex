@@ -238,7 +238,7 @@ function isWorkspaceNameValid(): boolean {
 $effect(() => {
   if (wizard.draft.nameManuallyEdited) return;
   const last = getDefaultSessionName(wizard.draft.sourcePath);
-  if (last) wizard.draft.sessionName = last;
+  if (last) wizard.draft.sessionName = sanitizeDns1123Label(last);
 });
 
 let configCheckToken = 0;
@@ -367,7 +367,7 @@ async function handleBrowseSource(): Promise<void> {
       wizard.draft.sourcePath = selected;
       if (!wizard.draft.nameManuallyEdited) {
         const lastSegment = getDefaultSessionName(selected);
-        if (lastSegment) wizard.draft.sessionName = lastSegment;
+        if (lastSegment) wizard.draft.sessionName = sanitizeDns1123Label(lastSegment);
       }
     }
   } catch (err: unknown) {

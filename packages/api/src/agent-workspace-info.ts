@@ -71,7 +71,8 @@ export function sanitizeDns1123Label(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, '-')
     .replace(/-{2,}/g, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(/^-+/, '')
+    .replace(/-+$/, '')
     .slice(0, SANDBOX_NAME_MAX_LENGTH);
 }
 
