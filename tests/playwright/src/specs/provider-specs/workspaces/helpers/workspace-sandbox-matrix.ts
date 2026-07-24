@@ -38,7 +38,6 @@ export const CUSTOM_MOUNT_DEFAULT_HOST = '$SOURCES/e2e-default';
 export const CUSTOM_ALLOWED_HOST = 'api.example.com';
 
 export const FULL_SYSTEM_SKIP_LABEL = 'OpenShell tar fails on / mount';
-export const UNRESTRICTED_SKIP_LABEL = 'Unrestricted network disabled on OpenShell';
 
 function skipTestTitle(scenarioId: string, skipReason: string): string {
   return `[SKIP] ${scenarioId} — ${skipReason}`;
@@ -69,7 +68,6 @@ const FILESYSTEM_TAG: Record<FileAccessLevel, string> = {
 const NETWORK_TAG: Record<NetworkAccessLevel, string> = {
   [NETWORK_ACCESS_LEVEL.DENY_ALL]: '@net-deny',
   [NETWORK_ACCESS_LEVEL.DEVELOPER_PRESET]: '@net-developer',
-  [NETWORK_ACCESS_LEVEL.UNRESTRICTED]: '@net-unrestricted',
 };
 
 export interface SandboxScenario {
@@ -138,8 +136,6 @@ function networkLabel(scenario: SandboxScenario): string {
       return scenario.additionalHosts?.length
         ? 'developer preset network and additional allowed host'
         : 'developer preset network';
-    case NETWORK_ACCESS_LEVEL.UNRESTRICTED:
-      return 'unrestricted network';
     default: {
       const _exhaustive: never = scenario.network;
       return _exhaustive;

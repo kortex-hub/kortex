@@ -139,8 +139,6 @@ function deriveNetworkHosts(network: NetworkConfiguration | undefined): string[]
 function mapNetworkSelection(value: string, hosts: string[]): NetworkConfiguration | undefined {
   const filtered = hosts.filter(h => h.trim() !== '');
   switch (value) {
-    case 'open':
-      return { mode: 'allow' };
     case 'registries':
     case 'blocked':
       return { mode: 'deny', hosts: filtered.length ? filtered : undefined };

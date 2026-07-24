@@ -274,7 +274,6 @@ export type FilesystemBadge = (typeof FILESYSTEM_BADGE)[keyof typeof FILESYSTEM_
 export const NETWORK_ACCESS_LEVEL = {
   DENY_ALL: 'Deny All',
   DEVELOPER_PRESET: 'Developer Preset',
-  UNRESTRICTED: 'Unrestricted',
 } as const;
 export const NETWORK_ACCESS_LEVELS = Object.values(NETWORK_ACCESS_LEVEL);
 export type NetworkAccessLevel = (typeof NETWORK_ACCESS_LEVEL)[keyof typeof NETWORK_ACCESS_LEVEL];

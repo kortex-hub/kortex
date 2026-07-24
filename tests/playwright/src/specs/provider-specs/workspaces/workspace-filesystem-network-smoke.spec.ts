@@ -30,7 +30,6 @@ import {
   registerSandboxMatrixTests,
   type SandboxAgentSetup,
   type SandboxScenario,
-  UNRESTRICTED_SKIP_LABEL,
 } from './helpers/workspace-sandbox-matrix';
 
 const AGENT_SETUPS: SandboxAgentSetup[] = [
@@ -146,25 +145,6 @@ const SANDBOX_SCENARIOS: SandboxScenario[] = [
     fileAccess: FILE_ACCESS_LEVEL.FULL_SYSTEM,
     network: NETWORK_ACCESS_LEVEL.DENY_ALL,
     skipReason: FULL_SYSTEM_SKIP_LABEL,
-  },
-  {
-    id: 'FS-NONE-NET-UNRESTRICTED',
-    fileAccess: FILE_ACCESS_LEVEL.NO_HOST_ACCESS,
-    network: NETWORK_ACCESS_LEVEL.UNRESTRICTED,
-    skipReason: UNRESTRICTED_SKIP_LABEL,
-  },
-  {
-    id: 'FS-HOME-NET-UNRESTRICTED',
-    fileAccess: FILE_ACCESS_LEVEL.HOME_DIRECTORY,
-    network: NETWORK_ACCESS_LEVEL.UNRESTRICTED,
-    skipReason: UNRESTRICTED_SKIP_LABEL,
-  },
-  {
-    id: 'FS-CUSTOM-NET-UNRESTRICTED',
-    fileAccess: FILE_ACCESS_LEVEL.CUSTOM_PATHS,
-    customMounts: CUSTOM_RW_MOUNT,
-    network: NETWORK_ACCESS_LEVEL.UNRESTRICTED,
-    skipReason: UNRESTRICTED_SKIP_LABEL,
   },
 ];
 
