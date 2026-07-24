@@ -94,7 +94,7 @@ function setEnvVar(context: AgentWorkspaceContext, name: string, value: string):
 // activates when COPILOT_PROVIDER_BASE_URL is set (BYOK mode); without it
 // Copilot uses GitHub auth and rejects a stray COPILOT_PROVIDER_API_KEY.
 export function buildCopilotCommand(): string {
-  const fallbacks = [...new Set(Object.values(VAULT_API_KEY_ENV_VAR))];
+  const fallbacks = Array.from(new Set(Object.values(VAULT_API_KEY_ENV_VAR)));
   const inner = fallbacks.reduceRight((acc, v) => `\${${v}:-${acc}}`, '');
   const bridge = `export COPILOT_PROVIDER_API_KEY="\${COPILOT_PROVIDER_API_KEY:-${inner}}"`;
   return `[ -n "$COPILOT_PROVIDER_BASE_URL" ] && ${bridge}; copilot`;
