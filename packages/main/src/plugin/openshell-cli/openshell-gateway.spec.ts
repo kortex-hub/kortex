@@ -44,6 +44,7 @@ const GATEWAY_BINARY = '/usr/local/bin/openshell-gateway';
 const KAIDEN_DATA_DIRECTORY = '/home/user/.local/share/kaiden';
 const GATEWAY_STORAGE_DIRECTORY = join(KAIDEN_DATA_DIRECTORY, 'openshell-gateway');
 const GATEWAY_CONFIG_PATH = join(GATEWAY_STORAGE_DIRECTORY, 'gateway.toml');
+const GATEWAY_DB_URL = `sqlite:${join(GATEWAY_STORAGE_DIRECTORY, 'gateway.db')}?mode=rwc`;
 
 function createMockChildProcess(): ChildProcess & { _stdout: EventEmitter; _stderr: EventEmitter } {
   const proc = new EventEmitter() as ChildProcess & { _stdout: EventEmitter; _stderr: EventEmitter };
@@ -274,7 +275,17 @@ describe('start', () => {
 
     expect(spawn).toHaveBeenCalledWith(
       GATEWAY_BINARY,
-      ['--config', GATEWAY_CONFIG_PATH, '--port', '17670', '--bind-address', '127.0.0.1', '--disable-tls'],
+      [
+        '--config',
+        GATEWAY_CONFIG_PATH,
+        '--port',
+        '17670',
+        '--bind-address',
+        '127.0.0.1',
+        '--disable-tls',
+        '--db-url',
+        GATEWAY_DB_URL,
+      ],
       expect.objectContaining({ detached: false }),
     );
   });
@@ -290,7 +301,17 @@ describe('start', () => {
 
     expect(spawn).toHaveBeenCalledWith(
       GATEWAY_BINARY,
-      ['--config', GATEWAY_CONFIG_PATH, '--port', '9999', '--bind-address', '0.0.0.0', '--disable-tls'],
+      [
+        '--config',
+        GATEWAY_CONFIG_PATH,
+        '--port',
+        '9999',
+        '--bind-address',
+        '0.0.0.0',
+        '--disable-tls',
+        '--db-url',
+        GATEWAY_DB_URL,
+      ],
       expect.objectContaining({ detached: false }),
     );
   });
@@ -306,7 +327,23 @@ describe('start', () => {
 
     expect(spawn).toHaveBeenCalledWith(
       GATEWAY_BINARY,
-      ['--config', GATEWAY_CONFIG_PATH, '--port', '17670', '--bind-address', '127.0.0.1'],
+      ['--config', GATEWAY_CONFIG_PATH, '--port', '17670', '--bind-address', '127.0.0.1', '--db-url', GATEWAY_DB_URL],
+      expect.objectContaining({ detached: false }),
+    );
+  });
+
+  test('passes --db-url pointing to the kaiden data directory', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValue(proc);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
+
+    await gateway.start();
+
+    expect(spawn).toHaveBeenCalledWith(
+      GATEWAY_BINARY,
+      expect.arrayContaining(['--db-url', GATEWAY_DB_URL]),
       expect.objectContaining({ detached: false }),
     );
   });
@@ -423,7 +460,7 @@ describe('start', () => {
 
     expect(spawn).toHaveBeenCalledWith(
       GATEWAY_BINARY,
-      ['--port', '17670', '--bind-address', '127.0.0.1', '--disable-tls'],
+      ['--port', '17670', '--bind-address', '127.0.0.1', '--disable-tls', '--db-url', GATEWAY_DB_URL],
       expect.objectContaining({ detached: false }),
     );
   });
@@ -796,7 +833,7 @@ describe('gateway config generation', () => {
 
     expect(spawn).toHaveBeenCalledWith(
       GATEWAY_BINARY,
-      ['--port', '17670', '--bind-address', '127.0.0.1', '--disable-tls'],
+      ['--port', '17670', '--bind-address', '127.0.0.1', '--disable-tls', '--db-url', GATEWAY_DB_URL],
       expect.objectContaining({ detached: false }),
     );
   });

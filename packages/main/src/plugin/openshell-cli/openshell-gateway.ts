@@ -279,6 +279,8 @@ export class OpenshellGateway implements Disposable {
     if (disableTls) {
       args.push('--disable-tls');
     }
+    const storageDirectory = join(this.directories.getDataDirectory(), 'openshell-gateway');
+    args.push('--db-url', `sqlite:${join(storageDirectory, 'gateway.db')}?mode=rwc`);
     return args;
   }
 
