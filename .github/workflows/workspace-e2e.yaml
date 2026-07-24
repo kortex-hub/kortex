@@ -28,8 +28,9 @@ run-name: >-
     || '(wsl, hyperv)' }}
 
 on:
-  schedule:
-    - cron: '0 4 * * *'
+  # Scheduled runs temporarily disabled - re-enable by uncommenting below.
+  # schedule:
+  #   - cron: '0 4 * * *'
   workflow_dispatch:
     inputs:
       repo_branch:
