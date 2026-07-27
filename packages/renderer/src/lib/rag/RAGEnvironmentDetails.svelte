@@ -108,7 +108,7 @@ async function handleRemoveFile(filePath: string): Promise<void> {
   {/snippet}
   {#snippet actionsSnippet()}
     {#if ragEnvironment}
-      <RAGEnvironmentActions object={ragEnvironment} />
+      <RAGEnvironmentActions object={ragEnvironment} onDelete={() => router.goto('/rag-environments')} />
     {/if}
   {/snippet}
   {#snippet contentSnippet()}

@@ -7,13 +7,25 @@ import type { RagEnvironment } from '/@api/rag/rag-environment';
 
 interface Props {
   object: RagEnvironment;
+  onDelete?: () => void;
 }
 
-const { object }: Props = $props();
+const { object, onDelete }: Props = $props();
 
 function handleDelete(): void {
   withConfirmation(
-    () => window.deleteRagEnvironment(object.name).catch(console.error),
+    async (err?: unknown) => {
+      if (err) {
+        console.error('Confirmation dialog failed', err);
+        return;
+      }
+      try {
+        await window.deleteRagEnvironment(object.name);
+        onDelete?.();
+      } catch (error: unknown) {
+        console.error('Failed to delete environment', error);
+      }
+    },
     `delete environment ${object.name}`,
   );
 }
