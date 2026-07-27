@@ -1,5 +1,12 @@
 <script lang="ts">
-import { faChevronDown, faFolder, faFolderOpen, faInfoCircle, faRocket } from '@fortawesome/free-solid-svg-icons';
+import {
+  faChevronDown,
+  faFolder,
+  faFolderOpen,
+  faInfoCircle,
+  faRocket,
+  faTriangleExclamation,
+} from '@fortawesome/free-solid-svg-icons';
 import { Button, Dropdown, Input } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
@@ -26,6 +33,7 @@ interface Props {
   selectedProjectId?: string;
   onProjectSelect?: (project: WorkspaceProjectInfo | undefined) => void;
   errors?: { name?: string };
+  gatewayUnavailable?: boolean;
 }
 
 let {
@@ -46,6 +54,7 @@ let {
   selectedProjectId,
   onProjectSelect,
   errors = {},
+  gatewayUnavailable = false,
 }: Props = $props();
 
 function markNameEdited(): void {
@@ -79,6 +88,22 @@ let nameInputError = $derived(sessionNameError ?? errors?.name ?? '');
 </p>
 
 <div class="space-y-4">
+  {#if gatewayUnavailable}
+    <div class="rounded-lg border border-[var(--pd-state-warning)]/30 bg-[var(--pd-state-warning)]/10 p-4" role="alert">
+      <div class="flex items-start gap-2">
+        <Icon icon={faTriangleExclamation} size="sm" class="text-[var(--pd-state-warning)] mt-0.5 shrink-0" />
+        <div>
+          <p class="text-sm font-medium text-[var(--pd-modal-text)]">
+            OpenShell Gateway is not available
+          </p>
+          <p class="text-xs text-[var(--pd-content-card-text)] opacity-70 mt-1">
+            No gateway was found. Please ensure a container runtime (Docker or Podman) is running and restart the
+            gateway.
+          </p>
+        </div>
+      </div>
+    </div>
+  {/if}
   {#if gateways.length > 1}
     <div>
       <label for="workspace-gateway" class="block text-sm font-semibold text-[var(--pd-modal-text)] mb-2">

@@ -250,6 +250,33 @@ test('Expect gateway selector hidden when only one gateway is available', () => 
   expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
 });
 
+test('Expect gateway unavailable warning shown when no gateways exist', () => {
+  vi.mocked(openshellGatewaysStore).openshellGateways = writable([]);
+
+  render(AgentWorkspaceCreate);
+
+  expect(screen.getByText('OpenShell Gateway is not available')).toBeInTheDocument();
+  expect(screen.getByText(/No gateway was found/)).toBeInTheDocument();
+});
+
+test('Expect gateway unavailable warning hidden when gateways exist', () => {
+  render(AgentWorkspaceCreate);
+
+  expect(screen.queryByText('OpenShell Gateway is not available')).not.toBeInTheDocument();
+});
+
+test('Expect Continue button disabled when no gateways exist', async () => {
+  vi.mocked(openshellGatewaysStore).openshellGateways = writable([]);
+
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '/home/user/my-repo' },
+  });
+
+  expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+});
+
 test('Expect gateway selector defaults to the active OpenShell gateway when multiple gateways are available', async () => {
   vi.mocked(openshellGatewaysStore).openshellGateways.set([
     { name: 'local', endpoint: 'http://localhost:17670', active: false },
