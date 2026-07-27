@@ -24,8 +24,7 @@ import { withMockedFileDialog } from '/@/utils/app-ready';
 import { BasePage } from './base-page';
 
 export class SkillsCreatePage extends BasePage {
-  readonly dialog: Locator;
-  readonly dialogHeading: Locator;
+  readonly heading: Locator;
   readonly nameInput: Locator;
   readonly descriptionInput: Locator;
   readonly contentTextarea: Locator;
@@ -35,25 +34,23 @@ export class SkillsCreatePage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.dialog = this.page.getByRole('dialog', { name: 'Create Skill' });
-    this.dialogHeading = this.dialog.getByRole('heading', { name: 'Create Skill' });
-    this.nameInput = this.dialog.getByLabel('Skill name');
-    this.descriptionInput = this.dialog.getByLabel('Skill description');
-    this.contentTextarea = this.dialog.getByLabel('Skill content');
-    this.cancelButton = this.dialog.getByRole('button', { name: 'Cancel' });
-    this.createButton = this.dialog.getByRole('button', { name: 'Create' });
-    this.fileDropZone = this.dialog.getByLabel('Drop or click to select a SKILL.md file');
+    this.heading = this.page.getByRole('heading', { name: 'Create Skill' });
+    this.nameInput = this.page.getByLabel('Skill name');
+    this.descriptionInput = this.page.getByLabel('Skill description');
+    this.contentTextarea = this.page.getByLabel('Skill content');
+    this.cancelButton = this.page.getByRole('button', { name: 'Cancel' });
+    this.createButton = this.page.getByRole('button', { name: 'Create' });
+    this.fileDropZone = this.page.getByLabel('Drop or click to select a SKILL.md file');
   }
 
   async waitForLoad(): Promise<void> {
-    await expect(this.dialog).toBeVisible({ timeout: TIMEOUTS.SHORT });
-    await expect(this.dialogHeading).toBeVisible();
+    await expect(this.heading).toBeVisible({ timeout: TIMEOUTS.SHORT });
   }
 
   async cancel(): Promise<void> {
     await expect(this.cancelButton).toBeEnabled();
     await this.cancelButton.click();
-    await expect(this.dialog).toBeHidden();
+    await expect(this.heading).toBeHidden({ timeout: TIMEOUTS.SHORT });
   }
 
   async selectFile(absoluteFilePath: string, electronApp: ElectronApplication): Promise<void> {
@@ -73,6 +70,6 @@ export class SkillsCreatePage extends BasePage {
   async create(): Promise<void> {
     await expect(this.createButton).toBeEnabled({ timeout: TIMEOUTS.SHORT });
     await this.createButton.click();
-    await expect(this.dialog).toBeHidden({ timeout: TIMEOUTS.SHORT });
+    await expect(this.heading).toBeHidden({ timeout: TIMEOUTS.SHORT });
   }
 }
