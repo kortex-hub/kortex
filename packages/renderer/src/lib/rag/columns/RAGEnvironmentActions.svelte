@@ -13,21 +13,18 @@ interface Props {
 const { object, onDelete }: Props = $props();
 
 function handleDelete(): void {
-  withConfirmation(
-    async (err?: unknown) => {
-      if (err) {
-        console.error('Confirmation dialog failed', err);
-        return;
-      }
-      try {
-        await window.deleteRagEnvironment(object.name);
-        onDelete?.();
-      } catch (error: unknown) {
-        console.error('Failed to delete environment', error);
-      }
-    },
-    `delete environment ${object.name}`,
-  );
+  withConfirmation(async (err?: unknown) => {
+    if (err) {
+      console.error('Confirmation dialog failed', err);
+      return;
+    }
+    try {
+      await window.deleteRagEnvironment(object.name);
+      onDelete?.();
+    } catch (error: unknown) {
+      console.error('Failed to delete environment', error);
+    }
+  }, `delete environment ${object.name}`);
 }
 </script>
 
