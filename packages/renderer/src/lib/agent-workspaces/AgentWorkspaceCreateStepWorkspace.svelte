@@ -33,7 +33,6 @@ interface Props {
   selectedProjectId?: string;
   onProjectSelect?: (project: WorkspaceProjectInfo | undefined) => void;
   errors?: { name?: string };
-  gatewayUnavailable?: boolean;
 }
 
 let {
@@ -54,7 +53,6 @@ let {
   selectedProjectId,
   onProjectSelect,
   errors = {},
-  gatewayUnavailable = false,
 }: Props = $props();
 
 function markNameEdited(): void {
@@ -88,7 +86,7 @@ let nameInputError = $derived(sessionNameError ?? errors?.name ?? '');
 </p>
 
 <div class="space-y-4">
-  {#if gatewayUnavailable}
+  {#if gateways.length === 0}
     <div class="rounded-lg border border-[var(--pd-state-warning)]/30 bg-[var(--pd-state-warning)]/10 p-4" role="alert">
       <div class="flex items-start gap-2">
         <Icon icon={faTriangleExclamation} size="sm" class="text-[var(--pd-state-warning)] mt-0.5 shrink-0" />

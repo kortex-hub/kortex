@@ -201,22 +201,19 @@ test('hides name error when errors is empty', () => {
   expect(screen.queryByText(/workspace with this name already exists/)).not.toBeInTheDocument();
 });
 
-test('shows gateway unavailable warning when gatewayUnavailable is true', () => {
-  render(AgentWorkspaceCreateStepWorkspace, { ...defaultProps, gatewayUnavailable: true });
+test('shows gateway unavailable warning when no gateways exist', () => {
+  render(AgentWorkspaceCreateStepWorkspace, { ...defaultProps, gateways: [] });
 
   expect(screen.getByRole('alert')).toBeInTheDocument();
   expect(screen.getByText('OpenShell Gateway is not available')).toBeInTheDocument();
   expect(screen.getByText(/No gateway was found/)).toBeInTheDocument();
 });
 
-test('hides gateway unavailable warning when gatewayUnavailable is false', () => {
-  render(AgentWorkspaceCreateStepWorkspace, { ...defaultProps, gatewayUnavailable: false });
-
-  expect(screen.queryByText('OpenShell Gateway is not available')).not.toBeInTheDocument();
-});
-
-test('hides gateway unavailable warning by default', () => {
-  render(AgentWorkspaceCreateStepWorkspace, defaultProps);
+test('hides gateway unavailable warning when gateways exist', () => {
+  render(AgentWorkspaceCreateStepWorkspace, {
+    ...defaultProps,
+    gateways: [{ name: 'kaiden', endpoint: 'http://localhost:17670', active: true }],
+  });
 
   expect(screen.queryByText('OpenShell Gateway is not available')).not.toBeInTheDocument();
 });

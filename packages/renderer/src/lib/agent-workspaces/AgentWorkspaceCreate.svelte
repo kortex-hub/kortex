@@ -592,8 +592,7 @@ async function startWorkspace(): Promise<void> {
                 projects={[...$workspaceProjectInfos]}
                 selectedProjectId={wizard.draft.selectedProjectId}
                 onProjectSelect={handleProjectSelect}
-                errors={validationErrors}
-                gatewayUnavailable={$openshellGateways.length === 0} />
+                errors={validationErrors} />
             {:else if currentStepId === 'agent-model'}
               <AgentWorkspaceCreateStepAgentModel bind:selectedAgent={wizard.draft.selectedAgent} bind:selectedModel={wizard.draft.selectedModel} />
             {:else if currentStepId === 'tools-secrets'}
