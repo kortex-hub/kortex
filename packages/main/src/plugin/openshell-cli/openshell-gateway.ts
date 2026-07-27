@@ -18,8 +18,11 @@
 
 import type { ChildProcess } from 'node:child_process';
 import { spawn } from 'node:child_process';
+import type { WriteStream } from 'node:fs';
+import { createWriteStream } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { format } from 'node:util';
 
 import type { Disposable } from '@openkaiden/api';
 import { inject, injectable, preDestroy } from 'inversify';
@@ -42,6 +45,9 @@ const HEALTH_CHECK_INTERVAL_MS = 1000;
 const MAX_HEALTH_CHECK_ATTEMPTS = 30;
 const STOP_TIMEOUT_MS = 5000;
 const SUPERVISOR_IMAGE_BASE = 'ghcr.io/nvidia/openshell/supervisor';
+const GATEWAY_LOG_FILENAME = 'gateway.log';
+
+type GatewayLogLevel = 'log' | 'warn' | 'error';
 
 /**
  * Manages the `openshell-gateway` server binary lifecycle.
@@ -54,6 +60,7 @@ const SUPERVISOR_IMAGE_BASE = 'ghcr.io/nvidia/openshell/supervisor';
 @injectable()
 export class OpenshellGateway implements Disposable {
   #gatewayProcess: ChildProcess | undefined;
+  #gatewayLogStream: WriteStream | undefined;
   #port: number = DEFAULT_PORT;
   #bindAddress: string = DEFAULT_BIND_ADDRESS;
 
@@ -77,6 +84,7 @@ export class OpenshellGateway implements Disposable {
   ) {}
 
   async init(): Promise<void> {
+    await this.initializeGatewayLog();
     try {
       const gateways = await this.openshellCli.listGateways();
       const localGateways = gateways.filter(gw => gw.type === 'local' || this.isLocalEndpoint(gw.endpoint));
@@ -86,38 +94,41 @@ export class OpenshellGateway implements Disposable {
             if (!gw.active) {
               await this.openshellCli.selectGateway(gw.name);
             }
-            console.log(`[openshell-gateway] gateway detected (${gw.endpoint}) and is healthy`);
+            this.logGatewayMessage('log', `[openshell-gateway] gateway detected (${gw.endpoint}) and is healthy`);
             this._onDidGatewayStart.fire();
             return;
           }
         }
-        console.warn('[openshell-gateway] local gateway(s) defined but none reachable');
+        this.logGatewayMessage('warn', '[openshell-gateway] local gateway(s) defined but none reachable');
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      console.warn(`[openshell-gateway] failed to discover gateways: ${message}`);
+      this.logGatewayMessage('warn', `[openshell-gateway] failed to discover gateways: ${message}`);
     }
 
     const binaryPath = this.getGatewayBinaryPath();
     if (!binaryPath) {
-      console.warn('[openshell-gateway] no existing gateways and binary not registered, skipping auto-start');
+      this.logGatewayMessage(
+        'warn',
+        '[openshell-gateway] no existing gateways and binary not registered, skipping auto-start',
+      );
       return;
     }
 
     if (await this.isEndpointHealthy()) {
-      console.log('[openshell-gateway] found healthy gateway on default port, registering');
+      this.logGatewayMessage('log', '[openshell-gateway] found healthy gateway on default port, registering');
       await this.registerWithCli();
       this._onDidGatewayStart.fire();
       return;
     }
 
-    console.log('[openshell-gateway] no existing gateways found, auto-starting local gateway');
+    this.logGatewayMessage('log', '[openshell-gateway] no existing gateways found, auto-starting local gateway');
     try {
       await this.start();
       this._onDidGatewayStart.fire();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      console.error(`[openshell-gateway] auto-start failed: ${message}`);
+      this.logGatewayMessage('error', `[openshell-gateway] auto-start failed: ${message}`);
       this._onDidGatewayInitFailed.fire(message);
       this.notificationRegistry.addNotification({
         title: 'OpenShell Gateway failed to start',
@@ -150,8 +161,10 @@ export class OpenshellGateway implements Disposable {
   }
 
   async start(options?: OpenshellGatewayStartOptions): Promise<void> {
+    await this.initializeGatewayLog();
+
     if (this.#gatewayProcess) {
-      console.log('[openshell-gateway] already running, skipping start');
+      this.logGatewayMessage('log', '[openshell-gateway] already running, skipping start');
       return;
     }
 
@@ -172,39 +185,47 @@ export class OpenshellGateway implements Disposable {
 
     const configPath = await this.createGatewayConfig(binaryPath, options?.supervisorImage);
     const args = this.buildArgs(options?.disableTls ?? true, configPath);
-    console.log(`[openshell-gateway] starting: ${binaryPath} ${args.join(' ')}`);
+    this.logGatewayMessage('log', `[openshell-gateway] starting: ${binaryPath} ${args.join(' ')}`);
 
-    this.#gatewayProcess = spawn(binaryPath, args, {
+    const gatewayProcess = spawn(binaryPath, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false,
     });
+    this.#gatewayProcess = gatewayProcess;
 
-    this.#gatewayProcess.stdout?.on('data', (data: Buffer) => {
-      console.log(`[openshell-gateway] ${data.toString().trimEnd()}`);
+    gatewayProcess.stdout?.on('data', (data: Buffer) => {
+      this.logGatewayProcessOutput(data);
     });
 
     const stderrChunks: string[] = [];
-    this.#gatewayProcess.stderr?.on('data', (data: Buffer) => {
+    gatewayProcess.stderr?.on('data', (data: Buffer) => {
       const text = data.toString().trimEnd();
-      console.error(`[openshell-gateway] ${text}`);
+      this.logGatewayProcessOutput(data);
       stderrChunks.push(text);
     });
 
-    this.#gatewayProcess.on('exit', (code, signal) => {
-      console.log(`[openshell-gateway] exited with code=${code ?? 'none'} signal=${signal ?? 'none'}`);
-      this.#gatewayProcess = undefined;
+    gatewayProcess.on('exit', (code, signal) => {
+      this.logGatewayMessage(
+        'log',
+        `[openshell-gateway] exited with code=${code ?? 'none'} signal=${signal ?? 'none'}`,
+      );
+      if (this.#gatewayProcess === gatewayProcess) {
+        this.#gatewayProcess = undefined;
+      }
     });
 
-    this.#gatewayProcess.on('error', (err: Error) => {
-      console.error(`[openshell-gateway] failed to start: ${err.message}`);
-      this.#gatewayProcess = undefined;
+    gatewayProcess.on('error', (err: Error) => {
+      this.logGatewayMessage('error', `[openshell-gateway] failed to start: ${err.message}`);
+      if (this.#gatewayProcess === gatewayProcess) {
+        this.#gatewayProcess = undefined;
+      }
     });
 
     try {
       await this.waitForReady();
     } catch (err: unknown) {
       await this.stop().catch((stopErr: unknown) => {
-        console.warn('[openshell-gateway] failed to stop after startup error:', stopErr);
+        this.logGatewayMessage('warn', '[openshell-gateway] failed to stop after startup error:', stopErr);
       });
       this.#port = previousPort;
       this.#bindAddress = previousBindAddress;
@@ -223,13 +244,13 @@ export class OpenshellGateway implements Disposable {
       return;
     }
 
-    console.log('[openshell-gateway] stopping');
+    this.logGatewayMessage('log', '[openshell-gateway] stopping');
     proc.kill('SIGTERM');
 
     await new Promise<void>(resolve => {
       const timeout = setTimeout(() => {
         if (typeof proc.exitCode !== 'number') {
-          console.warn('[openshell-gateway] did not exit after SIGTERM, sending SIGKILL');
+          this.logGatewayMessage('warn', '[openshell-gateway] did not exit after SIGTERM, sending SIGKILL');
           proc.kill('SIGKILL');
         }
         resolve();
@@ -250,7 +271,9 @@ export class OpenshellGateway implements Disposable {
 
   @preDestroy()
   dispose(): void {
-    this.stop().catch((err: unknown) => console.error('[openshell-gateway] failed to stop: ', err));
+    this.stop()
+      .catch((err: unknown) => this.logGatewayMessage('error', '[openshell-gateway] failed to stop: ', err))
+      .finally(() => this.closeGatewayLog());
     this._onDidGatewayStart.dispose();
     this._onDidGatewayInitFailed.dispose();
   }
@@ -304,7 +327,10 @@ export class OpenshellGateway implements Disposable {
           image = `${SUPERVISOR_IMAGE_BASE}:${version}`;
         } catch (err: unknown) {
           const message = err instanceof Error ? err.message : String(err);
-          console.warn(`[openshell-gateway] unable to detect version for supervisor pinning: ${message}`);
+          this.logGatewayMessage(
+            'warn',
+            `[openshell-gateway] unable to detect version for supervisor pinning: ${message}`,
+          );
         }
       }
 
@@ -320,20 +346,20 @@ export class OpenshellGateway implements Disposable {
       await mkdir(storageDirectory, { recursive: true });
       await writeFile(configPath, config, 'utf-8');
       if (image) {
-        console.log(`[openshell-gateway] supervisor image pinned to ${image}`);
+        this.logGatewayMessage('log', `[openshell-gateway] supervisor image pinned to ${image}`);
       }
-      console.log(`[openshell-gateway] generated local gateway config at ${configPath}`);
+      this.logGatewayMessage('log', `[openshell-gateway] generated local gateway config at ${configPath}`);
       return configPath;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      console.warn(`[openshell-gateway] failed to generate gateway config: ${message}`);
+      this.logGatewayMessage('warn', `[openshell-gateway] failed to generate gateway config: ${message}`);
       return undefined;
     }
   }
 
   private async waitForReady(): Promise<void> {
     const endpoint = `http://${this.#bindAddress}:${this.#port}`;
-    console.log(`[openshell-gateway] waiting for server at ${endpoint}`);
+    this.logGatewayMessage('log', `[openshell-gateway] waiting for server at ${endpoint}`);
 
     for (let attempt = 0; attempt < MAX_HEALTH_CHECK_ATTEMPTS; attempt++) {
       if (!this.isRunning()) {
@@ -341,7 +367,7 @@ export class OpenshellGateway implements Disposable {
       }
 
       if (await this.openshellCli.checkEndpointStatus(endpoint)) {
-        console.log('[openshell-gateway] server is ready');
+        this.logGatewayMessage('log', '[openshell-gateway] server is ready');
         return;
       }
 
@@ -355,10 +381,48 @@ export class OpenshellGateway implements Disposable {
     const endpoint = `http://${this.#bindAddress}:${this.#port}`;
     try {
       await this.openshellCli.addGateway({ endpoint, local: true, name: 'kaiden-local' });
-      console.log(`[openshell-gateway] registered with CLI as kaiden-local at ${endpoint}`);
+      this.logGatewayMessage('log', `[openshell-gateway] registered with CLI as kaiden-local at ${endpoint}`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      console.warn(`[openshell-gateway] failed to register with CLI: ${message}`);
+      this.logGatewayMessage('warn', `[openshell-gateway] failed to register with CLI: ${message}`);
     }
+  }
+
+  private async initializeGatewayLog(): Promise<void> {
+    if (this.#gatewayLogStream) {
+      return;
+    }
+
+    const storageDirectory = join(this.directories.getDataDirectory(), 'openshell-gateway');
+    const logPath = join(storageDirectory, GATEWAY_LOG_FILENAME);
+    try {
+      await mkdir(storageDirectory, { recursive: true });
+      const stream = createWriteStream(logPath, { flags: 'w' });
+      this.#gatewayLogStream = stream;
+      stream.on('error', (err: Error) => {
+        if (this.#gatewayLogStream === stream) {
+          this.#gatewayLogStream = undefined;
+        }
+        console.error(`[openshell-gateway] unable to write log file ${logPath}: ${err.message}`);
+      });
+      stream.write(`===== Kaiden gateway session started ${new Date().toISOString()} =====\n`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[openshell-gateway] unable to open log file ${logPath}: ${message}`);
+    }
+  }
+
+  private logGatewayMessage(level: GatewayLogLevel, ...args: unknown[]): void {
+    console[level](...args);
+    this.#gatewayLogStream?.write(`${format(...args)}\n`);
+  }
+
+  private logGatewayProcessOutput(data: Buffer): void {
+    this.#gatewayLogStream?.write(data);
+  }
+
+  private closeGatewayLog(): void {
+    this.#gatewayLogStream?.end();
+    this.#gatewayLogStream = undefined;
   }
 }
