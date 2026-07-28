@@ -75,7 +75,7 @@ export class AgentWorkspaceCreatePage extends BasePage {
   constructor(page: Page) {
     super(page);
     this.heading = this.page.getByRole('heading', { name: 'Create Coding Agent Workspace' });
-    this.sessionNameInput = this.page.getByPlaceholder('e.g., Frontend Refactoring');
+    this.sessionNameInput = this.page.getByPlaceholder('e.g., front-refactor');
     this.workingDirInput = this.page.getByPlaceholder('/path/to/project');
     this.browseButton = this.page.getByLabel('Browse for folder');
     this.descriptionToggle = this.page.getByRole('button', { name: /Description/ });

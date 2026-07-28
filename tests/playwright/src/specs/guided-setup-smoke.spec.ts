@@ -153,7 +153,7 @@ test.describe('Guided setup smoke', { tag: '@smoke' }, () => {
         const agentWorkspacesPage = new AgentWorkspacesPage(session.page!);
         await navigationBar.navigateToWorkspacesPage();
         const createPage = await agentWorkspacesPage.openCreatePage();
-        await createPage.workingDirInput.fill('/tmp/guided-setup-skip-test');
+        await createPage.workingDirInput.fill('/tmp/guide-skip-test');
         await createPage.navigateToStep(WIZARD_STEP.AGENT_MODEL);
         await createPage.expectAgentSelected(CODING_AGENT.OPENCODE);
         expect(await createPage.getSelectedModelLabel()).toBe(modelLabels[0]);

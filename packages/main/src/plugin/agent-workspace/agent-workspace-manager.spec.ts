@@ -359,15 +359,15 @@ describe('create – OpenShell mode', () => {
   test('rejects workspace names longer than the hostname limit', async () => {
     const options: AgentWorkspaceCreateOptions = {
       ...defaultOptions,
-      name: 'a'.repeat(57),
+      name: 'a'.repeat(20),
     };
 
-    await expect(manager.create(options)).rejects.toThrow(/must not exceed 56 characters/);
+    await expect(manager.create(options)).rejects.toThrow(/must not exceed 19 characters/);
     expect(openshellCli.createSandbox).not.toHaveBeenCalled();
   });
 
   test('rejects basename-derived names longer than the hostname limit', async () => {
-    const longBasename = 'a'.repeat(57);
+    const longBasename = 'a'.repeat(20);
     const options: AgentWorkspaceCreateOptions = {
       sourcePath: `/tmp/${longBasename}`,
       agent: 'claude',
@@ -375,7 +375,7 @@ describe('create – OpenShell mode', () => {
       gateway: 'kaiden',
     };
 
-    await expect(manager.create(options)).rejects.toThrow(/must not exceed 56 characters/);
+    await expect(manager.create(options)).rejects.toThrow(/must not exceed 19 characters/);
     expect(openshellCli.createSandbox).not.toHaveBeenCalled();
   });
 

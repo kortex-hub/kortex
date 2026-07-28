@@ -69,7 +69,11 @@ function getEffectiveWorkspaceName(name: string, path: string): string {
   return normalized.split(/[\\/]/).filter(Boolean).at(-1) ?? '';
 }
 
-let sessionNameError = $derived(getSandboxNameValidationError(getEffectiveWorkspaceName(sessionName, sourcePath)));
+let effectiveName = $derived(getEffectiveWorkspaceName(sessionName, sourcePath));
+let nameToValidate = $derived(nameManuallyEdited ? sessionName.trim() : effectiveName);
+let sessionNameError = $derived(
+  nameToValidate || nameManuallyEdited ? getSandboxNameValidationError(nameToValidate) : undefined,
+);
 let nameInputError = $derived(sessionNameError ?? errors?.name ?? '');
 </script>
 
@@ -164,7 +168,7 @@ let nameInputError = $derived(sessionNameError ?? errors?.name ?? '');
     <Input
       id="workspace-name"
       bind:value={sessionName}
-      placeholder="e.g., Frontend Refactoring"
+      placeholder="e.g., front-refactor"
       class="w-full"
       oninput={markNameEdited}
       error={nameInputError}

@@ -28,7 +28,7 @@ import type {
   AgentWorkspaceMount,
   NetworkConfiguration,
 } from '/@api/agent-workspace-info';
-import { getSandboxNameValidationError } from '/@api/agent-workspace-info';
+import { getSandboxNameValidationError, sanitizeDns1123Label } from '/@api/agent-workspace-info';
 import { NavigationPage } from '/@api/navigation-page';
 import type { DefaultWorkspaceSettings } from '/@api/onboarding-settings-info';
 import type { FilesystemConfiguration, WorkspaceProjectInfo } from '/@api/workspace-project-info';
@@ -108,7 +108,7 @@ function applyNetworkFromProject(net: NetworkConfiguration | undefined): void {
 function applyProject(project: WorkspaceProjectInfo): void {
   wizard.draft.selectedProjectId = project.id;
   wizard.draft.sourcePath = project.folder;
-  wizard.draft.sessionName = project.name;
+  wizard.draft.sessionName = sanitizeDns1123Label(project.name);
   wizard.draft.nameManuallyEdited = true;
   wizard.draft.selectedSkillIds = [...project.skills];
   wizard.draft.selectedMcpIds = [...project.mcpServers];
@@ -224,7 +224,9 @@ function getDefaultSessionName(path: string): string {
 }
 
 function getEffectiveWorkspaceName(): string {
-  return wizard.draft.sessionName.trim() || getDefaultSessionName(wizard.draft.sourcePath);
+  const trimmed = wizard.draft.sessionName.trim();
+  if (wizard.draft.nameManuallyEdited) return trimmed;
+  return trimmed || getDefaultSessionName(wizard.draft.sourcePath);
 }
 
 function getEffectiveWorkspaceNameFromSnapshot(draft: { sessionName: string; sourcePath: string }): string {
@@ -235,10 +237,16 @@ function isWorkspaceNameValid(): boolean {
   return getSandboxNameValidationError(getEffectiveWorkspaceName()) === undefined;
 }
 
+let previousSourcePath = '';
 $effect(() => {
-  if (wizard.draft.nameManuallyEdited) return;
-  const last = getDefaultSessionName(wizard.draft.sourcePath);
-  if (last) wizard.draft.sessionName = last;
+  const currentPath = wizard.draft.sourcePath;
+  const pathChanged = currentPath !== previousSourcePath;
+  previousSourcePath = currentPath;
+  if (wizard.draft.nameManuallyEdited && !(pathChanged && !wizard.draft.sessionName.trim())) return;
+  const last = getDefaultSessionName(currentPath);
+  if (!last) return;
+  wizard.draft.nameManuallyEdited = false;
+  wizard.draft.sessionName = sanitizeDns1123Label(last);
 });
 
 let configCheckToken = 0;
@@ -367,7 +375,7 @@ async function handleBrowseSource(): Promise<void> {
       wizard.draft.sourcePath = selected;
       if (!wizard.draft.nameManuallyEdited) {
         const lastSegment = getDefaultSessionName(selected);
-        if (lastSegment) wizard.draft.sessionName = lastSegment;
+        if (lastSegment) wizard.draft.sessionName = sanitizeDns1123Label(lastSegment);
       }
     }
   } catch (err: unknown) {

@@ -58,12 +58,39 @@ export type AgentWorkspaceMcpConfig = configComponents['schemas']['McpConfigurat
 
 export type AgentWorkspaceMount = configComponents['schemas']['Mount'];
 
-/** Maximum sandbox name length for OpenShell. Podman/crun hostname composition leaves a conservative 56-char limit. */
-export const SANDBOX_NAME_MAX_LENGTH = 56;
+/** Maximum sandbox name length for OpenShell. */
+export const SANDBOX_NAME_MAX_LENGTH = 19;
+
+/**
+ * Sanitize a display name into a DNS-1123 label.
+ * Lowercases, replaces invalid characters with hyphens, collapses consecutive
+ * hyphens, strips leading/trailing hyphens, and truncates to the maximum length.
+ */
+export function sanitizeDns1123Label(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-/, '')
+    .replace(/-$/, '')
+    .slice(0, SANDBOX_NAME_MAX_LENGTH);
+}
 
 export function getSandboxNameValidationError(name: string): string | undefined {
+  if (name.length === 0) {
+    return 'Workspace name must not be empty';
+  }
   if (name.length > SANDBOX_NAME_MAX_LENGTH) {
     return `Workspace name must not exceed ${SANDBOX_NAME_MAX_LENGTH} characters`;
+  }
+  if (!/^[a-z0-9-]+$/.test(name)) {
+    return 'Workspace name must contain only lowercase letters (a-z), digits (0-9), and hyphens (-)';
+  }
+  if (name.startsWith('-') || name.endsWith('-')) {
+    return 'Workspace name must not start or end with a hyphen';
+  }
+  if (name.includes('--')) {
+    return 'Workspace name must not contain consecutive hyphens (--)';
   }
   return undefined;
 }
