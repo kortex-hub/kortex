@@ -196,6 +196,36 @@ describe('downloadBinaries', () => {
 
     expect(mkdir).toHaveBeenCalledWith('/output', { recursive: true });
   });
+
+  test('sends Authorization header when GITHUB_TOKEN is set', async () => {
+    vi.stubEnv('GITHUB_TOKEN', 'test-token');
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, body: new PassThrough() });
+    vi.stubGlobal('fetch', fetchMock);
+    stubOpenShellExtraction();
+    const digests = new Map([['openshell-image-builder-x86_64-unknown-linux-gnu', 'abc123']]);
+
+    await downloadBinaries(OPENSHELL_IMAGE_BUILDER_DOWNLOAD, '0.9.0', 'linux', 'x64', '/output', digests);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer test-token' }) }),
+    );
+  });
+
+  test('sends no Authorization header when GITHUB_TOKEN is unset', async () => {
+    vi.stubEnv('GITHUB_TOKEN', '');
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, body: new PassThrough() });
+    vi.stubGlobal('fetch', fetchMock);
+    stubOpenShellExtraction();
+    const digests = new Map([['openshell-image-builder-x86_64-unknown-linux-gnu', 'abc123']]);
+
+    await downloadBinaries(OPENSHELL_IMAGE_BUILDER_DOWNLOAD, '0.9.0', 'linux', 'x64', '/output', digests);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ headers: expect.not.objectContaining({ Authorization: expect.any(String) }) }),
+    );
+  });
 });
 
 describe('getRelease', () => {
