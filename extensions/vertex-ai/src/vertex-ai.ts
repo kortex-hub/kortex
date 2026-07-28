@@ -37,7 +37,13 @@ export const CONNECTIONS_KEY = 'vertex-ai:connections';
 export const PROVIDER_ID = 'vertex-ai';
 const FETCH_TIMEOUT_MS = 30_000;
 const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
-const DEFAULT_ADC_PATH = '~/.config/gcloud/application_default_credentials.json';
+const ADC_FILENAME = 'application_default_credentials.json';
+const DEFAULT_ADC_PATH: string | undefined =
+  process.platform === 'win32'
+    ? process.env.APPDATA
+      ? join(process.env.APPDATA, 'gcloud', ADC_FILENAME)
+      : undefined
+    : `~/.config/gcloud/${ADC_FILENAME}`;
 export interface VertexAiConnectionConfig {
   projectId: string;
   region: string;
@@ -154,10 +160,14 @@ export class VertexAi implements Disposable {
       return process.env.GOOGLE_APPLICATION_CREDENTIALS;
     }
 
-    const defaultPath = this.resolveCredentialsPath(DEFAULT_ADC_PATH);
+    if (!DEFAULT_ADC_PATH) {
+      return undefined;
+    }
+
+    const resolvedPath = this.resolveCredentialsPath(DEFAULT_ADC_PATH);
     try {
-      await access(defaultPath);
-      return DEFAULT_ADC_PATH;
+      await access(resolvedPath);
+      return resolvedPath;
     } catch {
       return undefined;
     }

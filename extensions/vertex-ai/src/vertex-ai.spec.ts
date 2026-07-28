@@ -308,13 +308,25 @@ describe('applyEnvironmentDefaults', () => {
   });
 
   test('should set credentialsFile default to ADC path when file exists and no env var set', async () => {
+    if (process.platform === 'win32' && !process.env.APPDATA) {
+      const vertexAi = createVertexAi();
+      await vertexAi.init();
+      expect(UPDATE_PROPERTY_DEFAULT_MOCK).not.toHaveBeenCalledWith(
+        'vertex-ai.factory.credentialsFile',
+        expect.anything(),
+      );
+      return;
+    }
+
+    const expectedPath =
+      process.platform === 'win32'
+        ? join(process.env.APPDATA!, 'gcloud', 'application_default_credentials.json')
+        : join('/home/testuser', '.config/gcloud', 'application_default_credentials.json');
+
     const vertexAi = createVertexAi();
     await vertexAi.init();
 
-    expect(UPDATE_PROPERTY_DEFAULT_MOCK).toHaveBeenCalledWith(
-      'vertex-ai.factory.credentialsFile',
-      '~/.config/gcloud/application_default_credentials.json',
-    );
+    expect(UPDATE_PROPERTY_DEFAULT_MOCK).toHaveBeenCalledWith('vertex-ai.factory.credentialsFile', expectedPath);
   });
 
   test('should not set credentialsFile default when ADC file does not exist and no env var set', async () => {
