@@ -1049,6 +1049,9 @@ export class ExtensionLoader implements IAsyncDisposable {
       onDidChangeConfiguration: (listener, thisArg, disposables) => {
         return configurationRegistry.onDidChangeConfigurationAPI(listener, thisArg, disposables);
       },
+      updatePropertyDefault(key: string, value: unknown): void {
+        configurationRegistry.updatePropertyDefault(key, value);
+      },
     };
 
     const imageRegistry = this.imageRegistry;

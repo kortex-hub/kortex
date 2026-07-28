@@ -336,6 +336,37 @@ test('addConfigurationEnum with a previous default value', async () => {
   expect(val).toEqual('myValue1');
 });
 
+test('updatePropertyDefault should update the default field and notify', () => {
+  const node: IConfigurationNode = {
+    id: 'my.property',
+    title: 'Test Property',
+    type: 'object',
+    properties: {
+      ['my.factory.field']: {
+        description: 'A factory field',
+        type: 'string',
+        scope: 'InferenceProviderConnectionFactory',
+      },
+    },
+  };
+
+  configurationRegistry.registerConfigurations([node]);
+
+  configurationRegistry.updatePropertyDefault('my.factory.field', 'env-value');
+
+  const records = configurationRegistry.getConfigurationProperties();
+  expect(records['my.factory.field']?.default).toBe('env-value');
+  expect(apiSender.send).toHaveBeenCalledWith('configuration-changed');
+});
+
+test('updatePropertyDefault should be a no-op for unknown keys', () => {
+  vi.mocked(apiSender.send).mockClear();
+
+  configurationRegistry.updatePropertyDefault('unknown.key', 'value');
+
+  expect(apiSender.send).not.toHaveBeenCalledWith('configuration-changed');
+});
+
 test('check to be able to register a property with a group', async () => {
   const node: IConfigurationNode = {
     id: 'custom',

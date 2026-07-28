@@ -119,4 +119,5 @@ export interface IConfigurationRegistry {
     value: unknown,
     scope?: PodmanDesktopApiConfigurationScope | PodmanDesktopApiConfigurationScope[],
   ): Promise<void>;
+  updatePropertyDefault(key: string, value: unknown): void;
 }

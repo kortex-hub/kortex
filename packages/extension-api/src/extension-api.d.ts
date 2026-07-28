@@ -1664,6 +1664,17 @@ declare module '@openkaiden/api' {
      * An event that is emitted when the {@link Configuration configuration} changed.
      */
     export const onDidChangeConfiguration: Event<ConfigurationChangeEvent>;
+
+    /**
+     * Update the default value of a configuration property at runtime.
+     *
+     * Useful for pre-populating factory form fields with environment-derived values.
+     * The updated default is visible to the renderer without persisting to settings.
+     *
+     * @param key Full property key (e.g. `'my-ext.factory.field'`).
+     * @param value The new default value.
+     */
+    export function updatePropertyDefault(key: string, value: unknown): void;
   }
 
   /**

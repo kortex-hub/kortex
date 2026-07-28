@@ -37,6 +37,7 @@ export const CONNECTIONS_KEY = 'vertex-ai:connections';
 export const PROVIDER_ID = 'vertex-ai';
 const FETCH_TIMEOUT_MS = 30_000;
 const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
+const DEFAULT_ADC_PATH = '~/.config/gcloud/application_default_credentials.json';
 export interface VertexAiConnectionConfig {
   projectId: string;
   region: string;
@@ -127,7 +128,39 @@ export class VertexAi implements Disposable {
       create: this.factory.bind(this),
     });
 
+    await this.applyEnvironmentDefaults();
     await this.restoreConnections();
+  }
+
+  private async applyEnvironmentDefaults(): Promise<void> {
+    const projectId = process.env.GOOGLE_VERTEX_PROJECT ?? process.env.ANTHROPIC_VERTEX_PROJECT_ID;
+    if (projectId) {
+      this.configurationAPI.updatePropertyDefault('vertex-ai.factory.projectId', projectId);
+    }
+
+    const region = process.env.GOOGLE_VERTEX_LOCATION ?? process.env.CLOUD_ML_REGION;
+    if (region) {
+      this.configurationAPI.updatePropertyDefault('vertex-ai.factory.region', region);
+    }
+
+    const credentialsFile = await this.resolveDefaultCredentialsFile();
+    if (credentialsFile) {
+      this.configurationAPI.updatePropertyDefault('vertex-ai.factory.credentialsFile', credentialsFile);
+    }
+  }
+
+  private async resolveDefaultCredentialsFile(): Promise<string | undefined> {
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      return process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    }
+
+    const defaultPath = this.resolveCredentialsPath(DEFAULT_ADC_PATH);
+    try {
+      await access(defaultPath);
+      return DEFAULT_ADC_PATH;
+    } catch {
+      return undefined;
+    }
   }
 
   private async restoreConnections(): Promise<void> {

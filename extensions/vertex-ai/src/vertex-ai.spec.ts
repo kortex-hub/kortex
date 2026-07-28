@@ -31,7 +31,7 @@ import type {
   provider as ProviderAPI,
   SecretStorage,
 } from '@openkaiden/api';
-import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
   CONNECTIONS_KEY,
@@ -75,9 +75,12 @@ const CONFIGURATION_MOCK: Configuration = {
   update: CONFIG_UPDATE_MOCK,
 } as unknown as Configuration;
 
+const UPDATE_PROPERTY_DEFAULT_MOCK = vi.fn();
+
 const CONFIGURATION_API_MOCK: typeof ConfigurationAPI = {
   getConfiguration: vi.fn().mockReturnValue(CONFIGURATION_MOCK),
   onDidChangeConfiguration: vi.fn(),
+  updatePropertyDefault: UPDATE_PROPERTY_DEFAULT_MOCK,
 } as unknown as typeof ConfigurationAPI;
 
 const VALID_CREDENTIALS = JSON.stringify({
@@ -215,6 +218,124 @@ describe('init', () => {
     expect(PROVIDER_MOCK.registerInferenceProviderConnection).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'fake-uuid-1' }),
     );
+  });
+});
+
+describe('applyEnvironmentDefaults', () => {
+  const ENV_KEYS = [
+    'GOOGLE_VERTEX_PROJECT',
+    'ANTHROPIC_VERTEX_PROJECT_ID',
+    'GOOGLE_VERTEX_LOCATION',
+    'CLOUD_ML_REGION',
+    'GOOGLE_APPLICATION_CREDENTIALS',
+  ] as const;
+
+  const savedEnv: Record<string, string | undefined> = {};
+
+  beforeEach(() => {
+    for (const key of ENV_KEYS) {
+      savedEnv[key] = process.env[key];
+      delete process.env[key];
+    }
+  });
+
+  afterEach(() => {
+    for (const key of ENV_KEYS) {
+      if (savedEnv[key] !== undefined) {
+        process.env[key] = savedEnv[key];
+      } else {
+        delete process.env[key];
+      }
+    }
+  });
+
+  test('should set projectId default from GOOGLE_VERTEX_PROJECT', async () => {
+    process.env.GOOGLE_VERTEX_PROJECT = 'env-project';
+
+    const vertexAi = createVertexAi();
+    await vertexAi.init();
+
+    expect(UPDATE_PROPERTY_DEFAULT_MOCK).toHaveBeenCalledWith('vertex-ai.factory.projectId', 'env-project');
+  });
+
+  test('should set projectId default from ANTHROPIC_VERTEX_PROJECT_ID when GOOGLE_VERTEX_PROJECT is unset', async () => {
+    process.env.ANTHROPIC_VERTEX_PROJECT_ID = 'anthropic-project';
+
+    const vertexAi = createVertexAi();
+    await vertexAi.init();
+
+    expect(UPDATE_PROPERTY_DEFAULT_MOCK).toHaveBeenCalledWith('vertex-ai.factory.projectId', 'anthropic-project');
+  });
+
+  test('should prefer GOOGLE_VERTEX_PROJECT over ANTHROPIC_VERTEX_PROJECT_ID', async () => {
+    process.env.GOOGLE_VERTEX_PROJECT = 'google-project';
+    process.env.ANTHROPIC_VERTEX_PROJECT_ID = 'anthropic-project';
+
+    const vertexAi = createVertexAi();
+    await vertexAi.init();
+
+    expect(UPDATE_PROPERTY_DEFAULT_MOCK).toHaveBeenCalledWith('vertex-ai.factory.projectId', 'google-project');
+  });
+
+  test('should set region default from GOOGLE_VERTEX_LOCATION', async () => {
+    process.env.GOOGLE_VERTEX_LOCATION = 'europe-west1';
+
+    const vertexAi = createVertexAi();
+    await vertexAi.init();
+
+    expect(UPDATE_PROPERTY_DEFAULT_MOCK).toHaveBeenCalledWith('vertex-ai.factory.region', 'europe-west1');
+  });
+
+  test('should set region default from CLOUD_ML_REGION when GOOGLE_VERTEX_LOCATION is unset', async () => {
+    process.env.CLOUD_ML_REGION = 'asia-east1';
+
+    const vertexAi = createVertexAi();
+    await vertexAi.init();
+
+    expect(UPDATE_PROPERTY_DEFAULT_MOCK).toHaveBeenCalledWith('vertex-ai.factory.region', 'asia-east1');
+  });
+
+  test('should set credentialsFile default from GOOGLE_APPLICATION_CREDENTIALS', async () => {
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = '/custom/path/creds.json';
+
+    const vertexAi = createVertexAi();
+    await vertexAi.init();
+
+    expect(UPDATE_PROPERTY_DEFAULT_MOCK).toHaveBeenCalledWith(
+      'vertex-ai.factory.credentialsFile',
+      '/custom/path/creds.json',
+    );
+  });
+
+  test('should set credentialsFile default to ADC path when file exists and no env var set', async () => {
+    const vertexAi = createVertexAi();
+    await vertexAi.init();
+
+    expect(UPDATE_PROPERTY_DEFAULT_MOCK).toHaveBeenCalledWith(
+      'vertex-ai.factory.credentialsFile',
+      '~/.config/gcloud/application_default_credentials.json',
+    );
+  });
+
+  test('should not set credentialsFile default when ADC file does not exist and no env var set', async () => {
+    vi.mocked(access).mockRejectedValue(new Error('ENOENT'));
+
+    const vertexAi = createVertexAi();
+    await vertexAi.init();
+
+    expect(UPDATE_PROPERTY_DEFAULT_MOCK).not.toHaveBeenCalledWith(
+      'vertex-ai.factory.credentialsFile',
+      expect.anything(),
+    );
+  });
+
+  test('should not call updatePropertyDefault for project or region when no env vars are set', async () => {
+    vi.mocked(access).mockRejectedValue(new Error('ENOENT'));
+
+    const vertexAi = createVertexAi();
+    await vertexAi.init();
+
+    expect(UPDATE_PROPERTY_DEFAULT_MOCK).not.toHaveBeenCalled();
   });
 });
 

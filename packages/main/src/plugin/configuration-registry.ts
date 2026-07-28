@@ -379,6 +379,14 @@ export class ConfigurationRegistry implements IConfigurationRegistry {
     return new ConfigurationImpl(this.apiSender, callback, this.configurationValues, section, scope);
   }
 
+  updatePropertyDefault(key: string, value: unknown): void {
+    const property = this.configurationProperties[key];
+    if (property) {
+      property.default = value;
+      this.apiSender.send('configuration-changed');
+    }
+  }
+
   addConfigurationEnum(key: string, values: string[], valueWhenRemoved: unknown): Disposable {
     const property = this.configurationProperties[key];
     if (property?.enum) {
