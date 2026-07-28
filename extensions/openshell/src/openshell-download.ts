@@ -146,7 +146,12 @@ export async function getRelease(downloadConfig: GitHubArtifactDownload, version
 }
 
 async function download(url: string, dest: string): Promise<void> {
-  const res = await fetch(url, { redirect: 'follow' });
+  const headers: Record<string, string> = {};
+  const token = process.env['GITHUB_TOKEN'];
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  const res = await fetch(url, { headers, redirect: 'follow' });
   if (!res.ok || !res.body) {
     throw new Error(`failed to download ${url}: ${res.status} ${res.statusText}`);
   }
