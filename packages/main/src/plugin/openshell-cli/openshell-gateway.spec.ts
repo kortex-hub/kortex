@@ -16,9 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ChildProcess } from 'node:child_process';
+import { type ChildProcess, spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
-import type { WriteStream } from 'node:fs';
+import { createWriteStream, type WriteStream } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -39,9 +39,6 @@ vi.mock(import('node:child_process'));
 vi.mock(import('node:fs'));
 vi.mock(import('node:fs/promises'));
 vi.mock(import('/@/plugin/util/exec.js'));
-
-const { spawn } = await import('node:child_process');
-const { createWriteStream } = await import('node:fs');
 
 const GATEWAY_BINARY = '/usr/local/bin/openshell-gateway';
 const KAIDEN_DATA_DIRECTORY = '/home/user/.local/share/kaiden';
@@ -101,6 +98,7 @@ const notificationRegistry = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  gatewayLogStream.removeAllListeners();
   vi.mocked(directories.getDataDirectory).mockReturnValue(KAIDEN_DATA_DIRECTORY);
   vi.mocked(cliToolRegistry.getCliToolInfos).mockReturnValue([
     { name: 'openshell-gateway', path: GATEWAY_BINARY },
@@ -111,8 +109,8 @@ beforeEach(() => {
 });
 
 describe('init', () => {
-  test('creates the gateway log and reuses a healthy active gateway', async () => {
-    const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  test('skips auto-start when existing gateway is healthy and already active', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const existingGateways: GatewayInfo[] = [
       { name: 'local-gw', endpoint: 'https://127.0.0.1:8443', active: true, type: 'local' },
     ];
@@ -121,18 +119,10 @@ describe('init', () => {
 
     await gateway.init();
 
-    const message = '[openshell-gateway] gateway detected (https://127.0.0.1:8443) and is healthy';
-    expect(mkdir).toHaveBeenCalledWith(GATEWAY_STORAGE_DIRECTORY, { recursive: true });
-    expect(createWriteStream).toHaveBeenCalledWith(GATEWAY_LOG_PATH, { flags: 'w' });
-    expect(gatewayLogStream.write).toHaveBeenNthCalledWith(
-      1,
-      expect.stringMatching(/^===== Kaiden gateway session started \d{4}-\d{2}-\d{2}T.*Z =====\n$/),
-    );
-    expect(consoleLog).toHaveBeenCalledWith(message);
-    expect(gatewayLogStream.write).toHaveBeenCalledWith(`${message}\n`);
     expect(openshellCli.listGateways).toHaveBeenCalled();
     expect(openshellCli.checkEndpointStatus).toHaveBeenCalledWith('https://127.0.0.1:8443');
     expect(spawn).not.toHaveBeenCalled();
+    expect(createWriteStream).not.toHaveBeenCalled();
     expect(openshellCli.selectGateway).not.toHaveBeenCalled();
   });
 
@@ -312,10 +302,11 @@ describe('start', () => {
       ],
       expect.objectContaining({ detached: false }),
     );
+    expect(createWriteStream).toHaveBeenCalledWith(GATEWAY_LOG_PATH, { flags: 'w' });
+    expect(gatewayLogStream.write).not.toHaveBeenCalled();
 
     consoleLog.mockClear();
     consoleError.mockClear();
-    gatewayLogStream.write.mockClear();
     const stdout = Buffer.from('routine gateway output\n');
     const stderr = Buffer.from('routine gateway diagnostic\n');
     proc._stdout.emit('data', stdout);
