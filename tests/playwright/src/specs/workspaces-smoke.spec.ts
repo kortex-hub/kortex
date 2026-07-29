@@ -43,7 +43,7 @@ const TEST_SKILL = {
 };
 
 test.skip(
-  !!process.env.CI && process.platform !== 'linux' && !process.env.PODMAN_ENABLED,
+  !!process.env.GITHUB_ACTIONS && process.platform !== 'linux' && !process.env.PODMAN_ENABLED,
   'Workspaces smoke requires an OpenShell gateway with the Podman driver, which is not available on macOS/Windows GitHub Actions runners',
 );
 
