@@ -208,7 +208,7 @@ test.describe('Guided setup smoke', { tag: '@smoke' }, () => {
 
     test.describe('Onboarding - guided setup persistence (Claude)', () => {
       test.skip(
-        process.platform !== 'linux' && !process.env.PODMAN_ENABLED,
+        !!process.env.CI && process.platform !== 'linux' && !process.env.PODMAN_ENABLED,
         'Requires an OpenShell gateway with the Podman driver, which is not available on macOS/Windows GitHub Actions runners',
       );
 
