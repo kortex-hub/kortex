@@ -221,5 +221,14 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
     case NavigationPage.SEMANTIC_ROUTERS:
       router.goto('/models/semantic-routers');
       break;
+    case NavigationPage.ACP_SESSIONS:
+      router.goto('/acp-sessions');
+      break;
+    case NavigationPage.ACP_SESSION_CREATE:
+      router.goto('/acp-sessions/new');
+      break;
+    case NavigationPage.ACP_SESSION_DETAILS:
+      router.goto(`/acp-sessions/${encodeURIComponent(request.parameters.id)}`);
+      break;
   }
 };

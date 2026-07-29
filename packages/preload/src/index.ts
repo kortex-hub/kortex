@@ -44,6 +44,13 @@ import type * as containerDesktopAPI from '@openkaiden/api';
 import type { DynamicToolUIPart, UIMessageChunk } from 'ai';
 import { contextBridge, ipcRenderer } from 'electron';
 
+import type {
+  AcpAttachment,
+  AcpFlowEvent,
+  AcpSessionCreateOptions,
+  AcpSessionInfo,
+  AcpUserResponse,
+} from '/@api/acp-session-info';
 import type { AgentInfo } from '/@api/agent-info';
 import type {
   AgentWorkspaceConfiguration,
@@ -455,6 +462,64 @@ export function initExposure(): void {
       onDataCallbacksShellInAgentWorkspace.delete(callbackId);
     }
   });
+
+  // ACP Sessions
+  contextBridge.exposeInMainWorld(
+    'createAcpSession',
+    async (options: AcpSessionCreateOptions): Promise<AcpSessionInfo> => {
+      return ipcInvoke('acp:createSession', options);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('listAcpSessions', async (): Promise<AcpSessionInfo[]> => {
+    return ipcInvoke('acp:listSessions');
+  });
+
+  contextBridge.exposeInMainWorld('getAcpSessionEvents', async (sessionId: string): Promise<AcpFlowEvent[]> => {
+    return ipcInvoke('acp:getSessionEvents', sessionId);
+  });
+
+  contextBridge.exposeInMainWorld('respondToAcpRequest', async (response: AcpUserResponse): Promise<void> => {
+    return ipcInvoke('acp:respondToRequest', response);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'sendAcpFollowUp',
+    async (sessionId: string, prompt: string, attachments?: AcpAttachment[]): Promise<void> => {
+      return ipcInvoke('acp:sendFollowUp', sessionId, prompt, attachments);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('stopAcpPrompt', async (sessionId: string): Promise<void> => {
+    return ipcInvoke('acp:stopPrompt', sessionId);
+  });
+
+  contextBridge.exposeInMainWorld('deleteAcpSession', async (sessionId: string): Promise<void> => {
+    return ipcInvoke('acp:deleteSession', sessionId);
+  });
+
+  contextBridge.exposeInMainWorld('cancelAcpSession', async (sessionId: string): Promise<void> => {
+    return ipcInvoke('acp:cancelSession', sessionId);
+  });
+
+  contextBridge.exposeInMainWorld('isOpenshellAvailable', async (): Promise<boolean> => {
+    return ipcInvoke('acp:isOpenshellAvailable');
+  });
+
+  contextBridge.exposeInMainWorld('setAcpSessionModel', async (sessionId: string, modelId: string): Promise<void> => {
+    return ipcInvoke('acp:setSessionModel', sessionId, modelId);
+  });
+
+  contextBridge.exposeInMainWorld('setAcpSessionMode', async (sessionId: string, modeId: string): Promise<void> => {
+    return ipcInvoke('acp:setSessionMode', sessionId, modeId);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'setAcpSessionConfigOption',
+    async (sessionId: string, configId: string, value: string | boolean): Promise<void> => {
+      return ipcInvoke('acp:setSessionConfigOption', sessionId, configId, value);
+    },
+  );
 
   contextBridge.exposeInMainWorld('createSecret', async (options: SecretCreateOptions): Promise<SecretName> => {
     return ipcInvoke('secret-manager:create', options);
