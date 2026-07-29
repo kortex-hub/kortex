@@ -21,6 +21,6 @@
   },
   "dependencies": {
     "@ai-sdk/provider": "^4.0.3",
-    "@openkaiden/workspace-configuration": "^0.14.0"
+    "@openkaiden/workspace-configuration": "^0.15.0"
   }
 }

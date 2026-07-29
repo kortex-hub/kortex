@@ -482,6 +482,7 @@ async function startAsIs(): Promise<void> {
       model: getModelId(draftSnapshot.selectedModel!),
       gateway: draftSnapshot.selectedGateway,
       name: getEffectiveWorkspaceNameFromSnapshot(draftSnapshot),
+      description: draftSnapshot.description || undefined,
       project: draftSnapshot.selectedProjectId,
     });
     resetDraft();
@@ -543,6 +544,7 @@ async function startWorkspace(): Promise<void> {
       model: getModelId(draftSnapshot.selectedModel!),
       gateway: draftSnapshot.selectedGateway,
       name: getEffectiveWorkspaceNameFromSnapshot(draftSnapshot),
+      description: draftSnapshot.description || undefined,
       skills: selectedSkillPaths.length > 0 ? selectedSkillPaths : undefined,
       network,
       secrets: draftSnapshot.selectedSecretIds.length > 0 ? [...draftSnapshot.selectedSecretIds] : undefined,

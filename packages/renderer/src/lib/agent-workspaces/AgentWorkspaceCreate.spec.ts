@@ -225,7 +225,7 @@ test('Expect workspace name input rendered', () => {
 test('Expect description section is collapsed by default', () => {
   render(AgentWorkspaceCreate);
 
-  expect(screen.queryByPlaceholderText('Short note for your team (optional)')).not.toBeInTheDocument();
+  expect(screen.queryByRole('textbox', { name: 'Description' })).not.toBeInTheDocument();
 });
 
 test('Expect description section expands when toggle clicked', async () => {
@@ -233,7 +233,7 @@ test('Expect description section expands when toggle clicked', async () => {
 
   await fireEvent.click(screen.getByRole('button', { name: /Description/ }));
 
-  expect(screen.getByPlaceholderText('Short note for your team (optional)')).toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: 'Description' })).toBeInTheDocument();
 });
 
 test('Expect workspace name auto-suggested from source path', async () => {

@@ -79,7 +79,7 @@ export class AgentWorkspaceCreatePage extends BasePage {
     this.workingDirInput = this.page.getByPlaceholder('/path/to/project');
     this.browseButton = this.page.getByLabel('Browse for folder');
     this.descriptionToggle = this.page.getByRole('button', { name: /Description/ });
-    this.descriptionInput = this.page.getByPlaceholder('Short note for your team (optional)');
+    this.descriptionInput = this.page.getByRole('textbox', { name: 'Description' });
     this.agentSelector = this.page.getByRole('listbox', { name: 'Coding agent' });
     this.toolsSummary = this.page.getByText(/Everything available is included|Expand.*Customize/);
     this.customizeExpandable = this.page.getByText('Customize skills, MCP servers, vault, and knowledges');
