@@ -1,2 +1,3 @@
 base: https://raw.githubusercontent.com/fullsend-ai/agents/ca518d9353f5a8363c6ba499d7a2070a1b0e7c5d/harness/fix.yaml#sha256=5af5a1658ea36dd0982a475b08e51246224a52a3cdcfd805e837a16a286b6756
 image: ghcr.io/openkaiden/kaiden-fullsend-image@sha256:752de42626946c37a453a0b0ddd2effd7a2a4cecda86595586097d14b1c21635
+policy: .fullsend/policies/code.yaml
