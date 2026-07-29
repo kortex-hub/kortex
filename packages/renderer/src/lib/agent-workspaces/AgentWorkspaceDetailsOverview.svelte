@@ -151,10 +151,20 @@ function formatRelativeTime(ts: string | undefined): string {
           <span class="text-[11px] font-medium" style="color: {statusStyle.sandboxColor}">{statusStyle.sandboxLabel}</span>
         </div>
       </div>
-      {#if workspaceSummary?.sourcePath}
-        <p class="text-[13px] text-[var(--pd-content-text)] leading-relaxed m-0">
-          Project: {workspaceSummary.sourcePath}
+      {#if configuration?.description}
+        <p
+          tabindex="0"
+          role="region"
+          aria-label="Workspace description"
+          class="text-[13px] text-[var(--pd-content-text)] leading-relaxed m-0 whitespace-pre-line max-h-[calc(6*1.625em)] overflow-y-auto">
+          {configuration.description}
         </p>
+      {/if}
+      {#if workspaceSummary?.sourcePath}
+        <div class="flex items-center gap-1.5 mt-1 text-[var(--pd-content-text)] opacity-60">
+          <Icon icon={faFolder} size="xs" />
+          <span class="text-xs font-mono">{workspaceSummary.sourcePath}</span>
+        </div>
       {/if}
     </div>
 

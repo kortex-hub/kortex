@@ -7,6 +7,7 @@ import AgentWorkspaceCreateStepFileSystem, {
   type CustomMount,
 } from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepFileSystem.svelte';
 import AgentWorkspaceCreateStepNetworking from '/@/lib/agent-workspaces/AgentWorkspaceCreateStepNetworking.svelte';
+import WorkspaceDescriptionField from '/@/lib/agent-workspaces/WorkspaceDescriptionField.svelte';
 import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
 import type { ChecklistItem } from '/@/lib/ui/ChecklistPanel.svelte';
 import ChecklistPanel from '/@/lib/ui/ChecklistPanel.svelte';
@@ -52,6 +53,9 @@ let activeSection: SettingsSection = $state('general');
 const activeLabel = $derived(sections.find(s => s.id === activeSection)?.label ?? '');
 
 const workspaceName = $derived(workspaceSummary?.name ?? '');
+
+const originalDescription = $derived(configuration?.description ?? '');
+let pendingDescription = $derived(originalDescription);
 
 let skillItems: ChecklistItem[] = $derived(
   $skillInfos.map(s => ({
@@ -270,13 +274,24 @@ function updateCustomHost(index: number, value: string): void {
   };
 }
 
+const hasDescriptionChanges = $derived(pendingDescription !== originalDescription);
+
 const hasChanges = $derived(
-  hasMountChanges || hasSkillChanges || hasKnowledgeChanges || hasMcpChanges || hasNetworkChanges,
+  hasDescriptionChanges ||
+    hasMountChanges ||
+    hasSkillChanges ||
+    hasKnowledgeChanges ||
+    hasMcpChanges ||
+    hasNetworkChanges,
 );
 
 // --- Save / Discard ---
 async function saveChanges(): Promise<void> {
   try {
+    if (hasDescriptionChanges) {
+      await window.updateAgentWorkspaceConfiguration(workspaceId, { description: pendingDescription });
+      configuration = { ...configuration, description: pendingDescription };
+    }
     if (hasMountChanges) {
       const newMounts = buildMountsFromSelection(pendingFileAccess, pendingCustomMounts);
       await window.updateAgentWorkspaceConfiguration(workspaceId, { mounts: newMounts });
@@ -389,6 +404,7 @@ function buildUnmanagedMcpConfig(): AgentWorkspaceMcpConfig {
 }
 
 function discardChanges(): void {
+  pendingDescription = originalDescription;
   pendingFileAccess = originalFileAccess;
   pendingCustomMounts = originalCustomMounts.map(m => ({ ...m }));
   pendingSkillIds = [...originalSkillIds];
@@ -512,6 +528,10 @@ function handleDeleteWorkspace(): void {
                     aria-label="Workspace Name"
                     value={workspaceName}
                     readonly />
+                </div>
+                <div class="flex flex-col gap-2">
+                  <label for="input-workspace-description" class="text-[13px] font-semibold text-[var(--pd-content-card-header-text)]">Description</label>
+                  <WorkspaceDescriptionField id="input-workspace-description" bind:value={pendingDescription} />
                 </div>
                 <div class="flex flex-col gap-2">
                   <label for="input-working-directory" class="text-[13px] font-semibold text-[var(--pd-content-card-header-text)]">Working Directory</label>

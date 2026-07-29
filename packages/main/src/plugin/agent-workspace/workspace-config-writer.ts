@@ -78,6 +78,10 @@ export async function writeWorkspaceConfig(
     }
   }
 
+  if (options.description !== undefined) {
+    existing.description = options.description;
+  }
+
   if (hasSkills) {
     existing.skills = options.skills;
   }
@@ -155,8 +159,8 @@ export async function writeWorkspaceConfig(
   }
 
   const output = JSON.stringify(existing, undefined, 2) + '\n';
-  console.log(`[KdnCli] workspace.json:\n${output}`);
   await writeFile(configPath, output, 'utf-8');
+  console.log(`[KdnCli] wrote workspace.json to ${configPath}`);
   return existing;
 }
 

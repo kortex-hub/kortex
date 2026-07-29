@@ -3,7 +3,7 @@ import { faChevronDown, faFolder, faFolderOpen, faInfoCircle, faRocket } from '@
 import { Button, Dropdown, Input } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 
-import { Textarea } from '/@/lib/chat/components/ui/textarea';
+import WorkspaceDescriptionField from '/@/lib/agent-workspaces/WorkspaceDescriptionField.svelte';
 import { getSandboxNameValidationError } from '/@api/agent-workspace-info';
 import type { GatewayInfo } from '/@api/openshell-gateway-info';
 import type { WorkspaceProjectInfo } from '/@api/workspace-project-info';
@@ -194,12 +194,9 @@ let nameInputError = $derived(sessionNameError ?? errors?.name ?? '');
         <label for="workspace-description" class="block text-xs text-[var(--pd-content-card-text)] opacity-60 mb-1.5">
           What should this workspace focus on?
         </label>
-        <Textarea
-          id="workspace-description"
+        <WorkspaceDescriptionField
           bind:value={description}
-          placeholder="Short note for your team (optional)"
-          rows={3}
-          class="bg-muted min-h-[24px] resize-none rounded-lg !text-sm dark:border-zinc-700"
+          placeholder="e.g. Debug the login timeout — reproduce issue #42 and propose a fix (optional, max 500 chars)"
         />
       </div>
     {/if}

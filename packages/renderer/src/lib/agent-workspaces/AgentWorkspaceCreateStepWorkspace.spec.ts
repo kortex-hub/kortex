@@ -34,6 +34,7 @@ const defaultProps = {
 };
 
 beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.resetAllMocks();
 });
 
@@ -65,7 +66,11 @@ test('Expect workspace name input is rendered', () => {
 test('Expect description section is collapsed by default', () => {
   render(AgentWorkspaceCreateStepWorkspace, defaultProps);
 
-  expect(screen.queryByPlaceholderText('Short note for your team (optional)')).not.toBeInTheDocument();
+  expect(
+    screen.queryByPlaceholderText(
+      'e.g. Debug the login timeout — reproduce issue #42 and propose a fix (optional, max 500 chars)',
+    ),
+  ).not.toBeInTheDocument();
 });
 
 test('Expect description section expands when toggle is clicked', async () => {
@@ -73,13 +78,36 @@ test('Expect description section expands when toggle is clicked', async () => {
 
   await fireEvent.click(screen.getByRole('button', { name: /Description/ }));
 
-  expect(screen.getByPlaceholderText('Short note for your team (optional)')).toBeInTheDocument();
+  expect(
+    screen.getByPlaceholderText(
+      'e.g. Debug the login timeout — reproduce issue #42 and propose a fix (optional, max 500 chars)',
+    ),
+  ).toBeInTheDocument();
 });
 
 test('Expect description textarea is shown when descriptionOpen is true', () => {
   render(AgentWorkspaceCreateStepWorkspace, { ...defaultProps, descriptionOpen: true });
 
-  expect(screen.getByPlaceholderText('Short note for your team (optional)')).toBeInTheDocument();
+  expect(
+    screen.getByPlaceholderText(
+      'e.g. Debug the login timeout — reproduce issue #42 and propose a fix (optional, max 500 chars)',
+    ),
+  ).toBeInTheDocument();
+});
+
+test('Expect description field has maxlength and shows character counter', async () => {
+  render(AgentWorkspaceCreateStepWorkspace, { ...defaultProps, descriptionOpen: true, description: 'Hello world' });
+
+  const textarea = screen.getByRole('textbox', { name: 'Description' });
+  expect(textarea).toHaveAttribute('maxlength', '500');
+  expect(textarea).toHaveValue('Hello world');
+  expect(screen.getByText('11/500')).toBeInTheDocument();
+});
+
+test('Expect description hides character counter when empty', () => {
+  render(AgentWorkspaceCreateStepWorkspace, { ...defaultProps, descriptionOpen: true, description: '' });
+
+  expect(screen.queryByText(/\/500/)).not.toBeInTheDocument();
 });
 
 test('Expect browse button calls onBrowseSource', async () => {

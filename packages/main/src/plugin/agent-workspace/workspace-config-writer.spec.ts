@@ -503,6 +503,31 @@ describe('writeWorkspaceConfig', () => {
     const parsed = JSON.parse(writtenContent);
     expect(parsed.secrets).toEqual(['existing-secret']);
   });
+
+  test('writes description to workspace.json when provided', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(readFile).mockRejectedValue(mockEnoent());
+
+    await writeWorkspaceConfig({
+      ...defaultOptions,
+      description: 'My workspace description',
+    });
+
+    const writtenContent = vi.mocked(writeFile).mock.calls[0]![1] as string;
+    const parsed = JSON.parse(writtenContent);
+    expect(parsed.description).toBe('My workspace description');
+  });
+
+  test('omits description from workspace.json when not provided', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(readFile).mockRejectedValue(mockEnoent());
+
+    await writeWorkspaceConfig(defaultOptions);
+
+    const writtenContent = vi.mocked(writeFile).mock.calls[0]![1] as string;
+    const parsed = JSON.parse(writtenContent);
+    expect(parsed.description).toBeUndefined();
+  });
 });
 
 describe('updateWorkspaceConfig', () => {

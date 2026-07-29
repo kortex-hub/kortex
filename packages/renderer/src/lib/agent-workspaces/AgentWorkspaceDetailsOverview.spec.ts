@@ -85,10 +85,11 @@ test('Expect raw model string is displayed when no catalog match', () => {
   expect(screen.getByText('Not available')).toBeInTheDocument();
 });
 
-test('Expect project is displayed', () => {
+test('Expect project path is displayed in agent profile card', () => {
   render(AgentWorkspaceDetailsOverview, { workspaceSummary, configuration });
 
-  expect(screen.getByText('Project: /home/user/projects/backend')).toBeInTheDocument();
+  const profileCard = screen.getByLabelText('Agent profile');
+  expect(profileCard).toHaveTextContent('/home/user/projects/backend');
 });
 
 test('Expect state is displayed', () => {
@@ -155,7 +156,8 @@ test('Expect MCP servers are displayed', () => {
 test('Expect filesystem shows workspace source path', () => {
   render(AgentWorkspaceDetailsOverview, { workspaceSummary, configuration });
 
-  expect(screen.getByText('/home/user/projects/backend')).toBeInTheDocument();
+  const filesystemCard = screen.getByLabelText('Filesystem card');
+  expect(filesystemCard).toHaveTextContent('/home/user/projects/backend');
 });
 
 test('Expect mounts are displayed with access type', () => {

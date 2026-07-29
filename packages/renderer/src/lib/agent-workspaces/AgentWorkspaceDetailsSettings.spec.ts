@@ -87,6 +87,88 @@ test('Expect workspace name is displayed in input', () => {
   expect(nameInput).toHaveValue('api-refactor');
 });
 
+test('Expect description is displayed in input when present in configuration', () => {
+  const configWithDescription = {
+    ...configuration,
+    description: 'My workspace description',
+  } as AgentWorkspaceConfiguration;
+  render(AgentWorkspaceDetailsSettings, {
+    workspaceId: 'ws-1',
+    workspaceSummary,
+    configuration: configWithDescription,
+  });
+
+  const descInput = screen.getByRole('textbox', { name: 'Description' });
+  expect(descInput).toHaveValue('My workspace description');
+  expect(descInput).not.toHaveAttribute('readonly');
+});
+
+test('Expect description input is empty when not present in configuration', () => {
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
+
+  const descInput = screen.getByRole('textbox', { name: 'Description' });
+  expect(descInput).toHaveValue('');
+});
+
+test('Expect editing description shows unsaved changes', async () => {
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
+
+  const descInput = screen.getByRole('textbox', { name: 'Description' });
+  await fireEvent.input(descInput, { target: { value: 'Updated description' } });
+
+  expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
+  expect(window.updateAgentWorkspaceConfiguration).not.toHaveBeenCalled();
+});
+
+test('Expect Save changes persists description', async () => {
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
+
+  const descInput = screen.getByRole('textbox', { name: 'Description' });
+  await fireEvent.input(descInput, { target: { value: 'New description' } });
+  await fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+  expect(window.updateAgentWorkspaceConfiguration).toHaveBeenCalledWith('ws-1', { description: 'New description' });
+});
+
+test('Expect Discard changes resets description', async () => {
+  const configWithDescription = {
+    ...configuration,
+    description: 'Original description',
+  } as AgentWorkspaceConfiguration;
+  render(AgentWorkspaceDetailsSettings, {
+    workspaceId: 'ws-1',
+    workspaceSummary,
+    configuration: configWithDescription,
+  });
+
+  const descInput = screen.getByRole('textbox', { name: 'Description' });
+  await fireEvent.input(descInput, { target: { value: 'Changed' } });
+  await fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }));
+
+  expect(descInput).toHaveValue('Original description');
+  expect(screen.getByText('No changes to save')).toBeInTheDocument();
+});
+
+test('Expect description shows character counter when non-empty', () => {
+  const configWithDescription = {
+    ...configuration,
+    description: 'Hello',
+  } as AgentWorkspaceConfiguration;
+  render(AgentWorkspaceDetailsSettings, {
+    workspaceId: 'ws-1',
+    workspaceSummary,
+    configuration: configWithDescription,
+  });
+
+  expect(screen.getByText('5/500')).toBeInTheDocument();
+});
+
+test('Expect description hides character counter when empty', () => {
+  render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
+
+  expect(screen.queryByText(/\/500/)).not.toBeInTheDocument();
+});
+
 test('Expect working directory is displayed in input', () => {
   render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration });
 

@@ -104,6 +104,7 @@ export interface AgentWorkspaceCreateOptions {
   model: string;
   gateway: string;
   name?: string;
+  description?: string;
   project?: string;
   skills?: string[];
   network?: NetworkConfiguration;
