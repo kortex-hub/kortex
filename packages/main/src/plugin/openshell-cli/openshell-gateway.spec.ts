@@ -82,6 +82,7 @@ const openshellCli = {
   selectGateway: vi.fn(),
   checkEndpointStatus: vi.fn(),
   addGateway: vi.fn(),
+  removeGateway: vi.fn(),
 } as unknown as OpenshellCli;
 
 const directories = {
@@ -105,6 +106,7 @@ beforeEach(() => {
   ] as unknown as CliToolInfo[]);
   vi.mocked(createWriteStream).mockReturnValue(gatewayLogStream);
   vi.mocked(exec.exec).mockResolvedValue({ command: '', stdout: '', stderr: '' });
+  vi.mocked(openshellCli.removeGateway).mockResolvedValue();
   gateway = new OpenshellGateway(cliToolRegistry, openshellCli, directories, exec, notificationRegistry);
 });
 
@@ -413,6 +415,40 @@ describe('start', () => {
     vi.mocked(spawn).mockReturnValue(proc);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
     vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
+
+    await gateway.start();
+
+    expect(openshellCli.addGateway).toHaveBeenCalledWith({
+      endpoint: 'http://127.0.0.1:17670',
+      local: true,
+      name: 'kaiden-local',
+    });
+  });
+
+  test('removes stale gateway entry before re-registering', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValue(proc);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
+
+    await gateway.start();
+
+    expect(openshellCli.removeGateway).toHaveBeenCalledWith('kaiden-local');
+    expect(openshellCli.addGateway).toHaveBeenCalledWith({
+      endpoint: 'http://127.0.0.1:17670',
+      local: true,
+      name: 'kaiden-local',
+    });
+  });
+
+  test('registers successfully even when removeGateway fails', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValue(proc);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
+    vi.mocked(openshellCli.removeGateway).mockRejectedValue(new Error('no such gateway'));
 
     await gateway.start();
 

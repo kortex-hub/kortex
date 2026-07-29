@@ -366,6 +366,7 @@ export class OpenshellGateway implements Disposable {
   private async registerWithCli(): Promise<void> {
     const endpoint = `http://${this.#bindAddress}:${this.#port}`;
     try {
+      await this.openshellCli.removeGateway('kaiden-local').catch(() => {});
       await this.openshellCli.addGateway({ endpoint, local: true, name: 'kaiden-local' });
       console.log(`[openshell-gateway] registered with CLI as kaiden-local at ${endpoint}`);
     } catch (err: unknown) {
