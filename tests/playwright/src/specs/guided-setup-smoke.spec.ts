@@ -207,6 +207,11 @@ test.describe('Guided setup smoke', { tag: '@smoke' }, () => {
     });
 
     test.describe('Onboarding - guided setup persistence (Claude)', () => {
+      test.skip(
+        !!process.env.GITHUB_ACTIONS && process.platform !== 'linux' && !process.env.PODMAN_ENABLED,
+        'Requires an OpenShell gateway with the Podman driver, which is not available on macOS/Windows GitHub Actions runners',
+      );
+
       const session = bindGuidedSetupSession();
 
       test('[OGS-PERSIST-03] Guided setup persistence: Claude model appears in workspace wizard', async () => {

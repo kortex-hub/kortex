@@ -42,6 +42,11 @@ const TEST_SKILL = {
   name: 'playwright-testing',
 };
 
+test.skip(
+  !!process.env.GITHUB_ACTIONS && process.platform !== 'linux' && !process.env.PODMAN_ENABLED,
+  'Workspaces smoke requires an OpenShell gateway with the Podman driver, which is not available on macOS/Windows GitHub Actions runners',
+);
+
 const completeAgentModelStep: AgentModelSetup = async (createPage: AgentWorkspaceCreatePage): Promise<void> => {
   const connection = resolveAgentModelConnection();
   test.skip(!connection, agentModelSetupSkipMessage());
