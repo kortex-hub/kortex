@@ -16,3 +16,8 @@ create_issues:
         repos:
             - openkaiden/kaiden
             - fullsend-ai/fullsend
+agents:
+    - name: code
+      source: code.yaml
+    - name: fix
+      source: fix.yaml
