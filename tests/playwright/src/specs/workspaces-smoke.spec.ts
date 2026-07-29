@@ -44,7 +44,7 @@ const TEST_SKILL = {
 
 test.skip(
   process.platform !== 'linux' && !process.env.PODMAN_ENABLED,
-  'Workspaces tests require an OpenShell gateway (e.g. Podman), which is not available on macOS/Windows GitHub Actions runners',
+  'Workspaces smoke requires an OpenShell gateway with the Podman driver, which is not available on macOS/Windows GitHub Actions runners',
 );
 
 const completeAgentModelStep: AgentModelSetup = async (createPage: AgentWorkspaceCreatePage): Promise<void> => {
