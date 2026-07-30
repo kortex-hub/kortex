@@ -33,6 +33,8 @@ import {
   type GatewayAddOptions,
   type GatewayInfo,
   GatewayInfoSchema,
+  type GatewayRuntimeInfo,
+  GatewayRuntimeInfoSchema,
   type GatewaySandboxes,
   type OpenshellProfile,
   OpenshellProfileSchema,
@@ -351,6 +353,11 @@ export class OpenshellCli {
   async listGateways(): Promise<GatewayInfo[]> {
     const data = await this.execCLI<unknown>(['gateway', 'list']);
     return z.array(GatewayInfoSchema).parse(data);
+  }
+
+  async getGatewayInfo(): Promise<GatewayRuntimeInfo> {
+    const data = await this.execCLI<unknown>(['gateway', 'info']);
+    return GatewayRuntimeInfoSchema.parse(data);
   }
 
   async checkEndpointStatus(endpoint: string): Promise<boolean> {

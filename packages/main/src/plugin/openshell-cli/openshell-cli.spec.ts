@@ -688,6 +688,26 @@ describe('listGateways', () => {
   });
 });
 
+describe('getGatewayInfo', () => {
+  test('executes gateway info with json output and returns parsed result', async () => {
+    const payload = {
+      compute_drivers: [
+        {
+          capabilities: { driver_name: 'podman', driver_version: '0.0.92' },
+          name: 'podman',
+        },
+      ],
+      status: 'healthy',
+    };
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify(payload)));
+
+    const result = await openshellCli.getGatewayInfo();
+
+    expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'info', '-o', 'json'], undefined);
+    expect(result).toEqual(payload);
+  });
+});
+
 describe('listSandboxesForGateway', () => {
   test('lists sandboxes for a specific gateway using -g flag', async () => {
     const gateways = [

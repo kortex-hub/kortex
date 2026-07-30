@@ -83,6 +83,7 @@ const openshellCli = {
   checkEndpointStatus: vi.fn(),
   addGateway: vi.fn(),
   removeGateway: vi.fn(),
+  getGatewayInfo: vi.fn(),
 } as unknown as OpenshellCli;
 
 const directories = {
@@ -967,5 +968,29 @@ describe('gateway config generation', () => {
       ['--port', '17670', '--bind-address', '127.0.0.1', '--disable-tls', '--db-url', GATEWAY_DB_URL],
       expect.objectContaining({ detached: false }),
     );
+  });
+
+  test('enables bind mounts when a local compute driver is detected', async () => {
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
+    vi.mocked(openshellCli.getGatewayInfo).mockResolvedValue({
+      compute_drivers: [{ capabilities: { driver_name: 'podman' }, name: 'podman' }],
+    });
+
+    await gateway.start();
+
+    const writtenContent = vi.mocked(writeFile).mock.calls[0]?.[1] as string;
+    expect(writtenContent).toContain('enable_bind_mounts = true');
+  });
+
+  test('generates config without bind mounts when no driver is available', async () => {
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
+    vi.mocked(openshellCli.getGatewayInfo).mockResolvedValue({ compute_drivers: [] });
+
+    await gateway.start();
+
+    const writtenContent = vi.mocked(writeFile).mock.calls[0]?.[1] as string;
+    expect(writtenContent).toContain('[openshell.drivers.podman]');
+    expect(writtenContent).not.toContain('enable_bind_mounts');
+    expect(writtenContent).not.toContain('compute_drivers');
   });
 });

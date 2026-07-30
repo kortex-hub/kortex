@@ -1,10 +1,22 @@
 [openshell]
 version = 1
 
+{{#driver}}
+[openshell.gateway]
+compute_drivers = ["{{{driver}}}"]
+
+[openshell.drivers.{{{driver}}}]
+enable_bind_mounts = true
+{{#supervisorImage}}
+supervisor_image = "{{{supervisorImage}}}"
+{{/supervisorImage}}
+{{/driver}}
+{{^driver}}
 [openshell.drivers.podman]
 {{#supervisorImage}}
 supervisor_image = "{{{supervisorImage}}}"
 {{/supervisorImage}}
+{{/driver}}
 
 [openshell.gateway.auth]
 allow_unauthenticated_users = true
