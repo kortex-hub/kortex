@@ -133,7 +133,9 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           CRUN_VERSION=1.28
+          CRUN_SHA256=2aa6b7024a9c9f153895c0d11ae233d3758f54844011c3a039e3e89048d01d42
           curl -fsSL -o /tmp/crun "https://github.com/containers/crun/releases/download/${CRUN_VERSION}/crun-${CRUN_VERSION}-linux-amd64"
+          echo "${CRUN_SHA256}  /tmp/crun" | sha256sum -c -
           chmod +x /tmp/crun
           sudo mv /tmp/crun /usr/bin/crun
           crun --version
