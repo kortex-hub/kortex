@@ -572,6 +572,44 @@ describe('connectSandbox', () => {
   });
 });
 
+describe('uploadToSandbox', () => {
+  test('executes openshell sandbox upload with name, path, and dest', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.uploadToSandbox('my-sandbox', '/local/image.png', '/tmp/kaiden-attachments/abc');
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['sandbox', 'upload', 'my-sandbox', '/local/image.png', '/tmp/kaiden-attachments/abc'],
+      undefined,
+    );
+  });
+
+  test('passes gateway flag when gatewayName is provided', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.uploadToSandbox('my-sandbox', '/local/image.png', '/tmp/attachments/', 'my-gateway');
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['sandbox', 'upload', 'my-sandbox', '/local/image.png', '/tmp/attachments/', '-g', 'my-gateway'],
+      undefined,
+    );
+  });
+
+  test('rejects when CLI fails', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockRejectedValue(new Error('sandbox not found: unknown'));
+
+    await expect(openshellCli.uploadToSandbox('unknown', '/local/file', '/tmp')).rejects.toThrow(
+      'sandbox not found: unknown',
+    );
+  });
+});
+
 describe('addGateway', () => {
   test('executes gateway add with endpoint', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
