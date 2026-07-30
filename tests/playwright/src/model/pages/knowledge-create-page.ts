@@ -31,7 +31,7 @@ export class KnowledgeCreatePage extends BasePage {
 
   constructor(page: Page) {
     super(page);
-    this.modal = this.page.getByLabel('create knowledge environment');
+    this.modal = this.page.getByRole('dialog', { name: 'New Knowledge Environment' });
     this.heading = this.modal.getByRole('heading', { name: 'New Knowledge Environment' });
     this.nameInputField = this.modal.getByLabel('Environment Name');
     this.createButton = this.modal.getByRole('button', { name: 'Create Environment' });
