@@ -111,7 +111,7 @@ test('displays non-active gateways in Other Gateways section', () => {
   expect(screen.getByText('Other Gateways')).toBeInTheDocument();
   expect(screen.getByText('production')).toBeInTheDocument();
   expect(screen.getByText('Referenced')).toBeInTheDocument();
-  expect(screen.getByText('remote · remote · https://gateway.example.com')).toBeInTheDocument();
+  expect(screen.getByText('remote · https://gateway.example.com')).toBeInTheDocument();
 });
 
 test('shows Referenced badge for non-local gateways', () => {

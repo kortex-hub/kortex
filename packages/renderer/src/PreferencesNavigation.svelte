@@ -26,6 +26,12 @@ let settingsNavigationItems: SettingsNavItemConfig[] = $state(settingsNavigation
 
 let openshellExpanded: boolean = $state(false);
 
+$effect(() => {
+  if (meta.url.startsWith('/preferences/openshell')) {
+    openshellExpanded = true;
+  }
+});
+
 function updateDockerCompatibility(): void {
   window
     .getConfigurationValue<boolean>(`${DockerCompatibilitySettings.SectionName}.${DockerCompatibilitySettings.Enabled}`)

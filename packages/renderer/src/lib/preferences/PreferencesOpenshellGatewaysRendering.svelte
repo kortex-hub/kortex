@@ -28,7 +28,7 @@ function getDetails(gateway: GatewayInfo): string {
   if (gateway.type) {
     parts.push(gateway.type);
   }
-  if (gateway.is_remote) {
+  if (gateway.is_remote && gateway.type !== 'remote') {
     parts.push('remote');
   }
   parts.push(gateway.endpoint);
