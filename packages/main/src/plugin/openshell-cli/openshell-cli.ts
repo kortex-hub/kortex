@@ -413,11 +413,14 @@ export class OpenshellCli {
     await this.runCli(['provider', 'delete', name]);
   }
 
-  async createProvider(options: CreateProviderOptions): Promise<void> {
+  async createProvider(options: CreateProviderOptions, gateway?: string): Promise<void> {
     if (Object.keys(options.credentials).length === 0 && !options.flags?.length) {
       throw new Error('credentials must not be empty');
     }
     const args = ['provider', 'create', '--name', options.name, '--type', options.type];
+    if (gateway) {
+      args.push('-g', gateway);
+    }
     const env: Record<string, string> = options.env ?? {};
     for (const [key, value] of Object.entries(options.credentials)) {
       env[key] = value;

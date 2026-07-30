@@ -1151,6 +1151,30 @@ describe('deleteProvider', () => {
 });
 
 describe('createProvider', () => {
+  test('creates provider on the selected gateway', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.createProvider(
+      {
+        name: 'my-openai',
+        type: 'openai',
+        credentials: { apiKey: 'sk-123' },
+      },
+      'remote',
+    );
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['provider', 'create', '--name', 'my-openai', '--type', 'openai', '-g', 'remote', '--credential', 'apiKey'],
+      {
+        env: {
+          apiKey: 'sk-123',
+        },
+      },
+    );
+  });
+
   test('executes provider create with name, type, and credentials', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
