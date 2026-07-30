@@ -125,6 +125,19 @@ export interface OpenshellGatewayStartOptions {
   supervisorImage?: string;
 }
 
+export const GatewayRuntimeInfoSchema = z.looseObject({
+  compute_drivers: z.array(
+    z.looseObject({
+      capabilities: z.looseObject({
+        driver_name: z.string(),
+      }),
+      name: z.string(),
+    }),
+  ),
+});
+
+export type GatewayRuntimeInfo = z.output<typeof GatewayRuntimeInfoSchema>;
+
 export interface GatewaySandboxes {
   gateway: GatewayInfo;
   sandboxes: SandboxInfo[];

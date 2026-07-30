@@ -83,6 +83,7 @@ const openshellCli = {
   checkEndpointStatus: vi.fn(),
   addGateway: vi.fn(),
   removeGateway: vi.fn(),
+  getGatewayInfo: vi.fn(),
 } as unknown as OpenshellCli;
 
 const directories = {
@@ -971,6 +972,9 @@ describe('gateway config generation', () => {
 
   test('enables bind mounts when a local compute driver is detected', async () => {
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
+    vi.mocked(openshellCli.getGatewayInfo).mockResolvedValue({
+      compute_drivers: [{ capabilities: { driver_name: 'podman' }, name: 'podman' }],
+    });
 
     await gateway.start();
 
@@ -979,12 +983,8 @@ describe('gateway config generation', () => {
   });
 
   test('generates config without bind mounts when no driver is available', async () => {
-    vi.mocked(exec.exec).mockImplementation(async (command: string, args?: string[]) => {
-      if (command === 'podman') throw new Error('podman not found');
-      if (command === 'docker') throw new Error('docker not found');
-      if (args?.[0] === '--version') return mockExecResult('openshell-gateway 0.0.69');
-      return mockExecResult('');
-    });
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
+    vi.mocked(openshellCli.getGatewayInfo).mockResolvedValue({ compute_drivers: [] });
 
     await gateway.start();
 

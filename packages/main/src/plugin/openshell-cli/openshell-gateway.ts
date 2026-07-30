@@ -349,21 +349,12 @@ export class OpenshellGateway implements Disposable {
   }
 
   private async detectLocalComputeDriver(): Promise<LocalComputeDriver | undefined> {
-    if (await this.isCommandAvailable('podman')) {
-      return 'podman';
-    }
-    if (await this.isCommandAvailable('docker')) {
-      return 'docker';
-    }
-    return undefined;
-  }
-
-  private async isCommandAvailable(command: string): Promise<boolean> {
     try {
-      await this.exec.exec(command, ['--version']);
-      return true;
+      const info = await this.openshellCli.getGatewayInfo();
+      const driver = info.compute_drivers[0]?.capabilities.driver_name;
+      return driver === 'podman' || driver === 'docker' ? driver : undefined;
     } catch {
-      return false;
+      return undefined;
     }
   }
 
