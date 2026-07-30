@@ -23,6 +23,39 @@ process:
   run_as_group: sandbox
 
 network_policies:
+
+  # Required for Kaiden:
+  # added to be able to download node-gyp releases for pnpm install
+  nodegyp_releases:
+    name: nodegyp-releases
+    endpoints:
+      - host: codeload.github.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        rules:
+          - allow: { method: GET, path: /electron/node-gyp/** }
+      - host: www.electronjs.org
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        rules:
+          - allow: { method: GET, path: /headers/** }
+      - host: artifacts.electronjs.org
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        rules:
+          - allow: { method: GET, path: /** }
+      - host: nodejs.org
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        rules:
+          - allow: { method: GET, path: /dist/** }
+    binaries:
+      - path: "**/node"
+
   vertex_ai:
     name: vertex-ai
     endpoints:
@@ -87,6 +120,8 @@ network_policies:
         access: read-only
     binaries:
       - path: "**/pre-commit"
+      # required by Kaiden for better-sqlite3 (during pnpm install)
+      - path: "**/node"
 
   package_registries:
     name: package-registries
