@@ -123,6 +123,21 @@ jobs:
         timeout-minutes: 3
         run: npx playwright install chromium
 
+      # TEMPORARY: the ubuntu-24.04 runner image bumped Podman to >=5.6.2, which emits
+      # OCI runtime-spec v1.2.0/1.2.1. crun <1.14.3 has a version-check bug that rejects
+      # that spec ("crun: unknown version specified"), breaking every container-backed
+      # provider (Docling, Milvus, ...). Fixed upstream in crun 1.14.3.
+      # https://github.com/containers/podman/issues/27272
+      # Remove once the runner image ships a compatible crun.
+      - name: Upgrade crun (workaround for podman/crun OCI runtime-spec mismatch)
+        if: runner.os == 'Linux'
+        run: |
+          CRUN_VERSION=1.28
+          curl -fsSL -o /tmp/crun "https://github.com/containers/crun/releases/download/${CRUN_VERSION}/crun-${CRUN_VERSION}-linux-amd64"
+          chmod +x /tmp/crun
+          sudo mv /tmp/crun /usr/bin/crun
+          crun --version
+
       - name: Enable Podman socket
         if: runner.os == 'Linux'
         run: |
