@@ -52,7 +52,7 @@ test('Expect step description is displayed', () => {
 test('Expect project folder label and input are rendered', () => {
   render(AgentWorkspaceCreateStepWorkspace, defaultProps);
 
-  expect(screen.getByText('Project folder')).toBeInTheDocument();
+  expect(screen.getByText(/Project folder/)).toBeInTheDocument();
   expect(screen.getByPlaceholderText('/path/to/project')).toBeInTheDocument();
 });
 

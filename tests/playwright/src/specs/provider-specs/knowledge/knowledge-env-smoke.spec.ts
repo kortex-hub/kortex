@@ -42,7 +42,7 @@ test.describe('Knowledge Database provider tests', () => {
   });
 
   test.describe
-    .serial('Knowledge Database page - UI creation', { tag: '@knowledge-provider' }, () => {
+    .serial('Knowledge Database page - UI creation', { tag: ['@knowledge-provider', '@smoke'] }, () => {
       const ENVIRONMENT_NAME = 'test-knowledge-base';
 
       test('[KDB-02] Create knowledge database via UI and verify row appears', async ({
@@ -97,7 +97,7 @@ test.describe('Knowledge Database provider tests', () => {
     });
 
   test.describe
-    .serial('Knowledge Database Pipeline with Milvus', { tag: '@knowledge-provider' }, () => {
+    .serial('Knowledge Database Pipeline with Milvus', { tag: ['@knowledge-provider', '@smoke'] }, () => {
       const ENVIRONMENT_NAME = 'connected-knowledge-base';
       const EXPECTED_COLLECTION_NAME = 'connected_knowledge_base';
 

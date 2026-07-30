@@ -16,8 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ChildProcess } from 'node:child_process';
+import { type ChildProcess, spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
+import { createWriteStream, type WriteStream } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -35,16 +36,26 @@ import type { GatewayInfo } from '/@api/openshell-gateway-info.js';
 import { OpenshellGateway } from './openshell-gateway.js';
 
 vi.mock(import('node:child_process'));
+vi.mock(import('node:fs'));
 vi.mock(import('node:fs/promises'));
 vi.mock(import('/@/plugin/util/exec.js'));
-
-const { spawn } = await import('node:child_process');
 
 const GATEWAY_BINARY = '/usr/local/bin/openshell-gateway';
 const KAIDEN_DATA_DIRECTORY = '/home/user/.local/share/kaiden';
 const GATEWAY_STORAGE_DIRECTORY = join(KAIDEN_DATA_DIRECTORY, 'openshell-gateway');
 const GATEWAY_CONFIG_PATH = join(GATEWAY_STORAGE_DIRECTORY, 'gateway.toml');
 const GATEWAY_DB_URL = `sqlite:${join(GATEWAY_STORAGE_DIRECTORY, 'gateway.db')}?mode=rwc`;
+const GATEWAY_LOG_PATH = join(GATEWAY_STORAGE_DIRECTORY, 'gateway.log');
+
+type MockWriteStream = WriteStream & {
+  write: ReturnType<typeof vi.fn>;
+  end: ReturnType<typeof vi.fn>;
+};
+
+const gatewayLogStream = Object.assign(new EventEmitter(), {
+  write: vi.fn(),
+  end: vi.fn(),
+}) as unknown as MockWriteStream;
 
 function createMockChildProcess(): ChildProcess & { _stdout: EventEmitter; _stderr: EventEmitter } {
   const proc = new EventEmitter() as ChildProcess & { _stdout: EventEmitter; _stderr: EventEmitter };
@@ -87,10 +98,12 @@ const notificationRegistry = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  gatewayLogStream.removeAllListeners();
   vi.mocked(directories.getDataDirectory).mockReturnValue(KAIDEN_DATA_DIRECTORY);
   vi.mocked(cliToolRegistry.getCliToolInfos).mockReturnValue([
     { name: 'openshell-gateway', path: GATEWAY_BINARY },
   ] as unknown as CliToolInfo[]);
+  vi.mocked(createWriteStream).mockReturnValue(gatewayLogStream);
   vi.mocked(exec.exec).mockResolvedValue({ command: '', stdout: '', stderr: '' });
   gateway = new OpenshellGateway(cliToolRegistry, openshellCli, directories, exec, notificationRegistry);
 });
@@ -109,6 +122,7 @@ describe('init', () => {
     expect(openshellCli.listGateways).toHaveBeenCalled();
     expect(openshellCli.checkEndpointStatus).toHaveBeenCalledWith('https://127.0.0.1:8443');
     expect(spawn).not.toHaveBeenCalled();
+    expect(createWriteStream).not.toHaveBeenCalled();
     expect(openshellCli.selectGateway).not.toHaveBeenCalled();
   });
 
@@ -264,15 +278,15 @@ describe('getGatewayBinaryPath', () => {
 });
 
 describe('start', () => {
-  test('spawns the gateway process with default args including config', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  test('spawns the gateway process and writes its output only to the log', async () => {
+    const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const proc = createMockChildProcess();
     vi.mocked(spawn).mockReturnValue(proc);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
     vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
 
     await gateway.start();
-
     expect(spawn).toHaveBeenCalledWith(
       GATEWAY_BINARY,
       [
@@ -288,6 +302,20 @@ describe('start', () => {
       ],
       expect.objectContaining({ detached: false }),
     );
+    expect(createWriteStream).toHaveBeenCalledWith(GATEWAY_LOG_PATH, { flags: 'w' });
+    expect(gatewayLogStream.write).not.toHaveBeenCalled();
+
+    consoleLog.mockClear();
+    consoleError.mockClear();
+    const stdout = Buffer.from('routine gateway output\n');
+    const stderr = Buffer.from('routine gateway diagnostic\n');
+    proc._stdout.emit('data', stdout);
+    proc._stderr.emit('data', stderr);
+
+    expect(gatewayLogStream.write).toHaveBeenNthCalledWith(1, stdout);
+    expect(gatewayLogStream.write).toHaveBeenNthCalledWith(2, stderr);
+    expect(consoleLog).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
   });
 
   test('spawns with custom port and address', async () => {
@@ -511,6 +539,26 @@ describe('stop', () => {
     expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
   });
 
+  test('does not clear a newer process when the stopped process exits late', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const stoppedProcess = createMockChildProcess();
+    const currentProcess = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValueOnce(stoppedProcess).mockReturnValueOnce(currentProcess);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
+    await gateway.start();
+    const stopPromise = gateway.stop();
+    await vi.advanceTimersByTimeAsync(5000);
+    await stopPromise;
+    await gateway.start();
+
+    stoppedProcess.emit('exit', 0, undefined);
+    expect(gateway.isRunning()).toBe(true);
+    vi.useRealTimers();
+  });
+
   test('is a no-op when not running', async () => {
     await gateway.stop();
   });
@@ -535,7 +583,7 @@ describe('isRunning', () => {
 });
 
 describe('dispose', () => {
-  test('stops the gateway process', async () => {
+  test('stops the gateway process and closes its log', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const proc = createMockChildProcess();
     vi.mocked(spawn).mockReturnValue(proc);
@@ -547,6 +595,8 @@ describe('dispose', () => {
     gateway.dispose();
 
     expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
+    proc.emit('exit', 0, undefined);
+    await vi.waitFor(() => expect(gatewayLogStream.end).toHaveBeenCalledOnce());
   });
 });
 

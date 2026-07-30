@@ -180,6 +180,7 @@ beforeEach(() => {
   ]);
   vi.mocked(openshellSandboxesStore).allOpenshellSandboxes = writable<(SandboxInfo & { gatewayName: string })[]>([]);
   vi.mocked(window.checkAgentWorkspaceConfigExists).mockResolvedValue(false);
+  vi.mocked(window.checkAgentWorkspaceGlobalConfigExists).mockResolvedValue(false);
   vi.mocked(window.showMessageBox).mockResolvedValue({ response: 0 });
   resetDraft();
 });
@@ -308,6 +309,36 @@ test('Expect Continue button enabled when name and source are filled', async () 
   });
 
   expect(screen.getByRole('button', { name: 'Continue' })).not.toBeDisabled();
+});
+
+test('Expect Continue button enabled when sourcePath is empty but workspace name is filled', async () => {
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('e.g., front-refactor'), {
+    target: { value: 'my-sandbox' },
+  });
+
+  expect(screen.getByRole('button', { name: 'Continue' })).not.toBeDisabled();
+});
+
+test('Expect whitespace-only sourcePath sent as undefined to createAgentWorkspace', async () => {
+  render(AgentWorkspaceCreate);
+
+  await fireEvent.input(screen.getByPlaceholderText('/path/to/project'), {
+    target: { value: '   ' },
+  });
+  await fireEvent.input(screen.getByPlaceholderText('e.g., front-refactor'), {
+    target: { value: 'my-sandbox' },
+  });
+
+  await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
+
+  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      sourcePath: undefined,
+      name: 'my-sandbox',
+    }),
+  );
 });
 
 test('Expect Continue button disabled when workspace name exceeds hostname limit', async () => {
