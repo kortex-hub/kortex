@@ -208,40 +208,6 @@ describe('activate', () => {
       expect(written.OPENAI_BASE_URL).toBeUndefined();
     });
 
-    test('sets vertexai env vars to route through inference proxy', async () => {
-      const configFile = createConfigFile();
-      const context = createContext([configFile], { provider: 'vertexai', modelLabel: 'claude-sonnet-4' });
-      await agent.preWorkspaceStart(context);
-
-      const env = context.workspace.environment!;
-      expect(env).toEqual(
-        expect.arrayContaining([
-          { name: 'GOOSE_PROVIDER', value: 'anthropic' },
-          { name: 'ANTHROPIC_HOST', value: 'https://inference.local' },
-          { name: 'ANTHROPIC_API_KEY', value: 'unused' },
-        ]),
-      );
-    });
-
-    test('sets GOOSE_PROVIDER to anthropic in config for vertexai', async () => {
-      const configFile = createConfigFile();
-      await agent.preWorkspaceStart(
-        createContext([configFile], { provider: 'vertexai', modelLabel: 'claude-sonnet-4' }),
-      );
-
-      const written = parseWritten(configFile.updateMock);
-      expect(written.GOOSE_PROVIDER).toBe('anthropic');
-      expect(written.OPENAI_BASE_URL).toBeUndefined();
-    });
-
-    test('does not set vertexai env vars for non-vertexai providers', async () => {
-      const configFile = createConfigFile();
-      const context = createContext([configFile], { provider: 'anthropic', modelLabel: 'claude-sonnet-4' });
-      await agent.preWorkspaceStart(context);
-
-      expect(context.workspace.environment).toBeUndefined();
-    });
-
     test('does nothing when config file is not in context', async () => {
       const updateMock = vi.fn();
       const otherFile: AgentConfigurationFile = {
@@ -270,12 +236,12 @@ describe('activate', () => {
       expect(extensions['my-remote']).toEqual({
         name: 'my-remote',
         type: 'streamable_http',
-        url: 'https://mcp.example.com',
+        uri: 'https://mcp.example.com',
         enabled: true,
       });
     });
 
-    test('writes remote MCP servers with headers as envs', async () => {
+    test('writes remote MCP servers with headers', async () => {
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(
         createContext([configFile], {
@@ -296,9 +262,9 @@ describe('activate', () => {
       expect(extensions['authed-server']).toEqual({
         name: 'authed-server',
         type: 'streamable_http',
-        url: 'https://mcp.example.com',
+        uri: 'https://mcp.example.com',
         enabled: true,
-        envs: { Authorization: 'Bearer token123' },
+        headers: { Authorization: 'Bearer token123' },
       });
     });
 
@@ -368,7 +334,7 @@ describe('activate', () => {
       expect(extensions['remote-one']).toEqual({
         name: 'remote-one',
         type: 'streamable_http',
-        url: 'https://mcp.example.com',
+        uri: 'https://mcp.example.com',
         enabled: true,
       });
       expect(extensions['local-one']).toEqual({
@@ -433,7 +399,7 @@ describe('activate', () => {
       });
     });
 
-    test('omits envs when remote MCP server has empty headers', async () => {
+    test('omits headers when remote MCP server has empty headers', async () => {
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(
         createContext([configFile], {
@@ -445,7 +411,7 @@ describe('activate', () => {
 
       const written = parseWritten(configFile.updateMock);
       const extensions = written.extensions as Record<string, Record<string, unknown>>;
-      expect(extensions['no-headers']).not.toHaveProperty('envs');
+      expect(extensions['no-headers']).not.toHaveProperty('headers');
     });
 
     test('omits envs when local MCP command has empty env', async () => {

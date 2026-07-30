@@ -34,7 +34,8 @@ const GooseExtensionEntrySchema = z.looseObject({
   cmd: z.string().optional(),
   args: z.array(z.string()).optional(),
   envs: z.record(z.string(), z.string()).optional(),
-  url: z.string().optional(),
+  uri: z.string().optional(),
+  headers: z.record(z.string(), z.string()).optional(),
   timeout: z.number().optional(),
 });
 
@@ -66,18 +67,6 @@ function nonEmpty(obj: Record<string, string> | undefined): Record<string, strin
   return obj && Object.keys(obj).length > 0 ? obj : undefined;
 }
 
-function setEnvironmentVariable(
-  environment: NonNullable<AgentWorkspaceContext['workspace']['environment']>,
-  name: string,
-  value: string,
-): void {
-  const index = environment.findIndex(entry => entry.name === name);
-  if (index >= 0) {
-    environment.splice(index, 1);
-  }
-  environment.push({ name, value });
-}
-
 export async function activate(extensionContext: ExtensionContext): Promise<void> {
   const disposable = agents.registerAgent({
     id: 'goose',
@@ -100,31 +89,10 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     ],
     destinationSkillsFolder: '${HOME}/.agents/skills',
     isSupportedModelType(type: ModelType): boolean {
-      // Vertex AI setup is prepared below, but it is disabled until Kaiden injects it for Goose as Anthropic.
       return type.name !== 'vertexai';
     },
     async preWorkspaceStart(context: AgentWorkspaceContext): Promise<void> {
       const provider = context.model.llmMetadata?.name;
-
-      // Vertex AI + Goose: route through the openshell inference proxy as an
-      // Anthropic endpoint. We set GOOSE_PROVIDER=anthropic and ANTHROPIC_HOST
-      // here, but openshell overrides GOOSE_PROVIDER with gcp_vertex_ai because
-      // Kaiden creates a google-vertex-ai provider secret. Openshell injects
-      // its own env vars for that provider type and they win over --env flags.
-      // Workaround: pass `--provider anthropic` on the goose CLI to override
-      // the openshell-injected GOOSE_PROVIDER at runtime.
-      if (provider === 'vertexai') {
-        const envVars = [
-          { name: 'GOOSE_PROVIDER', value: 'anthropic' },
-          { name: 'ANTHROPIC_HOST', value: 'https://inference.local' },
-          { name: 'ANTHROPIC_API_KEY', value: 'unused' },
-        ];
-
-        context.workspace.environment ??= [];
-        for (const envVar of envVars) {
-          setEnvironmentVariable(context.workspace.environment, envVar.name, envVar.value);
-        }
-      }
 
       const configFile = context.configurationFiles.find(f => f.path === GOOSE_CONFIG_PATH);
       if (!configFile) {
@@ -135,11 +103,11 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       config.GOOSE_MODEL = context.model.model.label;
 
       if (provider) {
-        config.GOOSE_PROVIDER = provider === 'vertexai' ? 'anthropic' : (GOOSE_PROVIDER_MAPPING[provider] ?? provider);
+        config.GOOSE_PROVIDER = GOOSE_PROVIDER_MAPPING[provider] ?? provider;
       }
 
       const endpoint = context.model.endpoint;
-      if (endpoint && provider !== 'vertexai') {
+      if (endpoint) {
         config.OPENAI_BASE_URL = endpoint;
       }
 
@@ -153,9 +121,9 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
           config.extensions[server.name] = {
             name: server.name,
             type: 'streamable_http',
-            url: server.url,
+            uri: server.url,
             enabled: true,
-            envs: nonEmpty(server.headers),
+            headers: nonEmpty(server.headers),
           };
         }
 
