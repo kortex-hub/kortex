@@ -18,6 +18,7 @@
 
 // Import to access mocked functionionalities such as using vi.mock (we don't want to actually call node:fs methods)
 import * as fs from 'node:fs';
+import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -424,7 +425,7 @@ describe('env-prefix default resolution', () => {
 
     const records = registerWithDefault(['file:~/.config/gcloud/creds.json']);
 
-    expect(records['env.test.field']?.default).toContain('.config/gcloud/creds.json');
+    expect(records['env.test.field']?.default).toContain(path.join('.config', 'gcloud', 'creds.json'));
   });
 
   test('should resolve file: entry with $VAR when env var and file exist', () => {
