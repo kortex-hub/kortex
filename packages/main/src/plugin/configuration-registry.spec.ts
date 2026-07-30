@@ -19,14 +19,14 @@
 // Import to access mocked functionionalities such as using vi.mock (we don't want to actually call node:fs methods)
 import * as fs from 'node:fs';
 
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import {
   CONFIGURATION_SYSTEM_MANAGED_DEFAULTS_SCOPE,
   CONFIGURATION_SYSTEM_MANAGED_LOCKED_SCOPE,
 } from '/@api/configuration/constants.js';
-import type { IConfigurationNode } from '/@api/configuration/models.js';
+import type { IConfigurationNode, IConfigurationPropertyRecordedSchema } from '/@api/configuration/models.js';
 import type { IDisposable } from '/@api/disposable.js';
 
 import { ConfigurationRegistry } from './configuration-registry.js';
@@ -40,6 +40,7 @@ vi.mock('node:fs', () => ({
   readFileSync: vi.fn(),
   writeFileSync: vi.fn(),
   cpSync: vi.fn(),
+  accessSync: vi.fn(),
   promises: {
     access: vi.fn(),
     mkdir: vi.fn(),
@@ -334,6 +335,132 @@ test('addConfigurationEnum with a previous default value', async () => {
   // check default property is no longer 'myValue3' but it is defaulted to myValue1
   const val = configurationRegistry.getConfiguration('my.fake')?.get<string>('enum.property');
   expect(val).toEqual('myValue1');
+});
+
+describe('env-prefix default resolution', () => {
+  const ENV_KEYS = ['TEST_ENV_VAR_A', 'TEST_ENV_VAR_B', 'APPDATA'] as const;
+  const savedEnv: Record<string, string | undefined> = {};
+
+  beforeEach(() => {
+    for (const key of ENV_KEYS) {
+      savedEnv[key] = process.env[key];
+      delete process.env[key];
+    }
+  });
+
+  afterEach(() => {
+    for (const key of ENV_KEYS) {
+      if (savedEnv[key] !== undefined) {
+        process.env[key] = savedEnv[key];
+      } else {
+        delete process.env[key];
+      }
+    }
+  });
+
+  function registerWithDefault(defaultValue: unknown): Record<string, IConfigurationPropertyRecordedSchema> {
+    const node: IConfigurationNode = {
+      id: 'env.test',
+      title: 'Env Test',
+      type: 'object',
+      properties: {
+        ['env.test.field']: {
+          description: 'A test field',
+          type: 'string',
+          scope: 'InferenceProviderConnectionFactory',
+          default: defaultValue,
+        },
+      },
+    };
+    configurationRegistry.registerConfigurations([node]);
+    return configurationRegistry.getConfigurationProperties();
+  }
+
+  test('should resolve env: entry to environment variable value', () => {
+    process.env['TEST_ENV_VAR_A'] = 'resolved-value';
+
+    const records = registerWithDefault(['env:TEST_ENV_VAR_A']);
+
+    expect(records['env.test.field']?.default).toBe('resolved-value');
+  });
+
+  test('should resolve first available env var from array', () => {
+    process.env['TEST_ENV_VAR_B'] = 'fallback-value';
+
+    const records = registerWithDefault(['env:TEST_ENV_VAR_A', 'env:TEST_ENV_VAR_B']);
+
+    expect(records['env.test.field']?.default).toBe('fallback-value');
+  });
+
+  test('should prefer first entry in array when multiple match', () => {
+    process.env['TEST_ENV_VAR_A'] = 'primary';
+    process.env['TEST_ENV_VAR_B'] = 'secondary';
+
+    const records = registerWithDefault(['env:TEST_ENV_VAR_A', 'env:TEST_ENV_VAR_B']);
+
+    expect(records['env.test.field']?.default).toBe('primary');
+  });
+
+  test('should resolve to undefined when no env vars are set', () => {
+    const records = registerWithDefault(['env:TEST_ENV_VAR_A', 'env:TEST_ENV_VAR_B']);
+
+    expect(records['env.test.field']?.default).toBeUndefined();
+  });
+
+  test('should leave non-env defaults unchanged', () => {
+    const records = registerWithDefault('plain-value');
+
+    expect(records['env.test.field']?.default).toBe('plain-value');
+  });
+
+  test('should leave non-string defaults unchanged', () => {
+    const records = registerWithDefault(42);
+
+    expect(records['env.test.field']?.default).toBe(42);
+  });
+
+  test('should resolve file: entry with tilde when file exists', () => {
+    vi.mocked(fs.accessSync).mockReturnValue(undefined);
+
+    const records = registerWithDefault(['file:~/.config/gcloud/creds.json']);
+
+    expect(records['env.test.field']?.default).toContain('.config/gcloud/creds.json');
+  });
+
+  test('should resolve file: entry with $VAR when env var and file exist', () => {
+    process.env['APPDATA'] = '/mock/appdata';
+    vi.mocked(fs.accessSync).mockReturnValue(undefined);
+
+    const records = registerWithDefault(['file:$APPDATA/gcloud/creds.json']);
+
+    expect(records['env.test.field']?.default).toContain('appdata');
+    expect(records['env.test.field']?.default).toContain('gcloud');
+  });
+
+  test('should skip file: entry with $VAR when env var is not set', () => {
+    const records = registerWithDefault(['file:$APPDATA/gcloud/creds.json']);
+
+    expect(records['env.test.field']?.default).toBeUndefined();
+  });
+
+  test('should skip file: entry when file does not exist', () => {
+    vi.mocked(fs.accessSync).mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
+
+    const records = registerWithDefault(['env:TEST_ENV_VAR_A', 'file:/nonexistent/path.json']);
+
+    expect(records['env.test.field']?.default).toBeUndefined();
+  });
+
+  test('should prefer env var over file: fallback', () => {
+    process.env['TEST_ENV_VAR_A'] = '/custom/creds.json';
+    vi.mocked(fs.accessSync).mockReturnValue(undefined);
+
+    const records = registerWithDefault(['env:TEST_ENV_VAR_A', 'file:~/.config/gcloud/creds.json']);
+
+    expect(records['env.test.field']?.default).toBe('/custom/creds.json');
+  });
 });
 
 test('check to be able to register a property with a group', async () => {

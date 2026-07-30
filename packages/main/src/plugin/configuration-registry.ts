@@ -18,6 +18,7 @@
 
 import * as fs from 'node:fs';
 import { promises as fsPromises } from 'node:fs';
+import { homedir } from 'node:os';
 import * as path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 
@@ -231,6 +232,7 @@ export class ConfigurationRegistry implements IConfigurationRegistry {
             configurationValue[key] = configProperty.default;
           }
         }
+        configProperty.default = this.resolveEnvDefault(configProperty.default);
         configProperty.scope ??= CONFIGURATION_DEFAULT_SCOPE;
         this.configurationProperties[key] = configProperty;
       }
@@ -240,6 +242,71 @@ export class ConfigurationRegistry implements IConfigurationRegistry {
       this._onDidUpdateConfiguration.fire({ properties });
     }
     return properties;
+  }
+
+  /**
+   * Resolves a declarative default value by trying each entry in order
+   * and returning the first match. Supports `env:VAR` (environment variable lookup)
+   * and `file:PATH` (file existence check) prefixes. Returns the original value
+   * if it is not a declarative default, or `undefined` if no entry resolves.
+   */
+  private resolveEnvDefault(value: unknown): unknown {
+    const entries = this.parseDefaultEntries(value);
+    if (!entries) {
+      return value;
+    }
+    for (const entry of entries) {
+      if (entry.startsWith('env:')) {
+        const resolved = process.env[entry.slice(4)];
+        if (resolved) {
+          return resolved;
+        }
+      } else if (entry.startsWith('file:')) {
+        const resolved = this.resolveFilePath(entry.slice(5));
+        if (resolved) {
+          return resolved;
+        }
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Parses a declarative default into an ordered list of entries.
+   * Accepts a JSON array of strings (e.g. `["env:VAR", "file:PATH"]`).
+   * Returns `undefined` for plain (non-declarative) defaults.
+   */
+  private parseDefaultEntries(value: unknown): string[] | undefined {
+    if (Array.isArray(value) && value.every(v => typeof v === 'string')) {
+      return value as string[];
+    }
+    return undefined;
+  }
+
+  /**
+   * Expands a file path and returns it only if the file exists on disk.
+   * Supports `~` (user home directory) and `$VAR` (environment variable, e.g. `$APPDATA`)
+   * as path prefixes for cross-platform resolution.
+   */
+  private resolveFilePath(filePath: string): string | undefined {
+    let expanded: string;
+    if (filePath.startsWith('~')) {
+      expanded = path.join(homedir(), filePath.slice(1));
+    } else if (filePath.startsWith('$')) {
+      const sepIdx = filePath.indexOf('/');
+      const varName = sepIdx > 0 ? filePath.slice(1, sepIdx) : filePath.slice(1);
+      const envValue = process.env[varName];
+      if (!envValue) return undefined;
+      expanded = sepIdx > 0 ? path.join(envValue, filePath.slice(sepIdx)) : envValue;
+    } else {
+      expanded = filePath;
+    }
+    try {
+      fs.accessSync(expanded);
+      return expanded;
+    } catch {
+      return undefined;
+    }
   }
 
   private isDefaultScope(scope?: ConfigurationScope | ConfigurationScope[]): boolean {
