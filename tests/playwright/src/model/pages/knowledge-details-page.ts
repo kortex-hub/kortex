@@ -105,7 +105,7 @@ export class KnowledgeDetailsPage extends BasePage {
     await expect(this.deleteButton).toBeEnabled();
     await this.deleteButton.click();
     await handleDialogIfPresent(this.page);
-    return this.closeDetailsPage();
+    return new KnowledgePage(this.page);
   }
 
   async closeDetailsPage(): Promise<KnowledgePage> {
