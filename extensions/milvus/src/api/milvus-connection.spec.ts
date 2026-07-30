@@ -35,7 +35,9 @@ test('should register MCP server with uvx runtime hint', () => {
   const connection = new MilvusConnection('/path', 'test-db', 'container-1', 19530, true);
 
   const serverDetail = vi.mocked(api.mcpRegistry.registerServer).mock.calls[0][0];
-  expect(serverDetail.packages[0].runtimeHint).toBe('uvx');
+  const pkg = serverDetail.packages?.[0];
+  expect(pkg).toBeDefined();
+  expect(pkg?.runtimeHint).toBe('uvx');
   expect(connection.status()).toBe('started');
 });
 
@@ -43,7 +45,9 @@ test('should register MCP server with pinned mcp SDK runtime arguments', () => {
   const connection = new MilvusConnection('/path', 'test-db', 'container-1', 19530, true);
 
   const serverDetail = vi.mocked(api.mcpRegistry.registerServer).mock.calls[0][0];
-  expect(serverDetail.packages[0].runtimeArguments).toEqual(
+  const pkg = serverDetail.packages?.[0];
+  expect(pkg).toBeDefined();
+  expect(pkg?.runtimeArguments).toEqual(
     expect.arrayContaining([
       expect.objectContaining({ value: '--with' }),
       expect.objectContaining({ value: 'mcp==1.29.0' }),
@@ -57,8 +61,10 @@ test('should register MCP server with correct name and version', () => {
 
   const serverDetail = vi.mocked(api.mcpRegistry.registerServer).mock.calls[0][0];
   expect(serverDetail.name).toBe('kaiden.milvus.mcp-server-milvus-test-db');
-  expect(serverDetail.packages[0].identifier).toBe('mcp-server-milvus');
-  expect(serverDetail.packages[0].version).toBe('0.1.1.dev8');
+  const pkg = serverDetail.packages?.[0];
+  expect(pkg).toBeDefined();
+  expect(pkg?.identifier).toBe('mcp-server-milvus');
+  expect(pkg?.version).toBe('0.1.1.dev8');
   expect(connection.status()).toBe('started');
 });
 
@@ -66,7 +72,9 @@ test('should register MCP server with milvus-uri package arguments', () => {
   const connection = new MilvusConnection('/path', 'test-db', 'container-1', 19530, true);
 
   const serverDetail = vi.mocked(api.mcpRegistry.registerServer).mock.calls[0][0];
-  expect(serverDetail.packages[0].packageArguments).toEqual([
+  const pkg = serverDetail.packages?.[0];
+  expect(pkg).toBeDefined();
+  expect(pkg?.packageArguments).toEqual([
     expect.objectContaining({ value: '--milvus-uri' }),
     expect.objectContaining({ value: 'http://localhost:19530' }),
   ]);
