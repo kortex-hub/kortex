@@ -18,8 +18,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { extname } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { basename, extname } from 'node:path';
 
 import * as acp from '@agentclientprotocol/sdk';
 import { inject, injectable, preDestroy } from 'inversify';
@@ -47,7 +46,9 @@ import { AGENT_LABEL } from '/@api/openshell-gateway-info.js';
 import { createAcpDebug } from './acp-debug.js';
 
 const MAX_STDERR_LINES = 100;
-const PTY_COLS = 999_999;
+const PTY_COLS = 65_535;
+// eslint-disable-next-line sonarjs/publicly-writable-directories
+const ATTACHMENT_UPLOAD_DIR = '/tmp/kaiden-attachments';
 
 const debugPty = createAcpDebug('pty');
 const debugProtocol = createAcpDebug('protocol');
@@ -56,6 +57,12 @@ const debugLifecycle = createAcpDebug('lifecycle');
 interface PendingRequest {
   resolve: (value: unknown) => void;
   reject: (err: Error) => void;
+}
+
+interface UploadedAttachment extends AcpAttachment {
+  isText: boolean;
+  textContent?: string;
+  remotePath?: string;
 }
 
 interface AcpSession {
@@ -69,6 +76,7 @@ interface AcpSession {
   messageTurn: number;
   connectionClosed: boolean;
   agentCommand: string[];
+  gatewayName?: string;
 }
 
 @injectable()
@@ -243,6 +251,7 @@ export class AcpSessionManager {
       messageTurn: 0,
       connectionClosed: false,
       agentCommand: command,
+      gatewayName: sandbox.labels?.['gateway'],
     };
 
     this.sessions.set(sessionId, session);
@@ -742,7 +751,20 @@ export class AcpSessionManager {
       await this.reconnectSession(sessionId);
     }
 
-    const contentBlocks = await this.buildContentBlocks(prompt, attachments);
+    let contentBlocks: acp.ContentBlock[];
+    try {
+      const uploadedAttachments = await this.uploadAttachments(
+        session.info.sandboxName,
+        attachments,
+        session.gatewayName,
+      );
+      contentBlocks = this.buildContentBlocks(prompt, uploadedAttachments);
+    } catch (err: unknown) {
+      console.error(`[ACP ${session.info.sandboxName}] attachment upload failed:`, err);
+      this.updateSessionStatus(sessionId, 'error');
+      session.info.error = err instanceof Error ? err.message : String(err);
+      throw err;
+    }
 
     try {
       const result = await session.connection.prompt({
@@ -774,37 +796,53 @@ export class AcpSessionManager {
     }
   }
 
-  private async buildContentBlocks(text: string, attachments?: AcpAttachment[]): Promise<acp.ContentBlock[]> {
+  private async uploadAttachments(
+    sandboxName: string,
+    attachments?: AcpAttachment[],
+    gatewayName?: string,
+  ): Promise<UploadedAttachment[] | undefined> {
+    if (!attachments?.length) return undefined;
+
+    const results: UploadedAttachment[] = [];
+    for (const attachment of attachments) {
+      const isText =
+        attachment.mimeType.startsWith('text/') ||
+        AcpSessionManager.TEXT_EXTENSIONS.has(extname(attachment.filePath).toLowerCase());
+
+      if (isText) {
+        const data = await readFile(attachment.filePath, 'utf-8');
+        results.push({ ...attachment, isText: true, textContent: data });
+      } else {
+        const destDir = `${ATTACHMENT_UPLOAD_DIR}/${randomUUID()}/`;
+        await this.openshellCli.uploadToSandbox(sandboxName, attachment.filePath, destDir, gatewayName);
+        const remotePath = `${destDir}${basename(attachment.filePath)}`;
+        results.push({ ...attachment, isText: false, remotePath });
+      }
+    }
+    return results;
+  }
+
+  private buildContentBlocks(text: string, attachments?: UploadedAttachment[]): acp.ContentBlock[] {
     const blocks: acp.ContentBlock[] = [];
 
     if (attachments) {
       for (const attachment of attachments) {
-        const data = await readFile(attachment.filePath);
-        const isImage = attachment.mimeType.startsWith('image/');
-
-        if (isImage) {
+        if (attachment.isText) {
           blocks.push({
-            type: 'image',
-            data: data.toString('base64'),
-            mimeType: attachment.mimeType,
+            type: 'resource',
+            resource: {
+              uri: `file://${attachment.remotePath ?? attachment.filePath}`,
+              text: attachment.textContent!,
+              mimeType: attachment.mimeType,
+            },
           });
         } else {
-          const isText =
-            attachment.mimeType.startsWith('text/') ||
-            AcpSessionManager.TEXT_EXTENSIONS.has(extname(attachment.filePath).toLowerCase());
-          const uri = pathToFileURL(attachment.filePath).href;
-
-          if (isText) {
-            blocks.push({
-              type: 'resource',
-              resource: { uri, text: data.toString('utf-8'), mimeType: attachment.mimeType },
-            });
-          } else {
-            blocks.push({
-              type: 'resource',
-              resource: { uri, blob: data.toString('base64'), mimeType: attachment.mimeType },
-            });
-          }
+          blocks.push({
+            type: 'resource_link',
+            uri: `file://${attachment.remotePath!}`,
+            name: attachment.fileName,
+            mimeType: attachment.mimeType,
+          });
         }
       }
     }

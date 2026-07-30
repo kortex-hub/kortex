@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { readFile } from 'node:fs/promises';
+
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { AgentRegistry } from '/@/plugin/agent-registry.js';
@@ -27,6 +29,8 @@ import { AGENT_LABEL, type SandboxInfo } from '/@api/openshell-gateway-info.js';
 
 import { AcpSessionManager } from './acp-session-manager.js';
 
+vi.mock(import('node:fs/promises'));
+
 const apiSender: ApiSenderType = {
   send: vi.fn(),
   receive: vi.fn(),
@@ -35,6 +39,7 @@ const apiSender: ApiSenderType = {
 const openshellCli: OpenshellCli = {
   getCliPath: vi.fn().mockReturnValue('/usr/bin/openshell'),
   listSandboxes: vi.fn(),
+  uploadToSandbox: vi.fn(),
 } as unknown as OpenshellCli;
 
 const agentRegistry: AgentRegistry = {
@@ -137,6 +142,135 @@ describe('AcpSessionManager', () => {
       await expect(manager.resolveAgentCommand(options, sandbox)).rejects.toThrow(
         'Agent "Claude Code" does not support ACP',
       );
+    });
+  });
+
+  describe('uploadAttachments', () => {
+    test('uploads image attachments to sandbox and returns remote path', async () => {
+      vi.mocked(openshellCli.uploadToSandbox).mockResolvedValue();
+
+      const attachments = [{ filePath: '/local/photo.png', fileName: 'photo.png', mimeType: 'image/png' }];
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (manager as any).uploadAttachments('test-sandbox', attachments);
+
+      expect(openshellCli.uploadToSandbox).toHaveBeenCalledWith(
+        'test-sandbox',
+        '/local/photo.png',
+        expect.stringContaining('/tmp/kaiden-attachments/'),
+        undefined,
+      );
+      expect(result).toHaveLength(1);
+      expect(result[0].isText).toBe(false);
+      expect(result[0].remotePath).toMatch(/\/tmp\/kaiden-attachments\/.*\/photo\.png/);
+    });
+
+    test('reads text attachments inline without uploading', async () => {
+      vi.mocked(readFile).mockResolvedValue('hello world');
+
+      const attachments = [{ filePath: '/local/notes.txt', fileName: 'notes.txt', mimeType: 'text/plain' }];
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (manager as any).uploadAttachments('test-sandbox', attachments);
+
+      expect(openshellCli.uploadToSandbox).not.toHaveBeenCalled();
+      expect(result).toHaveLength(1);
+      expect(result[0].isText).toBe(true);
+      expect(result[0].textContent).toBe('hello world');
+    });
+
+    test('uploads PDF attachments to sandbox', async () => {
+      vi.mocked(openshellCli.uploadToSandbox).mockResolvedValue();
+
+      const attachments = [{ filePath: '/local/doc.pdf', fileName: 'doc.pdf', mimeType: 'application/pdf' }];
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (manager as any).uploadAttachments('test-sandbox', attachments);
+
+      expect(openshellCli.uploadToSandbox).toHaveBeenCalled();
+      expect(result[0].isText).toBe(false);
+      expect(result[0].remotePath).toMatch(/\/tmp\/kaiden-attachments\/.*\/doc\.pdf/);
+    });
+
+    test('returns undefined when no attachments', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await (manager as any).uploadAttachments('test-sandbox', undefined);
+      expect(result).toBeUndefined();
+    });
+
+    test('passes gateway name to uploadToSandbox when provided', async () => {
+      vi.mocked(openshellCli.uploadToSandbox).mockResolvedValue();
+
+      const attachments = [{ filePath: '/local/photo.png', fileName: 'photo.png', mimeType: 'image/png' }];
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (manager as any).uploadAttachments('test-sandbox', attachments, 'my-gateway');
+
+      expect(openshellCli.uploadToSandbox).toHaveBeenCalledWith(
+        'test-sandbox',
+        '/local/photo.png',
+        expect.stringContaining('/tmp/kaiden-attachments/'),
+        'my-gateway',
+      );
+    });
+  });
+
+  describe('buildContentBlocks', () => {
+    test('creates resource_link for uploaded non-text files', () => {
+      const attachments = [
+        {
+          filePath: '/local/photo.png',
+          fileName: 'photo.png',
+          mimeType: 'image/png',
+          isText: false,
+          remotePath: '/tmp/kaiden-attachments/uuid-123/photo.png',
+        },
+      ];
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const blocks = (manager as any).buildContentBlocks('describe this', attachments);
+
+      expect(blocks).toHaveLength(2);
+      expect(blocks[0]).toEqual({
+        type: 'resource_link',
+        uri: 'file:///tmp/kaiden-attachments/uuid-123/photo.png',
+        name: 'photo.png',
+        mimeType: 'image/png',
+      });
+      expect(blocks[1]).toEqual({ type: 'text', text: 'describe this' });
+    });
+
+    test('creates resource with inline text for text files', () => {
+      const attachments = [
+        {
+          filePath: '/local/notes.txt',
+          fileName: 'notes.txt',
+          mimeType: 'text/plain',
+          isText: true,
+          textContent: 'hello world',
+        },
+      ];
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const blocks = (manager as any).buildContentBlocks('summarize this', attachments);
+
+      expect(blocks).toHaveLength(2);
+      expect(blocks[0]).toEqual({
+        type: 'resource',
+        resource: {
+          uri: 'file:///local/notes.txt',
+          text: 'hello world',
+          mimeType: 'text/plain',
+        },
+      });
+      expect(blocks[1]).toEqual({ type: 'text', text: 'summarize this' });
+    });
+
+    test('creates only text block when no attachments', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const blocks = (manager as any).buildContentBlocks('hello', undefined);
+
+      expect(blocks).toEqual([{ type: 'text', text: 'hello' }]);
     });
   });
 });
