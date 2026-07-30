@@ -74,6 +74,10 @@ async function handleAddFile(): Promise<void> {
   }
 }
 
+function handleDeleteRedirect(): void {
+  router.goto('/rag-environments');
+}
+
 async function handleRemoveFile(filePath: string): Promise<void> {
   if (!ragEnvironment) return;
 
@@ -108,7 +112,7 @@ async function handleRemoveFile(filePath: string): Promise<void> {
   {/snippet}
   {#snippet actionsSnippet()}
     {#if ragEnvironment}
-      <RAGEnvironmentActions object={ragEnvironment} />
+      <RAGEnvironmentActions object={ragEnvironment} onDelete={handleDeleteRedirect} />
     {/if}
   {/snippet}
   {#snippet contentSnippet()}
