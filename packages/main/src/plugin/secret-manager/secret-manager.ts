@@ -69,8 +69,8 @@ export class SecretManager {
     return result;
   }
 
-  async list(): Promise<SecretInfo[]> {
-    return this.cli.listSecrets();
+  async list(gateway?: string): Promise<SecretInfo[]> {
+    return this.cli.listSecrets(gateway);
   }
 
   async remove(name: string): Promise<SecretName> {
@@ -231,8 +231,8 @@ export class SecretManager {
       },
     );
 
-    this.ipcHandle('secret-manager:list', async (): Promise<SecretInfo[]> => {
-      return this.list();
+    this.ipcHandle('secret-manager:list', async (_listener: unknown, gateway?: string): Promise<SecretInfo[]> => {
+      return this.list(gateway);
     });
 
     this.ipcHandle('secret-manager:remove', async (_listener: unknown, name: string): Promise<SecretName> => {

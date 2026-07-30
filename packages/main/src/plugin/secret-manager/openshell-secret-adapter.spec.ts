@@ -117,6 +117,14 @@ describe('listSecrets', () => {
     expect(result).toEqual([]);
   });
 
+  test('lists secrets from the selected gateway', async () => {
+    vi.mocked(openshellCli.listProviders).mockResolvedValue([]);
+
+    await adapter.listSecrets('remote');
+
+    expect(openshellCli.listProviders).toHaveBeenCalledWith('remote');
+  });
+
   test('rejects when openshellCli.listProviders fails', async () => {
     vi.mocked(openshellCli.listProviders).mockRejectedValue(new Error('no gateway configured'));
 

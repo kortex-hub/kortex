@@ -52,7 +52,7 @@ export interface SecretCreateOptions extends SecretInfo {
  */
 export interface SecretCliBackend {
   createSecret(options: SecretCreateOptions): Promise<SecretName>;
-  listSecrets(): Promise<SecretInfo[]>;
+  listSecrets(gateway?: string): Promise<SecretInfo[]>;
   removeSecret(name: string): Promise<SecretName>;
   listServices(): Promise<OpenshellProfile[]>;
 }

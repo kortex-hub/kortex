@@ -125,6 +125,7 @@ const mockOllamaProvider: ProviderInfo = {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(window.listSecrets).mockResolvedValue([]);
   vi.useFakeTimers({ shouldAdvanceTime: true });
   HTMLElement.prototype.animate = vi.fn().mockReturnValue({
     finished: Promise.resolve(),
@@ -492,17 +493,19 @@ test('Expect secrets empty state shown when vault is empty', async () => {
   expect(screen.getByRole('button', { name: 'Open Vault' })).toBeInTheDocument();
 });
 
-test('Expect secrets listed when vault has entries', async () => {
-  vi.mocked(secretVaultStore).secretVaultInfos = writable<readonly SecretVaultInfo[]>([
+test('Expect secrets listed from the selected gateway', async () => {
+  vi.mocked(openshellGatewaysStore).openshellGateways.set([
+    { name: 'local', endpoint: 'http://localhost:17670', active: true },
+    { name: 'remote', endpoint: 'https://remote.example.com', active: false },
+  ]);
+  vi.mocked(window.listSecrets).mockResolvedValue([
     {
-      id: 'github-token',
-      name: 'GitHub Token',
+      name: 'github-token',
       type: 'github',
       description: 'Personal access token',
     },
     {
-      id: 'anthropic-key',
-      name: 'Anthropic Key',
+      name: 'anthropic-key',
       type: 'anthropic',
       description: 'API key',
     },
@@ -510,11 +513,13 @@ test('Expect secrets listed when vault has entries', async () => {
 
   render(AgentWorkspaceCreate);
 
+  await fireEvent.change(screen.getByRole('combobox'), { target: { value: 'remote' } });
   await navigateToToolsSecretsStep();
   await expandCustomize();
 
-  expect(screen.getByText('GitHub Token')).toBeInTheDocument();
-  expect(screen.getByText('Anthropic Key')).toBeInTheDocument();
+  expect(screen.getByText('github-token')).toBeInTheDocument();
+  expect(screen.getByText('anthropic-key')).toBeInTheDocument();
+  expect(window.listSecrets).toHaveBeenCalledWith('remote');
   expect(screen.getByText('Secret Vault')).toBeInTheDocument();
   expect(screen.queryByText('No secrets in your vault yet.')).not.toBeInTheDocument();
 });

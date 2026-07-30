@@ -532,8 +532,8 @@ export function initExposure(): void {
     return ipcInvoke('secret-manager:create', options);
   });
 
-  contextBridge.exposeInMainWorld('listSecrets', async (): Promise<SecretInfo[]> => {
-    return ipcInvoke('secret-manager:list');
+  contextBridge.exposeInMainWorld('listSecrets', async (gateway?: string): Promise<SecretInfo[]> => {
+    return ipcInvoke('secret-manager:list', gateway);
   });
 
   contextBridge.exposeInMainWorld('removeSecret', async (name: string): Promise<SecretName> => {
