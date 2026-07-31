@@ -211,7 +211,7 @@ onMount(async () => {
   }
 });
 let customHosts = $derived(wizard.draft.hostsByMode[wizard.draft.selectedNetwork] ?? []);
-let reachableGateways = $derived($openshellGateways.filter(gateway => gateway.gatewayState?.reachable));
+let reachableGateways = $derived($openshellGateways.filter(gateway => gateway.gatewayState?.reachable !== false));
 
 $effect.pre(() => {
   const selectedGatewayExists = reachableGateways.some(gateway => gateway.name === wizard.draft.selectedGateway);

@@ -140,6 +140,14 @@ export class AgentWorkspaceManager implements Disposable {
         throw new Error('model is required to create a workspace');
       }
 
+      await this.openshellGatewayStateManager.whenReady();
+      const gateway = this.openshellGatewayStateManager
+        .listGateways()
+        .find(candidate => candidate.name === options.gateway);
+      if (!gateway?.gatewayState?.reachable) {
+        throw new Error(`gateway "${options.gateway}" is unreachable`);
+      }
+
       if (options.replaceConfig) {
         if (options.sourcePath) {
           await rm(join(options.sourcePath, '.kaiden', 'workspace.json'), { force: true });

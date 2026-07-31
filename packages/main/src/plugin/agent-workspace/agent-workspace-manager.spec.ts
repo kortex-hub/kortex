@@ -149,6 +149,7 @@ const openshellGateway = {
 const openshellGatewayStateManager = {
   listGateways: vi.fn(),
   refresh: vi.fn(),
+  whenReady: vi.fn(),
   onDidUpdateGateways: vi.fn((cb: () => void) => {
     gatewayStateUpdateCallback = cb;
     return { dispose: vi.fn() };
@@ -182,6 +183,14 @@ beforeEach(() => {
   vi.mocked(writeFile).mockResolvedValue(undefined);
   vi.mocked(rm).mockResolvedValue(undefined);
   vi.mocked(openshellGatewayStateManager.refresh).mockResolvedValue(undefined);
+  vi.mocked(openshellGatewayStateManager.whenReady).mockResolvedValue(undefined);
+  vi.mocked(openshellGatewayStateManager.listGateways).mockReturnValue([
+    {
+      name: 'kaiden',
+      endpoint: 'http://127.0.0.1:17670',
+      gatewayState: { reachable: true, health: 'healthy' },
+    },
+  ]);
   vi.mocked(readFile).mockResolvedValue('{}');
   vi.mocked(realpath).mockImplementation(async (p: unknown) => p as string);
   vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
@@ -351,6 +360,37 @@ describe('create – OpenShell mode', () => {
         command: ['true'],
       }),
     );
+  });
+
+  test('rejects an unreachable gateway before creating a sandbox', async () => {
+    vi.mocked(openshellGatewayStateManager.listGateways).mockReturnValue([
+      {
+        name: 'kaiden',
+        endpoint: 'http://127.0.0.1:17670',
+        gatewayState: { reachable: false, health: 'unknown' },
+      },
+    ]);
+
+    await expect(manager.create(defaultOptions)).rejects.toThrow('gateway "kaiden" is unreachable');
+
+    expect(openshellCli.createSandbox).not.toHaveBeenCalled();
+  });
+
+  test('waits for the gateway cache before checking reachability', async () => {
+    let resolveReady: () => void;
+    vi.mocked(openshellGatewayStateManager.whenReady).mockReturnValue(
+      new Promise(resolve => {
+        resolveReady = resolve;
+      }),
+    );
+
+    const createPromise = manager.create(defaultOptions);
+    await Promise.resolve();
+    expect(openshellGatewayStateManager.listGateways).not.toHaveBeenCalled();
+
+    resolveReady!();
+    await createPromise;
+    expect(openshellGatewayStateManager.listGateways).toHaveBeenCalledOnce();
   });
 
   test('returns { id: sandboxName }', async () => {

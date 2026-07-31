@@ -316,6 +316,18 @@ test('Expect selected gateway included when creating a workspace', async () => {
   expect(window.createAgentWorkspace).toHaveBeenCalledWith(expect.objectContaining({ gateway: 'remote' }));
 });
 
+test('offers gateways while their reachability state is unavailable', () => {
+  vi.mocked(openshellGatewaysStore).openshellGateways.set([
+    { name: 'local', endpoint: 'http://localhost:17670', active: true },
+    { name: 'remote', endpoint: 'https://remote.example.com', active: false },
+  ]);
+
+  render(AgentWorkspaceCreate);
+
+  expect(screen.getByRole('option', { name: /local/ })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: /remote/ })).toBeInTheDocument();
+});
+
 test('does not offer unreachable gateways for workspace creation', () => {
   vi.mocked(openshellGatewaysStore).openshellGateways.set([
     {

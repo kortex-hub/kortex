@@ -18,9 +18,9 @@
 
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
-import type { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import type { IConfigurationRegistry } from '/@api/configuration/models.js';
 
+import type { OpenshellCli } from './openshell-cli.js';
 import { OpenshellGatewayStateManager } from './openshell-gateway-state-manager.js';
 
 const openshellCli = {
@@ -173,6 +173,23 @@ test('polls gateways and stops polling when disposed', async () => {
   expect(openshellCli.listGateways).toHaveBeenCalledTimes(2);
 });
 
+test('waits for the initial refresh before becoming ready', async () => {
+  let resolveListGateways: (gateways: []) => void;
+  vi.mocked(openshellCli.listGateways).mockReturnValue(
+    new Promise(resolve => {
+      resolveListGateways = resolve;
+    }),
+  );
+
+  manager.init();
+  const ready = manager.whenReady();
+
+  expect(manager.listGateways()).toEqual([]);
+  resolveListGateways!([]);
+  await ready;
+  expect(openshellCli.listGateways).toHaveBeenCalledOnce();
+});
+
 test('reschedules polling when the configured interval changes', async () => {
   vi.useFakeTimers();
   vi.mocked(openshellCli.listGateways).mockResolvedValue([]);
@@ -184,6 +201,18 @@ test('reschedules polling when the configured interval changes', async () => {
   pollInterval = 1;
   configurationChangeCallback?.({ key: 'openshell.gateway.pollInterval' });
 
+  await vi.advanceTimersByTimeAsync(999);
+  expect(openshellCli.listGateways).toHaveBeenCalledOnce();
+  await vi.advanceTimersByTimeAsync(1);
+  expect(openshellCli.listGateways).toHaveBeenCalledTimes(2);
+});
+
+test('clamps polling intervals below one second', async () => {
+  vi.useFakeTimers();
+  pollInterval = 0;
+  vi.mocked(openshellCli.listGateways).mockResolvedValue([]);
+
+  manager.init();
   await vi.advanceTimersByTimeAsync(999);
   expect(openshellCli.listGateways).toHaveBeenCalledOnce();
   await vi.advanceTimersByTimeAsync(1);
