@@ -50,6 +50,7 @@ export class LegacyDirectories implements Directories {
   private readonly workspaceProjectsDirectory: string;
   private readonly semanticRoutersDirectory: string;
   private readonly agentWorkspacesConfigDirectory: string;
+  private readonly acpSessionsDirectory: string;
 
   constructor() {
     // Check for custom directory override
@@ -75,6 +76,7 @@ export class LegacyDirectories implements Directories {
     this.workspaceProjectsDirectory = path.resolve(this.desktopAppHomeDir, 'workspace-projects');
     this.semanticRoutersDirectory = path.resolve(this.desktopAppHomeDir, 'semantic-routers');
     this.agentWorkspacesConfigDirectory = path.resolve(this.desktopAppHomeDir, 'agent-workspaces');
+    this.acpSessionsDirectory = path.resolve(this.desktopAppHomeDir, 'acp-sessions');
   }
 
   getConfigurationDirectory(): string {
@@ -141,5 +143,9 @@ export class LegacyDirectories implements Directories {
 
   getAgentWorkspacesConfigDirectory(): string {
     return this.agentWorkspacesConfigDirectory;
+  }
+
+  getAcpSessionsDirectory(): string {
+    return this.acpSessionsDirectory;
   }
 }

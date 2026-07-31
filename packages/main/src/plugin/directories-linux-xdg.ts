@@ -43,6 +43,7 @@ export class LinuxXDGDirectories implements Directories {
   private readonly workspaceProjectsDirectory: string;
   private readonly semanticRoutersDirectory: string;
   private readonly agentWorkspacesConfigDirectory: string;
+  private readonly acpSessionsDirectory: string;
 
   constructor() {
     // XDG_CONFIG_HOME: user-specific configuration files
@@ -66,6 +67,7 @@ export class LinuxXDGDirectories implements Directories {
     this.workspaceProjectsDirectory = path.resolve(this.dataDirectory, 'workspace-projects');
     this.semanticRoutersDirectory = path.resolve(this.dataDirectory, 'semantic-routers');
     this.agentWorkspacesConfigDirectory = path.resolve(this.dataDirectory, 'agent-workspaces');
+    this.acpSessionsDirectory = path.resolve(this.dataDirectory, 'acp-sessions');
   }
 
   getConfigurationDirectory(): string {
@@ -122,5 +124,9 @@ export class LinuxXDGDirectories implements Directories {
 
   getAgentWorkspacesConfigDirectory(): string {
     return this.agentWorkspacesConfigDirectory;
+  }
+
+  getAcpSessionsDirectory(): string {
+    return this.acpSessionsDirectory;
   }
 }

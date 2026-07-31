@@ -17,8 +17,9 @@
  ***********************************************************************/
 
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
-import { basename, extname } from 'node:path';
+import { existsSync } from 'node:fs';
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { basename, extname, join } from 'node:path';
 
 import * as acp from '@agentclientprotocol/sdk';
 import { inject, injectable, preDestroy } from 'inversify';
@@ -26,6 +27,7 @@ import type { IPty } from 'node-pty';
 import { spawn as ptySpawn } from 'node-pty';
 
 import { AgentRegistry } from '/@/plugin/agent-registry.js';
+import { Directories } from '/@/plugin/directories.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import type {
   AcpAttachment,
@@ -87,7 +89,12 @@ export class AcpSessionManager {
     @inject(ApiSenderType) private readonly apiSender: ApiSenderType,
     @inject(OpenshellCli) private readonly openshellCli: OpenshellCli,
     @inject(AgentRegistry) private readonly agentRegistry: AgentRegistry,
+    @inject(Directories) private readonly directories: Directories,
   ) {}
+
+  async init(): Promise<void> {
+    await this.loadFromDisk();
+  }
 
   async resolveAgentCommand(
     options: AcpSessionCreateOptions,
@@ -255,6 +262,9 @@ export class AcpSessionManager {
     };
 
     this.sessions.set(sessionId, session);
+    this.saveToDisk(sessionId).catch((err: unknown) => {
+      console.error(`[ACP] Failed to persist session "${sessionId}":`, err);
+    });
 
     ptyProcess.onExit(({ exitCode }) => {
       debugPty(`${sandbox.name} process exited with code ${exitCode}`);
@@ -1035,7 +1045,7 @@ export class AcpSessionManager {
     }
     session.pendingRequests.clear();
 
-    if (session.acpSessionId) {
+    if (session.acpSessionId && session.connection) {
       session.connection.cancel({ sessionId: session.acpSessionId }).catch(() => {});
     }
 
@@ -1054,7 +1064,7 @@ export class AcpSessionManager {
     }
     session.pendingRequests.clear();
 
-    if (session.acpSessionId && !session.connectionClosed) {
+    if (session.acpSessionId && !session.connectionClosed && session.connection) {
       try {
         await session.connection.closeSession({ sessionId: session.acpSessionId });
       } catch {
@@ -1065,10 +1075,14 @@ export class AcpSessionManager {
     this.killPtyProcess(session);
 
     this.sessions.delete(sessionId);
+    await this.removeFromDisk(sessionId);
     this.apiSender.send('acp-session-update');
   }
 
   private killPtyProcess(session: AcpSession): void {
+    if (!session.ptyProcess) {
+      return;
+    }
     try {
       session.ptyProcess.write('\x03');
       session.ptyProcess.write('\x04');
@@ -1110,10 +1124,16 @@ export class AcpSessionManager {
     }
 
     this.apiSender.send('acp-session-update');
+    this.saveToDisk(sessionId).catch((err: unknown) => {
+      console.error(`[ACP] Failed to persist session "${sessionId}":`, err);
+    });
   }
 
-  private emitEvent(_sessionId: string, _event: AcpFlowEvent): void {
+  private emitEvent(sessionId: string, _event: AcpFlowEvent): void {
     this.apiSender.send('acp-session-update');
+    this.saveToDisk(sessionId).catch((err: unknown) => {
+      console.error(`[ACP] Failed to persist session "${sessionId}":`, err);
+    });
   }
 
   @preDestroy()
@@ -1125,5 +1145,67 @@ export class AcpSessionManager {
       this.killPtyProcess(session);
     }
     this.sessions.clear();
+  }
+
+  private async loadFromDisk(): Promise<void> {
+    const dir = this.directories.getAcpSessionsDirectory();
+    if (!existsSync(dir)) {
+      await mkdir(dir, { recursive: true });
+      return;
+    }
+    const entries = await readdir(dir);
+    for (const entry of entries) {
+      if (!entry.endsWith('.json')) {
+        continue;
+      }
+      try {
+        const raw = await readFile(join(dir, entry), 'utf-8');
+        const data = JSON.parse(raw) as { info: AcpSessionInfo; events: AcpFlowEvent[] };
+        const info = data.info;
+
+        // Mark non-terminal sessions as completed since the PTY is gone
+        if (info.status !== 'completed' && info.status !== 'cancelled' && info.status !== 'error') {
+          info.status = 'completed';
+          info.updatedAt = Date.now();
+        }
+
+        const session: AcpSession = {
+          info,
+          ptyProcess: undefined!,
+          connection: undefined!,
+          events: data.events ?? [],
+          pendingRequests: new Map(),
+          stderrLines: [],
+          messageTurn: 0,
+          connectionClosed: true,
+          agentCommand: [],
+        };
+        this.sessions.set(info.id, session);
+      } catch (e: unknown) {
+        console.error(`Failed to load ACP session file "${entry}"`, e);
+      }
+    }
+  }
+
+  private async saveToDisk(sessionId: string): Promise<void> {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return;
+    }
+    const dir = this.directories.getAcpSessionsDirectory();
+    if (!existsSync(dir)) {
+      await mkdir(dir, { recursive: true });
+    }
+    const data = { info: session.info, events: session.events };
+    await writeFile(join(dir, `${sessionId}.json`), JSON.stringify(data, undefined, 2) + '\n', 'utf-8');
+  }
+
+  private async removeFromDisk(sessionId: string): Promise<void> {
+    const filePath = join(this.directories.getAcpSessionsDirectory(), `${sessionId}.json`);
+    try {
+      await rm(filePath);
+    } catch {
+      // file may not exist
+    }
   }
 }

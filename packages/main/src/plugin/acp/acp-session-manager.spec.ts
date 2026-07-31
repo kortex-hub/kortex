@@ -17,19 +17,24 @@
  ***********************************************************************/
 
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { AgentRegistry } from '/@/plugin/agent-registry.js';
+import type { Directories } from '/@/plugin/directories.js';
 import type { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
-import type { AcpSessionCreateOptions } from '/@api/acp-session-info.js';
+import type { AcpSessionCreateOptions, AcpSessionInfo } from '/@api/acp-session-info.js';
 import type { AgentInfo } from '/@api/agent-info.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import { AGENT_LABEL, type SandboxInfo } from '/@api/openshell-gateway-info.js';
 
 import { AcpSessionManager } from './acp-session-manager.js';
 
+vi.mock(import('node:fs'));
 vi.mock(import('node:fs/promises'));
+vi.mock(import('node-pty'));
+vi.mock(import('@agentclientprotocol/sdk'));
 
 const apiSender: ApiSenderType = {
   send: vi.fn(),
@@ -45,6 +50,25 @@ const openshellCli: OpenshellCli = {
 const agentRegistry: AgentRegistry = {
   getAgent: vi.fn(),
 } as unknown as AgentRegistry;
+
+const FAKE_SESSIONS_DIR = join('/fake', 'acp-sessions');
+
+const directories: Directories = {
+  getAcpSessionsDirectory: vi.fn().mockReturnValue(FAKE_SESSIONS_DIR),
+  getConfigurationDirectory: vi.fn(),
+  getPluginsDirectory: vi.fn(),
+  getPluginsScanDirectory: vi.fn(),
+  getExtensionsStorageDirectory: vi.fn(),
+  getContributionStorageDir: vi.fn(),
+  getSafeStorageDirectory: vi.fn(),
+  getDataDirectory: vi.fn(),
+  getManagedDefaultsDirectory: vi.fn(),
+  getChatPersistenceDirectory: vi.fn(),
+  getSkillsDirectory: vi.fn(),
+  getWorkspaceProjectsDirectory: vi.fn(),
+  getSemanticRoutersDirectory: vi.fn(),
+  getAgentWorkspacesConfigDirectory: vi.fn(),
+} as unknown as Directories;
 
 function createSandbox(overrides?: Partial<SandboxInfo>): SandboxInfo {
   return {
@@ -72,7 +96,8 @@ describe('AcpSessionManager', () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
-    manager = new AcpSessionManager(apiSender, openshellCli, agentRegistry);
+    vi.mocked(directories.getAcpSessionsDirectory).mockReturnValue(FAKE_SESSIONS_DIR);
+    manager = new AcpSessionManager(apiSender, openshellCli, agentRegistry, directories);
   });
 
   describe('resolveAgentCommand', () => {
@@ -287,6 +312,180 @@ describe('AcpSessionManager', () => {
       const blocks = (manager as any).buildContentBlocks('hello', undefined);
 
       expect(blocks).toEqual([{ type: 'text', text: 'hello' }]);
+    });
+  });
+
+  describe('init', () => {
+    test('creates the sessions directory if it does not exist', async () => {
+      const { existsSync } = await import('node:fs');
+      const { mkdir, readdir } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(false);
+      vi.mocked(mkdir).mockResolvedValue(undefined);
+      vi.mocked(readdir).mockResolvedValue([]);
+
+      await manager.init();
+
+      expect(mkdir).toHaveBeenCalledWith(FAKE_SESSIONS_DIR, { recursive: true });
+    });
+
+    test('loads sessions from disk and marks non-terminal as completed', async () => {
+      const { existsSync } = await import('node:fs');
+      const { readdir, readFile } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readdir).mockResolvedValue(['session-1.json' as never]);
+
+      const storedSession: { info: AcpSessionInfo; events: unknown[] } = {
+        info: {
+          id: 'session-1',
+          sandboxName: 'sb',
+          sandboxId: 'sb-id',
+          prompt: 'hello',
+          status: 'running',
+          createdAt: 1000,
+          updatedAt: 2000,
+          agentId: 'agent-1',
+          agentName: 'Agent',
+        },
+        events: [{ kind: 'prompt', text: 'hello', timestamp: 1000 }],
+      };
+      vi.mocked(readFile).mockResolvedValue(JSON.stringify(storedSession));
+
+      await manager.init();
+
+      const sessions = manager.listSessions();
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0]!.id).toBe('session-1');
+      expect(sessions[0]!.status).toBe('completed');
+    });
+
+    test('preserves terminal session status on load', async () => {
+      const { existsSync } = await import('node:fs');
+      const { readdir, readFile } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readdir).mockResolvedValue(['session-2.json' as never]);
+
+      const storedSession: { info: AcpSessionInfo; events: unknown[] } = {
+        info: {
+          id: 'session-2',
+          sandboxName: 'sb',
+          sandboxId: 'sb-id',
+          prompt: 'bye',
+          status: 'error',
+          createdAt: 1000,
+          updatedAt: 2000,
+          error: 'Something went wrong',
+        },
+        events: [],
+      };
+      vi.mocked(readFile).mockResolvedValue(JSON.stringify(storedSession));
+
+      await manager.init();
+
+      const sessions = manager.listSessions();
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0]!.status).toBe('error');
+      expect(sessions[0]!.error).toBe('Something went wrong');
+    });
+
+    test('skips non-json files', async () => {
+      const { existsSync } = await import('node:fs');
+      const { readdir } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readdir).mockResolvedValue(['.gitkeep' as never]);
+
+      await manager.init();
+
+      expect(manager.listSessions()).toHaveLength(0);
+    });
+
+    test('handles corrupt session files gracefully', async () => {
+      const { existsSync } = await import('node:fs');
+      const { readdir, readFile } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readdir).mockResolvedValue(['bad.json' as never]);
+      vi.mocked(readFile).mockResolvedValue('not valid json');
+
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      await manager.init();
+
+      expect(manager.listSessions()).toHaveLength(0);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to load ACP session file'),
+        expect.any(SyntaxError),
+      );
+    });
+
+    test('restores session events from disk', async () => {
+      const { existsSync } = await import('node:fs');
+      const { readdir, readFile } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readdir).mockResolvedValue(['session-3.json' as never]);
+
+      const events = [
+        { kind: 'prompt', text: 'hello', timestamp: 1000 },
+        { kind: 'agent_message', text: 'response', messageId: 'msg-1', turn: 0, timestamp: 2000 },
+      ];
+      const storedSession: { info: AcpSessionInfo; events: unknown[] } = {
+        info: {
+          id: 'session-3',
+          sandboxName: 'sb',
+          sandboxId: 'sb-id',
+          prompt: 'hello',
+          status: 'completed',
+          createdAt: 1000,
+          updatedAt: 3000,
+        },
+        events,
+      };
+      vi.mocked(readFile).mockResolvedValue(JSON.stringify(storedSession));
+
+      await manager.init();
+
+      const sessionEvents = manager.getSessionEvents('session-3');
+      expect(sessionEvents).toHaveLength(2);
+      expect(sessionEvents[0]!.kind).toBe('prompt');
+      expect(sessionEvents[1]!.kind).toBe('agent_message');
+    });
+  });
+
+  describe('deleteSession', () => {
+    test('removes session file from disk', async () => {
+      const { existsSync } = await import('node:fs');
+      const { readdir, readFile, rm, writeFile } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readdir).mockResolvedValue(['session-del.json' as never]);
+      vi.mocked(writeFile).mockResolvedValue();
+      vi.mocked(rm).mockResolvedValue();
+
+      const storedSession: { info: AcpSessionInfo; events: unknown[] } = {
+        info: {
+          id: 'session-del',
+          sandboxName: 'sb',
+          sandboxId: 'sb-id',
+          prompt: 'hello',
+          status: 'completed',
+          createdAt: 1000,
+          updatedAt: 2000,
+        },
+        events: [],
+      };
+      vi.mocked(readFile).mockResolvedValue(JSON.stringify(storedSession));
+
+      await manager.init();
+      expect(manager.listSessions()).toHaveLength(1);
+
+      await manager.deleteSession('session-del');
+
+      expect(manager.listSessions()).toHaveLength(0);
+      expect(rm).toHaveBeenCalledWith(join(FAKE_SESSIONS_DIR, 'session-del.json'));
     });
   });
 });

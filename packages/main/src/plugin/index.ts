@@ -941,6 +941,9 @@ export class PluginSystem {
     const mcpIPCHandler = container.get<MCPIPCHandler>(MCPIPCHandler);
     mcpIPCHandler.init();
 
+    const acpSessionManager = container.get<AcpSessionManager>(AcpSessionManager);
+    await acpSessionManager.init();
+
     const acpIPCHandler = container.get<AcpIPCHandler>(AcpIPCHandler);
     acpIPCHandler.init();
 
