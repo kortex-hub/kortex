@@ -61,7 +61,7 @@ export interface AcpSlashCommand {
 export interface AcpSessionInfo {
   id: string;
   sandboxName: string;
-  sandboxId: string;
+  sandboxId?: string;
   prompt: string;
   status: AcpSessionStatus;
   createdAt: number;

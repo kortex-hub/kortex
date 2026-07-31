@@ -97,6 +97,7 @@ describe('AcpSessionManager', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(directories.getAcpSessionsDirectory).mockReturnValue(FAKE_SESSIONS_DIR);
+    vi.mocked(openshellCli.listSandboxes).mockResolvedValue([]);
     manager = new AcpSessionManager(apiSender, openshellCli, agentRegistry, directories);
   });
 
@@ -316,17 +317,15 @@ describe('AcpSessionManager', () => {
   });
 
   describe('init', () => {
-    test('creates the sessions directory if it does not exist', async () => {
+    test('skips loading when sessions directory does not exist', async () => {
       const { existsSync } = await import('node:fs');
-      const { mkdir, readdir } = await import('node:fs/promises');
+      const { readdir } = await import('node:fs/promises');
 
       vi.mocked(existsSync).mockReturnValue(false);
-      vi.mocked(mkdir).mockResolvedValue(undefined);
-      vi.mocked(readdir).mockResolvedValue([]);
 
       await manager.init();
 
-      expect(mkdir).toHaveBeenCalledWith(FAKE_SESSIONS_DIR, { recursive: true });
+      expect(readdir).not.toHaveBeenCalled();
     });
 
     test('loads sessions from disk and marks non-terminal as completed', async () => {
@@ -354,7 +353,7 @@ describe('AcpSessionManager', () => {
 
       await manager.init();
 
-      const sessions = manager.listSessions();
+      const sessions = await manager.listSessions();
       expect(sessions).toHaveLength(1);
       expect(sessions[0]!.id).toBe('session-1');
       expect(sessions[0]!.status).toBe('completed');
@@ -384,7 +383,7 @@ describe('AcpSessionManager', () => {
 
       await manager.init();
 
-      const sessions = manager.listSessions();
+      const sessions = await manager.listSessions();
       expect(sessions).toHaveLength(1);
       expect(sessions[0]!.status).toBe('error');
       expect(sessions[0]!.error).toBe('Something went wrong');
@@ -399,7 +398,7 @@ describe('AcpSessionManager', () => {
 
       await manager.init();
 
-      expect(manager.listSessions()).toHaveLength(0);
+      expect(await manager.listSessions()).toHaveLength(0);
     });
 
     test('handles corrupt session files gracefully', async () => {
@@ -414,7 +413,7 @@ describe('AcpSessionManager', () => {
 
       await manager.init();
 
-      expect(manager.listSessions()).toHaveLength(0);
+      expect(await manager.listSessions()).toHaveLength(0);
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('Failed to load ACP session file'),
         expect.any(SyntaxError),
@@ -480,11 +479,11 @@ describe('AcpSessionManager', () => {
       vi.mocked(readFile).mockResolvedValue(JSON.stringify(storedSession));
 
       await manager.init();
-      expect(manager.listSessions()).toHaveLength(1);
+      expect(await manager.listSessions()).toHaveLength(1);
 
       await manager.deleteSession('session-del');
 
-      expect(manager.listSessions()).toHaveLength(0);
+      expect(await manager.listSessions()).toHaveLength(0);
       expect(rm).toHaveBeenCalledWith(join(FAKE_SESSIONS_DIR, 'session-del.json'));
     });
   });
@@ -518,7 +517,7 @@ describe('AcpSessionManager', () => {
 
       await manager.init();
 
-      const sessions = manager.listSessions();
+      const sessions = await manager.listSessions();
       expect(sessions).toHaveLength(1);
       expect(sessions[0]!.id).toBe('session-resume');
     });
@@ -546,8 +545,153 @@ describe('AcpSessionManager', () => {
 
       await manager.init();
 
-      const sessions = manager.listSessions();
+      const sessions = await manager.listSessions();
       expect(sessions).toHaveLength(1);
+    });
+  });
+
+  describe('sandbox validation during init', () => {
+    test('marks sessions with missing sandboxes', async () => {
+      const { existsSync } = await import('node:fs');
+      const { readdir, readFile } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readdir).mockResolvedValue(['s1.json' as never]);
+      vi.mocked(readFile).mockResolvedValue(
+        JSON.stringify({
+          info: {
+            id: 's1',
+            sandboxName: 'deleted-sandbox',
+            sandboxId: 'sb-id',
+            prompt: 'hello',
+            status: 'completed',
+            createdAt: 1000,
+            updatedAt: 2000,
+          },
+          events: [],
+        }),
+      );
+      vi.mocked(openshellCli.listSandboxes).mockResolvedValue([
+        { id: 'other-id', name: 'other-sandbox', phase: 'Ready' },
+      ]);
+
+      await manager.init();
+
+      const sessions = await manager.listSessions();
+      expect(sessions[0]!.sandboxId).toBeUndefined();
+    });
+
+    test('preserves sandboxId when sandbox is still ready', async () => {
+      const { existsSync } = await import('node:fs');
+      const { readdir, readFile } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readdir).mockResolvedValue(['s1.json' as never]);
+      vi.mocked(readFile).mockResolvedValue(
+        JSON.stringify({
+          info: {
+            id: 's1',
+            sandboxName: 'my-sandbox',
+            sandboxId: 'sb-id',
+            prompt: 'hello',
+            status: 'completed',
+            createdAt: 1000,
+            updatedAt: 2000,
+          },
+          events: [],
+        }),
+      );
+      vi.mocked(openshellCli.listSandboxes).mockResolvedValue([{ id: 'sb-id', name: 'my-sandbox', phase: 'Ready' }]);
+
+      await manager.init();
+
+      const sessions = await manager.listSessions();
+      expect(sessions[0]!.sandboxId).toBe('sb-id');
+    });
+
+    test('clears sandboxId when sandbox exists but is not ready', async () => {
+      const { existsSync } = await import('node:fs');
+      const { readdir, readFile } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readdir).mockResolvedValue(['s1.json' as never]);
+      vi.mocked(readFile).mockResolvedValue(
+        JSON.stringify({
+          info: {
+            id: 's1',
+            sandboxName: 'my-sandbox',
+            sandboxId: 'sb-id',
+            prompt: 'hello',
+            status: 'completed',
+            createdAt: 1000,
+            updatedAt: 2000,
+          },
+          events: [],
+        }),
+      );
+      vi.mocked(openshellCli.listSandboxes).mockResolvedValue([{ id: 'sb-id', name: 'my-sandbox', phase: 'Deleting' }]);
+
+      await manager.init();
+
+      const sessions = await manager.listSessions();
+      expect(sessions[0]!.sandboxId).toBeUndefined();
+    });
+
+    test('handles listSandboxes failure gracefully', async () => {
+      const { existsSync } = await import('node:fs');
+      const { readdir, readFile } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readdir).mockResolvedValue(['s1.json' as never]);
+      vi.mocked(readFile).mockResolvedValue(
+        JSON.stringify({
+          info: {
+            id: 's1',
+            sandboxName: 'my-sandbox',
+            sandboxId: 'sb-id',
+            prompt: 'hello',
+            status: 'completed',
+            createdAt: 1000,
+            updatedAt: 2000,
+          },
+          events: [],
+        }),
+      );
+      vi.mocked(openshellCli.listSandboxes).mockRejectedValue(new Error('CLI not found'));
+
+      await manager.init();
+
+      const sessions = await manager.listSessions();
+      expect(sessions[0]!.sandboxId).toBe('sb-id');
+    });
+  });
+
+  describe('sendFollowUp guard', () => {
+    test('throws when sandbox is missing', async () => {
+      const { existsSync } = await import('node:fs');
+      const { readdir, readFile } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readdir).mockResolvedValue(['s1.json' as never]);
+      vi.mocked(readFile).mockResolvedValue(
+        JSON.stringify({
+          info: {
+            id: 's1',
+            sandboxName: 'gone-sandbox',
+            sandboxId: 'sb-id',
+            prompt: 'hello',
+            status: 'completed',
+            createdAt: 1000,
+            updatedAt: 2000,
+          },
+          events: [],
+        }),
+      );
+      vi.mocked(openshellCli.listSandboxes).mockResolvedValue([]);
+
+      await manager.init();
+
+      await expect(manager.sendFollowUp('s1', 'hello')).rejects.toThrow('Sandbox "gone-sandbox" no longer exists');
     });
   });
 });

@@ -45,4 +45,4 @@ export const acpSessionsEventStore = new EventStore<AcpSessionInfo[]>(
   ['extensions-already-started'],
   listSessions,
 );
-acpSessionsEventStore.setup();
+export const acpSessionsEventStoreInfo = acpSessionsEventStore.setup();
