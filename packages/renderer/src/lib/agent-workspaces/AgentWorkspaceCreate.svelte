@@ -134,6 +134,8 @@ function clearProject(): void {
   wizard.draft.selectedNetwork = 'registries';
   wizard.draft.customMounts = [{ host: '', target: '', ro: false }];
   wizard.draft.hostsByMode = { registries: ['registry.npmjs.org', 'pypi.python.org'], blocked: [''] };
+  const agentInfo = $agentInfos.find(a => a.id === wizard.draft.selectedAgent);
+  wizard.draft.customImage = agentInfo?.baseImage ?? '';
 }
 
 function handleProjectSelect(project: WorkspaceProjectInfo | undefined): void {
@@ -206,6 +208,9 @@ onMount(async () => {
         wizard.draft.selectedModel = firstModel;
       }
     }
+
+    const agentInfo = $agentInfos.find(a => a.id === wizard.draft.selectedAgent);
+    wizard.draft.customImage = agentInfo?.baseImage ?? '';
 
     wizard.draft.initialized = true;
   }
@@ -487,6 +492,7 @@ function startAsIs(): void {
     .createAgentWorkspace({
       sourcePath: draftSnapshot.sourcePath.trim() || undefined,
       agent: draftSnapshot.selectedAgent,
+      image: draftSnapshot.customImage.trim() || undefined,
       model: getModelId(draftSnapshot.selectedModel!),
       gateway: draftSnapshot.selectedGateway,
       name: getEffectiveWorkspaceNameFromSnapshot(draftSnapshot),
@@ -546,6 +552,7 @@ function startWorkspace(): void {
     .createAgentWorkspace({
       sourcePath: draftSnapshot.sourcePath.trim() || undefined,
       agent: draftSnapshot.selectedAgent,
+      image: draftSnapshot.customImage.trim() || undefined,
       model: getModelId(draftSnapshot.selectedModel!),
       gateway: draftSnapshot.selectedGateway,
       name: getEffectiveWorkspaceNameFromSnapshot(draftSnapshot),
@@ -622,7 +629,7 @@ function startWorkspace(): void {
                 onProjectSelect={handleProjectSelect}
                 errors={validationErrors} />
             {:else if currentStepId === 'agent-model'}
-              <AgentWorkspaceCreateStepAgentModel bind:selectedAgent={wizard.draft.selectedAgent} bind:selectedModel={wizard.draft.selectedModel} />
+              <AgentWorkspaceCreateStepAgentModel bind:selectedAgent={wizard.draft.selectedAgent} bind:selectedModel={wizard.draft.selectedModel} bind:customImage={wizard.draft.customImage} bind:customImageFieldOpen={wizard.draft.customImageFieldOpen} />
             {:else if currentStepId === 'tools-secrets'}
               <AgentWorkspaceCreateStepToolsSecrets
                 {skillItems}

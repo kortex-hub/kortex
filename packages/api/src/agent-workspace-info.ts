@@ -101,6 +101,7 @@ export function getSandboxNameValidationError(name: string): string | undefined 
 export interface AgentWorkspaceCreateOptions {
   sourcePath?: string;
   agent: string;
+  image?: string;
   model: string;
   gateway: string;
   name?: string;

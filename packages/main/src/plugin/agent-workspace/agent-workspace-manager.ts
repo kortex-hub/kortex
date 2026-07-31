@@ -259,7 +259,7 @@ export class AgentWorkspaceManager implements Disposable {
     await this.openshellCli.createSandbox({
       name: sandboxName,
       gateway: options.gateway,
-      from: agent.baseImage,
+      from: options.image ?? agent.baseImage,
       providers: options.secrets,
       env: env && Object.keys(env).length > 0 ? env : undefined,
       labels: {
