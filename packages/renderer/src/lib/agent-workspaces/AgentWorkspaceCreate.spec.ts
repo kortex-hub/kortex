@@ -177,7 +177,12 @@ beforeEach(() => {
   );
   vi.mocked(workspaceProjectsStore).workspaceProjectInfos = writable<readonly WorkspaceProjectInfo[]>([]);
   vi.mocked(openshellGatewaysStore).openshellGateways = writable([
-    { name: 'kaiden', endpoint: 'http://localhost:17670', active: true },
+    {
+      name: 'kaiden',
+      endpoint: 'http://localhost:17670',
+      active: true,
+      gatewayState: { reachable: true, health: 'healthy' },
+    },
   ]);
   vi.mocked(openshellSandboxesStore).allOpenshellSandboxes = writable<(SandboxInfo & { gatewayName: string })[]>([]);
   vi.mocked(window.checkAgentWorkspaceConfigExists).mockResolvedValue(false);
@@ -255,8 +260,18 @@ test('Expect gateway selector hidden when only one gateway is available', () => 
 
 test('Expect gateway selector defaults to the active OpenShell gateway when multiple gateways are available', async () => {
   vi.mocked(openshellGatewaysStore).openshellGateways.set([
-    { name: 'local', endpoint: 'http://localhost:17670', active: false },
-    { name: 'remote', endpoint: 'https://remote.example.com', active: true },
+    {
+      name: 'local',
+      endpoint: 'http://localhost:17670',
+      active: false,
+      gatewayState: { reachable: true, health: 'healthy' },
+    },
+    {
+      name: 'remote',
+      endpoint: 'https://remote.example.com',
+      active: true,
+      gatewayState: { reachable: true, health: 'healthy' },
+    },
   ]);
   render(AgentWorkspaceCreate);
 
@@ -277,8 +292,18 @@ test('Expect gateway selector defaults to the active OpenShell gateway when mult
 
 test('Expect selected gateway included when creating a workspace', async () => {
   vi.mocked(openshellGatewaysStore).openshellGateways.set([
-    { name: 'local', endpoint: 'http://localhost:17670', active: true },
-    { name: 'remote', endpoint: 'https://remote.example.com', active: false },
+    {
+      name: 'local',
+      endpoint: 'http://localhost:17670',
+      active: true,
+      gatewayState: { reachable: true, health: 'healthy' },
+    },
+    {
+      name: 'remote',
+      endpoint: 'https://remote.example.com',
+      active: false,
+      gatewayState: { reachable: true, health: 'healthy' },
+    },
   ]);
   render(AgentWorkspaceCreate);
 
@@ -289,6 +314,35 @@ test('Expect selected gateway included when creating a workspace', async () => {
   await fireEvent.click(screen.getByRole('button', { name: 'Use all defaults and create workspace' }));
 
   expect(window.createAgentWorkspace).toHaveBeenCalledWith(expect.objectContaining({ gateway: 'remote' }));
+});
+
+test('does not offer unreachable gateways for workspace creation', () => {
+  vi.mocked(openshellGatewaysStore).openshellGateways.set([
+    {
+      name: 'local',
+      endpoint: 'http://localhost:17670',
+      active: true,
+      gatewayState: { reachable: true, health: 'healthy' },
+    },
+    {
+      name: 'stopped',
+      endpoint: 'http://localhost:17671',
+      active: false,
+      gatewayState: { reachable: false, health: 'unknown' },
+    },
+    {
+      name: 'remote',
+      endpoint: 'https://remote.example.com',
+      active: false,
+      gatewayState: { reachable: true, health: 'healthy' },
+    },
+  ]);
+
+  render(AgentWorkspaceCreate);
+
+  expect(screen.getByRole('option', { name: /local/ })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: /remote/ })).toBeInTheDocument();
+  expect(screen.queryByRole('option', { name: /stopped/ })).not.toBeInTheDocument();
 });
 
 test('Expect Continue button rendered on step 1', () => {

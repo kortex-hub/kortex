@@ -52,6 +52,13 @@
           "when": "!isWindows",
           "default": "",
           "description": "Custom path to openshell-gateway binary (Default is blank)"
+        },
+        "openshell.gateway.pollInterval": {
+          "type": "number",
+          "scope": "DEFAULT",
+          "default": 5,
+          "minimum": 1,
+          "description": "Interval in seconds between OpenShell gateway state checks."
         }
       }
     }

@@ -33,6 +33,7 @@ import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { Directories } from '/@/plugin/directories.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
+import { OpenshellGatewayStateManager } from '/@/plugin/openshell-cli/openshell-gateway-state-manager.js';
 import {
   buildPolicyObject,
   collectBinaryFlags,
@@ -113,6 +114,8 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly agentRegistry: AgentRegistry,
     @inject(OpenshellGateway)
     private readonly openshellGateway: OpenshellGateway,
+    @inject(OpenshellGatewayStateManager)
+    private readonly openshellGatewayStateManager: OpenshellGatewayStateManager,
     @inject(Directories)
     private readonly directories: Directories,
   ) {}
@@ -559,7 +562,7 @@ export class AgentWorkspaceManager implements Disposable {
   }
 
   async listOpenshellGateways(): Promise<GatewayInfo[]> {
-    return this.openshellCli.listGateways();
+    return [...this.openshellGatewayStateManager.listGateways()];
   }
 
   async deleteOpenshellSandbox(name: string, gateway: string): Promise<void> {
@@ -828,13 +831,31 @@ export class AgentWorkspaceManager implements Disposable {
 
     this.disposables.push(
       this.openshellGateway.onDidGatewayStart(() => {
-        this.apiSender.send('agent-gateway-update');
+        this.openshellGatewayStateManager.refresh().catch((err: unknown) => {
+          console.warn(
+            `[AgentWorkspaceManager] unable to refresh gateways after startup: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          );
+        });
         this.apiSender.send('agent-workspace-update');
       }),
     );
 
     this.disposables.push(
       this.openshellGateway.onDidGatewayInitFailed(() => {
+        this.openshellGatewayStateManager.refresh().catch((err: unknown) => {
+          console.warn(
+            `[AgentWorkspaceManager] unable to refresh gateways after startup failure: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          );
+        });
+      }),
+    );
+
+    this.disposables.push(
+      this.openshellGatewayStateManager.onDidUpdateGateways(() => {
         this.apiSender.send('agent-gateway-update');
       }),
     );

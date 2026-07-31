@@ -418,8 +418,12 @@ export class OpenshellCli {
     return z.array(GatewayInfoSchema).parse(data);
   }
 
-  async getGatewayInfo(): Promise<GatewayRuntimeInfo> {
-    const data = await this.execCLI<unknown>(['gateway', 'info']);
+  async getGatewayInfo(gatewayName?: string): Promise<GatewayRuntimeInfo> {
+    const args = ['gateway', 'info'];
+    if (gatewayName) {
+      args.push('-g', gatewayName);
+    }
+    const data = await this.execCLI<unknown>(args);
     return GatewayRuntimeInfoSchema.parse(data);
   }
 

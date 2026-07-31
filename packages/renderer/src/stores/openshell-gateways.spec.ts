@@ -62,6 +62,7 @@ test('populates gateways when extensions are started', async () => {
       auth: 'plaintext',
       type: 'local',
       source: 'user',
+      gatewayState: { reachable: true, health: 'healthy' },
     },
   ];
   vi.mocked(window.listOpenshellGateways).mockResolvedValue(gateways);
@@ -76,7 +77,14 @@ test('populates gateways when extensions are started', async () => {
 
 test('refreshes gateways on OpenShell registry gateway updates after startup', async () => {
   const { openshellGateways } = await import('./openshell-gateways');
-  const initialGateways: GatewayInfo[] = [{ name: 'local', endpoint: 'http://127.0.0.1:17670', active: true }];
+  const initialGateways: GatewayInfo[] = [
+    {
+      name: 'local',
+      endpoint: 'http://127.0.0.1:17670',
+      active: true,
+      gatewayState: { reachable: true, health: 'healthy' },
+    },
+  ];
   const updatedGateways: GatewayInfo[] = [
     ...initialGateways,
     {
@@ -89,6 +97,7 @@ test('refreshes gateways on OpenShell registry gateway updates after startup', a
       is_remote: true,
       remote_host: 'user@gateway.example.com',
       resolved_host: '10.0.0.5',
+      gatewayState: { reachable: true, health: 'healthy' },
     },
   ];
   vi.mocked(window.listOpenshellGateways).mockResolvedValueOnce(initialGateways).mockResolvedValueOnce(updatedGateways);
@@ -106,9 +115,23 @@ test('refreshes gateways on OpenShell registry gateway updates after startup', a
 
 test('refreshes gateways on agent gateway updates after startup', async () => {
   const { openshellGateways } = await import('./openshell-gateways');
-  const initialGateways: GatewayInfo[] = [{ name: 'local', endpoint: 'http://127.0.0.1:17670', active: true }];
+  const initialGateways: GatewayInfo[] = [
+    {
+      name: 'local',
+      endpoint: 'http://127.0.0.1:17670',
+      active: true,
+      gatewayState: { reachable: true, health: 'healthy' },
+    },
+  ];
   const updatedGateways: GatewayInfo[] = [
-    { name: 'local', endpoint: 'http://127.0.0.1:17670', active: true, auth: 'plaintext', type: 'local' },
+    {
+      name: 'local',
+      endpoint: 'http://127.0.0.1:17670',
+      active: true,
+      auth: 'plaintext',
+      type: 'local',
+      gatewayState: { reachable: true, health: 'healthy' },
+    },
   ];
   vi.mocked(window.listOpenshellGateways).mockResolvedValueOnce(initialGateways).mockResolvedValueOnce(updatedGateways);
 

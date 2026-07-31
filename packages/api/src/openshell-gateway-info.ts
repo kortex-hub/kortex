@@ -18,6 +18,17 @@
 
 import z from 'zod';
 
+export const GatewayHealthSchema = z.enum(['healthy', 'degraded', 'unhealthy', 'unknown']);
+
+export type GatewayHealth = z.output<typeof GatewayHealthSchema>;
+
+export const GatewayStateSchema = z.object({
+  reachable: z.boolean(),
+  health: GatewayHealthSchema,
+});
+
+export type GatewayState = z.output<typeof GatewayStateSchema>;
+
 export const GatewayInfoSchema = z.object({
   name: z.string(),
   endpoint: z.string(),
@@ -28,6 +39,7 @@ export const GatewayInfoSchema = z.object({
   is_remote: z.boolean().optional(),
   remote_host: z.string().nullable().optional(),
   resolved_host: z.string().nullable().optional(),
+  gatewayState: GatewayStateSchema.optional(),
 });
 
 export type GatewayInfo = z.output<typeof GatewayInfoSchema>;
@@ -126,6 +138,7 @@ export interface OpenshellGatewayStartOptions {
 }
 
 export const GatewayRuntimeInfoSchema = z.looseObject({
+  status: GatewayHealthSchema,
   compute_drivers: z.array(
     z.looseObject({
       capabilities: z.looseObject({
