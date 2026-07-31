@@ -211,7 +211,12 @@ export class AcpSessionManager {
     const sessionId = randomUUID();
     const openshellPath = this.openshellCli.getCliPath();
 
-    const spawnArgs = ['sandbox', 'exec', '-n', sandbox.name, '--tty', '--', ...command];
+    const gatewayName = sandbox.labels?.['gateway'];
+    const spawnArgs = ['sandbox', 'exec', '-n', sandbox.name, '--tty'];
+    if (gatewayName) {
+      spawnArgs.push('-g', gatewayName);
+    }
+    spawnArgs.push('--', ...command);
     debugPty(`${sandbox.name} spawning: ${openshellPath} ${spawnArgs.join(' ')}`);
 
     const ptyProcess = ptySpawn(openshellPath, spawnArgs, {
@@ -258,7 +263,7 @@ export class AcpSessionManager {
       messageTurn: 0,
       connectionClosed: false,
       agentCommand: command,
-      gatewayName: sandbox.labels?.['gateway'],
+      gatewayName,
     };
 
     this.sessions.set(sessionId, session);
@@ -676,8 +681,22 @@ export class AcpSessionManager {
 
     debugLifecycle(`${session.info.sandboxName} reconnecting...`);
 
+    if (!session.agentCommand.length && session.info.agentId) {
+      const agentInfo = await this.agentRegistry.getAgent(session.info.agentId);
+      if (agentInfo?.acp) {
+        session.agentCommand = [agentInfo.command, ...agentInfo.acp.args];
+      }
+    }
+    if (!session.agentCommand.length) {
+      throw new Error(`Cannot reconnect session "${sessionId}": agent command is unknown`);
+    }
+
     const openshellPath = this.openshellCli.getCliPath();
-    const reconnectArgs = ['sandbox', 'exec', '-n', session.info.sandboxName, '--tty', '--', ...session.agentCommand];
+    const reconnectArgs = ['sandbox', 'exec', '-n', session.info.sandboxName, '--tty'];
+    if (session.gatewayName) {
+      reconnectArgs.push('-g', session.gatewayName);
+    }
+    reconnectArgs.push('--', ...session.agentCommand);
     debugPty(`${session.info.sandboxName} spawning: ${openshellPath} ${reconnectArgs.join(' ')}`);
 
     const ptyProcess = ptySpawn(openshellPath, reconnectArgs, {
@@ -715,36 +734,52 @@ export class AcpSessionManager {
     const initResult = await connection.initialize({
       protocolVersion: acp.PROTOCOL_VERSION,
       clientCapabilities: {
-        // let the agent read/write files through the agent
         fs: { readTextFile: false, writeTextFile: false },
       },
     });
     debugProtocol(`${session.info.sandboxName} reconnected: protocol v${initResult.protocolVersion}`);
 
-    const newSession = await connection.newSession({
-      cwd: '/sandbox',
-      mcpServers: [],
-    });
-    debugProtocol(`${session.info.sandboxName} new session: ${newSession.sessionId}`);
-    session.acpSessionId = newSession.sessionId;
-    if (newSession.modes) {
-      session.info.availableModes = newSession.modes.availableModes.map(m => ({
-        modeId: m.id,
-        name: m.name,
-        description: m.description ?? undefined,
-      }));
-      session.info.currentModeId = newSession.modes.currentModeId;
+    const canResume = !!initResult.agentCapabilities?.sessionCapabilities?.resume;
+
+    if (canResume && session.acpSessionId) {
+      debugProtocol(`${session.info.sandboxName} resuming session: ${session.acpSessionId}`);
+      const resumeResult = await connection.resumeSession({
+        sessionId: session.acpSessionId,
+        cwd: '/sandbox',
+      });
+      if (resumeResult.configOptions) {
+        session.info.configOptions = this.mapConfigOptions(resumeResult.configOptions);
+      }
+      this.extractModels(session, resumeResult);
+    } else {
+      const newSession = await connection.newSession({
+        cwd: '/sandbox',
+        mcpServers: [],
+      });
+      debugProtocol(`${session.info.sandboxName} new session: ${newSession.sessionId}`);
+      session.acpSessionId = newSession.sessionId;
+      if (newSession.modes) {
+        session.info.availableModes = newSession.modes.availableModes.map(m => ({
+          modeId: m.id,
+          name: m.name,
+          description: m.description ?? undefined,
+        }));
+        session.info.currentModeId = newSession.modes.currentModeId;
+      }
+      if (newSession.configOptions) {
+        session.info.configOptions = this.mapConfigOptions(newSession.configOptions);
+      }
+      this.extractModels(session, newSession);
     }
-    if (newSession.configOptions) {
-      session.info.configOptions = this.mapConfigOptions(newSession.configOptions);
-    }
-    this.extractModels(session, newSession);
   }
 
   async sendFollowUp(sessionId: string, prompt: string, attachments?: AcpAttachment[]): Promise<void> {
     const session = this.sessions.get(sessionId);
-    if (!session?.acpSessionId) {
-      throw new Error(`Session "${sessionId}" not found or not initialized`);
+    if (!session) {
+      throw new Error(`Session "${sessionId}" not found`);
+    }
+    if (!session.acpSessionId && !session.connectionClosed) {
+      throw new Error(`Session "${sessionId}" not initialized`);
     }
 
     session.messageTurn++;
@@ -759,6 +794,10 @@ export class AcpSessionManager {
 
     if (session.connectionClosed) {
       await this.reconnectSession(sessionId);
+    }
+
+    if (!session.acpSessionId) {
+      throw new Error(`Session "${sessionId}" not initialized after reconnection`);
     }
 
     let contentBlocks: acp.ContentBlock[];
@@ -1160,10 +1199,15 @@ export class AcpSessionManager {
       }
       try {
         const raw = await readFile(join(dir, entry), 'utf-8');
-        const data = JSON.parse(raw) as { info: AcpSessionInfo; events: AcpFlowEvent[] };
+        const data = JSON.parse(raw) as {
+          info: AcpSessionInfo;
+          events: AcpFlowEvent[];
+          acpSessionId?: string;
+          agentCommand?: string[];
+          gatewayName?: string;
+        };
         const info = data.info;
 
-        // Mark non-terminal sessions as completed since the PTY is gone
         if (info.status !== 'completed' && info.status !== 'cancelled' && info.status !== 'error') {
           info.status = 'completed';
           info.updatedAt = Date.now();
@@ -1173,12 +1217,14 @@ export class AcpSessionManager {
           info,
           ptyProcess: undefined!,
           connection: undefined!,
+          acpSessionId: data.acpSessionId,
           events: data.events ?? [],
           pendingRequests: new Map(),
           stderrLines: [],
           messageTurn: 0,
           connectionClosed: true,
-          agentCommand: [],
+          agentCommand: data.agentCommand ?? [],
+          gatewayName: data.gatewayName,
         };
         this.sessions.set(info.id, session);
       } catch (e: unknown) {
@@ -1196,7 +1242,13 @@ export class AcpSessionManager {
     if (!existsSync(dir)) {
       await mkdir(dir, { recursive: true });
     }
-    const data = { info: session.info, events: session.events };
+    const data = {
+      info: session.info,
+      events: session.events,
+      acpSessionId: session.acpSessionId,
+      agentCommand: session.agentCommand,
+      gatewayName: session.gatewayName,
+    };
     await writeFile(join(dir, `${sessionId}.json`), JSON.stringify(data, undefined, 2) + '\n', 'utf-8');
   }
 

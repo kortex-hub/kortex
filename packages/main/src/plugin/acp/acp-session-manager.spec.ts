@@ -488,4 +488,66 @@ describe('AcpSessionManager', () => {
       expect(rm).toHaveBeenCalledWith(join(FAKE_SESSIONS_DIR, 'session-del.json'));
     });
   });
+
+  describe('persistence of resume fields', () => {
+    test('restores acpSessionId, agentCommand, and gatewayName from disk', async () => {
+      const { existsSync } = await import('node:fs');
+      const { readdir, readFile } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readdir).mockResolvedValue(['session-resume.json' as never]);
+
+      const storedSession = {
+        info: {
+          id: 'session-resume',
+          sandboxName: 'sb',
+          sandboxId: 'sb-id',
+          prompt: 'hello',
+          status: 'completed',
+          createdAt: 1000,
+          updatedAt: 2000,
+          agentId: 'openclaw',
+          agentName: 'OpenClaw',
+        },
+        events: [],
+        acpSessionId: 'acp-123',
+        agentCommand: ['openclaw', 'acp'],
+        gatewayName: 'my-gateway',
+      };
+      vi.mocked(readFile).mockResolvedValue(JSON.stringify(storedSession));
+
+      await manager.init();
+
+      const sessions = manager.listSessions();
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0]!.id).toBe('session-resume');
+    });
+
+    test('handles missing resume fields in old persisted data', async () => {
+      const { existsSync } = await import('node:fs');
+      const { readdir, readFile } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readdir).mockResolvedValue(['old-session.json' as never]);
+
+      const storedSession = {
+        info: {
+          id: 'old-session',
+          sandboxName: 'sb',
+          sandboxId: 'sb-id',
+          prompt: 'hello',
+          status: 'completed',
+          createdAt: 1000,
+          updatedAt: 2000,
+        },
+        events: [],
+      };
+      vi.mocked(readFile).mockResolvedValue(JSON.stringify(storedSession));
+
+      await manager.init();
+
+      const sessions = manager.listSessions();
+      expect(sessions).toHaveLength(1);
+    });
+  });
 });
