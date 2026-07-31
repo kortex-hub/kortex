@@ -1072,6 +1072,18 @@ describe('listProviders', () => {
     expect(result).toEqual([]);
   });
 
+  test('lists providers from the selected gateway', async () => {
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify([])));
+
+    await openshellCli.listProviders('remote');
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['provider', 'list', '-g', 'remote', '-o', 'json'],
+      undefined,
+    );
+  });
+
   test('rejects when CLI fails', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockRejectedValue(new Error('no gateway configured'));

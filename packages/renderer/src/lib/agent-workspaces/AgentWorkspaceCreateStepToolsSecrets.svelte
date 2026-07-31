@@ -6,8 +6,8 @@ import { router } from 'tinro';
 import type { ChecklistItem } from '/@/lib/ui/ChecklistPanel.svelte';
 import ChecklistPanel from '/@/lib/ui/ChecklistPanel.svelte';
 import { handleNavigation } from '/@/navigation';
-import { secretVaultInfos } from '/@/stores/secret-vault';
 import { NavigationPage } from '/@api/navigation-page';
+import type { SecretInfo } from '/@api/secret-info';
 
 interface Props {
   skillItems: ChecklistItem[];
@@ -15,6 +15,7 @@ interface Props {
   mcpItems: ChecklistItem[];
   selectedMcpIds: string[];
   selectedSecretIds: string[];
+  gateway: string;
   knowledgeItems: ChecklistItem[];
   selectedKnowledgeIds: string[];
 }
@@ -25,17 +26,42 @@ let {
   mcpItems,
   selectedMcpIds = $bindable(),
   selectedSecretIds = $bindable(),
+  gateway,
   knowledgeItems,
   selectedKnowledgeIds = $bindable(),
 }: Props = $props();
 
+let secrets = $state.raw<SecretInfo[]>([]);
 let secretItems: ChecklistItem[] = $derived(
-  $secretVaultInfos.map(s => ({
-    id: s.id,
+  secrets.map(s => ({
+    id: s.name,
     name: s.name,
     description: [s.type, s.description].filter(Boolean).join(' · '),
   })),
 );
+
+$effect(() => {
+  let cancelled = false;
+  secrets = [];
+  window.listSecrets(gateway).then(
+    items => {
+      if (!cancelled) {
+        secrets = items;
+        const available = new Set(items.map(item => item.name));
+        selectedSecretIds = selectedSecretIds.filter(id => available.has(id));
+      }
+    },
+    (error: unknown) => {
+      if (!cancelled) {
+        selectedSecretIds = [];
+        console.error('Failed to list secrets for gateway', error);
+      }
+    },
+  );
+  return (): void => {
+    cancelled = true;
+  };
+});
 
 let allIncluded: boolean = $derived(
   selectedSkillIds.length === skillItems.length &&

@@ -395,8 +395,12 @@ export class OpenshellCli {
 
   // ── provider commands ──────────────────────────────────────────────
 
-  async listProviders(): Promise<OpenshellProviderInfo[]> {
-    const data = await this.execCLI<unknown>(['provider', 'list']);
+  async listProviders(gateway?: string): Promise<OpenshellProviderInfo[]> {
+    const args = ['provider', 'list'];
+    if (gateway) {
+      args.push('-g', gateway);
+    }
+    const data = await this.execCLI<unknown>(args);
     return z.array(OpenshellProviderInfoSchema).parse(data);
   }
 

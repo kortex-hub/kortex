@@ -620,6 +620,7 @@ async function startWorkspace(): Promise<void> {
             {:else if currentStepId === 'tools-secrets'}
               <AgentWorkspaceCreateStepToolsSecrets
                 {skillItems}
+                gateway={wizard.draft.selectedGateway}
                 bind:selectedSkillIds={wizard.draft.selectedSkillIds}
                 {mcpItems}
                 bind:selectedMcpIds={wizard.draft.selectedMcpIds}
