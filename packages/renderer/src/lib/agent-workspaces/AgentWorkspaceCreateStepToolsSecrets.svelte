@@ -42,6 +42,7 @@ let secretItems: ChecklistItem[] = $derived(
 
 $effect(() => {
   let cancelled = false;
+  secrets = [];
   window.listSecrets(gateway).then(
     items => {
       if (!cancelled) {
@@ -50,7 +51,12 @@ $effect(() => {
         selectedSecretIds = selectedSecretIds.filter(id => available.has(id));
       }
     },
-    (error: unknown) => console.error('Failed to list secrets for gateway', error),
+    (error: unknown) => {
+      if (!cancelled) {
+        selectedSecretIds = [];
+        console.error('Failed to list secrets for gateway', error);
+      }
+    },
   );
   return (): void => {
     cancelled = true;
