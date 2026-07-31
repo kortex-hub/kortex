@@ -72,6 +72,8 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     id: 'goose',
     name: 'Goose',
     description: 'Open-source autonomous coding agent by Block.',
+    baseImage:
+      'ghcr.io/openkaiden/openshell-image-goose@sha256:e23918ed2ee0e7e13dc5dc52d753ac187ff5508fc0fdd4b5fd1f2e43e147584f',
     icon: {
       icon: { dark: './icon_dark.png', light: './icon_light.png' },
       logo: { dark: './icon_dark.png', light: './icon_light.png' },
@@ -101,6 +103,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
 
       const config = GooseConfigCodec.decode(await configFile.read());
       config.GOOSE_MODEL = context.model.model.label;
+      config.GOOSE_TELEMETRY_ENABLED = false;
 
       if (provider) {
         config.GOOSE_PROVIDER = GOOSE_PROVIDER_MAPPING[provider] ?? provider;

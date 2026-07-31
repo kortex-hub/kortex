@@ -48,6 +48,8 @@ describe('activate', () => {
         description: expect.any(String),
         icon: expect.objectContaining({ icon: { dark: './icon_dark.png', light: './icon_light.png' } }),
         destinationSkillsFolder: '${HOME}/.agents/skills',
+        baseImage:
+          'ghcr.io/openkaiden/openshell-image-goose@sha256:e23918ed2ee0e7e13dc5dc52d753ac187ff5508fc0fdd4b5fd1f2e43e147584f',
         isSupportedModelType: expect.any(Function),
       }),
     );
@@ -132,6 +134,14 @@ describe('activate', () => {
       expect(configFile.updateMock).toHaveBeenCalledOnce();
       const written = parseWritten(configFile.updateMock);
       expect(written.GOOSE_MODEL).toBe('gpt-4o');
+    });
+
+    test('disables telemetry without prompting', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(createContext([configFile]));
+
+      const written = parseWritten(configFile.updateMock);
+      expect(written.GOOSE_TELEMETRY_ENABLED).toBe(false);
     });
 
     test('preserves existing configuration fields', async () => {
