@@ -161,6 +161,31 @@ describe('activate', () => {
       expect(written.GOOSE_MODEL).toBe('gemini-2.5-pro');
     });
 
+    test('replaces malformed YAML with generated configuration', async () => {
+      const configFile = createConfigFile('extensions:\n  invalid: [');
+      await agent.preWorkspaceStart(
+        createContext([configFile], { provider: 'anthropic', modelLabel: 'claude-sonnet' }),
+      );
+
+      const written = parseWritten(configFile.updateMock);
+      expect(written).toEqual({
+        GOOSE_MODEL: 'claude-sonnet',
+        GOOSE_TELEMETRY_ENABLED: false,
+        GOOSE_PROVIDER: 'anthropic',
+      });
+    });
+
+    test('replaces non-object YAML with generated configuration', async () => {
+      const configFile = createConfigFile('invalid');
+      await agent.preWorkspaceStart(createContext([configFile], { modelLabel: 'gpt-4o' }));
+
+      const written = parseWritten(configFile.updateMock);
+      expect(written).toEqual({
+        GOOSE_MODEL: 'gpt-4o',
+        GOOSE_TELEMETRY_ENABLED: false,
+      });
+    });
+
     test('does not set GOOSE_PROVIDER when no provider is given', async () => {
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(createContext([configFile]));

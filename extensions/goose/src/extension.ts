@@ -101,7 +101,8 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
         return;
       }
 
-      const config = GooseConfigCodec.decode(await configFile.read());
+      const decodedConfig = GooseConfigCodec.safeDecode(await configFile.read());
+      const config = decodedConfig.success ? decodedConfig.data : {};
       config.GOOSE_MODEL = context.model.model.label;
       config.GOOSE_TELEMETRY_ENABLED = false;
 
