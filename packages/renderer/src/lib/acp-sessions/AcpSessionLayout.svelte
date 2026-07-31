@@ -30,12 +30,13 @@ const STATUS_COLORS: Record<AcpSessionStatus, string> = {
   cancelled: 'bg-[var(--pd-status-not-running)]',
 };
 
-const needsInputSessions: AcpSessionInfo[] = $derived($acpSessions.filter(s => s.status === 'waiting_input'));
+const sortedSessions: AcpSessionInfo[] = $derived([...$acpSessions].sort((a, b) => b.createdAt - a.createdAt));
+const needsInputSessions: AcpSessionInfo[] = $derived(sortedSessions.filter(s => s.status === 'waiting_input'));
 const runningSessions: AcpSessionInfo[] = $derived(
-  $acpSessions.filter(s => s.status === 'running' || s.status === 'idle'),
+  sortedSessions.filter(s => s.status === 'running' || s.status === 'idle'),
 );
 const completedSessions: AcpSessionInfo[] = $derived(
-  $acpSessions.filter(s => s.status === 'completed' || s.status === 'cancelled' || s.status === 'error'),
+  sortedSessions.filter(s => s.status === 'completed' || s.status === 'cancelled' || s.status === 'error'),
 );
 
 function navigateToSession(id: string): void {

@@ -43,7 +43,8 @@ const filteredSessions: SessionSelectable[] = $derived.by(() => {
   const term = searchTerm.trim().toLowerCase();
   return $acpSessions
     .filter(s => !term || s.prompt.toLowerCase().includes(term) || s.sandboxName.toLowerCase().includes(term))
-    .map(s => ({ ...s, selected: false }));
+    .map(s => ({ ...s, selected: false }))
+    .sort((a, b) => b.createdAt - a.createdAt);
 });
 
 const needsInputSessions = $derived(filteredSessions.filter(s => s.status === 'waiting_input'));
@@ -78,7 +79,7 @@ const sandboxColumn = new TableColumn<SessionSelectable>('Sandbox', {
 const timeColumn = new TableColumn<SessionSelectable, Date | undefined>('Time', {
   renderer: TableDurationColumn,
   renderMapping: (s): Date | undefined => new Date(s.createdAt),
-  comparator: (a, b): number => a.createdAt - b.createdAt,
+  comparator: (a, b): number => b.createdAt - a.createdAt,
 });
 
 const columns = [nameColumn, statusColumn, sandboxColumn, timeColumn];
@@ -111,7 +112,7 @@ const columns = [nameColumn, statusColumn, sandboxColumn, timeColumn];
               data={filteredSessions}
               columns={columns}
               row={row}
-              defaultSortColumn="Session"
+              defaultSortColumn="Time"
             />
           </div>
         {:else}
@@ -119,19 +120,19 @@ const columns = [nameColumn, statusColumn, sandboxColumn, timeColumn];
             {#if needsInputSessions.length > 0}
               <div class="mx-5 pt-2 text-sm font-semibold uppercase tracking-wider text-[var(--pd-status-waiting)]">Needs your input</div>
               <div class="flex min-w-full">
-                <Table kind="acp-sessions-input" data={needsInputSessions} columns={columns} row={row} />
+                <Table kind="acp-sessions-input" data={needsInputSessions} columns={columns} row={row} defaultSortColumn="Time" />
               </div>
             {/if}
             {#if runningSessions.length > 0}
               <div class="mx-5 pt-2 text-sm font-semibold uppercase tracking-wider text-[var(--pd-status-running)]">Running</div>
               <div class="flex min-w-full">
-                <Table kind="acp-sessions-running" data={runningSessions} columns={columns} row={row} />
+                <Table kind="acp-sessions-running" data={runningSessions} columns={columns} row={row} defaultSortColumn="Time" />
               </div>
             {/if}
             {#if completedSessions.length > 0}
               <div class="mx-5 pt-2 text-sm font-semibold uppercase tracking-wider text-[var(--pd-table-header-text)]">Completed</div>
               <div class="flex min-w-full">
-                <Table kind="acp-sessions-completed" data={completedSessions} columns={columns} row={row} />
+                <Table kind="acp-sessions-completed" data={completedSessions} columns={columns} row={row} defaultSortColumn="Time" />
               </div>
             {/if}
           </div>
