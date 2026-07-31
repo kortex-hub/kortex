@@ -49,6 +49,8 @@ interface WorkspaceCreateDraft {
   selectedMcpIds: string[];
   selectedSecretIds: string[];
   selectedKnowledgeIds: string[];
+  customImage: string;
+  customImageFieldOpen: boolean;
   initialized: boolean;
 }
 
@@ -78,6 +80,8 @@ function createInitialDraft(): WorkspaceCreateDraft {
     selectedMcpIds: [],
     selectedSecretIds: [],
     selectedKnowledgeIds: [],
+    customImage: '',
+    customImageFieldOpen: false,
     initialized: false,
   };
 }

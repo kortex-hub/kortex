@@ -529,6 +529,36 @@ describe('create – OpenShell mode', () => {
     );
   });
 
+  test('uses user-specified image over agent baseImage when provided', async () => {
+    vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue({
+      ...mockAgent,
+      baseImage: 'registry.example.com/agent-base:v1',
+    });
+
+    await manager.create({ ...defaultOptions, image: 'custom-registry.io/my-image:latest' });
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: 'custom-registry.io/my-image:latest',
+      }),
+    );
+  });
+
+  test('falls back to agent baseImage when image option is undefined', async () => {
+    vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue({
+      ...mockAgent,
+      baseImage: 'registry.example.com/agent-base:v1',
+    });
+
+    await manager.create({ ...defaultOptions, image: undefined });
+
+    expect(openshellCli.createSandbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: 'registry.example.com/agent-base:v1',
+      }),
+    );
+  });
+
   test('calls agent.preWorkspaceStart with correct context', async () => {
     const preWorkspaceStart = vi.fn();
     vi.mocked(agentRegistry.getAgentRegistration).mockReturnValue({ ...mockAgent, preWorkspaceStart });

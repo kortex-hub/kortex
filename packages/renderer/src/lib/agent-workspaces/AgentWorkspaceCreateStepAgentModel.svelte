@@ -1,5 +1,6 @@
 <script lang="ts">
-import { faTerminal } from '@fortawesome/free-solid-svg-icons';
+import { faChevronDown, faTerminal } from '@fortawesome/free-solid-svg-icons';
+import { Input } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { untrack } from 'svelte';
 
@@ -15,9 +16,16 @@ import { catalogModels } from '/@/stores/models';
 interface Props {
   selectedAgent?: string;
   selectedModel?: ModelInfo;
+  customImage?: string;
+  customImageFieldOpen?: boolean;
 }
 
-let { selectedAgent = $bindable(''), selectedModel = $bindable() }: Props = $props();
+let {
+  selectedAgent = $bindable(''),
+  selectedModel = $bindable(),
+  customImage = $bindable(''),
+  customImageFieldOpen = $bindable(false),
+}: Props = $props();
 
 let filteredAgents = $derived(
   $agentInfos.toSorted((a, b) => {
@@ -57,6 +65,11 @@ function handleModelSelect(model: CatalogModelInfo): void {
 function selectAgent(value: string): void {
   if (selectedAgent === value) return;
   selectedAgent = value;
+  customImage = filteredAgents.find(a => a.id === value)?.baseImage ?? '';
+}
+
+function toggleCustomImageField(): void {
+  customImageFieldOpen = !customImageFieldOpen;
 }
 
 $effect(() => {
@@ -119,6 +132,35 @@ $effect(() => {
         </button>
       {/each}
     </div>
+  </div>
+
+  <!-- Container image override -->
+  <div class="rounded-xl border border-[var(--pd-content-card-border)]/85 bg-[var(--pd-content-card-bg)]/35 overflow-hidden">
+    <button
+      class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-[var(--pd-modal-text)] hover:bg-[var(--pd-content-card-inset-bg)]/50 transition-colors cursor-pointer"
+      onclick={toggleCustomImageField}>
+      <span>
+        Container image <span class="text-xs font-normal opacity-50">(optional)</span>
+      </span>
+      <span
+        class="transition-transform duration-150 {customImageFieldOpen ? 'rotate-180' : ''}"
+        aria-hidden="true">
+        <Icon icon={faChevronDown} size="xs" />
+      </span>
+    </button>
+    {#if customImageFieldOpen}
+      <div class="px-4 pb-4">
+        <label for="workspace-custom-image" class="block text-xs text-[var(--pd-content-card-text)] opacity-60 mb-1.5">
+          Override the base container image for the workspace.
+        </label>
+        <Input
+          id="workspace-custom-image"
+          bind:value={customImage}
+          placeholder={selectedAgentInfo?.baseImage ?? 'Default agent image'}
+          class="w-full font-mono text-sm"
+        />
+      </div>
+    {/if}
   </div>
 
   <!-- Model catalog -->
