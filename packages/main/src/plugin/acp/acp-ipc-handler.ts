@@ -60,7 +60,7 @@ export class AcpIPCHandler {
     return this.sessionManager.createSession(options);
   }
 
-  protected listSessions(_: IpcMainInvokeEvent): AcpSessionInfo[] {
+  protected async listSessions(_: IpcMainInvokeEvent): Promise<AcpSessionInfo[]> {
     return this.sessionManager.listSessions();
   }
 

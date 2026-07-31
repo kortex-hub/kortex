@@ -3,7 +3,7 @@ import { faPaperclip, faPaperPlane, faSquare, faXmark } from '@fortawesome/free-
 import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { router } from 'tinro';
 
-import { acpSessions } from '/@/stores/acp-sessions.svelte';
+import { acpSessions, acpSessionsEventStoreInfo } from '/@/stores/acp-sessions.svelte';
 import type {
   AcpAttachment,
   AcpFlowEvent,
@@ -36,6 +36,7 @@ const isDraft = $derived(sessionId === 'new' && !!draftSandboxName);
 let events: AcpFlowEvent[] = $state([]);
 let followUpText = $state('');
 let pendingAttachments: AcpAttachment[] = $state([]);
+let sendError: string | undefined = $state(undefined);
 let fetchSeq = 0;
 let flowContainer: HTMLElement | undefined = $state(undefined);
 
@@ -43,10 +44,11 @@ const session: AcpSessionInfo | undefined = $derived($acpSessions.find(s => s.id
 const isWaitingInput = $derived(!isDraft && session?.status === 'waiting_input');
 const canSendFollowUp = $derived(
   isDraft ||
-    session?.status === 'running' ||
-    session?.status === 'idle' ||
-    session?.status === 'waiting_input' ||
-    session?.status === 'completed',
+    (session?.sandboxId &&
+      (session?.status === 'running' ||
+        session?.status === 'idle' ||
+        session?.status === 'waiting_input' ||
+        session?.status === 'completed')),
 );
 
 const slashQuery = $derived(
@@ -321,6 +323,15 @@ $effect(() => {
 });
 
 $effect(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, sonarjs/no-unused-vars
+  const _id = sessionId;
+  followUpText = '';
+  pendingAttachments = [];
+  sendError = undefined;
+  acpSessionsEventStoreInfo?.fetch()?.catch(() => {});
+});
+
+$effect(() => {
   if (isWaitingInput && flowContainer) {
     requestAnimationFrame(() => {
       const pending = flowContainer?.querySelectorAll('.tool-call-pending-permission');
@@ -387,6 +398,7 @@ async function handleSendFollowUp(): Promise<void> {
 
   if (isDraft && draftSandboxName) {
     try {
+      sendError = undefined;
       const newSession = await window.createAcpSession({
         sandboxName: draftSandboxName,
         prompt: textToSend,
@@ -397,17 +409,20 @@ async function handleSendFollowUp(): Promise<void> {
       router.goto(`/acp-sessions/${encodeURIComponent(newSession.id)}`);
     } catch (err: unknown) {
       console.error('Failed to create session', err);
+      sendError = err instanceof Error ? err.message : String(err);
     }
     return;
   }
 
   try {
+    sendError = undefined;
     await window.sendAcpFollowUp(sessionId, textToSend, attachmentsToSend);
     followUpText = '';
     pendingAttachments = [];
     refreshEvents();
   } catch (err: unknown) {
     console.error('Failed to send follow-up', err);
+    sendError = err instanceof Error ? err.message : String(err);
   }
 }
 
@@ -481,8 +496,22 @@ function handleKeyDown(e: KeyboardEvent): void {
         {session.error}
       </div>
     {/if}
+
+    {#if session && !session.sandboxId}
+      <div class="rounded-lg border border-[var(--pd-state-warning)] bg-[var(--pd-state-warning)]/10 px-4 py-3 text-sm text-[var(--pd-state-warning)]">
+        Sandbox "{session.sandboxName}" no longer exists. This session is read-only.
+      </div>
+    {/if}
   </div>
 </div>
+
+{#if sendError}
+  <div class="px-4">
+    <div class="max-w-4xl mx-auto rounded-lg border border-[var(--pd-status-dead)] bg-[var(--pd-status-dead)]/10 px-4 py-3 text-sm text-[var(--pd-status-dead)]">
+      {sendError}
+    </div>
+  </div>
+{/if}
 
 <!-- Input area -->
 {#if canSendFollowUp}

@@ -94,6 +94,7 @@ export class AcpSessionManager {
 
   async init(): Promise<void> {
     await this.loadFromDisk();
+    await this.validateSandboxes();
   }
 
   async resolveAgentCommand(
@@ -778,6 +779,9 @@ export class AcpSessionManager {
     if (!session) {
       throw new Error(`Session "${sessionId}" not found`);
     }
+    if (!session.info.sandboxId) {
+      throw new Error(`Sandbox "${session.info.sandboxName}" no longer exists`);
+    }
     if (!session.acpSessionId && !session.connectionClosed) {
       throw new Error(`Session "${sessionId}" not initialized`);
     }
@@ -1052,7 +1056,8 @@ export class AcpSessionManager {
     });
   }
 
-  listSessions(): AcpSessionInfo[] {
+  async listSessions(): Promise<AcpSessionInfo[]> {
+    await this.validateSandboxes();
     return Array.from(this.sessions.values()).map(s => ({ ...s.info }));
   }
 
@@ -1189,7 +1194,6 @@ export class AcpSessionManager {
   private async loadFromDisk(): Promise<void> {
     const dir = this.directories.getAcpSessionsDirectory();
     if (!existsSync(dir)) {
-      await mkdir(dir, { recursive: true });
       return;
     }
     const entries = await readdir(dir);
@@ -1230,6 +1234,23 @@ export class AcpSessionManager {
       } catch (e: unknown) {
         console.error(`Failed to load ACP session file "${entry}"`, e);
       }
+    }
+  }
+
+  private async validateSandboxes(): Promise<void> {
+    if (this.sessions.size === 0) return;
+    try {
+      const sandboxes = await this.openshellCli.listSandboxes();
+      const readySandboxes = new Map(sandboxes.filter(s => s.phase === 'Ready').map(s => [s.name, s.id]));
+      for (const session of this.sessions.values()) {
+        if (readySandboxes.has(session.info.sandboxName)) {
+          session.info.sandboxId = readySandboxes.get(session.info.sandboxName);
+        } else {
+          session.info.sandboxId = undefined;
+        }
+      }
+    } catch {
+      // CLI may be unavailable — skip validation
     }
   }
 
