@@ -303,7 +303,7 @@ export class AcpSessionManager {
 
     debugProtocol('creating new session...');
     const newSession = await session.connection.newSession({
-      cwd: '.',
+      cwd: '/sandbox',
       mcpServers: [],
     });
     debugProtocol(`session created: ${newSession.sessionId}, keys: ${Object.keys(newSession).join(',')}`);
@@ -712,7 +712,7 @@ export class AcpSessionManager {
     debugProtocol(`${session.info.sandboxName} reconnected: protocol v${initResult.protocolVersion}`);
 
     const newSession = await connection.newSession({
-      cwd: '.',
+      cwd: '/sandbox',
       mcpServers: [],
     });
     debugProtocol(`${session.info.sandboxName} new session: ${newSession.sessionId}`);
