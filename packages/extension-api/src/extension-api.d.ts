@@ -5572,6 +5572,7 @@ declare module '@openkaiden/api' {
   }
 
   export interface AcpConfiguration {
+    readonly command?: string;
     readonly args: ReadonlyArray<string>;
   }
 

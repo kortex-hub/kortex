@@ -103,6 +103,22 @@ describe('AcpSessionManager', () => {
       expect(result.command).toEqual(['copilot', '--acp']);
     });
 
+    test('uses acp.command override when provided', async () => {
+      const agent = createAgentInfo({
+        id: 'claude',
+        command: 'claude',
+        acp: { command: 'claude-agent-acp', args: [] },
+      });
+      vi.mocked(agentRegistry.getAgent).mockResolvedValue(agent);
+
+      const options: AcpSessionCreateOptions = { sandboxName: 'sb', prompt: 'hello', agentId: 'claude' };
+      const sandbox = createSandbox();
+
+      const result = await manager.resolveAgentCommand(options, sandbox);
+
+      expect(result.command).toEqual(['claude-agent-acp']);
+    });
+
     test('options.agentId takes priority over sandbox label', async () => {
       const agent = createAgentInfo({ id: 'openclaw', command: 'openclaw' });
       vi.mocked(agentRegistry.getAgent).mockResolvedValue(agent);

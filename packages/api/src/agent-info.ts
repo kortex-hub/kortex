@@ -19,6 +19,7 @@
 import type { ModelType, ProviderImages } from '@openkaiden/api';
 
 export interface AcpConfigurationInfo {
+  command?: string;
   args: ReadonlyArray<string>;
 }
 

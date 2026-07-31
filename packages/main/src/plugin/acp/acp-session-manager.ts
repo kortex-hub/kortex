@@ -106,7 +106,7 @@ export class AcpSessionManager {
       throw new Error(`Agent "${agentInfo.name}" does not support ACP`);
     }
 
-    const command = [agentInfo.command, ...agentInfo.acp.args];
+    const command = [agentInfo.acp.command ?? agentInfo.command, ...agentInfo.acp.args];
     return { agentInfo, command };
   }
 
