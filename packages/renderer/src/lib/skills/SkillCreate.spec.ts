@@ -22,9 +22,12 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, expect, test, vi } from 'vitest';
 
+import { handleNavigation } from '/@/navigation';
+import { NavigationPage } from '/@api/navigation-page';
+
 import SkillCreate from './SkillCreate.svelte';
 
-const closeMock = vi.fn();
+vi.mock(import('/@/navigation'));
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -41,16 +44,17 @@ beforeEach(() => {
   });
 });
 
-test('should render the Create Skill dialog title', async () => {
-  render(SkillCreate, { onclose: closeMock });
+test('should render the Create Skill page title', async () => {
+  render(SkillCreate);
 
   await waitFor(() => {
     expect(screen.getByText('Create Skill')).toBeInTheDocument();
   });
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });
 
 test('should render target cards after loading', async () => {
-  render(SkillCreate, { onclose: closeMock });
+  render(SkillCreate);
 
   await waitFor(() => {
     expect(screen.getByText('Kaiden Skills')).toBeInTheDocument();
@@ -59,7 +63,7 @@ test('should render target cards after loading', async () => {
 });
 
 test('should render name, description, and content fields', async () => {
-  render(SkillCreate, { onclose: closeMock });
+  render(SkillCreate);
 
   await waitFor(() => {
     expect(screen.getByLabelText('Skill name')).toBeInTheDocument();
@@ -69,7 +73,7 @@ test('should render name, description, and content fields', async () => {
 });
 
 test('should render the drag/drop zone', async () => {
-  render(SkillCreate, { onclose: closeMock });
+  render(SkillCreate);
 
   await waitFor(() => {
     expect(screen.getByLabelText('Drop or click to select a SKILL.md file')).toBeInTheDocument();
@@ -79,24 +83,24 @@ test('should render the drag/drop zone', async () => {
 });
 
 test('should have Create button disabled when fields are empty', async () => {
-  render(SkillCreate, { onclose: closeMock });
+  render(SkillCreate);
 
   await waitFor(() => {
     expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled();
   });
 });
 
-test('should call onclose when Cancel is clicked', async () => {
-  render(SkillCreate, { onclose: closeMock });
+test('should navigate back to Skills when Cancel is clicked', async () => {
+  render(SkillCreate);
 
   const cancelButton = await screen.findByRole('button', { name: 'Cancel' });
   await fireEvent.click(cancelButton);
 
-  expect(closeMock).toHaveBeenCalled();
+  expect(handleNavigation).toHaveBeenCalledWith({ page: NavigationPage.SKILLS });
 });
 
 test('should enable Create button when all fields are filled and target is auto-selected', async () => {
-  render(SkillCreate, { onclose: closeMock });
+  render(SkillCreate);
 
   await waitFor(() => {
     expect(screen.getByText('Kaiden Skills')).toBeInTheDocument();
@@ -114,8 +118,8 @@ test('should enable Create button when all fields are filled and target is auto-
   expect(createButton).toBeEnabled();
 });
 
-test('should call createSkill with correct parameters and close on success', async () => {
-  render(SkillCreate, { onclose: closeMock });
+test('should call createSkill with correct parameters and navigate back on success', async () => {
+  render(SkillCreate);
 
   await waitFor(() => {
     expect(screen.getByText('Kaiden Skills')).toBeInTheDocument();
@@ -136,11 +140,11 @@ test('should call createSkill with correct parameters and close on success', asy
     { name: 'test-skill', description: 'A test skill', content: 'Some content' },
     '/test/skills',
   );
-  expect(closeMock).toHaveBeenCalled();
+  expect(handleNavigation).toHaveBeenCalledWith({ page: NavigationPage.SKILLS });
 });
 
 test('should call createSkill with claude target when Claude card is selected', async () => {
-  render(SkillCreate, { onclose: closeMock });
+  render(SkillCreate);
 
   await waitFor(() => {
     expect(screen.getByText('Claude Skills')).toBeInTheDocument();
@@ -166,7 +170,7 @@ test('should call createSkill with claude target when Claude card is selected', 
 test('should display error when createSkill fails', async () => {
   vi.mocked(window.createSkill).mockRejectedValue(new Error('Skill already exists'));
 
-  render(SkillCreate, { onclose: closeMock });
+  render(SkillCreate);
 
   await waitFor(() => {
     expect(screen.getByText('Kaiden Skills')).toBeInTheDocument();
@@ -184,11 +188,11 @@ test('should display error when createSkill fails', async () => {
   await fireEvent.click(createButton);
 
   expect(await screen.findByText(/Skill already exists/)).toBeInTheDocument();
-  expect(closeMock).not.toHaveBeenCalled();
+  expect(handleNavigation).not.toHaveBeenCalled();
 });
 
 test('should render drop zone with correct label', async () => {
-  render(SkillCreate, { onclose: closeMock });
+  render(SkillCreate);
 
   const dropZone = await screen.findByRole('button', { name: 'Drop or click to select a SKILL.md file' });
   expect(dropZone).toBeInTheDocument();
@@ -202,7 +206,7 @@ test('should open file dialog when drop zone is clicked', async () => {
     content: '# Body',
   });
 
-  render(SkillCreate, { onclose: closeMock });
+  render(SkillCreate);
 
   const dropZone = await screen.findByLabelText('Drop or click to select a SKILL.md file');
   await fireEvent.click(dropZone);
@@ -223,7 +227,7 @@ test('should prefill fields from parsed file when browsing', async () => {
     content: '# Body content',
   });
 
-  render(SkillCreate, { onclose: closeMock });
+  render(SkillCreate);
 
   const dropZone = await screen.findByLabelText('Drop or click to select a SKILL.md file');
   await fireEvent.click(dropZone);

@@ -97,6 +97,7 @@ import SecretVaultDetails from './lib/secret-vault/SecretVaultDetails.svelte';
 import SecretVaultList from './lib/secret-vault/SecretVaultList.svelte';
 import ServiceDetails from './lib/service/ServiceDetails.svelte';
 import ServicesList from './lib/service/ServicesList.svelte';
+import SkillCreate from './lib/skills/SkillCreate.svelte';
 import SkillDetails from './lib/skills/SkillDetails.svelte';
 import SkillsList from './lib/skills/SkillsList.svelte';
 import StatusBar from './lib/statusbar/StatusBar.svelte';
@@ -354,6 +355,9 @@ tablePersistence.storage = new PodmanDesktopStoragePersist();
         <Route path="/skills/*" breadcrumb="Skills" navigationHint="root" firstmatch>
           <Route path="/" breadcrumb="Skills" navigationHint="root">
             <SkillsList />
+          </Route>
+          <Route path="/create" breadcrumb="Create Skill" navigationHint="details">
+            <SkillCreate />
           </Route>
           <Route path="/:name/*" let:meta breadcrumb="Skill Details" navigationHint="details">
             <SkillDetails name={decodeURIComponent(meta.params.name)} />

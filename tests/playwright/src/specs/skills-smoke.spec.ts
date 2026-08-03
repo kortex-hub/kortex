@@ -51,12 +51,12 @@ test.describe('Skills page - initial state', { tag: '@smoke' }, () => {
     await expect(skillsPage.table).not.toBeVisible();
   });
 
-  test('[SKL-INIT-02] Create Skill dialog can be opened from either entry point and cancelled', async ({
+  test('[SKL-INIT-02] Create Skill page can be opened from either entry point and cancelled', async ({
     skillsPage,
   }) => {
     const entryPoints: Array<{ label: string; open: () => Promise<SkillsCreatePage> }> = [
-      { label: 'header New Skill button', open: () => skillsPage.openCreateDialog() },
-      { label: 'empty state New Skill button', open: () => skillsPage.openCreateDialogFromContentRegion() },
+      { label: 'header New Skill button', open: () => skillsPage.openCreatePage() },
+      { label: 'empty state New Skill button', open: () => skillsPage.openCreatePageFromContentRegion() },
     ];
 
     for (const { label, open } of entryPoints) {
@@ -64,7 +64,7 @@ test.describe('Skills page - initial state', { tag: '@smoke' }, () => {
         await skillsPage.waitForLoad();
         const createPage = await open();
 
-        await expect(createPage.dialogHeading).toBeVisible();
+        await expect(createPage.heading).toBeVisible();
         await expect(createPage.nameInput).toBeVisible();
         await expect(createPage.descriptionInput).toBeVisible();
         await expect(createPage.contentTextarea).toBeVisible();
