@@ -1,5 +1,4 @@
 <script lang="ts">
-import { faServer } from '@fortawesome/free-solid-svg-icons';
 import { SettingsNavItem } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 import type { TinroRouteMeta } from 'tinro';
@@ -23,14 +22,6 @@ let sectionExpanded: { [key: string]: boolean } = $state({});
 let experimentalSection: boolean = $state(false);
 
 let settingsNavigationItems: SettingsNavItemConfig[] = $state(settingsNavigationEntries);
-
-let openshellExpanded: boolean = $state(false);
-
-$effect(() => {
-  if (meta.url.startsWith('/preferences/openshell')) {
-    openshellExpanded = true;
-  }
-});
 
 function updateDockerCompatibility(): void {
   window
@@ -111,22 +102,6 @@ onMount(() => {
         />
       {/if}
     {/each}
-
-    <!-- OpenShell section -->
-    <SettingsNavItem
-      title="OpenShell"
-      href="/preferences/openshell/gateways"
-      icon={faServer}
-      section={true}
-      selected={meta.url.startsWith('/preferences/openshell') && !openshellExpanded}
-      bind:expanded={openshellExpanded} />
-    {#if openshellExpanded}
-      <SettingsNavItem
-        title="Gateways"
-        href="/preferences/openshell/gateways"
-        child={true}
-        selected={meta.url === '/preferences/openshell/gateways'} />
-    {/if}
 
     <!-- Default configuration properties start -->
     {#each configProperties as [configSection, configItems] (configSection)}

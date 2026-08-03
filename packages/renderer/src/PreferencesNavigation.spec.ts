@@ -216,15 +216,14 @@ test.skip('experimental configuration should be visible if one property has expe
   });
 });
 
-test('OpenShell nav entry is always visible with accordion', () => {
+test('Gateways nav entry is always visible', () => {
   render(PreferencesNavigation, {
     meta: {
       url: '/',
     } as unknown as TinroRouteMeta,
   });
 
-  const openshellLink = screen.getByRole('link', { name: 'OpenShell' });
-  expect(openshellLink).toBeVisible();
-
-  expect(screen.queryByRole('link', { name: 'Gateways' })).not.toBeInTheDocument();
+  const gatewaysLink = screen.getByRole('link', { name: 'Gateways' });
+  expect(gatewaysLink).toBeVisible();
+  expect(gatewaysLink).toHaveAttribute('href', '/preferences/openshell/gateways');
 });
