@@ -292,6 +292,7 @@ $effect(() => {
 // --- Wizard navigation ---
 let currentStepIndex = $derived(wizard.draft.currentStepIndex);
 let error = $state('');
+let secretsLoading = $state(false);
 
 let currentStepId = $derived(wizardSteps[wizard.draft.currentStepIndex]?.id ?? '');
 let isLastStep = $derived(wizard.draft.currentStepIndex === wizardSteps.length - 1);
@@ -320,6 +321,9 @@ let isCurrentStepComplete = $derived.by(() => {
   }
   if (currentStepId === 'agent-model') {
     return hasModel;
+  }
+  if (currentStepId === 'tools-secrets') {
+    return !secretsLoading;
   }
   return true;
 });
@@ -625,6 +629,7 @@ async function startWorkspace(): Promise<void> {
                 {mcpItems}
                 bind:selectedMcpIds={wizard.draft.selectedMcpIds}
                 bind:selectedSecretIds={wizard.draft.selectedSecretIds}
+                bind:secretsLoading
                 {knowledgeItems}
                 bind:selectedKnowledgeIds={wizard.draft.selectedKnowledgeIds} />
             {:else if currentStepId === 'filesystem'}

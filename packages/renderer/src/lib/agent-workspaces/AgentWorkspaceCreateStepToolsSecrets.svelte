@@ -1,6 +1,7 @@
 <script lang="ts">
 import { faBook, faKey, faServer, faWrench } from '@fortawesome/free-solid-svg-icons';
 import { Button, Expandable } from '@podman-desktop/ui-svelte';
+import { untrack } from 'svelte';
 import { router } from 'tinro';
 
 import type { ChecklistItem } from '/@/lib/ui/ChecklistPanel.svelte';
@@ -15,6 +16,7 @@ interface Props {
   mcpItems: ChecklistItem[];
   selectedMcpIds: string[];
   selectedSecretIds: string[];
+  secretsLoading: boolean;
   gateway: string;
   knowledgeItems: ChecklistItem[];
   selectedKnowledgeIds: string[];
@@ -26,6 +28,7 @@ let {
   mcpItems,
   selectedMcpIds = $bindable(),
   selectedSecretIds = $bindable(),
+  secretsLoading = $bindable(),
   gateway,
   knowledgeItems,
   selectedKnowledgeIds = $bindable(),
@@ -42,18 +45,22 @@ let secretItems: ChecklistItem[] = $derived(
 
 $effect(() => {
   let cancelled = false;
+  const requestedSecretIds = untrack(() => selectedSecretIds);
   secrets = [];
+  selectedSecretIds = [];
+  secretsLoading = true;
   window.listSecrets(gateway).then(
     items => {
       if (!cancelled) {
         secrets = items;
         const available = new Set(items.map(item => item.name));
-        selectedSecretIds = selectedSecretIds.filter(id => available.has(id));
+        selectedSecretIds = requestedSecretIds.filter(id => available.has(id));
+        secretsLoading = false;
       }
     },
     (error: unknown) => {
       if (!cancelled) {
-        selectedSecretIds = [];
+        secretsLoading = false;
         console.error('Failed to list secrets for gateway', error);
       }
     },
