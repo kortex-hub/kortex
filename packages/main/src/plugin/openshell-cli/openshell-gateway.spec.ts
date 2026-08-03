@@ -973,6 +973,7 @@ describe('gateway config generation', () => {
   test('enables bind mounts when a local compute driver is detected', async () => {
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
     vi.mocked(openshellCli.getGatewayInfo).mockResolvedValue({
+      status: 'healthy',
       compute_drivers: [{ capabilities: { driver_name: 'podman' }, name: 'podman' }],
     });
 
@@ -984,7 +985,7 @@ describe('gateway config generation', () => {
 
   test('generates config without bind mounts when no driver is available', async () => {
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
-    vi.mocked(openshellCli.getGatewayInfo).mockResolvedValue({ compute_drivers: [] });
+    vi.mocked(openshellCli.getGatewayInfo).mockResolvedValue({ status: 'healthy', compute_drivers: [] });
 
     await gateway.start();
 

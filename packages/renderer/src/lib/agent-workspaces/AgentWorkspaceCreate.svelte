@@ -211,13 +211,14 @@ onMount(async () => {
   }
 });
 let customHosts = $derived(wizard.draft.hostsByMode[wizard.draft.selectedNetwork] ?? []);
+let reachableGateways = $derived($openshellGateways.filter(gateway => gateway.gatewayState?.reachable !== false));
 
 $effect.pre(() => {
-  const selectedGatewayExists = $openshellGateways.some(gateway => gateway.name === wizard.draft.selectedGateway);
+  const selectedGatewayExists = reachableGateways.some(gateway => gateway.name === wizard.draft.selectedGateway);
   if (!selectedGatewayExists) {
-    const activeGateway = $openshellGateways.find(gateway => gateway.active);
+    const activeGateway = reachableGateways.find(gateway => gateway.active);
     wizard.draft.selectedGateway =
-      activeGateway?.name ?? ($openshellGateways.length === 1 ? ($openshellGateways[0]?.name ?? '') : '');
+      activeGateway?.name ?? (reachableGateways.length === 1 ? (reachableGateways[0]?.name ?? '') : '');
   }
 });
 
@@ -605,7 +606,7 @@ function startWorkspace(): void {
               <AgentWorkspaceCreateStepWorkspace
                 bind:sourcePath={wizard.draft.sourcePath}
                 bind:sessionName={wizard.draft.sessionName}
-                gateways={[...$openshellGateways]}
+                gateways={[...reachableGateways]}
                 bind:selectedGateway={wizard.draft.selectedGateway}
                 bind:description={wizard.draft.description}
                 bind:nameManuallyEdited={wizard.draft.nameManuallyEdited}

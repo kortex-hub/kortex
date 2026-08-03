@@ -40,6 +40,7 @@ import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { Directories } from '/@/plugin/directories.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import type { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
+import type { OpenshellGatewayStateManager } from '/@/plugin/openshell-cli/openshell-gateway-state-manager.js';
 import type { ProviderImpl } from '/@/plugin/provider-impl.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
@@ -131,6 +132,7 @@ const providerRegistry = {
 
 let gatewayStartCallback: (() => void) | undefined;
 let gatewayInitFailedCallback: ((message: string) => void) | undefined;
+let gatewayStateUpdateCallback: (() => void) | undefined;
 let sandboxListChangeCallback: (() => void) | undefined;
 
 const openshellGateway = {
@@ -143,6 +145,16 @@ const openshellGateway = {
     return { dispose: vi.fn() };
   }),
 } as unknown as OpenshellGateway;
+
+const openshellGatewayStateManager = {
+  listGateways: vi.fn(),
+  refresh: vi.fn(),
+  whenReady: vi.fn(),
+  onDidUpdateGateways: vi.fn((cb: () => void) => {
+    gatewayStateUpdateCallback = cb;
+    return { dispose: vi.fn() };
+  }),
+} as unknown as OpenshellGatewayStateManager;
 
 const secretManager = {
   create: vi.fn(),
@@ -170,6 +182,15 @@ beforeEach(() => {
   mockTask.error = '';
   vi.mocked(writeFile).mockResolvedValue(undefined);
   vi.mocked(rm).mockResolvedValue(undefined);
+  vi.mocked(openshellGatewayStateManager.refresh).mockResolvedValue(undefined);
+  vi.mocked(openshellGatewayStateManager.whenReady).mockResolvedValue(undefined);
+  vi.mocked(openshellGatewayStateManager.listGateways).mockReturnValue([
+    {
+      name: 'kaiden',
+      endpoint: 'http://127.0.0.1:17670',
+      gatewayState: { reachable: true, health: 'healthy' },
+    },
+  ]);
   vi.mocked(readFile).mockResolvedValue('{}');
   vi.mocked(realpath).mockImplementation(async (p: unknown) => p as string);
   vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
@@ -196,6 +217,7 @@ beforeEach(() => {
   vi.mocked(tmpdir).mockReturnValue('/tmp');
   gatewayStartCallback = undefined;
   gatewayInitFailedCallback = undefined;
+  gatewayStateUpdateCallback = undefined;
   sandboxListChangeCallback = undefined;
   Object.defineProperty(openshellCli, 'onDidSandboxListChange', {
     value: vi.fn((cb: () => void) => {
@@ -216,6 +238,7 @@ beforeEach(() => {
     openshellCli,
     agentRegistry,
     openshellGateway,
+    openshellGatewayStateManager,
     directories,
   );
   manager.init();
@@ -263,9 +286,9 @@ describe('init', () => {
     expect(openshellGateway.onDidGatewayStart).toHaveBeenCalled();
   });
 
-  test('sends gateway and workspace update events when gateway starts', () => {
+  test('refreshes gateway state and sends a workspace update when gateway starts', () => {
     gatewayStartCallback!();
-    expect(apiSender.send).toHaveBeenCalledWith('agent-gateway-update');
+    expect(openshellGatewayStateManager.refresh).toHaveBeenCalled();
     expect(apiSender.send).toHaveBeenCalledWith('agent-workspace-update');
   });
 
@@ -273,8 +296,13 @@ describe('init', () => {
     expect(openshellGateway.onDidGatewayInitFailed).toHaveBeenCalled();
   });
 
-  test('sends gateway update event when gateway init fails', () => {
+  test('refreshes gateway state when gateway init fails', () => {
     gatewayInitFailedCallback!('Socket not found');
+    expect(openshellGatewayStateManager.refresh).toHaveBeenCalled();
+  });
+
+  test('sends gateway update event when monitored gateway state changes', () => {
+    gatewayStateUpdateCallback!();
     expect(apiSender.send).toHaveBeenCalledWith('agent-gateway-update');
   });
 
@@ -332,6 +360,37 @@ describe('create – OpenShell mode', () => {
         command: ['true'],
       }),
     );
+  });
+
+  test('rejects an unreachable gateway before creating a sandbox', async () => {
+    vi.mocked(openshellGatewayStateManager.listGateways).mockReturnValue([
+      {
+        name: 'kaiden',
+        endpoint: 'http://127.0.0.1:17670',
+        gatewayState: { reachable: false, health: 'unknown' },
+      },
+    ]);
+
+    await expect(manager.create(defaultOptions)).rejects.toThrow('gateway "kaiden" is unreachable');
+
+    expect(openshellCli.createSandbox).not.toHaveBeenCalled();
+  });
+
+  test('waits for the gateway cache before checking reachability', async () => {
+    let resolveReady: () => void;
+    vi.mocked(openshellGatewayStateManager.whenReady).mockReturnValue(
+      new Promise(resolve => {
+        resolveReady = resolve;
+      }),
+    );
+
+    const createPromise = manager.create(defaultOptions);
+    await Promise.resolve();
+    expect(openshellGatewayStateManager.listGateways).not.toHaveBeenCalled();
+
+    resolveReady!();
+    await createPromise;
+    expect(openshellGatewayStateManager.listGateways).toHaveBeenCalledOnce();
   });
 
   test('returns { id: sandboxName }', async () => {
@@ -1152,6 +1211,7 @@ describe('listOpenshellGateways', () => {
       auth: 'plaintext',
       type: 'local',
       source: 'user',
+      gatewayState: { reachable: true, health: 'healthy' },
     },
     {
       name: 'remote-vm',
@@ -1163,26 +1223,22 @@ describe('listOpenshellGateways', () => {
       is_remote: true,
       remote_host: 'user@gateway-alias',
       resolved_host: '10.0.0.5',
+      gatewayState: { reachable: false, health: 'unknown' },
     },
   ];
 
-  test('delegates to openshellCli.listGateways and returns registered gateways', async () => {
-    vi.mocked(openshellCli.listGateways).mockResolvedValue(TEST_GATEWAYS);
+  test('returns the cached gateway-state snapshot', async () => {
+    vi.mocked(openshellGatewayStateManager.listGateways).mockReturnValue(TEST_GATEWAYS);
 
     const result = await manager.listOpenshellGateways();
 
-    expect(openshellCli.listGateways).toHaveBeenCalled();
+    expect(openshellGatewayStateManager.listGateways).toHaveBeenCalled();
     expect(result).toEqual(TEST_GATEWAYS);
-  });
-
-  test('rejects when openshellCli.listGateways fails', async () => {
-    vi.mocked(openshellCli.listGateways).mockRejectedValue(new Error('command not found'));
-
-    await expect(manager.listOpenshellGateways()).rejects.toThrow('command not found');
+    expect(result).not.toBe(TEST_GATEWAYS);
   });
 
   test('IPC handler returns OpenShell gateways', async () => {
-    vi.mocked(openshellCli.listGateways).mockResolvedValue(TEST_GATEWAYS);
+    vi.mocked(openshellGatewayStateManager.listGateways).mockReturnValue(TEST_GATEWAYS);
     const handler = vi
       .mocked(ipcHandle)
       .mock.calls.find(([channel]) => channel === 'agent-workspace:listOpenshellGateways')?.[1];

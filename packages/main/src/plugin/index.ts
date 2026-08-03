@@ -73,6 +73,7 @@ import { MenuRegistry } from '/@/plugin/menu-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
+import { OpenshellGatewayStateManager } from '/@/plugin/openshell-cli/openshell-gateway-state-manager.js';
 import { OpenshellImageBuilder } from '/@/plugin/openshell-cli/openshell-image-builder.js';
 import { OpenShellRegistry } from '/@/plugin/openshell-registry.js';
 import { RagEnvironmentRegistry } from '/@/plugin/rag-environment-registry.js';
@@ -603,6 +604,7 @@ export class PluginSystem {
     container.bind<OpenShellRegistry>(OpenShellRegistry).toSelf().inSingletonScope();
     container.bind<OpenshellCli>(OpenshellCli).toSelf().inSingletonScope();
     container.bind<OpenshellGateway>(OpenshellGateway).toSelf().inSingletonScope();
+    container.bind<OpenshellGatewayStateManager>(OpenshellGatewayStateManager).toSelf().inSingletonScope();
     container.bind<OpenshellImageBuilder>(OpenshellImageBuilder).toSelf().inSingletonScope();
     container.bind<AgentWorkspaceManager>(AgentWorkspaceManager).toSelf().inSingletonScope();
     container.bind<OpenshellSecretAdapter>(OpenshellSecretAdapter).toSelf().inSingletonScope();
@@ -705,6 +707,8 @@ export class PluginSystem {
 
     const agentWorkspaceManager = container.get<AgentWorkspaceManager>(AgentWorkspaceManager);
     agentWorkspaceManager.init();
+    const openshellGatewayStateManager = container.get<OpenshellGatewayStateManager>(OpenshellGatewayStateManager);
+    openshellGatewayStateManager.init();
 
     const secretManager = container.get<SecretManager>(SecretManager);
     secretManager.init();

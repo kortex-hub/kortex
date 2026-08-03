@@ -744,6 +744,19 @@ describe('getGatewayInfo', () => {
     expect(exec.exec).toHaveBeenCalledWith(OPENSHELL_CLI_PATH, ['gateway', 'info', '-o', 'json'], undefined);
     expect(result).toEqual(payload);
   });
+
+  test('gets runtime information for a named gateway', async () => {
+    const payload = { compute_drivers: [], status: 'degraded' };
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(JSON.stringify(payload)));
+
+    await expect(openshellCli.getGatewayInfo('remote')).resolves.toEqual(payload);
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['gateway', 'info', '-g', 'remote', '-o', 'json'],
+      undefined,
+    );
+  });
 });
 
 describe('listSandboxesForGateway', () => {
