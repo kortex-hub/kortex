@@ -43,8 +43,6 @@ import AgentWorkspaceCreateStepWorkspace from './AgentWorkspaceCreateStepWorkspa
 function mapNetworkSelection(value: string, hosts: string[]): NetworkConfiguration | undefined {
   const filtered = hosts.filter(h => h.trim() !== '');
   switch (value) {
-    case 'open':
-      return { mode: 'allow' };
     case 'registries':
     case 'blocked':
       return { mode: 'deny', hosts: filtered.length ? filtered : undefined };
@@ -88,8 +86,13 @@ function isRegistryPreset(hosts: string[]): boolean {
 
 function applyNetworkFromProject(net: NetworkConfiguration | undefined): void {
   if (!net) return;
+  // mode: allow is no longer offered in the UI; fall back to the recommended preset.
   if (net.mode === 'allow') {
-    wizard.draft.selectedNetwork = 'open';
+    wizard.draft.selectedNetwork = 'registries';
+    wizard.draft.hostsByMode = {
+      ...wizard.draft.hostsByMode,
+      registries: [...REGISTRY_PRESET],
+    };
     return;
   }
   const hosts = net.hosts ?? [];

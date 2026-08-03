@@ -934,15 +934,17 @@ test('Expect Network section defaults to Developer Preset when no network config
   expect(registriesRadio).toBeChecked();
 });
 
-test('Expect Network section shows Unrestricted selected for allow mode config', async () => {
+test('Expect Network section shows disabled Allow all outbound for allow mode config', async () => {
   const networkConfig: AgentWorkspaceConfiguration = { network: { mode: 'allow' } };
   render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: networkConfig });
 
   const networkNav = screen.getByRole('link', { name: 'Network' });
   await fireEvent.click(networkNav);
 
-  const openRadio = screen.getByRole('radio', { name: 'Use Unrestricted' });
+  const openRadio = screen.getByRole('radio', { name: 'Use Allow all outbound' });
   expect(openRadio).toBeChecked();
+  expect(openRadio).toBeDisabled();
+  expect(screen.queryByRole('radio', { name: 'Use Unrestricted' })).not.toBeInTheDocument();
 });
 
 test('Expect Network section shows Deny All selected for deny mode without hosts', async () => {
@@ -1029,8 +1031,9 @@ test('Expect discarding network changes resets to original mode', async () => {
   await fireEvent.click(screen.getByRole('radio', { name: 'Use Deny All' }));
   await fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }));
 
-  const openRadio = screen.getByRole('radio', { name: 'Use Unrestricted' });
+  const openRadio = screen.getByRole('radio', { name: 'Use Allow all outbound' });
   expect(openRadio).toBeChecked();
+  expect(openRadio).toBeDisabled();
   expect(screen.queryByText('You have unsaved changes')).not.toBeInTheDocument();
 });
 

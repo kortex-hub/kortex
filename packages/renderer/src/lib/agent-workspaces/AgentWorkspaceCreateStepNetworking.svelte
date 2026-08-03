@@ -39,15 +39,17 @@ const networkOptions: NetworkAccessOption[] = [
     notes: 'Human in the loop',
     disabled: true,
   },
-  {
-    value: 'open',
-    name: 'Unrestricted',
-    description: 'Permit all outbound traffic. Best for trusted dev setups.',
-    access: 'All hosts',
-    notes: 'Trusted setups',
-    disabled: false,
-  },
 ];
+
+/** Shown only for existing workspaces with mode: allow — not selectable for new configs. */
+const legacyAllowAllOutboundOption: NetworkAccessOption = {
+  value: 'open',
+  name: 'Allow all outbound',
+  description: 'No outbound allowlist. The sandbox stays isolated from the host.',
+  access: 'All hosts',
+  notes: 'Legacy',
+  disabled: true,
+};
 
 interface Props {
   selectedNetwork: string;
@@ -67,6 +69,10 @@ let {
   onchange,
 }: Props = $props();
 
+let displayedNetworkOptions = $derived(
+  selectedNetwork === 'open' ? [...networkOptions, legacyAllowAllOutboundOption] : networkOptions,
+);
+
 let showCustomHosts = $derived(selectedNetwork === 'blocked' || selectedNetwork === 'registries');
 </script>
 
@@ -81,7 +87,7 @@ let showCustomHosts = $derived(selectedNetwork === 'blocked' || selectedNetwork 
 </div>
 
 <div class="rounded-xl border border-[var(--pd-content-card-border)] bg-[var(--pd-content-card-bg)] overflow-hidden">
-  {#each networkOptions as option, idx (option.value)}
+  {#each displayedNetworkOptions as option, idx (option.value)}
     {#if idx > 0}
       <div class="mx-3 border-t border-[var(--pd-content-card-border)] opacity-30"></div>
     {/if}

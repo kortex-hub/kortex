@@ -78,7 +78,7 @@ const timeLabel = $derived(workspaceSummary && isActiveWorkspace(workspaceSummar
 const networkMode = $derived(configuration?.network?.mode ?? 'deny');
 const networkHosts = $derived(configuration?.network?.hosts ?? []);
 const networkLabel = $derived.by(() => {
-  if (networkMode === 'allow') return 'Unrestricted';
+  if (networkMode === 'allow') return 'Allow all outbound';
   if (networkHosts.length > 0) return 'Developer Preset';
   return 'Deny All';
 });

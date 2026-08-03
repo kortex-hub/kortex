@@ -882,7 +882,7 @@ test('Expect networking step shows Network Policy heading', async () => {
   expect(screen.getByText('Outbound network for this workspace sandbox')).toBeInTheDocument();
 });
 
-test('Expect all four network options rendered with Agent mode disabled', async () => {
+test('Expect three network options rendered with Agent mode disabled and Unrestricted absent', async () => {
   render(AgentWorkspaceCreate);
 
   await navigateToNetworkingStep();
@@ -891,7 +891,8 @@ test('Expect all four network options rendered with Agent mode disabled', async 
   expect(screen.getByRole('radio', { name: 'Use Developer Preset' })).toBeInTheDocument();
   expect(screen.getByRole('radio', { name: 'Use Agent mode' })).toBeInTheDocument();
   expect(screen.getByRole('radio', { name: 'Use Agent mode' })).toBeDisabled();
-  expect(screen.getByRole('radio', { name: 'Use Unrestricted' })).toBeInTheDocument();
+  expect(screen.queryByRole('radio', { name: 'Use Unrestricted' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('radio', { name: 'Use Allow all outbound' })).not.toBeInTheDocument();
 });
 
 test('Expect clicking disabled Agent mode does not change selection', async () => {
@@ -914,23 +915,14 @@ test('Expect Developer Preset selected by default on networking step', async () 
   expect(screen.getByRole('radio', { name: 'Use Deny All' })).not.toBeChecked();
 });
 
-test('Expect allowlists hint text displayed when Unrestricted selected on networking step', async () => {
-  render(AgentWorkspaceCreate);
-
-  await navigateToNetworkingStep();
-  await fireEvent.click(screen.getByRole('radio', { name: 'Use Unrestricted' }));
-
-  expect(screen.getByText(/Fine-grained host allowlists and static egress rules/)).toBeInTheDocument();
-});
-
-test('Expect selecting a different network option updates the radio', async () => {
+test('Expect selecting Deny All updates the radio', async () => {
   render(AgentWorkspaceCreate);
 
   await navigateToNetworkingStep();
 
-  await fireEvent.click(screen.getByRole('radio', { name: 'Use Unrestricted' }));
+  await fireEvent.click(screen.getByRole('radio', { name: 'Use Deny All' }));
 
-  expect(screen.getByRole('radio', { name: 'Use Unrestricted' })).toBeChecked();
+  expect(screen.getByRole('radio', { name: 'Use Deny All' })).toBeChecked();
   expect(screen.getByRole('radio', { name: 'Use Developer Preset' })).not.toBeChecked();
 });
 
@@ -1143,26 +1135,6 @@ test('Expect custom hosts pre-populated with registry hosts when Developer Prese
   expect((screen.getByLabelText('Custom host 1') as HTMLInputElement).value).toBe('registry.npmjs.org');
   expect((screen.getByLabelText('Custom host 2') as HTMLInputElement).value).toBe('pypi.python.org');
   expect(screen.getByRole('button', { name: 'Add Another Host' })).toBeInTheDocument();
-});
-
-test('Expect custom hosts input hidden when Agent mode is selected on networking step', async () => {
-  render(AgentWorkspaceCreate);
-
-  await navigateToNetworkingStep();
-  await fireEvent.click(screen.getByRole('radio', { name: 'Use Agent mode' }));
-
-  expect(screen.queryByLabelText('Custom host 1')).not.toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: 'Add Another Host' })).not.toBeInTheDocument();
-});
-
-test('Expect custom hosts input hidden when Unrestricted is selected on networking step', async () => {
-  render(AgentWorkspaceCreate);
-
-  await navigateToNetworkingStep();
-  await fireEvent.click(screen.getByRole('radio', { name: 'Use Unrestricted' }));
-
-  expect(screen.queryByLabelText('Custom host 1')).not.toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: 'Add Another Host' })).not.toBeInTheDocument();
 });
 
 test('Expect createAgentWorkspace called with registry hosts plus custom host for Developer Preset', async () => {
@@ -2000,11 +1972,15 @@ describe('when projects exist', () => {
 });
 
 describe('project filesystem mapping', () => {
-  test('Expect allow network maps to open', async () => {
+  test('Expect allow network maps to registries', async () => {
     const openNetProject: WorkspaceProjectInfo = {
       ...sampleProject,
       id: 'open-net',
       network: { mode: 'allow' },
+    };
+    wizard.draft.hostsByMode = {
+      ...wizard.draft.hostsByMode,
+      registries: ['stale.example.com'],
     };
     setProjects([openNetProject]);
     render(AgentWorkspaceCreate);
@@ -2012,7 +1988,8 @@ describe('project filesystem mapping', () => {
     await fireEvent.click(screen.getByRole('button', { name: /Saved project/ }));
     await fireEvent.click(screen.getByRole('option', { name: /My App/ }));
 
-    expect(wizard.draft.selectedNetwork).toBe('open');
+    expect(wizard.draft.selectedNetwork).toBe('registries');
+    expect(wizard.draft.hostsByMode['registries']).toEqual(['registry.npmjs.org', 'pypi.python.org']);
   });
 
   test('Expect deny network without hosts mapped to blocked mode', async () => {
