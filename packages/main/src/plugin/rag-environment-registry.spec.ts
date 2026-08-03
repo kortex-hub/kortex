@@ -209,8 +209,23 @@ describe('RagEnvironmentRegistry', () => {
     expect(result).toContainEqual(ragEnv2);
   });
 
+  test('should return empty array silently when rag directory does not exist', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(existsSync).mockReturnValue(false);
+
+    await ragEnvironmentRegistry.init();
+    const result = await ragEnvironmentRegistry.getAllRagEnvironments();
+
+    expect(result).toEqual([]);
+    expect(readdir).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+
+    consoleErrorSpy.mockRestore();
+  });
+
   test('should return empty array when getting all RAG environments and directory read fails', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.mocked(existsSync).mockReturnValue(true);
     vi.mocked(readdir).mockImplementation(() => {
       throw new Error('Failed to read directory');
     });

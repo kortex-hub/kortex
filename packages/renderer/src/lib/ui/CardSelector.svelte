@@ -31,7 +31,7 @@ function handleClick(value: string): void {
   <div class="grid gap-2 w-full grid-cols-[repeat(auto-fill,minmax(12rem,1fr))]">
     {#each options as option (option.value)}
       <button
-        class="rounded-md bg-[var(--pd-content-card-inset-bg)] p-3 min-w-0 min-h-24 cursor-pointer
+        class="rounded-md bg-[var(--pd-content-card-inset-bg)] p-3 min-w-0 min-h-[var(--card-selector-option-min-height,6rem)] cursor-pointer
           hover:bg-[var(--pd-content-card-hover-inset-bg)]
           {selected === option.value ? 'border-[var(--pd-content-card-border-selected)]' : 'border-[var(--pd-content-card-border)]'}
           border-2 flex flex-col overflow-hidden"

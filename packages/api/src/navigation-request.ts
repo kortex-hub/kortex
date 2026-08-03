@@ -80,6 +80,7 @@ export interface NavigationParameters {
   [NavigationPage.AGENT_WORKSPACE_CREATE]: never;
   [NavigationPage.CODING_AGENTS]: never;
   [NavigationPage.SKILLS]: never;
+  [NavigationPage.SKILL_CREATE]: never;
   [NavigationPage.SKILL_DETAILS]: {
     name: string;
   };

@@ -104,6 +104,12 @@ export class RagEnvironmentRegistry {
 
   private async loadEnvironments(): Promise<void> {
     this.#environments = [];
+
+    // Skip loading if the rag directory does not exist yet (normal on first startup)
+    if (!existsSync(this.#ragDirectory)) {
+      return;
+    }
+
     try {
       const files = await readdir(this.#ragDirectory);
 

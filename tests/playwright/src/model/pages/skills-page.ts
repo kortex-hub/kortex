@@ -58,7 +58,7 @@ export class SkillsPage extends BaseTablePage {
     return (await this.noSkillsMessage.count()) > 0;
   }
 
-  async openCreateDialog(): Promise<SkillsCreatePage> {
+  async openCreatePage(): Promise<SkillsCreatePage> {
     await this.waitForLoad();
     await expect(this.newSkillButton).toBeEnabled();
     await this.newSkillButton.click();
@@ -67,7 +67,7 @@ export class SkillsPage extends BaseTablePage {
     return createPage;
   }
 
-  async openCreateDialogFromContentRegion(): Promise<SkillsCreatePage> {
+  async openCreatePageFromContentRegion(): Promise<SkillsCreatePage> {
     await this.waitForLoad();
     await expect(this.newSkillButtonFromContentRegion).toBeEnabled();
     await this.newSkillButtonFromContentRegion.click();
@@ -77,13 +77,13 @@ export class SkillsPage extends BaseTablePage {
   }
 
   async createSkill(name: string, description: string, content: string): Promise<void> {
-    const createPage = await this.openCreateDialog();
+    const createPage = await this.openCreatePage();
     await createPage.fillForm(name, description, content);
     await createPage.create();
   }
 
   async importSkill(absoluteFilePath: string, electronApp: ElectronApplication): Promise<void> {
-    const createPage = await this.openCreateDialog();
+    const createPage = await this.openCreatePage();
     await createPage.selectFile(absoluteFilePath, electronApp);
     await createPage.create();
   }

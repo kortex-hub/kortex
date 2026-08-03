@@ -22,15 +22,19 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { writable } from 'svelte/store';
 import { beforeEach, expect, test, vi } from 'vitest';
 
+import { handleNavigation } from '/@/navigation';
 import * as skillsStore from '/@/stores/skills';
+import { NavigationPage } from '/@api/navigation-page';
 import type { SkillInfo } from '/@api/skill/skill-info';
 
 import SkillsList from './SkillsList.svelte';
 
 vi.mock(import('/@/stores/skills'));
+vi.mock(import('/@/navigation'));
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.mocked(skillsStore).filteredSkillInfos = writable<SkillInfo[]>([]);
   vi.mocked(skillsStore).skillSearchPattern = writable('');
   vi.mocked(window.listSkillFolders).mockResolvedValue([
@@ -64,11 +68,11 @@ test('should show table when skills exist', () => {
   expect(screen.getByText('skill-b')).toBeInTheDocument();
 });
 
-test('should open the create dialog when "New skill" is clicked', async () => {
+test('should navigate to the create page when "New skill" is clicked', async () => {
   render(SkillsList);
 
   const buttons = screen.getAllByText('New skill');
   await fireEvent.click(buttons[0]);
 
-  expect(screen.getByText('Create Skill')).toBeInTheDocument();
+  expect(handleNavigation).toHaveBeenCalledWith({ page: NavigationPage.SKILL_CREATE });
 });
