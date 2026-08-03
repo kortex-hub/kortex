@@ -495,7 +495,7 @@ export class OpenshellCli {
         args.push('--config', `${key}=${value}`);
       }
     }
-    await this.runCli(args, { env });
+    await this.runCli(args, { env, redact: true });
   }
 
   async setInference(options: SetInferenceOptions): Promise<void> {
