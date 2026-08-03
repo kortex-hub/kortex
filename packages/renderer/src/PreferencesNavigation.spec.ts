@@ -215,3 +215,15 @@ test.skip('experimental configuration should be visible if one property has expe
     expect(experimental).toBeDefined();
   });
 });
+
+test('Gateways nav entry is always visible', () => {
+  render(PreferencesNavigation, {
+    meta: {
+      url: '/',
+    } as unknown as TinroRouteMeta,
+  });
+
+  const gatewaysLink = screen.getByRole('link', { name: 'Gateways' });
+  expect(gatewaysLink).toBeVisible();
+  expect(gatewaysLink).toHaveAttribute('href', '/preferences/openshell/gateways');
+});

@@ -14,6 +14,7 @@ import PreferencesCliToolsRendering from './PreferencesCliToolsRendering.svelte'
 import PreferencesContainerConnectionRendering from './PreferencesContainerConnectionRendering.svelte';
 import PreferencesKubernetesConnectionRendering from './PreferencesKubernetesConnectionRendering.svelte';
 import PreferencesKubernetesContextsRendering from './PreferencesKubernetesContextsRendering.svelte';
+import PreferencesOpenshellGatewaysRendering from './PreferencesOpenshellGatewaysRendering.svelte';
 import PreferencesProviderRendering from './PreferencesProviderRendering.svelte';
 import PreferencesProxiesRendering from './PreferencesProxiesRendering.svelte';
 import PreferencesRegistriesEditing from './PreferencesRegistriesEditing.svelte';
@@ -78,6 +79,9 @@ onMount(async () => {
   </Route>
   <Route path="/cli-tools" breadcrumb="CLI Tools">
     <PreferencesCliToolsRendering />
+  </Route>
+  <Route path="/openshell/gateways" breadcrumb="OpenShell Gateways">
+    <PreferencesOpenshellGatewaysRendering />
   </Route>
   <Route path="/kubernetes-contexts" breadcrumb="Kubernetes Contexts">
     <PreferencesKubernetesContextsRendering />
