@@ -21,6 +21,13 @@ let error = $state<string | undefined>();
 let dragging = $state(false);
 let selectedFile = $state('');
 let sourceFilePath = $state('');
+let errorEl = $state<HTMLDivElement>();
+
+$effect(() => {
+  if (error && errorEl?.scrollIntoView) {
+    errorEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+});
 
 const isValid = $derived(
   target.length > 0 &&
@@ -225,7 +232,9 @@ function cancel(): void {
           </div>
 
           {#if error}
-            <ErrorMessage {error} />
+            <div bind:this={errorEl}>
+              <ErrorMessage {error} />
+            </div>
           {/if}
 
           <div class="flex items-center justify-end gap-3 pt-4 border-t border-[var(--pd-content-card-border)]">

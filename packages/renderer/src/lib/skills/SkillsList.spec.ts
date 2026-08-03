@@ -34,6 +34,7 @@ vi.mock(import('/@/navigation'));
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.mocked(skillsStore).filteredSkillInfos = writable<SkillInfo[]>([]);
   vi.mocked(skillsStore).skillSearchPattern = writable('');
   vi.mocked(window.listSkillFolders).mockResolvedValue([
