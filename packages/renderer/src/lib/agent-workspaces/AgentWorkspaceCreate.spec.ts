@@ -18,7 +18,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { fireEvent, render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { writable } from 'svelte/store';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -498,18 +498,28 @@ test('Expect secrets listed from the selected gateway', async () => {
     { name: 'local', endpoint: 'http://localhost:17670', active: true },
     { name: 'remote', endpoint: 'https://remote.example.com', active: false },
   ]);
-  vi.mocked(window.listSecrets).mockResolvedValue([
-    {
-      name: 'github-token',
-      type: 'github',
-      description: 'Personal access token',
-    },
-    {
-      name: 'anthropic-key',
-      type: 'anthropic',
-      description: 'API key',
-    },
-  ]);
+  vi.mocked(window.listSecrets).mockImplementation(async gateway =>
+    gateway === 'remote'
+      ? [
+          {
+            name: 'github-token',
+            type: 'github',
+            description: 'Personal access token',
+          },
+          {
+            name: 'anthropic-key',
+            type: 'anthropic',
+            description: 'API key',
+          },
+        ]
+      : [
+          {
+            name: 'local-only-secret',
+            type: 'generic',
+            description: 'Only available on the local gateway',
+          },
+        ],
+  );
 
   render(AgentWorkspaceCreate);
 
@@ -519,9 +529,32 @@ test('Expect secrets listed from the selected gateway', async () => {
 
   expect(screen.getByText('github-token')).toBeInTheDocument();
   expect(screen.getByText('anthropic-key')).toBeInTheDocument();
+  expect(screen.queryByText('local-only-secret')).not.toBeInTheDocument();
   expect(window.listSecrets).toHaveBeenCalledWith('remote');
   expect(screen.getByText('Secret Vault')).toBeInTheDocument();
   expect(screen.queryByText('No secrets in your vault yet.')).not.toBeInTheDocument();
+});
+
+test('Expect stale secret selections cleared and Continue disabled while gateway secrets load', async () => {
+  let resolveSecrets: (secrets: { name: string; type: string; description: string }[]) => void;
+  vi.mocked(window.listSecrets).mockImplementation(
+    () =>
+      new Promise(resolve => {
+        resolveSecrets = resolve;
+      }),
+  );
+  wizard.draft.selectedSecretIds = ['local-only-secret'];
+
+  render(AgentWorkspaceCreate);
+
+  await navigateToToolsSecretsStep();
+
+  expect(wizard.draft.selectedSecretIds).toEqual([]);
+  expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
+
+  resolveSecrets!([{ name: 'remote-secret', type: 'generic', description: 'Remote gateway secret' }]);
+
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Continue' })).not.toBeDisabled());
 });
 
 test('Expect Open Vault button navigates to secret vault', async () => {

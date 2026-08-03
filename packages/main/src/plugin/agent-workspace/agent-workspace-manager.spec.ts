@@ -1102,6 +1102,7 @@ describe('ensureModelSecret', () => {
     await manager.ensureModelSecret(options);
 
     expect(options.secrets).toBeUndefined();
+    expect(secretManager.ensureSecretForModel).toHaveBeenCalledWith('unknown::model::', 'kaiden');
   });
 
   test('adds secret name to options.secrets when found', async () => {
@@ -1111,6 +1112,7 @@ describe('ensureModelSecret', () => {
     await manager.ensureModelSecret(options);
 
     expect(options.secrets).toContain('cursor-conn-123');
+    expect(secretManager.ensureSecretForModel).toHaveBeenCalledWith('cursor::gpt-4o::https://api.cursor.com', 'kaiden');
   });
 
   test('does not call setInference when secret type is not in SET_INFERENCE_TYPES', async () => {

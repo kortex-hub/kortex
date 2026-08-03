@@ -51,13 +51,16 @@ describe('createSecret', () => {
 
     const result = await adapter.createSecret(defaultOptions);
 
-    expect(openshellCli.createProvider).toHaveBeenCalledWith({
-      name: 'my-secret',
-      type: 'github',
-      credentials: { GH_TOKEN: 'ghp_abc123' },
-      config: undefined,
-      flags: undefined,
-    });
+    expect(openshellCli.createProvider).toHaveBeenCalledWith(
+      {
+        name: 'my-secret',
+        type: 'github',
+        credentials: { GH_TOKEN: 'ghp_abc123' },
+        config: undefined,
+        flags: undefined,
+      },
+      undefined,
+    );
     expect(result).toEqual({ name: 'my-secret' });
   });
 
@@ -65,6 +68,14 @@ describe('createSecret', () => {
     vi.mocked(openshellCli.createProvider).mockRejectedValue(new Error('provider type not supported'));
 
     await expect(adapter.createSecret(defaultOptions)).rejects.toThrow('provider type not supported');
+  });
+
+  test('creates secret on the selected gateway', async () => {
+    vi.mocked(openshellCli.createProvider).mockResolvedValue(undefined);
+
+    await adapter.createSecret(defaultOptions, 'remote');
+
+    expect(openshellCli.createProvider).toHaveBeenCalledWith(expect.any(Object), 'remote');
   });
 
   test('passes config and flags through to createProvider', async () => {
@@ -82,13 +93,16 @@ describe('createSecret', () => {
 
     const result = await adapter.createSecret(options);
 
-    expect(openshellCli.createProvider).toHaveBeenCalledWith({
-      name: 'my-vertex',
-      type: 'google-vertex-ai',
-      credentials: { GOOGLE_APPLICATION_CREDENTIALS: '/path/to/creds.json' },
-      config: { GOOGLE_VERTEX_PROJECT: 'my-project', GOOGLE_VERTEX_LOCATION: 'us-east5' },
-      flags: ['--from-gcloud-adc'],
-    });
+    expect(openshellCli.createProvider).toHaveBeenCalledWith(
+      {
+        name: 'my-vertex',
+        type: 'google-vertex-ai',
+        credentials: { GOOGLE_APPLICATION_CREDENTIALS: '/path/to/creds.json' },
+        config: { GOOGLE_VERTEX_PROJECT: 'my-project', GOOGLE_VERTEX_LOCATION: 'us-east5' },
+        flags: ['--from-gcloud-adc'],
+      },
+      undefined,
+    );
     expect(result).toEqual({ name: 'my-vertex' });
   });
 });

@@ -16,12 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type {
-  Configuration,
-  InferenceProviderConnection,
-  RegisterInferenceConnectionEvent,
-  UnregisterInferenceConnectionEvent,
-} from '@openkaiden/api';
+import type { Configuration, InferenceProviderConnection, UnregisterInferenceConnectionEvent } from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 
 import { IPCHandle } from '/@/plugin/api.js';
@@ -63,8 +58,8 @@ export class SecretManager {
     return this.openshellAdapter;
   }
 
-  async create(options: SecretCreateOptions): Promise<SecretName> {
-    const result = await this.cli.createSecret(options);
+  async create(options: SecretCreateOptions, gateway?: string): Promise<SecretName> {
+    const result = await this.cli.createSecret(options, gateway);
     this.apiSender.send('secret-manager-update');
     return result;
   }
@@ -83,29 +78,29 @@ export class SecretManager {
     return this.cli.listServices();
   }
 
-  async getSecretForModel(modelId: string): Promise<SecretInfo | undefined> {
+  async getSecretForModel(modelId: string, gateway?: string): Promise<SecretInfo | undefined> {
     const info = this.providerRegistry.getInferenceConnection(modelId);
     if (!info) return undefined;
 
     const expectedName = `${info.providerId}-${info.connection.id}`;
-    const secrets = await this.list();
+    const secrets = await this.list(gateway);
     return secrets.find(s => s.name === expectedName);
   }
 
-  async ensureSecretForModel(modelId: string): Promise<SecretInfo | undefined> {
-    const existing = await this.getSecretForModel(modelId);
+  async ensureSecretForModel(modelId: string, gateway?: string): Promise<SecretInfo | undefined> {
+    const existing = await this.getSecretForModel(modelId, gateway);
     if (existing) return existing;
 
     const info = this.providerRegistry.getInferenceConnection(modelId);
     if (!info) return undefined;
 
-    return this.createSecretForConnection(info.providerId, info.connection, false);
+    return this.createSecretForConnection(info.providerId, info.connection, gateway);
   }
 
   async createSecretForConnection(
     providerId: string,
     connection: InferenceProviderConnection,
-    checkDuplicates: boolean,
+    gateway?: string,
   ): Promise<SecretInfo | undefined> {
     const provider = this.providerRegistry.getProvider(providerId);
     const { config, connectionProperties } = this.getConnectionProperties(connection, provider);
@@ -158,22 +153,16 @@ export class SecretManager {
 
     const secretName = `${providerId}-${connection.id}`;
 
-    if (checkDuplicates) {
-      const existingSecrets = await this.list();
-      if (existingSecrets.some(s => s.name === secretName)) return undefined;
-    }
-
-    await this.create({
-      name: secretName,
-      type: secretType,
-      value: value,
-    });
+    await this.create(
+      {
+        name: secretName,
+        type: secretType,
+        value: value,
+      },
+      gateway,
+    );
 
     return { name: secretName, type: secretType };
-  }
-
-  private async onInferenceConnectionRegistered(event: RegisterInferenceConnectionEvent): Promise<void> {
-    await this.createSecretForConnection(event.providerId, event.connection, true);
   }
 
   public getConnectionProperties(
@@ -208,12 +197,6 @@ export class SecretManager {
   }
 
   init(): void {
-    this.providerRegistry.onDidRegisterInferenceConnection(event => {
-      this.onInferenceConnectionRegistered(event).catch((err: unknown) => {
-        console.error('Failed to create openshell provider for inference connection:', err);
-      });
-    });
-
     this.providerRegistry.onDidUnregisterInferenceConnection(event => {
       this.onInferenceConnectionUnregistered(event).catch((err: unknown) => {
         console.error('Failed to delete openshell provider for inference connection:', err);

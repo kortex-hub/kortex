@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { FileSystemWatcher, InferenceProviderConnection, RegisterInferenceConnectionEvent } from '@openkaiden/api';
+import type { FileSystemWatcher, InferenceProviderConnection } from '@openkaiden/api';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { IPCHandle } from '/@/plugin/api.js';
@@ -48,15 +48,12 @@ const openshellCli = new OpenshellCli({} as Exec, {} as CliToolRegistry);
 const openshellAdapter = new OpenshellSecretAdapter(openshellCli);
 
 let gatewayStartCallback: (() => void) | undefined;
-let registerInferenceCallback: ((event: RegisterInferenceConnectionEvent) => void) | undefined;
 let unregisterInferenceCallback:
   | ((event: { providerId: string; connection: InferenceProviderConnection }) => void)
   | undefined;
 
 const providerRegistry = {
-  onDidRegisterInferenceConnection: vi.fn((cb: (event: RegisterInferenceConnectionEvent) => void) => {
-    registerInferenceCallback = cb;
-  }),
+  onDidRegisterInferenceConnection: vi.fn(),
   onDidUnregisterInferenceConnection: vi.fn(
     (cb: (event: { providerId: string; connection: InferenceProviderConnection }) => void) => {
       unregisterInferenceCallback = cb;
@@ -99,7 +96,6 @@ const filesystemMonitoring = {
 beforeEach(() => {
   vi.resetAllMocks();
   gatewayStartCallback = undefined;
-  registerInferenceCallback = undefined;
   unregisterInferenceCallback = undefined;
   vi.mocked(filesystemMonitoring.createFileSystemWatcher).mockReturnValue(mockWatcher);
   vi.mocked(safeStorageRegistry.getExtensionStorage).mockReturnValue(extensionStorageMock);
@@ -128,8 +124,8 @@ describe('init', () => {
     expect(ipcHandle).toHaveBeenCalledWith('secret-manager:remove', expect.any(Function));
   });
 
-  test('subscribes to inference connection events', () => {
-    expect(providerRegistry.onDidRegisterInferenceConnection).toHaveBeenCalled();
+  test('subscribes only to inference connection unregister events', () => {
+    expect(providerRegistry.onDidRegisterInferenceConnection).not.toHaveBeenCalled();
     expect(providerRegistry.onDidUnregisterInferenceConnection).toHaveBeenCalled();
   });
 
@@ -157,7 +153,6 @@ describe('openshellAdapter', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     gatewayStartCallback = undefined;
-    registerInferenceCallback = undefined;
     unregisterInferenceCallback = undefined;
     vi.mocked(filesystemMonitoring.createFileSystemWatcher).mockReturnValue(mockWatcher);
     vi.mocked(safeStorageRegistry.getExtensionStorage).mockReturnValue(extensionStorageMock);
@@ -178,11 +173,14 @@ describe('openshellAdapter', () => {
 
     const result = await manager.create(defaultOptions);
 
-    expect(openshellCli.createProvider).toHaveBeenCalledWith({
-      name: 'my-secret',
-      type: 'github',
-      credentials: { GH_TOKEN: 'ghp_abc123' },
-    });
+    expect(openshellCli.createProvider).toHaveBeenCalledWith(
+      {
+        name: 'my-secret',
+        type: 'github',
+        credentials: { GH_TOKEN: 'ghp_abc123' },
+      },
+      undefined,
+    );
     expect(result).toEqual({ name: 'my-secret' });
   });
 
@@ -249,96 +247,7 @@ describe('inference connection lifecycle', () => {
     credentials: () => ({ token: 'secret-token' }),
   };
 
-  function setupConfigMocks(secretType: string, flags?: string): void {
-    const properties = {
-      'cursor.connection._type': {
-        scope: 'InferenceProviderConnection',
-        extension: { id: 'kaiden.cursor' },
-        title: 'Cursor',
-        parentId: 'cursor',
-      },
-      'cursor.connection.token': {
-        scope: 'InferenceProviderConnection',
-        extension: { id: 'kaiden.cursor' },
-        format: 'password',
-        title: 'Cursor',
-        parentId: 'cursor',
-      },
-    } as Record<string, Record<string, unknown>>;
-    if (flags) {
-      properties['cursor.connection._flags'] = {
-        scope: 'InferenceProviderConnection',
-        extension: { id: 'kaiden.cursor' },
-        title: 'Cursor',
-        parentId: 'cursor',
-      };
-    }
-
-    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue(
-      properties as unknown as ReturnType<typeof configurationRegistry.getConfigurationProperties>,
-    );
-    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
-      get: vi.fn((key: string) => {
-        if (key === 'cursor.connection._type') return secretType;
-        if (key === 'cursor.connection.token') return 'cursor:conn-123:token';
-        if (key === 'cursor.connection._flags') return flags;
-        return undefined;
-      }),
-      has: vi.fn(),
-      update: vi.fn(),
-    } as unknown as ReturnType<typeof configurationRegistry.getConfiguration>);
-
-    vi.mocked(extensionStorageMock.get).mockResolvedValue('actual-api-key');
-    vi.mocked(openshellCli.listProviders).mockResolvedValue([]);
-    vi.mocked(openshellCli.createProvider).mockResolvedValue(undefined);
-    vi.mocked(providerRegistry.getProvider).mockReturnValue({
-      extensionId: 'kaiden.cursor',
-    } as unknown as ProviderImpl);
-  }
-
-  test('creates openshell provider on inference connection register', async () => {
-    setupConfigMocks('cursor');
-
-    registerInferenceCallback!({
-      providerId: 'kaiden.cursor',
-      connection: mockConnection,
-    });
-
-    await vi.waitFor(() => {
-      expect(openshellCli.createProvider).toHaveBeenCalledWith({
-        name: 'kaiden.cursor-conn-123',
-        type: 'cursor',
-        credentials: { token: 'actual-api-key' },
-      });
-    });
-  });
-
-  test('skips creation when provider with same name already exists', async () => {
-    setupConfigMocks('cursor');
-
-    vi.mocked(openshellCli.listProviders).mockResolvedValue([{ name: 'kaiden.cursor-conn-123', type: 'cursor' }]);
-
-    registerInferenceCallback!({
-      providerId: 'kaiden.cursor',
-      connection: mockConnection,
-    });
-
-    await new Promise(resolve => setTimeout(resolve, 50));
-    expect(openshellCli.createProvider).not.toHaveBeenCalled();
-  });
-
   test('deletes openshell provider on inference connection unregister', async () => {
-    setupConfigMocks('cursor');
-
-    registerInferenceCallback!({
-      providerId: 'kaiden.cursor',
-      connection: mockConnection,
-    });
-
-    await vi.waitFor(() => {
-      expect(openshellCli.createProvider).toHaveBeenCalled();
-    });
-
     vi.mocked(openshellCli.listProviders).mockResolvedValue([{ name: 'kaiden.cursor-conn-123', type: 'cursor' }]);
     vi.mocked(openshellCli.deleteProvider).mockResolvedValue(undefined);
 
@@ -352,23 +261,6 @@ describe('inference connection lifecycle', () => {
     });
   });
 
-  test('skips creation when no _type config property exists', async () => {
-    vi.mocked(configurationRegistry.getConfigurationProperties).mockReturnValue({});
-    vi.mocked(configurationRegistry.getConfiguration).mockReturnValue({
-      get: vi.fn(() => undefined),
-      has: vi.fn(),
-      update: vi.fn(),
-    } as unknown as ReturnType<typeof configurationRegistry.getConfiguration>);
-
-    registerInferenceCallback!({
-      providerId: 'kaiden.ramalama',
-      connection: mockConnection,
-    });
-
-    await new Promise(resolve => setTimeout(resolve, 50));
-    expect(openshellCli.createProvider).not.toHaveBeenCalled();
-  });
-
   test('getSecretForModel returns SecretInfo matching by name', async () => {
     vi.mocked(providerRegistry.getInferenceConnection).mockReturnValue({
       connection: mockConnection,
@@ -379,8 +271,9 @@ describe('inference connection lifecycle', () => {
       { name: 'kaiden.cursor-conn-123', type: 'cursor' },
     ]);
 
-    const secret = await manager.getSecretForModel('cursor::model-1::');
+    const secret = await manager.getSecretForModel('cursor::model-1::', 'remote');
     expect(secret).toEqual({ name: 'kaiden.cursor-conn-123', type: 'cursor' });
+    expect(openshellCli.listProviders).toHaveBeenCalledWith('remote');
   });
 
   test('getSecretForModel returns undefined for unknown model', async () => {
@@ -454,13 +347,16 @@ describe('createSecretForConnection', () => {
   test('creates secret and returns SecretInfo when none exists', async () => {
     setupConfigMocksForCreate('cursor');
 
-    const result = await manager.createSecretForConnection('kaiden.cursor', mockConnection, false);
+    const result = await manager.createSecretForConnection('kaiden.cursor', mockConnection);
 
-    expect(openshellCli.createProvider).toHaveBeenCalledWith({
-      name: 'kaiden.cursor-conn-456',
-      type: 'cursor',
-      credentials: { token: 'actual-api-key' },
-    });
+    expect(openshellCli.createProvider).toHaveBeenCalledWith(
+      {
+        name: 'kaiden.cursor-conn-456',
+        type: 'cursor',
+        credentials: { token: 'actual-api-key' },
+      },
+      undefined,
+    );
     expect(result).toEqual({ name: 'kaiden.cursor-conn-456', type: 'cursor' });
   });
 
@@ -475,17 +371,7 @@ describe('createSecretForConnection', () => {
       extensionId: 'kaiden.cursor',
     } as unknown as ProviderImpl);
 
-    const result = await manager.createSecretForConnection('kaiden.cursor', mockConnection, false);
-
-    expect(result).toBeUndefined();
-    expect(openshellCli.createProvider).not.toHaveBeenCalled();
-  });
-
-  test('returns undefined when secret already exists', async () => {
-    setupConfigMocksForCreate('cursor');
-    vi.mocked(openshellCli.listProviders).mockResolvedValue([{ name: 'kaiden.cursor-conn-456', type: 'cursor' }]);
-
-    const result = await manager.createSecretForConnection('kaiden.cursor', mockConnection, true);
+    const result = await manager.createSecretForConnection('kaiden.cursor', mockConnection);
 
     expect(result).toBeUndefined();
     expect(openshellCli.createProvider).not.toHaveBeenCalled();
@@ -510,10 +396,11 @@ describe('ensureSecretForModel', () => {
     });
     vi.mocked(openshellCli.listProviders).mockResolvedValue([{ name: 'kaiden.cursor-conn-789', type: 'cursor' }]);
 
-    const result = await manager.ensureSecretForModel('cursor::model-1::');
+    const result = await manager.ensureSecretForModel('cursor::model-1::', 'remote');
 
     expect(result).toEqual({ name: 'kaiden.cursor-conn-789', type: 'cursor' });
     expect(openshellCli.createProvider).not.toHaveBeenCalled();
+    expect(openshellCli.listProviders).toHaveBeenCalledWith('remote');
   });
 
   test('creates and returns secret when missing but connection exists', async () => {
@@ -558,9 +445,16 @@ describe('ensureSecretForModel', () => {
     } as unknown as ReturnType<typeof configurationRegistry.getConfiguration>);
     vi.mocked(extensionStorageMock.get).mockResolvedValue('actual-api-key');
 
-    const result = await manager.ensureSecretForModel('cursor::model-1::');
+    const result = await manager.ensureSecretForModel('cursor::model-1::', 'remote');
 
-    expect(openshellCli.createProvider).toHaveBeenCalled();
+    expect(openshellCli.createProvider).toHaveBeenCalledWith(
+      {
+        name: 'kaiden.cursor-conn-789',
+        type: 'cursor',
+        credentials: { token: 'actual-api-key' },
+      },
+      'remote',
+    );
     expect(result).toEqual({ name: 'kaiden.cursor-conn-789', type: 'cursor' });
   });
 

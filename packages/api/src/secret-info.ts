@@ -51,7 +51,7 @@ export interface SecretCreateOptions extends SecretInfo {
  * so that `SecretManager` can switch between them at runtime.
  */
 export interface SecretCliBackend {
-  createSecret(options: SecretCreateOptions): Promise<SecretName>;
+  createSecret(options: SecretCreateOptions, gateway?: string): Promise<SecretName>;
   listSecrets(gateway?: string): Promise<SecretInfo[]>;
   removeSecret(name: string): Promise<SecretName>;
   listServices(): Promise<OpenshellProfile[]>;
