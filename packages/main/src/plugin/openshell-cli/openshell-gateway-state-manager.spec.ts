@@ -134,6 +134,33 @@ test('does not fire an update when the gateway snapshot is unchanged', async () 
   expect(listener).not.toHaveBeenCalled();
 });
 
+test('runs a trailing refresh when another refresh is requested while one is active', async () => {
+  let resolveFirstRefresh: (gateways: [{ name: string; endpoint: string }]) => void;
+  vi.mocked(openshellCli.listGateways)
+    .mockReturnValueOnce(
+      new Promise(resolve => {
+        resolveFirstRefresh = resolve;
+      }),
+    )
+    .mockResolvedValueOnce([{ name: 'new', endpoint: 'http://127.0.0.1:17671' }]);
+  vi.mocked(openshellCli.getGatewayInfo).mockResolvedValue({ status: 'healthy', compute_drivers: [] });
+
+  const activeRefresh = manager.refresh();
+  const queuedRefresh = manager.refresh();
+  resolveFirstRefresh!([{ name: 'old', endpoint: 'http://127.0.0.1:17670' }]);
+
+  await Promise.all([activeRefresh, queuedRefresh]);
+
+  expect(openshellCli.listGateways).toHaveBeenCalledTimes(2);
+  expect(manager.listGateways()).toEqual([
+    {
+      name: 'new',
+      endpoint: 'http://127.0.0.1:17671',
+      gatewayState: { reachable: true, health: 'healthy' },
+    },
+  ]);
+});
+
 test('fires an update when active selection or gateway state changes', async () => {
   const listener = vi.fn();
   manager.onDidUpdateGateways(listener);
@@ -190,6 +217,19 @@ test('waits for the initial refresh before becoming ready', async () => {
   expect(openshellCli.listGateways).toHaveBeenCalledOnce();
 });
 
+test('becomes ready after the initial refresh fails and a later refresh succeeds', async () => {
+  vi.mocked(openshellCli.listGateways)
+    .mockRejectedValueOnce(new Error('temporary startup failure'))
+    .mockResolvedValue([]);
+
+  manager.init();
+
+  await expect(manager.whenReady()).rejects.toThrow('temporary startup failure');
+  await manager.refresh();
+  await expect(manager.whenReady()).resolves.toBeUndefined();
+  expect(openshellCli.listGateways).toHaveBeenCalledTimes(2);
+});
+
 test('reschedules polling when the configured interval changes', async () => {
   vi.useFakeTimers();
   vi.mocked(openshellCli.listGateways).mockResolvedValue([]);
@@ -214,6 +254,18 @@ test('clamps polling intervals below one second', async () => {
 
   manager.init();
   await vi.advanceTimersByTimeAsync(999);
+  expect(openshellCli.listGateways).toHaveBeenCalledOnce();
+  await vi.advanceTimersByTimeAsync(1);
+  expect(openshellCli.listGateways).toHaveBeenCalledTimes(2);
+});
+
+test('clamps polling intervals above one hour', async () => {
+  vi.useFakeTimers();
+  pollInterval = 3601;
+  vi.mocked(openshellCli.listGateways).mockResolvedValue([]);
+
+  manager.init();
+  await vi.advanceTimersByTimeAsync(3_599_999);
   expect(openshellCli.listGateways).toHaveBeenCalledOnce();
   await vi.advanceTimersByTimeAsync(1);
   expect(openshellCli.listGateways).toHaveBeenCalledTimes(2);

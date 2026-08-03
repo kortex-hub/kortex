@@ -34,14 +34,16 @@ const GATEWAY_POLL_INTERVAL_CONFIGURATION = 'gateway.pollInterval';
 const GATEWAY_POLL_INTERVAL_CONFIGURATION_KEY = `${OPENSHELL_CONFIGURATION_SECTION}.${GATEWAY_POLL_INTERVAL_CONFIGURATION}`;
 const DEFAULT_GATEWAY_POLL_INTERVAL_SECONDS = 5;
 const MIN_GATEWAY_POLL_INTERVAL_SECONDS = 1;
+const MAX_GATEWAY_POLL_INTERVAL_SECONDS = 60 * 60;
 
 @injectable()
 export class OpenshellGatewayStateManager implements Disposable {
   #gateways = new Map<string, GatewayInfo>();
   #initialized = false;
+  #ready = false;
   #pollInterval: NodeJS.Timeout | undefined;
   #refreshPromise: Promise<void> | undefined;
-  #initialRefreshPromise: Promise<void> | undefined;
+  #refreshQueued = false;
   #configurationChangeDisposable: IDisposable | undefined;
 
   readonly #onDidUpdateGateways = new Emitter<readonly GatewayInfo[]>();
@@ -59,8 +61,7 @@ export class OpenshellGatewayStateManager implements Disposable {
       return;
     }
     this.#initialized = true;
-    this.#initialRefreshPromise = this.refresh();
-    this.#initialRefreshPromise.catch((err: unknown) => this.logRefreshError(err));
+    this.refresh().catch((err: unknown) => this.logRefreshError(err));
     this.schedulePolling();
     this.#configurationChangeDisposable = this.configurationRegistry.onDidChangeConfiguration(event => {
       if (event.key === GATEWAY_POLL_INTERVAL_CONFIGURATION_KEY) {
@@ -76,7 +77,10 @@ export class OpenshellGatewayStateManager implements Disposable {
     const configuredPollIntervalSeconds = this.configurationRegistry
       .getConfiguration(OPENSHELL_CONFIGURATION_SECTION)
       .get<number>(GATEWAY_POLL_INTERVAL_CONFIGURATION, DEFAULT_GATEWAY_POLL_INTERVAL_SECONDS);
-    const pollIntervalSeconds = Math.max(MIN_GATEWAY_POLL_INTERVAL_SECONDS, configuredPollIntervalSeconds);
+    const pollIntervalSeconds = Math.min(
+      MAX_GATEWAY_POLL_INTERVAL_SECONDS,
+      Math.max(MIN_GATEWAY_POLL_INTERVAL_SECONDS, configuredPollIntervalSeconds),
+    );
     this.#pollInterval = setInterval(() => {
       this.refresh().catch((err: unknown) => this.logRefreshError(err));
     }, pollIntervalSeconds * 1000);
@@ -88,16 +92,40 @@ export class OpenshellGatewayStateManager implements Disposable {
 
   /** Waits until the initial gateway snapshot has been populated. */
   whenReady(): Promise<void> {
-    return this.#initialRefreshPromise ?? this.refresh();
+    if (this.#ready) {
+      return Promise.resolve();
+    }
+    return this.#refreshPromise ?? this.refresh();
   }
 
   refresh(): Promise<void> {
-    if (!this.#refreshPromise) {
-      this.#refreshPromise = this.doRefresh().finally(() => {
-        this.#refreshPromise = undefined;
-      });
+    if (this.#refreshPromise) {
+      this.#refreshQueued = true;
+      return this.#refreshPromise;
     }
+    this.#refreshPromise = this.runRefreshes().finally(() => {
+      this.#refreshPromise = undefined;
+    });
     return this.#refreshPromise;
+  }
+
+  private async runRefreshes(): Promise<void> {
+    let lastError: unknown;
+    let failed = false;
+    do {
+      this.#refreshQueued = false;
+      try {
+        await this.doRefresh();
+        this.#ready = true;
+        failed = false;
+      } catch (err: unknown) {
+        lastError = err;
+        failed = true;
+      }
+    } while (this.#refreshQueued);
+    if (failed) {
+      throw lastError;
+    }
   }
 
   private async doRefresh(): Promise<void> {

@@ -58,6 +58,7 @@
           "scope": "DEFAULT",
           "default": 5,
           "minimum": 1,
+          "maximum": 3600,
           "description": "Interval in seconds between OpenShell gateway state checks."
         }
       }
