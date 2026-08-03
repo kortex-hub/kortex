@@ -1978,6 +1978,10 @@ describe('project filesystem mapping', () => {
       id: 'open-net',
       network: { mode: 'allow' },
     };
+    wizard.draft.hostsByMode = {
+      ...wizard.draft.hostsByMode,
+      registries: ['stale.example.com'],
+    };
     setProjects([openNetProject]);
     render(AgentWorkspaceCreate);
 
@@ -1985,6 +1989,7 @@ describe('project filesystem mapping', () => {
     await fireEvent.click(screen.getByRole('option', { name: /My App/ }));
 
     expect(wizard.draft.selectedNetwork).toBe('registries');
+    expect(wizard.draft.hostsByMode['registries']).toEqual(['registry.npmjs.org', 'pypi.python.org']);
   });
 
   test('Expect deny network without hosts mapped to blocked mode', async () => {

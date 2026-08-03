@@ -89,6 +89,10 @@ function applyNetworkFromProject(net: NetworkConfiguration | undefined): void {
   // mode: allow is no longer offered in the UI; fall back to the recommended preset.
   if (net.mode === 'allow') {
     wizard.draft.selectedNetwork = 'registries';
+    wizard.draft.hostsByMode = {
+      ...wizard.draft.hostsByMode,
+      registries: [...REGISTRY_PRESET],
+    };
     return;
   }
   const hosts = net.hosts ?? [];
