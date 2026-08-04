@@ -21,13 +21,21 @@ import { inject, injectable } from 'inversify';
 
 import { IPCHandle } from '/@/plugin/api.js';
 import { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
+import { OpenshellGatewayStateManager } from '/@/plugin/openshell-cli/openshell-gateway-state-manager.js';
 import { ProviderImpl } from '/@/plugin/provider-impl.js';
 import { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import { IConfigurationPropertyRecordedSchema, IConfigurationRegistry } from '/@api/configuration/models.js';
 import type { OpenshellProfile } from '/@api/openshell-gateway-info.js';
-import type { SecretCliBackend, SecretCreateOptions, SecretInfo, SecretName, SecretValue } from '/@api/secret-info.js';
+import type {
+  GatewaySecretInfo,
+  SecretCliBackend,
+  SecretCreateOptions,
+  SecretInfo,
+  SecretName,
+  SecretValue,
+} from '/@api/secret-info.js';
 
 import { OpenshellSecretAdapter } from './openshell-secret-adapter.js';
 
@@ -52,6 +60,8 @@ export class SecretManager {
     private readonly safeStorageRegistry: SafeStorageRegistry,
     @inject(OpenshellGateway)
     private readonly openshellGateway: OpenshellGateway,
+    @inject(OpenshellGatewayStateManager)
+    private readonly openshellGatewayStateManager: OpenshellGatewayStateManager,
   ) {}
 
   private get cli(): SecretCliBackend {
@@ -64,12 +74,29 @@ export class SecretManager {
     return result;
   }
 
-  async list(gateway?: string): Promise<SecretInfo[]> {
-    return this.cli.listSecrets(gateway);
+  async list(gateway?: string): Promise<GatewaySecretInfo[]> {
+    if (gateway) {
+      const secrets = await this.cli.listSecrets(gateway);
+      return secrets.map(secret => ({ ...secret, gateway }));
+    }
+
+    await this.openshellGatewayStateManager.whenReady();
+    const results: GatewaySecretInfo[] = [];
+    for (const registeredGateway of this.openshellGatewayStateManager.listGateways()) {
+      try {
+        const secrets = await this.cli.listSecrets(registeredGateway.name);
+        results.push(...secrets.map(secret => ({ ...secret, gateway: registeredGateway.name })));
+      } catch (err: unknown) {
+        console.warn(
+          `[openshell] failed to list providers for gateway ${registeredGateway.name}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+    return results;
   }
 
-  async remove(name: string): Promise<SecretName> {
-    const result = await this.cli.removeSecret(name);
+  async remove(name: string, gateway?: string): Promise<SecretName> {
+    const result = gateway ? await this.cli.removeSecret(name, gateway) : await this.cli.removeSecret(name);
     this.apiSender.send('secret-manager-update');
     return result;
   }
@@ -84,7 +111,18 @@ export class SecretManager {
 
     const expectedName = `${info.providerId}-${info.connection.id}`;
     const secrets = await this.list(gateway);
-    return secrets.find(s => s.name === expectedName);
+    const secret = secrets.find(s => s.name === expectedName);
+    if (!secret) return undefined;
+    return {
+      name: secret.name,
+      type: secret.type,
+      description: secret.description,
+      envs: secret.envs,
+      hosts: secret.hosts,
+      path: secret.path,
+      header: secret.header,
+      headerTemplate: secret.headerTemplate,
+    };
   }
 
   async ensureSecretForModel(modelId: string, gateway?: string): Promise<SecretInfo | undefined> {
@@ -186,10 +224,10 @@ export class SecretManager {
   private async onInferenceConnectionUnregistered(event: UnregisterInferenceConnectionEvent): Promise<void> {
     const expectedName = `${event.providerId}-${event.connection.id}`;
     const secrets = await this.list();
-    const secret = secrets.find(s => s.name === expectedName);
-    if (secret) {
+    const matchingSecrets = secrets.filter(s => s.name === expectedName);
+    for (const secret of matchingSecrets) {
       try {
-        await this.remove(secret.name);
+        await this.remove(secret.name, secret.gateway);
       } catch (err: unknown) {
         console.warn(`Failed to delete openshell provider ${secret.name}:`, err);
       }
@@ -218,9 +256,12 @@ export class SecretManager {
       return this.list(gateway);
     });
 
-    this.ipcHandle('secret-manager:remove', async (_listener: unknown, name: string): Promise<SecretName> => {
-      return this.remove(name);
-    });
+    this.ipcHandle(
+      'secret-manager:remove',
+      async (_listener: unknown, name: string, gateway?: string): Promise<SecretName> => {
+        return this.remove(name, gateway);
+      },
+    );
 
     this.ipcHandle('secret-manager:list-services', async (): Promise<OpenshellProfile[]> => {
       return this.listServices();

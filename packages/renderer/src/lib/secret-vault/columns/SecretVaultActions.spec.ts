@@ -30,6 +30,7 @@ const secret: SecretVaultInfo = {
   name: 'GitHub',
   type: 'github',
   description: 'Personal access token',
+  gateway: 'kaiden',
 };
 
 beforeEach(() => {
@@ -63,7 +64,7 @@ test('should remove secret when user confirms removal', async () => {
   await fireEvent.click(removeButton);
 
   await waitFor(() => {
-    expect(window.removeSecret).toHaveBeenCalledWith('github-pat');
+    expect(window.removeSecret).toHaveBeenCalledWith('GitHub', 'kaiden');
   });
 });
 

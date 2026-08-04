@@ -29,7 +29,10 @@ function handleRemove(): void {
   withConfirmation(
     async () => {
       try {
-        await window.removeSecret(id);
+        if (!secretInfo) {
+          return;
+        }
+        await window.removeSecret(secretInfo.name, secretInfo.gateway);
         router.goto('/secret-vault');
       } catch (error: unknown) {
         console.error('Failed to remove secret', error);

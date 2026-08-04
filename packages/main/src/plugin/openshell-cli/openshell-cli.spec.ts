@@ -1368,6 +1368,19 @@ describe('deleteProvider', () => {
 
     await expect(openshellCli.deleteProvider('unknown')).rejects.toThrow('provider not found: unknown');
   });
+
+  test('deletes provider from the selected gateway', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.deleteProvider('my-openai', 'remote');
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['provider', 'delete', 'my-openai', '-g', 'remote'],
+      undefined,
+    );
+  });
 });
 
 describe('createProvider', () => {

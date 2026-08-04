@@ -151,7 +151,7 @@ import type { PullEvent } from '/@api/pull-event';
 import type { RagEnvironment } from '/@api/rag/rag-environment';
 import type { ExtensionBanner, RecommendedRegistry } from '/@api/recommendations/recommendations';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info';
-import type { SecretCreateOptions, SecretInfo, SecretName } from '/@api/secret-info';
+import type { GatewaySecretInfo, SecretCreateOptions, SecretName } from '/@api/secret-info';
 import type { SemanticRouterConfigInfo, SemanticRouterInfo } from '/@api/semantic-router-info';
 import type { SkillFileContent, SkillFolderInfo, SkillInfo, SkillResourceEntry } from '/@api/skill/skill-info';
 import type { StatusBarEntryDescriptor } from '/@api/status-bar';
@@ -532,12 +532,12 @@ export function initExposure(): void {
     return ipcInvoke('secret-manager:create', options);
   });
 
-  contextBridge.exposeInMainWorld('listSecrets', async (gateway?: string): Promise<SecretInfo[]> => {
+  contextBridge.exposeInMainWorld('listSecrets', async (gateway?: string): Promise<GatewaySecretInfo[]> => {
     return ipcInvoke('secret-manager:list', gateway);
   });
 
-  contextBridge.exposeInMainWorld('removeSecret', async (name: string): Promise<SecretName> => {
-    return ipcInvoke('secret-manager:remove', name);
+  contextBridge.exposeInMainWorld('removeSecret', async (name: string, gateway?: string): Promise<SecretName> => {
+    return ipcInvoke('secret-manager:remove', name, gateway);
   });
 
   contextBridge.exposeInMainWorld('listSecretServices', async (): Promise<OpenshellProfile[]> => {

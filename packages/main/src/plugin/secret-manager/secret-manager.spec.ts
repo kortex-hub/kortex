@@ -24,6 +24,7 @@ import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { FilesystemMonitoring } from '/@/plugin/filesystem-monitoring.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import type { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
+import type { OpenshellGatewayStateManager } from '/@/plugin/openshell-cli/openshell-gateway-state-manager.js';
 import type { ProviderImpl } from '/@/plugin/provider-impl.js';
 import type { ProviderRegistry } from '/@/plugin/provider-registry.js';
 import type { SafeStorageRegistry } from '/@/plugin/safe-storage/safe-storage-registry.js';
@@ -83,6 +84,11 @@ const openshellGateway = {
   }),
 } as unknown as OpenshellGateway;
 
+const openshellGatewayStateManager = {
+  whenReady: vi.fn().mockResolvedValue(undefined),
+  listGateways: vi.fn().mockReturnValue([{ name: 'kaiden', endpoint: 'http://localhost' }]),
+} as unknown as OpenshellGatewayStateManager;
+
 const mockWatcher = {
   onDidChange: vi.fn(),
   onDidCreate: vi.fn(),
@@ -99,6 +105,10 @@ beforeEach(() => {
   unregisterInferenceCallback = undefined;
   vi.mocked(filesystemMonitoring.createFileSystemWatcher).mockReturnValue(mockWatcher);
   vi.mocked(safeStorageRegistry.getExtensionStorage).mockReturnValue(extensionStorageMock);
+  vi.mocked(openshellGatewayStateManager.whenReady).mockResolvedValue(undefined);
+  vi.mocked(openshellGatewayStateManager.listGateways).mockReturnValue([
+    { name: 'kaiden', endpoint: 'http://localhost' },
+  ]);
   manager = new SecretManager(
     apiSender,
     ipcHandle,
@@ -107,6 +117,7 @@ beforeEach(() => {
     configurationRegistry,
     safeStorageRegistry,
     openshellGateway,
+    openshellGatewayStateManager,
   );
   manager.init();
 });
@@ -156,6 +167,10 @@ describe('openshellAdapter', () => {
     unregisterInferenceCallback = undefined;
     vi.mocked(filesystemMonitoring.createFileSystemWatcher).mockReturnValue(mockWatcher);
     vi.mocked(safeStorageRegistry.getExtensionStorage).mockReturnValue(extensionStorageMock);
+    vi.mocked(openshellGatewayStateManager.whenReady).mockResolvedValue(undefined);
+    vi.mocked(openshellGatewayStateManager.listGateways).mockReturnValue([
+      { name: 'kaiden', endpoint: 'http://localhost' },
+    ]);
     manager = new SecretManager(
       apiSender,
       ipcHandle,
@@ -164,6 +179,7 @@ describe('openshellAdapter', () => {
       configurationRegistry,
       safeStorageRegistry,
       openshellGateway,
+      openshellGatewayStateManager,
     );
     manager.init();
   });
@@ -192,9 +208,51 @@ describe('openshellAdapter', () => {
 
     const result = await manager.list();
 
-    expect(openshellCli.listProviders).toHaveBeenCalled();
+    expect(openshellCli.listProviders).toHaveBeenCalledWith('kaiden');
     expect(result).toHaveLength(2);
     expect(result.map(s => s.name)).toEqual(['my-openai', 'my-anthropic']);
+  });
+
+  test('lists providers from every gateway and records their owning gateway', async () => {
+    vi.mocked(openshellGatewayStateManager.listGateways).mockReturnValue([
+      { name: 'local', endpoint: 'http://local' },
+      { name: 'remote', endpoint: 'http://remote' },
+    ]);
+    vi.mocked(openshellCli.listProviders).mockImplementation(async gateway => {
+      return gateway === 'local'
+        ? [{ name: 'shared-provider', type: 'openai' }]
+        : [{ name: 'shared-provider', type: 'anthropic' }];
+    });
+
+    await expect(manager.list()).resolves.toEqual([
+      { name: 'shared-provider', type: 'openai', gateway: 'local' },
+      { name: 'shared-provider', type: 'anthropic', gateway: 'remote' },
+    ]);
+    expect(openshellCli.listProviders).toHaveBeenNthCalledWith(1, 'local');
+    expect(openshellCli.listProviders).toHaveBeenNthCalledWith(2, 'remote');
+  });
+
+  test('lists providers only from the requested gateway', async () => {
+    vi.mocked(openshellCli.listProviders).mockResolvedValue([{ name: 'remote-provider', type: 'openai' }]);
+
+    await expect(manager.list('remote')).resolves.toEqual([
+      { name: 'remote-provider', type: 'openai', gateway: 'remote' },
+    ]);
+    expect(openshellGatewayStateManager.whenReady).not.toHaveBeenCalled();
+    expect(openshellCli.listProviders).toHaveBeenCalledWith('remote');
+  });
+
+  test('keeps providers from reachable gateways when another gateway fails', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.mocked(openshellGatewayStateManager.listGateways).mockReturnValue([
+      { name: 'offline', endpoint: 'http://offline' },
+      { name: 'online', endpoint: 'http://online' },
+    ]);
+    vi.mocked(openshellCli.listProviders)
+      .mockRejectedValueOnce(new Error('connection refused'))
+      .mockResolvedValueOnce([{ name: 'available-provider', type: 'openai' }]);
+
+    await expect(manager.list()).resolves.toEqual([{ name: 'available-provider', type: 'openai', gateway: 'online' }]);
   });
 
   test('delegates remove to openshellAdapter', async () => {
@@ -204,6 +262,14 @@ describe('openshellAdapter', () => {
 
     expect(openshellCli.deleteProvider).toHaveBeenCalledWith('my-openai');
     expect(result).toEqual({ name: 'my-openai' });
+  });
+
+  test('removes a provider from its owning gateway', async () => {
+    vi.mocked(openshellCli.deleteProvider).mockResolvedValue(undefined);
+
+    await manager.remove('my-openai', 'remote');
+
+    expect(openshellCli.deleteProvider).toHaveBeenCalledWith('my-openai', 'remote');
   });
 
   test('listServices delegates to openshellAdapter', async () => {
@@ -257,7 +323,7 @@ describe('inference connection lifecycle', () => {
     });
 
     await vi.waitFor(() => {
-      expect(openshellCli.deleteProvider).toHaveBeenCalledWith('kaiden.cursor-conn-123');
+      expect(openshellCli.deleteProvider).toHaveBeenCalledWith('kaiden.cursor-conn-123', 'kaiden');
     });
   });
 

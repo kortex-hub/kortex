@@ -12,7 +12,10 @@ interface Props {
 let { object }: Props = $props();
 
 function handleRemove(): void {
-  withConfirmation(() => window.removeSecret(object.id).catch(console.error), `remove secret ${object.name}`);
+  withConfirmation(
+    () => window.removeSecret(object.name, object.gateway).catch(console.error),
+    `remove secret ${object.name}`,
+  );
 }
 </script>
 

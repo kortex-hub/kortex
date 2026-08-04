@@ -572,11 +572,13 @@ test('Expect secrets listed from the selected gateway', async () => {
             name: 'github-token',
             type: 'github',
             description: 'Personal access token',
+            gateway: 'remote',
           },
           {
             name: 'anthropic-key',
             type: 'anthropic',
             description: 'API key',
+            gateway: 'remote',
           },
         ]
       : [
@@ -584,6 +586,7 @@ test('Expect secrets listed from the selected gateway', async () => {
             name: 'local-only-secret',
             type: 'generic',
             description: 'Only available on the local gateway',
+            gateway: 'local',
           },
         ],
   );
@@ -603,7 +606,7 @@ test('Expect secrets listed from the selected gateway', async () => {
 });
 
 test('Expect stale secret selections cleared and Continue disabled while gateway secrets load', async () => {
-  let resolveSecrets: (secrets: { name: string; type: string; description: string }[]) => void;
+  let resolveSecrets: (secrets: { name: string; type: string; description: string; gateway: string }[]) => void;
   vi.mocked(window.listSecrets).mockImplementation(
     () =>
       new Promise(resolve => {
@@ -619,7 +622,9 @@ test('Expect stale secret selections cleared and Continue disabled while gateway
   expect(wizard.draft.selectedSecretIds).toEqual([]);
   expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
 
-  resolveSecrets!([{ name: 'remote-secret', type: 'generic', description: 'Remote gateway secret' }]);
+  resolveSecrets!([
+    { name: 'remote-secret', type: 'generic', description: 'Remote gateway secret', gateway: 'remote' },
+  ]);
 
   await waitFor(() => expect(screen.getByRole('button', { name: 'Continue' })).not.toBeDisabled());
 });
