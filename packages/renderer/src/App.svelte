@@ -107,6 +107,7 @@ import TaskManager from './lib/task-manager/TaskManager.svelte';
 import ToastHandler from './lib/toast/ToastHandler.svelte';
 import ToastTaskNotifications from './lib/toast/ToastTaskNotifications.svelte';
 import TroubleshootingPage from './lib/troubleshooting/TroubleshootingPage.svelte';
+import NoOpenshellGatewayWarning from './lib/ui/NoOpenshellGatewayWarning.svelte';
 import TitleBar from './lib/ui/TitleBar.svelte';
 import CreateVolume from './lib/volume/CreateVolume.svelte';
 import VolumeDetails from './lib/volume/VolumeDetails.svelte';
@@ -250,6 +251,7 @@ tablePersistence.storage = new PodmanDesktopStoragePersist();
         <SendFeedback />
         <ToastHandler />
         <ToastTaskNotifications />
+        <NoOpenshellGatewayWarning />
         {#if $showChatWindow}
         <Route path="/" breadcrumb="Chat" navigationHint="root">
           <CustomChat />

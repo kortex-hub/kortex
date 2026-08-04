@@ -36,9 +36,12 @@ export async function checkForUpdate(eventName: string): Promise<boolean> {
 }
 
 export const openshellGateways: Writable<GatewayInfo[]> = writable([]);
+export const openshellGatewaysReady: Writable<boolean> = writable(false);
 
-const listOpenshellGateways = (): Promise<GatewayInfo[]> => {
-  return window.listOpenshellGateways();
+const listOpenshellGateways = async (): Promise<GatewayInfo[]> => {
+  const gateways = await window.listOpenshellGateways();
+  openshellGatewaysReady.set(true);
+  return gateways;
 };
 
 export const openshellGatewaysEventStore = new EventStore<GatewayInfo[]>(
