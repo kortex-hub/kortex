@@ -37,13 +37,13 @@ export class MilvusConnection implements api.RagProviderConnection {
     this.connectionStatus = running ? 'started' : 'stopped';
     const server: MCPServerDetail = {
       name: `kaiden.milvus.mcp-server-milvus-${name}`,
-      version: '0.1.1.dev8',
+      version: '0.1.1.dev9',
       description: 'Milvus MCP Server for Knowledge Databases',
       packages: [
         {
           registryType: 'pypi',
           identifier: 'mcp-server-milvus',
-          version: '0.1.1.dev8',
+          version: '0.1.1.dev9',
           runtimeHint: 'uvx',
           transport: {
             type: 'stdio',
@@ -68,7 +68,7 @@ export class MilvusConnection implements api.RagProviderConnection {
             {
               isRequired: true,
               format: 'string',
-              value: '--milvus-uri',
+              value: '--milvus_uri',
               isSecret: false,
             },
             {

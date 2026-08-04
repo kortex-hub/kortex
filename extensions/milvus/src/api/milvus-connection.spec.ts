@@ -64,18 +64,18 @@ test('should register MCP server with correct name and version', () => {
   const pkg = serverDetail.packages?.[0];
   expect(pkg).toBeDefined();
   expect(pkg?.identifier).toBe('mcp-server-milvus');
-  expect(pkg?.version).toBe('0.1.1.dev8');
+  expect(pkg?.version).toBe('0.1.1.dev9');
   expect(connection.status()).toBe('started');
 });
 
-test('should register MCP server with milvus-uri package arguments', () => {
+test('should register MCP server with milvus_uri package arguments', () => {
   const connection = new MilvusConnection('/path', 'test-db', 'container-1', 19530, true);
 
   const serverDetail = vi.mocked(api.mcpRegistry.registerServer).mock.calls[0][0];
   const pkg = serverDetail.packages?.[0];
   expect(pkg).toBeDefined();
   expect(pkg?.packageArguments).toEqual([
-    expect.objectContaining({ value: '--milvus-uri' }),
+    expect.objectContaining({ value: '--milvus_uri' }),
     expect.objectContaining({ value: 'http://localhost:19530' }),
   ]);
   expect(connection.status()).toBe('started');
