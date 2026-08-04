@@ -1580,7 +1580,7 @@ describe('createProvider', () => {
     );
   });
 
-  test('redacts credential and config values in logs', async () => {
+  test('redacts provider credential and configuration arguments in logs', async () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
 
@@ -1591,16 +1591,16 @@ describe('createProvider', () => {
       config: { model: 'gpt-4' },
     });
 
-    const executingLog = logSpy.mock.calls.find(c => String(c[0]).startsWith('Executing:'));
-    expect(executingLog).toBeDefined();
-    const loggedMessage = executingLog![0] as string;
-    expect(loggedMessage).not.toContain('sk-secret-123');
-    expect(loggedMessage).toContain('gpt-4');
+    expect(logSpy).toHaveBeenCalledWith(
+      `Executing: ${OPENSHELL_CLI_PATH} provider create --name my-openai --type openai --credential *** --config ***`,
+    );
+    expect(logSpy).not.toHaveBeenCalledWith(expect.stringContaining('apiKey'));
+    expect(logSpy).not.toHaveBeenCalledWith(expect.stringContaining('model=gpt-4'));
   });
 
   test('rejects when CLI fails', async () => {
-    vi.spyOn(console, 'log').mockImplementation(() => undefined);
-    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     vi.mocked(exec.exec).mockRejectedValue(new Error('provider type not supported'));
 
     await expect(
@@ -1610,6 +1610,15 @@ describe('createProvider', () => {
         credentials: { key: 'val' },
       }),
     ).rejects.toThrow('provider type not supported');
+
+    expect(logSpy).toHaveBeenCalledWith(
+      `Executing: ${OPENSHELL_CLI_PATH} provider create --name bad --type unsupported --credential ***`,
+    );
+    expect(errorSpy).toHaveBeenCalledWith(
+      `openshell failed: ${OPENSHELL_CLI_PATH} provider create --name bad --type unsupported --credential *** — provider type not supported`,
+    );
+    expect(logSpy).not.toHaveBeenCalledWith(expect.stringContaining('key'));
+    expect(errorSpy).not.toHaveBeenCalledWith(expect.stringContaining('key'));
   });
 });
 
