@@ -41,10 +41,10 @@ test('shows a warning after gateways load with no results', async () => {
 
   openshellGatewaysReady.set(true);
 
-  expect(await screen.findByRole('alert')).toHaveTextContent('No Openshell Gateways Found. Please Create One.');
+  expect(await screen.findByRole('alert')).toHaveTextContent('No usable OpenShell gateways available.');
 });
 
-test('does not show a warning when a gateway is discoverable but unreachable', () => {
+test('shows a warning when all discoverable gateways are unreachable', () => {
   openshellGateways.set([
     {
       name: 'stale-local',
@@ -56,7 +56,21 @@ test('does not show a warning when a gateway is discoverable but unreachable', (
 
   render(NoOpenshellGatewayWarning);
 
-  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  expect(screen.getByRole('alert')).toHaveTextContent('No usable OpenShell gateways available.');
+});
+
+test('shows a warning when a gateway reachability state is unavailable', () => {
+  openshellGateways.set([
+    {
+      name: 'loading-local',
+      endpoint: 'http://127.0.0.1:17670',
+    },
+  ]);
+  openshellGatewaysReady.set(true);
+
+  render(NoOpenshellGatewayWarning);
+
+  expect(screen.getByRole('alert')).toHaveTextContent('No usable OpenShell gateways available.');
 });
 
 test('hides the warning when a gateway becomes available', async () => {
