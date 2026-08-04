@@ -23,6 +23,25 @@ function getTypeBadge(gateway: GatewayInfo): string {
   return 'Referenced';
 }
 
+function getStatusColor(gateway: GatewayInfo): string {
+  if (!gateway.gatewayState) {
+    return 'bg-(--pd-status-unknown)';
+  }
+  if (!gateway.gatewayState.reachable) {
+    return 'bg-(--pd-status-stopped)';
+  }
+  switch (gateway.gatewayState.health) {
+    case 'healthy':
+      return 'bg-(--pd-status-running)';
+    case 'degraded':
+      return 'bg-(--pd-status-degraded)';
+    case 'unhealthy':
+      return 'bg-(--pd-status-terminated)';
+    default:
+      return 'bg-(--pd-status-unknown)';
+  }
+}
+
 function getDetails(gateway: GatewayInfo): string {
   const parts: string[] = [];
   if (gateway.type) {
@@ -32,6 +51,27 @@ function getDetails(gateway: GatewayInfo): string {
     parts.push('remote');
   }
   parts.push(gateway.endpoint);
+
+  if (!gateway.gatewayState) {
+    parts.push('Unknown');
+  } else if (!gateway.gatewayState.reachable) {
+    parts.push('Disconnected');
+  } else {
+    switch (gateway.gatewayState.health) {
+      case 'healthy':
+        parts.push('Connected');
+        break;
+      case 'degraded':
+        parts.push('Degraded');
+        break;
+      case 'unhealthy':
+        parts.push('Unhealthy');
+        break;
+      default:
+        parts.push('Unknown');
+    }
+  }
+
   return parts.join(' · ');
 }
 </script>
@@ -67,7 +107,7 @@ function getDetails(gateway: GatewayInfo): string {
           role="region"
           aria-label="Active gateway {activeGateway.name}">
           <div class="flex items-center gap-3">
-            <div class="w-2 h-2 rounded-full shrink-0 bg-(--pd-status-running)" aria-label="Gateway status"></div>
+            <div class="w-2 h-2 rounded-full shrink-0 {getStatusColor(activeGateway)}" aria-label="Gateway state"></div>
             <span class="text-lg font-semibold text-(--pd-content-card-text)">{activeGateway.name}</span>
             <span
               class="text-xs font-medium px-2 py-0.5 rounded-full bg-(--pd-label-bg) text-(--pd-label-text)">
@@ -93,7 +133,7 @@ function getDetails(gateway: GatewayInfo): string {
               role="region"
               aria-label="Gateway {gateway.name}">
               <div class="flex items-center gap-3">
-                <div class="w-2 h-2 rounded-full shrink-0 bg-(--pd-status-running)" aria-label="Gateway status"></div>
+                <div class="w-2 h-2 rounded-full shrink-0 {getStatusColor(gateway)}" aria-label="Gateway state"></div>
                 <span class="font-semibold text-(--pd-content-card-text)">{gateway.name}</span>
                 <span
                   class="text-xs font-medium px-2 py-0.5 rounded-full bg-(--pd-label-bg) text-(--pd-label-text)">

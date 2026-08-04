@@ -71,6 +71,7 @@ test('displays active gateway in the Active Gateway section', () => {
     endpoint: 'http://127.0.0.1:17670',
     active: true,
     type: 'local',
+    gatewayState: { reachable: true, health: 'healthy' },
   };
   openshellGateways.set([activeGateway]);
   render(PreferencesOpenshellGatewaysRendering);
@@ -78,9 +79,9 @@ test('displays active gateway in the Active Gateway section', () => {
   expect(screen.getByText('Active Gateway')).toBeInTheDocument();
   expect(screen.getByText('kaiden-local')).toBeInTheDocument();
   expect(screen.getByText('Managed')).toBeInTheDocument();
-  expect(screen.getByText('local · http://127.0.0.1:17670')).toBeInTheDocument();
+  expect(screen.getByText('local · http://127.0.0.1:17670 · Connected')).toBeInTheDocument();
 
-  const statusDot = screen.getAllByLabelText('Gateway status')[0];
+  const statusDot = screen.getAllByLabelText('Gateway state')[0];
   expect(statusDot).toHaveClass('bg-(--pd-status-running)');
 
   expect(screen.queryByText('Other Gateways')).not.toBeInTheDocument();
@@ -111,7 +112,7 @@ test('displays non-active gateways in Other Gateways section', () => {
   expect(screen.getByText('Other Gateways')).toBeInTheDocument();
   expect(screen.getByText('production')).toBeInTheDocument();
   expect(screen.getByText('Referenced')).toBeInTheDocument();
-  expect(screen.getByText('remote · https://gateway.example.com')).toBeInTheDocument();
+  expect(screen.getByText('remote · https://gateway.example.com · Unknown')).toBeInTheDocument();
 });
 
 test('shows Referenced badge for non-local gateways', () => {
@@ -168,4 +169,82 @@ test('renders multiple non-active gateways', () => {
 
   expect(screen.getByText('team-shared')).toBeInTheDocument();
   expect(screen.getByText('dev-remote')).toBeInTheDocument();
+});
+
+test('shows unknown state text and color when gatewayState is undefined', () => {
+  setOpenshellStarted();
+  openshellGateways.set([{ name: 'no-state-gw', endpoint: 'http://localhost:17670', active: true }]);
+  render(PreferencesOpenshellGatewaysRendering);
+
+  expect(screen.getByText('http://localhost:17670 · Unknown')).toBeInTheDocument();
+  const statusDot = screen.getByLabelText('Gateway state');
+  expect(statusDot).toHaveClass('bg-(--pd-status-unknown)');
+});
+
+test('shows disconnected state text and stopped color when gateway is unreachable', () => {
+  setOpenshellStarted();
+  openshellGateways.set([
+    {
+      name: 'unreachable-gw',
+      endpoint: 'http://localhost:17670',
+      active: true,
+      gatewayState: { reachable: false, health: 'unknown' },
+    },
+  ]);
+  render(PreferencesOpenshellGatewaysRendering);
+
+  expect(screen.getByText('http://localhost:17670 · Disconnected')).toBeInTheDocument();
+  const statusDot = screen.getByLabelText('Gateway state');
+  expect(statusDot).toHaveClass('bg-(--pd-status-stopped)');
+});
+
+test('shows degraded state text and color for degraded gateway', () => {
+  setOpenshellStarted();
+  openshellGateways.set([
+    {
+      name: 'degraded-gw',
+      endpoint: 'http://localhost:17670',
+      active: true,
+      gatewayState: { reachable: true, health: 'degraded' },
+    },
+  ]);
+  render(PreferencesOpenshellGatewaysRendering);
+
+  expect(screen.getByText('http://localhost:17670 · Degraded')).toBeInTheDocument();
+  const statusDot = screen.getByLabelText('Gateway state');
+  expect(statusDot).toHaveClass('bg-(--pd-status-degraded)');
+});
+
+test('shows unhealthy state text and terminated color for unhealthy gateway', () => {
+  setOpenshellStarted();
+  openshellGateways.set([
+    {
+      name: 'unhealthy-gw',
+      endpoint: 'http://localhost:17670',
+      active: true,
+      gatewayState: { reachable: true, health: 'unhealthy' },
+    },
+  ]);
+  render(PreferencesOpenshellGatewaysRendering);
+
+  expect(screen.getByText('http://localhost:17670 · Unhealthy')).toBeInTheDocument();
+  const statusDot = screen.getByLabelText('Gateway state');
+  expect(statusDot).toHaveClass('bg-(--pd-status-terminated)');
+});
+
+test('shows connected state text and running color for healthy gateway', () => {
+  setOpenshellStarted();
+  openshellGateways.set([
+    {
+      name: 'healthy-gw',
+      endpoint: 'http://localhost:17670',
+      active: true,
+      gatewayState: { reachable: true, health: 'healthy' },
+    },
+  ]);
+  render(PreferencesOpenshellGatewaysRendering);
+
+  expect(screen.getByText('http://localhost:17670 · Connected')).toBeInTheDocument();
+  const statusDot = screen.getByLabelText('Gateway state');
+  expect(statusDot).toHaveClass('bg-(--pd-status-running)');
 });
