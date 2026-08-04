@@ -321,7 +321,7 @@ describe('activate', () => {
         expect(ctx.workspace.environment).toEqual(
           expect.arrayContaining([
             { name: 'COPILOT_PROVIDER_TYPE', value: 'anthropic' },
-            { name: 'COPILOT_PROVIDER_BASE_URL', value: 'https://api.anthropic.com/v1' },
+            { name: 'COPILOT_PROVIDER_BASE_URL', value: 'https://api.anthropic.com' },
             { name: 'COPILOT_MODEL', value: 'claude-sonnet-4' },
           ]),
         );

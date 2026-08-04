@@ -77,7 +77,7 @@ const VAULT_API_KEY_ENV_VAR: Record<string, string> = {
 // Default base URLs for providers that omit `endpoint` from their connection
 // info when using the standard API endpoint (e.g. Anthropic cloud).
 const DEFAULT_PROVIDER_BASE_URL: Record<string, string> = {
-  anthropic: 'https://api.anthropic.com/v1',
+  anthropic: 'https://api.anthropic.com',
 };
 
 function setEnvVar(context: AgentWorkspaceContext, name: string, value: string): void {
