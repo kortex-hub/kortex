@@ -260,7 +260,7 @@ describe('openshellAdapter', () => {
 
     const result = await manager.remove('my-openai');
 
-    expect(openshellCli.deleteProvider).toHaveBeenCalledWith('my-openai');
+    expect(openshellCli.deleteProvider).toHaveBeenCalledWith('my-openai', undefined);
     expect(result).toEqual({ name: 'my-openai' });
   });
 

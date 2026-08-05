@@ -96,7 +96,7 @@ export class SecretManager {
   }
 
   async remove(name: string, gateway?: string): Promise<SecretName> {
-    const result = gateway ? await this.cli.removeSecret(name, gateway) : await this.cli.removeSecret(name);
+    const result = await this.cli.removeSecret(name, gateway);
     this.apiSender.send('secret-manager-update');
     return result;
   }
@@ -113,16 +113,9 @@ export class SecretManager {
     const secrets = await this.list(gateway);
     const secret = secrets.find(s => s.name === expectedName);
     if (!secret) return undefined;
-    return {
-      name: secret.name,
-      type: secret.type,
-      description: secret.description,
-      envs: secret.envs,
-      hosts: secret.hosts,
-      path: secret.path,
-      header: secret.header,
-      headerTemplate: secret.headerTemplate,
-    };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars, sonarjs/no-unused-vars -- gateway is intentionally omitted
+    const { gateway: _, ...secretInfo } = secret;
+    return secretInfo;
   }
 
   async ensureSecretForModel(modelId: string, gateway?: string): Promise<SecretInfo | undefined> {

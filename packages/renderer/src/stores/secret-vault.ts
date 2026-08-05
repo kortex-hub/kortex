@@ -27,16 +27,8 @@ import { EventStore } from './event-store';
 
 function secretInfoToVaultInfo(info: GatewaySecretInfo): SecretVaultInfo {
   return {
+    ...info,
     id: `${info.gateway}/${info.name}`,
-    name: info.name,
-    gateway: info.gateway,
-    type: info.type,
-    description: info.description,
-    hosts: info.hosts,
-    path: info.path,
-    header: info.header,
-    headerTemplate: info.headerTemplate,
-    envs: info.envs,
   };
 }
 

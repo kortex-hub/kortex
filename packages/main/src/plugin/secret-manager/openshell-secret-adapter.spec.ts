@@ -152,7 +152,7 @@ describe('removeSecret', () => {
 
     const result = await adapter.removeSecret('my-openai');
 
-    expect(openshellCli.deleteProvider).toHaveBeenCalledWith('my-openai');
+    expect(openshellCli.deleteProvider).toHaveBeenCalledWith('my-openai', undefined);
     expect(result).toEqual({ name: 'my-openai' });
   });
 
