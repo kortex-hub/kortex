@@ -32,6 +32,11 @@ fi
 
 pnpm commitlint --edit "$1"
 
+# skip DCO for agents
+if test "${GITHUB_ACTIONS:-}" = "true"; then
+  exit 0
+fi
+
 SOB=$(git var GIT_AUTHOR_IDENT | sed -n 's/^\(.*>\).*$/Signed-off-by: \1/p')
 grep -qs "^$SOB" "$1" || echo "$SOB" >>"$1"
 
