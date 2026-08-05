@@ -23,7 +23,7 @@ import { beforeEach, expect, test } from 'vitest';
 
 import { openshellGateways, openshellGatewaysReady } from '/@/stores/openshell-gateways';
 
-import NoOpenshellGatewayWarning from './NoOpenshellGatewayWarning.svelte';
+import NoUsableGatewayWarning from './NoUsableGatewayWarning.svelte';
 
 beforeEach(() => {
   openshellGateways.set([]);
@@ -31,13 +31,13 @@ beforeEach(() => {
 });
 
 test('does not show a warning before gateways are loaded', () => {
-  render(NoOpenshellGatewayWarning);
+  render(NoUsableGatewayWarning);
 
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 });
 
 test('shows a warning after gateways load with no results', async () => {
-  render(NoOpenshellGatewayWarning);
+  render(NoUsableGatewayWarning);
 
   openshellGatewaysReady.set(true);
 
@@ -54,7 +54,7 @@ test('shows a warning when all discoverable gateways are unreachable', () => {
   ]);
   openshellGatewaysReady.set(true);
 
-  render(NoOpenshellGatewayWarning);
+  render(NoUsableGatewayWarning);
 
   expect(screen.getByRole('alert')).toHaveTextContent('No usable OpenShell gateways available.');
 });
@@ -68,14 +68,14 @@ test('shows a warning when a gateway reachability state is unavailable', () => {
   ]);
   openshellGatewaysReady.set(true);
 
-  render(NoOpenshellGatewayWarning);
+  render(NoUsableGatewayWarning);
 
   expect(screen.getByRole('alert')).toHaveTextContent('No usable OpenShell gateways available.');
 });
 
 test('hides the warning when a gateway becomes available', async () => {
   openshellGatewaysReady.set(true);
-  render(NoOpenshellGatewayWarning);
+  render(NoUsableGatewayWarning);
 
   expect(screen.getByRole('alert')).toBeInTheDocument();
 
