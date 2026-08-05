@@ -37,22 +37,38 @@ export class MilvusConnection implements api.RagProviderConnection {
     this.connectionStatus = running ? 'started' : 'stopped';
     const server: MCPServerDetail = {
       name: `kaiden.milvus.mcp-server-milvus-${name}`,
-      version: '0.1.1.dev8',
+      version: '0.1.1.dev9',
       description: 'Milvus MCP Server for Knowledge Databases',
       packages: [
         {
           registryType: 'pypi',
           identifier: 'mcp-server-milvus',
-          version: '0.1.1.dev8',
-          runtimeHint: 'python',
+          version: '0.1.1.dev9',
+          runtimeHint: 'uvx',
           transport: {
             type: 'stdio',
           },
+          // mcp-server-milvus imports mcp.server.fastmcp, which was removed when the
+          // mcp SDK released 2.0.0. Pin the last compatible 1.x release explicitly.
+          runtimeArguments: [
+            {
+              isRequired: true,
+              format: 'string',
+              value: '--with',
+              isSecret: false,
+            },
+            {
+              isRequired: true,
+              format: 'string',
+              value: 'mcp==1.29.0',
+              isSecret: false,
+            },
+          ],
           packageArguments: [
             {
               isRequired: true,
               format: 'string',
-              value: '--milvus-uri',
+              value: '--milvus_uri',
               isSecret: false,
             },
             {
