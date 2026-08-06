@@ -47,7 +47,7 @@ allow_unauthenticated_users = true
 signing_key_path = "/kaiden/jwt/signing.pem"
 public_key_path = "/kaiden/jwt/public.pem"
 kid_path = "/kaiden/jwt/kid"
-ttl_secs = 3600
+ttl_secs = 0
 `;
 
 const WINDOWS_PATH_REGEXP = /^([A-Za-z]):[/\\](.*)$/;

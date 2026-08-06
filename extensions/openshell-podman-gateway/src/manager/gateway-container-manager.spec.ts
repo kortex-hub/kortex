@@ -589,6 +589,22 @@ describe('GatewayContainerManager', () => {
     );
   });
 
+  test('should generate gateway config with non-expiring JWTs (ttl_secs = 0)', async () => {
+    const { writeFile: writeFileMock } = await import('node:fs/promises');
+
+    Object.defineProperty(env, 'isWindows', { value: true, configurable: true });
+    setupCliMock('/usr/bin/openshell');
+    setupFollowProgress();
+    vi.mocked(processApi.exec).mockResolvedValue({ stdout: '', stderr: '', command: '' });
+
+    await gatewayContainerManager.init();
+
+    expect(writeFileMock).toHaveBeenCalledWith(
+      expect.stringContaining('gateway.toml'),
+      expect.stringContaining('ttl_secs = 0'),
+    );
+  });
+
   test('should mount gateway directory to /kaiden in gateway container', async () => {
     Object.defineProperty(env, 'isWindows', { value: true, configurable: true });
     setupCliMock('/usr/bin/openshell');
