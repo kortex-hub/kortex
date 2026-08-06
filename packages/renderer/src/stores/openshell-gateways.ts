@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { type Writable, writable } from 'svelte/store';
+import { get, type Writable, writable } from 'svelte/store';
 
 import type { GatewayInfo } from '/@api/openshell-gateway-info';
 
@@ -40,7 +40,9 @@ export const openshellGatewaysReady: Writable<boolean> = writable(false);
 
 const listOpenshellGateways = async (): Promise<GatewayInfo[]> => {
   const gateways = await window.listOpenshellGateways();
-  openshellGatewaysReady.set(true);
+  if (!get(openshellGatewaysReady)) {
+    openshellGatewaysReady.set(true);
+  }
   return gateways;
 };
 

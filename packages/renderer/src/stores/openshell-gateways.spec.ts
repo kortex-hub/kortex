@@ -103,6 +103,20 @@ test('updates an initially empty gateway snapshot when a gateway becomes availab
   await vi.waitFor(() => expect(get(openshellGateways)).toEqual([gateway]));
 });
 
+test('marks gateways ready only after the first successful request', async () => {
+  const { openshellGatewaysReady } = await import('./openshell-gateways');
+  const setReady = vi.spyOn(openshellGatewaysReady, 'set');
+  vi.mocked(window.listOpenshellGateways).mockResolvedValue([]);
+
+  await callbacks.get('extensions-already-started')?.();
+  await vi.waitFor(() => expect(get(openshellGatewaysReady)).toBe(true));
+
+  await callbacks.get('agent-gateway-update')?.();
+  await vi.waitFor(() => expect(window.listOpenshellGateways).toHaveBeenCalledTimes(2));
+
+  expect(setReady).toHaveBeenCalledOnce();
+});
+
 test('does not mark gateways ready when the initial request fails', async () => {
   const { openshellGatewaysReady } = await import('./openshell-gateways');
   vi.mocked(window.listOpenshellGateways).mockRejectedValue(new Error('unable to list gateways'));

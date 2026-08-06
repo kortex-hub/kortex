@@ -4,7 +4,7 @@ import { openshellGateways, openshellGatewaysReady } from '/@/stores/openshell-g
 import type { GatewayInfo } from '/@api/openshell-gateway-info';
 
 function noUsableGateways(gateways: GatewayInfo[]): boolean {
-  return gateways.every(gateway => gateway.gatewayState?.reachable !== true);
+  return !gateways.some(gateway => gateway.gatewayState?.reachable === true);
 }
 </script>
 
