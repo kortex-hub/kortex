@@ -53,7 +53,7 @@ test('does not fetch gateways before extensions are started', async () => {
 });
 
 test('populates gateways when extensions are started', async () => {
-  const { openshellGateways } = await import('./openshell-gateways');
+  const { openshellGateways, openshellGatewaysReady } = await import('./openshell-gateways');
   const gateways: GatewayInfo[] = [
     {
       name: 'local',
@@ -72,7 +72,60 @@ test('populates gateways when extensions are started', async () => {
   await vi.waitFor(() => {
     expect(window.listOpenshellGateways).toHaveBeenCalled();
     expect(get(openshellGateways)).toEqual(gateways);
+    expect(get(openshellGatewaysReady)).toBe(true);
   });
+});
+
+test('marks gateways ready after an authoritative empty response', async () => {
+  const { openshellGateways, openshellGatewaysReady } = await import('./openshell-gateways');
+  vi.mocked(window.listOpenshellGateways).mockResolvedValue([]);
+
+  expect(get(openshellGatewaysReady)).toBe(false);
+
+  await callbacks.get('extensions-already-started')?.();
+
+  await vi.waitFor(() => {
+    expect(get(openshellGateways)).toEqual([]);
+    expect(get(openshellGatewaysReady)).toBe(true);
+  });
+});
+
+test('updates an initially empty gateway snapshot when a gateway becomes available', async () => {
+  const { openshellGateways, openshellGatewaysReady } = await import('./openshell-gateways');
+  const gateway: GatewayInfo = { name: 'local', endpoint: 'http://127.0.0.1:17670' };
+  vi.mocked(window.listOpenshellGateways).mockResolvedValueOnce([]).mockResolvedValueOnce([gateway]);
+
+  await callbacks.get('extensions-already-started')?.();
+  await vi.waitFor(() => expect(get(openshellGatewaysReady)).toBe(true));
+
+  await callbacks.get('agent-gateway-update')?.();
+
+  await vi.waitFor(() => expect(get(openshellGateways)).toEqual([gateway]));
+});
+
+test('marks gateways ready only after the first successful request', async () => {
+  const { openshellGatewaysReady } = await import('./openshell-gateways');
+  const setReady = vi.spyOn(openshellGatewaysReady, 'set');
+  vi.mocked(window.listOpenshellGateways).mockResolvedValue([]);
+
+  await callbacks.get('extensions-already-started')?.();
+  await vi.waitFor(() => expect(get(openshellGatewaysReady)).toBe(true));
+
+  await callbacks.get('agent-gateway-update')?.();
+  await vi.waitFor(() => expect(window.listOpenshellGateways).toHaveBeenCalledTimes(2));
+
+  expect(setReady).toHaveBeenCalledOnce();
+});
+
+test('does not mark gateways ready when the initial request fails', async () => {
+  const { openshellGatewaysReady } = await import('./openshell-gateways');
+  vi.mocked(window.listOpenshellGateways).mockRejectedValue(new Error('unable to list gateways'));
+  vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+  await callbacks.get('extensions-already-started')?.();
+  await vi.waitFor(() => expect(window.listOpenshellGateways).toHaveBeenCalled());
+
+  expect(get(openshellGatewaysReady)).toBe(false);
 });
 
 test('refreshes gateways on OpenShell registry gateway updates after startup', async () => {
