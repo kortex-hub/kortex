@@ -33,7 +33,7 @@ fi
 pnpm commitlint --edit "$1" || exit $?
 
 # skip DCO for agents
-if test "${GITHUB_ACTIONS:-}" = "true"; then
+if test "${GIT_BOT_EMAIL:-}" = "true"; then
   exit 0
 fi
 
