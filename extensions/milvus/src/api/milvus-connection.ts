@@ -22,6 +22,14 @@ import type { MCPServerDetail, ProviderConnectionLifecycle, ProviderConnectionSt
 import * as api from '@openkaiden/api';
 import { DataType, FunctionType, MilvusClient } from '@zilliz/milvus2-sdk-node';
 
+/**
+ * Milvus collection names may only contain letters, numbers, and underscores.
+ * Connection names are often hyphenated (container-safe), so convert for API use.
+ */
+export function sanitizeMilvusCollectionName(name: string): string {
+  return name.replace(/\W/g, '_');
+}
+
 export class MilvusConnection implements api.RagProviderConnection {
   private connectionStatus: api.ProviderConnectionStatus;
   mcpServer: api.MCPServer;
@@ -191,7 +199,7 @@ export class MilvusConnection implements api.RagProviderConnection {
 
   public async index(doc: api.Uri, chunks: api.Uri[]): Promise<void> {
     const client = this.getMilvusClient();
-    const collectionName = this.name;
+    const collectionName = sanitizeMilvusCollectionName(this.name);
 
     try {
       // Ensure collection exists
@@ -227,7 +235,7 @@ export class MilvusConnection implements api.RagProviderConnection {
 
   async deindex(doc: api.Uri): Promise<void> {
     const client = this.getMilvusClient();
-    const collectionName = this.name;
+    const collectionName = sanitizeMilvusCollectionName(this.name);
 
     try {
       // Check if collection exists

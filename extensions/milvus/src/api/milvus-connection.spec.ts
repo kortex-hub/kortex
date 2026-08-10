@@ -16,11 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { readFile } from 'node:fs/promises';
+
 import * as api from '@openkaiden/api';
+import { MilvusClient } from '@zilliz/milvus2-sdk-node';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import { MilvusConnection } from './milvus-connection';
 
+vi.mock(import('node:fs/promises'));
 vi.mock(import('@zilliz/milvus2-sdk-node'));
 
 beforeEach(() => {
@@ -94,4 +98,41 @@ test('should set connection status to stopped when running is false', () => {
 test('should store serverId from registered server', () => {
   const connection = new MilvusConnection('/path', 'test-db', 'container-1', 19530, true);
   expect(connection.mcpServer.serverId).toBe('test-server-id');
+});
+
+test('should sanitize hyphenated names when indexing into milvus collections', async () => {
+  const hasCollection = vi.fn().mockResolvedValue({ value: true });
+  const insert = vi.fn().mockResolvedValue({});
+  const flush = vi.fn().mockResolvedValue({});
+
+  vi.mocked(MilvusClient).mockImplementation(function (this: {
+    hasCollection: typeof hasCollection;
+    insert: typeof insert;
+    flush: typeof flush;
+  }): void {
+    this.hasCollection = hasCollection;
+    this.insert = insert;
+    this.flush = flush;
+  } as unknown as new (
+    ...args: ConstructorParameters<typeof MilvusClient>
+  ) => InstanceType<typeof MilvusClient>);
+  vi.mocked(readFile).mockResolvedValue('chunk text');
+  vi.mocked(api.Uri.file).mockImplementation(
+    (path: string) =>
+      ({
+        fsPath: path,
+        toString: (): string => `file://${path}`,
+      }) as unknown as api.Uri,
+  );
+
+  const connection = new MilvusConnection('/path', 'test-2', 'container-1', 19530, true);
+  await connection.index(api.Uri.file('/doc.pdf'), [api.Uri.file('/chunk0.txt')]);
+
+  expect(hasCollection).toHaveBeenCalledWith({ collection_name: 'test_2' });
+  expect(insert).toHaveBeenCalledWith(
+    expect.objectContaining({
+      collection_name: 'test_2',
+    }),
+  );
+  expect(flush).toHaveBeenCalledWith({ collection_names: ['test_2'] });
 });

@@ -44,6 +44,26 @@ const DOCLING_PORT = 5001;
 const DOCLING_NAME_LABEL = 'ai.openkaiden.docling.name';
 const DOCLING_PORT_LABEL = 'ai.openkaiden.docling.port';
 
+/** MIME types keyed by lowercase file extension (without the leading dot). */
+const EXTENSION_MIME_TYPES: Record<string, string> = {
+  pdf: 'application/pdf',
+  txt: 'text/plain',
+  md: 'text/markdown',
+  markdown: 'text/markdown',
+  htm: 'text/html',
+  html: 'text/html',
+  shtm: 'text/html',
+  shtml: 'text/html',
+  xht: 'application/xhtml+xml',
+  xhtml: 'application/xhtml+xml',
+  hta: 'application/hta',
+};
+
+function getMimeTypeForFilename(filename: string): string {
+  const extension = filename.includes('.') ? filename.slice(filename.lastIndexOf('.') + 1).toLowerCase() : '';
+  return EXTENSION_MIME_TYPES[extension] ?? 'application/octet-stream';
+}
+
 type DoclingContainerInfo = {
   dockerode: Dockerode;
   containerId: string;
@@ -207,8 +227,14 @@ export class ConnectionManager {
     const docFileName = basename(docPath);
 
     const data = new FormData();
+    // openAsBlob() often leaves Blob.type empty on Node, which makes FormData send
+    // application/octet-stream. Docling needs a real MIME type (e.g. application/pdf)
+    // to index PDFs correctly — mirror what the official docling SDK does.
     const blob = await openAsBlob(docPath);
-    data.set('files', blob, docFileName);
+    const file = new File([blob], docFileName, {
+      type: blob.type || getMimeTypeForFilename(docFileName),
+    });
+    data.set('files', file);
     const response = await fetch(`http://localhost:${entry.containerInfo.port}/v1/chunk/hierarchical/file`, {
       method: 'POST',
       body: data,

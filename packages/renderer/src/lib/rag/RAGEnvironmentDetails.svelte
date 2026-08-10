@@ -39,6 +39,11 @@ async function handleAddFile(): Promise<void> {
       selectors: ['openFile'],
       filters: [
         {
+          // First filter is the dialog default — include all supported types so PDFs are visible
+          name: 'Supported documents',
+          extensions: ['pdf', 'txt', 'md', 'markdown', 'htm', 'html', 'shtm', 'shtml', 'xht', 'xhtml', 'hta'],
+        },
+        {
           name: 'Normal text file',
           extensions: ['txt'],
         },
