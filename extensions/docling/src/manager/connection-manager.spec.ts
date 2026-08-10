@@ -569,9 +569,7 @@ describe('ConnectionManager', () => {
         json: vi.fn().mockResolvedValue({ detail: 'Unsupported file type: text/plain' }),
       } as unknown as Response);
 
-      await expect(registeredConnection!.chunk(docUri)).rejects.toThrow(
-        /Unsupported file type: text\/plain/,
-      );
+      await expect(registeredConnection!.chunk(docUri)).rejects.toThrow(/Unsupported file type: text\/plain/);
     });
 
     test('should serialize error object when detail field is missing', async () => {

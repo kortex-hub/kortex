@@ -242,7 +242,10 @@ export class ConnectionManager {
 
     if (!response.ok) {
       const error = await response.json();
-      const errorMessage = typeof error?.detail === 'string' ? error.detail : JSON.stringify(error);
+      const errorMessage =
+        typeof error === 'object' && error !== null && 'detail' in error && typeof error.detail === 'string'
+          ? error.detail
+          : JSON.stringify(error);
       throw new Error(`Conversion failed: ${response.status} ${errorMessage}`);
     }
 
