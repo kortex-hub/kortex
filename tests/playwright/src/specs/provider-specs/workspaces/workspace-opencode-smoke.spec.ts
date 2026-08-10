@@ -25,7 +25,7 @@ test.describe
   .serial('OpenCode agent workspace with OpenAI model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-OPENAI',
-      workspaceName: 'opencode-e2e-smoke',
+      workspaceName: 'opencode-openai',
       agent: CODING_AGENT.OPENCODE,
       requiredResource: 'openai',
       selectModel: async createPage => createPage.searchAndSelectDefault('chat'),
@@ -42,7 +42,7 @@ test.describe
   .serial('OpenCode agent workspace with Gemini model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-GEMINI',
-      workspaceName: 'opencode-gemini-e2e-smoke',
+      workspaceName: 'opencode-gemini',
       agent: CODING_AGENT.OPENCODE,
       requiredResource: 'gemini',
       selectModel: async createPage => createPage.searchAndSelectDefault('gemini', 'Gemini'),
@@ -58,7 +58,7 @@ test.describe
   .serial('OpenCode agent workspace with Anthropic model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-ANTHROPIC',
-      workspaceName: 'opencode-anthropic-e2e-smoke',
+      workspaceName: 'opencode-anthropic',
       agent: CODING_AGENT.OPENCODE,
       requiredResource: 'claude',
       selectModel: async createPage => createPage.searchAndSelectDefault('claude', 'Claude'),
@@ -74,7 +74,7 @@ test.describe
   .serial('OpenCode agent workspace with Mistral model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-MISTRAL',
-      workspaceName: 'opencode-mistral-e2e-smoke',
+      workspaceName: 'opencode-mistral',
       agent: CODING_AGENT.OPENCODE,
       requiredResource: 'mistral',
       selectModel: async createPage => createPage.searchAndSelectDefault('mistral', 'Mistral'),
@@ -90,7 +90,7 @@ test.describe
   .serial('OpenCode agent workspace with Ollama model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-OLLAMA',
-      workspaceName: 'opencode-ollama-e2e-smoke',
+      workspaceName: 'opencode-ollama',
       agent: CODING_AGENT.OPENCODE,
       requiredResource: 'ollama',
       selectModel: async createPage => createPage.searchAndSelectByRuntime('ollama', 'Ollama'),

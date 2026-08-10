@@ -25,7 +25,7 @@ test.describe
   .serial('Claude Code agent workspace with Anthropic model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-CLAUDE',
-      workspaceName: 'claude-e2e-smoke',
+      workspaceName: 'claude-default',
       agent: CODING_AGENT.CLAUDE,
       requiredResource: 'claude',
       selectModel: async createPage => {

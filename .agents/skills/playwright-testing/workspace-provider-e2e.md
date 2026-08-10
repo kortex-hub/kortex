@@ -177,6 +177,8 @@ tests/playwright/src/specs/provider-specs/workspaces/
 
 `workspace-filesystem-network-smoke.spec.ts` defines scenarios × agents (OpenCode + Claude Code). Skipped scenarios emit 1 skip-marker test instead of 5 steps — use `--list | tail -1` for the current count.
 
+Inference resources (e.g. OpenAI, Claude) are created **once per agent** in `registerSandboxMatrixTests` (`beforeAll` / `afterAll` on the agent describe). Scenario lifecycle hooks pass `manageResource: false` so they do not recreate/delete the connection between scenarios.
+
 Scenarios use a single `SANDBOX_SCENARIOS` array grouped by comments (core matrix, extended combos, edge cases, known skips).
 
 ### UI-aligned tags
@@ -288,13 +290,13 @@ The `Workspace-Provider` project is defined in `tests/playwright/playwright.conf
 
 1. Add a `SandboxScenario` entry in `workspace-filesystem-network-smoke.spec.ts`:
    - `id`: uppercase tag-aligned ID (e.g. `FS-HOME-NET-DENY`); describe title is derived in `helpers/workspace-sandbox-matrix.ts`
-   - `workspaceSlug`: optional short slug when `id` is too long for OpenShell (see below)
+   - `workspaceSlug`: required readable kebab slug (e.g. `none-dev`, `cust-multi`); final name is `{agentPrefix}-{slug}` and must be ≤ 19 chars (OpenShell limit)
    - `fileAccess`, `network`, and optional `customMounts` / `denyHosts` / `additionalHosts`
    - Reuse mount presets from `helpers/workspace-sandbox-matrix.ts` (`CUSTOM_RW_MOUNT`, etc.) when applicable
 2. Tags are auto-derived from `fileAccess` / `network` — modifier tags apply when mounts/hosts need them.
 3. Use `host: ''` in `customMounts` to get a temp dir from the lifecycle helper; use `$SOURCES/...` hosts for sandbox-safe paths.
 4. Set `skipReason` if the combo is known broken on OpenShell until upstream fixes land.
-5. Workspace names are `{agent}-{slug}-e2e` (≤ 46 chars so `openshell-sandbox-…` stays within Podman's 64-char hostname limit). Use `workspaceSlug` when `id` is too long — registration asserts the constraint.
+5. Workspace names are `{agentPrefix}-{workspaceSlug}` and must be ≤ 19 characters (OpenShell limit). `buildWorkspaceName` enforces this for matrix tests; hardcode short names in lifecycle smoke specs.
 6. Run the single scenario: `--grep "FS-HOME-NET-DENY"`.
 
 ## Custom Mount Conventions
