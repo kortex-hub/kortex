@@ -66,47 +66,56 @@ const AGENT_SETUPS: SandboxAgentSetup[] = [
 
 const SANDBOX_SCENARIOS: SandboxScenario[] = [
   // --- Core matrix ---
+  // Names are `{agent}-{workspaceSlug}`; slug must keep total ≤ 19 chars.
   {
     id: 'FS-NONE-NET-DEVELOPER',
+    workspaceSlug: 'none-dev',
     fileAccess: FILE_ACCESS_LEVEL.NO_HOST_ACCESS,
     network: NETWORK_ACCESS_LEVEL.DEVELOPER_PRESET,
   },
   {
     id: 'FS-HOME-NET-DEVELOPER',
+    workspaceSlug: 'home-dev',
     fileAccess: FILE_ACCESS_LEVEL.HOME_DIRECTORY,
     network: NETWORK_ACCESS_LEVEL.DEVELOPER_PRESET,
   },
   {
     id: 'FS-CUSTOM-NET-DEVELOPER',
+    workspaceSlug: 'cust-dev',
     fileAccess: FILE_ACCESS_LEVEL.CUSTOM_PATHS,
     customMounts: CUSTOM_RW_MOUNT,
     network: NETWORK_ACCESS_LEVEL.DEVELOPER_PRESET,
   },
   {
     id: 'FS-NONE-NET-DENY',
+    workspaceSlug: 'none-deny',
     fileAccess: FILE_ACCESS_LEVEL.NO_HOST_ACCESS,
     network: NETWORK_ACCESS_LEVEL.DENY_ALL,
   },
   // --- Extended filesystem × network ---
   {
     id: 'FS-FULL-NET-DEVELOPER',
+    workspaceSlug: 'full-dev',
     fileAccess: FILE_ACCESS_LEVEL.FULL_SYSTEM,
     network: NETWORK_ACCESS_LEVEL.DEVELOPER_PRESET,
     skipReason: FULL_SYSTEM_SKIP_LABEL,
   },
   {
     id: 'FS-CUSTOM-NET-DENY',
+    workspaceSlug: 'cust-deny',
     fileAccess: FILE_ACCESS_LEVEL.CUSTOM_PATHS,
     customMounts: CUSTOM_RW_MOUNT,
     network: NETWORK_ACCESS_LEVEL.DENY_ALL,
   },
   {
     id: 'FS-HOME-NET-DENY',
+    workspaceSlug: 'home-deny',
     fileAccess: FILE_ACCESS_LEVEL.HOME_DIRECTORY,
     network: NETWORK_ACCESS_LEVEL.DENY_ALL,
   },
   {
     id: 'FS-CUSTOM-RO-NET-DEVELOPER',
+    workspaceSlug: 'cust-ro',
     fileAccess: FILE_ACCESS_LEVEL.CUSTOM_PATHS,
     customMounts: CUSTOM_RO_MOUNT,
     network: NETWORK_ACCESS_LEVEL.DEVELOPER_PRESET,
@@ -114,13 +123,14 @@ const SANDBOX_SCENARIOS: SandboxScenario[] = [
   // --- Custom mount edge cases ---
   {
     id: 'FS-CUSTOM-DEFAULT-TARGET-NET-DEVELOPER',
-    workspaceSlug: 'fs-cust-def-tgt',
+    workspaceSlug: 'cust-def',
     fileAccess: FILE_ACCESS_LEVEL.CUSTOM_PATHS,
     customMounts: CUSTOM_DEFAULT_TARGET_MOUNT,
     network: NETWORK_ACCESS_LEVEL.DEVELOPER_PRESET,
   },
   {
     id: 'FS-CUSTOM-MULTI-NET-DEVELOPER',
+    workspaceSlug: 'cust-multi',
     fileAccess: FILE_ACCESS_LEVEL.CUSTOM_PATHS,
     customMounts: CUSTOM_MULTI_MOUNTS,
     network: NETWORK_ACCESS_LEVEL.DEVELOPER_PRESET,
@@ -128,13 +138,14 @@ const SANDBOX_SCENARIOS: SandboxScenario[] = [
   // --- Network host allowlist edge cases ---
   {
     id: 'FS-NONE-NET-DENY-CUSTOM-HOST',
+    workspaceSlug: 'deny-host',
     fileAccess: FILE_ACCESS_LEVEL.NO_HOST_ACCESS,
     network: NETWORK_ACCESS_LEVEL.DENY_ALL,
     denyHosts: [CUSTOM_ALLOWED_HOST],
   },
   {
     id: 'FS-NONE-NET-DEVELOPER-ADDITIONAL-HOST',
-    workspaceSlug: 'fs-none-dev-add-host',
+    workspaceSlug: 'dev-extra',
     fileAccess: FILE_ACCESS_LEVEL.NO_HOST_ACCESS,
     network: NETWORK_ACCESS_LEVEL.DEVELOPER_PRESET,
     additionalHosts: [CUSTOM_ALLOWED_HOST],
@@ -142,6 +153,7 @@ const SANDBOX_SCENARIOS: SandboxScenario[] = [
   // --- Known skips on OpenShell ---
   {
     id: 'FS-FULL-NET-DENY',
+    workspaceSlug: 'full-deny',
     fileAccess: FILE_ACCESS_LEVEL.FULL_SYSTEM,
     network: NETWORK_ACCESS_LEVEL.DENY_ALL,
     skipReason: FULL_SYSTEM_SKIP_LABEL,

@@ -25,7 +25,7 @@ test.describe
   .serial('OpenClaw agent workspace with Ollama model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-OLLAMA',
-      workspaceName: 'openclaw-ollama-e2e-smoke',
+      workspaceName: 'openclaw-ollama',
       agent: CODING_AGENT.OPENCLAW,
       requiredResource: 'ollama',
       selectModel: async createPage => createPage.searchAndSelectByRuntime('ollama', 'Ollama'),
@@ -43,7 +43,7 @@ test.describe
   .serial('OpenClaw agent workspace with OpenAI model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-OPENAI',
-      workspaceName: 'openclaw-openai-e2e-smoke',
+      workspaceName: 'openclaw-openai',
       agent: CODING_AGENT.OPENCLAW,
       requiredResource: 'openai',
       selectModel: async createPage => createPage.searchAndSelectDefault('chat'),
@@ -60,7 +60,7 @@ test.describe
   .serial('OpenClaw agent workspace with Anthropic model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-ANTHROPIC',
-      workspaceName: 'openclaw-anthropic-e2e-smoke',
+      workspaceName: 'openclaw-anthropic',
       agent: CODING_AGENT.OPENCLAW,
       requiredResource: 'claude',
       selectModel: async createPage => createPage.searchAndSelectDefault('claude', 'Claude'),
@@ -77,7 +77,7 @@ test.describe
   .serial('OpenClaw agent workspace with Gemini model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-GEMINI',
-      workspaceName: 'openclaw-gemini-e2e-smoke',
+      workspaceName: 'openclaw-gemini',
       agent: CODING_AGENT.OPENCLAW,
       requiredResource: 'gemini',
       selectModel: async createPage => createPage.searchAndSelectDefault('gemini', 'Gemini'),
@@ -94,7 +94,7 @@ test.describe
   .serial('OpenClaw agent workspace with Mistral model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-MISTRAL',
-      workspaceName: 'openclaw-mistral-e2e-smoke',
+      workspaceName: 'openclaw-mistral',
       agent: CODING_AGENT.OPENCLAW,
       requiredResource: 'mistral',
       selectModel: async createPage => createPage.searchAndSelectDefault('mistral', 'Mistral'),

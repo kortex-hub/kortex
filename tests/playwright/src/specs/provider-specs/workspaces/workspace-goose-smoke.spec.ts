@@ -25,7 +25,7 @@ test.describe
   .serial('Goose agent workspace with OpenAI model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-OPENAI',
-      workspaceName: 'goose-openai-e2e-smoke',
+      workspaceName: 'goose-openai',
       agent: CODING_AGENT.GOOSE,
       requiredResource: 'openai',
       selectModel: async createPage => createPage.searchAndSelectDefault('chat'),
@@ -41,7 +41,7 @@ test.describe
   .serial('Goose agent workspace with Mistral model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-MISTRAL',
-      workspaceName: 'goose-mistral-e2e-smoke',
+      workspaceName: 'goose-mistral',
       agent: CODING_AGENT.GOOSE,
       requiredResource: 'mistral',
       selectModel: async createPage => createPage.searchAndSelectDefault('mistral', 'Mistral'),
@@ -59,7 +59,7 @@ test.describe
 
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-OLLAMA',
-      workspaceName: 'goose-ollama-e2e-smoke',
+      workspaceName: 'goose-ollama',
       agent: CODING_AGENT.GOOSE,
       requiredResource: 'ollama',
       selectModel: async createPage => createPage.searchAndSelectByRuntime('ollama', 'Ollama'),
@@ -76,7 +76,7 @@ test.describe
   .serial('Goose agent workspace with RamaLama model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-RAMALAMA',
-      workspaceName: 'goose-ramalama-e2e-smoke',
+      workspaceName: 'goose-ramalama',
       agent: CODING_AGENT.GOOSE,
       requiredResource: 'ramalama',
       selectModel: async createPage => createPage.searchAndSelectByRuntime('ramalama', 'RamaLama'),

@@ -24,6 +24,7 @@ import {
   type FileAccessLevel,
   NETWORK_ACCESS_LEVEL,
   type NetworkAccessLevel,
+  PROVIDERS,
   type ResourceId,
   TIMEOUTS,
   type WorkspaceCustomMount,
@@ -43,10 +44,8 @@ function skipTestTitle(scenarioId: string, skipReason: string): string {
   return `[SKIP] ${scenarioId} — ${skipReason}`;
 }
 
-/** OpenShell prefixes container names with this; crun rejects hostnames longer than 64 bytes. */
-export const OPENSHELL_CONTAINER_NAME_PREFIX = 'openshell-sandbox-';
-export const OPENSHELL_MAX_HOSTNAME_LENGTH = 64;
-export const WORKSPACE_NAME_SUFFIX = '-e2e';
+/** Must match packages/api SANDBOX_NAME_MAX_LENGTH (OpenShell DNS-1123 limit). */
+export const SANDBOX_NAME_MAX_LENGTH = 19;
 
 export const CUSTOM_RW_MOUNT: WorkspaceCustomMount[] = [{ host: '', target: CUSTOM_MOUNT_TARGET, readOnly: false }];
 export const CUSTOM_RO_MOUNT: WorkspaceCustomMount[] = [{ host: '', target: CUSTOM_MOUNT_TARGET, readOnly: true }];
@@ -74,10 +73,11 @@ export interface SandboxScenario {
   /** Test ID segment after WKS-{AGENT}-, aligned with @fs-* / @net-* tags. */
   id: string;
   /**
-   * Short kebab-case segment for the OpenShell sandbox name when `id` is too long.
-   * Defaults to `id.toLowerCase()`. Must keep `openshell-sandbox-{prefix}-{slug}-e2e` ≤ 64 chars.
+   * Short kebab-case segment for the OpenShell sandbox name.
+   * Final name is `{prefix}-{slug}` (≤ 19 chars). Prefer readable slugs
+   * like `none-dev`, `cust-multi`, `deny-host` over single-letter codes.
    */
-  workspaceSlug?: string;
+  workspaceSlug: string;
   fileAccess: FileAccessLevel;
   network: NetworkAccessLevel;
   customMounts?: WorkspaceCustomMount[];
@@ -188,22 +188,14 @@ export function buildScenarioTags(scenario: SandboxScenario): string[] {
 }
 
 export function buildWorkspaceName(workspacePrefix: string, slug: string): string {
-  return `${workspacePrefix}-${slug}${WORKSPACE_NAME_SUFFIX}`;
-}
-
-export function openshellContainerName(workspaceName: string): string {
-  return `${OPENSHELL_CONTAINER_NAME_PREFIX}${workspaceName}`;
-}
-
-export function assertOpenshellContainerNameFits(workspaceName: string, context: string): void {
-  const containerName = openshellContainerName(workspaceName);
-  if (containerName.length > OPENSHELL_MAX_HOSTNAME_LENGTH) {
+  const workspaceName = `${workspacePrefix}-${slug}`;
+  if (workspaceName.length > SANDBOX_NAME_MAX_LENGTH) {
     throw new Error(
-      `Workspace name "${workspaceName}" produces OpenShell container name "${containerName}" ` +
-        `(${containerName.length} chars), exceeding the ${OPENSHELL_MAX_HOSTNAME_LENGTH}-char ` +
-        `Podman/crun hostname limit (${context})`,
+      `Workspace name "${workspaceName}" is ${workspaceName.length} chars; ` +
+        `must be ≤ ${SANDBOX_NAME_MAX_LENGTH} (OpenShell sandbox name limit)`,
     );
   }
+  return workspaceName;
 }
 
 export function registerSandboxMatrixTests(
@@ -214,10 +206,37 @@ export function registerSandboxMatrixTests(
 ): void {
   for (const agent of agents) {
     test.describe(agent.describeAgent, () => {
+      const provider = PROVIDERS[agent.requiredResource];
+      const managesResource = !('autoDetected' in provider && provider.autoDetected);
+
+      test.beforeAll(async ({ workerNavigationBar }) => {
+        await workerNavigationBar.ensureExtensionsRunning();
+
+        if (managesResource) {
+          const credentials = process.env[provider.envVarName];
+          if (!credentials) {
+            return;
+          }
+          const settingsPage = await workerNavigationBar.navigateToSettingsPage();
+          await settingsPage.createResource(agent.requiredResource, credentials);
+          await workerNavigationBar.navigateToWorkspacesPage();
+        }
+      });
+
+      test.afterAll(async ({ workerNavigationBar }) => {
+        if (!managesResource || !process.env[provider.envVarName]) {
+          return;
+        }
+        try {
+          const settingsPage = await workerNavigationBar.navigateToSettingsPage();
+          await settingsPage.deleteResource(agent.requiredResource);
+        } catch (error) {
+          console.error(`Failed to delete ${agent.requiredResource} resource:`, error);
+        }
+      });
+
       for (const scenario of scenarios) {
-        const slug = scenario.workspaceSlug ?? scenario.id.toLowerCase();
-        const workspaceName = buildWorkspaceName(agent.workspacePrefix, slug);
-        assertOpenshellContainerNameFits(workspaceName, `scenario ${scenario.id} / agent ${agent.workspacePrefix}`);
+        const workspaceName = buildWorkspaceName(agent.workspacePrefix, scenario.workspaceSlug);
         const description = scenarioDescription(scenario);
         const describeOptions = { tag: buildScenarioTags(scenario) };
 
@@ -235,6 +254,7 @@ export function registerSandboxMatrixTests(
             workspaceName,
             agent: agent.agent,
             requiredResource: agent.requiredResource,
+            manageResource: false,
             selectModel: agent.selectModel,
             terminalReadyPatterns: agent.terminalReadyPatterns,
             promptTimeout: TIMEOUTS.MODEL_RESPONSE,

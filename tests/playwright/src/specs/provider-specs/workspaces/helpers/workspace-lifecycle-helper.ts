@@ -67,6 +67,8 @@ export interface WorkspaceLifecycleConfig {
   };
   /** When set, configures filesystem/network wizard steps and skips stat-card assertions. */
   sandbox?: WorkspaceSandboxOptions;
+  /** When false, caller owns create/delete (sandbox matrix agent scope). Default true. */
+  manageResource?: boolean;
 }
 
 const SANDBOX_STEP_TITLES: Record<string, string> = {
@@ -114,10 +116,12 @@ export function registerWorkspaceLifecycleTests(
     ? { terminal: '03', prompt: '04', remove: '05' }
     : { statAfterCreate: '03', terminal: '04', prompt: '05', remove: '06', statAfterRemove: '07' };
 
+  const manageResource = config.manageResource !== false;
+
   test.beforeAll(async ({ workerNavigationBar }) => {
     await workerNavigationBar.ensureExtensionsRunning();
 
-    if (config.requiredResource) {
+    if (manageResource && config.requiredResource) {
       const provider = PROVIDERS[config.requiredResource];
       if (!('autoDetected' in provider && provider.autoDetected)) {
         const settingsPage = await workerNavigationBar.navigateToSettingsPage();
@@ -154,7 +158,7 @@ export function registerWorkspaceLifecycleTests(
     if (workingDir) {
       rmSync(workingDir, { recursive: true, force: true });
     }
-    if (config.requiredResource) {
+    if (manageResource && config.requiredResource) {
       const provider = PROVIDERS[config.requiredResource];
       if (!('autoDetected' in provider && provider.autoDetected)) {
         try {
