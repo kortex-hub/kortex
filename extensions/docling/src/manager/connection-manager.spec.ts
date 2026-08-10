@@ -507,6 +507,43 @@ describe('ConnectionManager', () => {
       );
     });
 
+    test('should upload PDF with application/pdf content type', async () => {
+      let registeredConnection: ChunkProviderConnection;
+      vi.mocked(doclingProviderMock.registerChunkProviderConnection).mockImplementation(conn => {
+        registeredConnection = conn;
+        return { dispose: vi.fn() };
+      });
+
+      await connectionManager.registerConnection({
+        path: '/test/endpoint',
+        containerId: 'chunk-container-id',
+        name: 'chunk-test',
+        port: 7070,
+        running: true,
+      });
+
+      vi.mocked(Uri.file).mockReturnValue({ fsPath: '/path/to/document.pdf' } as unknown as Uri);
+      const docUri = Uri.file('/path/to/document.pdf');
+      // openAsBlob leaves type empty on Node — reproducing the PDF indexing bug
+      vi.mocked(openAsBlob).mockResolvedValue(new Blob(['%PDF-1.4']));
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          chunks: [{ text: 'chunk1' }],
+        }),
+      } as unknown as Response);
+
+      await registeredConnection!.chunk(docUri);
+
+      const [, options] = vi.mocked(global.fetch).mock.calls[0]!;
+      const body = (options as RequestInit).body as FormData;
+      const uploaded = body.get('files') as File;
+      expect(uploaded).toBeInstanceOf(Blob);
+      expect(uploaded.name).toBe('document.pdf');
+      expect(uploaded.type).toBe('application/pdf');
+    });
+
     test('should throw when connection is stopped', async () => {
       let registeredConnection: ChunkProviderConnection;
       vi.mocked(doclingProviderMock.registerChunkProviderConnection).mockImplementation(conn => {
