@@ -48,12 +48,14 @@ const githubSecret: SecretVaultInfo = {
   path: '/v3',
   header: 'Authorization',
   headerTemplate: 'token {{secret}}',
+  gateway: 'kaiden',
 };
 
 const minimalSecret: SecretVaultInfo = {
   id: 'my-other-secret',
   name: 'Other secret',
   type: 'other',
+  gateway: 'remote',
 };
 
 beforeEach(() => {
@@ -109,7 +111,7 @@ test('should remove secret and navigate to list when user confirms removal', asy
   await fireEvent.click(removeButton);
 
   await waitFor(() => {
-    expect(window.removeSecret).toHaveBeenCalledWith('github-pat');
+    expect(window.removeSecret).toHaveBeenCalledWith('GitHub', 'kaiden');
   });
 
   expect(router.goto).toHaveBeenCalledWith('/secret-vault');

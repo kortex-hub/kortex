@@ -20,22 +20,15 @@ import type { Writable } from 'svelte/store';
 import { derived, writable } from 'svelte/store';
 
 import { findMatchInLeaves } from '/@/stores/search-util';
-import type { SecretInfo } from '/@api/secret-info';
+import type { GatewaySecretInfo } from '/@api/secret-info';
 import type { SecretVaultInfo } from '/@api/secret-vault/secret-vault-info';
 
 import { EventStore } from './event-store';
 
-function secretInfoToVaultInfo(info: SecretInfo): SecretVaultInfo {
+function secretInfoToVaultInfo(info: GatewaySecretInfo): SecretVaultInfo {
   return {
-    id: info.name,
-    name: info.name,
-    type: info.type,
-    description: info.description,
-    hosts: info.hosts,
-    path: info.path,
-    header: info.header,
-    headerTemplate: info.headerTemplate,
-    envs: info.envs,
+    ...info,
+    id: `${info.gateway}/${info.name}`,
   };
 }
 

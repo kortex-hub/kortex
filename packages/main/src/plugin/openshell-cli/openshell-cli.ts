@@ -468,8 +468,12 @@ export class OpenshellCli {
     return z.array(OpenshellProfileSchema).parse(data);
   }
 
-  async deleteProvider(name: string): Promise<void> {
-    await this.runCli(['provider', 'delete', name]);
+  async deleteProvider(name: string, gateway?: string): Promise<void> {
+    const args = ['provider', 'delete', name];
+    if (gateway) {
+      args.push('-g', gateway);
+    }
+    await this.runCli(args);
   }
 
   async createProvider(options: CreateProviderOptions, gateway?: string): Promise<void> {
