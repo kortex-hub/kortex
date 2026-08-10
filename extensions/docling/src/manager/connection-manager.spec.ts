@@ -544,6 +544,66 @@ describe('ConnectionManager', () => {
       expect(uploaded.type).toBe('application/pdf');
     });
 
+    test('should include actual error details in thrown error message', async () => {
+      let registeredConnection: ChunkProviderConnection;
+      vi.mocked(doclingProviderMock.registerChunkProviderConnection).mockImplementation(conn => {
+        registeredConnection = conn;
+        return { dispose: vi.fn() };
+      });
+
+      await connectionManager.registerConnection({
+        path: '/test/endpoint',
+        containerId: 'error-container-id',
+        name: 'error-test',
+        port: 7070,
+        running: true,
+      });
+
+      vi.mocked(Uri.file).mockReturnValue({ fsPath: '/path/to/document.txt' } as unknown as Uri);
+      const docUri = Uri.file('/path/to/document.txt');
+      vi.mocked(openAsBlob).mockResolvedValue(new Blob(['hello']));
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: false,
+        status: 404,
+        json: vi.fn().mockResolvedValue({ detail: 'Unsupported file type: text/plain' }),
+      } as unknown as Response);
+
+      await expect(registeredConnection!.chunk(docUri)).rejects.toThrow(
+        /Unsupported file type: text\/plain/,
+      );
+    });
+
+    test('should serialize error object when detail field is missing', async () => {
+      let registeredConnection: ChunkProviderConnection;
+      vi.mocked(doclingProviderMock.registerChunkProviderConnection).mockImplementation(conn => {
+        registeredConnection = conn;
+        return { dispose: vi.fn() };
+      });
+
+      await connectionManager.registerConnection({
+        path: '/test/endpoint',
+        containerId: 'error-container-id-2',
+        name: 'error-test-2',
+        port: 7070,
+        running: true,
+      });
+
+      vi.mocked(Uri.file).mockReturnValue({ fsPath: '/path/to/document.txt' } as unknown as Uri);
+      const docUri = Uri.file('/path/to/document.txt');
+      vi.mocked(openAsBlob).mockResolvedValue(new Blob(['hello']));
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: vi.fn().mockResolvedValue({ error: 'internal server error', code: 500 }),
+      } as unknown as Response);
+
+      await expect(registeredConnection!.chunk(docUri)).rejects.toThrow(
+        /Conversion failed: 500 \{"error":"internal server error","code":500\}/,
+      );
+    });
+
     test('should throw when connection is stopped', async () => {
       let registeredConnection: ChunkProviderConnection;
       vi.mocked(doclingProviderMock.registerChunkProviderConnection).mockImplementation(conn => {
