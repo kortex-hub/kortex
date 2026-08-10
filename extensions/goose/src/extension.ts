@@ -67,6 +67,10 @@ function nonEmpty(obj: Record<string, string> | undefined): Record<string, strin
   return obj && Object.keys(obj).length > 0 ? obj : undefined;
 }
 
+function toOllamaHost(endpoint: string): string {
+  return endpoint.replace(/\/v1\/?$/, '');
+}
+
 export async function activate(extensionContext: ExtensionContext): Promise<void> {
   const disposable = agents.registerAgent({
     id: 'goose',
@@ -112,7 +116,12 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
 
       const endpoint = context.model.endpoint;
       if (endpoint) {
-        config.OPENAI_BASE_URL = endpoint;
+        if (provider === 'ollama') {
+          config.OLLAMA_HOST = toOllamaHost(endpoint);
+          delete config.OPENAI_BASE_URL;
+        } else {
+          config.OPENAI_BASE_URL = endpoint;
+        }
       }
 
       const mcpServers = context.workspace.mcp?.servers;
