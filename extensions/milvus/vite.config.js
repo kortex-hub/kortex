@@ -34,6 +34,15 @@ const config = {
       '/@/': join(PACKAGE_ROOT, 'src') + '/',
     },
   },
+  // @grpc/grpc-js (bundled here, like every other extension dependency, since the
+  // packaged app only ships extensions/**/dist and never node_modules) dynamically
+  // declares `class ServiceClientImpl` and relies on its Function.prototype.name
+  // matching that identifier at runtime. esbuild's production-only minification
+  // renames the class and breaks that check inside milvus2-sdk-node, so names must
+  // be preserved through minification instead.
+  esbuild: {
+    keepNames: true,
+  },
   build: {
     sourcemap: 'inline',
     target: 'esnext',
