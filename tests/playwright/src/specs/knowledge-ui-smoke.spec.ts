@@ -32,4 +32,16 @@ test.describe('Knowledge Databases page - empty state', { tag: '@smoke' }, () =>
     await expect(knowledgePage.noEnvironmentsMessage).toHaveText('No knowledge databases are currently configured.');
     await expect(knowledgePage.table).not.toBeVisible();
   });
+
+  test('[KDB-11] Cancelling the New Knowledge Base modal discards the draft', async ({ workerNavigationBar }) => {
+    const knowledgePage = await workerNavigationBar.navigateToKnowledgePage();
+    const createPage = await knowledgePage.openCreatePage();
+
+    await expect(createPage.heading).toBeVisible();
+    await createPage.fillName('discarded-knowledge-base');
+    await createPage.cancel();
+
+    await expect(knowledgePage.noEnvironmentsMessage).toBeVisible();
+    await expect(knowledgePage.table).not.toBeVisible();
+  });
 });

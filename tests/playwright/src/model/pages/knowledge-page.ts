@@ -42,12 +42,18 @@ export class KnowledgePage extends BaseTablePage {
     await expect(this.heading).toBeVisible({ timeout: 15_000 });
   }
 
-  async createEnvironment(name: string, vectorStoreName: string, embeddingModelName: string): Promise<void> {
+  async openCreatePage(): Promise<KnowledgeCreatePage> {
     await this.waitForLoad();
     await expect(this.newKnowledgeBaseButton).toBeEnabled();
     await this.newKnowledgeBaseButton.click();
 
     const createPage = new KnowledgeCreatePage(this.page);
+    await createPage.waitForLoad();
+    return createPage;
+  }
+
+  async createEnvironment(name: string, vectorStoreName: string, embeddingModelName: string): Promise<void> {
+    const createPage = await this.openCreatePage();
     await createPage.fillAndSubmit(name, vectorStoreName, embeddingModelName);
     await this.ensureRowExists(name);
   }

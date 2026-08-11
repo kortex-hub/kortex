@@ -75,6 +75,12 @@ export class KnowledgeCreatePage extends BasePage {
     await expect(this.modal).not.toBeVisible({ timeout: TIMEOUTS.STANDARD });
   }
 
+  async cancel(): Promise<void> {
+    await expect(this.cancelButton).toBeEnabled();
+    await this.cancelButton.click();
+    await expect(this.modal).not.toBeVisible({ timeout: TIMEOUTS.STANDARD });
+  }
+
   async fillAndSubmit(name: string, vectorStoreName: string, embeddingModelName: string): Promise<void> {
     await this.waitForLoad();
     await this.fillName(name);
