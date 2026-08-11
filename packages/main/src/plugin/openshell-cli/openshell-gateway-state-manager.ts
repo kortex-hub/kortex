@@ -25,7 +25,7 @@ import { Emitter } from '/@/plugin/events/emitter.js';
 import { IConfigurationRegistry } from '/@api/configuration/models.js';
 import type { IDisposable } from '/@api/disposable.js';
 import type { Event } from '/@api/event.js';
-import type { GatewayInfo } from '/@api/openshell-gateway-info.js';
+import type { GatewayInfo, LocalGatewayDriver } from '/@api/openshell-gateway-info.js';
 
 import { OpenshellCli } from './openshell-cli.js';
 
@@ -134,8 +134,14 @@ export class OpenshellGatewayStateManager implements Disposable {
       registrations.map(async gateway => {
         try {
           const runtimeInfo = await this.openshellCli.getGatewayInfo(gateway.name);
+          const reportedDriver = runtimeInfo.compute_drivers[0]?.capabilities.driver_name;
+          const driver: LocalGatewayDriver | undefined =
+            reportedDriver === 'vm' || reportedDriver === 'podman' || reportedDriver === 'docker'
+              ? reportedDriver
+              : undefined;
           return {
             ...gateway,
+            ...(driver ? { driver } : {}),
             gatewayState: {
               reachable: true,
               health: runtimeInfo.status,
