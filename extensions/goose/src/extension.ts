@@ -24,7 +24,7 @@ import { z } from 'zod';
 export const GOOSE_CONFIG_PATH = '.config/goose/config.yaml';
 
 const GOOSE_PROVIDER_MAPPING: Record<string, string> = {
-  gemini: 'google',
+  gemini: 'openai',
 };
 
 const GooseExtensionEntrySchema = z.looseObject({

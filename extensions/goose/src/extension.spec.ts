@@ -205,20 +205,22 @@ describe('activate', () => {
       expect(written.GOOSE_MODEL).toBe('claude-sonnet');
     });
 
-    test('maps gemini provider to google', async () => {
+    test('maps gemini provider to openai', async () => {
       const configFile = createConfigFile();
       await agent.preWorkspaceStart(createContext([configFile], { provider: 'gemini', modelLabel: 'gemini-2.5-pro' }));
 
       const written = parseWritten(configFile.updateMock);
-      expect(written.GOOSE_PROVIDER).toBe('google');
+      expect(written.GOOSE_PROVIDER).toBe('openai');
     });
 
     test('passes through unknown providers as-is', async () => {
       const configFile = createConfigFile();
-      await agent.preWorkspaceStart(createContext([configFile], { provider: 'ollama', modelLabel: 'llama3' }));
+      await agent.preWorkspaceStart(
+        createContext([configFile], { provider: 'custom-provider', modelLabel: 'custom-model' }),
+      );
 
       const written = parseWritten(configFile.updateMock);
-      expect(written.GOOSE_PROVIDER).toBe('ollama');
+      expect(written.GOOSE_PROVIDER).toBe('custom-provider');
     });
 
     test('sets OPENAI_BASE_URL when endpoint is provided', async () => {
