@@ -544,6 +544,109 @@ describe('ConnectionManager', () => {
       expect(uploaded.type).toBe('application/pdf');
     });
 
+    test('should normalize .markdown extension to .md in uploaded filename', async () => {
+      let registeredConnection: ChunkProviderConnection;
+      vi.mocked(doclingProviderMock.registerChunkProviderConnection).mockImplementation(conn => {
+        registeredConnection = conn;
+        return { dispose: vi.fn() };
+      });
+
+      await connectionManager.registerConnection({
+        path: '/test/endpoint',
+        containerId: 'chunk-container-id',
+        name: 'chunk-test',
+        port: 7070,
+        running: true,
+      });
+
+      vi.mocked(Uri.file).mockReturnValue({ fsPath: '/path/to/notes.markdown' } as unknown as Uri);
+      const docUri = Uri.file('/path/to/notes.markdown');
+      vi.mocked(openAsBlob).mockResolvedValue(new Blob(['# Hello']));
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          chunks: [{ text: 'chunk1' }],
+        }),
+      } as unknown as Response);
+
+      await registeredConnection!.chunk(docUri);
+
+      const [, options] = vi.mocked(global.fetch).mock.calls[0]!;
+      const body = (options as RequestInit).body as FormData;
+      const uploaded = body.get('files') as File;
+      expect(uploaded.name).toBe('notes.md');
+      expect(uploaded.type).toBe('text/markdown');
+    });
+
+    test('should keep .md extension unchanged', async () => {
+      let registeredConnection: ChunkProviderConnection;
+      vi.mocked(doclingProviderMock.registerChunkProviderConnection).mockImplementation(conn => {
+        registeredConnection = conn;
+        return { dispose: vi.fn() };
+      });
+
+      await connectionManager.registerConnection({
+        path: '/test/endpoint',
+        containerId: 'chunk-container-id',
+        name: 'chunk-test',
+        port: 7070,
+        running: true,
+      });
+
+      vi.mocked(Uri.file).mockReturnValue({ fsPath: '/path/to/notes.md' } as unknown as Uri);
+      const docUri = Uri.file('/path/to/notes.md');
+      vi.mocked(openAsBlob).mockResolvedValue(new Blob(['# Hello']));
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          chunks: [{ text: 'chunk1' }],
+        }),
+      } as unknown as Response);
+
+      await registeredConnection!.chunk(docUri);
+
+      const [, options] = vi.mocked(global.fetch).mock.calls[0]!;
+      const body = (options as RequestInit).body as FormData;
+      const uploaded = body.get('files') as File;
+      expect(uploaded.name).toBe('notes.md');
+    });
+
+    test('should normalize .markdown with multiple dots in filename', async () => {
+      let registeredConnection: ChunkProviderConnection;
+      vi.mocked(doclingProviderMock.registerChunkProviderConnection).mockImplementation(conn => {
+        registeredConnection = conn;
+        return { dispose: vi.fn() };
+      });
+
+      await connectionManager.registerConnection({
+        path: '/test/endpoint',
+        containerId: 'chunk-container-id',
+        name: 'chunk-test',
+        port: 7070,
+        running: true,
+      });
+
+      vi.mocked(Uri.file).mockReturnValue({ fsPath: '/path/to/notes.v2.markdown' } as unknown as Uri);
+      const docUri = Uri.file('/path/to/notes.v2.markdown');
+      vi.mocked(openAsBlob).mockResolvedValue(new Blob(['# Hello']));
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          chunks: [{ text: 'chunk1' }],
+        }),
+      } as unknown as Response);
+
+      await registeredConnection!.chunk(docUri);
+
+      const [, options] = vi.mocked(global.fetch).mock.calls[0]!;
+      const body = (options as RequestInit).body as FormData;
+      const uploaded = body.get('files') as File;
+      expect(uploaded.name).toBe('notes.v2.md');
+    });
+
     test('should include actual error details in thrown error message', async () => {
       let registeredConnection: ChunkProviderConnection;
       vi.mocked(doclingProviderMock.registerChunkProviderConnection).mockImplementation(conn => {

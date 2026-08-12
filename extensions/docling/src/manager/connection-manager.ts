@@ -59,9 +59,34 @@ const EXTENSION_MIME_TYPES: Record<string, string> = {
   hta: 'application/hta',
 };
 
+/**
+ * Maps alias extensions to their canonical form recognized by Docling.
+ * Docling's server-side format detection uses the file extension, not the
+ * MIME type, so aliases like .markdown must be rewritten to .md.
+ */
+const CANONICAL_EXTENSIONS: Record<string, string> = {
+  markdown: 'md',
+  htm: 'html',
+  shtm: 'shtml',
+  xht: 'xhtml',
+};
+
 function getMimeTypeForFilename(filename: string): string {
   const extension = filename.includes('.') ? filename.slice(filename.lastIndexOf('.') + 1).toLowerCase() : '';
   return EXTENSION_MIME_TYPES[extension] ?? 'application/octet-stream';
+}
+
+/**
+ * Replaces alias file extensions with their canonical form so that
+ * Docling's extension-based format detection works correctly.
+ */
+function normalizeFilename(filename: string): string {
+  const dotIndex = filename.lastIndexOf('.');
+  if (dotIndex < 0) return filename;
+  const ext = filename.slice(dotIndex + 1).toLowerCase();
+  const canonical = CANONICAL_EXTENSIONS[ext];
+  if (!canonical) return filename;
+  return `${filename.slice(0, dotIndex)}.${canonical}`;
 }
 
 type DoclingContainerInfo = {
@@ -224,7 +249,7 @@ export class ConnectionManager {
     }
 
     const docPath = docUri.fsPath;
-    const docFileName = basename(docPath);
+    const docFileName = normalizeFilename(basename(docPath));
 
     const data = new FormData();
     // openAsBlob() often leaves Blob.type empty on Node, which makes FormData send
