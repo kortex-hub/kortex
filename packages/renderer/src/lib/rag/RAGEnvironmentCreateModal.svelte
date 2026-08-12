@@ -2,6 +2,7 @@
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { Button, Input } from '@podman-desktop/ui-svelte';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
+import { untrack } from 'svelte';
 
 import Dialog from '/@/lib/dialogs/Dialog.svelte';
 import PreferencesConnectionCreationRendering from '/@/lib/preferences/PreferencesConnectionCreationOrEditRendering.svelte';
@@ -69,19 +70,25 @@ let isFormValid = $derived(
   environmentName.trim() !== '' && selectedRagOption !== undefined && selectedChunkOption !== undefined,
 );
 
-let previousRagOptionsCount = $state(0);
+let prevOptionsLength = $state(-1);
 
 $effect(() => {
   const options = ragConnectionOptions;
-  const newlyCreated = options.length > previousRagOptionsCount && previousRagOptionsCount >= 0;
-  previousRagOptionsCount = options.length;
+  const prevLength = untrack(() => prevOptionsLength);
+  const currentKey = untrack(() => selectedRagConnectionKey);
+  prevOptionsLength = options.length;
 
-  if (selectedRagConnectionKey && !options.find(o => o.key === selectedRagConnectionKey)) {
+  if (currentKey && !options.find(o => o.key === currentKey)) {
     selectedRagConnectionKey = '';
   }
-  if (newlyCreated && options.length > 0) {
-    selectedRagConnectionKey = options[options.length - 1]!.key;
-    showCreateRagConnection = false;
+
+  if (prevLength >= 0 && options.length > prevLength) {
+    const factoryId = untrack(() => activeFactoryProvider?.id);
+    const created = factoryId ? options.filter(o => o.providerId === factoryId).at(-1) : options.at(-1);
+    if (created) {
+      selectedRagConnectionKey = created.key;
+      showCreateRagConnection = false;
+    }
   }
 });
 
@@ -123,6 +130,7 @@ function selectChunkConnection(key: string): void {
 function openCreateRagConnection(): void {
   showCreateRagConnection = true;
   selectedRagConnectionKey = '';
+  creationInProgress = false;
   creationAttempt++;
 }
 
@@ -152,27 +160,6 @@ function selectFactoryProvider(internalId: string): void {
 
         {#if ragConnectionOptions.length > 0}
           <div class="grid grid-cols-2 gap-4">
-            {#each ragConnectionOptions as option (option.key)}
-              <button
-                type="button"
-                class="border-2 rounded-lg p-4 text-left transition-all cursor-pointer {selectedRagConnectionKey ===
-                option.key
-                  ? 'border-[var(--pd-content-card-border-selected)] bg-[var(--pd-content-card-hover-inset-bg)]'
-                  : 'border-[var(--pd-content-card-border)] bg-[var(--pd-content-card-bg)] hover:border-[var(--pd-content-card-border-selected)] hover:bg-[var(--pd-content-card-hover-inset-bg)]'}"
-                onclick={selectRagConnection.bind(undefined, option.key)}>
-                <div class="flex items-center gap-3 mb-2">
-                  <div
-                    class="w-8 h-8 rounded-md flex items-center justify-center text-[var(--pd-label-primary-text)] text-xs font-bold bg-[var(--pd-label-primary-bg)]">
-                    {option.displayName.charAt(0).toUpperCase()}
-                  </div>
-                  <div class="text-base font-medium text-[var(--pd-modal-text)]">{option.displayName}</div>
-                </div>
-                <div class="text-xs text-[var(--pd-content-text)] leading-relaxed">
-                  {option.providerName}
-                </div>
-              </button>
-            {/each}
-
             {#if ragFactoryProviders.length > 0}
               <button
                 type="button"
@@ -193,6 +180,27 @@ function selectFactoryProvider(internalId: string): void {
                 </div>
               </button>
             {/if}
+
+            {#each ragConnectionOptions as option (option.key)}
+              <button
+                type="button"
+                class="border-2 rounded-lg p-4 text-left transition-all cursor-pointer {selectedRagConnectionKey ===
+                option.key
+                  ? 'border-[var(--pd-content-card-border-selected)] bg-[var(--pd-content-card-hover-inset-bg)]'
+                  : 'border-[var(--pd-content-card-border)] bg-[var(--pd-content-card-bg)] hover:border-[var(--pd-content-card-border-selected)] hover:bg-[var(--pd-content-card-hover-inset-bg)]'}"
+                onclick={selectRagConnection.bind(undefined, option.key)}>
+                <div class="flex items-center gap-3 mb-2">
+                  <div
+                    class="w-8 h-8 rounded-md flex items-center justify-center text-[var(--pd-label-primary-text)] text-xs font-bold bg-[var(--pd-label-primary-bg)]">
+                    {option.displayName.charAt(0).toUpperCase()}
+                  </div>
+                  <div class="text-base font-medium text-[var(--pd-modal-text)]">{option.displayName}</div>
+                </div>
+                <div class="text-xs text-[var(--pd-content-text)] leading-relaxed">
+                  {option.providerName}
+                </div>
+              </button>
+            {/each}
           </div>
         {:else if ragFactoryProviders.length > 0}
           <div class="flex flex-col items-center text-center py-4">
