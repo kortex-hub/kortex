@@ -19,8 +19,8 @@
 import type { ChildProcess } from 'node:child_process';
 import { spawn } from 'node:child_process';
 import type { WriteStream } from 'node:fs';
-import { closeSync, createWriteStream, openSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { createWriteStream } from 'node:fs';
+import { mkdir, open, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import type { Disposable } from '@openkaiden/api';
@@ -167,9 +167,6 @@ export class OpenshellGateway implements Disposable {
   }
 
   async createLocalGateway(options: CreateLocalGatewayOptions): Promise<void> {
-    if (options.driver && !['vm', 'podman', 'docker'].includes(options.driver)) {
-      throw new Error(`Unsupported local gateway driver: ${String(options.driver)}`);
-    }
     const driver = options.driver ?? (await this.detectLocalComputeDriver()) ?? 'podman';
     if (driver === 'vm') {
       throw new Error('VM support soon');
@@ -199,7 +196,7 @@ export class OpenshellGateway implements Disposable {
     }
     const storageDirectory = this.getGatewayStorageDirectory(name);
     const configPath = await this.createNamedGatewayConfig(binaryPath, storageDirectory, driver);
-    const logFd = openSync(join(storageDirectory, GATEWAY_LOG_FILENAME), 'w');
+    const logFile = await open(join(storageDirectory, GATEWAY_LOG_FILENAME), 'w');
     let gatewayProcess: ChildProcess;
     const processState: { spawnError?: Error } = {};
     try {
@@ -207,13 +204,13 @@ export class OpenshellGateway implements Disposable {
         binaryPath,
         this.buildArgs(true, configPath, storageDirectory, options.port, bindAddress),
         {
-          stdio: ['ignore', logFd, logFd],
+          stdio: ['ignore', logFile.fd, logFile.fd],
           detached: true,
         },
       );
       gatewayProcess.once('error', err => (processState.spawnError = err));
     } finally {
-      closeSync(logFd);
+      await logFile.close();
     }
 
     let registered = false;
@@ -530,9 +527,6 @@ export class OpenshellGateway implements Disposable {
   }
 
   private getGatewayStorageDirectory(name: string): string {
-    if (name === DEFAULT_GATEWAY_NAME) {
-      return join(this.directories.getDataDirectory(), 'openshell-gateway');
-    }
     return join(this.directories.getDataDirectory(), 'openshell-gateways', name);
   }
 

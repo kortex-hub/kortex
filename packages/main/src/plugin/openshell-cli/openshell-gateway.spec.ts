@@ -18,8 +18,8 @@
 
 import { type ChildProcess, spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
-import { closeSync, createWriteStream, openSync, type WriteStream } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { createWriteStream, type WriteStream } from 'node:fs';
+import { type FileHandle, mkdir, open, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import type { RunResult } from '@openkaiden/api';
@@ -44,7 +44,7 @@ vi.mock(import('/@/plugin/util/port.js'));
 
 const GATEWAY_BINARY = '/usr/local/bin/openshell-gateway';
 const KAIDEN_DATA_DIRECTORY = '/home/user/.local/share/kaiden';
-const GATEWAY_STORAGE_DIRECTORY = join(KAIDEN_DATA_DIRECTORY, 'openshell-gateway');
+const GATEWAY_STORAGE_DIRECTORY = join(KAIDEN_DATA_DIRECTORY, 'openshell-gateways', 'kaiden-local');
 const GATEWAY_CONFIG_PATH = join(GATEWAY_STORAGE_DIRECTORY, 'gateway.toml');
 const GATEWAY_DB_URL = `sqlite:${join(GATEWAY_STORAGE_DIRECTORY, 'gateway.db')}?mode=rwc`;
 const GATEWAY_LOG_PATH = join(GATEWAY_STORAGE_DIRECTORY, 'gateway.log');
@@ -58,6 +58,8 @@ const gatewayLogStream = Object.assign(new EventEmitter(), {
   write: vi.fn(),
   end: vi.fn(),
 }) as unknown as MockWriteStream;
+
+const closeLogFile = vi.fn();
 
 function createMockChildProcess(): ChildProcess & { _stdout: EventEmitter; _stderr: EventEmitter } {
   const proc = new EventEmitter() as ChildProcess & { _stdout: EventEmitter; _stderr: EventEmitter };
@@ -109,7 +111,7 @@ beforeEach(() => {
     { name: 'openshell-gateway', path: GATEWAY_BINARY },
   ] as unknown as CliToolInfo[]);
   vi.mocked(createWriteStream).mockReturnValue(gatewayLogStream);
-  vi.mocked(openSync).mockReturnValue(42);
+  vi.mocked(open).mockResolvedValue({ fd: 42, close: closeLogFile } as unknown as FileHandle);
   vi.mocked(exec.exec).mockResolvedValue({ command: '', stdout: '', stderr: '' });
   vi.mocked(isFreePort).mockResolvedValue(true);
   vi.mocked(openshellCli.removeGateway).mockResolvedValue();
@@ -331,7 +333,7 @@ describe('createLocalGateway', () => {
       expect.arrayContaining(['generate-certs', '--output-dir', storageDirectory]),
       { env: { XDG_CONFIG_HOME: join(storageDirectory, 'xdg-config') } },
     );
-    expect(closeSync).toHaveBeenCalledWith(42);
+    expect(closeLogFile).toHaveBeenCalled();
     expect(proc.unref).toHaveBeenCalled();
   });
 
