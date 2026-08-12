@@ -25,8 +25,31 @@ import {
   formatEndpointFlag,
   OPENSHELL_CONTAINER_HOST,
   parseModelEndpoint,
+  parseNetworkDestination,
   rewriteLocalhostUrl,
 } from './openshell-network-policy.js';
+
+describe('parseNetworkDestination', () => {
+  test('parses a hostname without a port', () => {
+    expect(parseNetworkDestination('registry.npmjs.org')).toEqual({ host: 'registry.npmjs.org' });
+  });
+
+  test('parses a hostname with an explicit port', () => {
+    expect(parseNetworkDestination('api.example.com:8080')).toEqual({ host: 'api.example.com', port: 8080 });
+  });
+
+  test.each([
+    '[2001:db8::1]:8443',
+    '2001:db8::1',
+    'api.example.com:0',
+    'api.example.com:65536',
+    'api.example.com:https',
+    ':8080',
+    '',
+  ])('rejects invalid destination %j', destination => {
+    expect(parseNetworkDestination(destination)).toBeUndefined();
+  });
+});
 
 describe('rewriteLocalhostUrl', () => {
   test('rewrites localhost to host.openshell.internal', () => {
@@ -138,6 +161,18 @@ describe('buildPolicyObject', () => {
         },
       },
     });
+  });
+
+  test('builds one endpoint for a host with an explicit port', () => {
+    const policy = buildPolicyObject({ mode: 'deny', hosts: ['api.example.com:8080'] });
+
+    expect(policy!.network_policies!['kdn-network']!.endpoints).toEqual([
+      { host: 'api.example.com', port: 8080, protocol: 'rest', access: 'full', allow_encoded_slash: true },
+    ]);
+  });
+
+  test('omits invalid destinations', () => {
+    expect(buildPolicyObject({ mode: 'deny', hosts: ['api.example.com:99999'] })).toBeUndefined();
   });
 
   test('builds model rule for valid endpoint', () => {

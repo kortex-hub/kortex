@@ -126,7 +126,9 @@ let showCustomHosts = $derived(selectedNetwork === 'blocked' || selectedNetwork 
 
 {#if showCustomHosts}
   <div class="mt-4 p-4 rounded-xl border border-[var(--pd-content-card-border)] bg-[var(--pd-content-card-bg)]">
-    <p class="text-xs text-[var(--pd-content-card-text)] opacity-70 mb-3">Additional hosts to allow outbound access to. You can refine this list later in workspace settings.</p>
+    <p class="text-xs text-[var(--pd-content-card-text)] opacity-70 mb-3">
+      Additional destinations to allow outbound access to. Add an optional port with <code>host:port</code>; destinations without a port allow HTTP and HTTPS.
+    </p>
     {#each customHosts as host, index (index)}
       <div class="flex gap-3 mb-2 items-center">
         <Input
