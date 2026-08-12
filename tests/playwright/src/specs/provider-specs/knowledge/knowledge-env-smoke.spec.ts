@@ -19,17 +19,47 @@
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import type { ElectronApplication } from '@playwright/test';
+
 import { expect, test } from '/@/fixtures/provider-fixtures';
 import { TIMEOUTS } from '/@/model/core/types';
+import type { NavigationBar } from '/@/model/navigation/navigation';
+import type { KnowledgeDetailsPage } from '/@/model/pages/knowledge-details-page';
 import { waitForNavigationReady } from '/@/utils/app-ready';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEST_FILE_PATH = resolve(__dirname, '../../../../resources/test-doc.pdf');
+const TEST_MD_FILE_PATH = resolve(__dirname, '../../../../resources/test-doc.md');
+const TEST_HTML_FILE_PATH = resolve(__dirname, '../../../../resources/test-doc.html');
+const TEST_UNSUPPORTED_FILE_PATH = resolve(__dirname, '../../../../resources/test-doc.bin');
 
 const VECTOR_STORE_NAME = 'e2e-milvus';
 const EMBEDDING_MODEL_NAME = 'docling';
 
 test.use({ milvusConnectionName: VECTOR_STORE_NAME, doclingConnectionName: EMBEDDING_MODEL_NAME });
+
+async function openKnowledgeDetails(
+  navigationBar: NavigationBar,
+  environmentName: string,
+): Promise<KnowledgeDetailsPage> {
+  const knowledgePage = await navigationBar.navigateToKnowledgePage();
+  const detailsPage = await knowledgePage.openEnvironmentDetails(environmentName);
+  await detailsPage.waitForLoad();
+  return detailsPage;
+}
+
+async function uploadAndAssertStatus(
+  detailsPage: KnowledgeDetailsPage,
+  electronApp: ElectronApplication,
+  filePath: string,
+  fileName: string,
+  expectedStatus: 'pending' | 'indexed' | 'error',
+  timeout: number = TIMEOUTS.IMAGE_PULL,
+): Promise<void> {
+  await detailsPage.uploadFile(filePath, electronApp);
+  await expect(detailsPage.getUploadedFile(fileName)).toBeVisible();
+  await expect(detailsPage.getUploadedFileRow(fileName)).toContainText(expectedStatus, { timeout });
+}
 
 test.describe('Knowledge Database provider tests', () => {
   test.skip(
@@ -55,9 +85,7 @@ test.describe('Knowledge Database provider tests', () => {
       });
 
       test('[KDB-03] Details page shows all tabs and Sources tab has zero files', async ({ workerNavigationBar }) => {
-        const knowledgePage = await workerNavigationBar.navigateToKnowledgePage();
-        const detailsPage = await knowledgePage.openEnvironmentDetails(ENVIRONMENT_NAME);
-        await detailsPage.waitForLoad();
+        const detailsPage = await openKnowledgeDetails(workerNavigationBar, ENVIRONMENT_NAME);
 
         await expect(detailsPage.heading).toContainText(ENVIRONMENT_NAME);
         await expect(detailsPage.summaryTabLink).toBeVisible();
@@ -67,28 +95,78 @@ test.describe('Knowledge Database provider tests', () => {
 
         await detailsPage.switchToSourcesTab();
         await expect(detailsPage.uploadedFilesHeader).toContainText('0');
+
+        await detailsPage.switchToChunkerTab();
+        await expect(detailsPage.getInfoValue('Model')).toContainText(EMBEDDING_MODEL_NAME);
       });
 
       test('[KDB-04] Upload a file and verify it appears in Sources tab', async ({
         workerElectronApp,
         workerNavigationBar,
       }) => {
-        const knowledgePage = await workerNavigationBar.navigateToKnowledgePage();
-        const detailsPage = await knowledgePage.openEnvironmentDetails(ENVIRONMENT_NAME);
-        await detailsPage.waitForLoad();
+        const detailsPage = await openKnowledgeDetails(workerNavigationBar, ENVIRONMENT_NAME);
         await detailsPage.switchToSourcesTab();
 
-        await detailsPage.uploadFile(TEST_FILE_PATH, workerElectronApp);
-
-        await expect(detailsPage.getUploadedFile('test-doc.pdf')).toBeVisible();
+        await uploadAndAssertStatus(
+          detailsPage,
+          workerElectronApp,
+          TEST_FILE_PATH,
+          'test-doc.pdf',
+          'pending',
+          TIMEOUTS.STANDARD,
+        );
         await expect(detailsPage.uploadedFilesHeader).toContainText('1');
-        await expect(detailsPage.getUploadedFileRow('test-doc.pdf')).toContainText('pending');
+      });
+
+      test('[KDB-10] Uploaded PDF is indexed successfully', async ({ workerNavigationBar }) => {
+        const detailsPage = await openKnowledgeDetails(workerNavigationBar, ENVIRONMENT_NAME);
+        await detailsPage.switchToSourcesTab();
+
+        await expect(detailsPage.getUploadedFileRow('test-doc.pdf')).toContainText('indexed', {
+          timeout: TIMEOUTS.IMAGE_PULL,
+        });
+      });
+
+      test('[KDB-12] Uploaded non-PDF source (.md) is indexed successfully', async ({
+        workerElectronApp,
+        workerNavigationBar,
+      }) => {
+        const detailsPage = await openKnowledgeDetails(workerNavigationBar, ENVIRONMENT_NAME);
+        await detailsPage.switchToSourcesTab();
+
+        await uploadAndAssertStatus(detailsPage, workerElectronApp, TEST_MD_FILE_PATH, 'test-doc.md', 'indexed');
+      });
+
+      test('[KDB-14] Uploaded HTML source is indexed successfully', async ({
+        workerElectronApp,
+        workerNavigationBar,
+      }) => {
+        const detailsPage = await openKnowledgeDetails(workerNavigationBar, ENVIRONMENT_NAME);
+        await detailsPage.switchToSourcesTab();
+
+        await uploadAndAssertStatus(detailsPage, workerElectronApp, TEST_HTML_FILE_PATH, 'test-doc.html', 'indexed');
+      });
+
+      test('[KDB-13] Uploading a file with an unsupported extension fails with error status', async ({
+        workerElectronApp,
+        workerNavigationBar,
+      }) => {
+        const detailsPage = await openKnowledgeDetails(workerNavigationBar, ENVIRONMENT_NAME);
+        await detailsPage.switchToSourcesTab();
+
+        // The file picker filters by extension, but the OS dialog is mocked in e2e, so an
+        // unsupported extension can still reach the backend here — exercising the failure path.
+        await uploadAndAssertStatus(
+          detailsPage,
+          workerElectronApp,
+          TEST_UNSUPPORTED_FILE_PATH,
+          'test-doc.bin',
+          'error',
+        );
       });
 
       test('[KDB-05] Delete knowledge database from details page', async ({ workerNavigationBar }) => {
-        const knowledgePage = await workerNavigationBar.navigateToKnowledgePage();
-        const detailsPage = await knowledgePage.openEnvironmentDetails(ENVIRONMENT_NAME);
-        await detailsPage.waitForLoad();
+        const detailsPage = await openKnowledgeDetails(workerNavigationBar, ENVIRONMENT_NAME);
 
         const listPage = await detailsPage.deleteEnvironment();
         await listPage.waitForLoad();
@@ -129,9 +207,7 @@ test.describe('Knowledge Database provider tests', () => {
         milvusSetup: vectorStoreName,
         workerNavigationBar,
       }) => {
-        const knowledgePage = await workerNavigationBar.navigateToKnowledgePage();
-        const detailsPage = await knowledgePage.openEnvironmentDetails(ENVIRONMENT_NAME);
-        await detailsPage.waitForLoad();
+        const detailsPage = await openKnowledgeDetails(workerNavigationBar, ENVIRONMENT_NAME);
 
         await detailsPage.switchToSummaryTab();
         await expect(detailsPage.getInfoValue('Vector Store')).toContainText(vectorStoreName, {
@@ -146,9 +222,7 @@ test.describe('Knowledge Database provider tests', () => {
       });
 
       test('[KDB-09] Delete knowledge database from details page', async ({ workerNavigationBar }) => {
-        const knowledgePage = await workerNavigationBar.navigateToKnowledgePage();
-        const detailsPage = await knowledgePage.openEnvironmentDetails(ENVIRONMENT_NAME);
-        await detailsPage.waitForLoad();
+        const detailsPage = await openKnowledgeDetails(workerNavigationBar, ENVIRONMENT_NAME);
 
         const listPage = await detailsPage.deleteEnvironment();
         await listPage.waitForLoad();
