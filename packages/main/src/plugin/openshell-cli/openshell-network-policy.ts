@@ -148,7 +148,7 @@ export interface NetworkDestination {
  */
 export function parseNetworkDestination(destination: string): NetworkDestination | undefined {
   const value = destination.trim();
-  if (!value) return undefined;
+  if (!value || value.endsWith(':')) return undefined;
 
   let parsed: URL;
   try {

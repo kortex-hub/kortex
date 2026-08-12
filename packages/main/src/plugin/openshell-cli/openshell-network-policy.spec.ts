@@ -44,6 +44,7 @@ describe('parseNetworkDestination', () => {
     'api.example.com:0',
     'api.example.com:65536',
     'api.example.com:https',
+    'api.example.com:',
     ':8080',
     '',
   ])('rejects invalid destination %j', destination => {
