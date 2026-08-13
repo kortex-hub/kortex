@@ -158,6 +158,39 @@ function selectFactoryProvider(internalId: string): void {
       <div role="group" aria-label="Vector Store" class="flex flex-col space-y-3">
         <span class="text-sm font-medium text-[var(--pd-modal-text)]">Vector Store</span>
 
+        {#if showCreateRagConnection || (ragConnectionOptions.length === 0 && ragFactoryProviders.length > 0)}
+          <div class="flex flex-col gap-3">
+            {#if ragFactoryProviders.length > 1}
+              <div class="flex flex-wrap gap-3" data-testid="rag-factory-picker">
+                {#each ragFactoryProviders as provider (provider.internalId)}
+                  {@const isActive = activeFactoryProvider?.internalId === provider.internalId}
+                  <Button
+                    type={isActive ? 'primary' : 'secondary'}
+                    aria-label="Select {provider.ragProviderConnectionCreationDisplayName ?? provider.name}"
+                    onclick={selectFactoryProvider.bind(undefined, provider.internalId)}>
+                    {provider.ragProviderConnectionCreationDisplayName ?? provider.name}
+                  </Button>
+                {/each}
+              </div>
+            {/if}
+
+            {#if activeFactoryProvider}
+              {#key `${activeFactoryProvider.internalId}-${creationAttempt}`}
+                <div class="rounded-lg border border-(--pd-content-card-border) bg-(--pd-content-card-bg) p-4" data-testid="inline-rag-creation-form">
+                  <PreferencesConnectionCreationRendering
+                    providerInfo={activeFactoryProvider}
+                    properties={$configurationProperties}
+                    propertyScope="RagProviderConnectionFactory"
+                    callback={window.createRagProviderConnection}
+                    disableEmptyScreen={true}
+                    hideCloseButton={true}
+                    bind:inProgress={creationInProgress} />
+                </div>
+              {/key}
+            {/if}
+          </div>
+        {/if}
+
         {#if ragConnectionOptions.length > 0}
           <div class="grid grid-cols-2 gap-4">
             {#if ragFactoryProviders.length > 0}
@@ -176,7 +209,7 @@ function selectFactoryProvider(internalId: string): void {
                   <div class="text-base font-medium text-(--pd-modal-text)">Create new</div>
                 </div>
                 <div class="text-xs text-(--pd-content-text) leading-relaxed">
-                  Set up a new vector store
+                  Set up a new connection
                 </div>
               </button>
             {/if}
@@ -213,39 +246,6 @@ function selectFactoryProvider(internalId: string): void {
             <p class="text-xs text-(--pd-content-card-text) opacity-60 max-w-sm">
               No vector store providers installed. Install a compatible extension to create knowledge environments.
             </p>
-          </div>
-        {/if}
-
-        {#if showCreateRagConnection || (ragConnectionOptions.length === 0 && ragFactoryProviders.length > 0)}
-          <div class="flex flex-col gap-3">
-            {#if ragFactoryProviders.length > 1}
-              <div class="flex flex-wrap gap-3" data-testid="rag-factory-picker">
-                {#each ragFactoryProviders as provider (provider.internalId)}
-                  {@const isActive = activeFactoryProvider?.internalId === provider.internalId}
-                  <Button
-                    type={isActive ? 'primary' : 'secondary'}
-                    aria-label="Select {provider.ragProviderConnectionCreationDisplayName ?? provider.name}"
-                    onclick={selectFactoryProvider.bind(undefined, provider.internalId)}>
-                    {provider.ragProviderConnectionCreationDisplayName ?? provider.name}
-                  </Button>
-                {/each}
-              </div>
-            {/if}
-
-            {#if activeFactoryProvider}
-              {#key `${activeFactoryProvider.internalId}-${creationAttempt}`}
-                <div class="rounded-lg border border-(--pd-content-card-border) bg-(--pd-content-card-bg) p-4" data-testid="inline-rag-creation-form">
-                  <PreferencesConnectionCreationRendering
-                    providerInfo={activeFactoryProvider}
-                    properties={$configurationProperties}
-                    propertyScope="RagProviderConnectionFactory"
-                    callback={window.createRagProviderConnection}
-                    disableEmptyScreen={true}
-                    hideCloseButton={true}
-                    bind:inProgress={creationInProgress} />
-                </div>
-              {/key}
-            {/if}
           </div>
         {/if}
       </div>
