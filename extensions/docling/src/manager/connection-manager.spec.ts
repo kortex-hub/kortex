@@ -647,6 +647,108 @@ describe('ConnectionManager', () => {
       expect(uploaded.name).toBe('notes.v2.md');
     });
 
+    test.each([
+      { input: 'page.htm', expected: 'page.html' },
+      { input: 'page.shtm', expected: 'page.html' },
+      { input: 'page.shtml', expected: 'page.html' },
+      { input: 'page.xht', expected: 'page.xhtml' },
+    ])('should normalize $input to $expected', async ({ input, expected }) => {
+      let registeredConnection: ChunkProviderConnection;
+      vi.mocked(doclingProviderMock.registerChunkProviderConnection).mockImplementation(conn => {
+        registeredConnection = conn;
+        return { dispose: vi.fn() };
+      });
+
+      await connectionManager.registerConnection({
+        path: '/test/endpoint',
+        containerId: 'chunk-container-id',
+        name: 'chunk-test',
+        port: 7070,
+        running: true,
+      });
+
+      vi.mocked(Uri.file).mockReturnValue({ fsPath: `/path/to/${input}` } as unknown as Uri);
+      const docUri = Uri.file(`/path/to/${input}`);
+      vi.mocked(openAsBlob).mockResolvedValue(new Blob(['<html></html>']));
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          chunks: [{ text: 'chunk1' }],
+        }),
+      } as unknown as Response);
+
+      await registeredConnection!.chunk(docUri);
+
+      const [, options] = vi.mocked(global.fetch).mock.calls[0]!;
+      const body = (options as RequestInit).body as FormData;
+      const uploaded = body.get('files') as File;
+      expect(uploaded.name).toBe(expected);
+    });
+
+    test('should keep a bare dotfile name unchanged instead of treating it as an extension', async () => {
+      let registeredConnection: ChunkProviderConnection;
+      vi.mocked(doclingProviderMock.registerChunkProviderConnection).mockImplementation(conn => {
+        registeredConnection = conn;
+        return { dispose: vi.fn() };
+      });
+
+      await connectionManager.registerConnection({
+        path: '/test/endpoint',
+        containerId: 'chunk-container-id',
+        name: 'chunk-test',
+        port: 7070,
+        running: true,
+      });
+
+      vi.mocked(Uri.file).mockReturnValue({ fsPath: '/path/to/.markdown' } as unknown as Uri);
+      const docUri = Uri.file('/path/to/.markdown');
+      vi.mocked(openAsBlob).mockResolvedValue(new Blob(['# Hello']));
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          chunks: [{ text: 'chunk1' }],
+        }),
+      } as unknown as Response);
+
+      await registeredConnection!.chunk(docUri);
+
+      const [, options] = vi.mocked(global.fetch).mock.calls[0]!;
+      const body = (options as RequestInit).body as FormData;
+      const uploaded = body.get('files') as File;
+      expect(uploaded.name).toBe('.markdown');
+      expect(uploaded.type).toBe('application/octet-stream');
+    });
+
+    test('should reference the original filename in error messages, not the normalized one', async () => {
+      let registeredConnection: ChunkProviderConnection;
+      vi.mocked(doclingProviderMock.registerChunkProviderConnection).mockImplementation(conn => {
+        registeredConnection = conn;
+        return { dispose: vi.fn() };
+      });
+
+      await connectionManager.registerConnection({
+        path: '/test/endpoint',
+        containerId: 'chunk-container-id',
+        name: 'chunk-test',
+        port: 7070,
+        running: true,
+      });
+
+      vi.mocked(Uri.file).mockReturnValue({ fsPath: '/path/to/notes.markdown' } as unknown as Uri);
+      const docUri = Uri.file('/path/to/notes.markdown');
+      vi.mocked(openAsBlob).mockResolvedValue(new Blob(['# Hello']));
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: false,
+        status: 422,
+        json: vi.fn().mockResolvedValue({ detail: 'Unsupported document format' }),
+      } as unknown as Response);
+
+      await expect(registeredConnection!.chunk(docUri)).rejects.toThrow(/notes\.markdown/);
+    });
+
     test('should include actual error details in thrown error message', async () => {
       let registeredConnection: ChunkProviderConnection;
       vi.mocked(doclingProviderMock.registerChunkProviderConnection).mockImplementation(conn => {
@@ -701,7 +803,7 @@ describe('ConnectionManager', () => {
       } as unknown as Response);
 
       await expect(registeredConnection!.chunk(docUri)).rejects.toThrow(
-        /Conversion failed: 500 \{"error":"internal server error","code":500\}/,
+        /Conversion failed for "document.txt": 500 \{"error":"internal server error","code":500\}/,
       );
     });
 
