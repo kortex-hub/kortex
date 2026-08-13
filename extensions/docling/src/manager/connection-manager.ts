@@ -45,7 +45,7 @@ const DOCLING_NAME_LABEL = 'ai.openkaiden.docling.name';
 const DOCLING_PORT_LABEL = 'ai.openkaiden.docling.port';
 
 /** MIME types keyed by lowercase file extension (without the leading dot). */
-const EXTENSION_MIME_TYPES: Record<string, string> = {
+export const EXTENSION_MIME_TYPES: Record<string, string> = {
   pdf: 'application/pdf',
   txt: 'text/plain',
   md: 'text/markdown',
@@ -73,6 +73,8 @@ const CANONICAL_EXTENSIONS: Record<string, string> = {
   shtml: 'html',
   xht: 'xhtml',
 };
+
+const DOCLING_SUPPORTED_EXTENSIONS = Object.keys(EXTENSION_MIME_TYPES);
 
 /** Returns the lowercase extension for a filename, or '' if it has none (including leading-dot-only names like '.markdown'). */
 function getExtension(filename: string): string {
@@ -185,6 +187,7 @@ export class ConnectionManager {
     const connection: ChunkProviderConnection = {
       id: `docling-${info.name}`,
       name: info.name,
+      supportedExtensions: DOCLING_SUPPORTED_EXTENSIONS,
       chunk: (doc: Uri): Promise<Chunk[]> => this.convertDocumentForConnection(entry, doc),
       status: (): ProviderConnectionStatus => entry.connectionStatus,
       lifecycle: {

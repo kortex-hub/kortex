@@ -2911,6 +2911,13 @@ describe('a chunk provider connection is registered', async () => {
       }),
     );
   });
+
+  test('should expose supportedExtensions in provider info', () => {
+    connection.supportedExtensions = ['pdf', 'txt'];
+
+    const chunkInfo = providerRegistry.getProviderChunkConnectionInfo(connection);
+    expect(chunkInfo.supportedExtensions).toEqual(['pdf', 'txt']);
+  });
 });
 
 test('rejects duplicate inference connection id for the same provider', () => {

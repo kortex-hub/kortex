@@ -5,7 +5,13 @@ import { Icon } from '@podman-desktop/ui-svelte/icons';
 import { router } from 'tinro';
 
 import { withConfirmation } from '/@/lib/dialogs/messagebox-utils';
-import { getChunkProviderName, getDatabaseName } from '/@/lib/rag/rag-environment-utils';
+import {
+  buildDialogFilters,
+  formatSupportedExtensionsLabel,
+  getChunkProviderName,
+  getChunkProviderSupportedExtensions,
+  getDatabaseName,
+} from '/@/lib/rag/rag-environment-utils';
 import DetailsPage from '/@/lib/ui/DetailsPage.svelte';
 import { getTabUrl, isTabSelected } from '/@/lib/ui/Util';
 import Route from '/@/Route.svelte';
@@ -29,6 +35,8 @@ const files = $derived.by(() => {
 
 const databaseName = $derived(getDatabaseName($providerInfos, ragEnvironment));
 const chunkProviderName = $derived(getChunkProviderName($providerInfos, ragEnvironment));
+const supportedExtensions = $derived(getChunkProviderSupportedExtensions($providerInfos, ragEnvironment));
+const supportedExtensionsLabel = $derived(formatSupportedExtensionsLabel(supportedExtensions ?? []));
 
 async function handleAddFile(): Promise<void> {
   if (!ragEnvironment) return;
@@ -37,29 +45,7 @@ async function handleAddFile(): Promise<void> {
     const selectedFiles = await window.openDialog({
       title: 'Select file to add to knowledge database',
       selectors: ['openFile'],
-      filters: [
-        {
-          // First filter is the dialog default — include all supported types so PDFs are visible
-          name: 'Supported documents',
-          extensions: ['pdf', 'txt', 'md', 'markdown', 'htm', 'html', 'shtm', 'shtml', 'xht', 'xhtml', 'hta'],
-        },
-        {
-          name: 'Normal text file',
-          extensions: ['txt'],
-        },
-        {
-          name: 'Markdown',
-          extensions: ['md', 'markdown'],
-        },
-        {
-          name: 'Hyper Text Markup Language',
-          extensions: ['htm', 'html', 'shtm', 'shtml', 'xht', 'xhtml', 'hta'],
-        },
-        {
-          name: 'Adobe PDF',
-          extensions: ['pdf'],
-        },
-      ],
+      filters: buildDialogFilters({ supportedExtensions }),
     });
 
     if (selectedFiles && selectedFiles.length > 0) {
@@ -165,7 +151,7 @@ async function handleRemoveFile(filePath: string): Promise<void> {
           >
             <Icon icon="fas fa-upload" class="fa-2x text-[var(--pd-content-text-secondary)] mb-3"/>
             <div class="text-base text-[var(--pd-content-text)] mb-1">Click to upload</div>
-            <div class="text-sm text-[var(--pd-content-text-secondary)]">Supports PDF, TXT, MD, and more</div>
+            <div class="text-sm text-[var(--pd-content-text-secondary)]">Supports {supportedExtensionsLabel}</div>
           </button>
 
           <div class="bg-[var(--pd-content-card-bg)] border border-[var(--pd-content-divider)] rounded-lg overflow-hidden">

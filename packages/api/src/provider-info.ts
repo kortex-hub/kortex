@@ -77,6 +77,8 @@ export interface ProviderChunkProviderConnectionInfo {
   status: ProviderConnectionStatus;
   lifecycleMethods?: LifecycleMethod[];
   connectionType: 'chunk';
+  /** Lowercase file extensions (without leading dot) supported by this chunk provider. */
+  supportedExtensions?: string[];
 }
 
 export interface ProviderInferenceConnectionInfo {

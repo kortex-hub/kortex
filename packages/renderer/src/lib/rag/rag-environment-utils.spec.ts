@@ -16,12 +16,24 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { expect, test } from 'vitest';
-
 import type { ProviderInfo } from '/@api/provider-info';
 import type { RagEnvironment } from '/@api/rag/rag-environment';
+import { expect, test } from 'vitest';
 
-import { getChunkProviderName, getDatabaseName } from './rag-environment-utils';
+import {
+  buildDialogFilters,
+  formatSupportedExtensionsLabel,
+  getChunkProviderName,
+  getChunkProviderSupportedExtensions,
+  getDatabaseName,
+  type ChunkProviderFileFilterSource,
+} from './rag-environment-utils';
+
+function createMockChunkProviderConnection(
+  overrides: ChunkProviderFileFilterSource = {},
+): ChunkProviderFileFilterSource {
+  return { ...overrides };
+}
 
 const mockProviderInfos = [
   {
@@ -32,7 +44,7 @@ const mockProviderInfos = [
       { name: 'another-connection', id: 'conn-2' },
     ],
     chunkConnections: [
-      { id: 'chunker-1', name: 'Docling Chunker' },
+      { id: 'chunker-1', name: 'Docling Chunker', supportedExtensions: ['pdf', 'txt', 'md'] },
       { id: 'chunker-2', name: 'Simple Chunker' },
     ],
   },
@@ -241,4 +253,66 @@ test('getDatabaseName and getChunkProviderName both return N/A when both connect
 
   expect(getDatabaseName(mockProviderInfos, ragEnvironment)).toBe('N/A');
   expect(getChunkProviderName(mockProviderInfos, ragEnvironment)).toBe('N/A');
+});
+
+// --- getChunkProviderSupportedExtensions tests ---
+
+test('getChunkProviderSupportedExtensions returns supportedExtensions from chunk connection', () => {
+  const ragEnvironment: RagEnvironment = {
+    name: 'test-env',
+    ragConnection: { name: 'chroma-connection', providerId: 'chroma-1' },
+    chunkerConnection: { id: 'chunker-1', providerId: 'chroma-1' },
+    files: [],
+  };
+
+  expect(getChunkProviderSupportedExtensions(mockProviderInfos, ragEnvironment)).toEqual(['pdf', 'txt', 'md']);
+});
+
+test('getChunkProviderSupportedExtensions returns undefined when chunker has no supportedExtensions', () => {
+  const ragEnvironment: RagEnvironment = {
+    name: 'test-env',
+    ragConnection: { name: 'chroma-connection', providerId: 'chroma-1' },
+    chunkerConnection: { id: 'chunker-2', providerId: 'chroma-1' },
+    files: [],
+  };
+
+  expect(getChunkProviderSupportedExtensions(mockProviderInfos, ragEnvironment)).toBeUndefined();
+});
+
+// --- buildDialogFilters tests ---
+
+test('file picker filters are derived from chunker supportedExtensions', () => {
+  const connection = createMockChunkProviderConnection({
+    supportedExtensions: ['pdf', 'docx', 'csv'],
+  });
+  const filters = buildDialogFilters(connection);
+  const extensions = filters.flatMap(filter => filter.extensions);
+  expect(extensions).toContain('pdf');
+  expect(extensions).toContain('docx');
+  expect(extensions).not.toContain('txt');
+});
+
+test('falls back gracefully when supportedExtensions is undefined', () => {
+  const connection = createMockChunkProviderConnection({});
+  const filters = buildDialogFilters(connection);
+  expect(filters.length).toBeGreaterThan(0);
+  expect(filters[0]).toEqual({ name: 'All Files', extensions: ['*'] });
+});
+
+test('buildDialogFilters returns sorted unique extensions', () => {
+  expect(buildDialogFilters({ supportedExtensions: ['PDF', 'txt', 'pdf', 'md'] })).toEqual([
+    { name: 'Supported documents', extensions: ['md', 'pdf', 'txt'] },
+  ]);
+});
+
+// --- formatSupportedExtensionsLabel tests ---
+
+test('formatSupportedExtensionsLabel truncates long extension lists', () => {
+  expect(formatSupportedExtensionsLabel(['pdf', 'txt', 'md', 'markdown', 'html'])).toBe(
+    'PDF, TXT, MD, MARKDOWN, and more',
+  );
+});
+
+test('formatSupportedExtensionsLabel returns All file types for empty list', () => {
+  expect(formatSupportedExtensionsLabel([])).toBe('All file types');
 });

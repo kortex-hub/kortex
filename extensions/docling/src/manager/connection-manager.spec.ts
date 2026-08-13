@@ -225,6 +225,7 @@ describe('ConnectionManager', () => {
         expect.objectContaining({
           id: 'docling-my-chunker',
           name: 'my-chunker',
+          supportedExtensions: expect.arrayContaining(['pdf', 'txt', 'md']),
           chunk: expect.any(Function),
           status: expect.any(Function),
           lifecycle: expect.objectContaining({
