@@ -17,7 +17,9 @@ let { existingNames, initialDriver, closeCallback }: Props = $props();
 let name = $state('local-gateway');
 const bindAddress = '127.0.0.1';
 let port = $state(17675);
-let driver = $state<LocalGatewayDriver>(untrack(() => initialDriver));
+let driver = $state<Exclude<LocalGatewayDriver, 'vm'>>(
+  untrack(() => (initialDriver === 'vm' ? 'podman' : initialDriver)),
+);
 let creating = $state(false);
 let error = $state('');
 let checkingPort = $state(true);
@@ -35,9 +37,7 @@ let nameError = $derived.by((): string => {
 let portError = $derived(
   !Number.isInteger(port) || port < 1024 || port > 65_535 ? 'Enter a port between 1024 and 65535' : '',
 );
-let canCreate = $derived(
-  driver !== 'vm' && !nameError && !portError && !portAvailabilityError && !checkingPort && !creating,
-);
+let canCreate = $derived(!nameError && !portError && !portAvailabilityError && !checkingPort && !creating);
 
 $effect(() => {
   const selectedPort = port;
@@ -92,12 +92,8 @@ async function createGateway(): Promise<void> {
         <Dropdown name="gateway-driver" class="w-full" bind:value={driver}>
           <option value="podman">Podman</option>
           <option value="docker">Docker</option>
-          <option value="vm">VM</option>
         </Dropdown>
       </label>
-      {#if driver === 'vm'}
-        <ErrorMessage error="VM support soon." />
-      {/if}
 
       <label for="gateway-name" class="block mt-3 mb-2 text-sm font-semibold">Name</label>
       <Input id="gateway-name" aria-label="Gateway name" bind:value={name} aria-invalid={nameError !== ''} />
