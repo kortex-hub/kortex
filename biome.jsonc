@@ -12,6 +12,7 @@
       "!**/coverage/**",
       "!**/dist/**",
       "!**/output/**",
+      "!extensions/openshell/assets/**",
       "!**/packages/ui/.svelte-kit/**",
       "!**/exposedIn*.d.ts"
     ]

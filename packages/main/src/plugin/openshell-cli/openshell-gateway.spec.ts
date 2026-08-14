@@ -568,6 +568,24 @@ describe('start', () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 
+  test.runIf(process.platform === 'linux')('adds bundled e2fsprogs tools to the gateway PATH', async () => {
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValue(proc);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
+    vi.mocked(existsSync).mockImplementation(path => path === '/usr/local/bin/e2fsprogs/bin');
+
+    await gateway.start();
+
+    expect(spawn).toHaveBeenCalledWith(
+      GATEWAY_BINARY,
+      expect.any(Array),
+      expect.objectContaining({
+        env: expect.objectContaining({ PATH: expect.stringMatching(/^\/usr\/local\/bin\/e2fsprogs\/bin:/) }),
+      }),
+    );
+  });
+
   test('spawns with custom port and address', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const proc = createMockChildProcess();

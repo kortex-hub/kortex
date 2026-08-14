@@ -1,0 +1,285 @@
+/**********************************************************************
+ * Copyright (C) 2026 Red Hat, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ***********************************************************************/
+
+import { createWriteStream, existsSync } from 'node:fs';
+import { chmod, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, normalize } from 'node:path';
+import { pipeline } from 'node:stream/promises';
+
+import * as tar from 'tar';
+
+import { sha256 } from './sha256';
+
+const REGISTRY = 'https://ghcr.io';
+const REPOSITORY = 'homebrew/core/e2fsprogs';
+const MANIFEST_ACCEPT = [
+  'application/vnd.oci.image.index.v1+json',
+  'application/vnd.oci.image.manifest.v1+json',
+  'application/vnd.docker.distribution.manifest.list.v2+json',
+  'application/vnd.docker.distribution.manifest.v2+json',
+].join(', ');
+const METADATA_TIMEOUT_MS = 30_000;
+const BOTTLE_DOWNLOAD_TIMEOUT_MS = 5 * 60_000;
+
+const LIBRARIES = ['libcom_err.so.2', 'libe2p.so.2', 'libext2fs.so.2', 'libss.so.2'];
+const BINARIES = ['mke2fs', 'mkfs.ext4', 'debugfs'];
+const DOCUMENTATION = ['NOTICE', 'README', 'sbom.spdx.json'];
+
+interface OciDescriptor {
+  mediaType: string;
+  digest: string;
+  platform?: {
+    architecture: string;
+    os: string;
+  };
+  annotations?: Record<string, string>;
+}
+
+interface OciIndex {
+  manifests: OciDescriptor[];
+}
+
+interface OciManifest {
+  layers: OciDescriptor[];
+}
+
+interface RegistryToken {
+  token?: string;
+  access_token?: string;
+}
+
+export interface E2fsprogsBottle {
+  digest: string;
+}
+
+function architectureForOci(arch: string): string {
+  if (arch === 'x64') return 'amd64';
+  if (arch === 'arm64') return 'arm64';
+  throw new Error(`unsupported e2fsprogs architecture: ${arch}`);
+}
+
+function isSafePath(entryName: string): boolean {
+  const normalized = normalize(entryName.replace(/\\/g, '/'));
+  return !normalized.startsWith('..') && !normalized.startsWith('/');
+}
+
+async function fetchJson<T>(url: string, headers: Record<string, string> = {}): Promise<T> {
+  const response = await fetch(url, {
+    headers,
+    redirect: 'follow',
+    signal: AbortSignal.timeout(METADATA_TIMEOUT_MS),
+  });
+  if (!response.ok) {
+    throw new Error(`failed to fetch ${url}: ${response.status} ${response.statusText}`);
+  }
+  return (await response.json()) as T;
+}
+
+async function getRegistryToken(): Promise<string> {
+  const query = new URLSearchParams({ service: 'ghcr.io', scope: `repository:${REPOSITORY}:pull` });
+  const result = await fetchJson<RegistryToken>(`${REGISTRY}/token?${query.toString()}`);
+  const token = result.token ?? result.access_token;
+  if (!token) {
+    throw new Error('e2fsprogs registry response did not include an access token');
+  }
+  return token;
+}
+
+async function getManifest<T>(reference: string, token: string): Promise<T> {
+  return fetchJson<T>(`${REGISTRY}/v2/${REPOSITORY}/manifests/${reference}`, {
+    Authorization: `Bearer ${token}`,
+    Accept: MANIFEST_ACCEPT,
+  });
+}
+
+export function selectE2fsprogsManifest(index: OciIndex, platform: string, arch: string): OciDescriptor {
+  const ociArch = architectureForOci(arch);
+  const descriptor = index.manifests.find(
+    candidate => candidate.platform?.os === platform && candidate.platform.architecture === ociArch,
+  );
+  if (!descriptor) {
+    throw new Error(`no e2fsprogs bottle for ${platform}/${arch}`);
+  }
+  return descriptor;
+}
+
+export function selectBottleLayer(manifest: OciManifest): E2fsprogsBottle {
+  const layer = manifest.layers.find(candidate => {
+    const title = candidate.annotations?.['org.opencontainers.image.title'];
+    return candidate.mediaType.endsWith('+gzip') && title?.endsWith('.bottle.tar.gz');
+  });
+  if (!layer) {
+    throw new Error('e2fsprogs OCI manifest does not contain a Homebrew bottle layer');
+  }
+  return { digest: layer.digest };
+}
+
+async function resolveBottle(
+  version: string,
+  platform: string,
+  arch: string,
+): Promise<{ bottle: E2fsprogsBottle; token: string }> {
+  const token = await getRegistryToken();
+  const index = await getManifest<OciIndex>(version, token);
+  const platformManifest = selectE2fsprogsManifest(index, platform, arch);
+  const manifest = await getManifest<OciManifest>(platformManifest.digest, token);
+  return { bottle: selectBottleLayer(manifest), token };
+}
+
+async function downloadBottle(digest: string, token: string, destination: string): Promise<void> {
+  const url = `${REGISTRY}/v2/${REPOSITORY}/blobs/${digest}`;
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    redirect: 'follow',
+    signal: AbortSignal.timeout(BOTTLE_DOWNLOAD_TIMEOUT_MS),
+  });
+  if (!response.ok || !response.body) {
+    throw new Error(`failed to download e2fsprogs bottle: ${response.status} ${response.statusText}`);
+  }
+  await pipeline(response.body, createWriteStream(destination));
+}
+
+function loaderForArchitecture(arch: string): string {
+  if (arch === 'x64') return '/lib64/ld-linux-x86-64.so.2';
+  if (arch === 'arm64') return '/lib/ld-linux-aarch64.so.1';
+  throw new Error(`unsupported e2fsprogs architecture: ${arch}`);
+}
+
+function wrapper(binaryName: string, arch: string): string {
+  const loader = loaderForArchitecture(arch);
+  const realBinary = binaryName === 'mkfs.ext4' ? 'mke2fs' : binaryName;
+  const argv0 = binaryName === 'mkfs.ext4' ? ' --argv0 mkfs.ext4' : '';
+  return `#!/bin/sh
+set -eu
+case "$0" in
+  */*) script_path="$0" ;;
+  *) script_path=$(command -v -- "$0") ;;
+esac
+bin_dir=$(CDPATH= cd -- "\${script_path%/*}" && pwd)
+library_path="$bin_dir/../lib"
+if [ -n "\${LD_LIBRARY_PATH:-}" ]; then
+  library_path="$library_path:$LD_LIBRARY_PATH"
+fi
+if [ -z "\${MKE2FS_CONFIG:-}" ]; then
+  export MKE2FS_CONFIG="$bin_dir/../etc/mke2fs.conf"
+fi
+exec ${loader} --library-path "$library_path"${argv0} "$bin_dir/../libexec/${realBinary}" "$@"
+`;
+}
+
+async function stageBottle(archive: string, version: string, arch: string, outputDir: string): Promise<void> {
+  const extractionDir = await mkdtemp(join(tmpdir(), 'kaiden-e2fsprogs-'));
+  try {
+    await tar.extract({ file: archive, cwd: extractionDir, filter: path => isSafePath(path) });
+    const bottleRoot = join(extractionDir, 'e2fsprogs', version);
+    const binDir = join(outputDir, 'bin');
+    const libDir = join(outputDir, 'lib');
+    const libexecDir = join(outputDir, 'libexec');
+    const etcDir = join(outputDir, 'etc');
+    const documentationDir = join(outputDir, 'share', 'e2fsprogs');
+    await Promise.all([
+      mkdir(binDir, { recursive: true }),
+      mkdir(libDir),
+      mkdir(libexecDir),
+      mkdir(etcDir),
+      mkdir(documentationDir, { recursive: true }),
+    ]);
+
+    for (const binary of ['mke2fs', 'debugfs']) {
+      const destination = join(libexecDir, binary);
+      await copyFile(join(bottleRoot, 'sbin', binary), destination);
+      await chmod(destination, 0o755);
+    }
+    for (const library of LIBRARIES) {
+      await copyFile(join(bottleRoot, 'lib', library), join(libDir, library));
+    }
+    await copyFile(join(bottleRoot, '.bottle', 'etc', 'mke2fs.conf'), join(etcDir, 'mke2fs.conf'));
+    for (const document of DOCUMENTATION) {
+      await copyFile(join(bottleRoot, document), join(documentationDir, document));
+    }
+
+    for (const binary of BINARIES) {
+      const destination = join(binDir, binary);
+      await writeFile(destination, wrapper(binary, arch), { encoding: 'utf-8' });
+      await chmod(destination, 0o755);
+    }
+  } finally {
+    await rm(extractionDir, { recursive: true, force: true });
+  }
+}
+
+function hasCompleteInstallation(outputDir: string): boolean {
+  return [
+    ...BINARIES.map(binary => join(outputDir, 'bin', binary)),
+    join(outputDir, 'libexec', 'mke2fs'),
+    join(outputDir, 'libexec', 'debugfs'),
+    ...LIBRARIES.map(library => join(outputDir, 'lib', library)),
+    join(outputDir, 'etc', 'mke2fs.conf'),
+    ...DOCUMENTATION.map(document => join(outputDir, 'share', 'e2fsprogs', document)),
+  ].every(path => existsSync(path));
+}
+
+export async function downloadE2fsprogs(
+  version: string,
+  platform: string,
+  arch: string,
+  outputDir: string,
+): Promise<void> {
+  if (platform !== 'linux') {
+    throw new Error(`e2fsprogs download is only supported on Linux, received: ${platform}`);
+  }
+  architectureForOci(arch);
+
+  const versionFile = join(outputDir, '.e2fsprogs-version');
+  const versionMarker = `${version}-${platform}-${arch}`;
+  if (existsSync(versionFile) && hasCompleteInstallation(outputDir)) {
+    const existing = await readFile(versionFile, 'utf-8');
+    if (existing.trim() === versionMarker) {
+      console.log(`e2fsprogs ${version} for ${platform}/${arch} already downloaded`);
+      return;
+    }
+  }
+
+  const { bottle, token } = await resolveBottle(version, platform, arch);
+  const expectedDigest = bottle.digest.replace(/^sha256:/, '');
+  if (!/^[a-f0-9]{64}$/i.test(expectedDigest)) {
+    throw new Error(`invalid e2fsprogs bottle digest: ${bottle.digest}`);
+  }
+
+  await rm(outputDir, { recursive: true, force: true });
+  await mkdir(outputDir, { recursive: true });
+  const archive = join(outputDir, `${expectedDigest}.bottle.tar.gz`);
+  try {
+    console.log(`downloading e2fsprogs ${version} for ${platform}/${arch}...`);
+    await downloadBottle(bottle.digest, token, archive);
+    const actualDigest = await sha256(archive);
+    if (actualDigest !== expectedDigest) {
+      throw new Error(`checksum mismatch for e2fsprogs bottle: expected ${expectedDigest}, got ${actualDigest}`);
+    }
+    console.log('checksum verified for e2fsprogs bottle');
+    await stageBottle(archive, version, arch, outputDir);
+    await writeFile(versionFile, versionMarker, { encoding: 'utf-8' });
+  } catch (error) {
+    await rm(outputDir, { recursive: true, force: true });
+    throw error;
+  } finally {
+    await rm(archive, { force: true });
+  }
+  console.log(`e2fsprogs ${version} for ${platform}/${arch} ready`);
+}
