@@ -42,6 +42,7 @@ const windowEvents = [
   'provider-unregister-flow-connection',
   'provider-register-inference-connection',
   'provider-register-mcp-connection',
+  'provider-register-rag-connection',
   'provider-register-chunk-connection',
   'provider-unregister-chunk-connection',
   'extensions-started',
