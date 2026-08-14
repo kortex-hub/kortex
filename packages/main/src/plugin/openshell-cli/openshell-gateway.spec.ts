@@ -420,6 +420,25 @@ describe('createLocalGateway', () => {
     expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
     expect(openshellCli.removeGateway).toHaveBeenCalledWith('local-dev');
   });
+
+  test('closes the log without registering when spawn throws', async () => {
+    vi.mocked(spawn).mockImplementation(() => {
+      throw new Error('spawn failed');
+    });
+
+    await expect(
+      gateway.createLocalGateway({
+        name: 'local-dev',
+        bindAddress: '127.0.0.1',
+        port: 17675,
+        driver: 'podman',
+      }),
+    ).rejects.toThrow('spawn failed');
+
+    expect(closeLogFile).toHaveBeenCalledOnce();
+    expect(openshellCli.addGateway).not.toHaveBeenCalled();
+    expect(openshellCli.removeGateway).not.toHaveBeenCalled();
+  });
 });
 
 describe('getGatewayBinaryPath', () => {

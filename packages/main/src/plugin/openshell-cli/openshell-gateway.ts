@@ -197,7 +197,7 @@ export class OpenshellGateway implements Disposable {
     const storageDirectory = this.getGatewayStorageDirectory(name);
     const configPath = await this.createNamedGatewayConfig(binaryPath, storageDirectory, driver);
     const logFile = await open(join(storageDirectory, GATEWAY_LOG_FILENAME), 'w');
-    let gatewayProcess: ChildProcess;
+    let gatewayProcess: ChildProcess | undefined;
     const processState: { spawnError?: Error } = {};
     try {
       gatewayProcess = spawn(
@@ -211,6 +211,9 @@ export class OpenshellGateway implements Disposable {
       gatewayProcess.once('error', err => (processState.spawnError = err));
     } finally {
       await logFile.close();
+    }
+    if (!gatewayProcess) {
+      throw new Error(`Failed to spawn local gateway "${name}"`);
     }
 
     let registered = false;
