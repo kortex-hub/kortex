@@ -25,11 +25,13 @@ import { BasePage } from './base-page';
 export class SettingsPreferencesPage extends BasePage {
   readonly searchField: Locator;
   readonly chatToggle: Locator;
+  readonly onboardAgainButton: Locator;
 
   constructor(page: Page) {
     super(page);
     this.searchField = page.getByLabel('search preferences');
     this.chatToggle = page.getByRole('checkbox', { name: 'Show or hide the chat window.' });
+    this.onboardAgainButton = page.getByRole('button', { name: 'Onboard again' });
   }
 
   async waitForLoad(): Promise<void> {
@@ -67,5 +69,10 @@ export class SettingsPreferencesPage extends BasePage {
   async enableChatWindow(): Promise<void> {
     await this.selectPreference(PreferenceOption.CHAT);
     await this.chatToggle.check({ force: true });
+  }
+
+  async clickOnboardAgain(): Promise<void> {
+    await this.selectPreference(PreferenceOption.ONBOARDING);
+    await this.onboardAgainButton.click();
   }
 }

@@ -16,12 +16,22 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 import { expect, workerTest as test } from '/@/fixtures/electron-app';
+import { bindGuidedSetupSession, test as isolatedTest } from '/@/fixtures/guided-setup-fixture';
 import {
+  CODING_AGENT,
   featuredResources,
   preferenceOptions,
   proxyConfigurations,
   resourcesWithCreateButton,
 } from '/@/model/core/types';
+import { NavigationBar } from '/@/model/navigation/navigation';
+import { GuidedSetupPage } from '/@/model/pages/guided-setup-page';
+import { describeAgentOnboarding } from '/@/model/pages/guided-setup-workflow';
+import {
+  completeGuidedSetupWithModel,
+  expectDefaultModelInCodingAgents,
+  restartOnboarding,
+} from '/@/model/pages/onboarding-restart-workflow';
 import { waitForNavigationReady } from '/@/utils/app-ready';
 
 test.describe('Settings page navigation', { tag: '@smoke' }, () => {
@@ -92,5 +102,65 @@ test.describe('Settings page navigation', { tag: '@smoke' }, () => {
       await expect(preferencesPage.getPreferenceContent(option)).toBeVisible();
       await preferencesPage.clearSearch();
     }
+  });
+});
+
+isolatedTest.describe('Settings - onboarding restart', { tag: '@smoke' }, () => {
+  describeAgentOnboarding(CODING_AGENT.OPENCODE, 'OpenCode', () => {
+    const session = bindGuidedSetupSession();
+
+    isolatedTest('[SET-07] persists a newly selected default model', async () => {
+      const guidedSetup = new GuidedSetupPage(session.page!);
+      const navigationBar = new NavigationBar(session.page!);
+
+      const initialOnboardingRestart = await completeGuidedSetupWithModel(
+        guidedSetup,
+        CODING_AGENT.OPENCODE,
+        labels => labels.at(-1)!,
+      );
+      await expectDefaultModelInCodingAgents(navigationBar, CODING_AGENT.OPENCODE, initialOnboardingRestart.modelLabel);
+
+      await restartOnboarding(navigationBar, guidedSetup);
+
+      const updatedOnboardingRestart = await completeGuidedSetupWithModel(
+        guidedSetup,
+        CODING_AGENT.OPENCODE,
+        labels =>
+          labels.find(label => label !== initialOnboardingRestart.modelLabel) ?? initialOnboardingRestart.modelLabel,
+      );
+      await expectDefaultModelInCodingAgents(navigationBar, CODING_AGENT.OPENCODE, updatedOnboardingRestart.modelLabel);
+
+      // Only enough local Ollama/RamaLama models guarantee a different one was available to switch to.
+      if (updatedOnboardingRestart.availableModelCount > 1) {
+        expect(updatedOnboardingRestart.modelLabel).not.toBe(initialOnboardingRestart.modelLabel);
+      }
+    });
+  });
+
+  describeAgentOnboarding(CODING_AGENT.CLAUDE, 'Claude Code', () => {
+    const claudeSession = bindGuidedSetupSession();
+
+    isolatedTest('[SET-08] persists a newly selected default model', async () => {
+      const guidedSetup = new GuidedSetupPage(claudeSession.page!);
+      const navigationBar = new NavigationBar(claudeSession.page!);
+
+      const initialOnboardingRestart = await completeGuidedSetupWithModel(
+        guidedSetup,
+        CODING_AGENT.CLAUDE,
+        labels => labels.at(-1)!,
+      );
+      await expectDefaultModelInCodingAgents(navigationBar, CODING_AGENT.CLAUDE, initialOnboardingRestart.modelLabel);
+
+      await restartOnboarding(navigationBar, guidedSetup);
+
+      const updatedOnboardingRestart = await completeGuidedSetupWithModel(
+        guidedSetup,
+        CODING_AGENT.CLAUDE,
+        labels =>
+          labels.find(label => label !== initialOnboardingRestart.modelLabel) ?? initialOnboardingRestart.modelLabel,
+      );
+      await expectDefaultModelInCodingAgents(navigationBar, CODING_AGENT.CLAUDE, updatedOnboardingRestart.modelLabel);
+      expect(updatedOnboardingRestart.modelLabel).not.toBe(initialOnboardingRestart.modelLabel);
+    });
   });
 });
