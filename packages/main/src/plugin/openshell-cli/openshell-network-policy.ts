@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { isIPv6 } from 'node:net';
+
 import z from 'zod';
 
 import type { NetworkConfiguration } from '/@api/agent-workspace-info.js';
@@ -135,6 +137,39 @@ export interface ModelEndpoint {
   port: number;
 }
 
+export interface NetworkDestination {
+  host: string;
+  port?: number;
+}
+
+/**
+ * Parses a network destination stored as either `host` or `host:port`.
+ * IPv6 is rejected because OpenShell endpoint flags use colon delimiters.
+ */
+export function parseNetworkDestination(destination: string): NetworkDestination | undefined {
+  const value = destination.trim();
+  if (!value || value.endsWith(':')) return undefined;
+
+  let parsed: URL;
+  try {
+    // A non-special scheme preserves explicit default ports such as 80 and 443.
+    parsed = new URL(`kdn://${value}`);
+  } catch {
+    return undefined;
+  }
+
+  if (parsed.username || parsed.password || parsed.pathname || parsed.search || parsed.hash) return undefined;
+
+  const host = parsed.hostname;
+  const unbracketedHost = host.startsWith('[') && host.endsWith(']') ? host.slice(1, -1) : host;
+  if (!host || isIPv6(unbracketedHost)) return undefined;
+
+  if (!parsed.port) return { host };
+
+  const port = Number(parsed.port);
+  return port > 0 ? { host, port } : undefined;
+}
+
 /**
  * Rewrites localhost URLs to {@link OPENSHELL_CONTAINER_HOST} so the
  * sandbox can reach host-local model servers (e.g. Ollama).
@@ -230,14 +265,25 @@ export function buildPolicyObject(network?: NetworkConfiguration, modelEndpoint?
   const networkPolicies: Record<string, OpenshellNetworkPolicyEntry> = {};
 
   if (network && network.mode !== 'allow' && network.hosts?.length) {
-    const endpoints: OpenshellEndpoint[] = network.hosts.flatMap(host => [
-      { host, port: 443, protocol: 'rest' as const, access: 'full' as const, allow_encoded_slash: true },
-      { host, port: 80, protocol: 'rest' as const, access: 'full' as const, allow_encoded_slash: true },
-    ]);
-    networkPolicies[NETWORK_RULE_NAME] = {
-      endpoints,
-      binaries: [{ path: '/**' }],
-    };
+    const endpoints: OpenshellEndpoint[] = network.hosts.flatMap(destination => {
+      const parsed = parseNetworkDestination(destination);
+      if (!parsed) return [];
+
+      const ports = parsed.port === undefined ? [443, 80] : [parsed.port];
+      return ports.map(port => ({
+        host: parsed.host,
+        port,
+        protocol: 'rest' as const,
+        access: 'full' as const,
+        allow_encoded_slash: true,
+      }));
+    });
+    if (endpoints.length > 0) {
+      networkPolicies[NETWORK_RULE_NAME] = {
+        endpoints,
+        binaries: [{ path: '/**' }],
+      };
+    }
   }
 
   if (modelEndpoint) {
