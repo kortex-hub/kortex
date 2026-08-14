@@ -59,9 +59,40 @@ const EXTENSION_MIME_TYPES: Record<string, string> = {
   hta: 'application/hta',
 };
 
+/**
+ * Maps alias extensions to their canonical form recognized by Docling.
+ * Docling's server-side format detection uses the file extension, not the
+ * MIME type, so aliases must be rewritten to one of the extensions Docling's
+ * FormatToExtensions table actually recognizes (e.g. HTML: html, htm, xhtml —
+ * notably not shtml/shtm), so both htm and shtm/shtml collapse to html.
+ */
+const CANONICAL_EXTENSIONS: Record<string, string> = {
+  markdown: 'md',
+  htm: 'html',
+  shtm: 'html',
+  shtml: 'html',
+  xht: 'xhtml',
+};
+
+/** Returns the lowercase extension for a filename, or '' if it has none (including leading-dot-only names like '.markdown'). */
+function getExtension(filename: string): string {
+  const dotIndex = filename.lastIndexOf('.');
+  return dotIndex > 0 ? filename.slice(dotIndex + 1).toLowerCase() : '';
+}
+
 function getMimeTypeForFilename(filename: string): string {
-  const extension = filename.includes('.') ? filename.slice(filename.lastIndexOf('.') + 1).toLowerCase() : '';
-  return EXTENSION_MIME_TYPES[extension] ?? 'application/octet-stream';
+  return EXTENSION_MIME_TYPES[getExtension(filename)] ?? 'application/octet-stream';
+}
+
+/**
+ * Replaces alias file extensions with their canonical form so that
+ * Docling's extension-based format detection works correctly.
+ */
+function normalizeFilename(filename: string): string {
+  const extension = getExtension(filename);
+  const canonical = CANONICAL_EXTENSIONS[extension];
+  if (!canonical) return filename;
+  return `${filename.slice(0, filename.lastIndexOf('.'))}.${canonical}`;
 }
 
 type DoclingContainerInfo = {
@@ -224,7 +255,7 @@ export class ConnectionManager {
     }
 
     const docPath = docUri.fsPath;
-    const docFileName = basename(docPath);
+    const docFileName = normalizeFilename(basename(docPath));
 
     const data = new FormData();
     // openAsBlob() often leaves Blob.type empty on Node, which makes FormData send
@@ -246,7 +277,7 @@ export class ConnectionManager {
         typeof error === 'object' && error !== null && 'detail' in error && typeof error.detail === 'string'
           ? error.detail
           : JSON.stringify(error);
-      throw new Error(`Conversion failed: ${response.status} ${errorMessage}`);
+      throw new Error(`Conversion failed for "${basename(docPath)}": ${response.status} ${errorMessage}`);
     }
 
     const res = await response.json();
