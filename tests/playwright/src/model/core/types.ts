@@ -76,6 +76,7 @@ export enum PreferenceOption {
   EXIT_ON_CLOSE = 'Exit On Close',
   EXTENSIONS = 'Extensions',
   KUBERNETES = 'Kubernetes',
+  ONBOARDING = 'Onboarding',
   TASKS = 'Tasks',
   TELEMETRY = 'Telemetry',
   TERMINAL = 'Terminal',

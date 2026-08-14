@@ -28,7 +28,7 @@ test.describe
 
     test('[APP-01] Navigation bar is visible and contains all expected navigation links', async ({ navigationBar }) => {
       await expect(navigationBar.navigationLocator).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
-      const expectedLinksCount = 7; // Chat, MCP, Skills, Knowledges, Extensions, Workspaces, Settings
+      const expectedLinksCount = 8; // Chat, MCP, Skills, Knowledges, Extensions, Workspaces, Coding agents, Settings
 
       const allLinks = navigationBar.getAllLinks();
       expect(allLinks).toHaveLength(expectedLinksCount);

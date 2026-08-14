@@ -132,13 +132,17 @@ export class GuidedSetupPage extends BasePage {
     return text?.replace(/^Selected:\s*/, '').trim() ?? '';
   }
 
-  async completeAgentModelFor(agent: CodingAgent): Promise<string> {
+  async ensureModelCatalogFor(agent: CodingAgent): Promise<void> {
     await this.selectAgent(agent);
     const setup = resolveAgentModelConnectionFor(agent);
     if (setup && (await this.dialog.getByTestId('no-models-create-connection').isVisible())) {
       await this.createInlineConnection(setup);
     }
     await this.waitForModelCatalog();
+  }
+
+  async completeAgentModelFor(agent: CodingAgent): Promise<string> {
+    await this.ensureModelCatalogFor(agent);
     await this.selectGuidedSetupDefaultModel(agent);
     return this.getSelectedModelLabel();
   }

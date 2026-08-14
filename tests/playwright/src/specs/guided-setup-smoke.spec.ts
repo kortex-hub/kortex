@@ -16,67 +16,21 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ElectronApplication, Page } from '@playwright/test';
-
-import { closeGuidedSetupSession, expect, launchGuidedSetupSession, test } from '/@/fixtures/guided-setup-fixture';
-import { CODING_AGENT, type CodingAgent, ENABLED_CODING_AGENTS, WIZARD_STEP } from '/@/model/core/types';
+import { bindGuidedSetupSession, expect, test } from '/@/fixtures/guided-setup-fixture';
+import { CODING_AGENT, ENABLED_CODING_AGENTS, WIZARD_STEP } from '/@/model/core/types';
 import { NavigationBar } from '/@/model/navigation/navigation';
-import {
-  agentModelSetupSkipMessageFor,
-  isAgentModelSetupAvailable,
-  resolveAgentModelConnectionFor,
-} from '/@/model/pages/agent-model-setup';
+import { resolveAgentModelConnectionFor } from '/@/model/pages/agent-model-setup';
 import { AgentWorkspacesPage } from '/@/model/pages/agent-workspaces-page';
 import { GuidedSetupPage } from '/@/model/pages/guided-setup-page';
+import {
+  completeGuidedSetupFor,
+  describeAgentOnboarding,
+  expectDefaultsInWorkspaceWizard,
+} from '/@/model/pages/guided-setup-workflow';
 
 const candidateModels = [process.env.INFERENCE_MODEL, process.env.INFERENCE_SECOND_MODEL].filter(
   (model): model is string => Boolean(model),
 );
-
-function describeAgentOnboarding(agent: CodingAgent, title: string, body: () => void): void {
-  const available = isAgentModelSetupAvailable(agent);
-  const describeFn = available ? test.describe : test.describe.skip;
-  describeFn(available ? title : agentModelSetupSkipMessageFor(agent), body);
-}
-
-async function completeGuidedSetupFor(guidedSetup: GuidedSetupPage, agent: CodingAgent): Promise<string> {
-  await guidedSetup.startFromWelcome();
-  const selectedModel = await guidedSetup.completeAgentModelFor(agent);
-  await guidedSetup.complete();
-  return selectedModel;
-}
-
-async function expectDefaultsInWorkspaceWizard(
-  page: Page,
-  agent: CodingAgent,
-  modelLabel: string,
-  workingDir = '/tmp/guided-setup-test',
-): Promise<void> {
-  const navigationBar = new NavigationBar(page);
-  const agentWorkspacesPage = new AgentWorkspacesPage(page);
-  await navigationBar.navigateToWorkspacesPage();
-  const createPage = await agentWorkspacesPage.openCreatePage();
-  await createPage.workingDirInput.fill(workingDir);
-  await createPage.navigateToStep(WIZARD_STEP.AGENT_MODEL);
-  await createPage.expectAgentSelected(agent);
-  await createPage.expectModelSelected(modelLabel);
-}
-
-function bindGuidedSetupSession(): { electronApp?: ElectronApplication; page?: Page } {
-  const session: { electronApp?: ElectronApplication; page?: Page } = {};
-
-  test.beforeAll(async () => {
-    ({ electronApp: session.electronApp, page: session.page } = await launchGuidedSetupSession());
-  });
-
-  test.afterAll(async () => {
-    if (session.electronApp) {
-      await closeGuidedSetupSession(session.electronApp);
-    }
-  });
-
-  return session;
-}
 
 test.describe('Guided setup smoke', { tag: '@smoke' }, () => {
   describeAgentOnboarding(CODING_AGENT.OPENCODE, 'OpenCode onboarding', () => {

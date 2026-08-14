@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ElectronApplication, Page } from '@playwright/test';
+import { type ElectronApplication, expect, type Page, test } from '@playwright/test';
 
 import { getFirstPage, launchElectronApp } from '/@/fixtures/electron-app';
 
@@ -39,4 +39,21 @@ export async function closeGuidedSetupSession(electronApp: ElectronApplication):
   await electronApp.close().catch(() => {});
 }
 
-export { expect, test } from '@playwright/test';
+/** Binds a fresh guided-setup Electron session to the enclosing describe block via beforeAll/afterAll. */
+export function bindGuidedSetupSession(): Partial<GuidedSetupSession> {
+  const session: Partial<GuidedSetupSession> = {};
+
+  test.beforeAll(async () => {
+    ({ electronApp: session.electronApp, page: session.page } = await launchGuidedSetupSession());
+  });
+
+  test.afterAll(async () => {
+    if (session.electronApp) {
+      await closeGuidedSetupSession(session.electronApp);
+    }
+  });
+
+  return session;
+}
+
+export { expect, test };
