@@ -23,7 +23,9 @@
     "watch": "vite build --watch"
   },
   "dependencies": {
-    "@openkaiden/api": "workspace:*"
+    "@openkaiden/api": "workspace:*",
+    "js-yaml": "^4.3.0",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "adm-zip": "^0.5.16",
