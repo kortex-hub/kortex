@@ -160,7 +160,7 @@ const sandboxColumns = [
       <div class="flex flex-col min-w-full min-h-0 flex-1 overflow-auto">
         {#if filteredSandboxes.length === 0}
           {#if searchTerm}
-            <FilteredEmptyScreen icon={NoLogIcon} kind="workspaces" bind:searchTerm={searchTerm} />
+            <FilteredEmptyScreen icon={NoLogIcon} kind="sessions" bind:searchTerm={searchTerm} />
           {:else if gatewayFilter}
             <EmptyScreen
               icon={NoLogIcon}
