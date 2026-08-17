@@ -89,16 +89,20 @@ describe('activate', () => {
       configFiles: AgentConfigurationFile[],
       options: {
         modelLabel?: string;
+        provider?: string;
+        endpoint?: string;
         mcp?: {
           servers?: { name: string; url: string; headers?: Record<string, string> }[];
           commands?: { name: string; command: string; args?: string[]; env?: Record<string, string> }[];
         };
       } = {},
     ): AgentWorkspaceContext {
-      const { modelLabel = 'anthropic/claude-opus-4-6', mcp } = options;
+      const { modelLabel = 'anthropic/claude-opus-4-6', provider, endpoint, mcp } = options;
       return {
         model: {
           model: { label: modelLabel },
+          llmMetadata: provider ? { name: provider } : undefined,
+          endpoint,
         },
         configurationFiles: configFiles,
         workspace: { mcp },
@@ -142,6 +146,44 @@ describe('activate', () => {
       expect(written.agents.defaults.model).toBe('openai/gpt-5.5');
       expect(written.agents.defaults.params.cacheRetention).toBe('long');
       expect(written.other).toBe(true);
+    });
+
+    test('configures an OpenAI-compatible model', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          modelLabel: 'gpt-5.5',
+          provider: 'openai',
+          endpoint: 'https://api.openai.com/v1',
+        }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.agents.defaults.model).toBe('openai/gpt-5.5');
+      expect(written.models.providers.openai).toEqual({
+        baseUrl: 'https://api.openai.com/v1',
+        api: 'openai-completions',
+        models: [{ id: 'gpt-5.5', name: 'gpt-5.5' }],
+      });
+    });
+
+    test('maps Gemini to an OpenAI-compatible model', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          modelLabel: 'gemini-flash-lite-latest',
+          provider: 'gemini',
+          endpoint: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+        }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.agents.defaults.model).toBe('openai/gemini-flash-lite-latest');
+      expect(written.models.providers.openai).toEqual({
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+        api: 'openai-completions',
+        models: [{ id: 'gemini-flash-lite-latest', name: 'gemini-flash-lite-latest' }],
+      });
     });
 
     test('throws on invalid JSON', async () => {

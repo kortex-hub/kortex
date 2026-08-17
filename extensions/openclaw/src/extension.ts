@@ -31,6 +31,21 @@ const OpenClawAgentsSchema = z
   })
   .catch({});
 
+const OPENCLAW_PROVIDER_MAPPING: Record<string, string> = {
+  gemini: 'openai',
+};
+
+const OpenClawModelProviderSchema = z.looseObject({
+  baseUrl: z.string().optional(),
+  api: z.string().optional(),
+  apiKey: z.string().optional(),
+  models: z.array(z.looseObject({ id: z.string(), name: z.string() })).optional(),
+});
+
+const OpenClawModelsSchema = z.looseObject({
+  providers: z.record(z.string(), OpenClawModelProviderSchema).optional(),
+});
+
 const McpServerEntrySchema = z.looseObject({
   command: z.string().optional(),
   args: z.array(z.string()).optional(),
@@ -48,6 +63,7 @@ const McpConfigSchema = z.looseObject({
 
 const OpenClawConfigSchema = z.looseObject({
   agents: OpenClawAgentsSchema.optional(),
+  models: OpenClawModelsSchema.optional(),
   mcp: McpConfigSchema.optional(),
 });
 
@@ -99,6 +115,10 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       return type.name !== 'vertexai';
     },
     async preWorkspaceStart(context: AgentWorkspaceContext): Promise<void> {
+      const providerName = context.model.llmMetadata?.name;
+      const provider = providerName ? (OPENCLAW_PROVIDER_MAPPING[providerName] ?? providerName) : undefined;
+      const model = context.model.model.label;
+
       const configFile = context.configurationFiles.find(f => f.path === OPENCLAW_CONFIG_PATH);
       if (!configFile) {
         return;
@@ -107,7 +127,19 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       const config = OpenClawConfigCodec.decode(await configFile.read());
 
       config.agents ??= {};
-      config.agents.defaults = { ...config.agents.defaults, model: context.model.model.label };
+      config.agents.defaults = { ...config.agents.defaults, model: provider ? `${provider}/${model}` : model };
+
+      if (provider && context.model.endpoint) {
+        config.models ??= {};
+        config.models.providers ??= {};
+        config.models.providers[provider] = {
+          ...config.models.providers[provider],
+          baseUrl: context.model.endpoint,
+          api: 'openai-completions',
+          apiKey: config.models.providers[provider]?.apiKey,
+          models: [{ id: model, name: model }],
+        };
+      }
 
       const mcpServers = context.workspace.mcp?.servers;
       const mcpCommands = context.workspace.mcp?.commands;
