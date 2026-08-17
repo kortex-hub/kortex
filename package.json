@@ -227,7 +227,7 @@
     "adm-zip": "^0.5.16",
     "ai": "^7.0.35",
     "bcrypt-ts": "^9.0.1",
-    "better-sqlite3": "^12.11.1",
+    "better-sqlite3": "^13.0.2",
     "check-disk-space": "^3.4.0",
     "chokidar": "^3.6.0",
     "compare-versions": "^6.1.1",
@@ -285,7 +285,8 @@
       "tar": "^7.5.3",
       "cheerio>undici": "^7.18.2",
       "cpu-features>nan": "^2.25.0",
-      "acorn": "8.17.0"
+      "acorn": "8.17.0",
+      "node-gyp": "^11"
     },
     "patchedDependencies": {
       "dmg-builder": "patches/dmg-builder.patch"
