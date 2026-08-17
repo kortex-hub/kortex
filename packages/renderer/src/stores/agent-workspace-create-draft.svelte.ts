@@ -127,3 +127,8 @@ ragEnvironments.subscribe(envs => {
   wizard.draft.selectedKnowledgeIds = [...wizard.draft.selectedKnowledgeIds.filter(id => available.has(id)), ...added];
   prevKnowledge = available;
 });
+
+// re-running guided setup can change the default agent/model; invalidate so a live draft picks up the new defaults on next mount
+window.events?.receive('onboarding:restart', () => {
+  wizard.draft.initialized = false;
+});
