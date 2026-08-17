@@ -89,16 +89,20 @@ describe('activate', () => {
       configFiles: AgentConfigurationFile[],
       options: {
         modelLabel?: string;
+        provider?: string;
+        endpoint?: string;
         mcp?: {
           servers?: { name: string; url: string; headers?: Record<string, string> }[];
           commands?: { name: string; command: string; args?: string[]; env?: Record<string, string> }[];
         };
       } = {},
     ): AgentWorkspaceContext {
-      const { modelLabel = 'anthropic/claude-opus-4-6', mcp } = options;
+      const { modelLabel = 'anthropic/claude-opus-4-6', provider, endpoint, mcp } = options;
       return {
         model: {
           model: { label: modelLabel },
+          llmMetadata: provider ? { name: provider } : undefined,
+          endpoint,
         },
         configurationFiles: configFiles,
         workspace: { mcp },
@@ -142,6 +146,98 @@ describe('activate', () => {
       expect(written.agents.defaults.model).toBe('openai/gpt-5.5');
       expect(written.agents.defaults.params.cacheRetention).toBe('long');
       expect(written.other).toBe(true);
+    });
+
+    test('does not set provider when no llmMetadata is given', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(createContext([configFile]));
+
+      const written = writtenConfig(configFile);
+      expect(written.agents.defaults.provider).toBeUndefined();
+    });
+
+    test('sets provider from llmMetadata', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], { provider: 'anthropic', modelLabel: 'anthropic/claude-sonnet' }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.agents.defaults.provider).toBe('anthropic');
+      expect(written.agents.defaults.model).toBe('anthropic/claude-sonnet');
+    });
+
+    test('maps gemini provider to openai', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], { provider: 'gemini', modelLabel: 'gemini/gemini-2.5-pro' }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.agents.defaults.provider).toBe('openai');
+    });
+
+    test('passes through unknown providers as-is', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], { provider: 'custom-provider', modelLabel: 'custom/model' }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.agents.defaults.provider).toBe('custom-provider');
+    });
+
+    test('sets base_url when endpoint is provided', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          provider: 'openai',
+          modelLabel: 'openai/gpt-4o',
+          endpoint: 'https://api.openai.com/v1',
+        }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.agents.defaults.base_url).toBe('https://api.openai.com/v1');
+    });
+
+    test('does not set base_url when no endpoint is given', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(createContext([configFile], { provider: 'openai', modelLabel: 'openai/gpt-4o' }));
+
+      const written = writtenConfig(configFile);
+      expect(written.agents.defaults.base_url).toBeUndefined();
+    });
+
+    test('strips /v1 suffix from ollama endpoint', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          provider: 'ollama',
+          modelLabel: 'ollama/llama3',
+          endpoint: 'http://localhost:11434/v1',
+        }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.agents.defaults.base_url).toBe('http://localhost:11434');
+      expect(written.agents.defaults.provider).toBe('ollama');
+    });
+
+    test('maps gemini provider and sets endpoint for OpenAI-compatible routing', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          provider: 'gemini',
+          modelLabel: 'gemini/gemini-2.5-pro',
+          endpoint: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+        }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.agents.defaults.provider).toBe('openai');
+      expect(written.agents.defaults.base_url).toBe('https://generativelanguage.googleapis.com/v1beta/openai/');
+      expect(written.agents.defaults.model).toBe('gemini/gemini-2.5-pro');
     });
 
     test('throws on invalid JSON', async () => {

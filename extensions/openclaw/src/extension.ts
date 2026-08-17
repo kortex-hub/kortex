@@ -20,11 +20,21 @@ import type { AgentWorkspaceContext, ExtensionContext, ModelType } from '@openka
 import { agents } from '@openkaiden/api';
 import { z } from 'zod';
 
+const OPENCLAW_PROVIDER_MAPPING: Record<string, string> = {
+  gemini: 'openai',
+};
+
+function toOllamaHost(endpoint: string): string {
+  return endpoint.replace(/\/v1\/?$/, '');
+}
+
 const OpenClawAgentsSchema = z
   .looseObject({
     defaults: z
       .looseObject({
         model: z.string().optional(),
+        provider: z.string().optional(),
+        base_url: z.string().optional(),
       })
       .catch({})
       .optional(),
@@ -99,6 +109,8 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       return type.name !== 'vertexai';
     },
     async preWorkspaceStart(context: AgentWorkspaceContext): Promise<void> {
+      const provider = context.model.llmMetadata?.name;
+
       const configFile = context.configurationFiles.find(f => f.path === OPENCLAW_CONFIG_PATH);
       if (!configFile) {
         return;
@@ -108,6 +120,19 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
 
       config.agents ??= {};
       config.agents.defaults = { ...config.agents.defaults, model: context.model.model.label };
+
+      if (provider) {
+        config.agents.defaults.provider = OPENCLAW_PROVIDER_MAPPING[provider] ?? provider;
+      }
+
+      const endpoint = context.model.endpoint;
+      if (endpoint) {
+        if (provider === 'ollama') {
+          config.agents.defaults.base_url = toOllamaHost(endpoint);
+        } else {
+          config.agents.defaults.base_url = endpoint;
+        }
+      }
 
       const mcpServers = context.workspace.mcp?.servers;
       const mcpCommands = context.workspace.mcp?.commands;
