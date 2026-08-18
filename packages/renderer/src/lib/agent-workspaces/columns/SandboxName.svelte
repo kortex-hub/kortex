@@ -19,11 +19,11 @@ function openDetails(): void {
 }
 </script>
 
-<div class="flex flex-col">
+<button class="flex flex-col w-full text-left" onclick={openDetails} disabled={isDeleting} class:opacity-50={isDeleting} class:cursor-default={isDeleting}>
   <Tooltip top tip={object.sourcePath ?? object.name}>
-    <button class="flex items-start" onclick={openDetails} disabled={isDeleting} class:opacity-50={isDeleting} class:cursor-default={isDeleting}>
-    <div class="text-sm text-[var(--pd-table-body-text)]">{object.name}</div>
-    </button>
+    <div class="flex items-start">
+      <div class="text-sm text-[var(--pd-table-body-text)]">{object.name}</div>
+    </div>
   </Tooltip>
   <div class="text-xs text-[var(--pd-table-body-text-sub)]">ID: {object.id}</div>
-</div>
+</button>

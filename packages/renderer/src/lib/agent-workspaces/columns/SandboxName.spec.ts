@@ -167,7 +167,7 @@ test('Expect button is clickable and accessible', () => {
 
   const button = screen.getByRole('button');
   expect(button).toBeInTheDocument();
-  expect(button).toHaveClass('flex', 'items-start');
+  expect(button).toHaveClass('flex', 'flex-col', 'w-full', 'text-left');
 });
 
 test('Expect button is disabled when sandbox is Deleting', () => {
@@ -184,4 +184,13 @@ test('Expect clicking does not navigate when sandbox is Deleting', async () => {
   await fireEvent.click(button);
 
   expect(router.goto).not.toHaveBeenCalled();
+});
+
+test('Expect clicking the ID area navigates to workspace overview page', async () => {
+  render(SandboxName, { object: mockSandbox });
+
+  const idElement = screen.getByText('ID: sandbox-123');
+  await fireEvent.click(idElement);
+
+  expect(router.goto).toHaveBeenCalledWith('/agent-workspaces/sandbox-123/overview');
 });
