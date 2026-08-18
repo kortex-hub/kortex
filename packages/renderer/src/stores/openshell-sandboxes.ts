@@ -93,19 +93,29 @@ export const allOpenshellSandboxes = derived(openshellSandboxes, $sandboxes => {
 // Search pattern for filtering sandboxes
 export const searchPattern = writable('');
 
-// Derived store: filtered sandboxes based on search pattern
+// Gateway filter: empty string means "all gateways"
+export const selectedGateway = writable('');
+
+// Derived store: filtered sandboxes based on search pattern and selected gateway
 export const filteredOpenshellSandboxes = derived(
-  [searchPattern, allOpenshellSandboxes],
-  ([$searchPattern, $allSandboxes]) => {
-    const term = $searchPattern.trim().toLowerCase();
-    if (!term) {
-      return $allSandboxes;
+  [searchPattern, selectedGateway, allOpenshellSandboxes],
+  ([$searchPattern, $selectedGateway, $allSandboxes]) => {
+    let result = $allSandboxes;
+
+    if ($selectedGateway) {
+      result = result.filter(sandbox => sandbox.gatewayName === $selectedGateway);
     }
-    return $allSandboxes.filter(
-      sandbox =>
-        sandbox.name.toLowerCase().includes(term) ||
-        sandbox.id.toLowerCase().includes(term) ||
-        sandbox.gatewayName.toLowerCase().includes(term),
-    );
+
+    const term = $searchPattern.trim().toLowerCase();
+    if (term) {
+      result = result.filter(
+        sandbox =>
+          sandbox.name.toLowerCase().includes(term) ||
+          sandbox.id.toLowerCase().includes(term) ||
+          sandbox.gatewayName.toLowerCase().includes(term),
+      );
+    }
+
+    return result;
   },
 );

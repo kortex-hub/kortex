@@ -18,19 +18,24 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { render, screen, within } from '@testing-library/svelte';
+import { fireEvent, render, screen, within } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import { notificationQueue } from '/@/stores/notifications';
-import { openshellSandboxes } from '/@/stores/openshell-sandboxes';
+import { openshellGateways } from '/@/stores/openshell-gateways';
+import { openshellSandboxes, selectedGateway } from '/@/stores/openshell-sandboxes';
 import type { NotificationCard } from '/@api/notification';
-import type { GatewaySandboxes } from '/@api/openshell-gateway-info';
+import type { GatewayInfo, GatewaySandboxes } from '/@api/openshell-gateway-info';
 
 import AgentWorkspaceList from './AgentWorkspaceList.svelte';
 
 beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
   vi.resetAllMocks();
   openshellSandboxes.set([]);
+  openshellGateways.set([]);
+  selectedGateway.set('');
   notificationQueue.set([]);
 });
 
@@ -128,4 +133,93 @@ test('Expect NotificationsBox to be visible when there are highlighted notificat
 
   const notificationsBox = screen.queryByLabelText('Notifications Box');
   expect(notificationsBox).toBeInTheDocument();
+});
+
+test('Expect gateway filter dropdown is not shown when there is only one gateway', async () => {
+  render(AgentWorkspaceList);
+  openshellGateways.set([{ name: 'local', endpoint: 'http://localhost:18080' }]);
+  await tick();
+
+  expect(screen.queryByLabelText('Filter by gateway')).not.toBeInTheDocument();
+});
+
+test('Expect gateway filter dropdown is shown when there are multiple gateways', async () => {
+  const gateways: GatewayInfo[] = [
+    { name: 'local', endpoint: 'http://localhost:18080' },
+    { name: 'remote', endpoint: 'https://remote.example.com:18080' },
+  ];
+
+  render(AgentWorkspaceList);
+  openshellGateways.set(gateways);
+  await tick();
+
+  const dropdown = screen.getByLabelText('Filter by gateway');
+  expect(dropdown).toBeInTheDocument();
+});
+
+test('Expect selecting a gateway filters the workspace list', async () => {
+  const workspaces: GatewaySandboxes[] = [
+    {
+      gateway: { name: 'local', endpoint: 'http://localhost:18080' },
+      sandboxes: [{ id: 'ws-1', name: 'local-workspace', phase: 'Ready', created_at: Date.now().toString() }],
+    },
+    {
+      gateway: { name: 'remote', endpoint: 'https://remote.example.com:18080' },
+      sandboxes: [{ id: 'ws-2', name: 'remote-workspace', phase: 'Ready', created_at: Date.now().toString() }],
+    },
+  ];
+
+  render(AgentWorkspaceList);
+  openshellGateways.set([
+    { name: 'local', endpoint: 'http://localhost:18080' },
+    { name: 'remote', endpoint: 'https://remote.example.com:18080' },
+  ]);
+  openshellSandboxes.set(workspaces);
+  await tick();
+
+  expect(screen.getByText('local-workspace')).toBeInTheDocument();
+  expect(screen.getByText('remote-workspace')).toBeInTheDocument();
+
+  const dropdownTrigger = within(screen.getByLabelText('Filter by gateway')).getByRole('button');
+  await fireEvent.click(dropdownTrigger);
+  await fireEvent.click(screen.getByRole('button', { name: 'local' }));
+  await tick();
+
+  expect(screen.getByText('local-workspace')).toBeInTheDocument();
+  expect(screen.queryByText('remote-workspace')).not.toBeInTheDocument();
+});
+
+test('Expect "All" option shows all workspaces', async () => {
+  const workspaces: GatewaySandboxes[] = [
+    {
+      gateway: { name: 'local', endpoint: 'http://localhost:18080' },
+      sandboxes: [{ id: 'ws-1', name: 'local-workspace', phase: 'Ready', created_at: Date.now().toString() }],
+    },
+    {
+      gateway: { name: 'remote', endpoint: 'https://remote.example.com:18080' },
+      sandboxes: [{ id: 'ws-2', name: 'remote-workspace', phase: 'Ready', created_at: Date.now().toString() }],
+    },
+  ];
+
+  render(AgentWorkspaceList);
+  openshellGateways.set([
+    { name: 'local', endpoint: 'http://localhost:18080' },
+    { name: 'remote', endpoint: 'https://remote.example.com:18080' },
+  ]);
+  openshellSandboxes.set(workspaces);
+  await tick();
+
+  const dropdownTrigger = within(screen.getByLabelText('Filter by gateway')).getByRole('button');
+  await fireEvent.click(dropdownTrigger);
+  await fireEvent.click(screen.getByRole('button', { name: 'local' }));
+  await tick();
+
+  expect(screen.queryByText('remote-workspace')).not.toBeInTheDocument();
+
+  await fireEvent.click(dropdownTrigger);
+  await fireEvent.click(screen.getByRole('button', { name: 'All' }));
+  await tick();
+
+  expect(screen.getByText('local-workspace')).toBeInTheDocument();
+  expect(screen.getByText('remote-workspace')).toBeInTheDocument();
 });
