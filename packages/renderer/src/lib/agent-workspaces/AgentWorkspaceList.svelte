@@ -43,6 +43,14 @@ $effect(() => {
   sandboxSearchPattern.set(searchTerm);
 });
 
+// Clear gateway filter when the selected gateway is no longer available
+$effect(() => {
+  const gateways = $openshellGateways;
+  if (gateways.length < 2 || (gatewayFilter && !gateways.some(g => g.name === gatewayFilter))) {
+    gatewayFilter = '';
+  }
+});
+
 // Sync gatewayFilter with sandbox store's selectedGateway
 $effect(() => {
   sandboxSelectedGateway.set(gatewayFilter);
