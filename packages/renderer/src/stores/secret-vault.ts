@@ -36,15 +36,24 @@ export const secretVaultInfos: Writable<readonly SecretVaultInfo[]> = writable([
 
 export const secretVaultSearchPattern = writable('');
 
+// Gateway filter: empty string means "all gateways"
+export const selectedGateway = writable('');
+
 export const filteredSecretVaultInfos = derived(
-  [secretVaultInfos, secretVaultSearchPattern],
-  ([$secretVaultInfos, $secretVaultSearchPattern]) => {
-    const pattern = $secretVaultSearchPattern.trim();
-    if (pattern.length) {
-      return $secretVaultInfos.filter(secret => findMatchInLeaves(secret, pattern));
+  [secretVaultInfos, secretVaultSearchPattern, selectedGateway],
+  ([$secretVaultInfos, $secretVaultSearchPattern, $selectedGateway]) => {
+    let result = $secretVaultInfos;
+
+    if ($selectedGateway) {
+      result = result.filter(secret => secret.gateway === $selectedGateway);
     }
 
-    return $secretVaultInfos;
+    const pattern = $secretVaultSearchPattern.trim();
+    if (pattern.length) {
+      return result.filter(secret => findMatchInLeaves(secret, pattern));
+    }
+
+    return result;
   },
 );
 
