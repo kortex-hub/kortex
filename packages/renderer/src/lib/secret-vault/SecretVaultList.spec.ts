@@ -140,6 +140,30 @@ test('Expect "All" option shows all secrets', async () => {
   expect(screen.getByText('anthropic-key')).toBeInTheDocument();
 });
 
+test('Expect combined gateway and search filters are applied together', async () => {
+  render(SecretVaultList);
+  openshellGateways.set([
+    { name: 'local', endpoint: 'http://localhost:18080' },
+    { name: 'remote', endpoint: 'https://remote.example.com:18080' },
+  ]);
+  secretVaultInfos.set([localSecret, remoteSecret]);
+  await tick();
+
+  const dropdownTrigger = within(screen.getByLabelText('Filter by gateway')).getByRole('button');
+  await fireEvent.click(dropdownTrigger);
+  await fireEvent.click(screen.getByRole('button', { name: 'local' }));
+  await tick();
+
+  expect(screen.getByText('github-pat')).toBeInTheDocument();
+
+  const searchField = screen.getByPlaceholderText('Search Secret Vault...');
+  await fireEvent.input(searchField, { target: { value: 'anthropic' } });
+  await tick();
+
+  expect(screen.queryByText('github-pat')).not.toBeInTheDocument();
+  expect(screen.queryByText('anthropic-key')).not.toBeInTheDocument();
+});
+
 test('Expect empty screen when selected gateway has no secrets', async () => {
   render(SecretVaultList);
   openshellGateways.set([
