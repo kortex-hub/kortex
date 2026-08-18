@@ -17,14 +17,14 @@
  ***********************************************************************/
 
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import * as tar from 'tar';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
-import { downloadE2fsprogs, selectBottleLayer, selectE2fsprogsManifest } from './e2fsprogs-download';
+import { downloadMkfsExt4 } from './e2fsprogs-download';
 
 const VERSION = '1.47.4';
 const LIBRARIES = ['libcom_err.so.2', 'libe2p.so.2', 'libext2fs.so.2', 'libss.so.2'];
@@ -55,8 +55,9 @@ async function createBottle(): Promise<Buffer> {
     writeFile(join(bottleRoot, 'NOTICE'), 'license notice'),
     writeFile(join(bottleRoot, 'README'), 'readme'),
     writeFile(join(bottleRoot, 'sbom.spdx.json'), '{}'),
-    ...LIBRARIES.map(library => writeFile(join(bottleRoot, 'lib', library), library)),
+    ...LIBRARIES.map(library => writeFile(join(bottleRoot, 'lib', `${library}.1`), library)),
   ]);
+  await Promise.all(LIBRARIES.map(library => symlink(`${library}.1`, join(bottleRoot, 'lib', library))));
 
   const archive = join(testDir, 'bottle.tar.gz');
   await tar.create({ file: archive, gzip: true, cwd: join(testDir, 'fixture') }, ['e2fsprogs']);
@@ -101,57 +102,30 @@ function stubRegistry(bottle: Buffer): ReturnType<typeof vi.fn> {
   return fetchMock;
 }
 
-describe('OCI selection', () => {
-  test('selects the Linux bottle matching the requested Node architecture', () => {
-    const selected = selectE2fsprogsManifest(
-      {
-        manifests: [
-          { mediaType: 'manifest', digest: 'darwin', platform: { os: 'darwin', architecture: 'amd64' } },
-          { mediaType: 'manifest', digest: 'linux-arm64', platform: { os: 'linux', architecture: 'arm64' } },
-          { mediaType: 'manifest', digest: 'linux-amd64', platform: { os: 'linux', architecture: 'amd64' } },
-        ],
-      },
-      'linux',
-      'x64',
-    );
-
-    expect(selected.digest).toBe('linux-amd64');
-  });
-
-  test('selects the Homebrew bottle layer instead of unrelated layers', () => {
-    const selected = selectBottleLayer({
-      layers: [
-        { mediaType: 'application/vnd.oci.image.layer.v1.tar+gzip', digest: 'other' },
-        {
-          mediaType: 'application/vnd.oci.image.layer.v1.tar+gzip',
-          digest: 'bottle',
-          annotations: { 'org.opencontainers.image.title': 'e2fsprogs.bottle.tar.gz' },
-        },
-      ],
-    });
-
-    expect(selected.digest).toBe('bottle');
-  });
-});
-
-test.runIf(process.platform === 'linux')('downloads, verifies, and stages executable e2fsprogs tools', async () => {
+test('downloads and stages mkfs.ext4 beside the VM driver', async () => {
   const bottle = await createBottle();
   const fetchMock = stubRegistry(bottle);
   const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
   const outputDir = join(testDir, 'output');
+  await mkdir(outputDir);
+  await writeFile(join(outputDir, 'openshell-driver-vm'), 'vm-driver');
 
-  await downloadE2fsprogs(VERSION, 'linux', 'x64', outputDir);
+  await downloadMkfsExt4(VERSION, 'x64', outputDir);
 
-  expect(await readFile(join(outputDir, 'libexec', 'mke2fs'), 'utf-8')).toBe('mke2fs-binary');
-  expect(await readFile(join(outputDir, 'lib', 'libext2fs.so.2'), 'utf-8')).toBe('libext2fs.so.2');
-  expect(await readFile(join(outputDir, '.e2fsprogs-version'), 'utf-8')).toBe(`${VERSION}-linux-x64`);
-  expect(await readFile(join(outputDir, 'share', 'e2fsprogs', 'NOTICE'), 'utf-8')).toBe('license notice');
-  expect((await stat(join(outputDir, 'bin', 'mkfs.ext4'))).mode & 0o111).not.toBe(0);
-  expect(await readFile(join(outputDir, 'bin', 'mkfs.ext4'), 'utf-8')).toContain('--argv0 mkfs.ext4');
+  expect(await readFile(join(outputDir, 'openshell-driver-vm'), 'utf-8')).toBe('vm-driver');
+  expect(await readFile(join(outputDir, '.mkfs-ext4', 'mke2fs'), 'utf-8')).toBe('mke2fs-binary');
+  expect(await readFile(join(outputDir, '.mkfs-ext4', 'lib', 'libext2fs.so.2'), 'utf-8')).toBe('libext2fs.so.2');
+  expect(await readFile(join(outputDir, '.mkfs-ext4-version'), 'utf-8')).toBe(`${VERSION}-linux-x64`);
+  if (process.platform !== 'win32') {
+    expect((await stat(join(outputDir, 'mkfs.ext4'))).mode & 0o111).not.toBe(0);
+  }
+  expect(await readFile(join(outputDir, 'mkfs.ext4'), 'utf-8')).toContain('--argv0 mkfs.ext4');
+  await expect(stat(join(outputDir, 'debugfs'))).rejects.toThrow();
+  await expect(stat(join(outputDir, 'NOTICE'))).rejects.toThrow();
   expect(timeoutSpy.mock.calls).toEqual([[30_000], [30_000], [30_000], [5 * 60_000]]);
 
   const callsAfterDownload = fetchMock.mock.calls.length;
-  await downloadE2fsprogs(VERSION, 'linux', 'x64', outputDir);
+  await downloadMkfsExt4(VERSION, 'x64', outputDir);
   expect(fetchMock).toHaveBeenCalledTimes(callsAfterDownload);
 });
 
@@ -161,7 +135,7 @@ test('reports registry failures with the failing endpoint', async () => {
     vi.fn().mockResolvedValue(new Response('', { status: 503, statusText: 'Service Unavailable' })),
   );
 
-  await expect(downloadE2fsprogs(VERSION, 'linux', 'x64', join(testDir, 'output'))).rejects.toThrow(
+  await expect(downloadMkfsExt4(VERSION, 'x64', join(testDir, 'output'))).rejects.toThrow(
     'failed to fetch https://ghcr.io/token',
   );
 });

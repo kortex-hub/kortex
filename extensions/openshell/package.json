@@ -66,16 +66,14 @@
     }
   },
   "scripts": {
-    "build": "vite build && node ./scripts/build.js && tsx ./scripts/download.ts && tsx ./scripts/download-e2fsprogs.ts",
+    "build": "vite build && node ./scripts/build.js && tsx ./scripts/download.ts",
     "download": "tsx ./scripts/download.ts --component openshell",
     "download:all": "tsx ./scripts/download.ts --component openshell --all",
     "download:image-builder": "tsx ./scripts/download.ts --component image-builder",
     "download:image-builder:all": "tsx ./scripts/download.ts --component image-builder --all",
-    "download:e2fsprogs": "tsx ./scripts/download-e2fsprogs.ts",
-    "download:e2fsprogs:all": "tsx ./scripts/download-e2fsprogs.ts --all",
     "test": "vitest run --coverage",
     "test:watch": "vitest watch --coverage",
-    "postinstall": "tsx ./scripts/download.ts && tsx ./scripts/download-e2fsprogs.ts",
+    "postinstall": "tsx ./scripts/download.ts",
     "watch": "vite build --watch"
   },
   "dependencies": {
