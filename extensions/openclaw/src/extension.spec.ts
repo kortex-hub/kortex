@@ -238,6 +238,20 @@ describe('activate', () => {
       });
     });
 
+    test('configures OpenAI-compatible models for coding tools', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          modelLabel: 'hf://bartowski/Qwen2.5-7B-Instruct-GGUF',
+          provider: 'openai',
+          endpoint: 'http://host.openshell.internal:8080/',
+        }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.tools.profile).toBe('coding');
+    });
+
     test('throws on invalid JSON', async () => {
       const configFile = createConfigFile('not valid json');
       await expect(agent.preWorkspaceStart(createContext([configFile]))).rejects.toThrow();

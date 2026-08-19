@@ -47,6 +47,10 @@ const OpenClawModelsSchema = z.looseObject({
   providers: z.record(z.string(), OpenClawModelProviderSchema).optional(),
 });
 
+const OpenClawToolsSchema = z.looseObject({
+  profile: z.string().optional(),
+});
+
 const McpServerEntrySchema = z.looseObject({
   command: z.string().optional(),
   args: z.array(z.string()).optional(),
@@ -65,6 +69,7 @@ const McpConfigSchema = z.looseObject({
 const OpenClawConfigSchema = z.looseObject({
   agents: OpenClawAgentsSchema.optional(),
   models: OpenClawModelsSchema.optional(),
+  tools: OpenClawToolsSchema.optional(),
   mcp: McpConfigSchema.optional(),
 });
 
@@ -140,6 +145,9 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
           apiKey: config.models.providers[provider]?.apiKey ?? 'local',
           models: [{ id: model, name: model }],
         };
+
+        config.tools ??= {};
+        config.tools.profile = 'coding';
       }
 
       const mcpServers = context.workspace.mcp?.servers;
