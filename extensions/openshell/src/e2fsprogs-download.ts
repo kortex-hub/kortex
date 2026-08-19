@@ -38,6 +38,10 @@ const METADATA_TIMEOUT_MS = 30_000;
 const BOTTLE_DOWNLOAD_TIMEOUT_MS = 5 * 60_000;
 
 const LIBRARIES = ['libcom_err.so.2', 'libe2p.so.2', 'libext2fs.so.2', 'libss.so.2'];
+const BINARIES = [
+  { name: 'mkfs.ext4', payload: 'mke2fs' },
+  { name: 'debugfs', payload: 'debugfs' },
+];
 
 interface OciDescriptor {
   mediaType: string;
@@ -73,7 +77,10 @@ function isRequiredBottleEntry(path: string, type: string, version: string): boo
     return false;
   }
   const bottleRoot = `e2fsprogs/${version}`;
-  const requiredPaths = [`${bottleRoot}/sbin/mke2fs`, `${bottleRoot}/.bottle/etc/mke2fs.conf`];
+  const requiredPaths = [
+    ...BINARIES.map(binary => `${bottleRoot}/sbin/${binary.payload}`),
+    `${bottleRoot}/.bottle/etc/mke2fs.conf`,
+  ];
   return (
     requiredPaths.some(
       requiredPath => path === requiredPath || requiredPath.startsWith(`${path.replace(/\/$/, '')}/`),
@@ -150,7 +157,7 @@ function loaderForArchitecture(arch: string): string {
   throw new Error(`unsupported e2fsprogs architecture: ${arch}`);
 }
 
-function wrapper(arch: string): string {
+function wrapper(binaryName: string, payload: string, arch: string): string {
   const loader = loaderForArchitecture(arch);
   return `#!/bin/sh
 set -eu
@@ -167,7 +174,7 @@ fi
 if [ -z "\${MKE2FS_CONFIG:-}" ]; then
   export MKE2FS_CONFIG="$runtime_dir/mke2fs.conf"
 fi
-exec ${loader} --library-path "$library_path" --argv0 mkfs.ext4 "$runtime_dir/mke2fs" "$@"
+exec ${loader} --library-path "$library_path" --argv0 ${binaryName} "$runtime_dir/${payload}" "$@"
 `;
 }
 
@@ -182,11 +189,14 @@ async function stageBottle(archive: string, version: string, arch: string, outpu
     const bottleRoot = join(extractionDir, 'e2fsprogs', version);
     const runtimeDir = join(outputDir, '.mkfs-ext4');
     const libDir = join(runtimeDir, 'lib');
+    await rm(runtimeDir, { recursive: true, force: true });
     await mkdir(libDir, { recursive: true });
 
-    const mke2fs = join(runtimeDir, 'mke2fs');
-    await copyFile(join(bottleRoot, 'sbin', 'mke2fs'), mke2fs);
-    await chmod(mke2fs, 0o755);
+    for (const binary of BINARIES) {
+      const payload = join(runtimeDir, binary.payload);
+      await copyFile(join(bottleRoot, 'sbin', binary.payload), payload);
+      await chmod(payload, 0o755);
+    }
     const bottleLibraries = await readdir(join(bottleRoot, 'lib'));
     for (const library of LIBRARIES) {
       const source = bottleLibraries.find(candidate => candidate.startsWith(`${library}.`));
@@ -197,9 +207,11 @@ async function stageBottle(archive: string, version: string, arch: string, outpu
     }
     await copyFile(join(bottleRoot, '.bottle', 'etc', 'mke2fs.conf'), join(runtimeDir, 'mke2fs.conf'));
 
-    const destination = join(outputDir, 'mkfs.ext4');
-    await writeFile(destination, wrapper(arch), { encoding: 'utf-8' });
-    await chmod(destination, 0o755);
+    for (const binary of BINARIES) {
+      const destination = join(outputDir, binary.name);
+      await writeFile(destination, wrapper(binary.name, binary.payload, arch), { encoding: 'utf-8' });
+      await chmod(destination, 0o755);
+    }
   } finally {
     await rm(extractionDir, { recursive: true, force: true });
   }
@@ -207,8 +219,8 @@ async function stageBottle(archive: string, version: string, arch: string, outpu
 
 function hasCompleteInstallation(outputDir: string): boolean {
   return [
-    join(outputDir, 'mkfs.ext4'),
-    join(outputDir, '.mkfs-ext4', 'mke2fs'),
+    ...BINARIES.map(binary => join(outputDir, binary.name)),
+    ...BINARIES.map(binary => join(outputDir, '.mkfs-ext4', binary.payload)),
     ...LIBRARIES.map(library => join(outputDir, '.mkfs-ext4', 'lib', library)),
     join(outputDir, '.mkfs-ext4', 'mke2fs.conf'),
   ].every(path => existsSync(path));
@@ -248,6 +260,7 @@ export async function downloadMkfsExt4(version: string, arch: string, outputDir:
   } catch (error) {
     await Promise.all([
       rm(join(outputDir, 'mkfs.ext4'), { force: true }),
+      rm(join(outputDir, 'debugfs'), { force: true }),
       rm(join(outputDir, '.mkfs-ext4'), { recursive: true, force: true }),
       rm(versionFile, { force: true }),
     ]);

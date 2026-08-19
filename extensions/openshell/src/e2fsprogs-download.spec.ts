@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import { createHash } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -102,7 +102,7 @@ function stubRegistry(bottle: Buffer): ReturnType<typeof vi.fn> {
   return fetchMock;
 }
 
-test('downloads and stages mkfs.ext4 beside the VM driver', async () => {
+test('downloads and stages e2fsprogs tools beside the VM driver', async () => {
   const bottle = await createBottle();
   const fetchMock = stubRegistry(bottle);
   const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
@@ -114,19 +114,27 @@ test('downloads and stages mkfs.ext4 beside the VM driver', async () => {
 
   expect(await readFile(join(outputDir, 'openshell-driver-vm'), 'utf-8')).toBe('vm-driver');
   expect(await readFile(join(outputDir, '.mkfs-ext4', 'mke2fs'), 'utf-8')).toBe('mke2fs-binary');
+  expect(await readFile(join(outputDir, '.mkfs-ext4', 'debugfs'), 'utf-8')).toBe('debugfs-binary');
   expect(await readFile(join(outputDir, '.mkfs-ext4', 'lib', 'libext2fs.so.2'), 'utf-8')).toBe('libext2fs.so.2');
   expect(await readFile(join(outputDir, '.mkfs-ext4-version'), 'utf-8')).toBe(`${VERSION}-linux-x64`);
   if (process.platform !== 'win32') {
     expect((await stat(join(outputDir, 'mkfs.ext4'))).mode & 0o111).not.toBe(0);
+    expect((await stat(join(outputDir, 'debugfs'))).mode & 0o111).not.toBe(0);
   }
   expect(await readFile(join(outputDir, 'mkfs.ext4'), 'utf-8')).toContain('--argv0 mkfs.ext4');
-  await expect(stat(join(outputDir, 'debugfs'))).rejects.toThrow();
+  expect(await readFile(join(outputDir, 'debugfs'), 'utf-8')).toContain('--argv0 debugfs');
   await expect(stat(join(outputDir, 'NOTICE'))).rejects.toThrow();
   expect(timeoutSpy.mock.calls).toEqual([[30_000], [30_000], [30_000], [5 * 60_000]]);
 
   const callsAfterDownload = fetchMock.mock.calls.length;
   await downloadMkfsExt4(VERSION, 'x64', outputDir);
   expect(fetchMock).toHaveBeenCalledTimes(callsAfterDownload);
+
+  await chmod(join(outputDir, '.mkfs-ext4', 'lib', 'libext2fs.so.2'), 0o444);
+  await rm(join(outputDir, 'debugfs'));
+  await downloadMkfsExt4(VERSION, 'x64', outputDir);
+  expect(await readFile(join(outputDir, '.mkfs-ext4', 'debugfs'), 'utf-8')).toBe('debugfs-binary');
+  expect(fetchMock).toHaveBeenCalledTimes(callsAfterDownload * 2);
 });
 
 test('reports registry failures with the failing endpoint', async () => {

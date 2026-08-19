@@ -323,6 +323,7 @@ export class OpenshellGateway implements Disposable {
     const gatewayProcess = spawn(binaryPath, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false,
+      env: this.getGatewayEnvironment(binaryPath),
     });
     this.trackGatewayProcess(DEFAULT_GATEWAY_NAME, gatewayProcess);
 
@@ -471,6 +472,24 @@ export class OpenshellGateway implements Disposable {
     }
     args.push('--db-url', `sqlite:${join(storageDirectory, 'gateway.db')}?mode=rwc`);
     return args;
+  }
+
+  private getGatewayEnvironment(binaryPath: string): NodeJS.ProcessEnv {
+    const environment: NodeJS.ProcessEnv & { PATH?: string } = { ...process.env };
+    if (process.platform !== 'linux') {
+      return environment;
+    }
+
+    const candidates = [dirname(binaryPath)];
+    const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
+    if (resourcesPath) {
+      candidates.push(join(resourcesPath, 'openshell'));
+    }
+    const e2fsprogsBin = candidates.find(candidate => existsSync(join(candidate, 'mkfs.ext4')));
+    if (e2fsprogsBin) {
+      environment.PATH = environment.PATH ? `${e2fsprogsBin}${delimiter}${environment.PATH}` : e2fsprogsBin;
+    }
+    return environment;
   }
 
   private async getGatewayVersion(binaryPath: string): Promise<string> {
