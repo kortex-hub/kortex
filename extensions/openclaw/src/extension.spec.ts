@@ -89,16 +89,20 @@ describe('activate', () => {
       configFiles: AgentConfigurationFile[],
       options: {
         modelLabel?: string;
+        provider?: string;
+        endpoint?: string;
         mcp?: {
           servers?: { name: string; url: string; headers?: Record<string, string> }[];
           commands?: { name: string; command: string; args?: string[]; env?: Record<string, string> }[];
         };
       } = {},
     ): AgentWorkspaceContext {
-      const { modelLabel = 'anthropic/claude-opus-4-6', mcp } = options;
+      const { modelLabel = 'anthropic/claude-opus-4-6', provider, endpoint, mcp } = options;
       return {
         model: {
           model: { label: modelLabel },
+          llmMetadata: provider ? { name: provider } : undefined,
+          endpoint,
         },
         configurationFiles: configFiles,
         workspace: { mcp },
@@ -142,6 +146,110 @@ describe('activate', () => {
       expect(written.agents.defaults.model).toBe('openai/gpt-5.5');
       expect(written.agents.defaults.params.cacheRetention).toBe('long');
       expect(written.other).toBe(true);
+    });
+
+    test('configures an OpenAI-compatible model', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          modelLabel: 'gpt-5.5',
+          provider: 'openai',
+          endpoint: 'https://api.openai.com/v1',
+        }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.agents.defaults.model).toBe('openai/gpt-5.5');
+      expect(written.models.providers.openai).toEqual({
+        baseUrl: 'https://api.openai.com/v1',
+        api: 'openai-completions',
+        apiKey: 'local',
+        models: [{ id: 'gpt-5.5', name: 'gpt-5.5' }],
+      });
+    });
+
+    test('preserves an existing API key', async () => {
+      const configFile = createConfigFile(JSON.stringify({ models: { providers: { openai: { apiKey: 'secret' } } } }));
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          modelLabel: 'gpt-5.5',
+          provider: 'openai',
+          endpoint: 'https://api.openai.com/v1',
+        }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.models.providers.openai.apiKey).toBe('secret');
+    });
+
+    test('does not configure non-OpenAI-compatible endpoints as OpenAI completions', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          modelLabel: 'claude-opus-4-6',
+          provider: 'anthropic',
+          endpoint: 'https://api.anthropic.com',
+        }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.agents.defaults.model).toBe('anthropic/claude-opus-4-6');
+      expect(written.models).toBeUndefined();
+      expect(written.tools).toBeUndefined();
+    });
+
+    test('maps Gemini to an OpenAI-compatible model', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          modelLabel: 'gemini-flash-lite-latest',
+          provider: 'gemini',
+          endpoint: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+        }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.agents.defaults.model).toBe('openai/gemini-flash-lite-latest');
+      expect(written.models.providers.openai).toEqual({
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+        api: 'openai-completions',
+        apiKey: 'local',
+        models: [{ id: 'gemini-flash-lite-latest', name: 'gemini-flash-lite-latest' }],
+      });
+    });
+
+    test('maps Ollama to an OpenAI-compatible model', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          modelLabel: 'qwen2.5:latest',
+          provider: 'ollama',
+          endpoint: 'http://host.openshell.internal:11434/v1',
+        }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.agents.defaults.model).toBe('openai/qwen2.5:latest');
+      expect(written.models.providers.openai).toEqual({
+        baseUrl: 'http://host.openshell.internal:11434/v1',
+        api: 'openai-completions',
+        apiKey: 'local',
+        models: [{ id: 'qwen2.5:latest', name: 'qwen2.5:latest' }],
+      });
+    });
+
+    test('configures OpenAI-compatible models for coding tools', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          modelLabel: 'hf://bartowski/Qwen2.5-7B-Instruct-GGUF',
+          provider: 'openai',
+          endpoint: 'http://host.openshell.internal:8080/',
+        }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.tools.profile).toBe('coding');
     });
 
     test('throws on invalid JSON', async () => {
