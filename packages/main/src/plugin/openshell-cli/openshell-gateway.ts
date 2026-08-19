@@ -54,8 +54,6 @@ const SUPERVISOR_IMAGE_BASE = 'ghcr.io/nvidia/openshell/supervisor';
 const GATEWAY_LOG_FILENAME = 'gateway.log';
 const DEFAULT_GATEWAY_NAME = KAIDEN_LOCAL_GATEWAY_NAME;
 
-type LocalComputeDriver = Exclude<LocalGatewayDriver, 'vm'>;
-
 /**
  * Manages the `openshell-gateway` server binary lifecycle.
  *
@@ -168,13 +166,10 @@ export class OpenshellGateway implements Disposable {
 
   async createLocalGateway(options: CreateLocalGatewayOptions): Promise<void> {
     const driver = options.driver ?? (await this.detectLocalComputeDriver()) ?? 'podman';
-    if (driver === 'vm') {
-      throw new Error('VM support soon');
-    }
     await this.createContainerGateway(options, driver);
   }
 
-  private async createContainerGateway(options: CreateLocalGatewayOptions, driver: LocalComputeDriver): Promise<void> {
+  private async createContainerGateway(options: CreateLocalGatewayOptions, driver: LocalGatewayDriver): Promise<void> {
     const name = options.name.trim();
     this.validateGatewayName(name, false);
     if (!Number.isInteger(options.port) || options.port < 1024 || options.port > 65_535) {
@@ -433,7 +428,7 @@ export class OpenshellGateway implements Disposable {
         supervisorImage: image,
         gatewayDir: storageDirectory,
         q: '"',
-        driver: driver === 'podman' || driver === 'docker' ? driver : undefined,
+        driver,
       });
 
       await writeFile(configPath, config, 'utf-8');
@@ -536,7 +531,7 @@ export class OpenshellGateway implements Disposable {
   private async createNamedGatewayConfig(
     binaryPath: string,
     storageDirectory: string,
-    driver: LocalComputeDriver,
+    driver: LocalGatewayDriver,
   ): Promise<string> {
     const configPath = join(storageDirectory, 'gateway.toml');
     await mkdir(storageDirectory, { recursive: true });

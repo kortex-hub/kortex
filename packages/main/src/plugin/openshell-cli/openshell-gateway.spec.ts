@@ -359,20 +359,23 @@ describe('createLocalGateway', () => {
     );
   });
 
-  test('rejects the future VM driver before running container gateway setup', async () => {
-    await expect(
-      gateway.createLocalGateway({
-        name: 'vm-dev',
-        bindAddress: '127.0.0.1',
-        port: 17675,
-        driver: 'vm',
-      }),
-    ).rejects.toThrow('VM support soon');
+  test('creates a local gateway using the VM driver', async () => {
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValue(proc);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult('openshell-gateway 0.0.69'));
 
-    expect(openshellCli.listGateways).not.toHaveBeenCalled();
-    expect(isFreePort).not.toHaveBeenCalled();
-    expect(writeFile).not.toHaveBeenCalled();
-    expect(spawn).not.toHaveBeenCalled();
+    await gateway.createLocalGateway({
+      name: 'vm-dev',
+      bindAddress: '127.0.0.1',
+      port: 17675,
+      driver: 'vm',
+    });
+
+    expect(writeFile).toHaveBeenCalledWith(
+      join(KAIDEN_DATA_DIRECTORY, 'openshell-gateways', 'vm-dev', 'gateway.toml'),
+      expect.stringContaining('compute_drivers = ["vm"]'),
+      'utf-8',
+    );
   });
 
   test.each([

@@ -177,7 +177,7 @@ test('shows Referenced badge for non-local gateways', () => {
   expect(screen.getByText('Referenced')).toBeInTheDocument();
 });
 
-test('shows Managed badge for local gateways', () => {
+test('shows Referenced badge for a local gateway not managed by Kaiden', () => {
   setOpenshellStarted();
   const gateways: GatewayInfo[] = [
     {
@@ -190,7 +190,7 @@ test('shows Managed badge for local gateways', () => {
   openshellGateways.set(gateways);
   render(PreferencesOpenshellGatewaysRendering);
 
-  expect(screen.getByText('Managed')).toBeInTheDocument();
+  expect(screen.getByText('Referenced')).toBeInTheDocument();
 });
 
 test('hides empty screen when gateways exist', () => {
