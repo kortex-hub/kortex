@@ -488,6 +488,11 @@ export class OpenshellGateway implements Disposable {
     const e2fsprogsBin = candidates.find(candidate => existsSync(join(candidate, 'mkfs.ext4')));
     if (e2fsprogsBin) {
       environment.PATH = environment.PATH ? `${e2fsprogsBin}${delimiter}${environment.PATH}` : e2fsprogsBin;
+    } else {
+      console.warn(
+        `[openshell-gateway] bundled mkfs.ext4 not found in any candidate location (${candidates.join(', ')}); ` +
+          'relying on system PATH',
+      );
     }
     return environment;
   }

@@ -163,7 +163,7 @@ function wrapper(binaryName: string, payload: string, arch: string): string {
 set -eu
 case "$0" in
   */*) script_path="$0" ;;
-  *) script_path=$(command -v -- "$0") ;;
+  *) script_path=$(command -v "$0") ;;
 esac
 bin_dir=$(CDPATH= cd -- "\${script_path%/*}" && pwd)
 runtime_dir="$bin_dir/.mkfs-ext4"
