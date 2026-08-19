@@ -163,8 +163,39 @@ describe('activate', () => {
       expect(written.models.providers.openai).toEqual({
         baseUrl: 'https://api.openai.com/v1',
         api: 'openai-completions',
+        apiKey: 'local',
         models: [{ id: 'gpt-5.5', name: 'gpt-5.5' }],
       });
+    });
+
+    test('preserves an existing API key', async () => {
+      const configFile = createConfigFile(JSON.stringify({ models: { providers: { openai: { apiKey: 'secret' } } } }));
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          modelLabel: 'gpt-5.5',
+          provider: 'openai',
+          endpoint: 'https://api.openai.com/v1',
+        }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.models.providers.openai.apiKey).toBe('secret');
+    });
+
+    test('does not configure non-OpenAI-compatible endpoints as OpenAI completions', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          modelLabel: 'claude-opus-4-6',
+          provider: 'anthropic',
+          endpoint: 'https://api.anthropic.com',
+        }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.agents.defaults.model).toBe('anthropic/claude-opus-4-6');
+      expect(written.models).toBeUndefined();
+      expect(written.tools).toBeUndefined();
     });
 
     test('maps Gemini to an OpenAI-compatible model', async () => {
@@ -182,7 +213,28 @@ describe('activate', () => {
       expect(written.models.providers.openai).toEqual({
         baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/',
         api: 'openai-completions',
+        apiKey: 'local',
         models: [{ id: 'gemini-flash-lite-latest', name: 'gemini-flash-lite-latest' }],
+      });
+    });
+
+    test('maps Ollama to an OpenAI-compatible model', async () => {
+      const configFile = createConfigFile();
+      await agent.preWorkspaceStart(
+        createContext([configFile], {
+          modelLabel: 'qwen2.5:latest',
+          provider: 'ollama',
+          endpoint: 'http://host.openshell.internal:11434/v1',
+        }),
+      );
+
+      const written = writtenConfig(configFile);
+      expect(written.agents.defaults.model).toBe('openai/qwen2.5:latest');
+      expect(written.models.providers.openai).toEqual({
+        baseUrl: 'http://host.openshell.internal:11434/v1',
+        api: 'openai-completions',
+        apiKey: 'local',
+        models: [{ id: 'qwen2.5:latest', name: 'qwen2.5:latest' }],
       });
     });
 

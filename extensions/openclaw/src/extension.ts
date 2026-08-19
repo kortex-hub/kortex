@@ -33,6 +33,7 @@ const OpenClawAgentsSchema = z
 
 const OPENCLAW_PROVIDER_MAPPING: Record<string, string> = {
   gemini: 'openai',
+  ollama: 'openai',
 };
 
 const OpenClawModelProviderSchema = z.looseObject({
@@ -129,14 +130,14 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       config.agents ??= {};
       config.agents.defaults = { ...config.agents.defaults, model: provider ? `${provider}/${model}` : model };
 
-      if (provider && context.model.endpoint) {
+      if (provider === 'openai' && context.model.endpoint) {
         config.models ??= {};
         config.models.providers ??= {};
         config.models.providers[provider] = {
           ...config.models.providers[provider],
           baseUrl: context.model.endpoint,
           api: 'openai-completions',
-          apiKey: config.models.providers[provider]?.apiKey,
+          apiKey: config.models.providers[provider]?.apiKey ?? 'local',
           models: [{ id: model, name: model }],
         };
       }
