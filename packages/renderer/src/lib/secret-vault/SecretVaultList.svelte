@@ -2,7 +2,6 @@
 import { faPlus } from '@fortawesome/free-solid-svg-icons/faPlus';
 import {
   Button,
-  Dropdown,
   EmptyScreen,
   FilteredEmptyScreen,
   NavPage,
@@ -12,9 +11,9 @@ import {
   TableRow,
 } from '@podman-desktop/ui-svelte';
 
+import GatewayFilterDropdown from '/@/lib/ui/GatewayFilterDropdown.svelte';
 import NoLogIcon from '/@/lib/ui/NoLogIcon.svelte';
 import { handleNavigation } from '/@/navigation';
-import { openshellGateways } from '/@/stores/openshell-gateways';
 import {
   filteredSecretVaultInfos,
   secretVaultSearchPattern,
@@ -38,29 +37,9 @@ $effect(() => {
   secretVaultSearchPattern.set(searchTerm);
 });
 
-// Clear gateway filter when the selected gateway is no longer available
-$effect(() => {
-  const gateways = $openshellGateways;
-  if (gateways.length < 2 || (gatewayFilter && !gateways.some(g => g.name === gatewayFilter))) {
-    gatewayFilter = '';
-  }
-});
-
 $effect(() => {
   secretVaultSelectedGateway.set(gatewayFilter);
 });
-
-const gatewayOptions = $derived.by(() => {
-  const options: { label: string; value: string }[] = [{ label: 'All', value: '' }];
-  for (const gateway of $openshellGateways) {
-    options.push({ label: gateway.name, value: gateway.name });
-  }
-  return options;
-});
-
-const longestGatewayLabel = $derived(
-  gatewayOptions.reduce((longest, option) => (option.label.length > longest.length ? option.label : longest), ''),
-);
 
 const row = new TableRow<SecretVaultSelectable>({});
 
@@ -117,26 +96,7 @@ function clearGatewayFilter(): void {
           <div class="w-72">
             <SearchInput bind:searchTerm={searchTerm} title="Secret Vault" />
           </div>
-          {#if $openshellGateways.length > 1}
-            <div class="inline-grid max-w-64">
-              <div class="invisible col-start-1 row-start-1 flex items-center px-1 py-1 whitespace-nowrap" aria-hidden="true">
-                <span class="mr-1">Gateway:</span>
-                <span class="truncate">{longestGatewayLabel}</span>
-                <span class="w-4 shrink-0"></span>
-              </div>
-              <Dropdown
-                ariaLabel="Filter by gateway"
-                id="gateway-filter"
-                name="gateway-filter"
-                class="col-start-1 row-start-1 whitespace-nowrap grow-0!"
-                bind:value={gatewayFilter}
-                options={gatewayOptions}>
-                {#snippet left()}
-                  <div class="mr-1 text-(--pd-input-field-placeholder-text)">Gateway:</div>
-                {/snippet}
-              </Dropdown>
-            </div>
-          {/if}
+          <GatewayFilterDropdown bind:value={gatewayFilter} />
         </div>
       </div>
 
