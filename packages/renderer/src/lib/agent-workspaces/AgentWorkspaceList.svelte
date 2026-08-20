@@ -13,7 +13,7 @@ import {
 } from '@podman-desktop/ui-svelte';
 
 import NotificationsBox from '/@/lib/dashboard/NotificationsBox.svelte';
-import GatewayFilterDropdown from '/@/lib/ui/GatewayFilterDropdown.svelte';
+import GatewayFilterDropdown from '/@/lib/gateways/GatewayFilterDropdown.svelte';
 import NoLogIcon from '/@/lib/ui/NoLogIcon.svelte';
 import { handleNavigation } from '/@/navigation';
 import {
