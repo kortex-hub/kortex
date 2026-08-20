@@ -71,7 +71,8 @@ Extensions interact with Kaiden through `@openkaiden/api` (`packages/extension-a
 ### Setup and Installation
 
 ```bash
-# Install dependencies
+# Install dependencies (requires GITHUB_TOKEN with read:packages for @nvidia/openshell-sdk)
+export GITHUB_TOKEN=$(gh auth token)
 pnpm install
 
 # Start in watch/development mode
