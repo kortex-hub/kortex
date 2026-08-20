@@ -21,6 +21,7 @@ run-name: >-
     || github.event.inputs.npm_target == 'test:e2e:workspaces:opencode' && 'workspace e2e tests(opencode agent)'
     || github.event.inputs.npm_target == 'test:e2e:workspaces:goose' && 'workspace e2e tests(goose agent)'
     || github.event.inputs.npm_target == 'test:e2e:workspaces:openclaw' && 'workspace e2e tests(openclaw agent)'
+    || github.event.inputs.npm_target == 'test:e2e:workspaces:copilot' && 'workspace e2e tests(copilot agent)'
     || 'workspace e2e tests' }}
   · prerelease ${{ github.event.inputs.prerelease_override || 'latest' }}
   · with podman ${{ github.event.inputs.podman_provider == 'wsl' && 'wsl'
@@ -48,6 +49,7 @@ on:
           - 'test:e2e:workspaces:opencode'
           - 'test:e2e:workspaces:goose'
           - 'test:e2e:workspaces:openclaw'
+          - 'test:e2e:workspaces:copilot'
         required: true
       env_vars:
         default: 'PODMAN_ENABLED=true,WORKSPACE_TESTS_CI=true'

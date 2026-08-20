@@ -18,7 +18,7 @@
 
 import { expect } from '@playwright/test';
 
-import type { CodingAgent } from '/@/model/core/types';
+import type { CodingAgent, WorkspaceInferenceProviderId } from '/@/model/core/types';
 import type { NavigationBar } from '/@/model/navigation/navigation';
 import type { GuidedSetupPage } from '/@/model/pages/guided-setup-page';
 
@@ -48,9 +48,10 @@ export async function completeGuidedSetupWithModel(
   guidedSetup: GuidedSetupPage,
   agent: CodingAgent,
   pickLabel: (labels: string[]) => string,
+  preferredProviderId?: WorkspaceInferenceProviderId,
 ): Promise<GuidedSetupCompletion> {
   await guidedSetup.startFromWelcome();
-  await guidedSetup.ensureModelCatalogFor(agent);
+  await guidedSetup.ensureModelCatalogFor(agent, preferredProviderId);
   const modelLabels = await guidedSetup.getModelLabels();
   const modelLabel = pickLabel(modelLabels);
   await guidedSetup.selectModelByLabel(modelLabel);

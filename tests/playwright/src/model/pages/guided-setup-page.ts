@@ -18,7 +18,13 @@
 
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import { CODING_AGENT, type CodingAgent, SELECTORS, TIMEOUTS } from '/@/model/core/types';
+import {
+  CODING_AGENT,
+  type CodingAgent,
+  SELECTORS,
+  TIMEOUTS,
+  type WorkspaceInferenceProviderId,
+} from '/@/model/core/types';
 import { waitForNavigationReady } from '/@/utils/app-ready';
 
 import type { ResolvedAgentModelSetup } from './agent-model-setup';
@@ -132,17 +138,17 @@ export class GuidedSetupPage extends BasePage {
     return text?.replace(/^Selected:\s*/, '').trim() ?? '';
   }
 
-  async ensureModelCatalogFor(agent: CodingAgent): Promise<void> {
+  async ensureModelCatalogFor(agent: CodingAgent, preferredProviderId?: WorkspaceInferenceProviderId): Promise<void> {
     await this.selectAgent(agent);
-    const setup = resolveAgentModelConnectionFor(agent);
+    const setup = resolveAgentModelConnectionFor(agent, preferredProviderId);
     if (setup && (await this.dialog.getByTestId('no-models-create-connection').isVisible())) {
       await this.createInlineConnection(setup);
     }
     await this.waitForModelCatalog();
   }
 
-  async completeAgentModelFor(agent: CodingAgent): Promise<string> {
-    await this.ensureModelCatalogFor(agent);
+  async completeAgentModelFor(agent: CodingAgent, preferredProviderId?: WorkspaceInferenceProviderId): Promise<string> {
+    await this.ensureModelCatalogFor(agent, preferredProviderId);
     await this.selectGuidedSetupDefaultModel(agent);
     return this.getSelectedModelLabel();
   }

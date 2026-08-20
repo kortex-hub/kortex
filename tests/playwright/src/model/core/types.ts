@@ -225,25 +225,27 @@ export const CODING_AGENT = {
 export const CODING_AGENTS = Object.values(CODING_AGENT);
 export type CodingAgent = (typeof CODING_AGENT)[keyof typeof CODING_AGENT];
 
-/** Coding agents enabled by default; other agent extensions are disabled in extension-loader. */
 export const ENABLED_CODING_AGENTS = [
   CODING_AGENT.OPENCODE,
   CODING_AGENT.CLAUDE,
+  CODING_AGENT.COPILOT,
 ] as const satisfies readonly CodingAgent[];
 
-/** Coding agents that require an inference provider connection in the workspace wizard. */
 export const AGENT_MODEL_SETUPS = [
-  { agent: CODING_AGENT.CLAUDE, providerId: 'claude' },
-  { agent: CODING_AGENT.CODEX, providerId: 'openai' },
-  { agent: CODING_AGENT.GEMINI, providerId: 'gemini' },
-  { agent: CODING_AGENT.CURSOR, providerId: 'cursor' },
+  { agent: CODING_AGENT.OPENCODE, providerIds: [], localRuntimeFallback: true },
+  { agent: CODING_AGENT.CLAUDE, providerIds: ['claude'], localRuntimeFallback: false },
+  { agent: CODING_AGENT.CODEX, providerIds: ['openai'], localRuntimeFallback: false },
+  { agent: CODING_AGENT.GEMINI, providerIds: ['gemini'], localRuntimeFallback: false },
+  { agent: CODING_AGENT.CURSOR, providerIds: ['cursor'], localRuntimeFallback: false },
+  { agent: CODING_AGENT.COPILOT, providerIds: ['openai', 'claude'], localRuntimeFallback: true },
 ] as const;
 
-export type WorkspaceInferenceProviderId = (typeof AGENT_MODEL_SETUPS)[number]['providerId'];
+export type WorkspaceInferenceProviderId = (typeof AGENT_MODEL_SETUPS)[number]['providerIds'][number];
 
 export interface AgentModelSetupConfig {
   readonly agent: CodingAgent;
-  readonly providerId: WorkspaceInferenceProviderId;
+  readonly providerIds: readonly WorkspaceInferenceProviderId[];
+  readonly localRuntimeFallback: boolean;
 }
 
 export const WIZARD_STEP = {
