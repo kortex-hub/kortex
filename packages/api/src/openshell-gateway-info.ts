@@ -29,6 +29,10 @@ export const GatewayStateSchema = z.object({
 
 export type GatewayState = z.output<typeof GatewayStateSchema>;
 
+export type LocalGatewayDriver = 'vm' | 'podman' | 'docker';
+
+export const KAIDEN_LOCAL_GATEWAY_NAME = 'kaiden-local';
+
 export const GatewayInfoSchema = z.object({
   name: z.string(),
   endpoint: z.string(),
@@ -40,6 +44,7 @@ export const GatewayInfoSchema = z.object({
   remote_host: z.string().nullable().optional(),
   resolved_host: z.string().nullable().optional(),
   gatewayState: GatewayStateSchema.optional(),
+  driver: z.enum(['vm', 'podman', 'docker']).optional(),
 });
 
 export type GatewayInfo = z.output<typeof GatewayInfoSchema>;
@@ -136,6 +141,16 @@ export interface OpenshellGatewayStartOptions {
   /** Override the supervisor container image. When unset, the image tag is pinned to the gateway binary version. */
   supervisorImage?: string;
 }
+
+export interface CreateLocalGatewayOptions {
+  name: string;
+  bindAddress: string;
+  port: number;
+  /** Overrides the driver inferred from the active gateway. */
+  driver?: LocalGatewayDriver;
+}
+
+export const GATEWAY_NAME_PATTERN = /^[a-z0-9][a-z0-9._-]*$/;
 
 export const GatewayRuntimeInfoSchema = z.looseObject({
   status: GatewayHealthSchema,

@@ -55,7 +55,7 @@ import { getSandboxNameValidationError } from '/@api/agent-workspace-info.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { IConfigurationNode } from '/@api/configuration/models.js';
 import { IConfigurationRegistry } from '/@api/configuration/models.js';
-import type { GatewayInfo, GatewaySandboxes } from '/@api/openshell-gateway-info.js';
+import type { CreateLocalGatewayOptions, GatewayInfo, GatewaySandboxes } from '/@api/openshell-gateway-info.js';
 import { AGENT_LABEL, decodeWorkspaceLabels, WORKSPACE_LABEL } from '/@api/openshell-gateway-info.js';
 
 const HOME_VARIABLE = '${HOME}';
@@ -573,6 +573,25 @@ export class AgentWorkspaceManager implements Disposable {
     return [...this.openshellGatewayStateManager.listGateways()];
   }
 
+  async createLocalGateway(options: CreateLocalGatewayOptions): Promise<GatewayInfo[]> {
+    const task = this.taskManager.createTask({ title: `Creating local gateway "${options.name.trim()}"` });
+    task.state = 'running';
+    task.status = 'in-progress';
+    try {
+      await this.openshellGateway.createLocalGateway(options);
+      await this.openshellGatewayStateManager.refresh();
+      task.status = 'success';
+      return this.listOpenshellGateways();
+    } catch (err: unknown) {
+      const detail = err instanceof Error ? err.message : String(err);
+      task.status = 'failure';
+      task.error = `Failed to create local gateway: ${detail}`;
+      throw new Error(detail);
+    } finally {
+      task.state = 'completed';
+    }
+  }
+
   async deleteOpenshellSandbox(name: string, gateway: string): Promise<void> {
     const task = this.taskManager.createTask({ title: `Deleting workspace ${name}` });
     task.state = 'running';
@@ -723,6 +742,13 @@ export class AgentWorkspaceManager implements Disposable {
     this.ipcHandle('agent-workspace:listOpenshellGateways', async (): Promise<GatewayInfo[]> => {
       return this.listOpenshellGateways();
     });
+
+    this.ipcHandle(
+      'agent-workspace:createLocalGateway',
+      async (_listener, options: CreateLocalGatewayOptions): Promise<GatewayInfo[]> => {
+        return this.createLocalGateway(options);
+      },
+    );
 
     this.ipcHandle(
       'agent-workspace:deleteOpenshellSandbox',

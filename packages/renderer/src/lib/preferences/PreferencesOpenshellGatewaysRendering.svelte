@@ -1,11 +1,13 @@
 <script lang="ts">
-import { EmptyScreen } from '@podman-desktop/ui-svelte';
+import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { Button, EmptyScreen } from '@podman-desktop/ui-svelte';
 
 import EngineIcon from '/@/lib/ui/EngineIcon.svelte';
 import { extensionInfos } from '/@/stores/extensions';
 import { openshellGateways } from '/@/stores/openshell-gateways';
-import type { GatewayInfo } from '/@api/openshell-gateway-info';
+import { type GatewayInfo, KAIDEN_LOCAL_GATEWAY_NAME } from '/@api/openshell-gateway-info';
 
+import PreferencesOpenshellGatewayCreate from './PreferencesOpenshellGatewayCreate.svelte';
 import SettingsPage from './SettingsPage.svelte';
 
 const OPENSHELL_EXTENSION_ID = 'kaiden.openshell';
@@ -15,9 +17,18 @@ let openshellStarted: boolean = $derived(
 
 let activeGateway: GatewayInfo | undefined = $derived($openshellGateways.find(g => g.active));
 let otherGateways: GatewayInfo[] = $derived($openshellGateways.filter(g => !g.active));
+let showCreateGateway = $state(false);
+
+function openCreateGateway(): void {
+  showCreateGateway = true;
+}
+
+function closeCreateGateway(): void {
+  showCreateGateway = false;
+}
 
 function getTypeBadge(gateway: GatewayInfo): string {
-  if (gateway.type === 'local') {
+  if (gateway.name === KAIDEN_LOCAL_GATEWAY_NAME) {
     return 'Managed';
   }
   return 'Referenced';
@@ -80,7 +91,6 @@ function getDetails(gateway: GatewayInfo): string {
   {#snippet subtitle()}
     <span>The runtime that provisions sandboxes, enforces policy, and routes inference traffic.</span>
   {/snippet}
-
   <div class="h-full" role="region" aria-label="Gateways">
     {#if !openshellStarted}
       <EmptyScreen
@@ -146,5 +156,20 @@ function getDetails(gateway: GatewayInfo): string {
         </div>
       </div>
     {/if}
+
+    {#if openshellStarted}
+      <div class="mt-3 flex">
+        <Button type="secondary" class="rounded-lg" icon={faPlus} onclick={openCreateGateway}>
+          Create local gateway
+        </Button>
+      </div>
+    {/if}
   </div>
 </SettingsPage>
+
+{#if showCreateGateway}
+  <PreferencesOpenshellGatewayCreate
+    existingNames={$openshellGateways.map(gateway => gateway.name)}
+    initialDriver={activeGateway?.driver ?? 'podman'}
+    closeCallback={closeCreateGateway} />
+{/if}

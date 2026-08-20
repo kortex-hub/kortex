@@ -136,6 +136,7 @@ let gatewayStateUpdateCallback: (() => void) | undefined;
 let sandboxListChangeCallback: (() => void) | undefined;
 
 const openshellGateway = {
+  createLocalGateway: vi.fn(),
   onDidGatewayStart: vi.fn((cb: () => void) => {
     gatewayStartCallback = cb;
     return { dispose: vi.fn() };
@@ -172,6 +173,13 @@ function mockEnoent(): NodeJS.ErrnoException {
   const err: NodeJS.ErrnoException = new Error('ENOENT');
   err.code = 'ENOENT';
   return err;
+}
+
+function getCreateLocalGatewayHandler(): (listener: unknown, options: unknown) => Promise<GatewayInfo[]> {
+  return vi.mocked(ipcHandle).mock.calls.find(call => call[0] === 'agent-workspace:createLocalGateway')![1] as (
+    listener: unknown,
+    options: unknown,
+  ) => Promise<GatewayInfo[]>;
 }
 
 beforeEach(() => {
@@ -267,6 +275,39 @@ describe('init', () => {
 
   test('registers IPC handler for listOpenshellGateways', () => {
     expect(ipcHandle).toHaveBeenCalledWith('agent-workspace:listOpenshellGateways', expect.any(Function));
+  });
+
+  test('refreshes gateway state before returning a newly created gateway', async () => {
+    const createdGateway = { name: 'local-dev', endpoint: 'https://127.0.0.1:17675' } as GatewayInfo;
+    vi.mocked(openshellGatewayStateManager.listGateways).mockReturnValue([createdGateway]);
+    const options = {
+      name: 'local-dev',
+      bindAddress: '127.0.0.1',
+      port: 17675,
+      driver: 'podman',
+    };
+
+    await expect(getCreateLocalGatewayHandler()({}, options)).resolves.toEqual([createdGateway]);
+
+    expect(openshellGateway.createLocalGateway).toHaveBeenCalledWith(options);
+    expect(openshellGatewayStateManager.refresh).toHaveBeenCalledOnce();
+    expect(taskManager.createTask).toHaveBeenCalledWith({ title: 'Creating local gateway "local-dev"' });
+    expect(mockTask.status).toBe('success');
+    expect(mockTask.state).toBe('completed');
+    expect(vi.mocked(openshellGatewayStateManager.refresh).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(openshellGatewayStateManager.listGateways).mock.invocationCallOrder[0]!,
+    );
+  });
+
+  test('reports task failure when local gateway creation fails', async () => {
+    vi.mocked(openshellGateway.createLocalGateway).mockRejectedValue(new Error('creation failed'));
+
+    await expect(getCreateLocalGatewayHandler()({}, { name: 'local-dev' })).rejects.toThrow('creation failed');
+
+    expect(mockTask.status).toBe('failure');
+    expect(mockTask.error).toBe('Failed to create local gateway: creation failed');
+    expect(mockTask.state).toBe('completed');
+    expect(openshellGatewayStateManager.refresh).not.toHaveBeenCalled();
   });
 
   test('registers defaultBaseImage configuration', () => {

@@ -18,7 +18,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import { extensionInfos } from '/@/stores/extensions';
@@ -49,6 +49,52 @@ beforeEach(() => {
   vi.resetAllMocks();
   extensionInfos.set([]);
   openshellGateways.set([]);
+  vi.mocked(window.isFreePort).mockResolvedValue(true);
+  vi.mocked(window.createLocalGateway).mockResolvedValue([]);
+});
+
+test('creates a gateway after confirming the selected port is available', async () => {
+  setOpenshellStarted();
+  render(PreferencesOpenshellGatewaysRendering);
+  await fireEvent.click(screen.getByRole('button', { name: 'Create local gateway' }));
+  expect(screen.getByLabelText('Gateway bind address')).toBeDisabled();
+  const createButton = await screen.findByRole('button', { name: 'Create' });
+  await vi.waitFor(() => expect(createButton).toBeEnabled());
+  await fireEvent.click(createButton);
+
+  expect(window.isFreePort).toHaveBeenCalledWith(17675);
+  expect(window.createLocalGateway).toHaveBeenCalledWith({
+    name: 'local-gateway',
+    bindAddress: '127.0.0.1',
+    port: 17675,
+    driver: 'podman',
+  });
+});
+
+test('disables creation while the selected port is in use', async () => {
+  vi.mocked(window.isFreePort).mockImplementation(port =>
+    port === 17676 ? Promise.reject(new Error('Port 17676 is already in use.')) : Promise.resolve(true),
+  );
+  setOpenshellStarted();
+  render(PreferencesOpenshellGatewaysRendering);
+  await fireEvent.click(screen.getByRole('button', { name: 'Create local gateway' }));
+  await fireEvent.input(screen.getByLabelText('Gateway port'), { target: { value: '17676' } });
+
+  await screen.findByText('Port 17676 is already in use');
+  expect(window.isFreePort).toHaveBeenLastCalledWith(17676);
+  expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled();
+  expect(window.createLocalGateway).not.toHaveBeenCalled();
+});
+
+test('prevents creating the reserved Kaiden gateway name', async () => {
+  setOpenshellStarted();
+  render(PreferencesOpenshellGatewaysRendering);
+  await fireEvent.click(screen.getByRole('button', { name: 'Create local gateway' }));
+  await fireEvent.input(screen.getByLabelText('Gateway name'), { target: { value: 'kaiden-local' } });
+
+  expect(await screen.findByText('"kaiden-local" is reserved by Kaiden')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Create' })).toBeDisabled();
+  expect(window.createLocalGateway).not.toHaveBeenCalled();
 });
 
 test('shows not-running message when OpenShell extension is not started', () => {
@@ -131,7 +177,7 @@ test('shows Referenced badge for non-local gateways', () => {
   expect(screen.getByText('Referenced')).toBeInTheDocument();
 });
 
-test('shows Managed badge for local gateways', () => {
+test('shows Referenced badge for a local gateway not managed by Kaiden', () => {
   setOpenshellStarted();
   const gateways: GatewayInfo[] = [
     {
@@ -144,7 +190,7 @@ test('shows Managed badge for local gateways', () => {
   openshellGateways.set(gateways);
   render(PreferencesOpenshellGatewaysRendering);
 
-  expect(screen.getByText('Managed')).toBeInTheDocument();
+  expect(screen.getByText('Referenced')).toBeInTheDocument();
 });
 
 test('hides empty screen when gateways exist', () => {
