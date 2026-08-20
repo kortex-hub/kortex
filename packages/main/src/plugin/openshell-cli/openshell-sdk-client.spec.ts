@@ -37,7 +37,7 @@ beforeEach(async () => {
   vi.mocked(homedir).mockReturnValue('/home/testuser');
 
   const sdk = await import('@nvidia/openshell-sdk');
-  vi.mocked(sdk.OpenShellClient).connect = mockConnect;
+  vi.mocked(sdk.OpenShellClient.connect).mockImplementation(mockConnect);
   mockConnect.mockResolvedValue({ sandbox: {}, raw: {}, transport: {} });
 });
 
@@ -67,6 +67,7 @@ describe('OpenshellSdkClient', () => {
     });
 
     test('loads mTLS certs for https endpoints', async () => {
+      vi.stubEnv('XDG_CONFIG_HOME', '/test/config');
       const { readFile } = await import('node:fs/promises');
       vi.mocked(readFile)
         .mockResolvedValueOnce(Buffer.from('ca-data'))
@@ -78,7 +79,7 @@ describe('OpenshellSdkClient', () => {
 
       await sdkClient.getClient('remote-gw');
 
-      const expectedMtlsDir = join('/home/testuser', '.config', 'openshell', 'gateways', 'remote-gw', 'mtls');
+      const expectedMtlsDir = join('/test/config', 'openshell', 'gateways', 'remote-gw', 'mtls');
       expect(vi.mocked(readFile)).toHaveBeenCalledWith(join(expectedMtlsDir, 'ca.crt'));
       expect(vi.mocked(readFile)).toHaveBeenCalledWith(join(expectedMtlsDir, 'tls.crt'));
       expect(vi.mocked(readFile)).toHaveBeenCalledWith(join(expectedMtlsDir, 'tls.key'));
@@ -91,8 +92,10 @@ describe('OpenshellSdkClient', () => {
     });
 
     test('passes undefined certs when mTLS files are missing', async () => {
+      vi.stubEnv('XDG_CONFIG_HOME', '/test/config');
       const { readFile } = await import('node:fs/promises');
-      vi.mocked(readFile).mockRejectedValue(new Error('ENOENT'));
+      const enoent = Object.assign(new Error('ENOENT: no such file or directory'), { code: 'ENOENT' });
+      vi.mocked(readFile).mockRejectedValue(enoent);
 
       const gw = gateway({ name: 'no-certs', endpoint: 'https://gw.example.com' });
       const sdkClient = createSdkClient(async () => [gw]);
@@ -107,9 +110,22 @@ describe('OpenshellSdkClient', () => {
       });
     });
 
+    test('propagates non-ENOENT cert read errors', async () => {
+      vi.stubEnv('XDG_CONFIG_HOME', '/test/config');
+      const { readFile } = await import('node:fs/promises');
+      const permError = Object.assign(new Error('EACCES: permission denied'), { code: 'EACCES' });
+      vi.mocked(readFile).mockRejectedValue(permError);
+
+      const gw = gateway({ name: 'bad-perms', endpoint: 'https://gw.example.com' });
+      const sdkClient = createSdkClient(async () => [gw]);
+
+      await expect(sdkClient.getClient('bad-perms')).rejects.toThrow(/EACCES/);
+    });
+
     test('respects XDG_CONFIG_HOME', async () => {
       const { readFile } = await import('node:fs/promises');
-      vi.mocked(readFile).mockRejectedValue(new Error('ENOENT'));
+      const enoent = Object.assign(new Error('ENOENT: no such file or directory'), { code: 'ENOENT' });
+      vi.mocked(readFile).mockRejectedValue(enoent);
       vi.stubEnv('XDG_CONFIG_HOME', '/custom/config');
 
       const gw = gateway({ name: 'xdg-gw', endpoint: 'https://gw.example.com' });

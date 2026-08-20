@@ -51,8 +51,11 @@ function gatewayMtlsDir(gatewayName: string): string {
 async function readCertIfExists(filePath: string): Promise<Buffer | undefined> {
   try {
     return await readFile(filePath);
-  } catch {
-    return undefined;
+  } catch (error: unknown) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return undefined;
+    }
+    throw error;
   }
 }
 
