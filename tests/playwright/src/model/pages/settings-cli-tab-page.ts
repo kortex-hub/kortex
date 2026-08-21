@@ -29,7 +29,7 @@ export class SettingsCliPage extends BasePage {
   }
 
   async waitForLoad(): Promise<void> {
-    await expect(this.toolName).toBeVisible();
+    await expect(this.toolName.first()).toBeVisible();
   }
 
   getToolRow(displayName: string): Locator {
