@@ -18,7 +18,7 @@
 
 import { type ChildProcess, spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
-import { createWriteStream, type WriteStream } from 'node:fs';
+import { createWriteStream, existsSync, type WriteStream } from 'node:fs';
 import { type FileHandle, mkdir, open, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -68,7 +68,6 @@ function createMockChildProcess(): ChildProcess & { _stdout: EventEmitter; _stde
   Object.defineProperty(proc, 'stdout', { get: (): EventEmitter => proc._stdout });
   Object.defineProperty(proc, 'stderr', { get: (): EventEmitter => proc._stderr });
   proc.kill = vi.fn().mockReturnValue(true);
-  proc.unref = vi.fn();
   return proc;
 }
 
@@ -111,6 +110,7 @@ beforeEach(() => {
     { name: 'openshell-gateway', path: GATEWAY_BINARY },
   ] as unknown as CliToolInfo[]);
   vi.mocked(createWriteStream).mockReturnValue(gatewayLogStream);
+  vi.mocked(existsSync).mockReturnValue(false);
   vi.mocked(open).mockResolvedValue({ fd: 42, close: closeLogFile } as unknown as FileHandle);
   vi.mocked(exec.exec).mockResolvedValue({ command: '', stdout: '', stderr: '' });
   vi.mocked(isFreePort).mockResolvedValue(true);
@@ -121,6 +121,29 @@ beforeEach(() => {
 });
 
 describe('init', () => {
+  test('starts a stopped gateway previously created by Kaiden', async () => {
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValue(proc);
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(openshellCli.listGateways).mockResolvedValue([
+      { name: 'local-dev', endpoint: 'http://127.0.0.1:17675', active: true, type: 'local' },
+    ]);
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValueOnce(false).mockResolvedValue(true);
+
+    await gateway.init();
+
+    expect(spawn).toHaveBeenCalledWith(
+      GATEWAY_BINARY,
+      expect.arrayContaining([
+        '--config',
+        join(KAIDEN_DATA_DIRECTORY, 'openshell-gateways', 'local-dev', 'gateway.toml'),
+        '--port',
+        '17675',
+      ]),
+      expect.objectContaining({ detached: false }),
+    );
+  });
+
   test('skips auto-start when existing gateway is healthy and already active', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const existingGateways: GatewayInfo[] = [
@@ -315,7 +338,7 @@ describe('createLocalGateway', () => {
         '--disable-tls',
       ]),
       expect.objectContaining({
-        detached: true,
+        detached: false,
         stdio: ['ignore', 42, 42],
       }),
     );
@@ -334,7 +357,6 @@ describe('createLocalGateway', () => {
       { env: { XDG_CONFIG_HOME: join(storageDirectory, 'xdg-config') } },
     );
     expect(closeLogFile).toHaveBeenCalled();
-    expect(proc.unref).toHaveBeenCalled();
   });
 
   test('infers the Docker driver from the active gateway when no override is supplied', async () => {
@@ -850,6 +872,23 @@ describe('isRunning', () => {
 });
 
 describe('dispose', () => {
+  test('stops gateways created from the settings UI', async () => {
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValue(proc);
+
+    await gateway.createLocalGateway({
+      name: 'local-dev',
+      bindAddress: '127.0.0.1',
+      port: 17675,
+      driver: 'podman',
+    });
+
+    gateway.dispose();
+
+    expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
+    proc.emit('exit', 0, undefined);
+  });
+
   test('stops the gateway process and closes its log', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const proc = createMockChildProcess();
