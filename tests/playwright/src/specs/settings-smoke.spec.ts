@@ -35,6 +35,9 @@ import {
 } from '/@/model/pages/onboarding-restart-workflow';
 import { waitForNavigationReady } from '/@/utils/app-ready';
 
+const OPENSHELL_BUNDLED_TOOLS = ['OpenShell', 'OpenShell Image Builder', 'OpenShell Gateway'];
+const OPENSHELL_TOOLS_WITH_UNINSTALL = ['OpenShell', 'OpenShell Image Builder'];
+
 test.describe('Settings page navigation', { tag: '@smoke' }, () => {
   test.beforeEach(async ({ page, navigationBar }) => {
     await waitForNavigationReady(page);
@@ -64,6 +67,31 @@ test.describe('Settings page navigation', { tag: '@smoke' }, () => {
       const createButton = resourcesPage.getResourceCreateButton(displayName);
       await expect(createButton).toBeVisible();
       await expect(createButton).toBeEnabled();
+    }
+  });
+
+  test('[SET-03] CLI tab shows the bundled OpenShell tools with a detected version', async ({ settingsPage }) => {
+    test.skip(process.platform === 'win32', 'OpenShell CLI binaries are not bundled for Windows yet');
+
+    const cliPage = await settingsPage.openCli();
+    await cliPage.waitForLoad();
+
+    for (const displayName of OPENSHELL_BUNDLED_TOOLS) {
+      await test.step(displayName, async () => {
+        await expect(cliPage.getToolRow(displayName)).toBeVisible();
+
+        const versionLabel = cliPage.getToolVersion(displayName);
+        await expect(versionLabel).toBeVisible();
+        expect(await cliPage.isToolVersionDetected(displayName)).toBeTruthy();
+
+        test.info().annotations.push({ type: displayName, description: (await versionLabel.textContent()) ?? '' });
+
+        if (OPENSHELL_TOOLS_WITH_UNINSTALL.includes(displayName)) {
+          const uninstallButton = cliPage.getToolUninstallButton(displayName);
+          await expect(uninstallButton).toBeVisible();
+          await expect(uninstallButton).toBeEnabled();
+        }
+      });
     }
   });
 

@@ -134,15 +134,4 @@ export class SettingsPage extends BasePage {
     await resourcesPage.waitForLoad();
     await resourcesPage.deleteCreatedConnectionFor(provider.resourceId, connectionType);
   }
-
-  async installGoose(): Promise<void> {
-    const cliPage = await this.openCli();
-
-    if (await cliPage.isGooseVersionDetected()) {
-      console.log('Goose is already installed, skipping...');
-      return;
-    }
-
-    await cliPage.installGoose();
-  }
 }
