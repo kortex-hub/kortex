@@ -18,41 +18,33 @@
 
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import { TIMEOUTS } from '/@/model/core/types';
-
 import { BasePage } from './base-page';
 
 export class SettingsCliPage extends BasePage {
   readonly toolName: Locator;
-  readonly gooseVersionLabel: Locator;
-  readonly gooseInstallButton: Locator;
-  readonly versionDropdownDialog: Locator;
-  readonly latestVersion: Locator;
 
   constructor(page: Page) {
     super(page);
     this.toolName = page.getByLabel('cli-name');
-    this.gooseVersionLabel = page.getByLabel('no-cli-version');
-    this.gooseInstallButton = page.getByRole('button', { name: 'Install Goose' });
-    this.versionDropdownDialog = page.getByLabel('drop-down-dialog');
-    this.latestVersion = this.versionDropdownDialog.getByRole('button', { name: /^v\d+\.\d+\.\d+$/ }).first();
   }
 
   async waitForLoad(): Promise<void> {
     await expect(this.toolName).toBeVisible();
   }
 
-  async isGooseVersionDetected(): Promise<boolean> {
-    return !(await this.gooseVersionLabel.isVisible());
+  getToolRow(displayName: string): Locator {
+    return this.page.getByRole('row', { name: displayName, exact: true });
   }
 
-  async installGoose(): Promise<void> {
-    await expect(this.gooseInstallButton).toBeVisible();
-    await this.gooseInstallButton.click();
+  getToolVersion(displayName: string): Locator {
+    return this.getToolRow(displayName).getByLabel('cli-version');
+  }
 
-    await expect(this.versionDropdownDialog).toBeVisible({ timeout: TIMEOUTS.STANDARD });
-    await this.latestVersion.click();
+  getToolNoVersionLabel(displayName: string): Locator {
+    return this.getToolRow(displayName).getByLabel('no-cli-version');
+  }
 
-    await expect.poll(async () => await this.isGooseVersionDetected(), { timeout: TIMEOUTS.DEFAULT }).toBeTruthy();
+  async isToolVersionDetected(displayName: string): Promise<boolean> {
+    return !(await this.getToolNoVersionLabel(displayName).isVisible());
   }
 }

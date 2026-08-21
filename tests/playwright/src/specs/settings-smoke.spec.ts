@@ -35,6 +35,8 @@ import {
 } from '/@/model/pages/onboarding-restart-workflow';
 import { waitForNavigationReady } from '/@/utils/app-ready';
 
+const OPENSHELL_BUNDLED_TOOLS = ['OpenShell', 'OpenShell Image Builder', 'OpenShell Gateway'];
+
 test.describe('Settings page navigation', { tag: '@smoke' }, () => {
   test.beforeEach(async ({ page, navigationBar }) => {
     await waitForNavigationReady(page);
@@ -64,6 +66,17 @@ test.describe('Settings page navigation', { tag: '@smoke' }, () => {
       const createButton = resourcesPage.getResourceCreateButton(displayName);
       await expect(createButton).toBeVisible();
       await expect(createButton).toBeEnabled();
+    }
+  });
+
+  test('[SET-03] CLI tab shows the bundled OpenShell tools with a detected version', async ({ settingsPage }) => {
+    const cliPage = await settingsPage.openCli();
+    await cliPage.waitForLoad();
+
+    for (const displayName of OPENSHELL_BUNDLED_TOOLS) {
+      await expect(cliPage.getToolRow(displayName)).toBeVisible();
+      await expect(cliPage.getToolVersion(displayName)).toBeVisible();
+      expect(await cliPage.isToolVersionDetected(displayName)).toBeTruthy();
     }
   });
 
