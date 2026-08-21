@@ -413,7 +413,6 @@ export class ExtensionLoader implements IAsyncDisposable {
       .get<string[]>(ExtensionLoaderSettings.Disabled, [
         'kaiden.openai',
         'kaiden.codex',
-        'kaiden.openclaw',
         'kaiden.goose',
         'kaiden.gemini',
         'kaiden.cursor',
