@@ -73,6 +73,7 @@ import { MenuRegistry } from '/@/plugin/menu-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
+import { OpenshellGatewayConfig } from '/@/plugin/openshell-cli/openshell-gateway-config.js';
 import { OpenshellGatewayStateManager } from '/@/plugin/openshell-cli/openshell-gateway-state-manager.js';
 import { OpenshellImageBuilder } from '/@/plugin/openshell-cli/openshell-image-builder.js';
 import { OpenshellSdkClient } from '/@/plugin/openshell-cli/openshell-sdk-client.js';
@@ -604,6 +605,7 @@ export class PluginSystem {
     container.bind<AgentRegistry>(AgentRegistry).toSelf().inSingletonScope();
     container.bind<OpenShellRegistry>(OpenShellRegistry).toSelf().inSingletonScope();
     container.bind<OpenshellCli>(OpenshellCli).toSelf().inSingletonScope();
+    container.bind<OpenshellGatewayConfig>(OpenshellGatewayConfig).toSelf().inSingletonScope();
     container.bind<OpenshellSdkClient>(OpenshellSdkClient).toSelf().inSingletonScope();
     container.bind<OpenshellGateway>(OpenshellGateway).toSelf().inSingletonScope();
     container.bind<OpenshellGatewayStateManager>(OpenshellGatewayStateManager).toSelf().inSingletonScope();

@@ -16,25 +16,21 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import { homedir } from 'node:os';
-import { join } from 'node:path';
-
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { GatewayInfo } from '/@api/openshell-gateway-info.js';
 
+import type { OpenshellGatewayConfig } from './openshell-gateway-config.js';
 import { OpenshellSdkClient } from './openshell-sdk-client.js';
 
-vi.mock(import('node:fs/promises'));
-vi.mock(import('node:os'));
 vi.mock(import('@nvidia/openshell-sdk'));
 vi.mock(import('/@/plugin/openshell-cli/openshell-cli.js'));
+vi.mock(import('/@/plugin/openshell-cli/openshell-gateway-config.js'));
 
 const mockConnect = vi.fn();
 
 beforeEach(async () => {
   vi.resetAllMocks();
-  vi.mocked(homedir).mockReturnValue('/home/testuser');
 
   const sdk = await import('@nvidia/openshell-sdk');
   vi.mocked(sdk.OpenShellClient.connect).mockImplementation(mockConnect);
@@ -50,14 +46,21 @@ function gateway(overrides: Partial<GatewayInfo> = {}): GatewayInfo {
   };
 }
 
-function createSdkClient(listGateways: () => Promise<GatewayInfo[]>): OpenshellSdkClient {
+function createSdkClient(
+  listGateways: () => Promise<GatewayInfo[]>,
+  buildConnectOptions?: OpenshellGatewayConfig['buildConnectOptions'],
+): OpenshellSdkClient {
   const openshellCli = { listGateways } as never;
-  return new OpenshellSdkClient(openshellCli);
+  const gatewayConfig = {
+    buildConnectOptions:
+      buildConnectOptions ?? vi.fn().mockImplementation(async (gw: GatewayInfo) => ({ gateway: gw.endpoint })),
+  } as never;
+  return new OpenshellSdkClient(openshellCli, gatewayConfig);
 }
 
 describe('OpenshellSdkClient', () => {
   describe('getClient', () => {
-    test('connects with gateway URL only for http endpoints', async () => {
+    test('connects with options from gateway config', async () => {
       const gw = gateway();
       const sdkClient = createSdkClient(async () => [gw]);
 
@@ -66,77 +69,25 @@ describe('OpenshellSdkClient', () => {
       expect(mockConnect).toHaveBeenCalledWith({ gateway: 'http://127.0.0.1:17670' });
     });
 
-    test('loads mTLS certs for https endpoints', async () => {
-      vi.stubEnv('XDG_CONFIG_HOME', '/test/config');
-      const { readFile } = await import('node:fs/promises');
-      vi.mocked(readFile)
-        .mockResolvedValueOnce(Buffer.from('ca-data'))
-        .mockResolvedValueOnce(Buffer.from('cert-data'))
-        .mockResolvedValueOnce(Buffer.from('key-data'));
+    test('delegates connect options assembly to OpenshellGatewayConfig', async () => {
+      const mockBuild = vi.fn().mockResolvedValue({
+        gateway: 'https://gw.example.com',
+        caCert: Buffer.from('ca'),
+        clientCert: Buffer.from('cert'),
+        clientKey: Buffer.from('key'),
+      });
+      const gw = gateway({ name: 'remote', endpoint: 'https://gw.example.com' });
+      const sdkClient = createSdkClient(async () => [gw], mockBuild);
 
-      const gw = gateway({ name: 'remote-gw', endpoint: 'https://gw.example.com', auth: 'mtls' });
-      const sdkClient = createSdkClient(async () => [gw]);
+      await sdkClient.getClient('remote');
 
-      await sdkClient.getClient('remote-gw');
-
-      const expectedMtlsDir = join('/test/config', 'openshell', 'gateways', 'remote-gw', 'mtls');
-      expect(vi.mocked(readFile)).toHaveBeenCalledWith(join(expectedMtlsDir, 'ca.crt'));
-      expect(vi.mocked(readFile)).toHaveBeenCalledWith(join(expectedMtlsDir, 'tls.crt'));
-      expect(vi.mocked(readFile)).toHaveBeenCalledWith(join(expectedMtlsDir, 'tls.key'));
+      expect(mockBuild).toHaveBeenCalledWith(gw);
       expect(mockConnect).toHaveBeenCalledWith({
         gateway: 'https://gw.example.com',
-        caCert: Buffer.from('ca-data'),
-        clientCert: Buffer.from('cert-data'),
-        clientKey: Buffer.from('key-data'),
+        caCert: Buffer.from('ca'),
+        clientCert: Buffer.from('cert'),
+        clientKey: Buffer.from('key'),
       });
-    });
-
-    test('passes undefined certs when mTLS files are missing', async () => {
-      vi.stubEnv('XDG_CONFIG_HOME', '/test/config');
-      const { readFile } = await import('node:fs/promises');
-      const enoent = Object.assign(new Error('ENOENT: no such file or directory'), { code: 'ENOENT' });
-      vi.mocked(readFile).mockRejectedValue(enoent);
-
-      const gw = gateway({ name: 'no-certs', endpoint: 'https://gw.example.com' });
-      const sdkClient = createSdkClient(async () => [gw]);
-
-      await sdkClient.getClient('no-certs');
-
-      expect(mockConnect).toHaveBeenCalledWith({
-        gateway: 'https://gw.example.com',
-        caCert: undefined,
-        clientCert: undefined,
-        clientKey: undefined,
-      });
-    });
-
-    test('propagates non-ENOENT cert read errors', async () => {
-      vi.stubEnv('XDG_CONFIG_HOME', '/test/config');
-      const { readFile } = await import('node:fs/promises');
-      const permError = Object.assign(new Error('EACCES: permission denied'), { code: 'EACCES' });
-      vi.mocked(readFile).mockRejectedValue(permError);
-
-      const gw = gateway({ name: 'bad-perms', endpoint: 'https://gw.example.com' });
-      const sdkClient = createSdkClient(async () => [gw]);
-
-      await expect(sdkClient.getClient('bad-perms')).rejects.toThrow(/EACCES/);
-    });
-
-    test('respects XDG_CONFIG_HOME', async () => {
-      const { readFile } = await import('node:fs/promises');
-      const enoent = Object.assign(new Error('ENOENT: no such file or directory'), { code: 'ENOENT' });
-      vi.mocked(readFile).mockRejectedValue(enoent);
-      vi.stubEnv('XDG_CONFIG_HOME', '/custom/config');
-
-      const gw = gateway({ name: 'xdg-gw', endpoint: 'https://gw.example.com' });
-      const sdkClient = createSdkClient(async () => [gw]);
-
-      await sdkClient.getClient('xdg-gw');
-
-      const expectedMtlsDir = join('/custom/config', 'openshell', 'gateways', 'xdg-gw', 'mtls');
-      expect(vi.mocked(readFile)).toHaveBeenCalledWith(join(expectedMtlsDir, 'ca.crt'));
-
-      vi.unstubAllEnvs();
     });
 
     test('caches client for same gateway name', async () => {
