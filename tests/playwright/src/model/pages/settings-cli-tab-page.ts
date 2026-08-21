@@ -47,4 +47,8 @@ export class SettingsCliPage extends BasePage {
   async isToolVersionDetected(displayName: string): Promise<boolean> {
     return !(await this.getToolNoVersionLabel(displayName).isVisible());
   }
+
+  getToolUninstallButton(displayName: string): Locator {
+    return this.getToolRow(displayName).getByRole('button', { name: 'Uninstall' });
+  }
 }

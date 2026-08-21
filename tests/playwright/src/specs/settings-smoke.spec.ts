@@ -36,6 +36,7 @@ import {
 import { waitForNavigationReady } from '/@/utils/app-ready';
 
 const OPENSHELL_BUNDLED_TOOLS = ['OpenShell', 'OpenShell Image Builder', 'OpenShell Gateway'];
+const OPENSHELL_TOOLS_WITH_UNINSTALL = ['OpenShell', 'OpenShell Image Builder'];
 
 test.describe('Settings page navigation', { tag: '@smoke' }, () => {
   test.beforeEach(async ({ page, navigationBar }) => {
@@ -82,6 +83,12 @@ test.describe('Settings page navigation', { tag: '@smoke' }, () => {
         expect(await cliPage.isToolVersionDetected(displayName)).toBeTruthy();
 
         test.info().annotations.push({ type: displayName, description: (await versionLabel.textContent()) ?? '' });
+
+        if (OPENSHELL_TOOLS_WITH_UNINSTALL.includes(displayName)) {
+          const uninstallButton = cliPage.getToolUninstallButton(displayName);
+          await expect(uninstallButton).toBeVisible();
+          await expect(uninstallButton).toBeEnabled();
+        }
       });
     }
   });
