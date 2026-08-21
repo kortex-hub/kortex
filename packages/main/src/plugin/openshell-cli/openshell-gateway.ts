@@ -92,16 +92,18 @@ export class OpenshellGateway implements Disposable {
     try {
       const gateways = await this.openshellCli.listGateways();
       const localGateways = gateways.filter(gw => gw.type === 'local' || this.isLocalEndpoint(gw.endpoint));
-      for (const gateway of localGateways) {
-        if (this.isCreatedGateway(gateway.name) && !(await this.isEndpointHealthy(gateway.endpoint))) {
-          try {
-            await this.startCreatedGateway(gateway.name, gateway.endpoint);
-          } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : String(err);
-            console.warn(`[openshell-gateway] failed to start created gateway "${gateway.name}": ${message}`);
+      await Promise.all(
+        localGateways.map(async gateway => {
+          if (this.isCreatedGateway(gateway.name) && !(await this.isEndpointHealthy(gateway.endpoint))) {
+            try {
+              await this.startCreatedGateway(gateway.name, gateway.endpoint);
+            } catch (err: unknown) {
+              const message = err instanceof Error ? err.message : String(err);
+              console.warn(`[openshell-gateway] failed to start created gateway "${gateway.name}": ${message}`);
+            }
           }
-        }
-      }
+        }),
+      );
       if (localGateways.length > 0) {
         for (const gw of localGateways) {
           if (await this.isEndpointHealthy(gw.endpoint)) {
@@ -221,10 +223,7 @@ export class OpenshellGateway implements Disposable {
       registered = true;
       await this.waitForIndependentGateway(gatewayProcess, name, processState);
     } catch (err: unknown) {
-      gatewayProcess.kill('SIGTERM');
-      if (this.#gatewayProcesses.get(name) === gatewayProcess) {
-        this.#gatewayProcesses.delete(name);
-      }
+      await this.stopGateway(name);
       if (registered) {
         await this.openshellCli.removeGateway(name).catch(() => undefined);
       }
@@ -234,7 +233,11 @@ export class OpenshellGateway implements Disposable {
   }
 
   private isCreatedGateway(name: string): boolean {
-    return name !== DEFAULT_GATEWAY_NAME && existsSync(join(this.getGatewayStorageDirectory(name), 'gateway.toml'));
+    return (
+      name !== DEFAULT_GATEWAY_NAME &&
+      GATEWAY_NAME_PATTERN.test(name) &&
+      existsSync(join(this.getGatewayStorageDirectory(name), 'gateway.toml'))
+    );
   }
 
   private async startCreatedGateway(name: string, endpoint: string): Promise<void> {
@@ -261,10 +264,7 @@ export class OpenshellGateway implements Disposable {
     try {
       await this.waitForIndependentGateway(gatewayProcess, name, processState);
     } catch (err: unknown) {
-      gatewayProcess.kill('SIGTERM');
-      if (this.#gatewayProcesses.get(name) === gatewayProcess) {
-        this.#gatewayProcesses.delete(name);
-      }
+      await this.stopGateway(name);
       throw err;
     }
   }
@@ -394,11 +394,13 @@ export class OpenshellGateway implements Disposable {
   }
 
   private trackGatewayProcess(name: string, gatewayProcess: ChildProcess): void {
-    gatewayProcess.once('exit', () => {
+    const cleanup = (): void => {
       if (this.#gatewayProcesses.get(name) === gatewayProcess) {
         this.#gatewayProcesses.delete(name);
       }
-    });
+    };
+    gatewayProcess.once('exit', cleanup);
+    gatewayProcess.once('error', cleanup);
     this.#gatewayProcesses.set(name, gatewayProcess);
   }
 
@@ -408,6 +410,10 @@ export class OpenshellGateway implements Disposable {
       return;
     }
     proc.kill('SIGTERM');
+    if (typeof proc.exitCode === 'number') {
+      this.#gatewayProcesses.delete(name);
+      return;
+    }
     await new Promise<void>(resolve => {
       const timeout = setTimeout(() => {
         if (typeof proc.exitCode !== 'number') {

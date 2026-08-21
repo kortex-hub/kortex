@@ -121,6 +121,18 @@ beforeEach(() => {
 });
 
 describe('init', () => {
+  test('does not inspect storage paths for invalid registered gateway names', async () => {
+    vi.mocked(openshellCli.listGateways).mockResolvedValue([
+      { name: '../outside', endpoint: 'http://127.0.0.1:17675', active: true, type: 'local' },
+    ]);
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
+
+    await gateway.init();
+
+    expect(existsSync).not.toHaveBeenCalled();
+    expect(spawn).not.toHaveBeenCalled();
+  });
+
   test('starts a stopped gateway previously created by Kaiden', async () => {
     const proc = createMockChildProcess();
     vi.mocked(spawn).mockReturnValue(proc);
@@ -446,6 +458,29 @@ describe('createLocalGateway', () => {
     expect(openshellCli.removeGateway).toHaveBeenCalledWith('local-dev');
   });
 
+  test('force-stops a failed gateway process that ignores SIGTERM', async () => {
+    vi.useFakeTimers();
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValue(proc);
+    vi.mocked(openshellCli.getGatewayInfo).mockRejectedValue(new Error('not ready'));
+
+    const creation = expect(
+      gateway.createLocalGateway({
+        name: 'local-dev',
+        bindAddress: '127.0.0.1',
+        port: 17675,
+        driver: 'podman',
+      }),
+    ).rejects.toThrow('Gateway did not become ready');
+    await vi.advanceTimersByTimeAsync(30_000);
+    await vi.advanceTimersByTimeAsync(5_000);
+
+    await creation;
+    expect(proc.kill).toHaveBeenNthCalledWith(1, 'SIGTERM');
+    expect(proc.kill).toHaveBeenNthCalledWith(2, 'SIGKILL');
+    vi.useRealTimers();
+  });
+
   test('closes the log without registering when spawn throws', async () => {
     vi.mocked(spawn).mockImplementation(() => {
       throw new Error('spawn failed');
@@ -478,6 +513,21 @@ describe('getGatewayBinaryPath', () => {
 });
 
 describe('start', () => {
+  test('can retry after the gateway process emits an error without exiting', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const failedProcess = createMockChildProcess();
+    const retryProcess = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValueOnce(failedProcess).mockReturnValueOnce(retryProcess);
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
+
+    await gateway.start();
+    failedProcess.emit('error', new Error('spawn error'));
+    await gateway.start();
+
+    expect(spawn).toHaveBeenCalledTimes(2);
+    expect(gateway.isRunning()).toBe(true);
+  });
+
   test('spawns the gateway process and writes its output only to the log', async () => {
     const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
