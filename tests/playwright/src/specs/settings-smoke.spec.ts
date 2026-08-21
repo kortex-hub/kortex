@@ -71,6 +71,8 @@ test.describe('Settings page navigation', { tag: '@smoke' }, () => {
   });
 
   test('[SET-03] CLI tab shows the bundled OpenShell tools with a detected version', async ({ settingsPage }) => {
+    test.skip(process.platform === 'win32', 'OpenShell CLI binaries are not bundled for Windows yet');
+
     const cliPage = await settingsPage.openCli();
     await cliPage.waitForLoad();
 
