@@ -74,9 +74,15 @@ test.describe('Settings page navigation', { tag: '@smoke' }, () => {
     await cliPage.waitForLoad();
 
     for (const displayName of OPENSHELL_BUNDLED_TOOLS) {
-      await expect(cliPage.getToolRow(displayName)).toBeVisible();
-      await expect(cliPage.getToolVersion(displayName)).toBeVisible();
-      expect(await cliPage.isToolVersionDetected(displayName)).toBeTruthy();
+      await test.step(displayName, async () => {
+        await expect(cliPage.getToolRow(displayName)).toBeVisible();
+
+        const versionLabel = cliPage.getToolVersion(displayName);
+        await expect(versionLabel).toBeVisible();
+        expect(await cliPage.isToolVersionDetected(displayName)).toBeTruthy();
+
+        test.info().annotations.push({ type: displayName, description: (await versionLabel.textContent()) ?? '' });
+      });
     }
   });
 
