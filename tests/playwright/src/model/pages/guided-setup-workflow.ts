@@ -25,10 +25,14 @@ import { agentModelSetupSkipMessageFor, isAgentModelSetupAvailable } from '/@/mo
 import { AgentWorkspacesPage } from '/@/model/pages/agent-workspaces-page';
 import type { GuidedSetupPage } from '/@/model/pages/guided-setup-page';
 
-export function describeAgentOnboarding(agent: CodingAgent, title: string, body: () => void): void {
-  const available = isAgentModelSetupAvailable(agent);
+/** Uses the describe title itself to surface the skip reason, so it's visible in the test report. */
+export function describeIfAvailable(available: boolean, title: string, skipReason: string, body: () => void): void {
   const describeFn = available ? test.describe : test.describe.skip;
-  describeFn(available ? title : agentModelSetupSkipMessageFor(agent), body);
+  describeFn(available ? title : skipReason, body);
+}
+
+export function describeAgentOnboarding(agent: CodingAgent, title: string, body: () => void): void {
+  describeIfAvailable(isAgentModelSetupAvailable(agent), title, agentModelSetupSkipMessageFor(agent), body);
 }
 
 export async function completeGuidedSetupFor(guidedSetup: GuidedSetupPage, agent: CodingAgent): Promise<string> {

@@ -42,7 +42,7 @@ export {
   buildInlineConnectionFields,
   type InlineConnectionField,
   isAgentModelSetupAvailable,
-  isOpenCodeModelSetupAvailable,
+  isLocalRuntimeAvailable,
   resolveAgentModelConnection,
   resolveAgentModelConnectionFor,
   type ResolvedAgentModelSetup,
