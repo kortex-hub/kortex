@@ -53,6 +53,8 @@ network_policies:
         enforcement: enforce
         rules:
           - allow: { method: GET, path: /dist/** }
+          # node-gyp >=10 fetches headers from /download/release/ by default
+          - allow: { method: GET, path: /download/release/** }
     binaries:
       - path: "**/node"
 
