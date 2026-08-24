@@ -107,7 +107,6 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     },
     tags: ['Local'],
     command: 'openclaw',
-    acp: { args: ['acp'] },
     configurationFiles: [
       {
         path: OPENCLAW_CONFIG_PATH,

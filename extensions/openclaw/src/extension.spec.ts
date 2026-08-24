@@ -54,6 +54,13 @@ describe('activate', () => {
     );
   });
 
+  test('registers openclaw agent without ACP', async () => {
+    await activate(extensionContextMock);
+
+    const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+    expect(agent.acp).toBeUndefined();
+  });
+
   test('pushes agent disposable to subscriptions', async () => {
     await activate(extensionContextMock);
 
