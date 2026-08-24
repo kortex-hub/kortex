@@ -449,7 +449,7 @@ function handleKeyDown(e: KeyboardEvent): void {
       {#if isDraft}
         New Session
       {:else}
-        {session ? (session.prompt.length > 80 ? `${session.prompt.slice(0, 80)}…` : session.prompt) : 'Session'}
+        {session ? ((session.name ?? session.prompt).length > 80 ? `${(session.name ?? session.prompt).slice(0, 80)}…` : (session.name ?? session.prompt)) : 'Session'}
       {/if}
     </span>
     {#if isDraft && draftSandboxName}

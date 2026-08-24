@@ -1057,6 +1057,17 @@ export class AcpSessionManager {
     });
   }
 
+  async renameSession(sessionId: string, name: string): Promise<void> {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      throw new Error(`Session "${sessionId}" not found`);
+    }
+    session.info.name = name;
+    session.info.updatedAt = Date.now();
+    this.apiSender.send('acp-session-update');
+    await this.saveToDisk(sessionId);
+  }
+
   async listSessions(): Promise<AcpSessionInfo[]> {
     await this.validateSandboxes();
     return Array.from(this.sessions.values()).map(s => ({ ...s.info }));

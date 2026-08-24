@@ -49,6 +49,7 @@ export class AcpIPCHandler {
     this.ipcHandle('acp:sendFollowUp', this.sendFollowUp.bind(this));
     this.ipcHandle('acp:stopPrompt', this.stopPrompt.bind(this));
     this.ipcHandle('acp:deleteSession', this.deleteSession.bind(this));
+    this.ipcHandle('acp:renameSession', this.renameSession.bind(this));
     this.ipcHandle('acp:cancelSession', this.cancelSession.bind(this));
     this.ipcHandle('acp:isOpenshellAvailable', this.isOpenshellAvailable.bind(this));
     this.ipcHandle('acp:setSessionModel', this.setSessionModel.bind(this));
@@ -87,6 +88,10 @@ export class AcpIPCHandler {
 
   protected async deleteSession(_: IpcMainInvokeEvent, sessionId: string): Promise<void> {
     return this.sessionManager.deleteSession(sessionId);
+  }
+
+  protected async renameSession(_: IpcMainInvokeEvent, sessionId: string, name: string): Promise<void> {
+    return this.sessionManager.renameSession(sessionId, name);
   }
 
   protected cancelSession(_: IpcMainInvokeEvent, sessionId: string): void {

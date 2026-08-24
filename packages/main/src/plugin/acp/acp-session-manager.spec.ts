@@ -489,6 +489,50 @@ describe('AcpSessionManager', () => {
     });
   });
 
+  describe('renameSession', () => {
+    test('updates the name field and persists to disk', async () => {
+      const { existsSync } = await import('node:fs');
+      const { readdir, readFile, writeFile } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readdir).mockResolvedValue(['session-rename.json' as never]);
+      vi.mocked(writeFile).mockResolvedValue();
+
+      const storedSession: { info: AcpSessionInfo; events: unknown[] } = {
+        info: {
+          id: 'session-rename',
+          sandboxName: 'sb',
+          sandboxId: 'sb-id',
+          prompt: 'original prompt text',
+          status: 'completed',
+          createdAt: 1000,
+          updatedAt: 2000,
+        },
+        events: [],
+      };
+      vi.mocked(readFile).mockResolvedValue(JSON.stringify(storedSession));
+
+      await manager.init();
+
+      await manager.renameSession('session-rename', 'My Custom Name');
+
+      const sessions = await manager.listSessions();
+      expect(sessions[0]!.name).toBe('My Custom Name');
+      expect(sessions[0]!.updatedAt).toBeGreaterThan(2000);
+      expect(writeFile).toHaveBeenCalledWith(
+        join(FAKE_SESSIONS_DIR, 'session-rename.json'),
+        expect.stringContaining('"My Custom Name"'),
+        'utf-8',
+      );
+      expect(apiSender.send).toHaveBeenCalledWith('acp-session-update');
+    });
+
+    test('throws when renaming a non-existent session', async () => {
+      await manager.init();
+      await expect(manager.renameSession('nonexistent', 'new name')).rejects.toThrow('Session "nonexistent" not found');
+    });
+  });
+
   describe('persistence of resume fields', () => {
     test('restores acpSessionId, agentCommand, and gatewayName from disk', async () => {
       const { existsSync } = await import('node:fs');

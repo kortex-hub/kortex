@@ -60,6 +60,7 @@ export interface AcpSlashCommand {
 
 export interface AcpSessionInfo {
   id: string;
+  name?: string;
   sandboxName: string;
   sandboxId?: string;
   prompt: string;
