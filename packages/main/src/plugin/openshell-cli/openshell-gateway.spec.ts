@@ -18,7 +18,7 @@
 
 import { type ChildProcess, spawn } from 'node:child_process';
 import { EventEmitter } from 'node:events';
-import { createWriteStream, type WriteStream } from 'node:fs';
+import { createWriteStream, existsSync, type WriteStream } from 'node:fs';
 import { type FileHandle, mkdir, open, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -68,7 +68,6 @@ function createMockChildProcess(): ChildProcess & { _stdout: EventEmitter; _stde
   Object.defineProperty(proc, 'stdout', { get: (): EventEmitter => proc._stdout });
   Object.defineProperty(proc, 'stderr', { get: (): EventEmitter => proc._stderr });
   proc.kill = vi.fn().mockReturnValue(true);
-  proc.unref = vi.fn();
   return proc;
 }
 
@@ -111,6 +110,7 @@ beforeEach(() => {
     { name: 'openshell-gateway', path: GATEWAY_BINARY },
   ] as unknown as CliToolInfo[]);
   vi.mocked(createWriteStream).mockReturnValue(gatewayLogStream);
+  vi.mocked(existsSync).mockReturnValue(false);
   vi.mocked(open).mockResolvedValue({ fd: 42, close: closeLogFile } as unknown as FileHandle);
   vi.mocked(exec.exec).mockResolvedValue({ command: '', stdout: '', stderr: '' });
   vi.mocked(isFreePort).mockResolvedValue(true);
@@ -121,6 +121,41 @@ beforeEach(() => {
 });
 
 describe('init', () => {
+  test('does not inspect storage paths for invalid registered gateway names', async () => {
+    vi.mocked(openshellCli.listGateways).mockResolvedValue([
+      { name: '../outside', endpoint: 'http://127.0.0.1:17675', active: true, type: 'local' },
+    ]);
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
+
+    await gateway.init();
+
+    expect(existsSync).not.toHaveBeenCalled();
+    expect(spawn).not.toHaveBeenCalled();
+  });
+
+  test('starts a stopped gateway previously created by Kaiden', async () => {
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValue(proc);
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(openshellCli.listGateways).mockResolvedValue([
+      { name: 'local-dev', endpoint: 'http://127.0.0.1:17675', active: true, type: 'local' },
+    ]);
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValueOnce(false).mockResolvedValue(true);
+
+    await gateway.init();
+
+    expect(spawn).toHaveBeenCalledWith(
+      GATEWAY_BINARY,
+      expect.arrayContaining([
+        '--config',
+        join(KAIDEN_DATA_DIRECTORY, 'openshell-gateways', 'local-dev', 'gateway.toml'),
+        '--port',
+        '17675',
+      ]),
+      expect.objectContaining({ detached: false }),
+    );
+  });
+
   test('skips auto-start when existing gateway is healthy and already active', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const existingGateways: GatewayInfo[] = [
@@ -315,7 +350,7 @@ describe('createLocalGateway', () => {
         '--disable-tls',
       ]),
       expect.objectContaining({
-        detached: true,
+        detached: false,
         stdio: ['ignore', 42, 42],
       }),
     );
@@ -334,7 +369,6 @@ describe('createLocalGateway', () => {
       { env: { XDG_CONFIG_HOME: join(storageDirectory, 'xdg-config') } },
     );
     expect(closeLogFile).toHaveBeenCalled();
-    expect(proc.unref).toHaveBeenCalled();
   });
 
   test('infers the Docker driver from the active gateway when no override is supplied', async () => {
@@ -424,6 +458,29 @@ describe('createLocalGateway', () => {
     expect(openshellCli.removeGateway).toHaveBeenCalledWith('local-dev');
   });
 
+  test('force-stops a failed gateway process that ignores SIGTERM', async () => {
+    vi.useFakeTimers();
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValue(proc);
+    vi.mocked(openshellCli.getGatewayInfo).mockRejectedValue(new Error('not ready'));
+
+    const creation = expect(
+      gateway.createLocalGateway({
+        name: 'local-dev',
+        bindAddress: '127.0.0.1',
+        port: 17675,
+        driver: 'podman',
+      }),
+    ).rejects.toThrow('Gateway did not become ready');
+    await vi.advanceTimersByTimeAsync(30_000);
+    await vi.advanceTimersByTimeAsync(5_000);
+
+    await creation;
+    expect(proc.kill).toHaveBeenNthCalledWith(1, 'SIGTERM');
+    expect(proc.kill).toHaveBeenNthCalledWith(2, 'SIGKILL');
+    vi.useRealTimers();
+  });
+
   test('closes the log without registering when spawn throws', async () => {
     vi.mocked(spawn).mockImplementation(() => {
       throw new Error('spawn failed');
@@ -456,6 +513,21 @@ describe('getGatewayBinaryPath', () => {
 });
 
 describe('start', () => {
+  test('can retry after the gateway process emits an error without exiting', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const failedProcess = createMockChildProcess();
+    const retryProcess = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValueOnce(failedProcess).mockReturnValueOnce(retryProcess);
+    vi.mocked(openshellCli.checkEndpointStatus).mockResolvedValue(true);
+
+    await gateway.start();
+    failedProcess.emit('error', new Error('spawn error'));
+    await gateway.start();
+
+    expect(spawn).toHaveBeenCalledTimes(2);
+    expect(gateway.isRunning()).toBe(true);
+  });
+
   test('spawns the gateway process and writes its output only to the log', async () => {
     const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -850,6 +922,23 @@ describe('isRunning', () => {
 });
 
 describe('dispose', () => {
+  test('stops gateways created from the settings UI', async () => {
+    const proc = createMockChildProcess();
+    vi.mocked(spawn).mockReturnValue(proc);
+
+    await gateway.createLocalGateway({
+      name: 'local-dev',
+      bindAddress: '127.0.0.1',
+      port: 17675,
+      driver: 'podman',
+    });
+
+    gateway.dispose();
+
+    expect(proc.kill).toHaveBeenCalledWith('SIGTERM');
+    proc.emit('exit', 0, undefined);
+  });
+
   test('stops the gateway process and closes its log', async () => {
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     const proc = createMockChildProcess();
