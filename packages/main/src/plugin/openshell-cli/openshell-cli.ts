@@ -423,7 +423,7 @@ export class OpenshellCli {
     if (gatewayName) {
       args.push('-g', gatewayName);
     }
-    const data = await this.execCLI<unknown>(args);
+    const data = await this.execCLI<unknown>(args, undefined, true);
     return GatewayRuntimeInfoSchema.parse(data);
   }
 
@@ -567,7 +567,7 @@ export class OpenshellCli {
     });
   }
 
-  private async execCLI<T>(args: string[], options?: RunOptions): Promise<T> {
+  private async execCLI<T>(args: string[], options?: RunOptions, quiet?: boolean): Promise<T> {
     const cliPath = this.getCliPath();
     const fullArgs = [...args, '-o', 'json'];
     try {
@@ -575,7 +575,9 @@ export class OpenshellCli {
       return JSON.parse(result.stdout) as T;
     } catch (err: unknown) {
       const detail = this.extractCliError(err);
-      console.error(`openshell failed: ${cliPath} ${fullArgs.join(' ')} — ${detail}`);
+      if (!quiet) {
+        console.error(`openshell failed: ${cliPath} ${fullArgs.join(' ')} — ${detail}`);
+      }
       throw new Error(detail);
     }
   }
