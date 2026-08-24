@@ -51,6 +51,12 @@ const OpenClawToolsSchema = z.looseObject({
   profile: z.string().optional(),
 });
 
+const OpenClawGatewaySchema = z.looseObject({
+  mode: z.string().optional(),
+  bind: z.string().optional(),
+  auth: z.looseObject({ mode: z.string().optional() }).optional(),
+});
+
 const McpServerEntrySchema = z.looseObject({
   command: z.string().optional(),
   args: z.array(z.string()).optional(),
@@ -70,6 +76,7 @@ const OpenClawConfigSchema = z.looseObject({
   agents: OpenClawAgentsSchema.optional(),
   models: OpenClawModelsSchema.optional(),
   tools: OpenClawToolsSchema.optional(),
+  gateway: OpenClawGatewaySchema.optional(),
   mcp: McpConfigSchema.optional(),
 });
 
@@ -95,6 +102,10 @@ function nonEmpty(obj: Record<string, string> | undefined): Record<string, strin
 }
 
 export const OPENCLAW_CONFIG_PATH = '.openclaw/openclaw.json';
+export const OPENCLAW_LAUNCH_SCRIPT_PATH = '.openclaw/kaiden-launch.sh';
+
+const OPENCLAW_LAUNCH_SCRIPT =
+  'curl -sf http://127.0.0.1:18789/ >/dev/null 2>&1 || { openclaw gateway run >/tmp/openclaw-gateway.log 2>&1 & for i in $(seq 1 30); do curl -sf http://127.0.0.1:18789/ >/dev/null 2>&1 && break; sleep 0.5; done; }; curl -sf http://127.0.0.1:18789/ >/dev/null 2>&1 || { cat /tmp/openclaw-gateway.log >&2; exit 1; }; openclaw "$@"';
 
 export async function activate(extensionContext: ExtensionContext): Promise<void> {
   const disposable = agents.registerAgent({
@@ -107,13 +118,22 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       logo: './icon.png',
     },
     tags: ['Local'],
-    command: 'openclaw',
-    acp: { args: ['acp'] },
+    command: `sh ~/${OPENCLAW_LAUNCH_SCRIPT_PATH}`,
+    acp: {
+      command: '/bin/sh',
+      args: ['-c', `exec /bin/sh "$HOME/${OPENCLAW_LAUNCH_SCRIPT_PATH}" acp`],
+    },
     configurationFiles: [
       {
         path: OPENCLAW_CONFIG_PATH,
         async read(): Promise<string> {
           return '{}';
+        },
+      },
+      {
+        path: OPENCLAW_LAUNCH_SCRIPT_PATH,
+        async read(): Promise<string> {
+          return OPENCLAW_LAUNCH_SCRIPT;
         },
       },
     ],
@@ -132,6 +152,11 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       }
 
       const config = OpenClawConfigCodec.decode(await configFile.read());
+
+      config.gateway ??= {};
+      config.gateway.mode ??= 'local';
+      config.gateway.bind ??= 'loopback';
+      config.gateway.auth ??= { mode: 'none' };
 
       config.agents ??= {};
       config.agents.defaults = { ...config.agents.defaults, model: provider ? `${provider}/${model}` : model };

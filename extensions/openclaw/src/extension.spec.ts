@@ -20,7 +20,7 @@ import type { AgentConfigurationFile, AgentWorkspaceContext, Disposable, Extensi
 import { agents } from '@openkaiden/api';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { activate, OPENCLAW_CONFIG_PATH } from './extension';
+import { activate, OPENCLAW_CONFIG_PATH, OPENCLAW_LAUNCH_SCRIPT_PATH } from './extension';
 
 vi.mock(import('@openkaiden/api'));
 
@@ -49,10 +49,18 @@ describe('activate', () => {
         description: expect.any(String),
         baseImage: expect.stringContaining('ghcr.io/openkaiden/openshell-image-openclaw'),
         icon: expect.objectContaining({ icon: './icon.png' }),
+        command: `sh ~/${OPENCLAW_LAUNCH_SCRIPT_PATH}`,
+        acp: {
+          command: '/bin/sh',
+          args: ['-c', `exec /bin/sh "$HOME/${OPENCLAW_LAUNCH_SCRIPT_PATH}" acp`],
+        },
         destinationSkillsFolder: '${HOME}/.openclaw/skills',
         isSupportedModelType: expect.any(Function),
       }),
     );
+
+    const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
+    expect(await agent.configurationFiles[1]!.read()).toContain('openclaw gateway run');
   });
 
   test('pushes agent disposable to subscriptions', async () => {
@@ -74,8 +82,9 @@ describe('activate', () => {
     await activate(extensionContextMock);
 
     const agent = vi.mocked(agents.registerAgent).mock.calls[0]![0];
-    expect(agent.configurationFiles).toHaveLength(1);
+    expect(agent.configurationFiles).toHaveLength(2);
     expect(agent.configurationFiles[0]!.path).toBe(OPENCLAW_CONFIG_PATH);
+    expect(agent.configurationFiles[1]!.path).toBe(OPENCLAW_LAUNCH_SCRIPT_PATH);
   });
 
   describe('preWorkspaceStart', () => {
@@ -132,12 +141,14 @@ describe('activate', () => {
       const written = writtenConfig(configFile);
       expect(written).toEqual({
         agents: { defaults: { model: 'anthropic/claude-opus-4-6' } },
+        gateway: { mode: 'local', bind: 'loopback', auth: { mode: 'none' } },
       });
     });
 
     test('preserves existing configuration fields', async () => {
       const existingConfig = JSON.stringify({
         agents: { defaults: { model: 'old-model', params: { cacheRetention: 'long' } } },
+        gateway: { mode: 'remote', bind: 'lan', auth: { mode: 'token', token: 'custom-token' } },
         other: true,
       });
       const configFile = createConfigFile(existingConfig);
@@ -146,6 +157,11 @@ describe('activate', () => {
       const written = writtenConfig(configFile);
       expect(written.agents.defaults.model).toBe('openai/gpt-5.5');
       expect(written.agents.defaults.params.cacheRetention).toBe('long');
+      expect(written.gateway).toEqual({
+        mode: 'remote',
+        bind: 'lan',
+        auth: { mode: 'token', token: 'custom-token' },
+      });
       expect(written.other).toBe(true);
     });
 
