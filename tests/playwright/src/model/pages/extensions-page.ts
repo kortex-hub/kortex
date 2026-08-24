@@ -24,12 +24,15 @@ import { builtInExtensions } from '/@/model/core/types';
 
 import { BasePage } from './base-page';
 import { ExtensionsInstalledPage } from './extensions-installed-tab-page';
+import { InstallCustomExtensionModal } from './install-custom-extension-modal';
 
 export class ExtensionsPage extends BasePage {
   readonly searchField: Locator;
   readonly installedTab: Locator;
   readonly catalogTab: Locator;
   readonly localExtensionsTab: Locator;
+  readonly installCustomButton: Locator;
+  readonly filteredOutIndicator: Locator;
   private readonly tabs: Locator[];
 
   constructor(page: Page) {
@@ -38,6 +41,8 @@ export class ExtensionsPage extends BasePage {
     this.installedTab = page.getByRole('button', { name: 'Installed', exact: true });
     this.catalogTab = page.getByRole('button', { name: 'Catalog', exact: true });
     this.localExtensionsTab = page.getByRole('button', { name: 'Local Extensions', exact: true });
+    this.installCustomButton = page.getByLabel('Install custom');
+    this.filteredOutIndicator = page.getByText(/Filtered out \d+ items? of \d+/);
     this.tabs = [this.installedTab, this.catalogTab, this.localExtensionsTab];
   }
 
@@ -50,6 +55,15 @@ export class ExtensionsPage extends BasePage {
 
   async openInstalledTab(): Promise<ExtensionsInstalledPage> {
     return this.openTab(this.installedTab, ExtensionsInstalledPage);
+  }
+
+  async openInstallCustomExtensionModal(): Promise<InstallCustomExtensionModal> {
+    await expect(this.installCustomButton).toBeEnabled();
+    await this.installCustomButton.click();
+
+    const modal = new InstallCustomExtensionModal(this.page);
+    await modal.waitForLoad();
+    return modal;
   }
 
   getAllTabs(): Locator[] {

@@ -38,6 +38,10 @@ export const builtInExtensions = [
 
 export type ExtensionLocator = (typeof builtInExtensions)[number]['locator'];
 
+export function extensionRawName(extension: (typeof builtInExtensions)[number]): string {
+  return extension.locator.replace(/^kaiden\./, '');
+}
+
 export enum Button {
   STOP = 'Stop',
   START = 'Start',
