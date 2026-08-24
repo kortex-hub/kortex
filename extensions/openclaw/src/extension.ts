@@ -101,6 +101,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     id: 'openclaw',
     name: 'OpenClaw',
     description: 'Open-source autonomous AI agent — local models via Ollama or Ramalama, or cloud APIs.',
+    baseImage: 'ghcr.io/openkaiden/openshell-image-openclaw:d08a4b181f2dbf714e7e17a487ee5a0462b1b78d',
     icon: {
       icon: './icon.png',
       logo: './icon.png',
