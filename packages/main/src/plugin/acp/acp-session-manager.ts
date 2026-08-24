@@ -85,6 +85,7 @@ interface AcpSession {
 @injectable()
 export class AcpSessionManager {
   private sessions = new Map<string, AcpSession>();
+  private renameLocks = new Map<string, Promise<void>>();
 
   constructor(
     @inject(ApiSenderType) private readonly apiSender: ApiSenderType,
@@ -1058,14 +1059,30 @@ export class AcpSessionManager {
   }
 
   async renameSession(sessionId: string, name: string): Promise<void> {
-    const session = this.sessions.get(sessionId);
-    if (!session) {
-      throw new Error(`Session "${sessionId}" not found`);
-    }
-    session.info.name = name;
-    session.info.updatedAt = Date.now();
-    this.apiSender.send('acp-session-update');
-    await this.saveToDisk(sessionId);
+    const previous = this.renameLocks.get(sessionId) ?? Promise.resolve();
+    const task = previous.then(async () => {
+      const session = this.sessions.get(sessionId);
+      if (!session) {
+        throw new Error(`Session "${sessionId}" not found`);
+      }
+      const previousName = session.info.name;
+      const previousUpdatedAt = session.info.updatedAt;
+      session.info.name = name;
+      session.info.updatedAt = Date.now();
+      try {
+        await this.saveToDisk(sessionId);
+      } catch (err: unknown) {
+        session.info.name = previousName;
+        session.info.updatedAt = previousUpdatedAt;
+        throw err;
+      }
+      this.apiSender.send('acp-session-update');
+    });
+    this.renameLocks.set(
+      sessionId,
+      task.catch(() => {}),
+    );
+    return task;
   }
 
   async listSessions(): Promise<AcpSessionInfo[]> {

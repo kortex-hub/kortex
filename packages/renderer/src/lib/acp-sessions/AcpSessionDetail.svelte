@@ -41,6 +41,12 @@ let fetchSeq = 0;
 let flowContainer: HTMLElement | undefined = $state(undefined);
 
 const session: AcpSessionInfo | undefined = $derived($acpSessions.find(s => s.id === sessionId));
+const sessionDisplayName: string = $derived.by(() => {
+  if (!session) return 'Session';
+  const name = session.name?.trim();
+  if (name) return name;
+  return session.prompt.trim() ? session.prompt.trim() : 'Session';
+});
 const isWaitingInput = $derived(!isDraft && session?.status === 'waiting_input');
 const canSendFollowUp = $derived(
   isDraft ||
@@ -449,7 +455,7 @@ function handleKeyDown(e: KeyboardEvent): void {
       {#if isDraft}
         New Session
       {:else}
-        {session ? ((session.name ?? session.prompt).length > 80 ? `${(session.name ?? session.prompt).slice(0, 80)}…` : (session.name ?? session.prompt)) : 'Session'}
+        {sessionDisplayName.length > 80 ? `${sessionDisplayName.slice(0, 80)}…` : sessionDisplayName}
       {/if}
     </span>
     {#if isDraft && draftSandboxName}
