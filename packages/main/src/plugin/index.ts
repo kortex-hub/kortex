@@ -605,7 +605,7 @@ export class PluginSystem {
     container.bind<AgentRegistry>(AgentRegistry).toSelf().inSingletonScope();
     container.bind<OpenShellRegistry>(OpenShellRegistry).toSelf().inSingletonScope();
     container.bind<OpenshellCli>(OpenshellCli).toSelf().inSingletonScope();
-    container.bind<OpenshellGatewayConfig>(OpenshellGatewayConfig).toSelf().inSingletonScope();
+    container.bind<OpenshellGatewayConfig>(OpenshellGatewayConfig).toSelf();
     container.bind<OpenshellSdkClient>(OpenshellSdkClient).toSelf().inSingletonScope();
     container.bind<OpenshellGateway>(OpenshellGateway).toSelf().inSingletonScope();
     container.bind<OpenshellGatewayStateManager>(OpenshellGatewayStateManager).toSelf().inSingletonScope();
