@@ -20,9 +20,10 @@ import type { Locator, Page } from '@playwright/test';
 import { expect } from '@playwright/test';
 
 import type { ExtensionLocator } from '/@/model/core/types';
-import { BadgeType, builtInExtensions, Button, ExtensionStatus, State } from '/@/model/core/types';
+import { BadgeType, builtInExtensions, Button, extensionRawName, ExtensionStatus, State } from '/@/model/core/types';
 
 import { BasePage } from './base-page';
+import { ExtensionDetailsPage } from './extension-details-page';
 
 const stateMap: { [key: string]: ExtensionStatus } = {
   [State.ACTIVE]: ExtensionStatus.RUNNING,
@@ -30,8 +31,13 @@ const stateMap: { [key: string]: ExtensionStatus } = {
 };
 
 export class ExtensionsInstalledPage extends BasePage {
+  readonly noSearchResultsHeading: Locator;
+  readonly clearFilterButton: Locator;
+
   constructor(page: Page) {
     super(page);
+    this.noSearchResultsHeading = page.getByRole('heading', { name: /No extensions matching/ });
+    this.clearFilterButton = page.getByRole('button', { name: 'Clear filter' });
   }
 
   async waitForLoad(): Promise<void> {
@@ -44,6 +50,10 @@ export class ExtensionsInstalledPage extends BasePage {
 
   public getExtensionBadge(locator: ExtensionLocator): Locator {
     return this.getExtension(locator).getByLabel(BadgeType.BUILT_IN);
+  }
+
+  public getPreInstalledLabel(locator: ExtensionLocator): Locator {
+    return this.getExtension(locator).getByText('Pre-installed', { exact: true });
   }
 
   public async getExtensionState(locator: ExtensionLocator): Promise<ExtensionStatus> {
@@ -83,6 +93,20 @@ export class ExtensionsInstalledPage extends BasePage {
       default:
         throw new Error(`Cannot toggle extension with unknown state: ${locator}`);
     }
+  }
+
+  public getExtensionDetailsLink(extension: (typeof builtInExtensions)[number]): Locator {
+    return this.page.getByLabel(`${extensionRawName(extension)} extension details`).first();
+  }
+
+  public async openExtensionDetails(extension: (typeof builtInExtensions)[number]): Promise<ExtensionDetailsPage> {
+    const link = this.getExtensionDetailsLink(extension);
+    await expect(link).toBeEnabled();
+    await link.click();
+
+    const detailsPage = new ExtensionDetailsPage(this.page, extension.name);
+    await detailsPage.waitForLoad();
+    return detailsPage;
   }
 
   public getDeleteButtonForExtension(locator: ExtensionLocator): Locator {

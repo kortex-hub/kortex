@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 import { expect, workerTest as test } from '/@/fixtures/electron-app';
-import { BADGE_TEXT, builtInExtensions } from '/@/model/core/types';
+import { BADGE_TEXT, builtInExtensions, ExtensionStatus } from '/@/model/core/types';
 import { waitForNavigationReady } from '/@/utils/app-ready';
 
 test.describe('Extensions page navigation', { tag: '@smoke' }, () => {
@@ -77,5 +77,82 @@ test.describe('Extensions page navigation', { tag: '@smoke' }, () => {
 
     await installedPage.toggleExtensionState(testExtension.locator);
     await expect(deleteButton).toBeDisabled();
+  });
+
+  test('[EXT-05] Extension details page reflects the installed extension state', async ({ extensionsPage }) => {
+    const installedPage = await extensionsPage.openInstalledTab();
+    const extension = builtInExtensions[0];
+
+    const detailsPage = await installedPage.openExtensionDetails(extension);
+
+    await expect(detailsPage.heading).toBeVisible();
+    await expect(detailsPage.status).toBeVisible();
+    await expect(detailsPage.deleteButton).toBeDisabled();
+  });
+
+  test('[EXT-06] Start/Stop controls toggle visibility in sync with extension status', async ({ extensionsPage }) => {
+    const installedPage = await extensionsPage.openInstalledTab();
+    const extension = builtInExtensions[0];
+    const startButton = installedPage.getStartButtonForExtension(extension.locator);
+    const stopButton = installedPage.getStopButtonForExtension(extension.locator);
+
+    const initialState = await installedPage.getExtensionState(extension.locator);
+
+    await installedPage.toggleExtensionState(extension.locator);
+    const toggledState = await installedPage.getExtensionState(extension.locator);
+    expect(toggledState).not.toBe(initialState);
+
+    if (toggledState === ExtensionStatus.RUNNING) {
+      await expect(stopButton).toBeVisible();
+      await expect(startButton).not.toBeVisible();
+    } else {
+      await expect(startButton).toBeVisible();
+      await expect(stopButton).not.toBeVisible();
+    }
+
+    await installedPage.toggleExtensionState(extension.locator);
+    expect(await installedPage.getExtensionState(extension.locator)).toBe(initialState);
+  });
+
+  test('[EXT-07] Filtered-out indicator appears once a search narrows the installed list', async ({
+    extensionsPage,
+  }) => {
+    const installedPage = await extensionsPage.openInstalledTab();
+    const extension = builtInExtensions[0];
+
+    await expect(installedPage.getPreInstalledLabel(extension.locator)).toBeVisible();
+
+    await extensionsPage.searchExtension(extension.name);
+    await expect(extensionsPage.filteredOutIndicator).toBeVisible();
+
+    await extensionsPage.clearSearch();
+    await expect(extensionsPage.filteredOutIndicator).not.toBeVisible();
+  });
+
+  test('[EXT-08] Install Custom Extension modal validates the OCI image field', async ({ extensionsPage }) => {
+    const modal = await extensionsPage.openInstallCustomExtensionModal();
+
+    await modal.fillImageName('quay.io/namespace/my-image');
+    await expect(modal.missingNameError).not.toBeVisible();
+    await expect(modal.installButton).toBeEnabled();
+
+    await modal.fillImageName('');
+    await expect(modal.missingNameError).toBeVisible();
+    await expect(modal.imageNameInput).toHaveAttribute('aria-invalid', 'true');
+    await expect(modal.installButton).toBeDisabled();
+
+    await modal.cancel();
+  });
+
+  test('[EXT-09] Installed tab search with no matches shows reset-filter empty screen', async ({ extensionsPage }) => {
+    const installedPage = await extensionsPage.openInstalledTab();
+    const searchTerm = 'zzz-nonexistent-extension-zzz';
+
+    await extensionsPage.searchExtension(searchTerm);
+    await expect(installedPage.noSearchResultsHeading).toBeVisible();
+
+    await installedPage.clearFilterButton.click();
+    await expect(extensionsPage.searchField).toHaveValue('');
+    await expect(installedPage.getExtension(builtInExtensions[0].locator)).toBeVisible();
   });
 });
