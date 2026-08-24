@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 import { expect, workerTest as test } from '/@/fixtures/electron-app';
-import { BADGE_TEXT, builtInExtensions, ExtensionStatus } from '/@/model/core/types';
+import { BADGE_TEXT, builtInExtensions, ExtensionStatus, State } from '/@/model/core/types';
 import { waitForNavigationReady } from '/@/utils/app-ready';
 
 test.describe
@@ -92,10 +92,13 @@ test.describe
     }) => {
       for (const extension of builtInExtensions) {
         const installedPage = await extensionsPage.openInstalledTab();
+        const installedState = await installedPage.getExtensionState(extension.locator);
         const detailsPage = await installedPage.openExtensionDetails(extension);
 
         await expect(detailsPage.heading).toBeVisible();
-        await expect(detailsPage.status).toBeVisible();
+        await expect(detailsPage.status).toHaveText(
+          installedState === ExtensionStatus.RUNNING ? State.ACTIVE : State.DISABLED,
+        );
         await expect(detailsPage.deleteButton).toBeDisabled();
 
         await navigationBar.navigateToExtensionsPage();
