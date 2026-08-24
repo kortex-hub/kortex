@@ -20,6 +20,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { basename, extname, join } from 'node:path';
+import { stripVTControlCharacters } from 'node:util';
 
 import * as acp from '@agentclientprotocol/sdk';
 import { inject, injectable, preDestroy } from 'inversify';
@@ -167,7 +168,7 @@ export class AcpSessionManager {
           if (stderrLines.length >= MAX_STDERR_LINES) {
             stderrLines.shift();
           }
-          stderrLines.push(cleaned);
+          stderrLines.push(stripVTControlCharacters(cleaned));
           continue;
         }
 
