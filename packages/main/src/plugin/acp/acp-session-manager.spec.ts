@@ -729,7 +729,7 @@ describe('AcpSessionManager', () => {
         newSession: vi.fn().mockResolvedValue({ sessionId: 'acp-1' }),
         prompt: vi.fn().mockResolvedValue({ stopReason: 'end_turn' }),
       };
-      vi.mocked(acp.ClientSideConnection).mockImplementation(() => mockConnection as never);
+      vi.mocked(acp.ClientSideConnection).mockImplementation(function () { return mockConnection as never; });
       vi.mocked(acp.ndJsonStream).mockReturnValue({} as never);
 
       const options: AcpSessionCreateOptions = {
@@ -796,7 +796,7 @@ describe('AcpSessionManager', () => {
         newSession: vi.fn().mockResolvedValue({ sessionId: 'acp-1' }),
         prompt: vi.fn().mockResolvedValue({ stopReason: 'end_turn' }),
       };
-      vi.mocked(acp.ClientSideConnection).mockImplementation(() => mockConnection as never);
+      vi.mocked(acp.ClientSideConnection).mockImplementation(function () { return mockConnection as never; });
       vi.mocked(acp.ndJsonStream).mockReturnValue({} as never);
 
       const options: AcpSessionCreateOptions = {
@@ -854,7 +854,7 @@ describe('AcpSessionManager', () => {
         newSession: vi.fn().mockResolvedValue({ sessionId: 'acp-1' }),
         prompt: vi.fn().mockResolvedValue({ stopReason: 'end_turn' }),
       };
-      vi.mocked(acp.ClientSideConnection).mockImplementation(() => mockConnection as never);
+      vi.mocked(acp.ClientSideConnection).mockImplementation(function () { return mockConnection as never; });
       vi.mocked(acp.ndJsonStream).mockReturnValue({} as never);
 
       const options: AcpSessionCreateOptions = {
