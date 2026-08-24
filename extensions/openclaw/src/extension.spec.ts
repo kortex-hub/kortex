@@ -48,6 +48,7 @@ describe('activate', () => {
         name: 'OpenClaw',
         description: expect.any(String),
         icon: expect.objectContaining({ icon: './icon.png' }),
+        baseImage: 'ghcr.io/openkaiden/openshell-image-openclaw:d08a4b181f2dbf714e7e17a487ee5a0462b1b78d',
         destinationSkillsFolder: '${HOME}/.openclaw/skills',
         isSupportedModelType: expect.any(Function),
       }),

@@ -107,6 +107,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
     },
     tags: ['Local'],
     command: 'openclaw',
+    baseImage: 'ghcr.io/openkaiden/openshell-image-openclaw:d08a4b181f2dbf714e7e17a487ee5a0462b1b78d',
     acp: { args: ['acp'] },
     configurationFiles: [
       {
