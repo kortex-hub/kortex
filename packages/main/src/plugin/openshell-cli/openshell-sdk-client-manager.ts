@@ -31,7 +31,7 @@ import type { GatewayInfo } from '/@api/openshell-gateway-info.js';
  * Clients are lazy — no network request is made until the first RPC.
  */
 @injectable()
-export class OpenshellSdkClient {
+export class OpenshellSdkClientManager {
   readonly #cache = new Map<string, OpenShellClient>();
 
   constructor(

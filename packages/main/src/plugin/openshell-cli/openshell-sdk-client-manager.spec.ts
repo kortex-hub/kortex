@@ -21,7 +21,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type { GatewayInfo } from '/@api/openshell-gateway-info.js';
 
 import type { OpenshellGatewayConfig } from './openshell-gateway-config.js';
-import { OpenshellSdkClient } from './openshell-sdk-client.js';
+import { OpenshellSdkClientManager } from './openshell-sdk-client-manager.js';
 
 vi.mock(import('@nvidia/openshell-sdk'));
 vi.mock(import('/@/plugin/openshell-cli/openshell-cli.js'));
@@ -49,16 +49,16 @@ function gateway(overrides: Partial<GatewayInfo> = {}): GatewayInfo {
 function createSdkClient(
   listGateways: () => Promise<GatewayInfo[]>,
   buildConnectOptions?: OpenshellGatewayConfig['buildConnectOptions'],
-): OpenshellSdkClient {
+): OpenshellSdkClientManager {
   const openshellCli = { listGateways } as never;
   const gatewayConfig = {
     buildConnectOptions:
       buildConnectOptions ?? vi.fn().mockImplementation(async (gw: GatewayInfo) => ({ gateway: gw.endpoint })),
   } as never;
-  return new OpenshellSdkClient(openshellCli, gatewayConfig);
+  return new OpenshellSdkClientManager(openshellCli, gatewayConfig);
 }
 
-describe('OpenshellSdkClient', () => {
+describe('OpenshellSdkClientManager', () => {
   describe('getClient', () => {
     test('connects with options from gateway config', async () => {
       const gw = gateway();
