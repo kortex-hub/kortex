@@ -21,7 +21,7 @@ import { spawn } from 'node:child_process';
 import type { WriteStream } from 'node:fs';
 import { createWriteStream, existsSync } from 'node:fs';
 import { mkdir, open, writeFile } from 'node:fs/promises';
-import { delimiter, dirname, join } from 'node:path';
+import { join } from 'node:path';
 
 import type { Disposable } from '@openkaiden/api';
 import { inject, injectable, preDestroy } from 'inversify';
@@ -323,7 +323,6 @@ export class OpenshellGateway implements Disposable {
     const gatewayProcess = spawn(binaryPath, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false,
-      env: this.getGatewayEnvironment(binaryPath),
     });
     this.trackGatewayProcess(DEFAULT_GATEWAY_NAME, gatewayProcess);
 
@@ -472,29 +471,6 @@ export class OpenshellGateway implements Disposable {
     }
     args.push('--db-url', `sqlite:${join(storageDirectory, 'gateway.db')}?mode=rwc`);
     return args;
-  }
-
-  private getGatewayEnvironment(binaryPath: string): NodeJS.ProcessEnv {
-    const environment: NodeJS.ProcessEnv & { PATH?: string } = { ...process.env };
-    if (process.platform !== 'linux') {
-      return environment;
-    }
-
-    const candidates = [dirname(binaryPath)];
-    const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
-    if (resourcesPath) {
-      candidates.push(join(resourcesPath, 'openshell'));
-    }
-    const e2fsprogsBin = candidates.find(candidate => existsSync(join(candidate, 'mkfs.ext4')));
-    if (e2fsprogsBin) {
-      environment.PATH = environment.PATH ? `${e2fsprogsBin}${delimiter}${environment.PATH}` : e2fsprogsBin;
-    } else {
-      console.warn(
-        `[openshell-gateway] bundled mkfs.ext4 not found in any candidate location (${candidates.join(', ')}); ` +
-          'relying on system PATH',
-      );
-    }
-    return environment;
   }
 
   private async getGatewayVersion(binaryPath: string): Promise<string> {
