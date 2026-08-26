@@ -22,18 +22,31 @@
         "vertex-ai.factory.projectId": {
           "type": "string",
           "scope": "InferenceProviderConnectionFactory",
-          "description": "Google Cloud project ID where Anthropic models are enabled (not the ADC quota_project_id)"
+          "description": "Google Cloud project ID where Anthropic models are enabled (not the ADC quota_project_id)",
+          "default": [
+            "env:GOOGLE_VERTEX_PROJECT",
+            "env:ANTHROPIC_VERTEX_PROJECT_ID"
+          ]
         },
         "vertex-ai.factory.region": {
           "type": "string",
           "scope": "InferenceProviderConnectionFactory",
-          "description": "Google Cloud region (e.g. us-east5, europe-west1)"
+          "description": "Google Cloud region (e.g. us-east5, europe-west1)",
+          "default": [
+            "env:GOOGLE_VERTEX_LOCATION",
+            "env:CLOUD_ML_REGION"
+          ]
         },
         "vertex-ai.factory.credentialsFile": {
           "type": "string",
           "format": "file",
           "scope": "InferenceProviderConnectionFactory",
-          "description": "Path to gcloud credentials file (e.g. ~/.config/gcloud/application_default_credentials.json)"
+          "description": "Path to gcloud credentials file (e.g. ~/.config/gcloud/application_default_credentials.json)",
+          "default": [
+            "env:GOOGLE_APPLICATION_CREDENTIALS",
+            "file:~/.config/gcloud/application_default_credentials.json",
+            "file:$APPDATA/gcloud/application_default_credentials.json"
+          ]
         },
         "vertex-ai.connection._type": {
           "type": "string",

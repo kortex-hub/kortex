@@ -18,6 +18,7 @@
 
 import * as fs from 'node:fs';
 import { promises as fsPromises } from 'node:fs';
+import { homedir } from 'node:os';
 import * as path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 
@@ -220,11 +221,14 @@ export class ConfigurationRegistry implements IConfigurationRegistry {
           configProperty.extension = { id: configuration.extension?.id };
         }
 
+        // Resolve declarative defaults (env:/file: arrays) at registration time
+        configProperty.default = this.resolveDeclarativeDefault(configProperty.default);
+
         // register default if not yet set
         const configurationValue = this.configurationValues.get(CONFIGURATION_DEFAULT_SCOPE);
         if (configurationValue !== undefined) {
           if (
-            configProperty.default &&
+            configProperty.default !== undefined &&
             this.isDefaultScope(configProperty.scope) &&
             configurationValue[key] === undefined
           ) {
@@ -240,6 +244,101 @@ export class ConfigurationRegistry implements IConfigurationRegistry {
       this._onDidUpdateConfiguration.fire({ properties });
     }
     return properties;
+  }
+
+  /**
+   * Resolve declarative default values declared as `env:` / `file:` entries.
+   * Supports both a single string (`"default": "env:VAR"`) and an ordered
+   * array (`"default": ["env:VAR", "file:~/.path"]`).
+   * Returns the first matching value, or `undefined` if none resolve.
+   * Non-declarative defaults (literals, object arrays, etc.) are returned unchanged.
+   */
+  protected resolveDeclarativeDefault(defaultValue: unknown): unknown {
+    // Single string form: "default": "env:VAR" or "default": "file:~/.path"
+    if (typeof defaultValue === 'string' && (defaultValue.startsWith('env:') || defaultValue.startsWith('file:'))) {
+      return this.resolveDeclarativeDefaultEntry(defaultValue);
+    }
+
+    if (!Array.isArray(defaultValue) || defaultValue.length === 0) {
+      return defaultValue;
+    }
+
+    // Only treat as declarative when every entry is an env: or file: string
+    if (
+      !defaultValue.every(
+        (entry): entry is string =>
+          typeof entry === 'string' && (entry.startsWith('env:') || entry.startsWith('file:')),
+      )
+    ) {
+      return defaultValue;
+    }
+
+    for (const entry of defaultValue) {
+      const resolved = this.resolveDeclarativeDefaultEntry(entry);
+      if (resolved !== undefined) {
+        return resolved;
+      }
+    }
+    return undefined;
+  }
+
+  protected resolveDeclarativeDefaultEntry(entry: string): string | undefined {
+    if (entry.startsWith('env:')) {
+      const varName = entry.slice('env:'.length);
+      if (!varName) {
+        return undefined;
+      }
+      const value = process.env[varName];
+      if (value !== undefined && value !== '') {
+        return value;
+      }
+      return undefined;
+    }
+
+    if (entry.startsWith('file:')) {
+      const pathSpec = entry.slice('file:'.length);
+      if (!pathSpec) {
+        return undefined;
+      }
+      const expanded = this.expandPath(pathSpec);
+      if (expanded && fs.existsSync(expanded)) {
+        return expanded;
+      }
+      return undefined;
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Expand `~` (home directory) and `$VAR` environment variables in a path string.
+   * Returns `undefined` if any referenced `$VAR` is unset or empty, so we never
+   * check a truncated path like `/gcloud/creds.json` when `$APPDATA` is missing.
+   */
+  protected expandPath(pathSpec: string): string | undefined {
+    let result = pathSpec;
+
+    if (result === '~') {
+      result = homedir();
+    } else if (result.startsWith('~/') || result.startsWith('~\\')) {
+      result = path.join(homedir(), result.slice(2));
+    }
+
+    let unsetVariable = false;
+    result = result.replace(/\$([A-Za-z_]\w*)/g, (_match, name: string) => {
+      const value = process.env[name];
+      if (value === undefined || value === '') {
+        unsetVariable = true;
+        return '';
+      }
+      return value;
+    });
+
+    if (unsetVariable) {
+      return undefined;
+    }
+
+    return result;
   }
 
   private isDefaultScope(scope?: ConfigurationScope | ConfigurationScope[]): boolean {
