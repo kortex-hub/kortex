@@ -160,10 +160,10 @@ test('should serialize concurrent onDidChange writes', async () => {
 
   // Track write order to ensure serialization
   const writeOrder: string[] = [];
-  vi.mocked(writeFile).mockImplementation(async (filePath: string | URL) => {
+  vi.mocked(writeFile).mockImplementation(async filePath => {
     writeOrder.push(`write:${String(filePath)}`);
   });
-  vi.mocked(rename).mockImplementation(async (src: string | URL) => {
+  vi.mocked(rename).mockImplementation(async (src, _dest) => {
     writeOrder.push(`rename:${String(src)}`);
   });
 
@@ -194,7 +194,7 @@ test('should return notification when data.json is corrupt', async () => {
 
   const notifications = await safeStorageRegistry.init();
   expect(notifications).toHaveLength(1);
-  expect(notifications[0].title).toBe('Corrupted secure storage');
+  expect(notifications[0]!.title).toBe('Corrupted secure storage');
 });
 
 test('should throw error if not initialized', async () => {
