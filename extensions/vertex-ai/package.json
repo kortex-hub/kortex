@@ -22,7 +22,7 @@
         "vertex-ai.factory.projectId": {
           "type": "string",
           "scope": "InferenceProviderConnectionFactory",
-          "description": "Google Cloud project ID where Anthropic models are enabled",
+          "description": "Google Cloud project ID where Anthropic models are enabled (not the ADC quota_project_id)",
           "default": [
             "env:GOOGLE_VERTEX_PROJECT",
             "env:ANTHROPIC_VERTEX_PROJECT_ID"
