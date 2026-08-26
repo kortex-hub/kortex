@@ -102,7 +102,13 @@ function getDetails(gateway: GatewayInfo): string {
         icon={EngineIcon}
         title="No gateways found"
         message="Start the OpenShell extension to register a gateway"
-        hidden={$openshellGateways.length > 0} />
+        hidden={$openshellGateways.length > 0}>
+        <div class="flex justify-center">
+          <Button type="secondary" class="rounded-lg" icon={faPlus} onclick={openCreateGateway}>
+            Create local gateway
+          </Button>
+        </div>
+      </EmptyScreen>
     {/if}
 
     {#if openshellStarted && activeGateway}
@@ -157,7 +163,7 @@ function getDetails(gateway: GatewayInfo): string {
       </div>
     {/if}
 
-    {#if openshellStarted}
+    {#if openshellStarted && $openshellGateways.length > 0}
       <div class="mt-3 flex">
         <Button type="secondary" class="rounded-lg" icon={faPlus} onclick={openCreateGateway}>
           Create local gateway

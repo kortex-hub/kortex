@@ -110,6 +110,15 @@ test('shows empty screen when extension is started but no gateways are registere
   expect(screen.getByText('No gateways found')).toBeInTheDocument();
 });
 
+test('create gateway button is visible inside empty screen when no gateways exist', () => {
+  setOpenshellStarted();
+  render(PreferencesOpenshellGatewaysRendering);
+
+  expect(screen.getByText('No gateways found')).toBeInTheDocument();
+  const createButton = screen.getByRole('button', { name: 'Create local gateway' });
+  expect(createButton).toBeVisible();
+});
+
 test('displays active gateway in the Active Gateway section', () => {
   setOpenshellStarted();
   const activeGateway: GatewayInfo = {
