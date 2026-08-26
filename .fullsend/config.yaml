@@ -3,7 +3,12 @@
 #
 # This file configures fullsend for per-repo installation mode.
 # See ADR 0033 for details.
+#
+# The "runtime" key selects which agent runtime runs the agents, claude
+# (default when unset) or pi. For one run, the 'fullsend run --runtime'
+# flag wins, then FULLSEND_RUNTIME, then this file. See docs/runtimes.md.
 version: "1"
+runtime: claude
 roles:
     - triage
     - coder
@@ -21,3 +26,6 @@ agents:
       source: code.yaml
     - name: fix
       source: fix.yaml
+inference:
+    project: fullsend-eval
+    wif_provider: projects/457914409018/locations/global/workloadIdentityPools/fullsend-inference/providers/gh-openkaiden-kaiden
