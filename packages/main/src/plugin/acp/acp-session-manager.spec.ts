@@ -727,9 +727,11 @@ describe('AcpSessionManager', () => {
       const mockConnection = {
         initialize: vi.fn().mockResolvedValue({ protocolVersion: '0.1' }),
         newSession: vi.fn().mockResolvedValue({ sessionId: 'acp-1' }),
-        prompt: vi.fn().mockResolvedValue({ stopReason: 'end_turn' }),
+        prompt: vi.fn().mockReturnValue(new Promise(() => {})),
       };
-      vi.mocked(acp.ClientSideConnection).mockImplementation(function () { return mockConnection as never; });
+      vi.mocked(acp.ClientSideConnection).mockImplementation(function () {
+        return mockConnection as never;
+      });
       vi.mocked(acp.ndJsonStream).mockReturnValue({} as never);
 
       const options: AcpSessionCreateOptions = {
@@ -740,7 +742,6 @@ describe('AcpSessionManager', () => {
 
       const session = await manager.createSession(options);
 
-      // Wait for startAcpSession to complete
       await vi.waitFor(() => {
         expect(mockConnection.prompt).toHaveBeenCalled();
       });
@@ -794,9 +795,11 @@ describe('AcpSessionManager', () => {
       const mockConnection = {
         initialize: vi.fn().mockResolvedValue({ protocolVersion: '0.1' }),
         newSession: vi.fn().mockResolvedValue({ sessionId: 'acp-1' }),
-        prompt: vi.fn().mockResolvedValue({ stopReason: 'end_turn' }),
+        prompt: vi.fn().mockReturnValue(new Promise(() => {})),
       };
-      vi.mocked(acp.ClientSideConnection).mockImplementation(function () { return mockConnection as never; });
+      vi.mocked(acp.ClientSideConnection).mockImplementation(function () {
+        return mockConnection as never;
+      });
       vi.mocked(acp.ndJsonStream).mockReturnValue({} as never);
 
       const options: AcpSessionCreateOptions = {
@@ -852,9 +855,11 @@ describe('AcpSessionManager', () => {
       const mockConnection = {
         initialize: vi.fn().mockResolvedValue({ protocolVersion: '0.1' }),
         newSession: vi.fn().mockResolvedValue({ sessionId: 'acp-1' }),
-        prompt: vi.fn().mockResolvedValue({ stopReason: 'end_turn' }),
+        prompt: vi.fn().mockReturnValue(new Promise(() => {})),
       };
-      vi.mocked(acp.ClientSideConnection).mockImplementation(function () { return mockConnection as never; });
+      vi.mocked(acp.ClientSideConnection).mockImplementation(function () {
+        return mockConnection as never;
+      });
       vi.mocked(acp.ndJsonStream).mockReturnValue({} as never);
 
       const options: AcpSessionCreateOptions = {
