@@ -104,8 +104,18 @@ function nonEmpty(obj: Record<string, string> | undefined): Record<string, strin
 export const OPENCLAW_CONFIG_PATH = '.openclaw/openclaw.json';
 export const OPENCLAW_LAUNCH_SCRIPT_PATH = '.openclaw/kaiden-launch.sh';
 
-const OPENCLAW_LAUNCH_SCRIPT =
-  'curl -sf http://127.0.0.1:18789/ >/dev/null 2>&1 || { openclaw gateway run >/tmp/openclaw-gateway.log 2>&1 & for i in $(seq 1 30); do curl -sf http://127.0.0.1:18789/ >/dev/null 2>&1 && break; sleep 0.5; done; }; curl -sf http://127.0.0.1:18789/ >/dev/null 2>&1 || { cat /tmp/openclaw-gateway.log >&2; exit 1; }; openclaw "$@"';
+const OPENCLAW_LAUNCH_SCRIPT = `curl -sf http://127.0.0.1:18789/ >/dev/null 2>&1 || {
+  openclaw gateway run >/tmp/openclaw-gateway.log 2>&1 &
+  for i in $(seq 1 30); do
+    curl -sf http://127.0.0.1:18789/ >/dev/null 2>&1 && break
+    sleep 0.5
+  done
+}
+curl -sf http://127.0.0.1:18789/ >/dev/null 2>&1 || {
+  cat /tmp/openclaw-gateway.log >&2
+  exit 1
+}
+openclaw "$@"`;
 
 export async function activate(extensionContext: ExtensionContext): Promise<void> {
   const disposable = agents.registerAgent({
@@ -118,7 +128,7 @@ export async function activate(extensionContext: ExtensionContext): Promise<void
       logo: './icon.png',
     },
     tags: ['Local'],
-    command: `sh ~/${OPENCLAW_LAUNCH_SCRIPT_PATH}`,
+    command: `sh $HOME/${OPENCLAW_LAUNCH_SCRIPT_PATH}`,
     acp: {
       command: '/bin/sh',
       args: ['-c', `exec /bin/sh "$HOME/${OPENCLAW_LAUNCH_SCRIPT_PATH}" acp`],

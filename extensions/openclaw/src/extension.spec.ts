@@ -49,7 +49,7 @@ describe('activate', () => {
         description: expect.any(String),
         baseImage: expect.stringContaining('ghcr.io/openkaiden/openshell-image-openclaw'),
         icon: expect.objectContaining({ icon: './icon.png' }),
-        command: `sh ~/${OPENCLAW_LAUNCH_SCRIPT_PATH}`,
+        command: `sh $HOME/${OPENCLAW_LAUNCH_SCRIPT_PATH}`,
         acp: {
           command: '/bin/sh',
           args: ['-c', `exec /bin/sh "$HOME/${OPENCLAW_LAUNCH_SCRIPT_PATH}" acp`],
