@@ -264,16 +264,13 @@ export type WizardStep = (typeof WIZARD_STEP)[keyof typeof WIZARD_STEP];
 
 export const FILE_ACCESS_LEVEL = {
   NO_HOST_ACCESS: 'No host filesystem access',
-  HOME_DIRECTORY: 'Home Directory',
   CUSTOM_PATHS: 'Custom Paths',
-  FULL_SYSTEM: 'Full System Access',
 } as const;
 export const FILE_ACCESS_LEVELS = Object.values(FILE_ACCESS_LEVEL);
 export type FileAccessLevel = (typeof FILE_ACCESS_LEVEL)[keyof typeof FILE_ACCESS_LEVEL];
 
 export const FILESYSTEM_BADGE = {
   STRICT: 'Strict',
-  HOME: 'Home',
   CUSTOM: 'Custom',
 } as const;
 export type FilesystemBadge = (typeof FILESYSTEM_BADGE)[keyof typeof FILESYSTEM_BADGE];

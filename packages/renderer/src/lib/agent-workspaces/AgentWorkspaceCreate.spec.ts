@@ -1510,36 +1510,6 @@ test('Expect createAgentWorkspace called without mounts when workspace (default)
   );
 });
 
-test('Expect createAgentWorkspace called with home mount when Home Directory selected', async () => {
-  render(AgentWorkspaceCreate);
-
-  await navigateToFileSystemStep();
-  await fireEvent.click(screen.getByRole('radio', { name: 'Use Home Directory' }));
-  await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
-  await fireEvent.click(screen.getByRole('button', { name: 'Start Workspace' }));
-
-  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
-    expect.objectContaining({
-      mounts: [{ host: '$HOME', target: '$HOME', ro: false }],
-    }),
-  );
-});
-
-test('Expect createAgentWorkspace called with full mount when Full System Access selected', async () => {
-  render(AgentWorkspaceCreate);
-
-  await navigateToFileSystemStep();
-  await fireEvent.click(screen.getByRole('radio', { name: 'Use Full System Access' }));
-  await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
-  await fireEvent.click(screen.getByRole('button', { name: 'Start Workspace' }));
-
-  expect(window.createAgentWorkspace).toHaveBeenCalledWith(
-    expect.objectContaining({
-      mounts: [{ host: '/', target: '/', ro: false }],
-    }),
-  );
-});
-
 test('Expect createAgentWorkspace called with custom mounts when Custom Paths selected', async () => {
   render(AgentWorkspaceCreate);
 
@@ -2151,7 +2121,7 @@ describe('project filesystem mapping', () => {
     expect(screen.getByRole('radio', { name: 'Use Deny All' })).not.toBeChecked();
   });
 
-  test('Expect home mount mapped to home file access', async () => {
+  test('Expect home mount mapped to custom file access', async () => {
     const homeProject: WorkspaceProjectInfo = {
       ...sampleProject,
       id: 'home-mount',
@@ -2163,10 +2133,11 @@ describe('project filesystem mapping', () => {
     await fireEvent.click(screen.getByRole('button', { name: /Saved project/ }));
     await fireEvent.click(screen.getByRole('option', { name: /My App/ }));
 
-    expect(wizard.draft.selectedFileAccess).toBe('home');
+    expect(wizard.draft.selectedFileAccess).toBe('custom');
+    expect(wizard.draft.customMounts).toEqual([{ host: '$HOME', target: '$HOME', ro: false }]);
   });
 
-  test('Expect root mount mapped to full file access', async () => {
+  test('Expect root mount mapped to custom file access', async () => {
     const rootProject: WorkspaceProjectInfo = {
       ...sampleProject,
       id: 'root-mount',
@@ -2178,7 +2149,8 @@ describe('project filesystem mapping', () => {
     await fireEvent.click(screen.getByRole('button', { name: /Saved project/ }));
     await fireEvent.click(screen.getByRole('option', { name: /My App/ }));
 
-    expect(wizard.draft.selectedFileAccess).toBe('full');
+    expect(wizard.draft.selectedFileAccess).toBe('custom');
+    expect(wizard.draft.customMounts).toEqual([{ host: '/', target: '/', ro: false }]);
   });
 
   test('Expect custom mounts mapped to custom file access', async () => {

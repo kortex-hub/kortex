@@ -86,8 +86,6 @@ const hasSkillChanges = $derived(
 
 function deriveFileAccessSelection(mounts: AgentWorkspaceMount[] | undefined): string {
   if (!mounts || mounts.length === 0) return 'workspace';
-  if (mounts.length === 1 && mounts[0].host === '$HOME' && mounts[0].target === '$HOME') return 'home';
-  if (mounts.length === 1 && mounts[0].host === '/' && mounts[0].target === '/') return 'full';
   return 'custom';
 }
 
@@ -103,24 +101,19 @@ let pendingFileAccess: string = $state(originalFileAccess);
 let pendingCustomMounts: CustomMount[] = $state(originalCustomMounts.map(m => ({ ...m })));
 
 function buildMountsFromSelection(fileAccess: string, mounts: CustomMount[]): AgentWorkspaceMount[] | undefined {
-  switch (fileAccess) {
-    case 'home':
-      return [{ host: '$HOME', target: '$HOME', ro: false }];
-    case 'full':
-      return [{ host: '/', target: '/', ro: false }];
-    case 'custom': {
-      const filtered = mounts
-        .filter(m => m.host.trim() !== '')
-        .map(m => {
-          const host = m.host.trim();
-          const trimmedTarget = m.target.trim();
-          const basename = host.split('/').filter(Boolean).pop();
-          const target = trimmedTarget !== '' ? trimmedTarget : (basename ?? host);
-          return { host, target, ro: m.ro };
-        });
-      return filtered.length > 0 ? filtered : undefined;
-    }
+  if (fileAccess !== 'custom') {
+    return undefined;
   }
+  const filtered = mounts
+    .filter(m => m.host.trim() !== '')
+    .map(m => {
+      const host = m.host.trim();
+      const trimmedTarget = m.target.trim();
+      const basename = host.split('/').filter(Boolean).pop();
+      const target = trimmedTarget !== '' ? trimmedTarget : (basename ?? host);
+      return { host, target, ro: m.ro };
+    });
+  return filtered.length > 0 ? filtered : undefined;
 }
 
 // --- Network section state ---

@@ -282,7 +282,7 @@ The `Workspace-Provider` project is defined in `tests/playwright/playwright.conf
 | ------------------------------------------------ | ---------------------------------------------------------------- |
 | Non-Linux without `PODMAN_ENABLED`               | Workspace tests require Podman                                   |
 | Missing `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`   | Per-agent skip in lifecycle helper                               |
-| `FILE_ACCESS_LEVEL.FULL_SYSTEM`                  | OpenShell tar fails on `/` mount                                 |
+| `home` / `full` filesystem options               | Removed — OpenShell upload not suited for broad trees (#2539)    |
 | `NETWORK_ACCESS_LEVEL.UNRESTRICTED` on OpenShell | Unrestricted disabled in create wizard when runtime is openshell |
 | Goose + Ollama                                   | Skipped until issue #1780 fixed                                  |
 

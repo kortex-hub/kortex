@@ -409,7 +409,7 @@ test('Expect switching file access mode shows unsaved changes', async () => {
   const fileAccessNav = screen.getByRole('link', { name: 'File Access' });
   await fireEvent.click(fileAccessNav);
 
-  await fireEvent.click(screen.getByRole('button', { name: 'Home Directory' }));
+  await fireEvent.click(screen.getByRole('button', { name: 'Custom Paths' }));
 
   expect(screen.getByText('You have unsaved changes')).toBeInTheDocument();
 });
@@ -428,17 +428,20 @@ test('Expect toggling read-only updates the button text', async () => {
   expect(screen.getByRole('button', { name: 'Toggle read-only for mount 1' })).toHaveTextContent('read-only');
 });
 
-test('Expect saving Home Directory mode calls updateAgentWorkspaceConfiguration', async () => {
+test('Expect saving custom mount calls updateAgentWorkspaceConfiguration with mount data', async () => {
   render(AgentWorkspaceDetailsSettings, { workspaceId: 'ws-1', workspaceSummary, configuration: {} });
 
   const fileAccessNav = screen.getByRole('link', { name: 'File Access' });
   await fireEvent.click(fileAccessNav);
 
-  await fireEvent.click(screen.getByRole('button', { name: 'Home Directory' }));
+  await fireEvent.click(screen.getByRole('button', { name: 'Custom Paths' }));
+  const hostInput = screen.getByRole('textbox', { name: 'Host path 1' });
+  await fireEvent.input(hostInput, { target: { value: '/home/user/projects' } });
+
   await fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
 
   expect(window.updateAgentWorkspaceConfiguration).toHaveBeenCalledWith('ws-1', {
-    mounts: [{ host: '$HOME', target: '$HOME', ro: false }],
+    mounts: [{ host: '/home/user/projects', target: 'projects', ro: false }],
   });
 });
 
@@ -501,7 +504,7 @@ test('Expect discarding file access changes resets to original mode', async () =
   const fileAccessNav = screen.getByRole('link', { name: 'File Access' });
   await fireEvent.click(fileAccessNav);
 
-  await fireEvent.click(screen.getByRole('button', { name: 'Home Directory' }));
+  await fireEvent.click(screen.getByRole('button', { name: 'No host filesystem access' }));
   await fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }));
 
   const customRadio = screen.getByRole('radio', { name: 'Use Custom Paths' });
