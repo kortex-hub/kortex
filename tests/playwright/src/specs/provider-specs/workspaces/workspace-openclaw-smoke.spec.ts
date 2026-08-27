@@ -57,6 +57,24 @@ test.describe
   });
 
 test.describe
+  .serial('OpenClaw agent workspace without a project folder', { tag: '@workspace-provider' }, () => {
+    registerWorkspaceLifecycleTests(test, expect, {
+      testIdPrefix: 'WKS-OPENAI-NOFOLDER',
+      workspaceName: 'openclaw-nofolder',
+      agent: CODING_AGENT.OPENCLAW,
+      requiredResource: 'openai',
+      noProjectFolder: true,
+      selectModel: async createPage => createPage.searchAndSelectDefault('chat'),
+      terminalReadyPatterns: [/openclaw/i],
+      prePrompts: [{ command: 'talk to agent', expectedResponse: /agent/i }],
+      promptTest: {
+        prompt: 'what is 123+456? reply with just the number',
+        expectedResponse: /579|insufficient|balance|credit|quota exceeded/i,
+      },
+    });
+  });
+
+test.describe
   .serial('OpenClaw agent workspace with Anthropic model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-ANTHROPIC',

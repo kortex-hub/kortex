@@ -38,6 +38,23 @@ test.describe
   });
 
 test.describe
+  .serial('Goose agent workspace without a project folder', { tag: '@workspace-provider' }, () => {
+    registerWorkspaceLifecycleTests(test, expect, {
+      testIdPrefix: 'WKS-OPENAI-NOFOLDER',
+      workspaceName: 'goose-nofolder',
+      agent: CODING_AGENT.GOOSE,
+      requiredResource: 'openai',
+      noProjectFolder: true,
+      selectModel: async createPage => createPage.searchAndSelectDefault('chat'),
+      terminalReadyPatterns: [/goose/i],
+      promptTest: {
+        prompt: 'what is 123+456? reply with just the number',
+        expectedResponse: /579|insufficient|balance|credit|quota exceeded/i,
+      },
+    });
+  });
+
+test.describe
   .serial('Goose agent workspace with Mistral model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-MISTRAL',

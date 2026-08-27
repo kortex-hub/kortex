@@ -39,3 +39,23 @@ test.describe
       },
     });
   });
+
+test.describe
+  .serial('Claude Code agent workspace without a project folder', { tag: '@workspace-provider' }, () => {
+    registerWorkspaceLifecycleTests(test, expect, {
+      testIdPrefix: 'WKS-CLAUDE-NOFOLDER',
+      workspaceName: 'claude-nofolder',
+      agent: CODING_AGENT.CLAUDE,
+      requiredResource: 'claude',
+      noProjectFolder: true,
+      selectModel: async createPage => {
+        await createPage.verifyModelRuntimes('Claude');
+        return createPage.selectDefaultModel();
+      },
+      terminalReadyPatterns: [/Claude Code/],
+      promptTest: {
+        prompt: 'what is 2+2? reply with just the number',
+        expectedResponse: /4|insufficient|balance|credit/i,
+      },
+    });
+  });

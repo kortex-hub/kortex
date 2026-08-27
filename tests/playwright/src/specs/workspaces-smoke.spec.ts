@@ -230,6 +230,42 @@ test.describe('Workspaces page - create wizard', { tag: '@smoke' }, () => {
   });
 });
 
+test.describe('Workspaces page - create wizard without project folder', { tag: '@smoke' }, () => {
+  test.beforeEach(async ({ page, navigationBar }) => {
+    await waitForNavigationReady(page);
+    await navigationBar.ensureExtensionsRunning();
+    await navigationBar.navigateToWorkspacesPage();
+  });
+
+  test('[WKS-NOFOLDER-01] Completes full wizard navigation without a project folder', async ({
+    agentWorkspacesPage,
+  }) => {
+    const createPage = await agentWorkspacesPage.openCreatePage();
+
+    await createPage.sessionNameInput.fill('no-folder-workspace');
+    await createPage.navigateToStep(WIZARD_STEP.NETWORKING, completeAgentModelStep);
+
+    await expect(createPage.submitButton).toBeVisible();
+    await expect(createPage.submitButton).toBeEnabled();
+    await expect(createPage.continueButton).not.toBeVisible();
+  });
+
+  test('[WKS-NOFOLDER-02] Use-defaults enables with session name and model but no folder', async ({
+    agentWorkspacesPage,
+  }) => {
+    const createPage = await agentWorkspacesPage.openCreatePage();
+
+    await expect(createPage.useDefaultsButton).toBeDisabled();
+
+    await createPage.sessionNameInput.fill('no-folder-defaults');
+    await createPage.continueToStep(WIZARD_STEP.AGENT_MODEL);
+    await createPage.completeAgentModelStepIfNeeded(completeAgentModelStep);
+
+    await createPage.backToStep(WIZARD_STEP.WORKSPACE);
+    await expect(createPage.useDefaultsButton).toBeEnabled();
+  });
+});
+
 test.describe('Workspaces page - skills integration', { tag: '@smoke' }, () => {
   test.beforeAll(async ({ page, electronApp, navigationBar, skillsPage }) => {
     await waitForNavigationReady(page);
