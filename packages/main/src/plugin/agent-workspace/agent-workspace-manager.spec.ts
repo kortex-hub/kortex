@@ -397,8 +397,8 @@ describe('create – OpenShell mode', () => {
         gateway: 'kaiden',
         providers: ['my-secret'],
         labels: { ...encodeWorkspaceLabels('/tmp/my-project'), [AGENT_LABEL]: 'claude' },
-        noTty: true,
-        command: ['true'],
+        detach: true,
+        tty: true,
       }),
     );
   });

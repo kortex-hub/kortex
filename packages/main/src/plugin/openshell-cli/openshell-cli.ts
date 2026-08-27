@@ -219,6 +219,12 @@ export class OpenshellCli {
     if (options.noTty) {
       args.push('--no-tty');
     }
+    if (options.tty) {
+      args.push('--tty');
+    }
+    if (options.detach) {
+      args.push('--detach');
+    }
     if (options.policy) {
       args.push('--policy', options.policy);
     }
