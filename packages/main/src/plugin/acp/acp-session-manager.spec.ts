@@ -696,65 +696,79 @@ describe('AcpSessionManager', () => {
     });
   });
 
+  async function setupPtySession(): Promise<{
+    sessionId: string;
+    emitStderr: (data: string) => void;
+    emitExit: (e: { exitCode: number; signal?: number }) => void;
+  }> {
+    const { existsSync } = await import('node:fs');
+    const { writeFile } = await import('node:fs/promises');
+    const { spawn } = await import('node-pty');
+
+    vi.mocked(existsSync).mockReturnValue(true);
+    vi.mocked(writeFile).mockResolvedValue();
+
+    const agent = createAgentInfo();
+    vi.mocked(agentRegistry.getAgent).mockResolvedValue(agent);
+    vi.mocked(openshellCli.listSandboxes).mockResolvedValue([createSandbox()]);
+
+    let onDataCallback: (data: string) => void = () => {};
+    let onExitCallback: (e: { exitCode: number; signal?: number }) => void = () => {};
+
+    const mockPty = {
+      onData: vi.fn((cb: (data: string) => void) => {
+        onDataCallback = cb;
+      }),
+      onExit: vi.fn((cb: (e: { exitCode: number; signal?: number }) => void) => {
+        onExitCallback = cb;
+      }),
+      write: vi.fn(),
+      kill: vi.fn(),
+    };
+    vi.mocked(spawn).mockReturnValue(mockPty as never);
+
+    const mockConnection = {
+      initialize: vi.fn().mockResolvedValue({ protocolVersion: '0.1' }),
+      newSession: vi.fn().mockResolvedValue({ sessionId: 'acp-1' }),
+      prompt: vi.fn().mockReturnValue(new Promise(() => {})),
+    };
+    vi.mocked(acp.ClientSideConnection).mockImplementation(function () {
+      return mockConnection as never;
+    });
+    vi.mocked(acp.ndJsonStream).mockReturnValue({} as never);
+
+    const options: AcpSessionCreateOptions = {
+      sandboxName: 'test-sandbox',
+      prompt: 'hello',
+      agentId: 'openclaw',
+    };
+
+    const session = await manager.createSession(options);
+
+    await vi.waitFor(() => {
+      expect(mockConnection.prompt).toHaveBeenCalled();
+    });
+
+    return {
+      sessionId: session.id,
+      emitStderr: onDataCallback,
+      emitExit: onExitCallback,
+    };
+  }
+
   describe('ANSI code stripping in error messages', () => {
     test('strips ANSI escape codes from stderr lines on process exit', async () => {
-      const { existsSync } = await import('node:fs');
-      const { writeFile } = await import('node:fs/promises');
-      const { spawn } = await import('node-pty');
-
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(writeFile).mockResolvedValue();
-
-      const agent = createAgentInfo();
-      vi.mocked(agentRegistry.getAgent).mockResolvedValue(agent);
-      vi.mocked(openshellCli.listSandboxes).mockResolvedValue([createSandbox()]);
-
-      let onDataCallback: (data: string) => void = () => {};
-      let onExitCallback: (e: { exitCode: number; signal?: number }) => void = () => {};
-
-      const mockPty = {
-        onData: vi.fn((cb: (data: string) => void) => {
-          onDataCallback = cb;
-        }),
-        onExit: vi.fn((cb: (e: { exitCode: number; signal?: number }) => void) => {
-          onExitCallback = cb;
-        }),
-        write: vi.fn(),
-        kill: vi.fn(),
-      };
-      vi.mocked(spawn).mockReturnValue(mockPty as never);
-
-      const mockConnection = {
-        initialize: vi.fn().mockResolvedValue({ protocolVersion: '0.1' }),
-        newSession: vi.fn().mockResolvedValue({ sessionId: 'acp-1' }),
-        prompt: vi.fn().mockReturnValue(new Promise(() => {})),
-      };
-      vi.mocked(acp.ClientSideConnection).mockImplementation(function () {
-        return mockConnection as never;
-      });
-      vi.mocked(acp.ndJsonStream).mockReturnValue({} as never);
-
-      const options: AcpSessionCreateOptions = {
-        sandboxName: 'test-sandbox',
-        prompt: 'hello',
-        agentId: 'openclaw',
-      };
-
-      const session = await manager.createSession(options);
-
-      await vi.waitFor(() => {
-        expect(mockConnection.prompt).toHaveBeenCalled();
-      });
+      const { emitStderr, emitExit, sessionId } = await setupPtySession();
 
       // Simulate PTY emitting stderr with ANSI codes
-      onDataCallback('\x1b[31m×\x1b[0m code: service unavailable\n');
-      onDataCallback('\x1b[1m\x1b[33mwarning:\x1b[0m connection lost\n');
+      emitStderr('\x1b[31m×\x1b[0m code: service unavailable\n');
+      emitStderr('\x1b[1m\x1b[33mwarning:\x1b[0m connection lost\n');
 
       // Simulate process exit with non-zero code
-      onExitCallback({ exitCode: 1 });
+      emitExit({ exitCode: 1 });
 
       const sessions = await manager.listSessions();
-      const updatedSession = sessions.find(s => s.id === session.id);
+      const updatedSession = sessions.find(s => s.id === sessionId);
 
       expect(updatedSession?.error).toBeDefined();
       // Verify ANSI codes are stripped
@@ -766,121 +780,29 @@ describe('AcpSessionManager', () => {
     });
 
     test('handles stderr lines without ANSI codes unchanged', async () => {
-      const { existsSync } = await import('node:fs');
-      const { writeFile } = await import('node:fs/promises');
-      const { spawn } = await import('node-pty');
-
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(writeFile).mockResolvedValue();
-
-      const agent = createAgentInfo();
-      vi.mocked(agentRegistry.getAgent).mockResolvedValue(agent);
-      vi.mocked(openshellCli.listSandboxes).mockResolvedValue([createSandbox()]);
-
-      let onDataCallback: (data: string) => void = () => {};
-      let onExitCallback: (e: { exitCode: number; signal?: number }) => void = () => {};
-
-      const mockPty = {
-        onData: vi.fn((cb: (data: string) => void) => {
-          onDataCallback = cb;
-        }),
-        onExit: vi.fn((cb: (e: { exitCode: number; signal?: number }) => void) => {
-          onExitCallback = cb;
-        }),
-        write: vi.fn(),
-        kill: vi.fn(),
-      };
-      vi.mocked(spawn).mockReturnValue(mockPty as never);
-
-      const mockConnection = {
-        initialize: vi.fn().mockResolvedValue({ protocolVersion: '0.1' }),
-        newSession: vi.fn().mockResolvedValue({ sessionId: 'acp-1' }),
-        prompt: vi.fn().mockReturnValue(new Promise(() => {})),
-      };
-      vi.mocked(acp.ClientSideConnection).mockImplementation(function () {
-        return mockConnection as never;
-      });
-      vi.mocked(acp.ndJsonStream).mockReturnValue({} as never);
-
-      const options: AcpSessionCreateOptions = {
-        sandboxName: 'test-sandbox',
-        prompt: 'hello',
-        agentId: 'openclaw',
-      };
-
-      const session = await manager.createSession(options);
-
-      await vi.waitFor(() => {
-        expect(mockConnection.prompt).toHaveBeenCalled();
-      });
+      const { emitStderr, emitExit, sessionId } = await setupPtySession();
 
       // Simulate PTY emitting stderr without ANSI codes
-      onDataCallback('plain error message\n');
+      emitStderr('plain error message\n');
 
-      onExitCallback({ exitCode: 1 });
+      emitExit({ exitCode: 1 });
 
       const sessions = await manager.listSessions();
-      const updatedSession = sessions.find(s => s.id === session.id);
+      const updatedSession = sessions.find(s => s.id === sessionId);
 
       expect(updatedSession?.error).toBe('plain error message');
     });
 
     test('handles empty stderr lines after stripping ANSI codes', async () => {
-      const { existsSync } = await import('node:fs');
-      const { writeFile } = await import('node:fs/promises');
-      const { spawn } = await import('node-pty');
-
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(writeFile).mockResolvedValue();
-
-      const agent = createAgentInfo();
-      vi.mocked(agentRegistry.getAgent).mockResolvedValue(agent);
-      vi.mocked(openshellCli.listSandboxes).mockResolvedValue([createSandbox()]);
-
-      let onDataCallback: (data: string) => void = () => {};
-      let onExitCallback: (e: { exitCode: number; signal?: number }) => void = () => {};
-
-      const mockPty = {
-        onData: vi.fn((cb: (data: string) => void) => {
-          onDataCallback = cb;
-        }),
-        onExit: vi.fn((cb: (e: { exitCode: number; signal?: number }) => void) => {
-          onExitCallback = cb;
-        }),
-        write: vi.fn(),
-        kill: vi.fn(),
-      };
-      vi.mocked(spawn).mockReturnValue(mockPty as never);
-
-      const mockConnection = {
-        initialize: vi.fn().mockResolvedValue({ protocolVersion: '0.1' }),
-        newSession: vi.fn().mockResolvedValue({ sessionId: 'acp-1' }),
-        prompt: vi.fn().mockReturnValue(new Promise(() => {})),
-      };
-      vi.mocked(acp.ClientSideConnection).mockImplementation(function () {
-        return mockConnection as never;
-      });
-      vi.mocked(acp.ndJsonStream).mockReturnValue({} as never);
-
-      const options: AcpSessionCreateOptions = {
-        sandboxName: 'test-sandbox',
-        prompt: 'hello',
-        agentId: 'openclaw',
-      };
-
-      const session = await manager.createSession(options);
-
-      await vi.waitFor(() => {
-        expect(mockConnection.prompt).toHaveBeenCalled();
-      });
+      const { emitStderr, emitExit, sessionId } = await setupPtySession();
 
       // Simulate PTY emitting stderr with actual content alongside ANSI
-      onDataCallback('\x1b[31m×\x1b[0m supervisor relay failed\n');
+      emitStderr('\x1b[31m×\x1b[0m supervisor relay failed\n');
 
-      onExitCallback({ exitCode: 1 });
+      emitExit({ exitCode: 1 });
 
       const sessions = await manager.listSessions();
-      const updatedSession = sessions.find(s => s.id === session.id);
+      const updatedSession = sessions.find(s => s.id === sessionId);
 
       expect(updatedSession?.error).toBe('× supervisor relay failed');
     });
