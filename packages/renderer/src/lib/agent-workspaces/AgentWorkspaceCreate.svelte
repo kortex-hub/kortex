@@ -66,16 +66,8 @@ function applyFilesystemFromProject(fs: FilesystemConfiguration): void {
     wizard.draft.customMounts = [{ host: '', target: '', ro: false }];
     return;
   }
-  const hasHome = fs.mounts.some(m => m.host === '$HOME' && m.target === '$HOME');
-  const hasRoot = fs.mounts.some(m => m.host === '/' && m.target === '/');
-  if (hasRoot) {
-    wizard.draft.selectedFileAccess = 'full';
-  } else if (hasHome && fs.mounts.length === 1) {
-    wizard.draft.selectedFileAccess = 'home';
-  } else {
-    wizard.draft.selectedFileAccess = 'custom';
-    wizard.draft.customMounts = fs.mounts.map(m => ({ host: m.host, target: m.target, ro: m.ro ?? false }));
-  }
+  wizard.draft.selectedFileAccess = 'custom';
+  wizard.draft.customMounts = fs.mounts.map(m => ({ host: m.host, target: m.target, ro: m.ro ?? false }));
 }
 
 const REGISTRY_PRESET = ['registry.npmjs.org', 'pypi.python.org'];
@@ -454,26 +446,19 @@ function getFirstCompatibleModel(): ModelInfo | undefined {
 }
 
 function buildMountsFrom(fileAccess: string, mounts: CustomMount[]): AgentWorkspaceMount[] | undefined {
-  switch (fileAccess) {
-    case 'home':
-      return [{ host: '$HOME', target: '$HOME', ro: false }];
-    case 'full':
-      return [{ host: '/', target: '/', ro: false }];
-    case 'custom': {
-      const filtered = mounts
-        .filter(m => m.host.trim() !== '')
-        .map(m => {
-          const host = m.host.trim();
-          const trimmedTarget = m.target.trim();
-          const basename = host.split('/').filter(Boolean).pop();
-          const target = trimmedTarget !== '' ? trimmedTarget : (basename ?? host);
-          return { host, target, ro: m.ro };
-        });
-      return filtered.length > 0 ? filtered : undefined;
-    }
-    default:
-      return undefined;
+  if (fileAccess !== 'custom') {
+    return undefined;
   }
+  const filtered = mounts
+    .filter(m => m.host.trim() !== '')
+    .map(m => {
+      const host = m.host.trim();
+      const trimmedTarget = m.target.trim();
+      const basename = host.split('/').filter(Boolean).pop();
+      const target = trimmedTarget !== '' ? trimmedTarget : (basename ?? host);
+      return { host, target, ro: m.ro };
+    });
+  return filtered.length > 0 ? filtered : undefined;
 }
 
 function startAsIs(): void {

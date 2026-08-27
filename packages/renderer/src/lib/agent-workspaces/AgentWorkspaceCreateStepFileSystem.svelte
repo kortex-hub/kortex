@@ -28,25 +28,11 @@ export const fileAccessOptions: FileAccessOption[] = [
     badge: 'Recommended',
   },
   {
-    value: 'home',
-    name: 'Home Directory',
-    description: 'Agent can access your entire home directory (~/) and all subdirectories.',
-    access: 'Home (~)',
-    notes: 'Local development',
-  },
-  {
     value: 'custom',
     name: 'Custom Paths',
     description: 'Specify exact directories the agent can access.',
     access: 'Listed paths',
     notes: 'Set path below',
-  },
-  {
-    value: 'full',
-    name: 'Full System Access',
-    description: 'Agent can access the entire filesystem. Use with caution.',
-    access: 'Full host',
-    notes: 'High privilege',
   },
 ];
 

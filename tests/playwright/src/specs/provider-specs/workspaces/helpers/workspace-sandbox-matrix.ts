@@ -38,8 +38,6 @@ export const CUSTOM_MOUNT_TARGET_2 = '$SOURCES/e2e-custom-2';
 export const CUSTOM_MOUNT_DEFAULT_HOST = '$SOURCES/e2e-default';
 export const CUSTOM_ALLOWED_HOST = 'api.example.com';
 
-export const FULL_SYSTEM_SKIP_LABEL = 'OpenShell tar fails on / mount';
-
 function skipTestTitle(scenarioId: string, skipReason: string): string {
   return `[SKIP] ${scenarioId} — ${skipReason}`;
 }
@@ -59,9 +57,7 @@ export const CUSTOM_MULTI_MOUNTS: WorkspaceCustomMount[] = [
 
 const FILESYSTEM_TAG: Record<FileAccessLevel, string> = {
   [FILE_ACCESS_LEVEL.NO_HOST_ACCESS]: '@fs-none',
-  [FILE_ACCESS_LEVEL.HOME_DIRECTORY]: '@fs-home',
   [FILE_ACCESS_LEVEL.CUSTOM_PATHS]: '@fs-custom',
-  [FILE_ACCESS_LEVEL.FULL_SYSTEM]: '@fs-full',
 };
 
 const NETWORK_TAG: Record<NetworkAccessLevel, string> = {
@@ -104,10 +100,6 @@ function filesystemLabel(scenario: SandboxScenario): string {
   switch (scenario.fileAccess) {
     case FILE_ACCESS_LEVEL.NO_HOST_ACCESS:
       return 'no host filesystem access';
-    case FILE_ACCESS_LEVEL.HOME_DIRECTORY:
-      return 'home directory filesystem';
-    case FILE_ACCESS_LEVEL.FULL_SYSTEM:
-      return 'full system filesystem';
     case FILE_ACCESS_LEVEL.CUSTOM_PATHS: {
       const mounts = scenario.customMounts;
       if (mounts?.some(mount => mount.readOnly)) {
