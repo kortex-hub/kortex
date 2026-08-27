@@ -267,8 +267,8 @@ export class AgentWorkspaceManager implements Disposable {
         [AGENT_LABEL]: options.agent,
       },
       uploads: dedupedUploads.length > 0 ? dedupedUploads : undefined,
-      noTty: true,
-      command: ['true'],
+      detach: true,
+      tty: true,
     });
 
     const tSandbox = performance.now();

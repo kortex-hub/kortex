@@ -120,6 +120,8 @@ export interface CreateSandboxOptions {
   uploads?: Array<{ local: string; remote: string }>;
   command?: string[];
   noTty?: boolean;
+  tty?: boolean;
+  detach?: boolean;
   policy?: string;
 }
 
