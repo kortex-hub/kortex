@@ -289,7 +289,7 @@ The `Workspace-Provider` project is defined in `tests/playwright/playwright.conf
 ## Adding a New Sandbox Scenario
 
 1. Add a `SandboxScenario` entry in `workspace-filesystem-network-smoke.spec.ts`:
-   - `id`: uppercase tag-aligned ID (e.g. `FS-HOME-NET-DENY`); describe title is derived in `helpers/workspace-sandbox-matrix.ts`
+   - `id`: uppercase tag-aligned ID (e.g. `FS-NONE-NET-DENY`); describe title is derived in `helpers/workspace-sandbox-matrix.ts`
    - `workspaceSlug`: required readable kebab slug (e.g. `none-dev`, `cust-multi`); final name is `{agentPrefix}-{slug}` and must be ≤ 19 chars (OpenShell limit)
    - `fileAccess`, `network`, and optional `customMounts` / `denyHosts` / `additionalHosts`
    - Reuse mount presets from `helpers/workspace-sandbox-matrix.ts` (`CUSTOM_RW_MOUNT`, etc.) when applicable
@@ -297,7 +297,7 @@ The `Workspace-Provider` project is defined in `tests/playwright/playwright.conf
 3. Use `host: ''` in `customMounts` to get a temp dir from the lifecycle helper; use `$SOURCES/...` hosts for sandbox-safe paths.
 4. Set `skipReason` if the combo is known broken on OpenShell until upstream fixes land.
 5. Workspace names are `{agentPrefix}-{workspaceSlug}` and must be ≤ 19 characters (OpenShell limit). `buildWorkspaceName` enforces this for matrix tests; hardcode short names in lifecycle smoke specs.
-6. Run the single scenario: `--grep "FS-HOME-NET-DENY"`.
+6. Run the single scenario: `--grep "FS-NONE-NET-DENY"`.
 
 ## Custom Mount Conventions
 
