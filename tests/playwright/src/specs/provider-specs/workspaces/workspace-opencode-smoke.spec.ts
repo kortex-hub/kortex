@@ -39,6 +39,24 @@ test.describe
   });
 
 test.describe
+  .serial('OpenCode agent workspace without a project folder', { tag: '@workspace-provider' }, () => {
+    registerWorkspaceLifecycleTests(test, expect, {
+      testIdPrefix: 'WKS-OPENAI-NOFOLDER',
+      workspaceName: 'opencode-nofolder',
+      agent: CODING_AGENT.OPENCODE,
+      requiredResource: 'openai',
+      noProjectFolder: true,
+      selectModel: async createPage => createPage.searchAndSelectDefault('chat'),
+      terminalReadyPatterns: [/Ask anything/i, /openai/i],
+      promptTimeout: TIMEOUTS.MODEL_RESPONSE,
+      promptTest: {
+        prompt: 'what is 123+456? reply with just the number',
+        expectedResponse: /579|insufficient|balance|credit|quota exceeded/i,
+      },
+    });
+  });
+
+test.describe
   .serial('OpenCode agent workspace with Gemini model', { tag: '@workspace-provider' }, () => {
     registerWorkspaceLifecycleTests(test, expect, {
       testIdPrefix: 'WKS-GEMINI',

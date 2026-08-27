@@ -69,6 +69,8 @@ export interface WorkspaceLifecycleConfig {
   sandbox?: WorkspaceSandboxOptions;
   /** When false, caller owns create/delete (sandbox matrix agent scope). Default true. */
   manageResource?: boolean;
+  /** When true, creates the workspace without a project folder (sourcePath left empty). */
+  noProjectFolder?: boolean;
 }
 
 const SANDBOX_STEP_TITLES: Record<string, string> = {
@@ -130,7 +132,9 @@ export function registerWorkspaceLifecycleTests(
       }
     }
 
-    workingDir = mkdtempSync(join(homedir(), '.kdn-e2e-'));
+    if (!config.noProjectFolder) {
+      workingDir = mkdtempSync(join(homedir(), '.kdn-e2e-'));
+    }
 
     if (
       hasSandbox &&
@@ -143,7 +147,7 @@ export function registerWorkspaceLifecycleTests(
 
       for (const mount of config.sandbox!.customMounts) {
         if (mount.host.startsWith('$SOURCES/')) {
-          mkdirSync(join(workingDir, mount.host.slice('$SOURCES/'.length)), { recursive: true });
+          mkdirSync(join(workingDir!, mount.host.slice('$SOURCES/'.length)), { recursive: true });
         }
       }
     }
@@ -192,7 +196,9 @@ export function registerWorkspaceLifecycleTests(
     const createPage = await agentWorkspacesPage.openCreatePage();
 
     await createPage.sessionNameInput.fill(config.workspaceName);
-    await createPage.workingDirInput.fill(workingDir!);
+    if (!config.noProjectFolder) {
+      await createPage.workingDirInput.fill(workingDir!);
+    }
     await createPage.continueToStep(WIZARD_STEP.AGENT_MODEL);
 
     await createPage.selectAgent(config.agent);
