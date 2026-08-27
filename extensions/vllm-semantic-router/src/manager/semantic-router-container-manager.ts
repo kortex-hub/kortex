@@ -138,6 +138,7 @@ export class SemanticRouterContainerManager {
         PortBindings: {
           [`${ROUTER_GRPC_PORT}/tcp`]: [{ HostPort: String(routerGrpcHostPort) }],
         },
+        SecurityOpt: ['label=disable'],
         Mounts: [
           {
             Source: configFilePath,
@@ -174,6 +175,7 @@ export class SemanticRouterContainerManager {
           [`${ENVOY_LISTEN_PORT}/tcp`]: [{ HostPort: String(envoyHostPort) }],
         },
         ExtraHosts: ['host.docker.internal:host-gateway'],
+        SecurityOpt: ['label=disable'],
         Mounts: [
           {
             Source: envoyConfigFilePath,
