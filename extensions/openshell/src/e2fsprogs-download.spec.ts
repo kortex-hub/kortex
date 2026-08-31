@@ -64,8 +64,9 @@ async function createBottle(): Promise<Buffer> {
   return readFile(archive);
 }
 
-function stubRegistry(bottle: Buffer): ReturnType<typeof vi.fn> {
+function stubRegistry(bottle: Buffer, architecture = 'amd64'): ReturnType<typeof vi.fn> {
   const digest = createHash('sha256').update(bottle).digest('hex');
+  const bottleArchitecture = architecture === 'amd64' ? 'x86_64' : 'aarch64';
   const fetchMock = vi.fn(async (input: string | URL | Request) => {
     const url = String(input);
     if (url.includes('/token?')) {
@@ -77,7 +78,7 @@ function stubRegistry(bottle: Buffer): ReturnType<typeof vi.fn> {
           {
             mediaType: 'application/vnd.oci.image.manifest.v1+json',
             digest: 'sha256:platform',
-            platform: { os: 'linux', architecture: 'amd64' },
+            platform: { os: 'linux', architecture },
           },
         ],
       });
@@ -88,7 +89,9 @@ function stubRegistry(bottle: Buffer): ReturnType<typeof vi.fn> {
           {
             mediaType: 'application/vnd.oci.image.layer.v1.tar+gzip',
             digest: `sha256:${digest}`,
-            annotations: { 'org.opencontainers.image.title': `e2fsprogs--${VERSION}.x86_64_linux.bottle.tar.gz` },
+            annotations: {
+              'org.opencontainers.image.title': `e2fsprogs--${VERSION}.${bottleArchitecture}_linux.bottle.tar.gz`,
+            },
           },
         ],
       });
@@ -102,7 +105,7 @@ function stubRegistry(bottle: Buffer): ReturnType<typeof vi.fn> {
   return fetchMock;
 }
 
-test('downloads and stages e2fsprogs tools beside the VM driver', async () => {
+test('downloads and stages the e2fsprogs tools beside the VM driver', async () => {
   const bottle = await createBottle();
   const fetchMock = stubRegistry(bottle);
   const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
@@ -113,15 +116,19 @@ test('downloads and stages e2fsprogs tools beside the VM driver', async () => {
   await downloadMkfsExt4(VERSION, 'x64', outputDir);
 
   expect(await readFile(join(outputDir, 'openshell-driver-vm'), 'utf-8')).toBe('vm-driver');
-  expect(await readFile(join(outputDir, '.mkfs-ext4', 'mke2fs'), 'utf-8')).toBe('mke2fs-binary');
-  expect(await readFile(join(outputDir, '.mkfs-ext4', 'debugfs'), 'utf-8')).toBe('debugfs-binary');
-  expect(await readFile(join(outputDir, '.mkfs-ext4', 'lib', 'libext2fs.so.2'), 'utf-8')).toBe('libext2fs.so.2');
+  expect(await readFile(join(outputDir, 'e2fsprogs', 'mke2fs'), 'utf-8')).toBe('mke2fs-binary');
+  expect(await readFile(join(outputDir, 'e2fsprogs', 'debugfs'), 'utf-8')).toBe('debugfs-binary');
+  for (const library of LIBRARIES) {
+    expect(await readFile(join(outputDir, 'e2fsprogs', 'lib', library), 'utf-8')).toBe(library);
+  }
+  expect(await readFile(join(outputDir, 'e2fsprogs', 'mke2fs.conf'), 'utf-8')).toBe('[defaults]\n');
   expect(await readFile(join(outputDir, '.mkfs-ext4-version'), 'utf-8')).toBe(`${VERSION}-linux-x64`);
   if (process.platform !== 'win32') {
     expect((await stat(join(outputDir, 'mkfs.ext4'))).mode & 0o111).not.toBe(0);
     expect((await stat(join(outputDir, 'debugfs'))).mode & 0o111).not.toBe(0);
   }
   expect(await readFile(join(outputDir, 'mkfs.ext4'), 'utf-8')).toContain('--argv0 mkfs.ext4');
+  expect(await readFile(join(outputDir, 'mkfs.ext4'), 'utf-8')).toContain('runtime_dir="$bin_dir/e2fsprogs"');
   expect(await readFile(join(outputDir, 'debugfs'), 'utf-8')).toContain('--argv0 debugfs');
   await expect(stat(join(outputDir, 'NOTICE'))).rejects.toThrow();
   expect(timeoutSpy.mock.calls).toEqual([[30_000], [30_000], [30_000], [5 * 60_000]]);
@@ -130,11 +137,21 @@ test('downloads and stages e2fsprogs tools beside the VM driver', async () => {
   await downloadMkfsExt4(VERSION, 'x64', outputDir);
   expect(fetchMock).toHaveBeenCalledTimes(callsAfterDownload);
 
-  await chmod(join(outputDir, '.mkfs-ext4', 'lib', 'libext2fs.so.2'), 0o444);
-  await rm(join(outputDir, 'debugfs'));
+  await chmod(join(outputDir, 'e2fsprogs', 'lib', 'libext2fs.so.2'), 0o444);
+  await rm(join(outputDir, 'e2fsprogs', 'mke2fs'));
   await downloadMkfsExt4(VERSION, 'x64', outputDir);
-  expect(await readFile(join(outputDir, '.mkfs-ext4', 'debugfs'), 'utf-8')).toBe('debugfs-binary');
+  expect(await readFile(join(outputDir, 'e2fsprogs', 'mke2fs'), 'utf-8')).toBe('mke2fs-binary');
   expect(fetchMock).toHaveBeenCalledTimes(callsAfterDownload * 2);
+});
+
+test('uses the arm64 ELF loader in the launcher', async () => {
+  const bottle = await createBottle();
+  stubRegistry(bottle, 'arm64');
+  const outputDir = join(testDir, 'output');
+
+  await downloadMkfsExt4(VERSION, 'arm64', outputDir);
+
+  expect(await readFile(join(outputDir, 'mkfs.ext4'), 'utf-8')).toContain('/lib/ld-linux-aarch64.so.1');
 });
 
 test('reports registry failures with the failing endpoint', async () => {

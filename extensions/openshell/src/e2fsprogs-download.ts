@@ -38,6 +38,7 @@ const METADATA_TIMEOUT_MS = 30_000;
 const BOTTLE_DOWNLOAD_TIMEOUT_MS = 5 * 60_000;
 
 const LIBRARIES = ['libcom_err.so.2', 'libe2p.so.2', 'libext2fs.so.2', 'libss.so.2'];
+const RUNTIME_DIRECTORY = 'e2fsprogs';
 const BINARIES = [
   { name: 'mkfs.ext4', payload: 'mke2fs' },
   { name: 'debugfs', payload: 'debugfs' },
@@ -166,7 +167,7 @@ case "$0" in
   *) script_path=$(command -v "$0") ;;
 esac
 bin_dir=$(CDPATH= cd -- "\${script_path%/*}" && pwd)
-runtime_dir="$bin_dir/.mkfs-ext4"
+runtime_dir="$bin_dir/${RUNTIME_DIRECTORY}"
 library_path="$runtime_dir/lib"
 if [ -n "\${LD_LIBRARY_PATH:-}" ]; then
   library_path="$library_path:$LD_LIBRARY_PATH"
@@ -187,7 +188,7 @@ async function stageBottle(archive: string, version: string, arch: string, outpu
       filter: (path, entry) => 'type' in entry && isRequiredBottleEntry(path, entry.type, version),
     });
     const bottleRoot = join(extractionDir, 'e2fsprogs', version);
-    const runtimeDir = join(outputDir, '.mkfs-ext4');
+    const runtimeDir = join(outputDir, RUNTIME_DIRECTORY);
     const libDir = join(runtimeDir, 'lib');
     await rm(runtimeDir, { recursive: true, force: true });
     await mkdir(libDir, { recursive: true });
@@ -220,9 +221,9 @@ async function stageBottle(archive: string, version: string, arch: string, outpu
 function hasCompleteInstallation(outputDir: string): boolean {
   return [
     ...BINARIES.map(binary => join(outputDir, binary.name)),
-    ...BINARIES.map(binary => join(outputDir, '.mkfs-ext4', binary.payload)),
-    ...LIBRARIES.map(library => join(outputDir, '.mkfs-ext4', 'lib', library)),
-    join(outputDir, '.mkfs-ext4', 'mke2fs.conf'),
+    ...BINARIES.map(binary => join(outputDir, RUNTIME_DIRECTORY, binary.payload)),
+    ...LIBRARIES.map(library => join(outputDir, RUNTIME_DIRECTORY, 'lib', library)),
+    join(outputDir, RUNTIME_DIRECTORY, 'mke2fs.conf'),
   ].every(path => existsSync(path));
 }
 
@@ -261,7 +262,7 @@ export async function downloadMkfsExt4(version: string, arch: string, outputDir:
     await Promise.all([
       rm(join(outputDir, 'mkfs.ext4'), { force: true }),
       rm(join(outputDir, 'debugfs'), { force: true }),
-      rm(join(outputDir, '.mkfs-ext4'), { recursive: true, force: true }),
+      rm(join(outputDir, RUNTIME_DIRECTORY), { recursive: true, force: true }),
       rm(versionFile, { force: true }),
     ]);
     throw error;
