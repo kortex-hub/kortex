@@ -24,6 +24,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { AgentRegistry } from '/@/plugin/agent-registry.js';
 import type { Directories } from '/@/plugin/directories.js';
+import type { DraftPolicyWatcher } from '/@/plugin/draft-policy/draft-policy-watcher.js';
 import type { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import type { AcpSessionCreateOptions, AcpSessionInfo } from '/@api/acp-session-info.js';
 import type { AgentInfo } from '/@api/agent-info.js';
@@ -71,6 +72,15 @@ const directories: Directories = {
   getAgentWorkspacesConfigDirectory: vi.fn(),
 } as unknown as Directories;
 
+const draftPolicyWatcher: DraftPolicyWatcher = {
+  watchSandbox: vi.fn().mockResolvedValue({ dispose: vi.fn() }),
+  unwatchSandbox: vi.fn(),
+  approveDraftChunk: vi.fn().mockResolvedValue(undefined),
+  rejectDraftChunk: vi.fn().mockResolvedValue(undefined),
+  onDraftPolicyUpdate: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+  dispose: vi.fn(),
+} as unknown as DraftPolicyWatcher;
+
 function createSandbox(overrides?: Partial<SandboxInfo>): SandboxInfo {
   return {
     id: 'sandbox-1',
@@ -99,7 +109,9 @@ describe('AcpSessionManager', () => {
     vi.resetAllMocks();
     vi.mocked(directories.getAcpSessionsDirectory).mockReturnValue(FAKE_SESSIONS_DIR);
     vi.mocked(openshellCli.listSandboxes).mockResolvedValue([]);
-    manager = new AcpSessionManager(apiSender, openshellCli, agentRegistry, directories);
+    vi.mocked(draftPolicyWatcher.watchSandbox).mockResolvedValue({ dispose: vi.fn() });
+    vi.mocked(draftPolicyWatcher.onDraftPolicyUpdate).mockReturnValue({ dispose: vi.fn() });
+    manager = new AcpSessionManager(apiSender, openshellCli, agentRegistry, directories, draftPolicyWatcher);
   });
 
   describe('resolveAgentCommand', () => {

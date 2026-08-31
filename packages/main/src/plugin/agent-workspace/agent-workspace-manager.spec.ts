@@ -38,6 +38,7 @@ import * as configWriter from '/@/plugin/agent-workspace/workspace-config-writer
 import type { IPCHandle } from '/@/plugin/api.js';
 import type { CliToolRegistry } from '/@/plugin/cli-tool-registry.js';
 import type { Directories } from '/@/plugin/directories.js';
+import type { DraftPolicyWatcher } from '/@/plugin/draft-policy/draft-policy-watcher.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import type { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
 import type { OpenshellGatewayStateManager } from '/@/plugin/openshell-cli/openshell-gateway-state-manager.js';
@@ -169,6 +170,11 @@ const directories = {
   getAgentWorkspacesConfigDirectory: vi.fn().mockReturnValue('/mock/data/agent-workspaces'),
 } as unknown as Directories;
 
+const draftPolicyWatcher = {
+  unwatchSandbox: vi.fn(),
+  unwatchSandboxByName: vi.fn(),
+} as unknown as DraftPolicyWatcher;
+
 function mockEnoent(): NodeJS.ErrnoException {
   const err: NodeJS.ErrnoException = new Error('ENOENT');
   err.code = 'ENOENT';
@@ -248,6 +254,7 @@ beforeEach(() => {
     openshellGateway,
     openshellGatewayStateManager,
     directories,
+    draftPolicyWatcher,
   );
   manager.init();
 });
@@ -1390,6 +1397,15 @@ describe('remove', () => {
       force: true,
     });
   });
+
+  test('unwatches draft policy for the sandbox being removed', async () => {
+    vi.mocked(openshellCli.listSandboxesPerGateway).mockResolvedValue(TEST_SUMMARIES);
+    vi.mocked(openshellCli.deleteSandbox).mockResolvedValue(undefined);
+
+    await manager.remove('ws-1', 'kaiden');
+
+    expect(draftPolicyWatcher.unwatchSandbox).toHaveBeenCalledWith('ws-1');
+  });
 });
 
 describe('deleteOpenshellSandbox', () => {
@@ -1410,6 +1426,14 @@ describe('deleteOpenshellSandbox', () => {
       recursive: true,
       force: true,
     });
+  });
+
+  test('unwatches draft policy by sandbox name', async () => {
+    vi.mocked(openshellCli.deleteSandbox).mockResolvedValue(undefined);
+
+    await manager.deleteOpenshellSandbox('my-workspace', 'kaiden');
+
+    expect(draftPolicyWatcher.unwatchSandboxByName).toHaveBeenCalledWith('my-workspace');
   });
 });
 

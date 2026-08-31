@@ -58,6 +58,7 @@ import { AgentRegistry } from '/@/plugin/agent-registry.js';
 import { AgentWorkspaceManager } from '/@/plugin/agent-workspace/agent-workspace-manager.js';
 import { IPCHandle, IPCMainOn, WebContentsType } from '/@/plugin/api.js';
 import { ContainerfileParser } from '/@/plugin/containerfile-parser.js';
+import { DraftPolicyWatcher } from '/@/plugin/draft-policy/draft-policy-watcher.js';
 import { ExtensionApiVersion } from '/@/plugin/extension/extension-api-version.js';
 import { ExtensionLoader } from '/@/plugin/extension/extension-loader.js';
 import { ExtensionWatcher } from '/@/plugin/extension/extension-watcher.js';
@@ -607,6 +608,7 @@ export class PluginSystem {
     container.bind<OpenshellCli>(OpenshellCli).toSelf().inSingletonScope();
     container.bind<OpenshellGatewayConfig>(OpenshellGatewayConfig).toSelf();
     container.bind<OpenshellSdkClientManager>(OpenshellSdkClientManager).toSelf().inSingletonScope();
+    container.bind<DraftPolicyWatcher>(DraftPolicyWatcher).toSelf().inSingletonScope();
     container.bind<OpenshellGateway>(OpenshellGateway).toSelf().inSingletonScope();
     container.bind<OpenshellGatewayStateManager>(OpenshellGatewayStateManager).toSelf().inSingletonScope();
     container.bind<OpenshellImageBuilder>(OpenshellImageBuilder).toSelf().inSingletonScope();

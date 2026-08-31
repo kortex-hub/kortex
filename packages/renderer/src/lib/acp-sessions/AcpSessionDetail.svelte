@@ -18,6 +18,7 @@ import type {
 import AcpAtMentionCompletion from './AcpAtMentionCompletion.svelte';
 import AcpSlashCommandCompletion from './AcpSlashCommandCompletion.svelte';
 import AcpFlowAgentMessage from './flow/AcpFlowAgentMessage.svelte';
+import AcpFlowNetworkBlock from './flow/AcpFlowNetworkBlock.svelte';
 import AcpFlowPlan from './flow/AcpFlowPlan.svelte';
 import AcpFlowPrompt from './flow/AcpFlowPrompt.svelte';
 import AcpFlowThinking from './flow/AcpFlowThinking.svelte';
@@ -481,6 +482,8 @@ function handleKeyDown(e: KeyboardEvent): void {
         <AcpFlowToolCall {event} {sessionId} />
       {:else if event.kind === 'plan'}
         <AcpFlowPlan {event} />
+      {:else if event.kind === 'draft_policy_update'}
+        <AcpFlowNetworkBlock {event} {sessionId} />
       {/if}
     {/each}
 
