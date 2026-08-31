@@ -500,12 +500,16 @@ export class DraftPolicyWatcher {
     if (denial.denyReason?.includes('policy changed') || denial.denyReason?.includes('policy generation is stale'))
       return;
 
-    const alreadyCovered = Array.from(state.chunkState.values()).some(
-      s => s.chunk.host === denial.host && s.chunk.port === denial.port,
-    );
+    const isL7 = denial.method !== undefined && denial.path !== undefined;
+    const alreadyCovered = Array.from(state.chunkState.values()).some(s => {
+      if (s.chunk.host !== denial.host || s.chunk.port !== denial.port) return false;
+      // L4 chunk covers all traffic to host:port
+      if (!s.chunk.isL7) return true;
+      // L7 chunk only covers its specific method — new paths need new cards
+      return isL7 && s.chunk.method === denial.method && s.chunk.status !== 'approved';
+    });
     if (alreadyCovered) return;
 
-    const isL7 = denial.method !== undefined && denial.path !== undefined;
     const chunkId = isL7
       ? `l7-${denial.host}-${denial.port}-${denial.method}-${Date.now()}`
       : `l4-${denial.host}-${denial.port}-${Date.now()}`;
