@@ -278,8 +278,11 @@ export class AgentWorkspaceManager implements Disposable {
     if (networkPolicy) {
       const endpointFlags = collectEndpointFlags(networkPolicy);
       if (endpointFlags.length > 0) {
+        const hasProviders = (options.secrets?.length ?? 0) > 0;
         try {
-          await this.openshellCli.updatePolicy(sandboxName, endpointFlags, collectBinaryFlags(networkPolicy));
+          await this.openshellCli.updatePolicy(sandboxName, endpointFlags, collectBinaryFlags(networkPolicy), {
+            allowUninspectedCredentials: hasProviders,
+          });
         } catch (err) {
           await this.openshellCli.deleteSandbox(sandboxName, options.gateway).catch(() => {});
           throw err;

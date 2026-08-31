@@ -438,6 +438,45 @@ describe('updatePolicy', () => {
       undefined,
     );
   });
+
+  test('includes --allow-uninspected-credentials flag when option is set', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.updatePolicy('my-sandbox', ['registry.npmjs.org:443:full:rest'], ['/**'], {
+      allowUninspectedCredentials: true,
+    });
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      [
+        'policy',
+        'update',
+        'my-sandbox',
+        '--allow-uninspected-credentials',
+        '--add-endpoint',
+        'registry.npmjs.org:443:full:rest',
+        '--binary',
+        '/**',
+      ],
+      undefined,
+    );
+  });
+
+  test('omits --allow-uninspected-credentials flag when option is false', async () => {
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    vi.mocked(exec.exec).mockResolvedValue(mockExecResult(''));
+
+    await openshellCli.updatePolicy('my-sandbox', ['registry.npmjs.org:443:full:rest'], undefined, {
+      allowUninspectedCredentials: false,
+    });
+
+    expect(exec.exec).toHaveBeenCalledWith(
+      OPENSHELL_CLI_PATH,
+      ['policy', 'update', 'my-sandbox', '--add-endpoint', 'registry.npmjs.org:443:full:rest'],
+      undefined,
+    );
+  });
 });
 
 describe('listSandboxes', () => {

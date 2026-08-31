@@ -801,6 +801,24 @@ describe('create – OpenShell mode', () => {
         'pypi.python.org:80:full:rest',
       ]),
       ['/**'],
+      { allowUninspectedCredentials: false },
+    );
+  });
+
+  test('passes allowUninspectedCredentials when secrets are attached', async () => {
+    const options = {
+      ...defaultOptions,
+      secrets: ['KAIDEN_GH_TOKEN'],
+      network: { mode: 'deny' as const, hosts: ['registry.npmjs.org'] },
+    };
+
+    await manager.create(options);
+
+    expect(openshellCli.updatePolicy).toHaveBeenCalledWith(
+      'my-sandbox',
+      expect.arrayContaining(['registry.npmjs.org:443:full:rest']),
+      ['/**'],
+      { allowUninspectedCredentials: true },
     );
   });
 
@@ -983,6 +1001,7 @@ describe('create – OpenShell mode', () => {
       'my-sandbox',
       expect.arrayContaining(['api.example.com:443']),
       ['/**'],
+      { allowUninspectedCredentials: false },
     );
   });
 
@@ -1009,6 +1028,7 @@ describe('create – OpenShell mode', () => {
       'my-sandbox',
       expect.arrayContaining(['host.openshell.internal:11434']),
       ['/**'],
+      { allowUninspectedCredentials: false },
     );
   });
 
@@ -1035,6 +1055,7 @@ describe('create – OpenShell mode', () => {
       'my-sandbox',
       expect.arrayContaining(['host.openshell.internal:11434']),
       ['/**'],
+      { allowUninspectedCredentials: false },
     );
   });
 
@@ -1058,6 +1079,7 @@ describe('create – OpenShell mode', () => {
       'my-sandbox',
       expect.arrayContaining(['registry.npmjs.org:443:full:rest', 'api.openai.com:443']),
       ['/**'],
+      { allowUninspectedCredentials: false },
     );
   });
 });

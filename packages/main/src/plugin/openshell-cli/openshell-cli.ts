@@ -530,8 +530,16 @@ export class OpenshellCli {
 
   // ── policy commands ──────────────────────────────────────────────
 
-  async updatePolicy(sandboxName: string, endpoints: string[], binaries?: string[]): Promise<void> {
+  async updatePolicy(
+    sandboxName: string,
+    endpoints: string[],
+    binaries?: string[],
+    options?: { allowUninspectedCredentials?: boolean },
+  ): Promise<void> {
     const args = ['policy', 'update', sandboxName];
+    if (options?.allowUninspectedCredentials) {
+      args.push('--allow-uninspected-credentials');
+    }
     for (const ep of endpoints) {
       args.push('--add-endpoint', ep);
     }
