@@ -52,7 +52,7 @@ on:
           - 'test:e2e:workspaces:copilot'
         required: true
       env_vars:
-        default: 'PODMAN_ENABLED=true,WORKSPACE_TESTS_CI=true'
+        default: 'PODMAN_ENABLED=true'
         description: 'Env. Variables passed into target machine, ie: VAR1=xxx,VAR2=true'
         type: string
         required: true
@@ -165,7 +165,7 @@ jobs:
       env:
         DEFAULT_REPO_BRANCH: 'FORK=openkaiden,BRANCH=main'
         DEFAULT_NPM_TARGET: 'test:e2e:workspaces'
-        DEFAULT_ENV_VARS: 'PODMAN_ENABLED=true,WORKSPACE_TESTS_CI=true,NPM_CONFIG_LOGLEVEL=warn'
+        DEFAULT_ENV_VARS: 'PODMAN_ENABLED=true,NPM_CONFIG_LOGLEVEL=warn'
         DEFAULT_IMAGE_VERSION: 'v0.1.1'
         DEFAULT_TARGET_REPO: 'kaiden'
         DEFAULT_TARGET_APP_NAME: 'Kaiden'

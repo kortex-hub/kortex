@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import { expect, test } from '/@/fixtures/provider-fixtures';
-import { CODING_AGENT } from '/@/model/core/types';
+import { CODING_AGENT, TERMINAL_READY_PATTERNS } from '/@/model/core/types';
 
 import { registerWorkspaceLifecycleTests } from './helpers/workspace-lifecycle-helper';
 
@@ -29,7 +29,7 @@ test.describe
       agent: CODING_AGENT.GOOSE,
       requiredResource: 'openai',
       selectModel: async createPage => createPage.searchAndSelectDefault('chat'),
-      terminalReadyPatterns: [/goose/i],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.GOOSE,
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',
         expectedResponse: /579|insufficient|balance|credit|quota exceeded/i,
@@ -46,7 +46,7 @@ test.describe
       requiredResource: 'openai',
       noProjectFolder: true,
       selectModel: async createPage => createPage.searchAndSelectDefault('chat'),
-      terminalReadyPatterns: [/goose/i],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.GOOSE,
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',
         expectedResponse: /579|insufficient|balance|credit|quota exceeded/i,
@@ -62,7 +62,7 @@ test.describe
       agent: CODING_AGENT.GOOSE,
       requiredResource: 'mistral',
       selectModel: async createPage => createPage.searchAndSelectDefault('mistral', 'Mistral'),
-      terminalReadyPatterns: [/goose/i],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.GOOSE,
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',
         expectedResponse: /579|insufficient|balance|credit/i,
@@ -80,7 +80,7 @@ test.describe
       agent: CODING_AGENT.GOOSE,
       requiredResource: 'ollama',
       selectModel: async createPage => createPage.searchAndSelectByRuntime('ollama', 'Ollama'),
-      terminalReadyPatterns: [/goose/i],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.GOOSE,
       promptTimeout: 120_000,
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',
@@ -97,7 +97,7 @@ test.describe
       agent: CODING_AGENT.GOOSE,
       requiredResource: 'ramalama',
       selectModel: async createPage => createPage.searchAndSelectByRuntime('ramalama', 'RamaLama'),
-      terminalReadyPatterns: [/goose/i],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.GOOSE,
       promptTimeout: 120_000,
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',

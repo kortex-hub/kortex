@@ -89,7 +89,7 @@ export interface SandboxAgentSetup {
   requiredResource: ResourceId;
   workspacePrefix: string;
   selectModel: (createPage: AgentWorkspaceCreatePage) => Promise<string | undefined>;
-  terminalReadyPatterns: RegExp[];
+  terminalReadyPatterns: readonly RegExp[];
   promptTest: {
     prompt: string;
     expectedResponse: RegExp;

@@ -242,7 +242,6 @@ npx playwright show-trace path/to/trace.zip
 | `OPENAI_API_KEY`          | OpenAI provider API key                                             |
 | `ANTHROPIC_API_KEY`       | Claude workspace provider tests                                     |
 | `PODMAN_ENABLED`          | Enable workspace provider + container-dependent tests               |
-| `WORKSPACE_TESTS_CI`      | Allow workspace tests when `CI=true`                                |
 | `OLLAMA_ENABLED`          | Enable Ollama provider tests                                        |
 | `RAMALAMA_ENABLED`        | Enable RamaLama provider tests                                      |
 | `OPENSHIFT_AI_TOKEN`      | OpenShift AI authentication                                         |
@@ -250,6 +249,7 @@ npx playwright show-trace path/to/trace.zip
 | `KAIDEN_BINARY`           | Path to production binary (vs dev mode)                             |
 | `KAIDEN_E2E_VERBOSE_LOGS` | Set `true` to print Electron main/renderer logs between test titles |
 | `CI`                      | CI environment flag (enables retries, mock keychain)                |
+| `GITHUB_ACTIONS`          | Auto-set by GitHub Actions; workspace tests skip when present       |
 | `KAIDEN_HOME_DIR`         | Test config directory (auto-set by fixtures)                        |
 
 ## Workspace Provider E2E
