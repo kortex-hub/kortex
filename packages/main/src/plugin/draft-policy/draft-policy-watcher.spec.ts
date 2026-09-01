@@ -58,6 +58,34 @@ function createSdkManager(client: ReturnType<typeof createMockClient>): Openshel
   } as unknown as OpenshellSdkClientManager;
 }
 
+function makeLogEvent(
+  message: string,
+  fields: Record<string, string> = {},
+): {
+  payload: {
+    case: 'log';
+    value: { fields: Record<string, string>; timestampMs: bigint; message: string; level: string; source: string };
+  };
+} {
+  return {
+    payload: {
+      case: 'log' as const,
+      value: { fields, timestampMs: BigInt(Date.now()), message, level: 'INFO', source: 'sandbox' },
+    },
+  };
+}
+
+function setupStreamWithEvents(
+  events: Array<{ payload: { case: string; value: unknown } }>,
+): AsyncGenerator<{ payload: { case: string; value: unknown } }> {
+  return (async function* (): AsyncGenerator<{ payload: { case: string; value: unknown } }> {
+    for (const ev of events) {
+      yield ev;
+    }
+    await new Promise(() => {});
+  })();
+}
+
 describe('DraftPolicyWatcher', () => {
   let watcher: DraftPolicyWatcher;
   let client: ReturnType<typeof createMockClient>;
@@ -174,6 +202,190 @@ describe('DraftPolicyWatcher', () => {
     });
   });
 
+  describe('approveDraftChunk - L7 policy update', () => {
+    function mockGetConfig(
+      rules: Record<string, { endpoints: Array<{ host: string; port: number }>; binaries?: Array<{ path: string }> }>,
+    ): void {
+      (client as unknown as Record<string, unknown>)['sandbox'] = {
+        getConfig: vi.fn().mockResolvedValue({
+          policy: { networkPolicies: rules },
+        }),
+      };
+    }
+
+    test('uses addAllowRules when exactly one rule owns the host:port and binary is covered', async () => {
+      const logEvent = makeLogEvent(
+        'L7_REQUEST deny POST api.example.com:443/graphql graphql_ops=type=mutation name=CreateItem fields=createItem',
+      );
+      client.raw.watchSandbox.mockReturnValue(setupStreamWithEvents([logEvent]));
+
+      const events: DraftPolicyEvent[] = [];
+      watcher.onDraftPolicyUpdate(e => events.push(e));
+
+      await watcher.watchSandbox('sandbox-1', 'my-sandbox', 'gateway-1');
+      await vi.advanceTimersByTimeAsync(0);
+
+      const chunkId = events[0]!.chunks[0]!.chunkId;
+
+      mockGetConfig({
+        single_rule: {
+          endpoints: [{ host: 'api.example.com', port: 443 }],
+          binaries: [{ path: '/**' }],
+        },
+      });
+
+      await watcher.approveDraftChunk('sandbox-1', chunkId);
+
+      expect(client.raw.updateConfig).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mergeOperations: [
+            expect.objectContaining({
+              operation: expect.objectContaining({
+                case: 'addAllowRules',
+                value: expect.objectContaining({
+                  host: 'api.example.com',
+                  port: 443,
+                }),
+              }),
+            }),
+          ],
+        }),
+      );
+    });
+
+    test('falls back to addRule when multiple rules share the host:port', async () => {
+      const logEvent = makeLogEvent(
+        'L7_REQUEST deny POST api.github.com:443/graphql graphql_ops=type=mutation name=PullRequestCreate fields=createPullRequest',
+      );
+      client.raw.watchSandbox.mockReturnValue(setupStreamWithEvents([logEvent]));
+
+      const events: DraftPolicyEvent[] = [];
+      watcher.onDraftPolicyUpdate(e => events.push(e));
+
+      await watcher.watchSandbox('sandbox-1', 'my-sandbox', 'gateway-1');
+      await vi.advanceTimersByTimeAsync(0);
+
+      const chunkId = events[0]!.chunks[0]!.chunkId;
+
+      mockGetConfig({
+        github_rest_api: { endpoints: [{ host: 'api.github.com', port: 443 }] },
+        copilot: { endpoints: [{ host: 'api.github.com', port: 443 }] },
+        pypi: { endpoints: [{ host: 'api.github.com', port: 443 }] },
+      });
+
+      await watcher.approveDraftChunk('sandbox-1', chunkId);
+
+      expect(client.raw.updateConfig).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mergeOperations: [
+            expect.objectContaining({
+              operation: expect.objectContaining({
+                case: 'addRule',
+                value: expect.objectContaining({
+                  rule: expect.objectContaining({
+                    endpoints: [
+                      expect.objectContaining({
+                        host: 'api.github.com',
+                        port: 443,
+                        protocol: 'graphql',
+                        path: '/graphql',
+                      }),
+                    ],
+                  }),
+                }),
+              }),
+            }),
+          ],
+        }),
+      );
+    });
+
+    test('falls back to addRule when single rule does not cover the denial binary', async () => {
+      const logEvent = makeLogEvent('l7 deny', {
+        l7_decision: 'deny',
+        dst_host: 'api.example.com',
+        dst_port: '443',
+        l7_action: 'POST',
+        l7_target: '/repos/org/repo/pulls',
+        binary: '/usr/bin/git',
+        l7_deny_reason: 'method/path not in allow list',
+      });
+      client.raw.watchSandbox.mockReturnValue(setupStreamWithEvents([logEvent]));
+
+      const events: DraftPolicyEvent[] = [];
+      watcher.onDraftPolicyUpdate(e => events.push(e));
+
+      await watcher.watchSandbox('sandbox-1', 'my-sandbox', 'gateway-1');
+      await vi.advanceTimersByTimeAsync(0);
+
+      const chunkId = events[0]!.chunks[0]!.chunkId;
+
+      mockGetConfig({
+        single_rule: {
+          endpoints: [{ host: 'api.example.com', port: 443 }],
+          binaries: [{ path: '/usr/bin/curl' }],
+        },
+      });
+
+      await watcher.approveDraftChunk('sandbox-1', chunkId);
+
+      expect(client.raw.updateConfig).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mergeOperations: [
+            expect.objectContaining({
+              operation: expect.objectContaining({
+                case: 'addRule',
+              }),
+            }),
+          ],
+        }),
+      );
+    });
+
+    test('falls back to addRule when no rules exist for host:port', async () => {
+      const logEvent = makeLogEvent(
+        'HTTP:POST [MED] DENIED curl(1234) -> POST https://api.new-host.com:443/some/path [policy:default]',
+      );
+      client.raw.watchSandbox.mockReturnValue(setupStreamWithEvents([logEvent]));
+
+      const events: DraftPolicyEvent[] = [];
+      watcher.onDraftPolicyUpdate(e => events.push(e));
+
+      await watcher.watchSandbox('sandbox-1', 'my-sandbox', 'gateway-1');
+      await vi.advanceTimersByTimeAsync(0);
+
+      const chunkId = events[0]!.chunks[0]!.chunkId;
+
+      mockGetConfig({});
+
+      await watcher.approveDraftChunk('sandbox-1', chunkId);
+
+      expect(client.raw.updateConfig).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mergeOperations: [
+            expect.objectContaining({
+              operation: expect.objectContaining({
+                case: 'addRule',
+                value: expect.objectContaining({
+                  rule: expect.objectContaining({
+                    endpoints: [
+                      expect.objectContaining({
+                        host: 'api.new-host.com',
+                        port: 443,
+                        protocol: 'rest',
+                        enforcement: 'enforce',
+                      }),
+                    ],
+                  }),
+                }),
+              }),
+            }),
+          ],
+        }),
+      );
+    });
+  });
+
   describe('rejectDraftChunk', () => {
     test('calls rejectDraftChunk RPC for L4 proposals', async () => {
       const pendingChunk = {
@@ -234,34 +446,6 @@ describe('DraftPolicyWatcher', () => {
   });
 
   describe('log-based denial detection', () => {
-    function makeLogEvent(
-      message: string,
-      fields: Record<string, string> = {},
-    ): {
-      payload: {
-        case: 'log';
-        value: { fields: Record<string, string>; timestampMs: bigint; message: string; level: string; source: string };
-      };
-    } {
-      return {
-        payload: {
-          case: 'log' as const,
-          value: { fields, timestampMs: BigInt(Date.now()), message, level: 'INFO', source: 'sandbox' },
-        },
-      };
-    }
-
-    function setupStreamWithEvents(
-      events: Array<{ payload: { case: string; value: unknown } }>,
-    ): AsyncGenerator<{ payload: { case: string; value: unknown } }> {
-      return (async function* (): AsyncGenerator<{ payload: { case: string; value: unknown } }> {
-        for (const ev of events) {
-          yield ev;
-        }
-        await new Promise(() => {});
-      })();
-    }
-
     test('emits L4 denial immediately from OCSF shorthand', async () => {
       const logEvent = makeLogEvent(
         'NET:CONNECT [MED] DENIED curl(1234) -> registry.npmjs.org:443 [policy:default] [reason:host not in allow list]',
@@ -408,6 +592,68 @@ describe('DraftPolicyWatcher', () => {
       await vi.advanceTimersByTimeAsync(0);
 
       expect(events).toHaveLength(0);
+    });
+
+    test('emits GraphQL denial from L7_REQUEST format', async () => {
+      const logEvent = makeLogEvent(
+        'L7_REQUEST deny POST api.github.com:443/graphql graphql_ops=type=mutation name=PullRequestCreate fields=createPullRequest [policy:default]',
+      );
+      client.raw.watchSandbox.mockReturnValue(setupStreamWithEvents([logEvent]));
+
+      const events: DraftPolicyEvent[] = [];
+      watcher.onDraftPolicyUpdate(e => events.push(e));
+
+      await watcher.watchSandbox('sandbox-1', 'my-sandbox');
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(events).toHaveLength(1);
+      const chunk = events[0]!.chunks[0]!;
+      expect(chunk.host).toBe('api.github.com');
+      expect(chunk.port).toBe(443);
+      expect(chunk.isL7).toBe(true);
+      expect(chunk.protocol).toBe('graphql');
+      expect(chunk.operationType).toBe('mutation');
+      expect(chunk.operationName).toBe('PullRequestCreate');
+      expect(chunk.graphqlFields).toEqual(['createPullRequest']);
+    });
+
+    test('does not duplicate GraphQL denial with same operation type', async () => {
+      const logEvent1 = makeLogEvent(
+        'L7_REQUEST deny POST api.github.com:443/graphql graphql_ops=type=mutation name=PullRequestCreate fields=createPullRequest',
+      );
+      const logEvent2 = makeLogEvent(
+        'L7_REQUEST deny POST api.github.com:443/graphql graphql_ops=type=mutation name=AddReview fields=addPullRequestReview',
+      );
+      client.raw.watchSandbox.mockReturnValue(setupStreamWithEvents([logEvent1, logEvent2]));
+
+      const events: DraftPolicyEvent[] = [];
+      watcher.onDraftPolicyUpdate(e => events.push(e));
+
+      await watcher.watchSandbox('sandbox-1', 'my-sandbox');
+      await vi.advanceTimersByTimeAsync(0);
+
+      // Both are mutation type on same host:port, first pending suppresses second
+      expect(events).toHaveLength(1);
+    });
+
+    test('emits different GraphQL operation types separately', async () => {
+      const logEvent1 = makeLogEvent(
+        'L7_REQUEST deny POST api.github.com:443/graphql graphql_ops=type=mutation name=CreatePR fields=createPullRequest',
+      );
+      const logEvent2 = makeLogEvent(
+        'L7_REQUEST deny POST api.github.com:443/graphql graphql_ops=type=query name=GetRepo fields=repository',
+      );
+      client.raw.watchSandbox.mockReturnValue(setupStreamWithEvents([logEvent1, logEvent2]));
+
+      const events: DraftPolicyEvent[] = [];
+      watcher.onDraftPolicyUpdate(e => events.push(e));
+
+      await watcher.watchSandbox('sandbox-1', 'my-sandbox');
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(events).toHaveLength(2);
+      expect(events[0]!.chunks[0]!.operationType).toBe('mutation');
+      expect(events[1]!.chunks[0]!.operationType).toBe('query');
     });
 
     test('emits L4 denial from NET:CONNECT with no arrow actor prefix', async () => {

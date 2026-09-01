@@ -12,14 +12,17 @@ interface Props {
 
 let { event, sessionId }: Props = $props();
 let responding = $state<string | undefined>(undefined);
+let errorByChunk = $state<Record<string, string>>({});
 
 async function handleApprove(chunkId: string): Promise<void> {
   if (responding) return;
   responding = chunkId;
+  errorByChunk[chunkId] = '';
   try {
     await window.approveDraftChunk(sessionId, chunkId);
   } catch (err: unknown) {
     console.error('Failed to approve draft chunk', err);
+    errorByChunk[chunkId] = err instanceof Error ? err.message : String(err);
   } finally {
     responding = undefined;
   }
@@ -28,10 +31,12 @@ async function handleApprove(chunkId: string): Promise<void> {
 async function handleReject(chunkId: string): Promise<void> {
   if (responding) return;
   responding = chunkId;
+  errorByChunk[chunkId] = '';
   try {
     await window.rejectDraftChunk(sessionId, chunkId);
   } catch (err: unknown) {
     console.error('Failed to reject draft chunk', err);
+    errorByChunk[chunkId] = err instanceof Error ? err.message : String(err);
   } finally {
     responding = undefined;
   }
@@ -61,7 +66,20 @@ async function handleReject(chunkId: string): Promise<void> {
 
       <!-- Details -->
       <div class="network-block-details rounded-lg p-2.5 px-3.5 mb-3.5 flex flex-col gap-2">
-        {#if chunk.isL7 && chunk.method && chunk.path}
+        {#if chunk.protocol === 'graphql' && chunk.operationType}
+          <div class="flex items-baseline gap-2.5 text-xs">
+            <span class="text-[var(--pd-content-text)] opacity-50 font-medium w-[72px] shrink-0">Request</span>
+            <code class="text-[var(--pd-content-text)] bg-[var(--pd-content-card-hover-bg)] px-1.5 py-0.5 rounded text-[11px]">
+              GraphQL {chunk.operationType}{chunk.operationName ? ` ${chunk.operationName}` : ''}{chunk.graphqlFields?.length ? ` (${chunk.graphqlFields.join(', ')})` : ''}
+            </code>
+          </div>
+          <div class="flex items-baseline gap-2.5 text-xs">
+            <span class="text-[var(--pd-content-text)] opacity-50 font-medium w-[72px] shrink-0">Host</span>
+            <code class="text-[var(--pd-content-text)] bg-[var(--pd-content-card-hover-bg)] px-1.5 py-0.5 rounded text-[11px]">
+              {chunk.host}:{chunk.port}
+            </code>
+          </div>
+        {:else if chunk.isL7 && chunk.method && chunk.path}
           <div class="flex items-baseline gap-2.5 text-xs">
             <span class="text-[var(--pd-content-text)] opacity-50 font-medium w-[72px] shrink-0">Request</span>
             <code class="text-[var(--pd-content-text)] bg-[var(--pd-content-card-hover-bg)] px-1.5 py-0.5 rounded text-[11px]">
@@ -86,7 +104,9 @@ async function handleReject(chunkId: string): Promise<void> {
           <span class="text-[var(--pd-content-text)] opacity-50 font-medium w-[72px] shrink-0">Policy</span>
           <span class="text-[var(--pd-content-text)]">
             <span class="network-policy-badge-deny inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider">Deny</span>
-            {#if chunk.isL7}
+            {#if chunk.protocol === 'graphql'}
+              — operation not in allow list
+            {:else if chunk.isL7}
               — method/path not in allow list
             {:else}
               — host not in allowed list
@@ -105,21 +125,29 @@ async function handleReject(chunkId: string): Promise<void> {
 
       <!-- Actions -->
       {#if chunk.status === 'pending'}
-        <div class="flex items-center gap-2 flex-wrap">
-          <Button
-            type="primary"
-            onclick={(): void => { handleApprove(chunk.chunkId).catch((e: unknown) => console.error(e)); }}
-            disabled={responding === chunk.chunkId}
-          >
-            Allow {chunk.host}{chunk.isL7 && chunk.method ? ` (${chunk.method})` : ''}
-          </Button>
-          <Button
-            type="secondary"
-            onclick={(): void => { handleReject(chunk.chunkId).catch((e: unknown) => console.error(e)); }}
-            disabled={responding === chunk.chunkId}
-          >
-            Reject
-          </Button>
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <Button
+              type="primary"
+              onclick={(): void => { handleApprove(chunk.chunkId).catch((e: unknown) => console.error(e)); }}
+              disabled={responding === chunk.chunkId}
+            >
+              Allow {chunk.host}{chunk.protocol === 'graphql' && chunk.operationType ? ` (${chunk.operationType})` : chunk.isL7 && chunk.method ? ` (${chunk.method})` : ''}
+            </Button>
+            <Button
+              type="secondary"
+              onclick={(): void => { handleReject(chunk.chunkId).catch((e: unknown) => console.error(e)); }}
+              disabled={responding === chunk.chunkId}
+            >
+              Reject
+            </Button>
+          </div>
+          {#if errorByChunk[chunk.chunkId]}
+            <div class="flex items-start gap-1.5 text-xs text-[var(--pd-status-dead)]">
+              <Icon icon={faExclamationTriangle} class="text-xs mt-0.5 shrink-0" />
+              <span>Failed to update policy: {errorByChunk[chunk.chunkId]}</span>
+            </div>
+          {/if}
         </div>
       {:else if chunk.status === 'approved'}
         <div class="flex items-center gap-1.5 text-xs">

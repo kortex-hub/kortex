@@ -34,12 +34,17 @@ export interface DraftPolicyEvent {
 
 interface DenialLogEntry {
   timestampMs: number;
+  isL7: boolean;
   host: string;
   port: number;
   method?: string;
   path?: string;
   binary?: string;
   denyReason?: string;
+  protocol?: 'rest' | 'graphql';
+  operationType?: string;
+  operationName?: string;
+  graphqlFields?: string[];
 }
 
 interface SandboxWatchState {
@@ -76,11 +81,8 @@ export class DraftPolicyWatcher {
 
   async watchSandbox(sandboxId: string, sandboxName: string, gatewayName?: string): Promise<IDisposable> {
     if (this.#subscriptions.has(sandboxId)) {
-      console.log(`[DraftPolicy] already watching sandbox ${sandboxName} (${sandboxId}), skipping`);
       return { dispose: () => this.unwatchSandbox(sandboxId) };
     }
-
-    console.log(`[DraftPolicy] watching sandbox ${sandboxName} (id=${sandboxId}, gateway=${gatewayName ?? 'default'})`);
 
     const state: SandboxWatchState = {
       sandboxName,
@@ -162,17 +164,27 @@ export class DraftPolicyWatcher {
     sandboxName: string,
     chunk: AcpFlowDraftPolicyChunk,
   ): Promise<void> {
+    const endpointProtocol = chunk.protocol ?? (chunk.isL7 ? 'rest' : undefined);
+    const allow = this.#buildAllowRule(chunk, endpointProtocol);
+
+    // Use addAllowRules when exactly one rule owns this host:port AND its binary
+    // scope covers the denial binary. addAllowRules appends to the existing
+    // endpoint (no ambiguity risk), but it can't update binaries — so if the
+    // denial binary isn't in scope, addAllowRules would have no effect.
     const config = await client.sandbox.getConfig(sandboxName);
-    const policy = config.policy;
+    const matchingRules = config.policy
+      ? Object.values(config.policy.networkPolicies).filter(rule =>
+          rule.endpoints.some(
+            (ep: { host: string; port: number; ports?: number[] }) =>
+              ep.host === chunk.host && (ep.port === chunk.port || ep.ports?.includes(chunk.port)),
+          ),
+        )
+      : [];
 
-    const matchingEndpoint =
-      policy &&
-      Object.values(policy.networkPolicies)
-        .flatMap(rule => rule.endpoints)
-        .find(ep => ep.host === chunk.host && (ep.port === chunk.port || ep.ports.includes(chunk.port)));
+    const canUseAddAllowRules =
+      matchingRules.length === 1 && this.#binaryCoveredByRule(chunk.binaries, matchingRules[0]!);
 
-    if (matchingEndpoint && matchingEndpoint.protocol) {
-      // Endpoint has L7 inspection — append allow rules
+    if (canUseAddAllowRules) {
       await client.raw.updateConfig({
         name: sandboxName,
         mergeOperations: [
@@ -182,30 +194,26 @@ export class DraftPolicyWatcher {
               value: {
                 host: chunk.host,
                 port: chunk.port,
-                rules: [
-                  {
-                    allow: {
-                      method: chunk.method ?? '*',
-                      path: chunk.path ?? '/**',
-                    },
-                  },
-                ],
+                rules: [{ allow }],
               },
             },
           },
         ],
       });
-    } else if (!matchingEndpoint) {
-      // Endpoint not in policy — create a new rule
-      const endpoint: { host: string; port: number; protocol?: string; enforcement?: string } = {
+    } else {
+      // Multiple rules (or none) share this host:port — addAllowRules can't
+      // disambiguate, so create a new rule instead.
+      const endpoint: Record<string, unknown> = {
         host: chunk.host,
         port: chunk.port,
       };
-      if (chunk.isL7) {
-        endpoint.protocol = 'rest';
-        endpoint.enforcement = 'enforce';
+      if (endpointProtocol) {
+        endpoint['protocol'] = endpointProtocol;
+        endpoint['enforcement'] = 'enforce';
+        if (endpointProtocol === 'graphql') {
+          endpoint['path'] = '/graphql';
+        }
       }
-
       await client.raw.updateConfig({
         name: sandboxName,
         mergeOperations: [
@@ -216,7 +224,7 @@ export class DraftPolicyWatcher {
                 ruleName: chunk.ruleName,
                 rule: {
                   name: chunk.ruleName,
-                  endpoints: [endpoint],
+                  endpoints: [{ ...endpoint, rules: [{ allow }] }],
                   binaries: chunk.binaries.map(path => ({ path })),
                 },
               },
@@ -225,19 +233,39 @@ export class DraftPolicyWatcher {
         ],
       });
     }
-    // else: endpoint exists as L4-only — already allowed, nothing to do
+  }
+
+  #buildAllowRule(chunk: AcpFlowDraftPolicyChunk, protocol?: string): Record<string, unknown> {
+    if (protocol === 'graphql') {
+      const allow: Record<string, unknown> = {};
+      if (chunk.operationType) allow['operation_type'] = chunk.operationType;
+      if (chunk.operationName) allow['operation_name'] = chunk.operationName;
+      if (chunk.graphqlFields?.length) allow['fields'] = chunk.graphqlFields;
+      return allow;
+    }
+    return {
+      method: chunk.method ?? '*',
+      path: chunk.path ?? '/**',
+    };
+  }
+
+  #binaryCoveredByRule(denialBinaries: string[], rule: { binaries?: Array<{ path: string }> }): boolean {
+    const ruleBinaries = rule.binaries?.map(b => b.path) ?? [];
+    if (ruleBinaries.length === 0) return true;
+    if (ruleBinaries.some(b => b === '/**' || b === '*')) return true;
+    return denialBinaries.every(
+      db =>
+        db === '/**' || ruleBinaries.some(rb => db === rb || (rb.endsWith('/**') && db.startsWith(rb.slice(0, -2)))),
+    );
   }
 
   async #fetchExistingDrafts(sandboxId: string, state: SandboxWatchState): Promise<void> {
     try {
-      console.log(`[DraftPolicy] fetching existing drafts for ${state.sandboxName}`);
       const client = await this.sdkClientManager.getClient(state.gatewayName);
       const response = await client.raw.getDraftPolicy({
         name: state.sandboxName,
         statusFilter: 'pending',
       });
-
-      console.log(`[DraftPolicy] got ${response.chunks.length} existing draft chunks for ${state.sandboxName}`);
 
       if (response.chunks.length > 0) {
         const mapped = response.chunks.map(c => this.#policyChunkToFlowChunk(c));
@@ -259,7 +287,6 @@ export class DraftPolicyWatcher {
   #startStream(sandboxId: string, state: SandboxWatchState): void {
     const iterate = async (): Promise<void> => {
       try {
-        console.log(`[DraftPolicy] starting WatchSandbox stream for ${state.sandboxName} (id=${sandboxId})`);
         const client = await this.sdkClientManager.getClient(state.gatewayName);
         const stream = client.raw.watchSandbox(
           {
@@ -273,7 +300,6 @@ export class DraftPolicyWatcher {
           { signal: state.abortController.signal },
         );
 
-        console.log(`[DraftPolicy] WatchSandbox stream connected for ${state.sandboxName}`);
         state.reconnectAttempt = 0;
 
         for await (const event of stream) {
@@ -281,28 +307,19 @@ export class DraftPolicyWatcher {
 
           switch (event.payload.case) {
             case 'draftPolicyUpdate':
-              console.log(
-                `[DraftPolicy] received draftPolicyUpdate for ${state.sandboxName}: newChunks=${event.payload.value.newChunks}, totalPending=${event.payload.value.totalPending}`,
-              );
-              await this.#handleDraftPolicyUpdate(sandboxId, state, event.payload.value);
+              await this.#handleDraftPolicyUpdate(sandboxId, state);
               break;
             case 'sandbox':
-              console.log(
-                `[DraftPolicy] sandbox state changed for ${state.sandboxName}, checking for new draft chunks`,
-              );
               await this.#handleSandboxStateChange(sandboxId, state);
               break;
             case 'log':
               this.#handleLogLine(sandboxId, state, event.payload.value);
               break;
             default:
-              console.log(`[DraftPolicy] received event type: ${event.payload.case} for ${state.sandboxName}`);
           }
         }
-        console.log(`[DraftPolicy] WatchSandbox stream ended for ${state.sandboxName}`);
       } catch (err: unknown) {
         if (state.abortController.signal.aborted) {
-          console.log(`[DraftPolicy] stream aborted for ${state.sandboxName}`);
           return;
         }
 
@@ -325,14 +342,7 @@ export class DraftPolicyWatcher {
     });
   }
 
-  async #handleDraftPolicyUpdate(
-    sandboxId: string,
-    state: SandboxWatchState,
-    update: { newChunks: number; totalPending: number; summary: string; draftVersion: bigint },
-  ): Promise<void> {
-    console.log(
-      `[DraftPolicy] fetching draft policy after update (version=${update.draftVersion}) for ${state.sandboxName}`,
-    );
+  async #handleDraftPolicyUpdate(sandboxId: string, state: SandboxWatchState): Promise<void> {
     await this.#refetchDraftPolicy(sandboxId, state);
   }
 
@@ -347,10 +357,6 @@ export class DraftPolicyWatcher {
         name: state.sandboxName,
         statusFilter: 'pending',
       });
-
-      console.log(
-        `[DraftPolicy] getDraftPolicy returned ${response.chunks.length} pending chunks for ${state.sandboxName}`,
-      );
 
       const newChunks: AcpFlowDraftPolicyChunk[] = [];
       for (const policyChunk of response.chunks) {
@@ -383,18 +389,12 @@ export class DraftPolicyWatcher {
       }
 
       if (newChunks.length > 0) {
-        console.log(
-          `[DraftPolicy] firing ${newChunks.length} new chunks for ${state.sandboxName}:`,
-          newChunks.map(c => `${c.host}:${c.port}`).join(', '),
-        );
         this.#onDraftPolicyUpdate.fire({
           sandboxId,
           sandboxName: state.sandboxName,
           chunks: newChunks,
           totalPending: newChunks.length,
         });
-      } else if (response.chunks.length > 0) {
-        console.log(`[DraftPolicy] no new chunks after filtering (${response.chunks.length} already known)`);
       }
     } catch (err: unknown) {
       console.error(`[DraftPolicy] failed to fetch draft policy for ${state.sandboxName}:`, err);
@@ -409,12 +409,6 @@ export class DraftPolicyWatcher {
     const denial = this.#parseDenialFromLogLine(logLine);
     if (!denial) return;
 
-    const layer = denial.isL7 ? 'L7' : 'L4';
-    const detail = denial.method ? ` ${denial.method} ${denial.path}` : '';
-    console.log(
-      `[DraftPolicy] denial detected for ${state.sandboxName}: ${layer} ${denial.host}:${denial.port}${detail}`,
-    );
-
     const entry: DenialLogEntry = {
       timestampMs: Number(logLine.timestampMs),
       ...denial,
@@ -426,17 +420,11 @@ export class DraftPolicyWatcher {
     this.#emitDenialFromLog(sandboxId, state, entry);
   }
 
-  #parseDenialFromLogLine(logLine: { fields: { [key: string]: string }; message: string; level: string }):
-    | {
-        isL7: boolean;
-        host: string;
-        port: number;
-        method?: string;
-        path?: string;
-        binary?: string;
-        denyReason?: string;
-      }
-    | undefined {
+  #parseDenialFromLogLine(logLine: {
+    fields: { [key: string]: string };
+    message: string;
+    level: string;
+  }): Omit<DenialLogEntry, 'timestampMs'> | undefined {
     const fields = logLine.fields;
 
     // Try structured fields first (sandbox-pushed non-OCSF logs may populate them)
@@ -447,6 +435,7 @@ export class DraftPolicyWatcher {
       const port = parseInt(portStr, 10);
       if (isNaN(port)) return undefined;
 
+      const protocol = fields['l7_protocol'] === 'graphql' ? ('graphql' as const) : undefined;
       return {
         isL7: fields['l7_decision'] === 'deny',
         host,
@@ -455,13 +444,44 @@ export class DraftPolicyWatcher {
         path: fields['l7_target'],
         binary: fields['binary'],
         denyReason: fields['l7_deny_reason'] ?? fields['l4_deny_reason'],
+        protocol,
       };
     }
 
-    // Parse OCSF shorthand message format:
-    //   NET:CONNECT [MED] DENIED proc(pid) -> host:port [policy:...] [reason:...]
-    //   HTTP:METHOD [MED] DENIED proc(pid) -> METHOD scheme://host:port/path [policy:...] [reason:...]
     const msg = logLine.message;
+
+    // L7_REQUEST denial (GraphQL, MCP, etc.):
+    //   L7_REQUEST deny POST host:port/path graphql_ops=type=mutation name=Op fields=f1,f2 ...
+    if (msg.startsWith('L7_REQUEST')) {
+      // eslint-disable-next-line sonarjs/slow-regex
+      const l7Match = /^L7_REQUEST\s+deny\s+(\w+)\s+([^/:]+):(\d+)(\/\S*)?/.exec(msg);
+      if (!l7Match) return undefined;
+
+      const result: Omit<DenialLogEntry, 'timestampMs'> = {
+        isL7: true,
+        host: l7Match[2]!,
+        port: parseInt(l7Match[3]!, 10),
+        method: l7Match[1],
+        path: l7Match[4] ?? '/',
+        denyReason: msg,
+      };
+
+      // eslint-disable-next-line sonarjs/slow-regex
+      const gqlOps = /graphql_ops=(.+?)(?:\s+persisted=|\s+\[|$)/.exec(msg);
+      if (gqlOps) {
+        result.protocol = 'graphql';
+        const opsStr = gqlOps[1]!;
+        const typeMatch = /type=(\w+)/.exec(opsStr);
+        const nameMatch = /name=(\w+)/.exec(opsStr);
+        const fieldsMatch = /fields=(\S+)/.exec(opsStr);
+        if (typeMatch) result.operationType = typeMatch[1];
+        if (nameMatch) result.operationName = nameMatch[1];
+        if (fieldsMatch) result.graphqlFields = fieldsMatch[1]!.split(',');
+      }
+
+      return result;
+    }
+
     if (!msg.includes('DENIED')) return undefined;
 
     const reasonMatch = /\[reason:([^\]]+)\]/.exec(msg);
@@ -474,6 +494,7 @@ export class DraftPolicyWatcher {
     if (httpMatch) {
       return {
         isL7: true,
+        protocol: 'rest',
         host: httpMatch[2]!,
         port: parseInt(httpMatch[3]!, 10),
         method: httpMatch[1],
@@ -501,20 +522,30 @@ export class DraftPolicyWatcher {
       return;
 
     const isL7 = denial.method !== undefined && denial.path !== undefined;
+    const isGraphql = denial.protocol === 'graphql';
     const alreadyCovered = Array.from(state.chunkState.values()).some(s => {
       if (s.chunk.host !== denial.host || s.chunk.port !== denial.port) return false;
-      // L4 chunk covers all traffic to host:port
       if (!s.chunk.isL7) return true;
-      // L7 chunk only covers its specific method — new paths need new cards
+      if (isGraphql && s.chunk.protocol === 'graphql') {
+        return s.chunk.operationType === denial.operationType && s.chunk.status !== 'approved';
+      }
       return isL7 && s.chunk.method === denial.method && s.chunk.status !== 'approved';
     });
     if (alreadyCovered) return;
 
-    const chunkId = isL7
-      ? `l7-${denial.host}-${denial.port}-${denial.method}-${Date.now()}`
-      : `l4-${denial.host}-${denial.port}-${Date.now()}`;
+    const suffix = isGraphql
+      ? `gql-${denial.host}-${denial.port}-${denial.operationType}-${denial.operationName}-${Date.now()}`
+      : isL7
+        ? `l7-${denial.host}-${denial.port}-${denial.method}-${Date.now()}`
+        : `l4-${denial.host}-${denial.port}-${Date.now()}`;
+    const chunkId = suffix;
     const sanitizedHost = denial.host.replace(/[.-]/g, '_').replace(/\W/g, '');
-    const ruleName = `allow_${sanitizedHost}_${denial.port}`;
+    const protocolSuffix = isGraphql
+      ? `_gql_${denial.operationType ?? 'op'}`
+      : isL7
+        ? `_${(denial.method ?? 'any').toLowerCase()}`
+        : '';
+    const ruleName = `allow_${sanitizedHost}_${denial.port}${protocolSuffix}`;
 
     const chunk: AcpFlowDraftPolicyChunk = {
       chunkId,
@@ -525,13 +556,19 @@ export class DraftPolicyWatcher {
       binaries: denial.binary ? [denial.binary] : ['/**'],
       rationale:
         denial.denyReason ??
-        (isL7
-          ? `${denial.method} ${denial.path} was denied`
-          : `Connection to ${denial.host}:${denial.port} was denied`),
+        (isGraphql
+          ? `GraphQL ${denial.operationType} ${denial.operationName} was denied`
+          : isL7
+            ? `${denial.method} ${denial.path} was denied`
+            : `Connection to ${denial.host}:${denial.port} was denied`),
       hasSecurityNotes: false,
       isL7,
+      protocol: denial.protocol,
       method: denial.method,
-      path: isL7 ? generalizeDenialPath(denial.host, denial.path!) : undefined,
+      path: isL7 && !isGraphql ? generalizeDenialPath(denial.host, denial.path!) : denial.path,
+      operationType: denial.operationType,
+      operationName: denial.operationName,
+      graphqlFields: denial.graphqlFields,
     };
 
     state.chunkState.set(chunkId, { chunk, isL4Proposal: false });

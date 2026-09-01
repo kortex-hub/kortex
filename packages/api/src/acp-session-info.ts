@@ -221,8 +221,12 @@ export interface AcpFlowDraftPolicyChunk {
   rationale: string;
   hasSecurityNotes: boolean;
   isL7: boolean;
+  protocol?: 'rest' | 'graphql';
   method?: string;
   path?: string;
+  operationType?: string;
+  operationName?: string;
+  graphqlFields?: string[];
 }
 
 export interface AcpFlowDraftPolicyEvent {

@@ -1188,20 +1188,12 @@ export class AcpSessionManager {
       console.warn(`[ACP] skipping draft policy watch for session ${sessionId}: sandbox has no id`);
       return;
     }
-    console.log(
-      `[ACP] starting draft policy watch for session ${sessionId}, sandbox ${sandbox.name} (id=${sandbox.id})`,
-    );
-
     const listenerDisposable = this.draftPolicyWatcher.onDraftPolicyUpdate(event => {
       const session = this.sessions.get(sessionId);
       if (session?.info.sandboxId !== event.sandboxId) {
-        console.log(
-          `[ACP] draft policy event for sandbox ${event.sandboxId} does not match session ${sessionId} (sandboxId=${session?.info.sandboxId})`,
-        );
         return;
       }
 
-      console.log(`[ACP] received draft policy update for session ${sessionId}: ${event.chunks.length} chunks`);
       const flowEvent: AcpFlowDraftPolicyEvent = {
         kind: 'draft_policy_update',
         chunks: event.chunks,
@@ -1242,10 +1234,6 @@ export class AcpSessionManager {
     if (!session) throw new Error(`Session "${sessionId}" not found`);
     if (!session.info.sandboxId) throw new Error(`Session "${sessionId}" has no sandbox`);
 
-    console.log(
-      `[ACP] approveDraftChunk: session="${sessionId}", chunkId="${chunkId}", status="${session.info.status}"`,
-    );
-
     await this.draftPolicyWatcher.approveDraftChunk(session.info.sandboxId, chunkId);
 
     this.updateDraftPolicyEventStatus(session, chunkId, 'approved');
@@ -1253,23 +1241,23 @@ export class AcpSessionManager {
 
     if (session.info.status === 'running' || session.info.status === 'idle' || session.info.status === 'completed') {
       const chunk = this.findChunkInEvents(session, chunkId);
-      console.log(`[ACP] approveDraftChunk: chunk found=${!!chunk}, host=${chunk?.host}, port=${chunk?.port}`);
       let retryMessage = 'The network policy was updated. Please retry the blocked request.';
       if (chunk) {
-        const l7Detail = chunk.isL7 ? ` (${chunk.method} ${chunk.path})` : '';
+        let l7Detail = '';
+        if (chunk.protocol === 'graphql') {
+          const opName = chunk.operationName ? ' ' + chunk.operationName : '';
+          l7Detail = ' (GraphQL ' + (chunk.operationType ?? '') + opName + ')';
+        } else if (chunk.isL7) {
+          l7Detail = ' (' + chunk.method + ' ' + chunk.path + ')';
+        }
         retryMessage = `The network policy was updated. Access to ${chunk.host}:${chunk.port}${l7Detail} is now allowed. Please retry the blocked request.`;
       }
 
-      console.log(`[ACP] approveDraftChunk: scheduling retry message in 1000ms`);
-      // Short delay to let the policy hot-reload propagate inside the sandbox
       setTimeout(() => {
-        console.log(`[ACP] approveDraftChunk: sending retry message now`);
         this.sendFollowUp(sessionId, retryMessage).catch((err: unknown) => {
           console.error(`[ACP] Failed to send retry message for "${sessionId}":`, err);
         });
       }, 1000);
-    } else {
-      console.log(`[ACP] approveDraftChunk: NOT sending retry, session status="${session.info.status}"`);
     }
   }
 
