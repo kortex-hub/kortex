@@ -162,20 +162,16 @@ function wrapper(binaryName: string, payload: string, arch: string): string {
   const loader = loaderForArchitecture(arch);
   return `#!/bin/sh
 set -eu
-case "$0" in
-  */*) script_path="$0" ;;
-  *) script_path=$(command -v "$0") ;;
-esac
-bin_dir=$(CDPATH= cd -- "\${script_path%/*}" && pwd)
+bin_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 runtime_dir="$bin_dir/${RUNTIME_DIRECTORY}"
-library_path="$runtime_dir/lib"
-if [ -n "\${LD_LIBRARY_PATH:-}" ]; then
-  library_path="$library_path:$LD_LIBRARY_PATH"
+loader="${loader}"
+if [ ! -x "$loader" ]; then
+  echo "${binaryName} requires the glibc loader at $loader" >&2
+  exit 127
 fi
-if [ -z "\${MKE2FS_CONFIG:-}" ]; then
-  export MKE2FS_CONFIG="$runtime_dir/mke2fs.conf"
-fi
-exec ${loader} --library-path "$library_path" --argv0 ${binaryName} "$runtime_dir/${payload}" "$@"
+export LD_LIBRARY_PATH="$runtime_dir/lib\${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export MKE2FS_CONFIG="\${MKE2FS_CONFIG:-$runtime_dir/mke2fs.conf}"
+exec "$loader" --argv0 "${binaryName}" "$runtime_dir/${payload}" "$@"
 `;
 }
 

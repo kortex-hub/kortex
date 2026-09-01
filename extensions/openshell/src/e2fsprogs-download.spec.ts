@@ -127,9 +127,15 @@ test('downloads and stages the e2fsprogs tools beside the VM driver', async () =
     expect((await stat(join(outputDir, 'mkfs.ext4'))).mode & 0o111).not.toBe(0);
     expect((await stat(join(outputDir, 'debugfs'))).mode & 0o111).not.toBe(0);
   }
-  expect(await readFile(join(outputDir, 'mkfs.ext4'), 'utf-8')).toContain('--argv0 mkfs.ext4');
+  expect(await readFile(join(outputDir, 'mkfs.ext4'), 'utf-8')).toContain('--argv0 "mkfs.ext4"');
   expect(await readFile(join(outputDir, 'mkfs.ext4'), 'utf-8')).toContain('runtime_dir="$bin_dir/e2fsprogs"');
-  expect(await readFile(join(outputDir, 'debugfs'), 'utf-8')).toContain('--argv0 debugfs');
+  expect(await readFile(join(outputDir, 'mkfs.ext4'), 'utf-8')).toContain(
+    `export LD_LIBRARY_PATH="$runtime_dir/lib\${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"`,
+  );
+  expect(await readFile(join(outputDir, 'mkfs.ext4'), 'utf-8')).toContain(
+    'mkfs.ext4 requires the glibc loader at $loader',
+  );
+  expect(await readFile(join(outputDir, 'debugfs'), 'utf-8')).toContain('--argv0 "debugfs"');
   await expect(stat(join(outputDir, 'NOTICE'))).rejects.toThrow();
   expect(timeoutSpy.mock.calls).toEqual([[30_000], [30_000], [30_000], [5 * 60_000]]);
 
