@@ -81,6 +81,7 @@ function isRequiredBottleEntry(path: string, type: string, version: string): boo
   const requiredPaths = [
     ...BINARIES.map(binary => `${bottleRoot}/sbin/${binary.payload}`),
     `${bottleRoot}/.bottle/etc/mke2fs.conf`,
+    `${bottleRoot}/NOTICE`,
   ];
   return (
     requiredPaths.some(
@@ -203,6 +204,7 @@ async function stageBottle(archive: string, version: string, arch: string, outpu
       await copyFile(join(bottleRoot, 'lib', source), join(libDir, library));
     }
     await copyFile(join(bottleRoot, '.bottle', 'etc', 'mke2fs.conf'), join(runtimeDir, 'mke2fs.conf'));
+    await copyFile(join(bottleRoot, 'NOTICE'), join(runtimeDir, 'NOTICE'));
 
     for (const binary of BINARIES) {
       const destination = join(outputDir, binary.name);
@@ -220,6 +222,7 @@ function hasCompleteInstallation(outputDir: string): boolean {
     ...BINARIES.map(binary => join(outputDir, RUNTIME_DIRECTORY, binary.payload)),
     ...LIBRARIES.map(library => join(outputDir, RUNTIME_DIRECTORY, 'lib', library)),
     join(outputDir, RUNTIME_DIRECTORY, 'mke2fs.conf'),
+    join(outputDir, RUNTIME_DIRECTORY, 'NOTICE'),
   ].every(path => existsSync(path));
 }
 

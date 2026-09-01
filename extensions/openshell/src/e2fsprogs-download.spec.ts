@@ -118,6 +118,7 @@ test('downloads and stages the e2fsprogs tools beside the VM driver', async () =
   expect(await readFile(join(outputDir, 'openshell-driver-vm'), 'utf-8')).toBe('vm-driver');
   expect(await readFile(join(outputDir, 'e2fsprogs', 'mke2fs'), 'utf-8')).toBe('mke2fs-binary');
   expect(await readFile(join(outputDir, 'e2fsprogs', 'debugfs'), 'utf-8')).toBe('debugfs-binary');
+  expect(await readFile(join(outputDir, 'e2fsprogs', 'NOTICE'), 'utf-8')).toBe('license notice');
   for (const library of LIBRARIES) {
     expect(await readFile(join(outputDir, 'e2fsprogs', 'lib', library), 'utf-8')).toBe(library);
   }
@@ -136,7 +137,6 @@ test('downloads and stages the e2fsprogs tools beside the VM driver', async () =
     'mkfs.ext4 requires the glibc loader at $loader',
   );
   expect(await readFile(join(outputDir, 'debugfs'), 'utf-8')).toContain('--argv0 "debugfs"');
-  await expect(stat(join(outputDir, 'NOTICE'))).rejects.toThrow();
   expect(timeoutSpy.mock.calls).toEqual([[30_000], [30_000], [30_000], [5 * 60_000]]);
 
   const callsAfterDownload = fetchMock.mock.calls.length;
