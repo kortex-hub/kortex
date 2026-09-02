@@ -108,7 +108,8 @@ export type AcpFlowEvent =
   | AcpFlowPermissionRequestEvent
   | AcpFlowElicitationEvent
   | AcpFlowStatusChangeEvent
-  | AcpFlowCostUpdateEvent;
+  | AcpFlowCostUpdateEvent
+  | AcpFlowDraftPolicyEvent;
 
 export interface AcpAttachment {
   filePath: string;
@@ -207,6 +208,31 @@ export interface AcpFlowStatusChangeEvent {
 export interface AcpFlowCostUpdateEvent {
   kind: 'cost_update';
   cost: AcpCost;
+  timestamp: number;
+}
+
+export interface AcpFlowDraftPolicyChunk {
+  chunkId: string;
+  ruleName: string;
+  status: 'pending' | 'approved' | 'rejected';
+  host: string;
+  port: number;
+  binaries: string[];
+  rationale: string;
+  hasSecurityNotes: boolean;
+  isL7: boolean;
+  protocol?: 'rest' | 'graphql';
+  method?: string;
+  path?: string;
+  operationType?: string;
+  operationName?: string;
+  graphqlFields?: string[];
+}
+
+export interface AcpFlowDraftPolicyEvent {
+  kind: 'draft_policy_update';
+  chunks: AcpFlowDraftPolicyChunk[];
+  totalPending: number;
   timestamp: number;
 }
 

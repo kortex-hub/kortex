@@ -29,10 +29,12 @@ import { spawn as ptySpawn } from 'node-pty';
 
 import { AgentRegistry } from '/@/plugin/agent-registry.js';
 import { Directories } from '/@/plugin/directories.js';
+import { DraftPolicyWatcher } from '/@/plugin/draft-policy/draft-policy-watcher.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import type {
   AcpAttachment,
   AcpElicitationResponseData,
+  AcpFlowDraftPolicyEvent,
   AcpFlowEvent,
   AcpPermissionResponseData,
   AcpSessionConfigOption,
@@ -43,6 +45,7 @@ import type {
 } from '/@api/acp-session-info.js';
 import type { AgentInfo } from '/@api/agent-info.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
+import type { IDisposable } from '/@api/disposable.js';
 import type { SandboxInfo } from '/@api/openshell-gateway-info.js';
 import { AGENT_LABEL } from '/@api/openshell-gateway-info.js';
 
@@ -85,12 +88,14 @@ interface AcpSession {
 @injectable()
 export class AcpSessionManager {
   private sessions = new Map<string, AcpSession>();
+  private readonly draftPolicyDisposables = new Map<string, IDisposable>();
 
   constructor(
     @inject(ApiSenderType) private readonly apiSender: ApiSenderType,
     @inject(OpenshellCli) private readonly openshellCli: OpenshellCli,
     @inject(AgentRegistry) private readonly agentRegistry: AgentRegistry,
     @inject(Directories) private readonly directories: Directories,
+    @inject(DraftPolicyWatcher) private readonly draftPolicyWatcher: DraftPolicyWatcher,
   ) {}
 
   async init(): Promise<void> {
@@ -272,6 +277,8 @@ export class AcpSessionManager {
     this.saveToDisk(sessionId).catch((err: unknown) => {
       console.error(`[ACP] Failed to persist session "${sessionId}":`, err);
     });
+
+    this.startDraftPolicyWatch(sessionId, sandbox, gatewayName);
 
     ptyProcess.onExit(({ exitCode }) => {
       debugPty(`${sandbox.name} process exited with code ${exitCode}`);
@@ -1095,6 +1102,7 @@ export class AcpSessionManager {
     }
 
     this.killPtyProcess(session);
+    this.stopDraftPolicyWatch(sessionId);
     this.updateSessionStatus(sessionId, 'cancelled');
   }
 
@@ -1118,6 +1126,7 @@ export class AcpSessionManager {
     }
 
     this.killPtyProcess(session);
+    this.stopDraftPolicyWatch(sessionId);
 
     this.sessions.delete(sessionId);
     await this.removeFromDisk(sessionId);
@@ -1174,6 +1183,118 @@ export class AcpSessionManager {
     });
   }
 
+  private startDraftPolicyWatch(sessionId: string, sandbox: SandboxInfo, gatewayName?: string): void {
+    if (!sandbox.id) {
+      console.warn(`[ACP] skipping draft policy watch for session ${sessionId}: sandbox has no id`);
+      return;
+    }
+    const listenerDisposable = this.draftPolicyWatcher.onDraftPolicyUpdate(event => {
+      const session = this.sessions.get(sessionId);
+      if (session?.info.sandboxId !== event.sandboxId) {
+        return;
+      }
+
+      const flowEvent: AcpFlowDraftPolicyEvent = {
+        kind: 'draft_policy_update',
+        chunks: event.chunks,
+        totalPending: event.totalPending,
+        timestamp: Date.now(),
+      };
+      session.events.push(flowEvent);
+      this.emitEvent(sessionId, flowEvent);
+    });
+
+    this.draftPolicyWatcher
+      .watchSandbox(sandbox.id, sandbox.name, gatewayName)
+      .then(watchDisposable => {
+        const combined: IDisposable = {
+          dispose: () => {
+            listenerDisposable.dispose();
+            watchDisposable.dispose();
+          },
+        };
+        this.draftPolicyDisposables.set(sessionId, combined);
+      })
+      .catch((err: unknown) => {
+        console.error(`[ACP] Failed to start draft policy watch for "${sandbox.name}":`, err);
+        listenerDisposable.dispose();
+      });
+  }
+
+  private stopDraftPolicyWatch(sessionId: string): void {
+    const disposable = this.draftPolicyDisposables.get(sessionId);
+    if (disposable) {
+      disposable.dispose();
+      this.draftPolicyDisposables.delete(sessionId);
+    }
+  }
+
+  async approveDraftChunk(sessionId: string, chunkId: string): Promise<void> {
+    const session = this.sessions.get(sessionId);
+    if (!session) throw new Error(`Session "${sessionId}" not found`);
+    if (!session.info.sandboxId) throw new Error(`Session "${sessionId}" has no sandbox`);
+
+    await this.draftPolicyWatcher.approveDraftChunk(session.info.sandboxId, chunkId);
+
+    this.updateDraftPolicyEventStatus(session, chunkId, 'approved');
+    this.emitEvent(sessionId, session.events[session.events.length - 1]!);
+
+    if (session.info.status === 'running' || session.info.status === 'idle' || session.info.status === 'completed') {
+      const chunk = this.findChunkInEvents(session, chunkId);
+      let retryMessage = 'The network policy was updated. Please retry the blocked request.';
+      if (chunk) {
+        let l7Detail = '';
+        if (chunk.protocol === 'graphql') {
+          const opName = chunk.operationName ? ' ' + chunk.operationName : '';
+          l7Detail = ' (GraphQL ' + (chunk.operationType ?? '') + opName + ')';
+        } else if (chunk.isL7) {
+          l7Detail = ' (' + chunk.method + ' ' + chunk.path + ')';
+        }
+        retryMessage = `The network policy was updated. Access to ${chunk.host}:${chunk.port}${l7Detail} is now allowed. Please retry the blocked request.`;
+      }
+
+      setTimeout(() => {
+        this.sendFollowUp(sessionId, retryMessage).catch((err: unknown) => {
+          console.error(`[ACP] Failed to send retry message for "${sessionId}":`, err);
+        });
+      }, 1000);
+    }
+  }
+
+  async rejectDraftChunk(sessionId: string, chunkId: string): Promise<void> {
+    const session = this.sessions.get(sessionId);
+    if (!session) throw new Error(`Session "${sessionId}" not found`);
+    if (!session.info.sandboxId) throw new Error(`Session "${sessionId}" has no sandbox`);
+
+    await this.draftPolicyWatcher.rejectDraftChunk(session.info.sandboxId, chunkId);
+
+    this.updateDraftPolicyEventStatus(session, chunkId, 'rejected');
+    this.emitEvent(sessionId, session.events[session.events.length - 1]!);
+  }
+
+  private updateDraftPolicyEventStatus(session: AcpSession, chunkId: string, status: 'approved' | 'rejected'): void {
+    for (const event of session.events) {
+      if (event.kind !== 'draft_policy_update') continue;
+      const chunk = (event as AcpFlowDraftPolicyEvent).chunks.find(c => c.chunkId === chunkId);
+      if (chunk) {
+        chunk.status = status;
+        return;
+      }
+    }
+  }
+
+  private findChunkInEvents(
+    session: AcpSession,
+    chunkId: string,
+  ): AcpFlowDraftPolicyEvent['chunks'][number] | undefined {
+    for (const event of session.events) {
+      if (event.kind !== 'draft_policy_update') continue;
+      const chunk = (event as AcpFlowDraftPolicyEvent).chunks.find(c => c.chunkId === chunkId);
+      if (chunk) return chunk;
+    }
+    return undefined;
+  }
+
   private emitEvent(sessionId: string, _event: AcpFlowEvent): void {
     this.apiSender.send('acp-session-update');
     this.saveToDisk(sessionId).catch((err: unknown) => {
@@ -1183,11 +1304,12 @@ export class AcpSessionManager {
 
   @preDestroy()
   dispose(): void {
-    for (const [, session] of this.sessions) {
+    for (const [sessionId, session] of this.sessions) {
       for (const [, pending] of session.pendingRequests) {
         pending.reject(new Error('Manager disposing'));
       }
       this.killPtyProcess(session);
+      this.stopDraftPolicyWatch(sessionId);
     }
     this.sessions.clear();
   }

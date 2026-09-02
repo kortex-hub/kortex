@@ -31,6 +31,7 @@ import { updateWorkspaceConfig, writeWorkspaceConfig } from '/@/plugin/agent-wor
 import { WritableConfigurationFile } from '/@/plugin/agent-workspace/writable-configuration-file.js';
 import { IPCHandle, WebContentsType } from '/@/plugin/api.js';
 import { Directories } from '/@/plugin/directories.js';
+import { DraftPolicyWatcher } from '/@/plugin/draft-policy/draft-policy-watcher.js';
 import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
 import { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
 import { OpenshellGatewayStateManager } from '/@/plugin/openshell-cli/openshell-gateway-state-manager.js';
@@ -118,6 +119,8 @@ export class AgentWorkspaceManager implements Disposable {
     private readonly openshellGatewayStateManager: OpenshellGatewayStateManager,
     @inject(Directories)
     private readonly directories: Directories,
+    @inject(DraftPolicyWatcher)
+    private readonly draftPolicyWatcher: DraftPolicyWatcher,
   ) {}
 
   private getGlobalConfigDir(gateway: string, sandboxName: string): string {
@@ -477,6 +480,7 @@ export class AgentWorkspaceManager implements Disposable {
     task.state = 'running';
     task.status = 'in-progress';
     try {
+      this.draftPolicyWatcher.unwatchSandbox(id);
       await this.openshellCli.deleteSandbox(workspaceName, gateway);
       this.closeWorkspaceTerminal(id);
       await rm(this.getGlobalConfigDir(gateway, workspaceName), { recursive: true, force: true });
@@ -597,6 +601,7 @@ export class AgentWorkspaceManager implements Disposable {
     task.state = 'running';
     task.status = 'in-progress';
     try {
+      this.draftPolicyWatcher.unwatchSandboxByName(name);
       await this.openshellCli.deleteSandbox(name, gateway);
       await rm(this.getGlobalConfigDir(gateway, name), { recursive: true, force: true });
       this.apiSender.send('agent-workspace-update');

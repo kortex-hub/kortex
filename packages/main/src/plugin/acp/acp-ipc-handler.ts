@@ -54,6 +54,8 @@ export class AcpIPCHandler {
     this.ipcHandle('acp:setSessionModel', this.setSessionModel.bind(this));
     this.ipcHandle('acp:setSessionMode', this.setSessionMode.bind(this));
     this.ipcHandle('acp:setSessionConfigOption', this.setSessionConfigOption.bind(this));
+    this.ipcHandle('acp:approveDraftChunk', this.approveDraftChunk.bind(this));
+    this.ipcHandle('acp:rejectDraftChunk', this.rejectDraftChunk.bind(this));
   }
 
   protected async createSession(_: IpcMainInvokeEvent, options: AcpSessionCreateOptions): Promise<AcpSessionInfo> {
@@ -117,5 +119,13 @@ export class AcpIPCHandler {
     value: string | boolean,
   ): Promise<void> {
     return this.sessionManager.setSessionConfigOption(sessionId, configId, value);
+  }
+
+  protected async approveDraftChunk(_: IpcMainInvokeEvent, sessionId: string, chunkId: string): Promise<void> {
+    return this.sessionManager.approveDraftChunk(sessionId, chunkId);
+  }
+
+  protected async rejectDraftChunk(_: IpcMainInvokeEvent, sessionId: string, chunkId: string): Promise<void> {
+    return this.sessionManager.rejectDraftChunk(sessionId, chunkId);
   }
 }
