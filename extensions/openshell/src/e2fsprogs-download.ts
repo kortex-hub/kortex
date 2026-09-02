@@ -14,10 +14,10 @@
  * limitations under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
- ***********************************************************************/
+ **********************************************************************/
 
-import { createWriteStream, existsSync } from 'node:fs';
-import { chmod, copyFile, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { createWriteStream, existsSync, readdirSync } from 'node:fs';
+import { chmod, copyFile, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
@@ -27,7 +27,9 @@ import * as tar from 'tar';
 import { sha256 } from './sha256';
 
 const REGISTRY = 'https://ghcr.io';
-const REPOSITORY = 'homebrew/core/e2fsprogs';
+const E2FSPROGS_REPOSITORY = 'homebrew/core/e2fsprogs';
+const GETTEXT_REPOSITORY = 'homebrew/core/gettext';
+const GETTEXT_VERSION = '1.0';
 const MANIFEST_ACCEPT = [
   'application/vnd.oci.image.index.v1+json',
   'application/vnd.oci.image.manifest.v1+json',
@@ -37,8 +39,8 @@ const MANIFEST_ACCEPT = [
 const METADATA_TIMEOUT_MS = 30_000;
 const BOTTLE_DOWNLOAD_TIMEOUT_MS = 5 * 60_000;
 
-const LIBRARIES = ['libcom_err.so.2', 'libe2p.so.2', 'libext2fs.so.2', 'libss.so.2'];
-const RUNTIME_DIRECTORY = 'e2fsprogs';
+const LINUX_LIBRARIES = ['libcom_err.so.2', 'libe2p.so.2', 'libext2fs.so.2', 'libss.so.2'];
+const DARWIN_LIBRARY_STEMS = ['libblkid', 'libcom_err', 'libe2p', 'libext2fs', 'libss', 'libuuid'];
 const BINARIES = [
   { name: 'mkfs.ext4', payload: 'mke2fs' },
   { name: 'debugfs', payload: 'debugfs' },
@@ -67,13 +69,21 @@ interface RegistryToken {
   access_token?: string;
 }
 
+function runtimeDirectoryName(platform: string): string {
+  return platform === 'linux' ? 'e2fsprogs' : '.mkfs-ext4';
+}
+
 function architectureForOci(arch: string): string {
   if (arch === 'x64') return 'amd64';
   if (arch === 'arm64') return 'arm64';
   throw new Error(`unsupported e2fsprogs architecture: ${arch}`);
 }
 
-function isRequiredBottleEntry(path: string, type: string, version: string): boolean {
+function isDarwinLibrary(path: string, bottleRoot: string): boolean {
+  return DARWIN_LIBRARY_STEMS.some(stem => path.startsWith(`${bottleRoot}/lib/${stem}`) && path.endsWith('.dylib'));
+}
+
+function isRequiredBottleEntry(path: string, type: string, version: string, platform: string): boolean {
   if (type === 'Link' || type === 'SymbolicLink') {
     return false;
   }
@@ -86,7 +96,10 @@ function isRequiredBottleEntry(path: string, type: string, version: string): boo
   return (
     requiredPaths.some(
       requiredPath => path === requiredPath || requiredPath.startsWith(`${path.replace(/\/$/, '')}/`),
-    ) || LIBRARIES.some(library => path.startsWith(`${bottleRoot}/lib/${library}.`))
+    ) ||
+    (platform === 'linux'
+      ? LINUX_LIBRARIES.some(library => path.startsWith(`${bottleRoot}/lib/${library}.`))
+      : isDarwinLibrary(path, bottleRoot))
   );
 }
 
@@ -102,55 +115,86 @@ async function fetchJson<T>(url: string, headers: Record<string, string> = {}): 
   return (await response.json()) as T;
 }
 
-async function getRegistryToken(): Promise<string> {
-  const query = new URLSearchParams({ service: 'ghcr.io', scope: `repository:${REPOSITORY}:pull` });
+async function getRegistryToken(repository: string): Promise<string> {
+  const query = new URLSearchParams({ service: 'ghcr.io', scope: `repository:${repository}:pull` });
   const result = await fetchJson<RegistryToken>(`${REGISTRY}/token?${query.toString()}`);
   const token = result.token ?? result.access_token;
   if (!token) {
-    throw new Error('e2fsprogs registry response did not include an access token');
+    throw new Error(`registry response for ${repository} did not include an access token`);
   }
   return token;
 }
 
-async function getManifest<T>(reference: string, token: string): Promise<T> {
-  return fetchJson<T>(`${REGISTRY}/v2/${REPOSITORY}/manifests/${reference}`, {
+async function getManifest<T>(repository: string, reference: string, token: string): Promise<T> {
+  return fetchJson<T>(`${REGISTRY}/v2/${repository}/manifests/${reference}`, {
     Authorization: `Bearer ${token}`,
     Accept: MANIFEST_ACCEPT,
   });
 }
 
-async function resolveBottle(version: string, arch: string): Promise<{ digest: string; token: string }> {
-  const token = await getRegistryToken();
-  const index = await getManifest<OciIndex>(version, token);
+async function resolveBottle(
+  repository: string,
+  version: string,
+  arch: string,
+  platform: string,
+): Promise<{ digest: string; token: string }> {
+  const token = await getRegistryToken(repository);
+  const index = await getManifest<OciIndex>(repository, version, token);
   const ociArch = architectureForOci(arch);
   const platformManifest = index.manifests.find(
-    candidate => candidate.platform?.os === 'linux' && candidate.platform.architecture === ociArch,
+    candidate => candidate.platform?.os === platform && candidate.platform.architecture === ociArch,
   );
   if (!platformManifest) {
-    throw new Error(`no e2fsprogs bottle for linux/${arch}`);
+    throw new Error(`no ${repository} bottle for ${platform}/${arch}`);
   }
-  const manifest = await getManifest<OciManifest>(platformManifest.digest, token);
+  const manifest = await getManifest<OciManifest>(repository, platformManifest.digest, token);
   const bottle = manifest.layers.find(candidate => {
     const title = candidate.annotations?.['org.opencontainers.image.title'];
     return candidate.mediaType.endsWith('+gzip') && title?.endsWith('.bottle.tar.gz');
   });
   if (!bottle) {
-    throw new Error('e2fsprogs OCI manifest does not contain a Homebrew bottle layer');
+    throw new Error(`${repository} OCI manifest does not contain a Homebrew bottle layer`);
   }
   return { digest: bottle.digest, token };
 }
 
-async function downloadBottle(digest: string, token: string, destination: string): Promise<void> {
-  const url = `${REGISTRY}/v2/${REPOSITORY}/blobs/${digest}`;
+async function downloadBottle(repository: string, digest: string, token: string, destination: string): Promise<void> {
+  const url = `${REGISTRY}/v2/${repository}/blobs/${digest}`;
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
     redirect: 'follow',
     signal: AbortSignal.timeout(BOTTLE_DOWNLOAD_TIMEOUT_MS),
   });
   if (!response.ok || !response.body) {
-    throw new Error(`failed to download e2fsprogs bottle: ${response.status} ${response.statusText}`);
+    throw new Error(`failed to download ${repository} bottle: ${response.status} ${response.statusText}`);
   }
   await pipeline(response.body, createWriteStream(destination));
+}
+
+async function downloadAndVerifyBottle(
+  repository: string,
+  version: string,
+  arch: string,
+  platform: string,
+  outputDir: string,
+): Promise<string> {
+  const { digest, token } = await resolveBottle(repository, version, arch, platform);
+  const expectedDigest = digest.replace(/^sha256:/, '');
+  if (!/^[a-f0-9]{64}$/i.test(expectedDigest)) {
+    throw new Error(`invalid ${repository} bottle digest: ${digest}`);
+  }
+  const archive = join(outputDir, `${expectedDigest}.bottle.tar.gz`);
+  try {
+    await downloadBottle(repository, digest, token, archive);
+    const actualDigest = await sha256(archive);
+    if (actualDigest !== expectedDigest) {
+      throw new Error(`checksum mismatch for ${repository} bottle: expected ${expectedDigest}, got ${actualDigest}`);
+    }
+  } catch (error) {
+    await rm(archive, { force: true });
+    throw error;
+  }
+  return archive;
 }
 
 function loaderForArchitecture(arch: string): string {
@@ -159,12 +203,13 @@ function loaderForArchitecture(arch: string): string {
   throw new Error(`unsupported e2fsprogs architecture: ${arch}`);
 }
 
-function wrapper(binaryName: string, payload: string, arch: string): string {
+function linuxWrapper(binaryName: string, payload: string, arch: string): string {
   const loader = loaderForArchitecture(arch);
+  const rtDir = runtimeDirectoryName('linux');
   return `#!/bin/sh
 set -eu
 bin_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-runtime_dir="$bin_dir/${RUNTIME_DIRECTORY}"
+runtime_dir="$bin_dir/${rtDir}"
 loader="${loader}"
 if [ ! -x "$loader" ]; then
   echo "${binaryName} requires the glibc loader at $loader" >&2
@@ -176,16 +221,59 @@ exec "$loader" --argv0 "${binaryName}" "$runtime_dir/${payload}" "$@"
 `;
 }
 
-async function stageBottle(archive: string, version: string, arch: string, outputDir: string): Promise<void> {
+function darwinWrapper(binaryName: string, payload: string): string {
+  const execTarget = binaryName === payload ? payload : binaryName;
+  return `#!/bin/sh
+set -eu
+case "$0" in
+  */*) script_path="$0" ;;
+  *) script_path=$(command -v "$0") ;;
+esac
+bin_dir=$(CDPATH= cd -- "\${script_path%/*}" && pwd)
+runtime_dir="$bin_dir/.mkfs-ext4"
+library_path="$runtime_dir/lib"
+if [ -n "\${DYLD_LIBRARY_PATH:-}" ]; then
+  library_path="$library_path:$DYLD_LIBRARY_PATH"
+fi
+if [ -z "\${MKE2FS_CONFIG:-}" ]; then
+  export MKE2FS_CONFIG="$runtime_dir/mke2fs.conf"
+fi
+export DYLD_LIBRARY_PATH="$library_path"
+exec "$runtime_dir/${execTarget}" "$@"
+`;
+}
+
+async function stageDarwinLibraries(bottleRoot: string, libDir: string): Promise<void> {
+  const bottleLibraries = await readdir(join(bottleRoot, 'lib'));
+  for (const stem of DARWIN_LIBRARY_STEMS) {
+    const matchingFiles = bottleLibraries.filter(
+      candidate => candidate.startsWith(stem) && candidate.endsWith('.dylib'),
+    );
+    if (matchingFiles.length === 0) {
+      throw new Error(`e2fsprogs bottle does not contain ${stem}*.dylib`);
+    }
+    for (const file of matchingFiles) {
+      await copyFile(join(bottleRoot, 'lib', file), join(libDir, file));
+    }
+  }
+}
+
+async function stageBottle(
+  archive: string,
+  version: string,
+  arch: string,
+  platform: string,
+  outputDir: string,
+): Promise<void> {
   const extractionDir = await mkdtemp(join(tmpdir(), 'kaiden-e2fsprogs-'));
   try {
     await tar.extract({
       file: archive,
       cwd: extractionDir,
-      filter: (path, entry) => 'type' in entry && isRequiredBottleEntry(path, entry.type, version),
+      filter: (path, entry) => 'type' in entry && isRequiredBottleEntry(path, entry.type, version, platform),
     });
     const bottleRoot = join(extractionDir, 'e2fsprogs', version);
-    const runtimeDir = join(outputDir, RUNTIME_DIRECTORY);
+    const runtimeDir = join(outputDir, runtimeDirectoryName(platform));
     const libDir = join(runtimeDir, 'lib');
     await rm(runtimeDir, { recursive: true, force: true });
     await mkdir(libDir, { recursive: true });
@@ -195,20 +283,35 @@ async function stageBottle(archive: string, version: string, arch: string, outpu
       await copyFile(join(bottleRoot, 'sbin', binary.payload), payload);
       await chmod(payload, 0o755);
     }
-    const bottleLibraries = await readdir(join(bottleRoot, 'lib'));
-    for (const library of LIBRARIES) {
-      const source = bottleLibraries.find(candidate => candidate.startsWith(`${library}.`));
-      if (!source) {
-        throw new Error(`e2fsprogs bottle does not contain ${library}`);
+
+    if (platform === 'linux') {
+      const bottleLibraries = await readdir(join(bottleRoot, 'lib'));
+      for (const library of LINUX_LIBRARIES) {
+        const source = bottleLibraries.find(candidate => candidate.startsWith(`${library}.`));
+        if (!source) {
+          throw new Error(`e2fsprogs bottle does not contain ${library}`);
+        }
+        await copyFile(join(bottleRoot, 'lib', source), join(libDir, library));
       }
-      await copyFile(join(bottleRoot, 'lib', source), join(libDir, library));
+    } else {
+      await stageDarwinLibraries(bottleRoot, libDir);
     }
+
     await copyFile(join(bottleRoot, '.bottle', 'etc', 'mke2fs.conf'), join(runtimeDir, 'mke2fs.conf'));
+
     await copyFile(join(bottleRoot, 'NOTICE'), join(runtimeDir, 'NOTICE'));
+
+    if (platform === 'darwin') {
+      await symlink('mke2fs', join(runtimeDir, 'mkfs.ext4'));
+    }
 
     for (const binary of BINARIES) {
       const destination = join(outputDir, binary.name);
-      await writeFile(destination, wrapper(binary.name, binary.payload, arch), { encoding: 'utf-8' });
+      const wrapperContent =
+        platform === 'linux'
+          ? linuxWrapper(binary.name, binary.payload, arch)
+          : darwinWrapper(binary.name, binary.payload);
+      await writeFile(destination, wrapperContent, { encoding: 'utf-8' });
       await chmod(destination, 0o755);
     }
   } finally {
@@ -216,57 +319,108 @@ async function stageBottle(archive: string, version: string, arch: string, outpu
   }
 }
 
-function hasCompleteInstallation(outputDir: string): boolean {
-  return [
-    ...BINARIES.map(binary => join(outputDir, binary.name)),
-    ...BINARIES.map(binary => join(outputDir, RUNTIME_DIRECTORY, binary.payload)),
-    ...LIBRARIES.map(library => join(outputDir, RUNTIME_DIRECTORY, 'lib', library)),
-    join(outputDir, RUNTIME_DIRECTORY, 'mke2fs.conf'),
-    join(outputDir, RUNTIME_DIRECTORY, 'NOTICE'),
-  ].every(path => existsSync(path));
+async function stageGettextLibrary(arch: string, libDir: string): Promise<void> {
+  const tmpDir = await mkdtemp(join(tmpdir(), 'kaiden-gettext-'));
+  try {
+    console.log(`downloading gettext ${GETTEXT_VERSION} for darwin/${arch}...`);
+    const archive = await downloadAndVerifyBottle(GETTEXT_REPOSITORY, GETTEXT_VERSION, arch, 'darwin', tmpDir);
+    console.log('checksum verified for gettext bottle');
+    const extractionDir = join(tmpDir, 'extracted');
+    await mkdir(extractionDir, { recursive: true });
+    await tar.extract({
+      file: archive,
+      cwd: extractionDir,
+      filter: (path, entry) => {
+        if ('type' in entry && (entry.type === 'Link' || entry.type === 'SymbolicLink')) {
+          return false;
+        }
+        return path.startsWith(`gettext/${GETTEXT_VERSION}/lib/libintl`) && path.endsWith('.dylib');
+      },
+    });
+    const gettextLibDir = join(extractionDir, 'gettext', GETTEXT_VERSION, 'lib');
+    const gettextLibraries = await readdir(gettextLibDir);
+    const intlLibs = gettextLibraries.filter(f => f.startsWith('libintl') && f.endsWith('.dylib'));
+    if (intlLibs.length === 0) {
+      throw new Error('gettext bottle does not contain libintl*.dylib');
+    }
+    for (const lib of intlLibs) {
+      await copyFile(join(gettextLibDir, lib), join(libDir, lib));
+    }
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true });
+  }
 }
 
-export async function downloadMkfsExt4(version: string, arch: string, outputDir: string): Promise<void> {
+function hasCompleteInstallation(outputDir: string, platform: string): boolean {
+  const rtDir = runtimeDirectoryName(platform);
+  const runtimeDir = join(outputDir, rtDir);
+  const paths = [
+    ...BINARIES.map(binary => join(outputDir, binary.name)),
+    ...BINARIES.map(binary => join(runtimeDir, binary.payload)),
+    join(runtimeDir, 'mke2fs.conf'),
+  ];
+  paths.push(join(runtimeDir, 'NOTICE'));
+  if (platform === 'linux') {
+    paths.push(...LINUX_LIBRARIES.map(library => join(runtimeDir, 'lib', library)));
+  } else {
+    paths.push(join(runtimeDir, 'mkfs.ext4'));
+    const libDir = join(runtimeDir, 'lib');
+    if (!existsSync(libDir)) return false;
+    try {
+      const libFiles = readdirSync(libDir);
+      const hasDarwinLibs = DARWIN_LIBRARY_STEMS.every(stem =>
+        libFiles.some(f => f.startsWith(stem) && f.endsWith('.dylib')),
+      );
+      const hasIntl = libFiles.some(f => f.startsWith('libintl') && f.endsWith('.dylib'));
+      if (!hasDarwinLibs || !hasIntl) return false;
+    } catch {
+      return false;
+    }
+  }
+  return paths.every(path => existsSync(path));
+}
+
+export async function downloadMkfsExt4(
+  version: string,
+  arch: string,
+  platform: string,
+  outputDir: string,
+): Promise<void> {
   architectureForOci(arch);
 
   const versionFile = join(outputDir, '.mkfs-ext4-version');
-  const versionMarker = `${version}-linux-${arch}`;
-  if (existsSync(versionFile) && hasCompleteInstallation(outputDir)) {
+  const versionMarker = `${version}-${platform}-${arch}`;
+  if (existsSync(versionFile) && hasCompleteInstallation(outputDir, platform)) {
     const existing = await readFile(versionFile, 'utf-8');
     if (existing.trim() === versionMarker) {
-      console.log(`mkfs.ext4 ${version} for linux/${arch} already downloaded`);
+      console.log(`mkfs.ext4 ${version} for ${platform}/${arch} already downloaded`);
       return;
     }
   }
 
-  const { digest, token } = await resolveBottle(version, arch);
-  const expectedDigest = digest.replace(/^sha256:/, '');
-  if (!/^[a-f0-9]{64}$/i.test(expectedDigest)) {
-    throw new Error(`invalid e2fsprogs bottle digest: ${digest}`);
-  }
-
   await mkdir(outputDir, { recursive: true });
-  const archive = join(outputDir, `${expectedDigest}.bottle.tar.gz`);
   try {
-    console.log(`downloading mkfs.ext4 ${version} for linux/${arch}...`);
-    await downloadBottle(digest, token, archive);
-    const actualDigest = await sha256(archive);
-    if (actualDigest !== expectedDigest) {
-      throw new Error(`checksum mismatch for e2fsprogs bottle: expected ${expectedDigest}, got ${actualDigest}`);
-    }
+    console.log(`downloading mkfs.ext4 ${version} for ${platform}/${arch}...`);
+    const archive = await downloadAndVerifyBottle(E2FSPROGS_REPOSITORY, version, arch, platform, outputDir);
     console.log('checksum verified for e2fsprogs bottle');
-    await stageBottle(archive, version, arch, outputDir);
+    try {
+      await stageBottle(archive, version, arch, platform, outputDir);
+    } finally {
+      await rm(archive, { force: true });
+    }
+    if (platform === 'darwin') {
+      const libDir = join(outputDir, runtimeDirectoryName('darwin'), 'lib');
+      await stageGettextLibrary(arch, libDir);
+    }
     await writeFile(versionFile, versionMarker, { encoding: 'utf-8' });
   } catch (error) {
+    const rtDir = runtimeDirectoryName(platform);
     await Promise.all([
-      rm(join(outputDir, 'mkfs.ext4'), { force: true }),
-      rm(join(outputDir, 'debugfs'), { force: true }),
-      rm(join(outputDir, RUNTIME_DIRECTORY), { recursive: true, force: true }),
+      ...BINARIES.map(binary => rm(join(outputDir, binary.name), { force: true })),
+      rm(join(outputDir, rtDir), { recursive: true, force: true }),
       rm(versionFile, { force: true }),
     ]);
     throw error;
-  } finally {
-    await rm(archive, { force: true });
   }
-  console.log(`mkfs.ext4 ${version} for linux/${arch} ready`);
+  console.log(`mkfs.ext4 ${version} for ${platform}/${arch} ready`);
 }
