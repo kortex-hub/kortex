@@ -42,6 +42,7 @@ const METADATA_FILENAME = 'metadata.json';
 const ACTIVE_GATEWAY_FILENAME = 'active_gateway';
 
 const GRPC_GET_GATEWAY_INFO_PATH = '/openshell.v1.OpenShell/GetGatewayInfo';
+const GRPC_CALL_TIMEOUT_MS = 10_000;
 
 /**
  * Manages OpenShell gateway registrations by reading and writing the
@@ -106,6 +107,10 @@ export class OpenshellGatewayManager {
 
   async addGateway(name: string, metadata: GatewayMetadata): Promise<void> {
     this.#validateGatewayName(name);
+    const parsed = GatewayMetadataSchema.parse(metadata);
+    if (parsed.name !== name) {
+      throw new Error(`Gateway metadata name '${parsed.name}' does not match gateway name '${name}'`);
+    }
     const source = await this.#gatewayMetadataSource(name);
     if (source === 'user') {
       throw new Error(
@@ -115,7 +120,7 @@ export class OpenshellGatewayManager {
     const gatewayDir = join(this.#userGatewaysDir(), name);
     await mkdir(gatewayDir, { recursive: true, mode: 0o700 });
     const metadataPath = join(gatewayDir, METADATA_FILENAME);
-    await writeFile(metadataPath, JSON.stringify(metadata, undefined, 2), 'utf-8');
+    await writeFile(metadataPath, JSON.stringify(parsed, undefined, 2), 'utf-8');
   }
 
   async removeGateway(name: string): Promise<void> {
@@ -323,6 +328,19 @@ export class OpenshellGatewayManager {
     requestMessage.copy(grpcFrame, 5);
 
     return new Promise((resolve, reject) => {
+      let settled = false;
+      const settle = (fn: typeof resolve | typeof reject, value: Buffer | Error): void => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        (fn as (v: Buffer | Error) => void)(value);
+      };
+
+      const timer = setTimeout(() => {
+        settle(reject, new Error('GetGatewayInfo gRPC call timed out'));
+        session.destroy();
+      }, GRPC_CALL_TIMEOUT_MS);
+
       const url = new URL(gatewayUrl);
       const isHttps = url.protocol === 'https:';
 
@@ -331,8 +349,8 @@ export class OpenshellGatewayManager {
       });
 
       session.on('error', err => {
-        reject(err);
-        session.close();
+        settle(reject, err);
+        session.destroy();
       });
 
       const req = session.request({
@@ -343,8 +361,20 @@ export class OpenshellGatewayManager {
       });
 
       let statusCode = 0;
+      let grpcStatus = -1;
+      let grpcMessage = '';
+
       req.on('response', headers => {
         statusCode = Number(headers[h2constants.HTTP2_HEADER_STATUS]) || 0;
+      });
+
+      req.on('trailers', (trailers: Record<string, string>) => {
+        if (trailers['grpc-status'] !== undefined) {
+          grpcStatus = Number(trailers['grpc-status']);
+        }
+        if (trailers['grpc-message']) {
+          grpcMessage = decodeURIComponent(trailers['grpc-message']);
+        }
       });
 
       const chunks: Buffer[] = [];
@@ -352,20 +382,28 @@ export class OpenshellGatewayManager {
       req.on('end', () => {
         session.close();
         if (statusCode !== 200) {
-          reject(new Error(`GetGatewayInfo gRPC call failed (HTTP ${statusCode})`));
+          settle(reject, new Error(`GetGatewayInfo gRPC call failed (HTTP ${statusCode})`));
+          return;
+        }
+        if (grpcStatus > 0) {
+          settle(reject, new Error(`GetGatewayInfo gRPC error (status ${grpcStatus}): ${grpcMessage}`));
           return;
         }
         const body = Buffer.concat(chunks);
         if (body.length < 5) {
-          reject(new Error('GetGatewayInfo gRPC response too short'));
+          settle(reject, new Error('GetGatewayInfo gRPC response too short'));
           return;
         }
         const msgLen = body.readUInt32BE(1);
-        resolve(body.subarray(5, 5 + msgLen));
+        if (body.length < 5 + msgLen) {
+          settle(reject, new Error('GetGatewayInfo gRPC response truncated'));
+          return;
+        }
+        settle(resolve, body.subarray(5, 5 + msgLen));
       });
       req.on('error', err => {
-        session.close();
-        reject(err);
+        session.destroy();
+        settle(reject, err);
       });
 
       req.write(grpcFrame);
@@ -405,14 +443,15 @@ function readVarint(buf: Buffer, offset: number): [number, number] {
   let result = 0;
   let shift = 0;
   let pos = offset;
-  while (pos < buf.length) {
+  const maxBytes = Math.min(offset + 5, buf.length);
+  while (pos < maxBytes) {
     const byte = buf[pos]!;
     result |= (byte & 0x7f) << shift;
     pos++;
-    if ((byte & 0x80) === 0) return [result, pos];
+    if ((byte & 0x80) === 0) return [result >>> 0, pos];
     shift += 7;
   }
-  return [result, pos];
+  return [result >>> 0, pos];
 }
 
 function parseFields(buf: Buffer): ProtoField[] {
@@ -430,6 +469,7 @@ function parseFields(buf: Buffer): ProtoField[] {
       offset = afterValue;
     } else if (wireType === 2) {
       const [len, afterLen] = readVarint(buf, offset);
+      if (len > buf.length - afterLen) break;
       fields.push({ fieldNumber, wireType, value: buf.subarray(afterLen, afterLen + len) });
       offset = afterLen + len;
     } else {

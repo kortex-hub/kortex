@@ -138,6 +138,7 @@ import type { OnboardingInfo, OnboardingStatus } from '/@api/onboarding';
 import type {
   CreateLocalGatewayOptions,
   GatewayInfo,
+  GatewayMetadata,
   GatewayRuntimeInfo,
   GatewaySandboxes,
   ListedGateway,
@@ -420,9 +421,12 @@ export function initExposure(): void {
   contextBridge.exposeInMainWorld('openshellGatewayManagerListGateways', async (): Promise<ListedGateway[]> => {
     return ipcInvoke('openshell-gateway-manager:listGateways');
   });
-  contextBridge.exposeInMainWorld('openshellGatewayManagerGetGateway', async (name: string): Promise<unknown> => {
-    return ipcInvoke('openshell-gateway-manager:getGateway', name);
-  });
+  contextBridge.exposeInMainWorld(
+    'openshellGatewayManagerGetGateway',
+    async (name: string): Promise<GatewayMetadata> => {
+      return ipcInvoke('openshell-gateway-manager:getGateway', name);
+    },
+  );
   contextBridge.exposeInMainWorld('openshellGatewayManagerGetActiveGateway', async (): Promise<string | undefined> => {
     return ipcInvoke('openshell-gateway-manager:getActiveGateway');
   });

@@ -16,8 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { EventEmitter } from 'node:events';
 import { join } from 'node:path';
-import { EventEmitter } from 'node:stream';
 
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -56,11 +56,12 @@ const sdkClientManager = {
 
 function encodeVarint(value: number): Buffer {
   const bytes: number[] = [];
-  while (value > 0x7f) {
-    bytes.push((value & 0x7f) | 0x80);
-    value >>>= 7;
+  let remaining = value;
+  while (remaining > 0x7f) {
+    bytes.push((remaining & 0x7f) | 0x80);
+    remaining >>>= 7;
   }
-  bytes.push(value & 0x7f);
+  bytes.push(remaining & 0x7f);
   return Buffer.from(bytes);
 }
 
@@ -101,12 +102,17 @@ function encodeGatewayInfoResponse(opts: {
   return frame;
 }
 
-async function mockGrpcResponse(statusCode: number, grpcBody: Buffer): Promise<void> {
+async function mockGrpcResponse(
+  statusCode: number,
+  grpcBody: Buffer,
+  trailers?: Record<string, string>,
+): Promise<void> {
   const { connect } = await import('node:http2');
 
   vi.mocked(connect).mockImplementation(() => {
     const session = new EventEmitter() as ReturnType<typeof connect>;
     session.close = vi.fn();
+    session.destroy = vi.fn() as never;
 
     session.request = vi.fn().mockImplementation(() => {
       const stream = new EventEmitter();
@@ -115,6 +121,7 @@ async function mockGrpcResponse(statusCode: number, grpcBody: Buffer): Promise<v
       process.nextTick(() => {
         stream.emit('response', { ':status': statusCode });
         stream.emit('data', grpcBody);
+        if (trailers) stream.emit('trailers', trailers);
         stream.emit('end');
       });
 
@@ -235,22 +242,24 @@ describe('OpenshellGatewayManager', () => {
 
     test('does not list system gateways on win32', async () => {
       const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
-      Object.defineProperty(process, 'platform', { value: 'win32' });
+      Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
       vi.stubEnv('OPENSHELL_SYSTEM_GATEWAY_DIR', '');
 
-      const { readdir, readFile } = await import('node:fs/promises');
-      const { existsSync } = await import('node:fs');
-      vi.mocked(readdir).mockResolvedValueOnce(['win-gw'] as unknown as never[]);
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(readFile).mockResolvedValueOnce(JSON.stringify(validMetadata({ name: 'win-gw' })));
+      try {
+        const { readdir, readFile } = await import('node:fs/promises');
+        const { existsSync } = await import('node:fs');
+        vi.mocked(readdir).mockResolvedValueOnce(['win-gw'] as unknown as never[]);
+        vi.mocked(existsSync).mockReturnValue(true);
+        vi.mocked(readFile).mockResolvedValueOnce(JSON.stringify(validMetadata({ name: 'win-gw' })));
 
-      const gateways = await manager.listGateways();
+        const gateways = await manager.listGateways();
 
-      expect(gateways).toHaveLength(1);
-      expect(readdir).toHaveBeenCalledTimes(1);
-
-      if (originalPlatform) {
-        Object.defineProperty(process, 'platform', originalPlatform);
+        expect(gateways).toHaveLength(1);
+        expect(readdir).toHaveBeenCalledTimes(1);
+      } finally {
+        if (originalPlatform) {
+          Object.defineProperty(process, 'platform', originalPlatform);
+        }
       }
     });
   });
@@ -330,6 +339,12 @@ describe('OpenshellGatewayManager', () => {
 
       expect(mkdir).toHaveBeenCalled();
       expect(writeFile).toHaveBeenCalled();
+    });
+
+    test('throws when metadata.name does not match the gateway name', async () => {
+      await expect(manager.addGateway('foo', validMetadata({ name: 'bar' }))).rejects.toThrow(
+        /does not match gateway name/,
+      );
     });
 
     test('rejects invalid gateway names', async () => {
@@ -503,6 +518,15 @@ describe('OpenshellGatewayManager', () => {
       await mockGrpcResponse(401, Buffer.alloc(0));
 
       await expect(manager.getGatewayInfo('gw')).rejects.toThrow(/HTTP 401/);
+    });
+
+    test('throws on non-zero grpc-status trailer', async () => {
+      const { readFile } = await import('node:fs/promises');
+      vi.mocked(readFile).mockResolvedValueOnce(JSON.stringify(validMetadata({ name: 'gw' })));
+
+      await mockGrpcResponse(200, Buffer.alloc(0), { 'grpc-status': '13', 'grpc-message': 'internal%20error' });
+
+      await expect(manager.getGatewayInfo('gw')).rejects.toThrow(/gRPC error \(status 13\): internal error/);
     });
   });
 
