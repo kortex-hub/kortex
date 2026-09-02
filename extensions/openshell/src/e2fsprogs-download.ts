@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  **********************************************************************/
 
-import { createWriteStream, existsSync } from 'node:fs';
+import { createWriteStream, existsSync, readdirSync } from 'node:fs';
 import { chmod, copyFile, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -364,7 +364,19 @@ function hasCompleteInstallation(outputDir: string, platform: string): boolean {
   if (platform === 'linux') {
     paths.push(...LINUX_LIBRARIES.map(library => join(runtimeDir, 'lib', library)), join(runtimeDir, 'NOTICE'));
   } else {
-    paths.push(join(runtimeDir, 'mkfs.ext4'), join(runtimeDir, 'lib'));
+    paths.push(join(runtimeDir, 'mkfs.ext4'));
+    const libDir = join(runtimeDir, 'lib');
+    if (!existsSync(libDir)) return false;
+    try {
+      const libFiles = readdirSync(libDir);
+      const hasDarwinLibs = DARWIN_LIBRARY_STEMS.every(stem =>
+        libFiles.some(f => f.startsWith(stem) && f.endsWith('.dylib')),
+      );
+      const hasIntl = libFiles.some(f => f.startsWith('libintl') && f.endsWith('.dylib'));
+      if (!hasDarwinLibs || !hasIntl) return false;
+    } catch {
+      return false;
+    }
   }
   return paths.every(path => existsSync(path));
 }
