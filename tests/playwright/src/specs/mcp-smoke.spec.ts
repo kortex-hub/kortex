@@ -224,13 +224,13 @@ test.describe('MCP UI Interactions', { tag: '@smoke' }, () => {
     const installTab = await mcpPage.openInstallTab();
     const initialServerCount = await installTab.countRowsFromTable();
 
-    await mcpPage.searchMcpServersField.fill('podman');
+    await mcpPage.searchServers('podman');
     await expect
       .poll(async () => await installTab.countRowsFromTable(), { timeout: TIMEOUTS.SHORT })
       .toBeLessThan(initialServerCount);
     await expect(installTab.findServer('ai.openkaiden.registry/podman')).toBeVisible();
 
-    await mcpPage.searchMcpServersField.clear();
+    await mcpPage.clearSearch();
     await expect
       .poll(async () => await installTab.countRowsFromTable(), { timeout: TIMEOUTS.SHORT })
       .toBe(initialServerCount);
@@ -260,7 +260,7 @@ test.describe('MCP UI Interactions', { tag: '@smoke' }, () => {
     await installTab.clickInstallRemoteServer('ai.openkaiden.registry/podman');
     await expect(installTab.installFormHeading).toBeVisible({ timeout: TIMEOUTS.SHORT });
 
-    await installTab.cancelButton.click();
+    await installTab.cancel();
     await expect(mcpPage.searchMcpServersField).toBeVisible({ timeout: TIMEOUTS.SHORT });
   });
 });

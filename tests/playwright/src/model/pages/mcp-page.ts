@@ -72,6 +72,14 @@ export class McpPage extends BasePage {
       .toBeTruthy();
   }
 
+  async searchServers(query: string): Promise<void> {
+    await this.searchMcpServersField.fill(query);
+  }
+
+  async clearSearch(): Promise<void> {
+    await this.searchMcpServersField.clear();
+  }
+
   async deleteServer(serverName: string): Promise<void> {
     const readyTab = await this.openReadyTab();
     await readyTab.deleteServer(serverName);

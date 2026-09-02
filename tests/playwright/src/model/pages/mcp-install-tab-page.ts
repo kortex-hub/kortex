@@ -80,6 +80,10 @@ export class McpInstallTabPage extends BaseTablePage {
     await columnHeader.click();
   }
 
+  async cancel(): Promise<void> {
+    await this.cancelButton.click();
+  }
+
   async spawnPackageServer(serverName: string): Promise<void> {
     await this.clickInstallRemoteServer(serverName);
     await expect(this.installFormHeading).toBeVisible();
