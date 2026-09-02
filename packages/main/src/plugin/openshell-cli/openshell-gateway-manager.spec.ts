@@ -528,6 +528,57 @@ describe('OpenshellGatewayManager', () => {
 
       await expect(manager.getGatewayInfo('gw')).rejects.toThrow(/gRPC error \(status 13\): internal error/);
     });
+
+    test('handles malformed percent-encoding in grpc-message trailer', async () => {
+      const { readFile } = await import('node:fs/promises');
+      vi.mocked(readFile).mockResolvedValueOnce(JSON.stringify(validMetadata({ name: 'gw' })));
+
+      await mockGrpcResponse(200, Buffer.alloc(0), { 'grpc-status': '2', 'grpc-message': 'bad%ZZencoding' });
+
+      await expect(manager.getGatewayInfo('gw')).rejects.toThrow(/gRPC error \(status 2\): bad%ZZencoding/);
+    });
+
+    test('rejects when response exceeds maximum size', async () => {
+      const { readFile } = await import('node:fs/promises');
+      const { connect } = await import('node:http2');
+      vi.mocked(readFile).mockResolvedValueOnce(JSON.stringify(validMetadata({ name: 'gw' })));
+
+      const destroyedStreams: { req: boolean; session: boolean } = { req: false, session: false };
+
+      vi.mocked(connect).mockImplementation(() => {
+        const session = new EventEmitter() as ReturnType<typeof connect>;
+        session.close = vi.fn();
+        session.destroy = vi.fn(() => {
+          destroyedStreams.session = true;
+        }) as never;
+
+        session.request = vi.fn().mockImplementation(() => {
+          const stream = new EventEmitter();
+          Object.assign(stream, {
+            write: vi.fn(),
+            end: vi.fn(),
+            destroy: vi.fn(() => {
+              destroyedStreams.req = true;
+            }),
+          });
+
+          process.nextTick(() => {
+            stream.emit('response', { ':status': 200 });
+            const oversizedChunk = Buffer.alloc(1024 * 1024 + 1);
+            stream.emit('data', oversizedChunk);
+            stream.emit('end');
+          });
+
+          return stream;
+        });
+
+        return session;
+      });
+
+      await expect(manager.getGatewayInfo('gw')).rejects.toThrow(/exceeded maximum size/);
+      expect(destroyedStreams.req).toBe(true);
+      expect(destroyedStreams.session).toBe(true);
+    });
   });
 
   describe('health', () => {

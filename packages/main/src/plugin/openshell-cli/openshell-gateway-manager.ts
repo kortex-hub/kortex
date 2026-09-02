@@ -43,6 +43,7 @@ const ACTIVE_GATEWAY_FILENAME = 'active_gateway';
 
 const GRPC_GET_GATEWAY_INFO_PATH = '/openshell.v1.OpenShell/GetGatewayInfo';
 const GRPC_CALL_TIMEOUT_MS = 10_000;
+const GRPC_MAX_RESPONSE_BYTES = 1024 * 1024;
 
 /**
  * Manages OpenShell gateway registrations by reading and writing the
@@ -373,12 +374,26 @@ export class OpenshellGatewayManager {
           grpcStatus = Number(trailers['grpc-status']);
         }
         if (trailers['grpc-message']) {
-          grpcMessage = decodeURIComponent(trailers['grpc-message']);
+          try {
+            grpcMessage = decodeURIComponent(trailers['grpc-message']);
+          } catch {
+            grpcMessage = trailers['grpc-message'];
+          }
         }
       });
 
       const chunks: Buffer[] = [];
-      req.on('data', (chunk: Buffer) => chunks.push(chunk));
+      let receivedBytes = 0;
+      req.on('data', (chunk: Buffer) => {
+        receivedBytes += chunk.length;
+        if (receivedBytes > GRPC_MAX_RESPONSE_BYTES) {
+          settle(reject, new Error('GetGatewayInfo gRPC response exceeded maximum size'));
+          req.destroy();
+          session.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
       req.on('end', () => {
         session.close();
         if (statusCode !== 200) {
