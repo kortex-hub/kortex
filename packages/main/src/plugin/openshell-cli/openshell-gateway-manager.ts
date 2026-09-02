@@ -20,7 +20,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { connect as h2Connect, constants as h2constants } from 'node:http2';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { isAbsolute, join } from 'node:path';
 
 import { inject, injectable } from 'inversify';
 
@@ -201,7 +201,7 @@ export class OpenshellGatewayManager {
       if (appdata) return appdata;
     }
 
-    return join(homedir(), '.config');
+    return join(process.env['HOME'] ?? homedir(), '.config');
   }
 
   #openshellConfigDir(): string {
@@ -215,10 +215,11 @@ export class OpenshellGatewayManager {
   #systemConfigDir(): string | undefined {
     const envOverride = process.env[SYSTEM_GATEWAY_DIR_ENV];
     if (envOverride) {
-      if (!envOverride.trim() || !join(envOverride).startsWith('/')) {
+      const trimmed = envOverride.trim();
+      if (!trimmed || !isAbsolute(trimmed)) {
         return undefined;
       }
-      return envOverride;
+      return trimmed;
     }
     if (process.platform === 'win32') return undefined;
     return DEFAULT_SYSTEM_CONFIG_DIR;

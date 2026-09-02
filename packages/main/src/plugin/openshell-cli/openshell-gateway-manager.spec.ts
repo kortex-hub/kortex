@@ -29,7 +29,6 @@ import type { OpenshellSdkClientManager } from './openshell-sdk-client-manager.j
 
 vi.mock(import('node:fs'));
 vi.mock(import('node:fs/promises'));
-vi.mock(import('node:os'));
 vi.mock(import('node:http2'));
 
 const USER_CONFIG = '/home/testuser/.config';
@@ -154,6 +153,8 @@ describe('OpenshellGatewayManager', () => {
     });
 
     test('lists gateways from both user and system directories', async () => {
+      vi.stubEnv('OPENSHELL_SYSTEM_GATEWAY_DIR', SYSTEM_CONFIG_DIR);
+      manager = new OpenshellGatewayManager(gatewayConfig, sdkClientManager);
       const { readdir, readFile } = await import('node:fs/promises');
       const { existsSync } = await import('node:fs');
       vi.mocked(readdir)
@@ -176,6 +177,8 @@ describe('OpenshellGatewayManager', () => {
     });
 
     test('user gateways take precedence over system gateways with the same name', async () => {
+      vi.stubEnv('OPENSHELL_SYSTEM_GATEWAY_DIR', SYSTEM_CONFIG_DIR);
+      manager = new OpenshellGatewayManager(gatewayConfig, sdkClientManager);
       const { readdir, readFile } = await import('node:fs/promises');
       const { existsSync } = await import('node:fs');
       vi.mocked(readdir)
@@ -264,6 +267,8 @@ describe('OpenshellGatewayManager', () => {
     });
 
     test('falls back to system directory when not found in user', async () => {
+      vi.stubEnv('OPENSHELL_SYSTEM_GATEWAY_DIR', SYSTEM_CONFIG_DIR);
+      manager = new OpenshellGatewayManager(gatewayConfig, sdkClientManager);
       const { readFile } = await import('node:fs/promises');
       vi.mocked(readFile)
         .mockRejectedValueOnce(new Error('ENOENT'))
@@ -357,6 +362,8 @@ describe('OpenshellGatewayManager', () => {
     });
 
     test('throws when trying to remove a system gateway', async () => {
+      vi.stubEnv('OPENSHELL_SYSTEM_GATEWAY_DIR', SYSTEM_CONFIG_DIR);
+      manager = new OpenshellGatewayManager(gatewayConfig, sdkClientManager);
       const { existsSync } = await import('node:fs');
       vi.mocked(existsSync).mockReturnValueOnce(false).mockReturnValueOnce(true);
 
@@ -387,6 +394,8 @@ describe('OpenshellGatewayManager', () => {
     });
 
     test('falls back to system active gateway when user has none', async () => {
+      vi.stubEnv('OPENSHELL_SYSTEM_GATEWAY_DIR', SYSTEM_CONFIG_DIR);
+      manager = new OpenshellGatewayManager(gatewayConfig, sdkClientManager);
       const { readFile } = await import('node:fs/promises');
       vi.mocked(readFile).mockRejectedValueOnce(new Error('ENOENT')).mockResolvedValueOnce('system-active');
 
@@ -531,11 +540,10 @@ describe('OpenshellGatewayManager', () => {
       expect(readdir).toHaveBeenCalledWith(join('/custom/config', 'openshell', 'gateways'));
     });
 
-    test('uses APPDATA on win32 when XDG_CONFIG_HOME is not set', async () => {
+    test.skipIf(process.platform !== 'win32')('uses APPDATA on win32 when XDG_CONFIG_HOME is not set', async () => {
       vi.unstubAllEnvs();
+      vi.stubEnv('XDG_CONFIG_HOME', '');
       vi.stubEnv('APPDATA', 'C:\\Users\\test\\AppData\\Roaming');
-      const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
-      Object.defineProperty(process, 'platform', { value: 'win32' });
 
       manager = new OpenshellGatewayManager(gatewayConfig, sdkClientManager);
 
@@ -545,26 +553,25 @@ describe('OpenshellGatewayManager', () => {
       await manager.listGateways();
 
       expect(readdir).toHaveBeenCalledWith(join('C:\\Users\\test\\AppData\\Roaming', 'openshell', 'gateways'));
-
-      if (originalPlatform) {
-        Object.defineProperty(process, 'platform', originalPlatform);
-      }
     });
 
-    test('falls back to $HOME/.config on non-win32 without XDG_CONFIG_HOME', async () => {
-      vi.unstubAllEnvs();
-      const { homedir } = await import('node:os');
-      vi.mocked(homedir).mockReturnValue('/home/testuser');
+    test.skipIf(process.platform === 'win32')(
+      'falls back to $HOME/.config on non-win32 without XDG_CONFIG_HOME',
+      async () => {
+        vi.unstubAllEnvs();
+        vi.stubEnv('XDG_CONFIG_HOME', '');
+        vi.stubEnv('HOME', '/home/testuser');
 
-      manager = new OpenshellGatewayManager(gatewayConfig, sdkClientManager);
+        manager = new OpenshellGatewayManager(gatewayConfig, sdkClientManager);
 
-      const { readdir } = await import('node:fs/promises');
-      vi.mocked(readdir).mockRejectedValue(new Error('ENOENT'));
+        const { readdir } = await import('node:fs/promises');
+        vi.mocked(readdir).mockRejectedValue(new Error('ENOENT'));
 
-      await manager.listGateways();
+        await manager.listGateways();
 
-      expect(readdir).toHaveBeenCalledWith(join('/home/testuser', '.config', 'openshell', 'gateways'));
-    });
+        expect(readdir).toHaveBeenCalledWith(join('/home/testuser', '.config', 'openshell', 'gateways'));
+      },
+    );
 
     test('uses OPENSHELL_SYSTEM_GATEWAY_DIR env override for system directory', async () => {
       vi.stubEnv('OPENSHELL_SYSTEM_GATEWAY_DIR', '/custom/system/openshell');
