@@ -186,10 +186,15 @@ async function downloadAndVerifyBottle(
     throw new Error(`invalid ${repository} bottle digest: ${digest}`);
   }
   const archive = join(outputDir, `${expectedDigest}.bottle.tar.gz`);
-  await downloadBottle(repository, digest, token, archive);
-  const actualDigest = await sha256(archive);
-  if (actualDigest !== expectedDigest) {
-    throw new Error(`checksum mismatch for ${repository} bottle: expected ${expectedDigest}, got ${actualDigest}`);
+  try {
+    await downloadBottle(repository, digest, token, archive);
+    const actualDigest = await sha256(archive);
+    if (actualDigest !== expectedDigest) {
+      throw new Error(`checksum mismatch for ${repository} bottle: expected ${expectedDigest}, got ${actualDigest}`);
+    }
+  } catch (error) {
+    await rm(archive, { force: true });
+    throw error;
   }
   return archive;
 }
