@@ -142,9 +142,7 @@ jobs:
 
       - name: Install uv (Python package manager for MCP server spawning)
         if: runner.os == 'Linux'
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
 
       - name: Enable Podman socket
         if: runner.os == 'Linux'
