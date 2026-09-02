@@ -91,10 +91,8 @@ function isRequiredBottleEntry(path: string, type: string, version: string, plat
   const requiredPaths = [
     ...BINARIES.map(binary => `${bottleRoot}/sbin/${binary.payload}`),
     `${bottleRoot}/.bottle/etc/mke2fs.conf`,
+    `${bottleRoot}/NOTICE`,
   ];
-  if (platform === 'linux') {
-    requiredPaths.push(`${bottleRoot}/NOTICE`);
-  }
   return (
     requiredPaths.some(
       requiredPath => path === requiredPath || requiredPath.startsWith(`${path.replace(/\/$/, '')}/`),
@@ -301,9 +299,9 @@ async function stageBottle(
 
     await copyFile(join(bottleRoot, '.bottle', 'etc', 'mke2fs.conf'), join(runtimeDir, 'mke2fs.conf'));
 
-    if (platform === 'linux') {
-      await copyFile(join(bottleRoot, 'NOTICE'), join(runtimeDir, 'NOTICE'));
-    } else {
+    await copyFile(join(bottleRoot, 'NOTICE'), join(runtimeDir, 'NOTICE'));
+
+    if (platform === 'darwin') {
       await symlink('mke2fs', join(runtimeDir, 'mkfs.ext4'));
     }
 
@@ -361,8 +359,9 @@ function hasCompleteInstallation(outputDir: string, platform: string): boolean {
     ...BINARIES.map(binary => join(runtimeDir, binary.payload)),
     join(runtimeDir, 'mke2fs.conf'),
   ];
+  paths.push(join(runtimeDir, 'NOTICE'));
   if (platform === 'linux') {
-    paths.push(...LINUX_LIBRARIES.map(library => join(runtimeDir, 'lib', library)), join(runtimeDir, 'NOTICE'));
+    paths.push(...LINUX_LIBRARIES.map(library => join(runtimeDir, 'lib', library)));
   } else {
     paths.push(join(runtimeDir, 'mkfs.ext4'));
     const libDir = join(runtimeDir, 'lib');

@@ -330,6 +330,7 @@ describe('darwin', () => {
     expect(debugfsWrapper).toContain('DYLD_LIBRARY_PATH');
     expect(debugfsWrapper).toContain('$runtime_dir/debugfs');
 
+    expect(await readFile(join(outputDir, '.mkfs-ext4', 'NOTICE'), 'utf-8')).toBe('license notice');
     await expect(stat(join(outputDir, 'NOTICE'))).rejects.toThrow();
     await expect(stat(join(outputDir, 'README'))).rejects.toThrow();
 
