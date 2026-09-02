@@ -25,6 +25,9 @@ export class McpInstallTabPage extends BaseTablePage {
   readonly catalogRefreshingIndicator: Locator;
   readonly passwordInput: Locator;
   readonly connectButton: Locator;
+  readonly cancelButton: Locator;
+  readonly installFormHeading: Locator;
+  readonly spawnButton: Locator;
 
   constructor(page: Page) {
     super(page, 'mcpServer');
@@ -32,6 +35,9 @@ export class McpInstallTabPage extends BaseTablePage {
     this.catalogRefreshingIndicator = this.content.getByText(/Loading catalog|Refreshing catalog/);
     this.passwordInput = this.page.getByLabel('password');
     this.connectButton = this.page.getByRole('button', { name: 'Connect' });
+    this.cancelButton = this.page.getByRole('button', { name: 'Cancel' });
+    this.installFormHeading = this.page.getByRole('heading', { name: /Adding/ });
+    this.spawnButton = this.page.getByRole('button', { name: 'Spawn' });
   }
 
   async waitForLoad(): Promise<void> {
@@ -63,13 +69,26 @@ export class McpInstallTabPage extends BaseTablePage {
     return this.table.getByRole('row').filter({ hasText: serverName });
   }
 
-  async installRemoteServer(serverName: string, token: string): Promise<void> {
+  async clickInstallRemoteServer(serverName: string): Promise<void> {
     const serverRow = this.findServer(serverName);
-    await expect(serverRow).toBeVisible();
-
     const installButton = serverRow.getByRole('button', { name: 'Install Remote server' });
-    await expect(installButton).toBeEnabled();
     await installButton.click();
+  }
+
+  async sortByColumn(columnName: string): Promise<void> {
+    const columnHeader = this.table.getByRole('columnheader', { name: columnName });
+    await columnHeader.click();
+  }
+
+  async spawnPackageServer(serverName: string): Promise<void> {
+    await this.clickInstallRemoteServer(serverName);
+    await expect(this.installFormHeading).toBeVisible();
+    await expect(this.spawnButton).toBeEnabled();
+    await this.spawnButton.click();
+  }
+
+  async installRemoteServer(serverName: string, token: string): Promise<void> {
+    await this.clickInstallRemoteServer(serverName);
 
     await expect(this.passwordInput).toBeVisible();
     await this.passwordInput.fill(token);

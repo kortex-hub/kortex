@@ -140,6 +140,12 @@ jobs:
           sudo mv /tmp/crun /usr/bin/crun
           crun --version
 
+      - name: Install uv (Python package manager for MCP server spawning)
+        if: runner.os == 'Linux'
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
       - name: Enable Podman socket
         if: runner.os == 'Linux'
         run: |

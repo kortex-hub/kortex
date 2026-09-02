@@ -66,6 +66,11 @@ export class KnowledgePage extends BaseTablePage {
     await this.ensureRowDoesNotExist(name);
   }
 
+  async getEnvironmentStatus(name: string): Promise<string | null> {
+    const row = await this.getRowLocatorByName(name);
+    return row.getByRole('status').getAttribute('title');
+  }
+
   async openEnvironmentDetails(name: string, exact = true): Promise<KnowledgeDetailsPage> {
     await this.waitForLoad();
     const row = await this.getRowLocatorByName(name, exact);
