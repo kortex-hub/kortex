@@ -143,10 +143,6 @@ function jsonRegistryHandler(response: string): RequestListener {
   };
 }
 
-test.use({
-  mcpServers: process.env[MCP_SERVERS.github.envVarName] ? ['github'] : [],
-});
-
 test.describe('MCP Registry Management', { tag: '@smoke' }, () => {
   let server: Server;
   let mockRegistryUrl: string;
@@ -196,21 +192,21 @@ test.describe('MCP Server Management', { tag: '@smoke' }, () => {
     await navigationBar.navigateToMCPPage();
   });
 
-  test('[MCP-02] Add and remove MCP server: verify server list updates accordingly', async ({
-    mcpSetup: _mcpSetup,
-    mcpPage,
-  }) => {
-    test.skip(
-      !process.env[MCP_SERVERS.github.envVarName],
-      `${MCP_SERVERS.github.envVarName} environment variable is not set`,
-    );
+  test('[MCP-02] Add and remove MCP server: verify server list updates accordingly', async ({ mcpPage }) => {
+    const envVar = MCP_SERVERS.github.envVarName;
+    test.skip(!process.env[envVar], `${envVar} environment variable is not set`);
 
     const serverName = MCP_SERVERS.github.serverName;
-    const mcpReadyTab = await mcpPage.openReadyTab();
+    const token = process.env[envVar]!;
 
+    await mcpPage.createServer(serverName, token);
+
+    const readyTab = await mcpPage.openReadyTab();
     await expect
-      .poll(async () => await mcpReadyTab.isServerConnected(serverName), { timeout: TIMEOUTS.SHORT })
+      .poll(async () => await readyTab.isServerConnected(serverName), { timeout: TIMEOUTS.SHORT })
       .toBeTruthy();
+
+    await mcpPage.deleteServer(serverName);
   });
 });
 
