@@ -31,7 +31,7 @@ export interface ReleaseInfo {
 }
 
 interface AssetSpec {
-  assetName: string;
+  assetName: string | string[];
   binaryName: string;
   subdir?: string;
 }
@@ -64,7 +64,10 @@ export const OPENSHELL_DOWNLOAD: GitHubArtifactDownload = {
         binaryName: 'openshell-gateway',
       },
       {
-        assetName: 'openshell-sandbox-x86_64-unknown-linux-gnu.tar.gz',
+        assetName: [
+          'openshell-sandbox-x86_64-unknown-linux-musl.tar.gz',
+          'openshell-sandbox-x86_64-unknown-linux-gnu.tar.gz',
+        ],
         binaryName: 'openshell-sandbox',
       },
       {
@@ -79,7 +82,10 @@ export const OPENSHELL_DOWNLOAD: GitHubArtifactDownload = {
         binaryName: 'openshell-gateway',
       },
       {
-        assetName: 'openshell-sandbox-aarch64-unknown-linux-gnu.tar.gz',
+        assetName: [
+          'openshell-sandbox-aarch64-unknown-linux-musl.tar.gz',
+          'openshell-sandbox-aarch64-unknown-linux-gnu.tar.gz',
+        ],
         binaryName: 'openshell-sandbox',
       },
       {
@@ -220,15 +226,17 @@ export async function downloadBinaries(
     const assetDir = asset.subdir ? join(outputDir, asset.subdir) : outputDir;
     await mkdir(assetDir, { recursive: true });
 
-    const url = `https://github.com/${downloadConfig.repository}/releases/download/v${version}/${asset.assetName}`;
-    const downloadPath = join(assetDir, asset.assetName);
+    const assetNames = Array.isArray(asset.assetName) ? asset.assetName : [asset.assetName];
+    const assetName = assetNames.find(name => digests.has(name)) ?? assetNames[0];
+    const url = `https://github.com/${downloadConfig.repository}/releases/download/v${version}/${assetName}`;
+    const downloadPath = join(assetDir, assetName);
     const binaryPath = join(assetDir, asset.binaryName);
 
     console.log(`downloading ${asset.binaryName} ${version} for ${platform}/${arch}...`);
     await download(url, downloadPath);
-    await verifyChecksum(digests, asset.assetName, downloadPath);
+    await verifyChecksum(digests, assetName, downloadPath);
 
-    if (asset.assetName.endsWith('.tar.gz')) {
+    if (assetName.endsWith('.tar.gz')) {
       console.log(`extracting ${asset.binaryName}...`);
       await extract(downloadPath, assetDir);
       await rm(downloadPath);
