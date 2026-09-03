@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import { expect, test } from '/@/fixtures/provider-fixtures';
-import { CODING_AGENT } from '/@/model/core/types';
+import { CODING_AGENT, TERMINAL_READY_PATTERNS } from '/@/model/core/types';
 
 import { registerWorkspaceLifecycleTests } from './helpers/workspace-lifecycle-helper';
 
@@ -32,7 +32,7 @@ test.describe
         await createPage.verifyModelRuntimes('Claude');
         return createPage.selectDefaultModel();
       },
-      terminalReadyPatterns: [/Claude Code/],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.CLAUDE,
       promptTest: {
         prompt: 'what is 2+2? reply with just the number',
         expectedResponse: /4|insufficient|balance|credit/i,
@@ -52,7 +52,7 @@ test.describe
         await createPage.verifyModelRuntimes('Claude');
         return createPage.selectDefaultModel();
       },
-      terminalReadyPatterns: [/Claude Code/],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.CLAUDE,
       promptTest: {
         prompt: 'what is 2+2? reply with just the number',
         expectedResponse: /4|insufficient|balance|credit/i,

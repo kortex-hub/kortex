@@ -14,12 +14,11 @@ Run from the **repo root** in a **single shell** (exports must persist into the 
 # 1. Required env — set in the same terminal session (never paste API keys into commands)
 export CI=true
 export PODMAN_ENABLED=true          # Required on macOS/Windows
-export WORKSPACE_TESTS_CI=true      # Required when CI=true
 export KAIDEN_BINARY="/path/to/Kaiden.app/Contents/MacOS/Kaiden"
 # OPENAI_API_KEY and ANTHROPIC_API_KEY must already be in the environment (user shell / secrets file)
 
 # 2. Verify secrets and gates (all must print "set" / a positive count)
-echo "PODMAN: ${PODMAN_ENABLED:+set}" "WORKSPACE_CI: ${WORKSPACE_TESTS_CI:+set}" "BINARY: ${KAIDEN_BINARY:+set}"
+echo "PODMAN: ${PODMAN_ENABLED:+set}" "BINARY: ${KAIDEN_BINARY:+set}"
 echo "OPENAI: ${OPENAI_API_KEY:+set}" "ANTHROPIC: ${ANTHROPIC_API_KEY:+set}"
 
 pnpm exec playwright test -c tests/playwright/playwright.config.ts \
@@ -65,7 +64,7 @@ Expect passes (not skips). Then scale up to `--grep @workspace-sandbox` or the f
 
 | Symptom                                                 | Likely cause                                                                         | Fix                                                                                               |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| `No tests found`                                        | `PODMAN_ENABLED` unset, or `CI=true` without `WORKSPACE_TESTS_CI`                    | Export both Podman vars; re-run `--list`                                                          |
+| `No tests found`                                        | `PODMAN_ENABLED` unset, or `GITHUB_ACTIONS` env var present                          | Export `PODMAN_ENABLED` locally; tests skip in GitHub Actions (run on Azure VMs via workflow)     |
 | All tests **skipped**, exit 0                           | `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` missing in this shell                         | Use the terminal where keys are loaded, or `test:e2e:pde2e:workspaces:*` on Windows               |
 | `40 skipped` for a tag grep                             | Same as above, or intentional `skipReason` (full-system / unrestricted on OpenShell) | Check skip reason in output; see [Expected results](#expected-results-on-openshell-macos--podman) |
 | Create fails: `mkdir: cannot create directory '/Users'` | Bad custom mount target (absolute host + empty target)                               | Use `$SOURCES/...` hosts; see [Custom mount conventions](#custom-mount-conventions)               |
@@ -77,11 +76,11 @@ Expect passes (not skips). Then scale up to `--grep @workspace-sandbox` or the f
 
 Agents can **invoke** Playwright and interpret results, but often **cannot get real passes** without inference API keys in the same shell.
 
-| Agent can do                                                | Agent often cannot do                                                                                  |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Read this runbook and run `--list` / `--grep` commands      | Access `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` from the user's 1Password, `.zshrc`, or IDE-only secrets |
-| Set `PODMAN_ENABLED`, `WORKSPACE_TESTS_CI`, `KAIDEN_BINARY` | Treat `N skipped` + exit 0 as success when keys are missing                                            |
-| Diagnose skips using the troubleshooting table              | Run unattended full matrix (~15+ min) without user approval/timeouts                                   |
+| Agent can do                                           | Agent often cannot do                                                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| Read this runbook and run `--list` / `--grep` commands | Access `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` from the user's 1Password, `.zshrc`, or IDE-only secrets |
+| Set `PODMAN_ENABLED`, `KAIDEN_BINARY`                  | Treat `N skipped` + exit 0 as success when keys are missing                                            |
+| Diagnose skips using the troubleshooting table         | Run unattended full matrix (~15+ min) without user approval/timeouts                                   |
 
 **If pre-flight shows `OPENAI: ` / `ANTHROPIC: ` empty:** stop and ask the user to run the command in a terminal where keys are already loaded, or trigger CI/MAPT (`test:e2e:pde2e:workspaces:*` on Windows with deferred secrets). Do not paste API keys into chat or commit them.
 
@@ -214,7 +213,7 @@ Most scenarios pass; full-system and unrestricted scenarios are skipped (see [Sk
 
 **Report hierarchy (HTML):** `OpenCode` → `FS-NONE-NET-DEVELOPER` → `[01] creation` … `[05] removal` (no duplicated scenario ID in step titles).
 
-**Terminal output:** With `WORKSPACE_TESTS_CI=true` (default for workspace runs), the compact list reporter prints only `test.title` — no truncation:
+**Terminal output:** When running in GitHub Actions workspace e2e workflow, the compact list reporter prints only `test.title` — no truncation:
 
 ```
 ✓ 1 WKS-OPENAI [FS-NONE-NET-DEVELOPER] creation (5.6s)
@@ -274,7 +273,7 @@ PDE2E variants (`test:e2e:pde2e:workspaces:*`) restore deferred API keys from `~
 
 ## Playwright Project Config
 
-The `Workspace-Provider` project is defined in `tests/playwright/playwright.config.ts`. It matches `**/provider-specs/workspaces/*.spec.ts` and is gated by `PODMAN_ENABLED` (plus `WORKSPACE_TESTS_CI` when `CI=true`). If the gate is unmet, Playwright reports "No tests found."
+The `Workspace-Provider` project is defined in `tests/playwright/playwright.config.ts`. It matches `**/provider-specs/workspaces/*.spec.ts` and is gated by `PODMAN_ENABLED` and skips when `GITHUB_ACTIONS` is set (GitHub Actions runners). Workspace tests run locally or on Azure VMs via workspace-e2e workflow. If the gate is unmet, Playwright reports "No tests found."
 
 ## Skip Conditions
 

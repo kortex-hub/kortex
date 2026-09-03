@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import { expect, test } from '/@/fixtures/provider-fixtures';
-import { CODING_AGENT, TIMEOUTS } from '/@/model/core/types';
+import { CODING_AGENT, TERMINAL_READY_PATTERNS, TIMEOUTS } from '/@/model/core/types';
 
 import { registerWorkspaceLifecycleTests } from './helpers/workspace-lifecycle-helper';
 
@@ -29,7 +29,7 @@ test.describe
       agent: CODING_AGENT.OPENCODE,
       requiredResource: 'openai',
       selectModel: async createPage => createPage.searchAndSelectDefault('chat'),
-      terminalReadyPatterns: [/Ask anything/i, /openai/i],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.OPENCODE,
       promptTimeout: TIMEOUTS.MODEL_RESPONSE,
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',
@@ -47,7 +47,7 @@ test.describe
       requiredResource: 'openai',
       noProjectFolder: true,
       selectModel: async createPage => createPage.searchAndSelectDefault('chat'),
-      terminalReadyPatterns: [/Ask anything/i, /openai/i],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.OPENCODE,
       promptTimeout: TIMEOUTS.MODEL_RESPONSE,
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',
@@ -64,7 +64,7 @@ test.describe
       agent: CODING_AGENT.OPENCODE,
       requiredResource: 'gemini',
       selectModel: async createPage => createPage.searchAndSelectDefault('gemini', 'Gemini'),
-      terminalReadyPatterns: [/Ask anything/i, /gemini/i],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.OPENCODE,
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',
         expectedResponse: /579|insufficient|balance|credit/i,
@@ -80,7 +80,7 @@ test.describe
       agent: CODING_AGENT.OPENCODE,
       requiredResource: 'claude',
       selectModel: async createPage => createPage.searchAndSelectDefault('claude', 'Claude'),
-      terminalReadyPatterns: [/Ask anything/i, /claude/i],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.OPENCODE,
       promptTest: {
         prompt: 'what is 2+2? reply with just the number',
         expectedResponse: /4|insufficient|balance|credit/i,
@@ -96,7 +96,7 @@ test.describe
       agent: CODING_AGENT.OPENCODE,
       requiredResource: 'mistral',
       selectModel: async createPage => createPage.searchAndSelectDefault('mistral', 'Mistral'),
-      terminalReadyPatterns: [/Ask anything/i, /mistral/i],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.OPENCODE,
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',
         expectedResponse: /579|insufficient|balance|credit/i,
@@ -112,7 +112,7 @@ test.describe
       agent: CODING_AGENT.OPENCODE,
       requiredResource: 'ollama',
       selectModel: async createPage => createPage.searchAndSelectByRuntime('ollama', 'Ollama'),
-      terminalReadyPatterns: [/Ask anything/i, /ollama/i],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.OPENCODE,
       promptTimeout: 120_000,
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',

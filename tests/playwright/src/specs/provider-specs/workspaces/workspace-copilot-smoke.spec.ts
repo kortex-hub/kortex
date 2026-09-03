@@ -17,11 +17,9 @@
  ***********************************************************************/
 
 import { expect, test } from '/@/fixtures/provider-fixtures';
-import { CODING_AGENT } from '/@/model/core/types';
+import { CODING_AGENT, TERMINAL_READY_PATTERNS } from '/@/model/core/types';
 
 import { registerWorkspaceLifecycleTests } from './helpers/workspace-lifecycle-helper';
-
-const COPILOT_READY_PATTERNS = [/Copilot/i];
 
 test.describe
   .serial('GitHub Copilot agent workspace with OpenAI model', { tag: '@workspace-provider' }, () => {
@@ -31,7 +29,7 @@ test.describe
       agent: CODING_AGENT.COPILOT,
       requiredResource: 'openai',
       selectModel: async createPage => createPage.searchAndSelectDefault('chat'),
-      terminalReadyPatterns: COPILOT_READY_PATTERNS,
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.COPILOT,
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',
         expectedResponse: /579|insufficient|balance|credit|quota exceeded/i,
@@ -47,7 +45,7 @@ test.describe
       agent: CODING_AGENT.COPILOT,
       requiredResource: 'claude',
       selectModel: async createPage => createPage.searchAndSelectDefault('claude', 'Claude'),
-      terminalReadyPatterns: COPILOT_READY_PATTERNS,
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.COPILOT,
       promptTest: {
         prompt: 'what is 2+2? reply with just the number',
         expectedResponse: /4|insufficient|balance|credit/i,

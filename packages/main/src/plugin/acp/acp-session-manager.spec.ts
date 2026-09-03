@@ -489,6 +489,119 @@ describe('AcpSessionManager', () => {
     });
   });
 
+  describe('renameSession', () => {
+    test('updates the name field and persists to disk', async () => {
+      const { existsSync } = await import('node:fs');
+      const { readdir, readFile, writeFile } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readdir).mockResolvedValue(['session-rename.json' as never]);
+      vi.mocked(writeFile).mockResolvedValue();
+
+      const storedSession: { info: AcpSessionInfo; events: unknown[] } = {
+        info: {
+          id: 'session-rename',
+          sandboxName: 'sb',
+          sandboxId: 'sb-id',
+          prompt: 'original prompt text',
+          status: 'completed',
+          createdAt: 1000,
+          updatedAt: 2000,
+        },
+        events: [],
+      };
+      vi.mocked(readFile).mockResolvedValue(JSON.stringify(storedSession));
+
+      await manager.init();
+
+      await manager.renameSession('session-rename', 'My Custom Name');
+
+      const sessions = await manager.listSessions();
+      expect(sessions[0]!.name).toBe('My Custom Name');
+      expect(sessions[0]!.updatedAt).toBeGreaterThan(2000);
+      expect(writeFile).toHaveBeenCalledWith(
+        join(FAKE_SESSIONS_DIR, 'session-rename.json'),
+        expect.stringContaining('"My Custom Name"'),
+        'utf-8',
+      );
+      expect(apiSender.send).toHaveBeenCalledWith('acp-session-update');
+    });
+
+    test('persists to disk before broadcasting update event', async () => {
+      const { existsSync } = await import('node:fs');
+      const { readdir, readFile, writeFile } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readdir).mockResolvedValue(['session-order.json' as never]);
+
+      const storedSession: { info: AcpSessionInfo; events: unknown[] } = {
+        info: {
+          id: 'session-order',
+          sandboxName: 'sb',
+          sandboxId: 'sb-id',
+          prompt: 'prompt',
+          status: 'completed',
+          createdAt: 1000,
+          updatedAt: 2000,
+        },
+        events: [],
+      };
+      vi.mocked(readFile).mockResolvedValue(JSON.stringify(storedSession));
+
+      let resolveWrite: () => void;
+      const writePromise = new Promise<void>(resolve => {
+        resolveWrite = resolve;
+      });
+
+      vi.mocked(writeFile).mockReturnValue(writePromise);
+
+      await manager.init();
+      const renamePromise = manager.renameSession('session-order', 'New Name');
+
+      expect(apiSender.send).not.toHaveBeenCalledWith('acp-session-update');
+      resolveWrite!();
+      await renamePromise;
+
+      expect(apiSender.send).toHaveBeenCalledWith('acp-session-update');
+    });
+
+    test('restores previous metadata when persistence fails', async () => {
+      const { existsSync } = await import('node:fs');
+      const { readdir, readFile, writeFile } = await import('node:fs/promises');
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readdir).mockResolvedValue(['session-fail.json' as never]);
+
+      const storedSession: { info: AcpSessionInfo; events: unknown[] } = {
+        info: {
+          id: 'session-fail',
+          sandboxName: 'sb',
+          sandboxId: 'sb-id',
+          prompt: 'prompt',
+          status: 'completed',
+          createdAt: 1000,
+          updatedAt: 2000,
+        },
+        events: [],
+      };
+      vi.mocked(readFile).mockResolvedValue(JSON.stringify(storedSession));
+      vi.mocked(writeFile).mockRejectedValue(new Error('disk error'));
+
+      await manager.init();
+      await expect(manager.renameSession('session-fail', 'Bad Name')).rejects.toThrow('disk error');
+
+      const sessions = await manager.listSessions();
+      expect(sessions[0]!.name).toBeUndefined();
+      expect(sessions[0]!.updatedAt).toBe(2000);
+      expect(apiSender.send).not.toHaveBeenCalledWith('acp-session-update');
+    });
+
+    test('throws when renaming a non-existent session', async () => {
+      await manager.init();
+      await expect(manager.renameSession('nonexistent', 'new name')).rejects.toThrow('Session "nonexistent" not found');
+    });
+  });
+
   describe('persistence of resume fields', () => {
     test('restores acpSessionId, agentCommand, and gatewayName from disk', async () => {
       const { existsSync } = await import('node:fs');

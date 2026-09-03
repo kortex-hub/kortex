@@ -517,6 +517,10 @@ export function initExposure(): void {
     return ipcInvoke('acp:deleteSession', sessionId);
   });
 
+  contextBridge.exposeInMainWorld('renameAcpSession', async (sessionId: string, name: string): Promise<void> => {
+    return ipcInvoke('acp:renameSession', sessionId, name);
+  });
+
   contextBridge.exposeInMainWorld('cancelAcpSession', async (sessionId: string): Promise<void> => {
     return ipcInvoke('acp:cancelSession', sessionId);
   });

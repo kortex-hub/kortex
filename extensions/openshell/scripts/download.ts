@@ -29,6 +29,7 @@ import {
   OPENSHELL_IMAGE_BUILDER_DOWNLOAD,
   type GitHubArtifactDownload,
 } from '../src/openshell-download';
+import { downloadMkfsExt4 } from '../src/e2fsprogs-download';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ASSETS_DIR = resolve(__dirname, '..', 'assets');
@@ -40,6 +41,7 @@ const SUPPORTED_TARGETS: { platform: string; arch: string }[] = [
 ];
 
 interface PackageJson {
+  e2fsprogsVersion: string;
   openshellVersion: string;
   openshellImageBuilderVersion: string;
 }
@@ -131,6 +133,14 @@ if (targets.length === 0) {
         ? resolve(ASSETS_DIR, downloadEntry.outputSubdirectory, `${platform}-${arch}`)
         : resolve(ASSETS_DIR, `${platform}-${arch}`);
       await downloadBinaries(downloadEntry.config, version, platform, arch, outputDir, digests);
+    }
+  }
+
+  if (selectedDownloads.some(entry => entry.id === 'openshell')) {
+    for (const { platform, arch } of targets.filter(
+      target => target.platform === 'linux' || target.platform === 'darwin',
+    )) {
+      await downloadMkfsExt4(pkg.e2fsprogsVersion, arch, platform, resolve(ASSETS_DIR, `${platform}-${arch}`));
     }
   }
 })();

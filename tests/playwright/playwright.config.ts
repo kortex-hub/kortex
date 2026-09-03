@@ -36,9 +36,7 @@ if (podmanAvailable) {
   console.log('Podman enabled - running container-dependent tests');
 }
 
-const useCompactListReporter =
-  process.env.KAIDEN_E2E_COMPACT_REPORTER === 'true' ||
-  (process.env.WORKSPACE_TESTS_CI === 'true' && process.env.KAIDEN_E2E_COMPACT_REPORTER !== 'false');
+const useCompactListReporter = process.env.KAIDEN_E2E_COMPACT_REPORTER === 'true';
 
 const config: PlaywrightTestConfig & {
   projects?: Array<{
@@ -97,7 +95,7 @@ const config: PlaywrightTestConfig & {
         video: 'retain-on-failure',
         screenshot: 'on',
       },
-      testIgnore: podmanAvailable && (!process.env.CI || process.env.WORKSPACE_TESTS_CI) ? [] : ['**/*'],
+      testIgnore: podmanAvailable && !process.env.GITHUB_ACTIONS ? [] : ['**/*'],
     },
     {
       name: 'OpenShift-AI-Provider',

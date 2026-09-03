@@ -58,7 +58,7 @@ export interface WorkspaceLifecycleConfig {
   agent: CodingAgent;
   requiredResource?: ResourceId;
   selectModel: (createPage: AgentWorkspaceCreatePage) => Promise<string | undefined>;
-  terminalReadyPatterns: RegExp[];
+  terminalReadyPatterns: readonly RegExp[];
   prePrompts?: { command: string; expectedResponse: RegExp }[];
   promptTimeout?: number;
   promptTest: {

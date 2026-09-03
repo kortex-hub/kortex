@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import { expect, test } from '/@/fixtures/provider-fixtures';
-import { CODING_AGENT } from '/@/model/core/types';
+import { CODING_AGENT, TERMINAL_READY_PATTERNS } from '/@/model/core/types';
 
 import { registerWorkspaceLifecycleTests } from './helpers/workspace-lifecycle-helper';
 
@@ -29,7 +29,7 @@ test.describe
       agent: CODING_AGENT.OPENCLAW,
       requiredResource: 'ollama',
       selectModel: async createPage => createPage.searchAndSelectByRuntime('ollama', 'Ollama'),
-      terminalReadyPatterns: [/openclaw/i],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.OPENCLAW,
       prePrompts: [{ command: 'talk to agent', expectedResponse: /agent/i }],
       promptTimeout: 120_000,
       promptTest: {
@@ -47,7 +47,7 @@ test.describe
       agent: CODING_AGENT.OPENCLAW,
       requiredResource: 'openai',
       selectModel: async createPage => createPage.searchAndSelectDefault('chat'),
-      terminalReadyPatterns: [/openclaw/i],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.OPENCLAW,
       prePrompts: [{ command: 'talk to agent', expectedResponse: /agent/i }],
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',
@@ -65,7 +65,7 @@ test.describe
       requiredResource: 'openai',
       noProjectFolder: true,
       selectModel: async createPage => createPage.searchAndSelectDefault('chat'),
-      terminalReadyPatterns: [/openclaw/i],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.OPENCLAW,
       prePrompts: [{ command: 'talk to agent', expectedResponse: /agent/i }],
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',
@@ -82,7 +82,7 @@ test.describe
       agent: CODING_AGENT.OPENCLAW,
       requiredResource: 'claude',
       selectModel: async createPage => createPage.searchAndSelectDefault('claude', 'Claude'),
-      terminalReadyPatterns: [/openclaw/i],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.OPENCLAW,
       prePrompts: [{ command: 'talk to agent', expectedResponse: /agent/i }],
       promptTest: {
         prompt: 'what is 2+2? reply with just the number',
@@ -99,7 +99,7 @@ test.describe
       agent: CODING_AGENT.OPENCLAW,
       requiredResource: 'gemini',
       selectModel: async createPage => createPage.searchAndSelectDefault('gemini', 'Gemini'),
-      terminalReadyPatterns: [/openclaw/i],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.OPENCLAW,
       prePrompts: [{ command: 'talk to agent', expectedResponse: /agent/i }],
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',
@@ -116,7 +116,7 @@ test.describe
       agent: CODING_AGENT.OPENCLAW,
       requiredResource: 'mistral',
       selectModel: async createPage => createPage.searchAndSelectDefault('mistral', 'Mistral'),
-      terminalReadyPatterns: [/openclaw/i],
+      terminalReadyPatterns: TERMINAL_READY_PATTERNS.OPENCLAW,
       prePrompts: [{ command: 'talk to agent', expectedResponse: /agent/i }],
       promptTest: {
         prompt: 'what is 123+456? reply with just the number',
