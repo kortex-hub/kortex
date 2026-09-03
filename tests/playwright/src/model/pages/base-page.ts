@@ -18,11 +18,17 @@
 
 import { expect, type Locator, type Page } from '@playwright/test';
 
+import { TIMEOUTS } from '/@/model/core/types';
+
+export const NO_GATEWAY_MESSAGE = 'No usable OpenShell gateways available';
+
 export abstract class BasePage {
   readonly page: Page;
+  readonly noGatewayBanner: Locator;
 
   constructor(page: Page) {
     this.page = page;
+    this.noGatewayBanner = page.getByText(NO_GATEWAY_MESSAGE);
   }
 
   protected async openTab<T extends BasePage>(
@@ -36,6 +42,19 @@ export abstract class BasePage {
     const pageInstance = new PageClass(this.page);
     await pageInstance.waitForLoad();
     return pageInstance;
+  }
+
+  async isGatewayAvailable(timeoutMs: number = TIMEOUTS.SHORT): Promise<boolean> {
+    return this.noGatewayBanner
+      .waitFor({ state: 'visible', timeout: timeoutMs })
+      .then(() => false)
+      .catch(() => true);
+  }
+
+  async assertGatewayAvailable(): Promise<void> {
+    if (!(await this.isGatewayAvailable())) {
+      throw new Error(NO_GATEWAY_MESSAGE);
+    }
   }
 
   abstract waitForLoad(): Promise<void>;

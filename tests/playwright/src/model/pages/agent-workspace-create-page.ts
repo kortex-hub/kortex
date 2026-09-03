@@ -120,6 +120,13 @@ export class AgentWorkspaceCreatePage extends BasePage {
   }
 
   async continueToStep(step: WizardStep): Promise<void> {
+    // Only the Workspace step's Continue button is gated on gateway availability, so restrict
+    // this diagnostic to that transition to avoid misattributing unrelated disabled-button
+    // causes on other steps.
+    const leavesWorkspaceStep = WIZARD_STEPS[WIZARD_STEPS.indexOf(step) - 1] === WIZARD_STEP.WORKSPACE;
+    if (leavesWorkspaceStep && !(await this.continueButton.isEnabled().catch(() => false))) {
+      await this.assertGatewayAvailable();
+    }
     await expect(this.continueButton).toBeEnabled();
     await this.continueButton.click();
     await this.expectStepActive(step);
@@ -315,6 +322,12 @@ export class AgentWorkspaceCreatePage extends BasePage {
   async cancel(): Promise<void> {
     await expect(this.cancelButton).toBeEnabled();
     await this.cancelButton.click();
+  }
+
+  async closeIfOpen(): Promise<void> {
+    if (await this.cancelButton.isVisible().catch(() => false)) {
+      await this.cancel();
+    }
   }
 
   async startWithDefaults(): Promise<void> {

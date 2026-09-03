@@ -31,7 +31,7 @@ import {
 import {
   type AgentModelSetup,
   agentModelSetupSkipMessage,
-  type AgentWorkspaceCreatePage,
+  AgentWorkspaceCreatePage,
   resolveAgentModelConnection,
 } from '/@/model/pages/agent-workspace-create-page';
 import { waitForNavigationReady } from '/@/utils/app-ready';
@@ -52,6 +52,10 @@ const completeAgentModelStep: AgentModelSetup = async (createPage: AgentWorkspac
   test.skip(!connection, agentModelSetupSkipMessage());
   await createPage.completeAvailableAgentModelStep(connection!);
 };
+
+test.afterEach(async ({ page }) => {
+  await new AgentWorkspaceCreatePage(page).closeIfOpen();
+});
 
 test.describe('Workspaces page - initial state', { tag: '@smoke' }, () => {
   test.beforeEach(async ({ page, navigationBar }) => {
