@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { NotificationOptions } from '@podman-desktop/api';
+import type { NotificationOptions } from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 
 import { NotificationImpl } from '/@/plugin/tasks/notification-impl.js';
@@ -71,7 +71,7 @@ export class TaskManager {
           [`${ExperimentalTasksSettings.SectionName}.${ExperimentalTasksSettings.Toast}`]: {
             description: 'Display a notification toast when task is created',
             type: 'boolean',
-            default: false,
+            default: true,
           },
         },
       },

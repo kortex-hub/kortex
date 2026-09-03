@@ -21,8 +21,7 @@ import '@testing-library/jest-dom/vitest';
 import { render, screen } from '@testing-library/svelte';
 import { expect, test } from 'vitest';
 
-import type { JobUI } from '/@/lib/job/JobUI';
-
+import type { JobUI } from '../JobUI';
 import Completions from './Completions.svelte';
 
 test('Expect simple column styling', async () => {

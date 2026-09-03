@@ -17,7 +17,7 @@
  ***********************************************************************/
 import '@testing-library/jest-dom/vitest';
 
-import type { ProviderStatus } from '@podman-desktop/api';
+import type { ProviderStatus } from '@openkaiden/api';
 import { render, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, expect, test, vi } from 'vitest';
@@ -33,6 +33,10 @@ const PROVIDER_MOCK = {
   containerConnections: [],
   kubernetesConnections: [],
   vmConnections: [],
+  inferenceConnections: [],
+  ragConnections: [],
+  chunkConnections: [],
+  mcpConnections: [],
   status: 'ready' as ProviderStatus,
   images: {
     icon: 'my-nice-icon',

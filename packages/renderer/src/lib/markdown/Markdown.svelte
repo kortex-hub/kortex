@@ -15,7 +15,7 @@ UI guidelines -->
   font-size: revert;
   line-height: normal;
   font-weight: revert;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border);
   margin-bottom: 20px;
 }
 
@@ -34,6 +34,34 @@ UI guidelines -->
   opacity: 0.8;
   line-height: normal;
 }
+.markdown :global(table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 16px;
+}
+.markdown :global(th),
+.markdown :global(td) {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 12px;
+  text-align: left;
+}
+.markdown :global(th) {
+  font-weight: 600;
+  background-color: var(--muted);
+  border-bottom-width: 2px;
+}
+.markdown :global(tr:nth-child(even)) {
+  background-color: var(--muted);
+}
+.markdown > :global(pre) {
+  margin-bottom: 8px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background-color: var(--muted);
+  border-radius: 8px;
+  padding: 16px;
+}
 .markdown :global(a) {
   color: var(--pd-link);
   text-decoration: none;
@@ -45,11 +73,18 @@ UI guidelines -->
 </style>
 
 <script lang="ts">
+import './syntax-highlighting.css';
+
+import DOMPurify from 'dompurify';
+import hljs from 'highlight.js';
 import { micromark } from 'micromark';
 import { directive, directiveHtml } from 'micromark-extension-directive';
+import { gfmAutolinkLiteral, gfmAutolinkLiteralHtml } from 'micromark-extension-gfm-autolink-literal';
+import { gfmTable, gfmTableHtml } from 'micromark-extension-gfm-table';
 import { onDestroy, onMount } from 'svelte';
 
 import { button } from './micromark-button-directive';
+import { fallback } from './micromark-fallback-directive';
 import { image } from './micromark-image-directive';
 import { link } from './micromark-link-directive';
 import { createListener } from './micromark-listener-handler';
@@ -61,6 +96,10 @@ let html: string;
 // Optional attribute to specify the markdown to use
 // the user can use: <Markdown>**bold</Markdown> or <Markdown markdown="**bold**" /> syntax
 export let markdown = '';
+
+// Whether to allow raw HTML tags in markdown prose.
+// Safe for model responses; should be disabled for user-authored content.
+export let allowDangerousHtml = false;
 
 // Button micromark related:
 //
@@ -75,34 +114,24 @@ export let inProgressMarkdownCommandExecutionCallback: (
 const eventListeners: EventListener[] = [];
 
 // Render the markdown or the html+micromark markdown reactively
-$: markdown
-  ? (html = micromark(markdown, {
-      extensions: [directive()],
-      htmlExtensions: [directiveHtml({ button, image, link, warnings })],
-    }))
-  : undefined;
+$: html = markdown ? renderMarkdown(markdown, allowDangerousHtml) : '';
 
-function decode(htmlString: string): string {
-  let textArea = document.createElement('textarea');
-  textArea.innerHTML = htmlString;
-  return textArea.value;
-}
-
-onMount(() => {
-  if (markdown) {
-    text = markdown;
-  }
-
+function renderMarkdown(source: string, dangerousHtml: boolean): string {
   // Provide micromark + extensions
-  html = micromark(text, {
-    extensions: [directive()],
-    htmlExtensions: [directiveHtml({ button, image, link, warnings })],
+  const rendered = micromark(source, {
+    allowDangerousHtml: dangerousHtml,
+    extensions: [gfmAutolinkLiteral(), gfmTable(), directive()],
+    htmlExtensions: [
+      gfmAutolinkLiteralHtml(),
+      gfmTableHtml(),
+      directiveHtml({ button, image, link, warnings, '*': fallback }),
+    ],
   });
 
   // remove href values in each anchor using # for links
   // and set the attribute data-pd-jump-in-page
   const parser = new DOMParser();
-  const doc = parser.parseFromString(decode(html), 'text/html');
+  const doc = parser.parseFromString(rendered, 'text/html');
   const links = doc.querySelectorAll('a');
   links.forEach(link => {
     const currentHref = link.getAttribute('href');
@@ -136,7 +165,21 @@ onMount(() => {
     }
   });
 
-  html = doc.body.innerHTML;
+  // Apply syntax highlighting to code blocks
+  doc.querySelectorAll('pre code').forEach(block => {
+    hljs.highlightElement(block as HTMLElement);
+  });
+
+  // Sanitize the output to prevent XSS from raw HTML (e.g. <img onerror="...">)
+  return DOMPurify.sanitize(doc.body.innerHTML, {
+    ADD_ATTR: ['data-pd-jump-in-page', 'data-command', 'data-args', 'data-expandable'],
+  });
+}
+
+onMount(() => {
+  if (markdown) {
+    text = markdown;
+  }
 
   // We create a click listener in order to execute any internal micromark commands
   // We add the clickListener here since we're unable to add it in the directive typescript file.

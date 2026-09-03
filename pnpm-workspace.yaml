@@ -3,11 +3,8 @@ packages:
   - 'packages/*'
   - 'extensions/*'
   - 'extensions/*/packages/*'
-  - 'storybook'
-  - 'website'
-  - 'website-argos'
-  - 'tests/*'
   - 'scripts'
+  - 'tests/playwright'
 onlyBuiltDependencies:
   - '@biomejs/biome'
   - core-js
@@ -21,3 +18,4 @@ onlyBuiltDependencies:
   - ssh2
   - svelte-preprocess
   - win-ca
+  - 'better-sqlite3'

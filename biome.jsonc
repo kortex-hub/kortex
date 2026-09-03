@@ -13,15 +13,7 @@
       "!**/dist/**",
       "!**/output/**",
       "!**/packages/ui/.svelte-kit/**",
-      "!**/exposedIn*.d.ts",
-      "!**/website/.docusaurus/**",
-      "!**/website/api/**",
-      "!**/website/build/**",
-      "!**/website/src/pages/storybook/sidebar.cjs",
-      "!**/website/static/release-notes/**",
-      "!**/website-argos/screenshots/**",
-      "!**/storybook/.storybook/themes.css",
-      "!**/storybook/storybook-static/**"
+      "!**/exposedIn*.d.ts"
     ]
   },
   "javascript": {

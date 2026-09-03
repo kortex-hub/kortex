@@ -15,3 +15,10 @@ dist
 yarn.lock
 extensions/podman/assets/
 extensions-extra/
+kdn-binary/
+extensions/openshell/assets/
+.claude
+output/
+__mocks__/@openkaiden/api.ts
+.agents/skills/svelte-code-writer/
+.agents/skills/svelte-core-bestpractices/

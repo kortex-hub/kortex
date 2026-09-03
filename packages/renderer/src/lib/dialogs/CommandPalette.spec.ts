@@ -400,40 +400,39 @@ describe('Command Palette', () => {
       description: 'Ctrl+Shift+P',
       shortcut: '{Control>}{Shift>}p{/Shift}{/Control}',
       expectedTabText: 'Ctrl+Shift+P All',
+      shouldOpen: false,
     },
     {
       description: 'F1 key',
       shortcut: '{F1}',
       expectedTabText: 'F1 > Commands',
+      shouldOpen: true,
     },
     {
       description: '> key',
       shortcut: '>',
       expectedTabText: 'F1 > Commands',
+      shouldOpen: false,
     },
     {
       description: 'Ctrl+K',
       shortcut: '{Control>}k{/Control}',
       expectedTabText: 'Ctrl+K Documentation',
+      shouldOpen: false,
     },
     {
       description: 'Ctrl+F',
       shortcut: '{Control>}f{/Control}',
       expectedTabText: 'Ctrl+F Go to',
+      shouldOpen: false,
     },
   ];
 
-  test.each(
-    shortcutTabTestCases,
-  )('Expect that $description opens command palette with $expectedTabText tab selected', async ({
+  test.each(shortcutTabTestCases)('Expect that $description selects $expectedTabText tab', async ({
     shortcut,
     expectedTabText,
   }) => {
-    render(CommandPalette);
-
-    // check command palette is not displayed initially
-    const inputBefore = screen.queryByRole('textbox', { name: COMMAND_PALETTE_ARIA_LABEL });
-    expect(inputBefore).not.toBeInTheDocument();
+    render(CommandPalette, { display: true });
 
     // press the shortcut
     await userEvent.keyboard(shortcut);
@@ -457,6 +456,23 @@ describe('Command Palette', () => {
         expect(button).not.toHaveClass('border-[var(--pd-button-tab-border-selected)]');
       }
     });
+  });
+
+  test.each(shortcutTabTestCases)('Check that $description key can open the command palette: $shouldOpen', async ({
+    shortcut,
+    shouldOpen,
+  }) => {
+    render(CommandPalette);
+    // check command palette is not displayed initially
+    const inputBefore = screen.queryByRole('textbox', { name: COMMAND_PALETTE_ARIA_LABEL });
+    expect(inputBefore).not.toBeInTheDocument();
+
+    await userEvent.keyboard(shortcut);
+    if (shouldOpen) {
+      expect(screen.queryByRole('textbox', { name: COMMAND_PALETTE_ARIA_LABEL })).toBeInTheDocument();
+    } else {
+      expect(screen.queryByRole('textbox', { name: COMMAND_PALETTE_ARIA_LABEL })).not.toBeInTheDocument();
+    }
   });
 
   test('Expect that clicking tabs switches between them correctly', async () => {
@@ -546,7 +562,7 @@ describe('Command Palette', () => {
     expect(gotoTab).not.toHaveClass('border-[var(--pd-button-tab-border-selected)]');
 
     // Test that placeholder text is correct for each tab
-    expect(input).toHaveAttribute('placeholder', 'Search Podman Desktop, or type > for commands');
+    expect(input).toHaveAttribute('placeholder', 'Search Kaiden, or type > for commands');
 
     // Click Commands tab and verify placeholder changes
     await userEvent.click(commandsTab);
@@ -559,14 +575,10 @@ describe('Command Palette', () => {
 
     // Click Go to tab and verify placeholder changes
     await userEvent.click(gotoTab);
-    await vi.waitFor(() =>
-      expect(input).toHaveAttribute('placeholder', 'Search images, containers, pods, and other resources'),
-    );
+    await vi.waitFor(() => expect(input).toHaveAttribute('placeholder', 'Search resources'));
 
     // Click All tab and verify placeholder changes back
     await userEvent.click(allTab);
-    await vi.waitFor(() =>
-      expect(input).toHaveAttribute('placeholder', 'Search Podman Desktop, or type > for commands'),
-    );
+    await vi.waitFor(() => expect(input).toHaveAttribute('placeholder', 'Search Kaiden, or type > for commands'));
   });
 });

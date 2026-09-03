@@ -18,7 +18,7 @@
 
 import type { Cluster, KubernetesObject, ObjectCache } from '@kubernetes/client-node';
 import { KubeConfig } from '@kubernetes/client-node';
-import type { Event } from '@podman-desktop/api';
+import type { Event } from '@openkaiden/api';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import type { ContextHealthState } from './context-health-checker.js';

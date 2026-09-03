@@ -1,4 +1,4 @@
-# Guidelines for Podman Desktop Code
+# Guidelines for Kaiden Code
 
 ## Production code
 
@@ -18,6 +18,101 @@ import { WinPlatform } from './win-platform';
 ```typescript
 import type { WSL2Check } from '../checks/windows/wsl2-check';
 ```
+
+### UI Colors
+
+Never use raw Tailwind color classes (e.g. `bg-red-500`, `text-gray-700`, `border-blue-300`) directly. Always use CSS variables from the color-registry so values can be tuned by themes (light/dark mode and custom themes).
+
+Format: `[var(--pd-<color-name>)]`
+
+✅ **Use this pattern:**
+
+```svelte
+<div class="bg-[var(--pd-content-bg)] text-[var(--pd-content-text)]">...</div>
+<Button class="bg-[var(--pd-button-primary-bg)]"/>
+```
+
+🚫 **Instead of:**
+
+```svelte
+<div class="bg-gray-800 text-white">...</div>
+<Button class="bg-purple-500"/>
+```
+
+Non-color Tailwind utilities (layout, spacing, sizing, typography, borders, effects) are fine to use directly.
+
+To find the right color variable:
+
+1. Open `packages/main/src/plugin/color-registry.ts`
+2. Find the appropriate category in `initColors()` (e.g. `initButton()`, `initInput()`, `initTable()`)
+3. Each category has a prefix constant (e.g. `const button = 'button-';`)
+4. The CSS variable is `--pd-` + prefix + specific name (e.g. `--pd-button-primary-bg`)
+
+### Usage of `@podman-desktop/ui-svelte` components
+
+Before creating any new UI component from scratch, **always check `@podman-desktop/ui-svelte` first**. This is the shared component library that Kortex builds on. Available components:
+
+| Component                                                                      | Import                            | Purpose                |
+| ------------------------------------------------------------------------------ | --------------------------------- | ---------------------- |
+| `Button`, `CloseButton`, `Expandable`                                          | `@podman-desktop/ui-svelte`       | Button variants        |
+| `Input`, `NumberInput`, `SearchInput`                                          | `@podman-desktop/ui-svelte`       | Form inputs            |
+| `Checkbox`                                                                     | `@podman-desktop/ui-svelte`       | Checkboxes             |
+| `Dropdown`, `DropdownMenu`                                                     | `@podman-desktop/ui-svelte`       | Selection menus        |
+| `Table`, `TableColumn`, `TableRow`, `TableSimpleColumn`, `TableDurationColumn` | `@podman-desktop/ui-svelte`       | Data tables            |
+| `DetailsPage`, `FormPage`, `NavPage`, `Page`                                   | `@podman-desktop/ui-svelte`       | Page layouts           |
+| `Modal`                                                                        | `@podman-desktop/ui-svelte`       | Modal dialogs          |
+| `Tab`                                                                          | `@podman-desktop/ui-svelte`       | Tab navigation         |
+| `Tooltip`                                                                      | `@podman-desktop/ui-svelte`       | Tooltips               |
+| `Link`                                                                         | `@podman-desktop/ui-svelte`       | Styled links           |
+| `Spinner`, `LinearProgress`                                                    | `@podman-desktop/ui-svelte`       | Loading indicators     |
+| `StatusIcon`                                                                   | `@podman-desktop/ui-svelte`       | Status indicators      |
+| `EmptyScreen`, `FilteredEmptyScreen`                                           | `@podman-desktop/ui-svelte`       | Empty state views      |
+| `ErrorMessage`                                                                 | `@podman-desktop/ui-svelte`       | Error alerts           |
+| `Carousel`                                                                     | `@podman-desktop/ui-svelte`       | Carousel               |
+| `ListOrganizer`                                                                | `@podman-desktop/ui-svelte`       | List management        |
+| `SettingsNavItem`                                                              | `@podman-desktop/ui-svelte`       | Settings navigation    |
+| `Icon`                                                                         | `@podman-desktop/ui-svelte/icons` | Unified icon rendering |
+
+### Usage of Icon component
+
+Use the `Icon` component from `@podman-desktop/ui-svelte/icons` for rendering icons. The Icon component supports FontAwesome `IconDefinition` objects, font class strings (`fas fa-*`, `far fa-*`, `fab fa-*`), data URI images, and Svelte components.
+
+✅ **Use this pattern:**
+
+```svelte
+<script lang="ts">
+import { Icon } from '@podman-desktop/ui-svelte/icons';
+import { faGear } from '@fortawesome/free-solid-svg-icons';
+</script>
+
+<Icon icon={faGear} size="xs" />
+```
+
+🚫 **Instead of:**
+
+```svelte
+<!-- Don't use raw SVG paths or custom icon wrappers -->
+<svg viewBox="0 0 512 512"><path d="M..."/></svg>
+
+<!-- Don't use inline Fa components directly -->
+<Fa icon={faGear} />
+
+<!-- Don't use raw class strings -->
+<i class="fas fa-gear"></i>
+```
+
+### Reuse existing Kortex Svelte components
+
+If `@podman-desktop/ui-svelte` doesn't have what you need, check Kortex's own shared components before building from scratch:
+
+- `packages/renderer/src/lib/ui/` — Kortex-specific UI components (Badge, CopyToClipboard, StatusDot, Steps, SlideToggle, Typeahead, etc.)
+- `packages/renderer/src/lib/button/` — Button components
+- `packages/renderer/src/lib/table/` — Table components
+- `packages/renderer/src/lib/modal/` — Modal dialogs
+- `packages/renderer/src/lib/forms/` — Form components
+- `packages/renderer/src/lib/dialogs/` — Dialog components
+
+If an existing component is close but not quite right, prefer extending it over duplicating it.
 
 ### Svelte
 
@@ -180,9 +275,9 @@ it's up to you to decide if you want to mock them or not, depending on the cover
 
 #### Mock a complete module
 
-Mock completely an imported module with `vi.mock('/path/to/module)`, and define mock implementation for each test with `vi.mocked(function).mock...()`.
+Mock completely an imported module with `vi.mock('/path/to/module')`, and define mock implementation for each test with `vi.mocked(function).mock...()`.
 
-Use `vi.resetAllMocks()` in the top-level `beforeEach` to reset all mocks to a no-op function returning `undefined` before to start each test.
+Use `vi.resetAllMocks()` in the top-level `beforeEach` to reset all mocks to a no-op function returning `undefined` before starting each test.
 
 ```ts
 import { existsSync } from 'node:fs';

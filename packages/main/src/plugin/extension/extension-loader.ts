@@ -19,7 +19,9 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import type * as containerDesktopAPI from '@podman-desktop/api';
+import type * as containerDesktopAPI from '@openkaiden/api';
+import { RegisterServerResult } from '@openkaiden/api';
+import { components } from '@openkaiden/mcp-registry-types';
 import AdmZip from 'adm-zip';
 import { app, clipboard as electronClipboard } from 'electron';
 import { inject, injectable, preDestroy } from 'inversify';
@@ -31,6 +33,7 @@ import {
   KubeGeneratorRegistry,
   type KubernetesGeneratorProvider,
 } from '/@/plugin/kubernetes/kube-generator-registry.js';
+import { RegisterServerResultImpl } from '/@/plugin/mcp/register-server-result-impl.js';
 import { MenuRegistry } from '/@/plugin/menu-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
 import { WebviewRegistry } from '/@/plugin/webview/webview-registry.js';
@@ -47,6 +50,7 @@ import product from '/@product.json' with { type: 'json' };
 
 import { securityRestrictionCurrentHandler } from '../../security-restrictions-handler.js';
 import { getBase64Image, isLinux, isMac, isWindows } from '../../util.js';
+import { AgentRegistry } from '../agent-registry.js';
 import { AuthenticationImpl } from '../authentication.js';
 import { CancellationTokenSource } from '../cancellation-token.js';
 import { Certificates } from '../certificates.js';
@@ -69,9 +73,11 @@ import {
   QuickPickItemKind,
 } from '../input-quickpick/input-quickpick-registry.js';
 import { KubernetesClient } from '../kubernetes/kubernetes-client.js';
+import { MCPRegistry } from '../mcp/mcp-registry.js';
 import { MessageBox } from '../message-box.js';
 import { ModuleLoader } from '../module-loader.js';
 import { OnboardingRegistry } from '../onboarding-registry.js';
+import { OpenShellRegistry } from '../openshell-registry.js';
 import { ProviderRegistry } from '../provider-registry.js';
 import { Proxy } from '../proxy.js';
 import { createHttpPatchedModules } from '../proxy-resolver.js';
@@ -195,6 +201,10 @@ export class ExtensionLoader implements IAsyncDisposable {
     private kubeGeneratorRegistry: KubeGeneratorRegistry,
     @inject(CliToolRegistry)
     private cliToolRegistry: CliToolRegistry,
+    @inject(AgentRegistry)
+    private agentRegistry: AgentRegistry,
+    @inject(OpenShellRegistry)
+    private openShellRegistry: OpenShellRegistry,
     @inject(NotificationRegistry)
     private notificationRegistry: NotificationRegistry,
     @inject(ImageCheckerImpl)
@@ -223,6 +233,8 @@ export class ExtensionLoader implements IAsyncDisposable {
     private extensionApiVersion: ExtensionApiVersion,
     @inject(FeatureRegistry)
     private featureRegistry: FeatureRegistry,
+    @inject(MCPRegistry)
+    private mcpRegistry: MCPRegistry,
   ) {
     this.pluginsDirectory = directories.getPluginsDirectory();
     this.pluginsScanDirectory = directories.getPluginsScanDirectory();
@@ -234,6 +246,7 @@ export class ExtensionLoader implements IAsyncDisposable {
   @preDestroy()
   async asyncDispose(): Promise<void> {
     await this.stopAllExtensions();
+    await this.fileSystemMonitoring.disposeAll();
 
     // clear maps
     this.activatedExtensions.clear();
@@ -341,7 +354,7 @@ export class ExtensionLoader implements IAsyncDisposable {
     }
 
     this.moduleLoader.addOverride(createHttpPatchedModules(this.proxy, this.certificates)); // add patched http and https
-    this.moduleLoader.addOverride({ '@podman-desktop/api': ext => ext.api }); // add podman desktop API
+    this.moduleLoader.addOverride({ '@openkaiden/api': ext => ext.api }); // add kaiden API
 
     this.moduleLoader.overrideRequire();
     // register configuration for the max activation time
@@ -397,7 +410,14 @@ export class ExtensionLoader implements IAsyncDisposable {
   getDisabledExtensionIds(): string[] {
     return this.configurationRegistry
       .getConfiguration(ExtensionLoaderSettings.SectionName)
-      .get<string[]>(ExtensionLoaderSettings.Disabled, []);
+      .get<string[]>(ExtensionLoaderSettings.Disabled, [
+        'kaiden.openai',
+        'kaiden.codex',
+        'kaiden.goose',
+        'kaiden.gemini',
+        'kaiden.cursor',
+        'kaiden.mistral',
+      ]);
   }
 
   setDisabledExtensionIds(disabledExtensionIds: string[]): void {
@@ -962,6 +982,12 @@ export class ExtensionLoader implements IAsyncDisposable {
       getContainerConnections: () => {
         return providerRegistry.getContainerConnections();
       },
+      getInferenceConnections: () => {
+        return providerRegistry.getInferenceConnections();
+      },
+      getRagConnections: () => {
+        return providerRegistry.getRagConnections();
+      },
       getProviderLifecycleContext(
         providerId: string,
         providerConnectionInfo: containerDesktopAPI.ContainerProviderConnection,
@@ -1052,6 +1078,48 @@ export class ExtensionLoader implements IAsyncDisposable {
         const registration = imageRegistry.registerRegistryProvider(registryProvider);
         disposables.push(registration);
         return registration;
+      },
+    };
+
+    const mcpRegistryInstance = this.mcpRegistry;
+    const mcpRegistry: typeof containerDesktopAPI.mcpRegistry = {
+      registerRegistry: (registry: containerDesktopAPI.MCPRegistry): Disposable => {
+        return mcpRegistryInstance.registerMCPRegistry(registry, false);
+      },
+
+      suggestRegistry: (registry: containerDesktopAPI.MCPRegistrySuggestedProvider): Disposable => {
+        return mcpRegistryInstance.suggestMCPRegistry(registry);
+      },
+
+      unregisterRegistry: (registry: containerDesktopAPI.MCPRegistry): void => {
+        mcpRegistryInstance.unregisterMCPRegistry(registry, false);
+      },
+
+      onDidUpdateRegistry: (listener, thisArg, disposables) => {
+        return mcpRegistryInstance.onDidUpdateRegistry(listener, thisArg, disposables);
+      },
+
+      onDidRegisterRegistry: (listener, thisArg, disposables) => {
+        return mcpRegistryInstance.onDidRegisterRegistry(listener, thisArg, disposables);
+      },
+
+      onDidUnregisterRegistry: (listener, thisArg, disposables) => {
+        return mcpRegistryInstance.onDidUnregisterRegistry(listener, thisArg, disposables);
+      },
+      registerRegistryProvider: (registryProvider: containerDesktopAPI.MCPRegistryProvider): Disposable => {
+        const registration = mcpRegistryInstance.registerMCPRegistryProvider(registryProvider);
+        disposables.push(registration);
+        return registration;
+      },
+      registerServer: (server: components['schemas']['ServerDetail']): RegisterServerResult => {
+        const serverId = analyzedExtension.id + '.' + server.name;
+        mcpRegistryInstance.registerInternalMCPServer({ ...server, serverId });
+        return new RegisterServerResultImpl(() => {
+          mcpRegistryInstance.unregisterInternalMCPServer(serverId);
+        }, serverId);
+      },
+      unregisterServer(serverId: string): void {
+        mcpRegistryInstance.unregisterInternalMCPServer(serverId);
       },
     };
 
@@ -1632,6 +1700,51 @@ export class ExtensionLoader implements IAsyncDisposable {
 
     const version = app.getVersion();
 
+    const agents: typeof containerDesktopAPI.agents = {
+      registerAgent(agent: containerDesktopAPI.Agent): containerDesktopAPI.Disposable {
+        const resolvedAgent = agent.icon
+          ? {
+              ...agent,
+              icon: {
+                icon: instance.updateImage(agent.icon.icon, extensionPath),
+                logo: instance.updateImage(agent.icon.logo, extensionPath),
+              },
+            }
+          : agent;
+        const disposable = instance.agentRegistry.registerAgent(resolvedAgent);
+        disposables.push(disposable);
+        return disposable;
+      },
+    };
+
+    const openshell: typeof containerDesktopAPI.openshell = {
+      registerGateway(gateway: containerDesktopAPI.OpenShellGateway): containerDesktopAPI.Disposable {
+        const disposable = instance.openShellRegistry.registerGateway(gateway);
+        disposables.push(disposable);
+        return disposable;
+      },
+      onDidRegisterGateway: (listener, thisArg, disposableArr) => {
+        return instance.openShellRegistry.onDidRegisterGateway(listener, thisArg, disposableArr);
+      },
+      onDidUnregisterGateway: (listener, thisArg, disposableArr) => {
+        return instance.openShellRegistry.onDidUnregisterGateway(listener, thisArg, disposableArr);
+      },
+      onDidUpdateGateway: (listener, thisArg, disposableArr) => {
+        return instance.openShellRegistry.onDidUpdateGateway(listener, thisArg, disposableArr);
+      },
+      registerCLI(cli: containerDesktopAPI.OpenShellCLI): containerDesktopAPI.Disposable {
+        const disposable = instance.openShellRegistry.registerCLI(cli);
+        disposables.push(disposable);
+        return disposable;
+      },
+      onDidRegisterCLI: (listener, thisArg, disposableArr) => {
+        return instance.openShellRegistry.onDidRegisterCLI(listener, thisArg, disposableArr);
+      },
+      onDidUnregisterCLI: (listener, thisArg, disposableArr) => {
+        return instance.openShellRegistry.onDidUnregisterCLI(listener, thisArg, disposableArr);
+      },
+    };
+
     return <typeof containerDesktopAPI>{
       // Types
       Disposable: Disposable,
@@ -1667,6 +1780,9 @@ export class ExtensionLoader implements IAsyncDisposable {
       navigation,
       RepositoryInfoParser,
       net,
+      mcpRegistry,
+      agents,
+      openshell,
     };
   }
 

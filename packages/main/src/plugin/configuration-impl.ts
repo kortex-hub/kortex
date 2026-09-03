@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2022-2025 Red Hat, Inc.
+ * Copyright (C) 2022-2026 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type * as containerDesktopAPI from '@podman-desktop/api';
+import type * as containerDesktopAPI from '@openkaiden/api';
 
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import {
@@ -154,6 +154,13 @@ export class ConfigurationImpl implements containerDesktopAPI.Configuration {
     return typeof obj.endpoint?.apiURL === 'string';
   }
 
+  isInferenceProviderConnection(obj: unknown): obj is containerDesktopAPI.InferenceProviderConnection {
+    if (!obj || typeof obj !== 'object') {
+      return false;
+    }
+    return 'id' in obj && typeof obj.id === 'string' && 'sdk' in obj && 'models' in obj;
+  }
+
   getLocalKey(section?: string): string {
     // first we need to use the global section key
     let searchedKey = this.globalSection;
@@ -175,6 +182,8 @@ export class ConfigurationImpl implements containerDesktopAPI.Configuration {
       return `container-connection:${this.scope.name}.${this.scope.endpoint.socketPath}`;
     } else if (this.isKubernetesProviderConnection(this.scope)) {
       return `kubernetes-connection:${this.scope.endpoint.apiURL}`;
+    } else if (this.isInferenceProviderConnection(this.scope)) {
+      return `inference-connection:${this.scope.id}`;
     } else if (this.scope === CONFIGURATION_SYSTEM_MANAGED_DEFAULTS_SCOPE) {
       return CONFIGURATION_SYSTEM_MANAGED_DEFAULTS_SCOPE;
     } else if (this.scope === CONFIGURATION_SYSTEM_MANAGED_LOCKED_SCOPE) {

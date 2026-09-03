@@ -78,6 +78,16 @@ test('Expect that removing the connection is going back to the previous page', a
     kubernetesProviderConnectionInitialization: false,
     extensionId: '',
     cleanupSupport: false,
+    inferenceConnections: [],
+    ragConnections: [],
+    chunkConnections: [],
+    flowConnections: [],
+    inferenceProviderConnectionCreation: false,
+    inferenceProviderConnectionInitialization: false,
+    ragProviderConnectionCreation: false,
+    ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
 
   providerInfos.set([providerInfo]);
@@ -153,6 +163,16 @@ test('Expect to see error message if action fails', async () => {
     kubernetesProviderConnectionInitialization: false,
     extensionId: '',
     cleanupSupport: false,
+    inferenceConnections: [],
+    ragConnections: [],
+    chunkConnections: [],
+    flowConnections: [],
+    inferenceProviderConnectionCreation: false,
+    inferenceProviderConnectionInitialization: false,
+    ragProviderConnectionCreation: false,
+    ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
 
   providerInfos.set([providerInfo]);
@@ -218,6 +238,16 @@ test('startProviderConnectionLifecycle is called when addConnectionToRestartingQ
     kubernetesProviderConnectionInitialization: false,
     extensionId: '',
     cleanupSupport: false,
+    inferenceConnections: [],
+    ragConnections: [],
+    chunkConnections: [],
+    flowConnections: [],
+    inferenceProviderConnectionCreation: false,
+    inferenceProviderConnectionInitialization: false,
+    ragProviderConnectionCreation: false,
+    ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
 
   providerInfos.set([providerInfo]);

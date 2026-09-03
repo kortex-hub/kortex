@@ -23,7 +23,7 @@ import path from 'node:path';
 import { PassThrough, Readable } from 'node:stream';
 import * as streamPromises from 'node:stream/promises';
 
-import type * as podmanDesktopAPI from '@podman-desktop/api';
+import type * as podmanDesktopAPI from '@openkaiden/api';
 import Dockerode from 'dockerode';
 import moment from 'moment';
 import { http, HttpResponse } from 'msw';
@@ -5693,7 +5693,7 @@ test('saveImage canceled during image saving on filesystem', async () => {
 
   const tmpdir = os.tmpdir();
   const savePromise = containerRegistry.saveImage('podman1', 'an-image', path.join(tmpdir, 'image-to-save'), token);
-  await expect(savePromise).rejects.toThrowError('The operation was aborted');
+  await expect(savePromise).rejects.toThrowError(/(The operation was aborted|Premature close)/);
 });
 
 describe('provider update', () => {

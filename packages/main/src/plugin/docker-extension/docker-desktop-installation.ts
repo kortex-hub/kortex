@@ -197,11 +197,6 @@ export class DockerDesktopInstallation {
   }
 
   async init(): Promise<void> {
-    ipcMain.handle('docker-desktop-plugin:get-preload-script', async (): Promise<string> => {
-      const preloadScriptPath = path.join(__dirname, '../../preload-docker-extension/dist/index.cjs');
-      return `file://${preloadScriptPath}`;
-    });
-
     ipcMain.on(
       'docker-desktop-plugin:install',
       (event: IpcMainEvent, imageName: string, logCallbackId: number): void => {

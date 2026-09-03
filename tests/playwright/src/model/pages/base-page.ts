@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2023 Red Hat, Inc.
+ * Copyright (C) 2025 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,27 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 export abstract class BasePage {
   readonly page: Page;
-  // TODO: extract header and content locators into base class, add that roles into all pages
 
   constructor(page: Page) {
     this.page = page;
   }
 
-  public getPage(): Page {
-    return this.page;
+  protected async openTab<T extends BasePage>(
+    button: Locator,
+    PageClass: new (page: Page) => T,
+    timeout = 10_000,
+  ): Promise<T> {
+    await expect(button).toBeEnabled({ timeout });
+    await button.click({ timeout });
+
+    const pageInstance = new PageClass(this.page);
+    await pageInstance.waitForLoad();
+    return pageInstance;
   }
+
+  abstract waitForLoad(): Promise<void>;
 }

@@ -55,13 +55,13 @@ describe('LinuxXDGDirectories', () => {
     });
 
     test('should use default XDG configuration directory', () => {
-      const expectedConfigDir = path.resolve(os.homedir(), '.config', 'containers', 'podman-desktop');
+      const expectedConfigDir = path.resolve(os.homedir(), '.config', 'kaiden');
 
       expect(provider.getConfigurationDirectory()).toBe(expectedConfigDir);
     });
 
     test('should use default XDG data directory', () => {
-      const expectedDataDir = path.resolve(os.homedir(), '.local', 'share', 'containers', 'podman-desktop');
+      const expectedDataDir = path.resolve(os.homedir(), '.local', 'share', 'kaiden');
 
       expect(provider.getDataDirectory()).toBe(expectedDataDir);
     });
@@ -84,6 +84,7 @@ describe('LinuxXDGDirectories', () => {
       expect(provider.getExtensionsStorageDirectory()).toBe(path.resolve(dataDir, 'extensions-storage'));
       expect(provider.getContributionStorageDir()).toBe(path.resolve(dataDir, 'contributions'));
       expect(provider.getSafeStorageDirectory()).toBe(path.resolve(dataDir, 'safe-storage'));
+      expect(provider.getSemanticRoutersDirectory()).toBe(path.resolve(dataDir, 'semantic-routers'));
     });
   });
 
@@ -102,8 +103,8 @@ describe('LinuxXDGDirectories', () => {
       const configDir = provider.getConfigurationDirectory();
       const dataDir = provider.getDataDirectory();
 
-      expect(configDir).toBe(path.resolve(customConfigHome, 'containers', 'podman-desktop'));
-      expect(dataDir).toBe(path.resolve(customDataHome, 'containers', 'podman-desktop'));
+      expect(configDir).toBe(path.resolve(customConfigHome, 'kaiden'));
+      expect(dataDir).toBe(path.resolve(customDataHome, 'kaiden'));
     });
 
     test('should use custom paths for data subdirectories', () => {
@@ -113,7 +114,7 @@ describe('LinuxXDGDirectories', () => {
 
       provider = new LinuxXDGDirectories();
 
-      const expectedDataDir = path.resolve(customDataHome, 'containers', 'podman-desktop');
+      const expectedDataDir = path.resolve(customDataHome, 'kaiden');
 
       expect(provider.getPluginsDirectory()).toBe(path.resolve(expectedDataDir, 'plugins'));
       expect(provider.getExtensionsStorageDirectory()).toBe(path.resolve(expectedDataDir, 'extensions-storage'));
@@ -129,7 +130,7 @@ describe('LinuxXDGDirectories', () => {
 
     test('should return flatpak managed folder path when running in Flatpak', () => {
       // biome-ignore lint/complexity/useLiteralKeys: FLATPAK_ID comes from an index signature
-      process.env['FLATPAK_ID'] = 'io.podman_desktop.PodmanDesktop';
+      process.env['FLATPAK_ID'] = 'ai.openkaiden.Kaiden';
 
       provider = new LinuxXDGDirectories();
 

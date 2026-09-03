@@ -42,6 +42,25 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
     case NavigationPage.DASHBOARD:
       router.goto('/');
       break;
+    case NavigationPage.FLOWS:
+      router.goto('/flows');
+      break;
+    case NavigationPage.FLOW_CREATE:
+      router.goto(`/flows/create`);
+      break;
+    case NavigationPage.FLOW_DETAILS:
+      router.goto(
+        `/flows/${encodeURIComponent(request.parameters.providerId)}/${encodeURIComponent(request.parameters.connectionName)}/${encodeURIComponent(request.parameters.flowId)}/summary`,
+      );
+      break;
+    case NavigationPage.FLOW_RUN:
+      router.goto(
+        `/flows/${encodeURIComponent(request.parameters.providerId)}/${encodeURIComponent(request.parameters.connectionName)}/${encodeURIComponent(request.parameters.flowId)}/run`,
+      );
+      break;
+    case NavigationPage.MCP_INSTALL_FROM_REGISTRY:
+      router.goto(`/mcp-install-from-registry/${encodeURIComponent(request.parameters.serverId)}`);
+      break;
     case NavigationPage.CONTAINERS:
       router.goto('/containers');
       break;
@@ -153,6 +172,66 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
       break;
     case NavigationPage.EXTENSIONS_CATALOG:
       router.goto(`/extensions?screen=catalog&searchTerm=${encodeURIComponent(request.parameters.searchTerm ?? '')}`);
+      break;
+    case NavigationPage.MCP_DETAILS:
+      router.goto(`/mcps/${encodeURIComponent(request.parameters.id)}/summary`);
+      break;
+    case NavigationPage.AGENT_WORKSPACES:
+      router.goto('/agent-workspaces');
+      break;
+    case NavigationPage.AGENT_WORKSPACE_CREATE:
+      router.goto('/agent-workspaces/create');
+      break;
+    case NavigationPage.CODING_AGENTS:
+      router.goto('/coding-agents');
+      break;
+    case NavigationPage.SKILL_DETAILS:
+      router.goto(`/skills/${encodeURIComponent(request.parameters.name)}/summary`);
+      break;
+    case NavigationPage.RAG_ENVIRONMENTS:
+      router.goto('/rag-environments/');
+      break;
+    case NavigationPage.RAG_ENVIRONMENT_DETAILS:
+      router.goto(`/rag-environments/${encodeURIComponent(request.parameters.name)}/summary`);
+      break;
+    case NavigationPage.SKILLS:
+      router.goto('/skills');
+      break;
+    case NavigationPage.SKILL_CREATE:
+      router.goto('/skills/create');
+      break;
+    case NavigationPage.SECRET_VAULT:
+      router.goto('/secret-vault');
+      break;
+    case NavigationPage.SECRET_VAULT_CREATE:
+      router.goto('/secret-vault/create');
+      break;
+    case NavigationPage.SECRET_VAULT_DETAILS:
+      router.goto(`/secret-vault/${encodeURIComponent(request.parameters.id)}/summary`);
+      break;
+    case NavigationPage.PROJECTS:
+      router.goto('/projects');
+      break;
+    case NavigationPage.PROJECT_DETAILS:
+      router.goto(`/projects/${encodeURIComponent(request.parameters.id)}/overview`);
+      break;
+    case NavigationPage.PROJECT_CREATE:
+      router.goto('/projects/create');
+      break;
+    case NavigationPage.MODELS:
+      router.goto('/models');
+      break;
+    case NavigationPage.SEMANTIC_ROUTERS:
+      router.goto('/models/semantic-routers');
+      break;
+    case NavigationPage.ACP_SESSIONS:
+      router.goto('/acp-sessions');
+      break;
+    case NavigationPage.ACP_SESSION_CREATE:
+      router.goto('/acp-sessions/new');
+      break;
+    case NavigationPage.ACP_SESSION_DETAILS:
+      router.goto(`/acp-sessions/${encodeURIComponent(request.parameters.id)}`);
       break;
   }
 };

@@ -27,6 +27,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   prepare-version:
@@ -38,7 +39,7 @@ jobs:
       github-tag: ${{ steps.set-version.outputs.github-tag }}
       is-tag: ${{ steps.set-version.outputs.is-tag }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set version / dist-tag depending on ref
         id: set-version
@@ -61,8 +62,8 @@ jobs:
             # main branch (or others if you add them)
             CURRENT_DAY=$(date +'%Y%m%d')
             SHORT_SHA1=$(git rev-parse --short HEAD)
-            PODMAN_DESKTOP_VERSION=$(jq -r '.version' package.json)
-            STRIPPED_VERSION=${PODMAN_DESKTOP_VERSION%-next}
+            KAIDEN_VERSION=$(jq -r '.version' package.json)
+            STRIPPED_VERSION=${KAIDEN_VERSION%-next}
             TAG_PATTERN=${STRIPPED_VERSION}-next.$(date +'%Y%m%d%H%M')-${SHORT_SHA1}
             GITHUB_TAG="v${TAG_PATTERN}"
 
@@ -81,22 +82,26 @@ jobs:
     # For tag releases, require an environment (so people can approve it)
     environment: ${{ needs.prepare-version.outputs.is-tag == 'true' && 'npmjs-publication' || '' }}
     permissions:
+      contents: read
+      packages: read
       id-token: write
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         name: Install pnpm
         with:
           run_install: false
 
-      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24 # 24.x for npm publish with OIDC
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Show publish parameters
         run: |
@@ -111,40 +116,8 @@ jobs:
           echo "Setting version to ${VERSION}"
 
           sed -i  "s#\"version\": \"\(.*\)\",#\"version\": \"${VERSION}\",#g" packages/extension-api/package.json
-          sed -i  "s#\"version\": \"\(.*\)\",#\"version\": \"${VERSION}\",#g" packages/webview-api/package.json
-          sed -i  "s#\"version\": \"\(.*\)\",#\"version\": \"${VERSION}\",#g" packages/ui/package.json
-          sed -i  "s#\"version\": \"\(.*\)\",#\"version\": \"${VERSION}\",#g" tests/playwright/package.json
-          sed -i  "s#\"version\": \"\(.*\)\",#\"version\": \"${VERSION}\",#g" extensions/podman/packages/api/package.json
-          sed -i  "s#\"version\": \"\(.*\)\",#\"version\": \"${VERSION}\",#g" extensions/docker/packages/api/package.json
 
       - name: Publish Extension API to npmjs
         run: |
           cd packages/extension-api
-          pnpm publish --provenance --tag ${{ needs.prepare-version.outputs.dist-tag }} --no-git-checks --access public
-
-      - name: Publish Webview API to npmjs
-        run: |
-          cd packages/webview-api
-          pnpm publish --provenance --tag ${{ needs.prepare-version.outputs.dist-tag }} --no-git-checks --access public
-
-      - name: Publish ui/svelte to npmjs
-        run: |
-          cd packages/ui
-          pnpm build
-          pnpm publish --provenance --tag ${{ needs.prepare-version.outputs.dist-tag }} --no-git-checks --access public
-
-      - name: Publish tests-playwright to npmjs
-        run: |
-          cd tests/playwright
-          pnpm build
-          pnpm publish --provenance --tag ${{ needs.prepare-version.outputs.dist-tag }} --no-git-checks --access public
-
-      - name: Publish Podman Extension API to npmjs
-        run: |
-          cd extensions/podman/packages/api
-          pnpm publish --provenance --tag ${{ needs.prepare-version.outputs.dist-tag }} --no-git-checks --access public
-
-      - name: Publish Docker Extension API to npmjs
-        run: |
-          cd extensions/docker/packages/api
           pnpm publish --provenance --tag ${{ needs.prepare-version.outputs.dist-tag }} --no-git-checks --access public

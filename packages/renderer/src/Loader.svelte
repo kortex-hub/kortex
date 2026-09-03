@@ -3,27 +3,27 @@ import { onDestroy, onMount, tick } from 'svelte';
 import { router } from 'tinro';
 
 import App from './App.svelte';
-import SealRocket from './lib/images/SealRocket.svelte';
+import LoaderAnimation from './lib/images/LoaderAnimation.svelte';
 import ColorsStyle from './lib/style/ColorsStyle.svelte';
 import { lastPage } from './stores/breadcrumb';
 
-let systemReady = false;
+let systemReady = $state(false);
+let showTitle = $state(false);
 
-let toggle = false;
-
-let loadingSequence: NodeJS.Timeout;
-
+let titleTimer: NodeJS.Timeout;
 let extensionsStarterChecker: NodeJS.Timeout;
 
 onMount(async () => {
-  loadingSequence = setInterval(() => {
-    toggle = !toggle;
-  }, 100);
+  titleTimer = setTimeout(() => {
+    showTitle = true;
+  }, 2_000);
+
   // check if the server side is ready
   try {
     const isReady = await window.extensionSystemIsReady();
     systemReady = isReady;
     if (systemReady) {
+      clearTimeout(titleTimer);
       window.dispatchEvent(new CustomEvent('system-ready', {}));
     }
   } catch (error) {
@@ -46,9 +46,7 @@ onMount(async () => {
 });
 
 onDestroy(() => {
-  if (loadingSequence) {
-    clearInterval(loadingSequence);
-  }
+  clearTimeout(titleTimer);
 
   if (extensionsStarterChecker) {
     clearInterval(extensionsStarterChecker);
@@ -80,9 +78,9 @@ window.events?.receive('install-extension:from-id', (extensionId: unknown) => {
 window.events.receive('starting-extensions', (value: unknown) => {
   systemReady = value === 'true';
   if (systemReady) {
+    clearTimeout(titleTimer);
     window.dispatchEvent(new CustomEvent('system-ready', {}));
   }
-  clearInterval(loadingSequence);
 });
 </script>
 
@@ -91,8 +89,8 @@ window.events.receive('starting-extensions', (value: unknown) => {
 {#if !systemReady}
   <main class="flex flex-row w-screen h-screen justify-center" style="-webkit-app-region: drag;">
     <div class="flex flex-col justify-center">
-      <SealRocket />
-      <h1 class="text-center text-xl">Initializing...</h1>
+      <LoaderAnimation />
+      <h1 class="text-center text-xl" class:invisible={!showTitle}>Initializing...</h1>
     </div>
   </main>
 {:else}

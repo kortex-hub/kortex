@@ -23,7 +23,7 @@ import type {
   ImageCheckerProviderMetadata,
   ImageChecks,
   ImageInfo,
-} from '@podman-desktop/api';
+} from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';

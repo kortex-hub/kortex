@@ -1,0 +1,27 @@
+{
+  "name": "mcp-registries",
+  "displayName": "Default MCP Registries",
+  "description": "Adds default MCP registries",
+  "version": "0.4.0-next",
+  "icon": "icon.png",
+  "publisher": "kaiden",
+  "license": "Apache-2.0",
+  "engines": {
+    "kaiden": "^0.0.1"
+  },
+  "main": "./dist/extension.js",
+  "source": "./src/extension.ts",
+  "scripts": {
+    "build": "vite build && node ./scripts/build.js",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest watch --coverage",
+    "watch": "vite build --watch"
+  },
+  "devDependencies": {
+    "@openkaiden/api": "workspace:*",
+    "adm-zip": "^0.5.16",
+    "mkdirp": "^3.0.1",
+    "vite": "^7.1.2",
+    "vitest": "^4.0.10"
+  }
+}

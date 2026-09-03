@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { CliToolInstaller, CliToolOptions, CliToolSelectUpdate, CliToolUpdate, Logger } from '@podman-desktop/api';
+import type { CliToolInstaller, CliToolOptions, CliToolSelectUpdate, CliToolUpdate, Logger } from '@openkaiden/api';
 import { afterEach, beforeEach, expect, suite, test, vi } from 'vitest';
 
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
@@ -535,6 +535,7 @@ suite('cli module', () => {
       displayName: 'tool-display-name',
       markdownDescription: 'markdown description',
       images: {},
+      path: '/usr/bin/tool-name',
     };
     const newCliTool = cliToolRegistry.createCliTool(extensionInfo, options);
     const cliToolInfo = cliToolRegistry['convertToCliToolInfo'](newCliTool);
@@ -544,5 +545,6 @@ suite('cli module', () => {
     expect(cliToolInfo.displayName).equals(newCliTool.displayName);
     expect(cliToolInfo.markdownDescription).equals(newCliTool.markdownDescription);
     expect(cliToolInfo.version).equals(newCliTool.version);
+    expect(cliToolInfo.path).equals(newCliTool.path);
   });
 });

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { CustomPickItem, QuickPickItem } from '@podman-desktop/api';
+import type { CustomPickItem, QuickPickItem } from '@openkaiden/api';
 
 export interface QuickPickOptions {
   placeHolder?: string;

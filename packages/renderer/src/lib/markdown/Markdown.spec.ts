@@ -53,7 +53,7 @@ describe('Custom button', () => {
     const markdownContent = screen.getByRole('region', { name: 'markdown-content' });
     expect(markdownContent).toBeInTheDocument();
     expect(markdownContent).toContainHTML(
-      '<a class="px-4 py-[6px] rounded-[4px] text-white! text-[13px] whitespace-nowrap bg-purple-600 hover:bg-purple-500! no-underline!">Name of the button</a>',
+      '<a class="px-4 py-[6px] rounded-[4px] text-[var(--pd-button-text)]! text-[13px] whitespace-nowrap bg-[var(--pd-button-primary-bg)] hover:bg-[var(--pd-button-primary-hover-bg)]! no-underline!">Name of the button</a>',
     );
   });
 
@@ -71,7 +71,7 @@ describe('Custom button', () => {
     const markdownContent = screen.getByRole('region', { name: 'markdown-content' });
     expect(markdownContent).toBeInTheDocument();
     expect(markdownContent).toContainHTML(
-      '<button class="px-4 py-[6px] rounded-[4px] text-white text-[13px] whitespace-nowrap bg-purple-600 hover:bg-purple-500 no-underline"',
+      '<button class="px-4 py-[6px] rounded-[4px] text-[var(--pd-button-text)] text-[13px] whitespace-nowrap bg-[var(--pd-button-primary-bg)] hover:bg-[var(--pd-button-primary-hover-bg)] no-underline"',
     );
     expect(markdownContent).toContainHTML('data-command="command"');
     expect(markdownContent).toContainHTML('Name of the button</button>');
@@ -125,7 +125,10 @@ describe('Custom link', () => {
   });
 
   test('expect a tags to be renderer as working links', async () => {
-    await waitRender({ markdown: '- **important info**: some more info. <a href="/some/link">click here to test</a>' });
+    await waitRender({
+      markdown: '- **important info**: some more info. <a href="/some/link">click here to test</a>',
+      allowDangerousHtml: true,
+    });
     const markdownContent = screen.getByRole('region', { name: 'markdown-content' });
     expect(markdownContent).toBeInTheDocument();
     expect(markdownContent).toContainHTML('<a href="/some/link">click here to test</a>');
@@ -250,6 +253,65 @@ describe('Custom warnings', () => {
 
     const buttonFailedStatus = await screen.findByText('command title failed');
     expect(buttonFailedStatus).toBeDefined();
+  });
+});
+
+test('Expect to render a markdown table as an HTML table', async () => {
+  await waitRender({ markdown: '| Header 1 | Header 2 |\n| --- | --- |\n| Cell 1 | Cell 2 |' });
+  const markdownContent = screen.getByRole('region', { name: 'markdown-content' });
+  expect(markdownContent).toBeInTheDocument();
+  const table = screen.getByRole('table');
+  expect(table).toBeInTheDocument();
+  expect(table).toContainHTML('<th>Header 1</th>');
+  expect(table).toContainHTML('<td>Cell 1</td>');
+});
+
+test('Expect XML tags to be preserved in code blocks', async () => {
+  const markdown = '```xml\n<dependency>\n  <groupId>io.quarkus</groupId>\n</dependency>\n```';
+  await waitRender({ markdown });
+  const markdownContent = screen.getByRole('region', { name: 'markdown-content' });
+  expect(markdownContent).toBeInTheDocument();
+  const codeBlock = markdownContent.querySelector('pre code');
+  expect(codeBlock).toBeInTheDocument();
+  expect(codeBlock!.textContent).toContain('<dependency>');
+  expect(codeBlock!.textContent).toContain('<groupId>io.quarkus</groupId>');
+  expect(codeBlock!.textContent).toContain('</dependency>');
+});
+
+describe('XSS sanitization', () => {
+  test('Expect script tags to be stripped', async () => {
+    await waitRender({ markdown: '<script>alert(1)</script>', allowDangerousHtml: true });
+    const markdownContent = screen.getByRole('region', { name: 'markdown-content' });
+    expect(markdownContent.innerHTML).not.toContain('<script>');
+  });
+
+  test('Expect event handlers to be stripped from img tags', async () => {
+    await waitRender({ markdown: '<img src=x onerror="alert(1)">', allowDangerousHtml: true });
+    const markdownContent = screen.getByRole('region', { name: 'markdown-content' });
+    expect(markdownContent.innerHTML).not.toContain('onerror');
+  });
+
+  test('Expect safe HTML tags to be preserved', async () => {
+    await waitRender({ markdown: '<b>bold</b> and <em>italic</em>', allowDangerousHtml: true });
+    const markdownContent = screen.getByRole('region', { name: 'markdown-content' });
+    expect(markdownContent).toContainHTML('<b>bold</b>');
+    expect(markdownContent).toContainHTML('<em>italic</em>');
+  });
+});
+
+describe('Unrecognized directives', () => {
+  test('Expect text with colon-separated words to be preserved', async () => {
+    await waitRender({ markdown: 'look at that:poof!' });
+    const markdownContent = screen.getByRole('region', { name: 'markdown-content' });
+    expect(markdownContent).toBeInTheDocument();
+    expect(markdownContent.textContent).toContain('look at that:poof!');
+  });
+
+  test('Expect unrecognized directive with label to be preserved', async () => {
+    await waitRender({ markdown: ':unknown[some label]' });
+    const markdownContent = screen.getByRole('region', { name: 'markdown-content' });
+    expect(markdownContent).toBeInTheDocument();
+    expect(markdownContent.textContent).toContain(':unknown[some label]');
   });
 });
 

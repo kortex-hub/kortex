@@ -21,7 +21,7 @@ import type {
   HostConfigPortBinding,
   PodContainerInfo,
   PodCreatePortOptions,
-} from '@podman-desktop/api';
+} from '@openkaiden/api';
 
 import type { ProviderContainerConnectionInfo } from './provider-info.js';
 

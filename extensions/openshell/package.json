@@ -1,0 +1,90 @@
+{
+  "name": "openshell",
+  "displayName": "OpenShell",
+  "description": "Registers the openshell CLI binary for managing sandboxed workspaces.",
+  "version": "0.4.0-next",
+  "openshellVersion": "0.0.113",
+  "openshellImageBuilderVersion": "0.9.0",
+  "e2fsprogsVersion": "1.47.4",
+  "icon": "icon.png",
+  "publisher": "kaiden",
+  "license": "Apache-2.0",
+  "engines": {
+    "kaiden": "^0.0.1"
+  },
+  "main": "./dist/extension.js",
+  "source": "./src/extension.ts",
+  "contributes": {
+    "configuration": {
+      "title": "OpenShell",
+      "properties": {
+        "openshell.binary.path": {
+          "type": "string",
+          "format": "file",
+          "scope": "DEFAULT",
+          "default": "",
+          "description": "Custom path to OpenShell binary (Default is blank)"
+        },
+        "openshell.binary.resolution": {
+          "type": "string",
+          "enum": [
+            "bundled,storage,system",
+            "bundled,system,storage",
+            "storage,bundled,system",
+            "storage,system,bundled",
+            "system,bundled,storage",
+            "system,storage,bundled"
+          ],
+          "scope": "DEFAULT",
+          "default": "bundled,storage,system",
+          "description": "Binary resolution priority order. Custom config path is always checked first regardless of this setting."
+        },
+        "openshell.imageBuilder.binary.path": {
+          "type": "string",
+          "format": "file",
+          "scope": "DEFAULT",
+          "default": "",
+          "description": "Custom path to openshell-image-builder binary (Default is blank)"
+        },
+        "openshell.gateway.binary.path": {
+          "type": "string",
+          "format": "file",
+          "scope": "DEFAULT",
+          "when": "!isWindows",
+          "default": "",
+          "description": "Custom path to openshell-gateway binary (Default is blank)"
+        },
+        "openshell.gateway.pollInterval": {
+          "type": "number",
+          "scope": "DEFAULT",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 3600,
+          "description": "Interval in seconds between OpenShell gateway state checks."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "vite build && node ./scripts/build.js && tsx ./scripts/download.ts",
+    "download": "tsx ./scripts/download.ts --component openshell",
+    "download:all": "tsx ./scripts/download.ts --component openshell --all",
+    "download:image-builder": "tsx ./scripts/download.ts --component image-builder",
+    "download:image-builder:all": "tsx ./scripts/download.ts --component image-builder --all",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest watch --coverage",
+    "postinstall": "tsx ./scripts/download.ts",
+    "watch": "vite build --watch"
+  },
+  "dependencies": {
+    "inversify": "^7.10.4",
+    "tar": "^7.5.3"
+  },
+  "devDependencies": {
+    "@openkaiden/api": "workspace:*",
+    "mkdirp": "^3.0.1",
+    "tsx": "^4.19.4",
+    "vite": "^7.1.2",
+    "vitest": "^4.0.10"
+  }
+}

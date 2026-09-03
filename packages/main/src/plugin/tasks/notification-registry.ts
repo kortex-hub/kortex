@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type * as containerDesktopAPI from '@podman-desktop/api';
+import type * as containerDesktopAPI from '@openkaiden/api';
 import { Notification } from 'electron';
 import { inject, injectable } from 'inversify';
 

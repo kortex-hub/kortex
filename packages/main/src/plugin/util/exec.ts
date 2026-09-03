@@ -22,7 +22,7 @@ import { homedir } from 'node:os';
 import { delimiter, join } from 'node:path';
 
 import * as sudo from '@expo/sudo-prompt';
-import type { RunError, RunOptions, RunResult } from '@podman-desktop/api';
+import type { RunError, RunOptions, RunResult } from '@openkaiden/api';
 
 import { isLinux, isMac, isWindows } from '../../util.js';
 import type { Proxy } from '../proxy.js';

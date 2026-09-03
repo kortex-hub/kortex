@@ -25,6 +25,10 @@ let providerStatus = $derived.by(() => {
       return provider.kubernetesConnections[0].status;
     } else if (provider.vmConnections.length > 0) {
       return provider.vmConnections[0].status;
+    } else if (provider.inferenceConnections.length > 0) {
+      return provider.inferenceConnections[0].status;
+    } else if (provider.ragConnections.length > 0) {
+      return provider.ragConnections[0].status;
     } else {
       return provider.status;
     }

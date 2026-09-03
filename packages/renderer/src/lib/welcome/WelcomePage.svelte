@@ -4,17 +4,21 @@ import { onMount } from 'svelte';
 import { router } from 'tinro';
 
 import IconImage from '/@/lib/appearance/IconImage.svelte';
+import { guidedSetupSteps } from '/@/lib/guided-setup/guided-setup-steps';
+import GuidedSetup from '/@/lib/guided-setup/GuidedSetup.svelte';
 import DesktopIcon from '/@/lib/images/DesktopIcon.svelte';
 import { onboardingList } from '/@/stores/onboarding';
 import { providerInfos } from '/@/stores/providers';
 import type { OnboardingInfo } from '/@api/onboarding';
 import type { TelemetryMessages } from '/@api/telemetry';
+import type { WelcomeMessages } from '/@api/welcome-info';
 
 import bgImage from './background.png';
 import { WelcomeUtils } from './welcome-utils';
 
 export let showWelcome = false;
 export let showTelemetry = false;
+let showGuidedSetup = false;
 
 let telemetry = true;
 let telemetryMessages: TelemetryMessages;
@@ -29,6 +33,7 @@ interface OnboardingInfoWithAdditionalInfo extends OnboardingInfo {
 }
 
 let onboardingProviders: OnboardingInfoWithAdditionalInfo[] = [];
+let welcomeMessages: WelcomeMessages;
 
 // Get every provider that has a container connections
 $: providersWithContainerConnections = $providerInfos.filter(provider => provider.containerConnections.length > 0);
@@ -57,6 +62,7 @@ onMount(async () => {
     showWelcome = true;
   }
   router.goto('/');
+  welcomeMessages = await window.getWelcomeMessages();
 
   const telemetryPrompt = await welcomeUtils.havePromptedForTelemetry();
   if (!telemetryPrompt) {
@@ -68,6 +74,10 @@ onMount(async () => {
   if (showWelcome) {
     await window.updateConfigurationValue(`releaseNotesBanner.show`, podmanDesktopVersion);
   }
+
+  window.events?.receive('onboarding:restart', () => {
+    showWelcome = true;
+  });
 });
 
 async function closeWelcome(): Promise<void> {
@@ -95,6 +105,15 @@ function startOnboardingQueue(): void {
   const queryParams = new URLSearchParams({ ids: extensionIds.join(',') }).toString();
   router.goto(`/global-onboarding?${queryParams}`);
 }
+
+function openGuidedSetup(): void {
+  showGuidedSetup = true;
+}
+
+async function handleGuidedSetupClose(): Promise<void> {
+  showGuidedSetup = false;
+  await closeWelcome();
+}
 </script>
 
 {#if showWelcome}
@@ -103,18 +122,18 @@ function startOnboardingQueue(): void {
     style="background-image: url({bgImage}); background-position: 50% -175%; background-size: 100% 75%">
     <!-- Header -->
     <div class="flex flex-row flex-none backdrop-blur-sm p-6 mt-10">
-      <div class="flex flex-auto text-lg font-bold">Get started with Podman Desktop</div>
+      <div class="flex flex-auto text-lg font-bold">{welcomeMessages?.getStartedMessage}</div>
     </div>
 
     <!-- Body -->
     <div class="flex flex-col justify-center content-center flex-auto backdrop-blur-sm p-2 overflow-y-auto">
       <div class="flex justify-center p-2"><DesktopIcon /></div>
       <div class="flex justify-center text-lg font-bold p-2">
-        <span class="mr-2">🎉</span>Welcome to Podman Desktop v{podmanDesktopVersion} !
+        <span class="mr-2">🎉</span>{welcomeMessages?.welcomeMessage} v{podmanDesktopVersion} !
       </div>
-      <div class="flex flex-row justify-center">
-        <div class="bg-[var(--pd-content-card-inset-bg)] px-4 pb-4 pt-2 rounded-sm">
-          {#if onboardingProviders && onboardingProviders.length > 0}
+      {#if onboardingProviders && onboardingProviders.length > 0}
+        <div class="flex flex-row justify-center">
+          <div class="bg-[var(--pd-content-card-inset-bg)] px-4 pb-4 pt-2 rounded-sm">
             <div class="flex justify-center text-sm text-[var(--pd-content-card-text)] pb-2">
               <div>Choose the extensions to include:</div>
             </div>
@@ -145,12 +164,12 @@ function startOnboardingQueue(): void {
                 </div>
               {/each}
             </div>
-          {/if}
+          </div>
         </div>
-      </div>
-      <div class="flex justify-center p-2 text-sm items-center">
-        Configure these and more under Settings.
-      </div>
+        <div class="flex justify-center p-2 text-sm items-center">
+          Configure these and more under Settings.
+        </div>
+      {/if}
     </div>
 
     <!-- Telemetry -->
@@ -204,7 +223,16 @@ function startOnboardingQueue(): void {
           <Button
             on:click={closeWelcome}>Skip</Button>
         {/if}
+        {#if guidedSetupSteps.length > 0}
+          <Button
+            class="ml-2"
+            on:click={openGuidedSetup}>Start guided setup</Button>
+        {/if}
       </div>
     </div>
   </div>
+{/if}
+
+{#if showGuidedSetup}
+  <GuidedSetup onclose={handleGuidedSetupClose} />
 {/if}

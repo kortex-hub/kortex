@@ -19,10 +19,6 @@
 import type { ListOrganizerItem } from '@podman-desktop/ui-svelte';
 import type { Component } from 'svelte';
 
-import { createExploreFeatures } from './dashboard-page-registry-explore-features';
-import { createExtensionBanners } from './dashboard-page-registry-extension-banners.svelte';
-import { createLearningCenter } from './dashboard-page-registry-learning-center.svelte';
-import { createProviders } from './dashboard-page-registry-providers.svelte';
 import { createReleaseNotesBox } from './dashboard-page-registry-release-notes.svelte';
 
 export interface DashboardPageRegistryEntry {
@@ -37,10 +33,12 @@ export const dashboardPageRegistry = $state<{ entries: DashboardPageRegistryEntr
 function getDashboardPageRegistry(): DashboardPageRegistryEntry[] {
   return [
     createReleaseNotesBox(),
+    /*
     createExtensionBanners(),
     createExploreFeatures(),
     createLearningCenter(),
     createProviders(),
+    */
   ];
 }
 

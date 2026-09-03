@@ -36,6 +36,17 @@ beforeEach(() => {
   vi.mocked(states).secretSearchPattern = writable<string>('');
   vi.mocked(states).kubernetesContextsCheckingStateDelayed = writable();
   vi.mocked(states).kubernetesCurrentContextState = writable();
+
+  // Mock window.events
+  Object.defineProperty(window, 'events', {
+    value: {
+      receive: vi.fn(() => ({
+        dispose: vi.fn(),
+      })),
+    },
+    configurable: true,
+    writable: true,
+  });
 });
 
 test('Expect configmap empty screen', async () => {

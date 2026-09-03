@@ -40,11 +40,30 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
-import type * as containerDesktopAPI from '@podman-desktop/api';
+import type * as containerDesktopAPI from '@openkaiden/api';
+import type { DynamicToolUIPart, UIMessageChunk } from 'ai';
 import { contextBridge, ipcRenderer } from 'electron';
 
+import type {
+  AcpAttachment,
+  AcpFlowEvent,
+  AcpSessionCreateOptions,
+  AcpSessionInfo,
+  AcpUserResponse,
+} from '/@api/acp-session-info';
+import type { AgentInfo } from '/@api/agent-info';
+import type {
+  AgentWorkspaceConfiguration,
+  AgentWorkspaceCreateOptions,
+  AgentWorkspaceId,
+  AgentWorkspaceSummary,
+} from '/@api/agent-workspace-info';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type';
 import type { AuthenticationProviderInfo } from '/@api/authentication/authentication';
+import type { DetectFlowFieldsParams, DetectFlowFieldsResult } from '/@api/chat/detect-flow-fields-schema.ts';
+import type { FlowGenerationParameters } from '/@api/chat/flow-generation-parameters-schema';
+import type { InferenceParameters } from '/@api/chat/InferenceParameters.js';
+import type { Chat, Message } from '/@api/chat/schema.js';
 import type { CliToolInfo } from '/@api/cli-tool-info';
 import type { ColorInfo } from '/@api/color-info';
 import type { CommandInfo } from '/@api/command-info';
@@ -76,6 +95,9 @@ import type { ExtensionDevelopmentFolderInfo } from '/@api/extension-development
 import type { ExtensionInfo } from '/@api/extension-info';
 import type { FeaturedExtension } from '/@api/featured/featured-api';
 import type { FeedbackMessages, FeedbackProperties, GitHubIssue } from '/@api/feedback';
+import type { FlowExecuteInfo } from '/@api/flow-execute-info';
+import type { FlowInfo } from '/@api/flow-info';
+import type { FlowScheduleInfo } from '/@api/flow-schedule-info';
 import type { ItemInfo } from '/@api/help-menu';
 import type { HistoryInfo } from '/@api/history-info';
 import type { IconInfo } from '/@api/icon-info';
@@ -103,12 +125,22 @@ import type { Guide } from '/@api/learning-center/guide';
 import type { ContainerCreateOptions as PodmanContainerCreateOptions, PlayKubeInfo } from '/@api/libpod/libpod';
 import type { ListOrganizerItem } from '/@api/list-organizer';
 import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '/@api/manifest-info';
+import type { MCPExportTarget } from '/@api/mcp/mcp-export';
+import type { MCPRemoteServerInfo, MCPServerDetail } from '/@api/mcp/mcp-server-info';
+import type { MCPSetupOptions, MCPSetupPackageOptions } from '/@api/mcp/mcp-setup';
 import type { Menu } from '/@api/menu.js';
+import type { CatalogModelInfo, InferenceConnectionSummary } from '/@api/model-registry-info';
 import { NavigationPage } from '/@api/navigation-page';
 import type { NavigationRequest } from '/@api/navigation-request';
 import type { NetworkInspectInfo } from '/@api/network-info';
 import type { NotificationCard, NotificationCardOptions } from '/@api/notification';
 import type { OnboardingInfo, OnboardingStatus } from '/@api/onboarding';
+import type {
+  CreateLocalGatewayOptions,
+  GatewayInfo,
+  GatewaySandboxes,
+  OpenshellProfile,
+} from '/@api/openshell-gateway-info';
 import type { V1Route } from '/@api/openshift-types';
 import type { PodCreateOptions, PodInfo, PodInspectInfo } from '/@api/pod-info';
 import type {
@@ -121,14 +153,25 @@ import type {
 } from '/@api/provider-info';
 import type { ProxyState } from '/@api/proxy';
 import type { PullEvent } from '/@api/pull-event';
+import type { RagEnvironment } from '/@api/rag/rag-environment';
 import type { ExtensionBanner, RecommendedRegistry } from '/@api/recommendations/recommendations';
 import type { ReleaseNotesInfo } from '/@api/release-notes-info';
+import type { GatewaySecretInfo, SecretCreateOptions, SecretName } from '/@api/secret-info';
+import type { SemanticRouterConfigInfo, SemanticRouterInfo } from '/@api/semantic-router-info';
+import type { SkillFileContent, SkillFolderInfo, SkillInfo, SkillResourceEntry } from '/@api/skill/skill-info';
 import type { StatusBarEntryDescriptor } from '/@api/status-bar';
 import type { PinOption } from '/@api/status-bar/pin-option';
 import type { TelemetryMessages } from '/@api/telemetry';
 import type { ViewInfoUI } from '/@api/view-info';
 import type { VolumeInspectInfo, VolumeListInfo } from '/@api/volume-info';
 import type { WebviewInfo } from '/@api/webview-info';
+import type { WelcomeMessages } from '/@api/welcome-info';
+import type {
+  WorkspaceProjectAnalysis,
+  WorkspaceProjectCreateOptions,
+  WorkspaceProjectInfo,
+  WorkspaceProjectUpdateOptions,
+} from '/@api/workspace-project-info';
 
 export type DialogResultCallback = (openDialogReturnValue: Electron.OpenDialogReturnValue) => void;
 export type OpenSaveDialogResultCallback = (result: string | string[] | undefined) => void;
@@ -295,6 +338,445 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld('listPods', async (): Promise<PodInfo[]> => {
     return ipcInvoke('container-provider-registry:listPods');
+  });
+
+  // Agent Workspaces
+  contextBridge.exposeInMainWorld('checkAgentWorkspaceConfigExists', async (sourcePath: string): Promise<boolean> => {
+    return ipcInvoke('agent-workspace:checkConfigExists', sourcePath);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'checkAgentWorkspaceGlobalConfigExists',
+    async (gateway: string, name: string): Promise<boolean> => {
+      return ipcInvoke('agent-workspace:checkGlobalConfigExists', gateway, name);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'createAgentWorkspace',
+    async (options: AgentWorkspaceCreateOptions): Promise<AgentWorkspaceId> => {
+      return ipcInvoke('agent-workspace:create', options);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'removeAgentWorkspace',
+    async (id: string, gateway: string): Promise<AgentWorkspaceId> => {
+      return ipcInvoke('agent-workspace:remove', id, gateway);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'getAgentWorkspaceConfiguration',
+    async (id: string): Promise<AgentWorkspaceConfiguration> => {
+      return ipcInvoke('agent-workspace:getConfiguration', id);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'updateAgentWorkspaceConfiguration',
+    async (id: string, config: AgentWorkspaceConfiguration): Promise<void> => {
+      return ipcInvoke('agent-workspace:updateConfiguration', id, config);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'updateAgentWorkspaceSummary',
+    async (id: string, update: Pick<AgentWorkspaceSummary, 'name'>): Promise<void> => {
+      return ipcInvoke('agent-workspace:updateSummary', id, update);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('startAgentWorkspace', async (id: string): Promise<AgentWorkspaceId> => {
+    return ipcInvoke('agent-workspace:start', id);
+  });
+
+  contextBridge.exposeInMainWorld('stopAgentWorkspace', async (id: string): Promise<AgentWorkspaceId> => {
+    return ipcInvoke('agent-workspace:stop', id);
+  });
+
+  contextBridge.exposeInMainWorld('listOpenshellSandboxes', async (): Promise<GatewaySandboxes[]> => {
+    return ipcInvoke('agent-workspace:listOpenshellSandboxes');
+  });
+
+  contextBridge.exposeInMainWorld('listOpenshellGateways', async (): Promise<GatewayInfo[]> => {
+    return ipcInvoke('agent-workspace:listOpenshellGateways');
+  });
+
+  contextBridge.exposeInMainWorld(
+    'createLocalGateway',
+    async (options: CreateLocalGatewayOptions): Promise<GatewayInfo[]> => {
+      return ipcInvoke('agent-workspace:createLocalGateway', options);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('deleteOpenshellSandbox', async (name: string, gateway: string): Promise<void> => {
+    return ipcInvoke('agent-workspace:deleteOpenshellSandbox', name, gateway);
+  });
+
+  // Agent Workspace Terminal
+  let onDataCallbacksShellInAgentWorkspaceId = 0;
+  const onDataCallbacksShellInAgentWorkspace = new Map<
+    number,
+    { onData: (data: string) => void; onError: (error: string) => void; onEnd: () => void }
+  >();
+  contextBridge.exposeInMainWorld(
+    'shellInAgentWorkspace',
+    async (
+      id: string,
+      onData: (data: string) => void,
+      onError: (error: string) => void,
+      onEnd: () => void,
+    ): Promise<number> => {
+      onDataCallbacksShellInAgentWorkspaceId++;
+      onDataCallbacksShellInAgentWorkspace.set(onDataCallbacksShellInAgentWorkspaceId, { onData, onError, onEnd });
+      return ipcInvoke('agent-workspace:terminal', id, onDataCallbacksShellInAgentWorkspaceId);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('shellInAgentWorkspaceClose', async (callbackId: number): Promise<void> => {
+    onDataCallbacksShellInAgentWorkspace.delete(callbackId);
+    return ipcInvoke('agent-workspace:terminalClose', callbackId);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'shellInAgentWorkspaceReattach',
+    (callbackId: number, onData: (data: string) => void, onError: (error: string) => void, onEnd: () => void): void => {
+      onDataCallbacksShellInAgentWorkspace.set(callbackId, { onData, onError, onEnd });
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'shellInAgentWorkspaceSend',
+    async (dataId: number, content: string): Promise<void> => {
+      return ipcInvoke('agent-workspace:terminalSend', dataId, content);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'shellInAgentWorkspaceResize',
+    async (dataId: number, width: number, height: number): Promise<void> => {
+      return ipcInvoke('agent-workspace:terminalResize', dataId, width, height);
+    },
+  );
+
+  ipcRenderer.on('agent-workspace:terminal-onData', (_, callbackId: number, data: string) => {
+    const callback = onDataCallbacksShellInAgentWorkspace.get(callbackId);
+    if (callback) {
+      callback.onData(data);
+    }
+  });
+
+  ipcRenderer.on('agent-workspace:terminal-onError', (_, callbackId: number, error: string) => {
+    const callback = onDataCallbacksShellInAgentWorkspace.get(callbackId);
+    if (callback) {
+      callback.onError(error);
+    }
+  });
+
+  ipcRenderer.on('agent-workspace:terminal-onEnd', (_, callbackId: number) => {
+    const callback = onDataCallbacksShellInAgentWorkspace.get(callbackId);
+    if (callback) {
+      callback.onEnd();
+      onDataCallbacksShellInAgentWorkspace.delete(callbackId);
+    }
+  });
+
+  // ACP Sessions
+  contextBridge.exposeInMainWorld(
+    'createAcpSession',
+    async (options: AcpSessionCreateOptions): Promise<AcpSessionInfo> => {
+      return ipcInvoke('acp:createSession', options);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('listAcpSessions', async (): Promise<AcpSessionInfo[]> => {
+    return ipcInvoke('acp:listSessions');
+  });
+
+  contextBridge.exposeInMainWorld('getAcpSessionEvents', async (sessionId: string): Promise<AcpFlowEvent[]> => {
+    return ipcInvoke('acp:getSessionEvents', sessionId);
+  });
+
+  contextBridge.exposeInMainWorld('respondToAcpRequest', async (response: AcpUserResponse): Promise<void> => {
+    return ipcInvoke('acp:respondToRequest', response);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'sendAcpFollowUp',
+    async (sessionId: string, prompt: string, attachments?: AcpAttachment[]): Promise<void> => {
+      return ipcInvoke('acp:sendFollowUp', sessionId, prompt, attachments);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('stopAcpPrompt', async (sessionId: string): Promise<void> => {
+    return ipcInvoke('acp:stopPrompt', sessionId);
+  });
+
+  contextBridge.exposeInMainWorld('deleteAcpSession', async (sessionId: string): Promise<void> => {
+    return ipcInvoke('acp:deleteSession', sessionId);
+  });
+
+  contextBridge.exposeInMainWorld('renameAcpSession', async (sessionId: string, name: string): Promise<void> => {
+    return ipcInvoke('acp:renameSession', sessionId, name);
+  });
+
+  contextBridge.exposeInMainWorld('cancelAcpSession', async (sessionId: string): Promise<void> => {
+    return ipcInvoke('acp:cancelSession', sessionId);
+  });
+
+  contextBridge.exposeInMainWorld('isOpenshellAvailable', async (): Promise<boolean> => {
+    return ipcInvoke('acp:isOpenshellAvailable');
+  });
+
+  contextBridge.exposeInMainWorld('setAcpSessionModel', async (sessionId: string, modelId: string): Promise<void> => {
+    return ipcInvoke('acp:setSessionModel', sessionId, modelId);
+  });
+
+  contextBridge.exposeInMainWorld('setAcpSessionMode', async (sessionId: string, modeId: string): Promise<void> => {
+    return ipcInvoke('acp:setSessionMode', sessionId, modeId);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'setAcpSessionConfigOption',
+    async (sessionId: string, configId: string, value: string | boolean): Promise<void> => {
+      return ipcInvoke('acp:setSessionConfigOption', sessionId, configId, value);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('createSecret', async (options: SecretCreateOptions): Promise<SecretName> => {
+    return ipcInvoke('secret-manager:create', options);
+  });
+
+  contextBridge.exposeInMainWorld('listSecrets', async (gateway?: string): Promise<GatewaySecretInfo[]> => {
+    return ipcInvoke('secret-manager:list', gateway);
+  });
+
+  contextBridge.exposeInMainWorld('removeSecret', async (name: string, gateway?: string): Promise<SecretName> => {
+    return ipcInvoke('secret-manager:remove', name, gateway);
+  });
+
+  contextBridge.exposeInMainWorld('listSecretServices', async (): Promise<OpenshellProfile[]> => {
+    return ipcInvoke('secret-manager:list-services');
+  });
+
+  contextBridge.exposeInMainWorld('listFlows', async (): Promise<Array<FlowInfo>> => {
+    return ipcInvoke('flows:list');
+  });
+  contextBridge.exposeInMainWorld(
+    'scheduleFlow',
+    async (
+      schedulerName: string,
+      flowId: string,
+      providerId: string,
+      connectionName: string,
+      cronExpression: string,
+    ): Promise<void> => {
+      return ipcInvoke('flows:schedule', schedulerName, flowId, providerId, connectionName, cronExpression);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('listExecuteFlows', async (): Promise<Array<FlowExecuteInfo>> => {
+    return ipcInvoke('flows:listExecute');
+  });
+
+  contextBridge.exposeInMainWorld('listScheduledFlows', async (): Promise<Array<FlowScheduleInfo>> => {
+    return ipcInvoke('flows:listSchedules');
+  });
+
+  contextBridge.exposeInMainWorld('listSkills', async (): Promise<Array<SkillInfo>> => {
+    return ipcInvoke('skill-manager:listSkills');
+  });
+
+  contextBridge.exposeInMainWorld('listSkillFolders', async (): Promise<Array<SkillFolderInfo>> => {
+    return ipcInvoke('skill-manager:listSkillFolders');
+  });
+
+  contextBridge.exposeInMainWorld('registerSkill', async (folderPath: string): Promise<SkillInfo> => {
+    return ipcInvoke('skill-manager:registerSkill', folderPath);
+  });
+
+  contextBridge.exposeInMainWorld('disableSkill', async (name: string): Promise<void> => {
+    return ipcInvoke('skill-manager:disableSkill', name);
+  });
+
+  contextBridge.exposeInMainWorld('enableSkill', async (name: string): Promise<void> => {
+    return ipcInvoke('skill-manager:enableSkill', name);
+  });
+
+  contextBridge.exposeInMainWorld('unregisterSkill', async (name: string): Promise<void> => {
+    return ipcInvoke('skill-manager:unregisterSkill', name);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'createSkill',
+    async (options: SkillFileContent, targetDirectory: string): Promise<SkillInfo> => {
+      return ipcInvoke('skill-manager:createSkill', options, targetDirectory);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('getSkillContent', async (name: string): Promise<string> => {
+    return ipcInvoke('skill-manager:getSkillContent', name);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'listSkillFolderContent',
+    async (name: string, relativePath?: string): Promise<SkillResourceEntry[]> => {
+      return ipcInvoke('skill-manager:listSkillFolderContent', name, relativePath);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('getSkillFileContent', async (filePath: string): Promise<SkillFileContent> => {
+    return ipcInvoke('skill-manager:getSkillFileContent', filePath);
+  });
+
+  // Workspace Projects
+  contextBridge.exposeInMainWorld('listWorkspaceProjects', async (): Promise<WorkspaceProjectInfo[]> => {
+    return ipcInvoke('workspace-project-manager:list');
+  });
+
+  contextBridge.exposeInMainWorld('getWorkspaceProject', async (id: string): Promise<WorkspaceProjectInfo> => {
+    return ipcInvoke('workspace-project-manager:get', id);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'createWorkspaceProject',
+    async (options: WorkspaceProjectCreateOptions): Promise<WorkspaceProjectInfo> => {
+      return ipcInvoke('workspace-project-manager:create', options);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('removeWorkspaceProject', async (id: string): Promise<void> => {
+    return ipcInvoke('workspace-project-manager:remove', id);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'updateWorkspaceProject',
+    async (id: string, options: WorkspaceProjectUpdateOptions): Promise<WorkspaceProjectInfo> => {
+      return ipcInvoke('workspace-project-manager:update', id, options);
+    },
+  );
+
+  // Semantic Routers
+  contextBridge.exposeInMainWorld('listSemanticRouters', async (): Promise<SemanticRouterInfo[]> => {
+    return ipcInvoke('semantic-router-manager:list');
+  });
+
+  contextBridge.exposeInMainWorld(
+    'findSemanticRouterByName',
+    async (name: string): Promise<SemanticRouterInfo | undefined> => {
+      return ipcInvoke('semantic-router-manager:findByName', name);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'createSemanticRouter',
+    async (config: SemanticRouterConfigInfo): Promise<SemanticRouterInfo> => {
+      return ipcInvoke('semantic-router-manager:create', config);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('removeSemanticRouter', async (name: string): Promise<void> => {
+    return ipcInvoke('semantic-router-manager:remove', name);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'analyzeWorkspaceProject',
+    async (folderPath: string): Promise<WorkspaceProjectAnalysis> => {
+      return ipcInvoke('workspace-project-manager:analyze', folderPath);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'cloneAndAnalyzeWorkspaceProject',
+    async (gitUrl: string, targetPath: string): Promise<WorkspaceProjectAnalysis> => {
+      return ipcInvoke('workspace-project-manager:clone-and-analyze', gitUrl, targetPath);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'deleteSchedule',
+    async (schedulerName: string, scheduleId: string): Promise<void> => {
+      return ipcInvoke('scheduler:delete-schedule', schedulerName, scheduleId);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'getSchedulerExecution',
+    async (schedulerName: string, id: string): Promise<containerDesktopAPI.ProviderScheduleExecution | undefined> => {
+      return ipcInvoke('scheduler:get-execution', schedulerName, id);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'readFlow',
+    async (providerId: string, connectionName: string, flowId: string): Promise<string> => {
+      return ipcInvoke('flows:read', providerId, connectionName, flowId);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'deleteFlow',
+    async (providerId: string, connectionName: string, flowId: string): Promise<string> => {
+      return ipcInvoke('flows:delete', providerId, connectionName, flowId);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'flowDispatchLog',
+    async (providerId: string, connectionName: string, flowId: string, taskId: string): Promise<void> => {
+      return ipcInvoke('flows:dispatchLog', providerId, connectionName, flowId, taskId);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('getLogCurrentFlow', async (): Promise<string> => {
+    return ipcInvoke('flows:getLogCurrent');
+  });
+
+  contextBridge.exposeInMainWorld(
+    'generateFlow',
+    async (
+      providerId: string,
+      connectionName: string,
+      options: Omit<containerDesktopAPI.FlowGenerateOptions, 'mcp'> & { mcp: MCPRemoteServerInfo[] },
+    ): Promise<string> => {
+      return ipcInvoke('flows:generate', providerId, connectionName, options);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'flowDeployKubernetes',
+    async (
+      flow: {
+        providerId: string;
+        connectionName: string;
+        flowId: string;
+      },
+      options: {
+        namespace: string;
+        hideSecrets: boolean;
+        dryrun: boolean;
+        params: Record<string, string>;
+      },
+    ): Promise<string> => {
+      return ipcInvoke('flows:deploy:kubernetes', flow, options);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'flowExecute',
+    async (flow: {
+      providerId: string;
+      connectionName: string;
+      flowId: string;
+      params?: Record<string, string>;
+    }): Promise<string> => {
+      return ipcInvoke('flows:execute', flow);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('refreshFlows', async (): Promise<void> => {
+    return ipcInvoke('flows:refresh');
   });
 
   contextBridge.exposeInMainWorld('reconnectContainerProviders', async (): Promise<PodInfo[]> => {
@@ -1107,6 +1589,304 @@ export function initExposure(): void {
     },
   );
 
+  contextBridge.exposeInMainWorld('inferenceGetChats', async (): Promise<Chat[]> => {
+    return ipcInvoke('inference:getChats');
+  });
+
+  contextBridge.exposeInMainWorld(
+    'inferenceGetChatMessagesById',
+    async (chatId: string): Promise<{ chat: Chat | undefined; messages: Message[] }> => {
+      return ipcInvoke('inference:getChatMessagesById', chatId);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('inferenceDeleteChat', async (chatId: string): Promise<Chat | undefined> => {
+    return ipcInvoke('inference:deleteChat', chatId);
+  });
+
+  contextBridge.exposeInMainWorld('inferenceRenameChat', async (chatId: string, title: string): Promise<undefined> => {
+    return ipcInvoke('inference:renameChat', chatId, title);
+  });
+
+  contextBridge.exposeInMainWorld('inferenceDeleteAllChats', async (): Promise<undefined> => {
+    return ipcInvoke('inference:deleteAllChats');
+  });
+
+  contextBridge.exposeInMainWorld('inferenceDeleteTrailingMessages', async (id: string): Promise<undefined> => {
+    return ipcInvoke('inference:deleteTrailingMessages', id);
+  });
+
+  contextBridge.exposeInMainWorld('inferenceGenerate', async (params: InferenceParameters): Promise<string> => {
+    return ipcInvoke('inference:generate', params);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'inferenceGenerateFlowParams',
+    async (params: InferenceParameters): Promise<FlowGenerationParameters> => {
+      return ipcInvoke('inference:generateFlowParams', params);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'inferenceDetectFlowFields',
+    async (params: DetectFlowFieldsParams): Promise<DetectFlowFieldsResult> => {
+      return ipcInvoke('inference:detectFlowFields', params);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'createInferenceProviderConnection',
+    async (
+      internalProviderId: string,
+      params: { [key: string]: unknown },
+      key: symbol,
+      keyLogger: (key: symbol, eventName: 'log' | 'warn' | 'error' | 'finish', args: string[]) => void,
+      tokenId: number | undefined,
+      taskId: number | undefined,
+    ): Promise<void> => {
+      onDataCallbacksTaskConnectionId++;
+      onDataCallbacksTaskConnectionKeys.set(onDataCallbacksTaskConnectionId, key);
+      onDataCallbacksTaskConnectionLogs.set(onDataCallbacksTaskConnectionId, keyLogger);
+      return ipcInvoke(
+        'provider-registry:createInferenceProviderConnection',
+        internalProviderId,
+        params,
+        onDataCallbacksTaskConnectionId,
+        tokenId,
+        taskId,
+      );
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'createRagProviderConnection',
+    async (
+      internalProviderId: string,
+      params: { [key: string]: unknown },
+      key: symbol,
+      keyLogger: (key: symbol, eventName: 'log' | 'warn' | 'error' | 'finish', args: string[]) => void,
+      tokenId: number | undefined,
+      taskId: number | undefined,
+    ): Promise<void> => {
+      onDataCallbacksTaskConnectionId++;
+      onDataCallbacksTaskConnectionKeys.set(onDataCallbacksTaskConnectionId, key);
+      onDataCallbacksTaskConnectionLogs.set(onDataCallbacksTaskConnectionId, keyLogger);
+      return ipcInvoke(
+        'provider-registry:createRagProviderConnection',
+        internalProviderId,
+        params,
+        onDataCallbacksTaskConnectionId,
+        tokenId,
+        taskId,
+      );
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'createChunkProviderConnection',
+    async (
+      internalProviderId: string,
+      params: { [key: string]: unknown },
+      key: symbol,
+      keyLogger: (key: symbol, eventName: 'log' | 'warn' | 'error' | 'finish', args: string[]) => void,
+      tokenId: number | undefined,
+      taskId: number | undefined,
+    ): Promise<void> => {
+      onDataCallbacksTaskConnectionId++;
+      onDataCallbacksTaskConnectionKeys.set(onDataCallbacksTaskConnectionId, key);
+      onDataCallbacksTaskConnectionLogs.set(onDataCallbacksTaskConnectionId, keyLogger);
+      return ipcInvoke(
+        'provider-registry:createChunkProviderConnection',
+        internalProviderId,
+        params,
+        onDataCallbacksTaskConnectionId,
+        tokenId,
+        taskId,
+      );
+    },
+  );
+
+  // callbacks for streamText
+  let onDataCallbacksStreamTextId = 0;
+  const onDataCallbacksStreamText = new Map<
+    number,
+    { onChunk: (chunk: UIMessageChunk) => void; onError: (error: string) => void; onEnd: () => void }
+  >();
+
+  // Grace period to keep buffered chunks after stream completion, allowing late reconnection
+  const STREAM_BUFFER_TTL_MS = 30_000;
+
+  // Track active streams by chatId and buffer chunks for background streams
+  const activeStreamsByChatId = new Map<
+    string,
+    {
+      onDataId: number;
+      bufferedChunks: UIMessageChunk[];
+      isComplete: boolean;
+      error?: string;
+    }
+  >();
+  contextBridge.exposeInMainWorld(
+    'inferenceStreamText',
+    (
+      params: InferenceParameters & { chatId: string },
+      onChunk: (data: UIMessageChunk) => void,
+      onError: (error: string) => void,
+      onEnd: () => void,
+    ): number => {
+      onDataCallbacksStreamTextId++;
+      const id = onDataCallbacksStreamTextId;
+      onDataCallbacksStreamText.set(id, { onChunk, onError, onEnd });
+
+      // Track this stream by chatId
+      activeStreamsByChatId.set(params.chatId, {
+        onDataId: id,
+        bufferedChunks: [],
+        isComplete: false,
+      });
+
+      ipcInvoke('inference:streamText', { ...params, onDataId: id }).catch((err: unknown) => {
+        const callback = onDataCallbacksStreamText.get(id);
+        if (callback) {
+          onDataCallbacksStreamText.delete(id);
+          try {
+            callback.onError(String(err));
+          } finally {
+            callback.onEnd();
+          }
+        }
+        const streamState = activeStreamsByChatId.get(params.chatId);
+        if (streamState?.onDataId === id) {
+          streamState.error = String(err);
+          streamState.isComplete = true;
+          if (callback) {
+            streamState.bufferedChunks = [];
+          }
+          setTimeout(() => {
+            if (activeStreamsByChatId.get(params.chatId)?.onDataId === id) {
+              activeStreamsByChatId.delete(params.chatId);
+            }
+          }, STREAM_BUFFER_TTL_MS);
+        }
+      });
+      return id;
+    },
+  );
+
+  contextBridge.exposeInMainWorld('inferenceStopStream', async (onDataId: number): Promise<void> => {
+    return ipcInvoke('inference:stopStream', onDataId);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'inferenceGetActiveStream',
+    (chatId: string): { onDataId: number; bufferedChunks: UIMessageChunk[]; isComplete: boolean } | null => {
+      const streamState = activeStreamsByChatId.get(chatId);
+      return streamState ? { ...streamState } : null;
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'inferenceReconnectToStream',
+    (
+      chatId: string,
+      onChunk: (data: UIMessageChunk) => void,
+      onError: (error: string) => void,
+      onEnd: () => void,
+    ): { bufferedChunks: UIMessageChunk[]; onDataId: number } | null => {
+      const streamState = activeStreamsByChatId.get(chatId);
+      if (!streamState) {
+        return null;
+      }
+
+      // Register callbacks for this stream
+      onDataCallbacksStreamText.set(streamState.onDataId, { onChunk, onError, onEnd });
+
+      // Return buffered chunks to be replayed (keep them for potential re-reconnection)
+      const bufferedChunks = [...streamState.bufferedChunks];
+
+      // If stream completed while disconnected, trigger onEnd
+      if (streamState.isComplete) {
+        // Trigger after buffered chunks are processed
+        setTimeout(() => {
+          if (streamState.error) {
+            onError(streamState.error);
+          } else {
+            onEnd();
+          }
+          onDataCallbacksStreamText.delete(streamState.onDataId);
+        }, 0);
+      }
+
+      return {
+        bufferedChunks,
+        onDataId: streamState.onDataId,
+      };
+    },
+  );
+
+  contextBridge.exposeInMainWorld('inferenceDisconnectFromStream', (onDataId: number): void => {
+    // Remove the active callback, but keep stream state for buffering
+    onDataCallbacksStreamText.delete(onDataId);
+  });
+
+  ipcRenderer.on('inference:streamText-onChunk', (_, callbackId: number, chunk: UIMessageChunk) => {
+    // Always buffer chunks for potential reconnection
+    for (const [, streamState] of activeStreamsByChatId.entries()) {
+      if (streamState.onDataId === callbackId) {
+        streamState.bufferedChunks.push(chunk);
+        break;
+      }
+    }
+
+    // Deliver to active callback if present
+    const callback = onDataCallbacksStreamText.get(callbackId);
+    if (callback) {
+      callback.onChunk(chunk);
+    }
+  });
+  ipcRenderer.on('inference:streamText-onError', (_, callbackId: number, error: string) => {
+    // grab callback from the map
+    const callback = onDataCallbacksStreamText.get(callbackId);
+    if (callback) {
+      callback.onError(error);
+    }
+
+    // Mark stream as complete with error
+    for (const [, streamState] of activeStreamsByChatId.entries()) {
+      if (streamState.onDataId === callbackId) {
+        streamState.error = error;
+        streamState.isComplete = true;
+        break;
+      }
+    }
+  });
+
+  ipcRenderer.on('inference:streamText-onEnd', (_, callbackId: number) => {
+    const callback = onDataCallbacksStreamText.get(callbackId);
+    if (callback) {
+      callback.onEnd();
+      onDataCallbacksStreamText.delete(callbackId);
+    }
+
+    for (const [chatId, streamState] of activeStreamsByChatId.entries()) {
+      if (streamState.onDataId === callbackId) {
+        streamState.isComplete = true;
+        // Release chunk references immediately if a consumer already drained them.
+        // The entry itself stays for TTL so reconnection can detect "completed".
+        if (callback) {
+          streamState.bufferedChunks = [];
+        }
+        const completedOnDataId = callbackId;
+        setTimeout(() => {
+          if (activeStreamsByChatId.get(chatId)?.onDataId === completedOnDataId) {
+            activeStreamsByChatId.delete(chatId);
+          }
+        }, STREAM_BUFFER_TTL_MS);
+        break;
+      }
+    }
+  });
+
   ipcRenderer.on(
     'provider-registry:taskConnection-onData',
     (_, onDataCallbacksTaskConnectionId: number, channel: string, data: string[]) => {
@@ -1375,8 +2155,53 @@ export function initExposure(): void {
     return ipcInvoke('provider-registry:getProviderInfos');
   });
 
+  contextBridge.exposeInMainWorld('getCatalogModels', async (): Promise<Readonly<CatalogModelInfo[]>> => {
+    return ipcInvoke('model-registry:getCatalogModels');
+  });
+
+  contextBridge.exposeInMainWorld(
+    'getInferenceConnectionSummaries',
+    async (): Promise<Readonly<InferenceConnectionSummary[]>> => {
+      return ipcInvoke('inference-connection-summary-registry:getInferenceConnectionSummaries');
+    },
+  );
+
+  contextBridge.exposeInMainWorld('getRagEnvironments', async (): Promise<RagEnvironment[]> => {
+    return ipcInvoke('rag-environment-registry:getRagEnvironments');
+  });
+
+  contextBridge.exposeInMainWorld(
+    'createRagEnvironment',
+    async (
+      name: string,
+      ragConnection: { name: string; providerId: string },
+      chunkerConnection: { id: string; providerId: string },
+    ): Promise<void> => {
+      return ipcInvoke('rag-environment-registry:createRagEnvironment', name, ragConnection, chunkerConnection);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('addFileToPendingFiles', async (name: string, filePath: string): Promise<boolean> => {
+    return ipcInvoke('rag-environment-registry:addFileToPendingFiles', name, filePath);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'removeFileFromEnvironment',
+    async (name: string, filePath: string): Promise<boolean> => {
+      return ipcInvoke('rag-environment-registry:removeFileFromEnvironment', name, filePath);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('deleteRagEnvironment', async (name: string): Promise<void> => {
+    return ipcInvoke('rag-environment-registry:deleteRagEnvironment', name);
+  });
+
   contextBridge.exposeInMainWorld('getCliToolInfos', async (): Promise<CliToolInfo[]> => {
     return ipcInvoke('cli-tool-registry:getCliToolInfos');
+  });
+
+  contextBridge.exposeInMainWorld('getAgentInfos', async (): Promise<AgentInfo[]> => {
+    return ipcInvoke('agent-registry:getAgentInfos');
   });
 
   contextBridge.exposeInMainWorld('selectCliToolVersionToUpdate', async (id: string): Promise<string> => {
@@ -1588,6 +2413,76 @@ export function initExposure(): void {
     },
   );
 
+  contextBridge.exposeInMainWorld('getMcpRegistries', async (): Promise<readonly containerDesktopAPI.MCPRegistry[]> => {
+    return ipcInvoke('mcp-registry:getMcpRegistries');
+  });
+  contextBridge.exposeInMainWorld(
+    'getMcpSuggestedRegistries',
+    async (): Promise<containerDesktopAPI.MCPRegistrySuggestedProvider[]> => {
+      return ipcInvoke('mcp-registry:getMcpSuggestedRegistries');
+    },
+  );
+
+  contextBridge.exposeInMainWorld('getMcpRegistryServers', async (): Promise<MCPServerDetail[]> => {
+    return ipcInvoke('mcp-registry:getMcpRegistryServers');
+  });
+
+  contextBridge.exposeInMainWorld('getMcpExchanges', async (mcpId: string): Promise<DynamicToolUIPart[]> => {
+    return ipcInvoke('mcp-manager:getExchanges', mcpId);
+  });
+
+  contextBridge.exposeInMainWorld('setupMCP', async (serverId: string, options: MCPSetupOptions): Promise<void> => {
+    return ipcInvoke('mcp-registry:setup', serverId, options);
+  });
+
+  contextBridge.exposeInMainWorld(
+    'registerMCP',
+    async (serverId: string, options: MCPSetupPackageOptions): Promise<void> => {
+      return ipcInvoke('mcp-registry:register', serverId, options);
+    },
+  );
+
+  contextBridge.exposeInMainWorld('fetchMcpRemoteServers', async (): Promise<MCPRemoteServerInfo[]> => {
+    return ipcInvoke('mcp-manager:fetchMcpRemoteServers');
+  });
+
+  contextBridge.exposeInMainWorld(
+    'removeMcpRemoteServer',
+    async (key: string, options: { serverId: string; remoteId: number }): Promise<void> => {
+      return ipcInvoke('mcp-manager:removeMcpRemoteServer', key, options);
+    },
+  );
+
+  contextBridge.exposeInMainWorld(
+    'unregisterMCPRegistry',
+    async (registry: containerDesktopAPI.MCPRegistry): Promise<void> => {
+      return ipcInvoke('mcp-registry:unregisterMCPRegistry', registry);
+    },
+  );
+  contextBridge.exposeInMainWorld(
+    'createMCPRegistry',
+    async (registryCreateOptions: containerDesktopAPI.MCPRegistryCreateOptions): Promise<void> => {
+      return ipcInvoke('mcp-registry:createMCPRegistry', registryCreateOptions);
+    },
+  );
+  contextBridge.exposeInMainWorld(
+    'exportMcpServer',
+    async (serverId: string, target: MCPExportTarget): Promise<void> => {
+      return ipcInvoke('mcp-registry:exportServer', serverId, target);
+    },
+  );
+  contextBridge.exposeInMainWorld('getMcpExportConfigPath', async (target: MCPExportTarget): Promise<string> => {
+    return ipcInvoke('mcp-registry:getExportConfigPath', target);
+  });
+
+  contextBridge.exposeInMainWorld('startMcpServer', async (key: string): Promise<void> => {
+    return ipcInvoke('mcp-manager:startMCPServer', key);
+  });
+
+  contextBridge.exposeInMainWorld('stopMcpServer', async (key: string): Promise<void> => {
+    return ipcInvoke('mcp-manager:stopMCPServer', key);
+  });
+
   // can't send configuration object as it is not serializable
   // https://www.electronjs.org/docs/latest/api/context-bridge#parameter--error--return-type-support
   contextBridge.exposeInMainWorld(
@@ -1683,6 +2578,10 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld('listExtensions', async (): Promise<ExtensionInfo[]> => {
     return ipcInvoke('extension-loader:listExtensions');
+  });
+
+  contextBridge.exposeInMainWorld('getWelcomeMessages', async (): Promise<WelcomeMessages> => {
+    return ipcInvoke('welcome:getWelcomeMessages');
   });
 
   contextBridge.exposeInMainWorld('stopExtension', async (extensionId: string): Promise<void> => {
@@ -2422,6 +3321,17 @@ export function initExposure(): void {
     return ipcInvoke('feedback:GitHubPreview', feedback);
   });
 
+  contextBridge.exposeInMainWorld(
+    'getGitHubFeedbackLinks',
+    async (): Promise<{ [category: string]: string } | undefined> => {
+      return ipcInvoke('feedback:getGitHubFeedbackLinks');
+    },
+  );
+
+  contextBridge.exposeInMainWorld('getFeedbackLinks', async (): Promise<{ [category: string]: string } | undefined> => {
+    return ipcInvoke('feedback:getFeedbackLinks');
+  });
+
   contextBridge.exposeInMainWorld('getFeedbackMessages', async (): Promise<FeedbackMessages> => {
     return ipcInvoke('feedback:getFeedbackMessages');
   });
@@ -2657,6 +3567,14 @@ export function initExposure(): void {
 
   contextBridge.exposeInMainWorld('pathRelative', async (from: string, to: string): Promise<string> => {
     return ipcInvoke('path:relative', from, to);
+  });
+
+  contextBridge.exposeInMainWorld('pathMimeType', async (from: string): Promise<string> => {
+    return ipcInvoke('path:mimeType', from);
+  });
+
+  contextBridge.exposeInMainWorld('pathFileSize', async (filePath: string): Promise<number> => {
+    return ipcInvoke('path:fileSize', filePath);
   });
 
   contextBridge.exposeInMainWorld(

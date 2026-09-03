@@ -38,6 +38,6 @@ test('expect extension name match extension folder', async () => {
     const packageJsonPath = resolve(extensionsDir, extensionFolder.name, 'package.json');
     const packageJson = await promises.readFile(packageJsonPath, 'utf8');
     const packageJsonObj = JSON.parse(packageJson);
-    expect(packageJsonObj.name).toBe(extensionFolder.name);
+    expect(packageJsonObj.name.replace('-native', '')).toBe(extensionFolder.name);
   }
 });

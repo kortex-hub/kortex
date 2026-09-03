@@ -53,6 +53,16 @@ const containerProviderInfo: ProviderInfo = {
   vmConnections: [],
   vmProviderConnectionCreation: false,
   vmProviderConnectionInitialization: false,
+  inferenceConnections: [],
+  ragConnections: [],
+  chunkConnections: [],
+  flowConnections: [],
+  inferenceProviderConnectionCreation: false,
+  inferenceProviderConnectionInitialization: false,
+  ragProviderConnectionCreation: false,
+  ragProviderConnectionInitialization: false,
+  chunkProviderConnectionCreation: false,
+  chunkProviderConnectionInitialization: false,
 };
 
 const containerConnection: ProviderContainerConnectionInfo = {

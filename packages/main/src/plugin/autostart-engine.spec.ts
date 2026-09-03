@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Configuration } from '@podman-desktop/api';
+import type { Configuration } from '@openkaiden/api';
 import { beforeAll, beforeEach, expect, test, vi } from 'vitest';
 
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
@@ -75,7 +75,7 @@ test('Check that default value is true if provider autostart setting is not set'
     },
     properties: {
       [`preferences.${extensionId}.engine.autostart`]: {
-        description: `Autostart ${extensionDisplayName} engine when launching Podman Desktop`,
+        description: `Autostart ${extensionDisplayName} engine when launching Kaiden`,
         type: 'boolean',
         default: true,
         scope: [CONFIGURATION_DEFAULT_SCOPE, CONFIGURATION_ONBOARDING_SCOPE],

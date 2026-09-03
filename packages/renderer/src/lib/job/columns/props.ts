@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { JobUI } from '/@/lib/job/JobUI';
+import type { JobUI } from '../JobUI';
 
 export interface Props {
   object: JobUI;

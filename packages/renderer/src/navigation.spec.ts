@@ -308,3 +308,27 @@ test(`Test navigationHandle for ${NavigationPage.EXTENSIONS_CATALOG}`, () => {
     '/extensions?screen=catalog&searchTerm=not%3Ainstalled%20category%3Afoo%20keyword%3Abar%20red%20hat',
   );
 });
+
+test(`Test navigationHandle for ${NavigationPage.AGENT_WORKSPACES}`, () => {
+  handleNavigation({ page: NavigationPage.AGENT_WORKSPACES });
+
+  expect(vi.mocked(router.goto)).toHaveBeenCalledWith('/agent-workspaces');
+});
+
+test(`Test navigationHandle for ${NavigationPage.MODELS}`, () => {
+  handleNavigation({ page: NavigationPage.MODELS });
+
+  expect(vi.mocked(router.goto)).toHaveBeenCalledWith('/models');
+});
+
+test(`Test navigationHandle for ${NavigationPage.SEMANTIC_ROUTERS}`, () => {
+  handleNavigation({ page: NavigationPage.SEMANTIC_ROUTERS });
+
+  expect(vi.mocked(router.goto)).toHaveBeenCalledWith('/models/semantic-routers');
+});
+
+test(`Test navigationHandle for ${NavigationPage.SKILL_CREATE}`, () => {
+  handleNavigation({ page: NavigationPage.SKILL_CREATE });
+
+  expect(vi.mocked(router.goto)).toHaveBeenCalledWith('/skills/create');
+});

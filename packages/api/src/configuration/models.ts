@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2024 Red Hat, Inc.
+ * Copyright (C) 2024-2026 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import type {
   Configuration,
   ConfigurationChangeEvent,
   ConfigurationScope as PodmanDesktopApiConfigurationScope,
-} from '@podman-desktop/api';
+} from '@openkaiden/api';
 
 import type { IDisposable } from '../disposable.js';
 import type { Event } from '../event.js';
@@ -83,6 +83,8 @@ export type ConfigurationScope =
   | 'KubernetesConnection'
   | 'VmConnection'
   | 'ContainerProviderConnectionFactory'
+  | 'InferenceProviderConnectionFactory'
+  | 'InferenceProviderConnection'
   | 'KubernetesProviderConnectionFactory'
   | 'VmProviderConnectionFactory'
   | 'DockerCompatibility'

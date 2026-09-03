@@ -1,6 +1,5 @@
 <script lang="ts">
-import JobActions from '/@/lib/job/JobActions.svelte';
-
+import JobActions from '../JobActions.svelte';
 import type { Props } from './props';
 
 let { object }: Props = $props();

@@ -32,13 +32,25 @@ import type { TelemetryMessages } from '/@api/telemetry';
 
 import WelcomePage from './WelcomePage.svelte';
 
+vi.mock(import('/@/lib/guided-setup/guided-setup-steps'), async importOriginal => ({
+  ...(await importOriginal()),
+  guidedSetupSteps: [],
+}));
+
+const eventListeners = new Map<string, (...args: unknown[]) => void>();
+
 // fake the window.events object
 beforeEach(() => {
   vi.resetAllMocks();
+  eventListeners.clear();
   vi.mocked(window.getPodmanDesktopVersion).mockResolvedValue('1.0.0');
+  vi.mocked(window.getWelcomeMessages).mockResolvedValue({
+    getStartedMessage: 'Get started with Podman Desktop',
+    welcomeMessage: 'Welcome to Podman Desktop',
+  });
   (window.events as unknown) = {
-    receive: (_channel: string, func: () => void): void => {
-      func();
+    receive: (channel: string, func: (...args: unknown[]) => void): void => {
+      eventListeners.set(channel, func);
     },
   };
 });
@@ -327,4 +339,28 @@ test('Expect that releaseNotesBanner.show configuration value is not set to curr
   vi.mocked(window.getConfigurationValue).mockResolvedValueOnce('value1');
   await waitRender({});
   expect(vi.mocked(window.updateConfigurationValue)).not.toBeCalledWith(`releaseNotesBanner.show`, '1.0.0');
+});
+
+test('Expect "Start guided setup" button is hidden when no steps are registered', async () => {
+  await waitRender({ showWelcome: true });
+
+  expect(screen.queryByRole('button', { name: 'Start guided setup' })).not.toBeInTheDocument();
+});
+
+test('Expect onboarding:restart event shows the welcome page', async () => {
+  vi.mocked(window.getConfigurationValue).mockResolvedValueOnce('initial');
+  await waitRender({});
+
+  // welcome should not be visible since version is already set
+  expect(screen.queryByRole('button', { name: 'Skip' })).not.toBeInTheDocument();
+
+  // simulate the onboarding:restart event
+  const listener = eventListeners.get('onboarding:restart');
+  expect(listener).toBeDefined();
+  listener!();
+  await tick();
+
+  // welcome should now be visible
+  const button = screen.getByRole('button', { name: 'Skip' });
+  expect(button).toBeInTheDocument();
 });

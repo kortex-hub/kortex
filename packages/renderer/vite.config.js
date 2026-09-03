@@ -38,9 +38,9 @@ export default defineConfig({
       '/@api/': join(PACKAGE_ROOT, '../api/src') + '/',
     },
   },
-  plugins: [tailwindcss(), svelte({ configFile: '../../svelte.config.js', hot: !process.env.VITEST }), svelteTesting()],
+  plugins: [tailwindcss(), svelte({ configFile: '../../svelte.config.js' }), svelteTesting()],
   optimizeDeps: {
-    exclude: ['tinro', '@podman-desktop/api'],
+    exclude: ['tinro', '@openkaiden/api'],
   },
   test: {
     retry: 3, // Retries failing tests up to 3 times

@@ -23,7 +23,7 @@ import { beforeAll, expect, test, vi } from 'vitest';
 
 import { configurationProperties } from '/@/stores/configurationProperties';
 import { providerInfos } from '/@/stores/providers';
-import type { ProviderInfo } from '/@api/provider-info';
+import { type ProviderInfo } from '/@api/provider-info';
 
 import OnboardingComponent from './OnboardingComponent.svelte';
 
@@ -63,6 +63,16 @@ const providerInfo: ProviderInfo = {
   kubernetesProviderConnectionInitialization: false,
   extensionId: 'id',
   cleanupSupport: false,
+  inferenceConnections: [],
+  ragConnections: [],
+  chunkConnections: [],
+  flowConnections: [],
+  inferenceProviderConnectionCreation: false,
+  inferenceProviderConnectionInitialization: false,
+  ragProviderConnectionCreation: false,
+  ragProviderConnectionInitialization: false,
+  chunkProviderConnectionCreation: false,
+  chunkProviderConnectionInitialization: false,
 };
 
 async function waitRender(customProperties: object): Promise<void> {

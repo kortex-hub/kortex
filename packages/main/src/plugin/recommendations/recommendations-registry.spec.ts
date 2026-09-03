@@ -81,12 +81,7 @@ beforeEach(() => {
 
   vi.setSystemTime(fakeNow);
 
-  recommendationsRegistry = new RecommendationsRegistry(
-    configurationRegistryMock,
-    featuredMock,
-    extensionLoaderMock,
-    extensionsCatalogMock,
-  );
+  recommendationsRegistry = new RecommendationsRegistry(configurationRegistryMock);
 });
 
 afterEach(() => {
@@ -176,8 +171,6 @@ describe('getExtensionBanners', () => {
 
     const extensions = await recommendationsRegistry.getExtensionBanners();
     expect(extensions.length).toBe(0);
-
-    expect(featuredMock.getFeaturedExtensions).toHaveBeenCalled();
   });
 
   test('not-installed extension from featured', async () => {
@@ -195,15 +188,7 @@ describe('getExtensionBanners', () => {
     vi.mocked(featuredMock.getFeaturedExtensions).mockResolvedValue([featured]);
 
     const extensions = await recommendationsRegistry.getExtensionBanners();
-    expect(extensions.length).toBe(1);
-    expect(extensions[0]?.featured).toStrictEqual(featured);
-    expect(extensions[0]?.extensionId).toBe('dummy.id-0');
-    expect(extensions[0]?.title).toBe('dummy title');
-    expect(extensions[0]?.description).toBe('dummy description');
-    expect(extensions[0]?.icon).toBe('data:image/png;base64-icon');
-    expect(extensions[0]?.thumbnail).toBe('data:image/png;base64-thumbnail');
-
-    expect(featuredMock.getFeaturedExtensions).toHaveBeenCalled();
+    expect(extensions.length).toBe(0);
   });
 
   test('default should limit to 1 item', async () => {
@@ -222,9 +207,7 @@ describe('getExtensionBanners', () => {
     );
 
     const extensions = await recommendationsRegistry.getExtensionBanners();
-    expect(extensions.length).toBe(1);
-
-    expect(featuredMock.getFeaturedExtensions).toHaveBeenCalled();
+    expect(extensions.length).toBe(0);
   });
 
   test('no limit to the maximum number returned', async () => {
@@ -243,9 +226,7 @@ describe('getExtensionBanners', () => {
     );
 
     const extensions = await recommendationsRegistry.getExtensionBanners(-1);
-    expect(extensions.length).toBe(10);
-
-    expect(featuredMock.getFeaturedExtensions).toHaveBeenCalled();
+    expect(extensions.length).toBe(0);
   });
 
   test('publishDate value anterior', async () => {
@@ -266,8 +247,6 @@ describe('getExtensionBanners', () => {
 
     const extensions = await recommendationsRegistry.getExtensionBanners();
     expect(extensions.length).toBe(0);
-
-    expect(featuredMock.getFeaturedExtensions).toHaveBeenCalled();
   });
 
   test('same time should return same arrays', async () => {
@@ -310,13 +289,11 @@ describe('getExtensionBanners', () => {
 
     vi.setSystemTime(new Date(2050, 1, 1, 1));
     const resultA = await recommendationsRegistry.getExtensionBanners(5);
-    expect(resultA.length).toBe(5);
+    expect(resultA.length).toBe(0);
 
     vi.setSystemTime(new Date(2050, 1, 1, 2));
     const resultB = await recommendationsRegistry.getExtensionBanners(5);
-    expect(resultB.length).toBe(5);
-
-    expect(resultA).not.toStrictEqual(resultB);
+    expect(resultB.length).toBe(0);
   });
 
   test('all elements should have been shown in one day', async () => {
@@ -333,23 +310,12 @@ describe('getExtensionBanners', () => {
     }));
     vi.mocked(featuredMock.getFeaturedExtensions).mockResolvedValue(featured);
 
-    const expectedIds: Set<string> = new Set(featured.map(item => item.id));
-
-    const actualsIds: Set<string> = new Set();
-
     for (let h = 0; h < 24; h++) {
       vi.setSystemTime(new Date(2050, 1, 1, h));
 
       const banners = await recommendationsRegistry.getExtensionBanners(1);
-      expect(banners.length).toBe(1);
-
-      const actualExtensionId = banners[0]?.extensionId;
-      expect(actualExtensionId).toBeDefined();
-      const actualExtensionIdString = actualExtensionId as string;
-      actualsIds.add(actualExtensionIdString);
+      expect(banners.length).toBe(0);
     }
-
-    expect(expectedIds).toStrictEqual(actualsIds);
   });
 });
 
@@ -381,13 +347,6 @@ describe('getRegistries', () => {
     ]);
 
     const registries = await recommendationsRegistry.getRegistries();
-    expect(registries.length).toBe(1);
-    if (!registries[0]) {
-      throw new Error('registry is undefined');
-    }
-    expect(registries[0].extensionId).toBe('my.extensionId');
-
-    expect(vi.mocked(extensionLoaderMock).listExtensions).toHaveBeenCalled();
-    expect(vi.mocked(extensionsCatalogMock).getFetchableExtensions).toHaveBeenCalled();
+    expect(registries.length).toBe(0);
   });
 });

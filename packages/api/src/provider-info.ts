@@ -17,7 +17,9 @@
  ***********************************************************************/
 
 import type {
+  InferenceProviderConnectionType,
   Link,
+  LLMMetadata,
   ProviderCleanupAction,
   ProviderConnectionStatus,
   ProviderDetectionCheck,
@@ -25,10 +27,9 @@ import type {
   ProviderInformation,
   ProviderLinks,
   ProviderStatus,
-} from '@podman-desktop/api';
+} from '@openkaiden/api';
 
 export type LifecycleMethod = 'start' | 'stop' | 'delete' | 'edit';
-
 export interface ProviderContainerConnectionInfo {
   connectionType: 'container';
   name: string;
@@ -39,7 +40,7 @@ export interface ProviderContainerConnectionInfo {
   };
   lifecycleMethods?: LifecycleMethod[];
   /**
-   * Specify if the corresponding {@link import('@podman-desktop/api').ProviderContainerConnection} instance
+   * Specify if the corresponding {@link import('@openkaiden/api').ProviderContainerConnection} instance
    * has a shellAccess available
    */
   shellAccess?: boolean;
@@ -63,27 +64,72 @@ export interface ProviderVmConnectionInfo {
   status: ProviderConnectionStatus;
   lifecycleMethods?: LifecycleMethod[];
 }
+export interface ProviderFlowConnectionInfo {
+  name: string;
+  status: ProviderConnectionStatus;
+  lifecycleMethods?: LifecycleMethod[];
+  connectionType: 'flow';
+}
+
+export interface ProviderChunkProviderConnectionInfo {
+  id: string;
+  name: string;
+  status: ProviderConnectionStatus;
+  lifecycleMethods?: LifecycleMethod[];
+  connectionType: 'chunk';
+}
+
+export interface ProviderInferenceConnectionInfo {
+  connectionType: 'inference';
+  id: string;
+  name: string;
+  type: InferenceProviderConnectionType;
+  llmMetadata?: LLMMetadata;
+  endpoint?: string;
+  status: ProviderConnectionStatus;
+  lifecycleMethods?: LifecycleMethod[];
+  models: Array<{
+    label: string;
+  }>;
+}
+
+export interface ProviderRagConnectionInfo {
+  name: string;
+  status: ProviderConnectionStatus;
+  lifecycleMethods?: LifecycleMethod[];
+  connectionType: 'rag';
+}
 
 export type ProviderConnectionInfo =
   | ProviderContainerConnectionInfo
   | ProviderKubernetesConnectionInfo
-  | ProviderVmConnectionInfo;
+  | ProviderVmConnectionInfo
+  | ProviderInferenceConnectionInfo
+  | ProviderRagConnectionInfo
+  | ProviderFlowConnectionInfo
+  | ProviderChunkProviderConnectionInfo;
 
 export interface ProviderInfo {
   internalId: string;
   id: string;
   readonly extensionId: string;
   name: string;
+
+  // connections
   containerConnections: ProviderContainerConnectionInfo[];
   kubernetesConnections: ProviderKubernetesConnectionInfo[];
   vmConnections: ProviderVmConnectionInfo[];
+  inferenceConnections: ProviderInferenceConnectionInfo[];
+  ragConnections: ProviderRagConnectionInfo[];
+  flowConnections: ProviderFlowConnectionInfo[];
+  chunkConnections: ProviderChunkProviderConnectionInfo[];
+
   status: ProviderStatus;
   lifecycleMethods?: LifecycleMethod[];
   // can create provider connection from ContainerProviderConnectionFactory params
   containerProviderConnectionCreation: boolean;
   // can initialize provider connection from ContainerProviderConnectionFactory params
   containerProviderConnectionInitialization: boolean;
-
   // optional creation name (if defined)
   containerProviderConnectionCreationDisplayName?: string;
 
@@ -112,6 +158,43 @@ export interface ProviderInfo {
   // optional creation button title (if defined)
   vmProviderConnectionCreationButtonTitle?: string;
 
+  /**
+   * Inference Provider connection
+   */
+  // can create provider connection from InferenceProviderConnectionFactory params
+  inferenceProviderConnectionCreation: boolean;
+  // can initialize provider connection from InferenceProviderConnectionFactory params
+  inferenceProviderConnectionInitialization: boolean;
+  // optional creation name (if defined)
+  inferenceProviderConnectionCreationDisplayName?: string;
+  // optional creation button title (if defined)
+  inferenceProviderConnectionCreationButtonTitle?: string;
+  // optional connection types from the factory (e.g. ['cloud', 'self-hosted'])
+  inferenceProviderConnectionCreationTypes?: InferenceProviderConnectionType[];
+  // optional LLM metadata from the factory (e.g. { name: 'anthropic' })
+  inferenceProviderConnectionCreationLLMMetadata?: LLMMetadata;
+
+  /**
+   * RAG Provider connection
+   */
+  // can create provider connection from RagProviderConnectionFactory params
+  ragProviderConnectionCreation: boolean;
+  // can initialize provider connection from RagProviderConnectionFactory params
+  ragProviderConnectionInitialization: boolean;
+  // optional creation name (if defined)
+  ragProviderConnectionCreationDisplayName?: string;
+  // optional creation button title (if defined)
+  ragProviderConnectionCreationButtonTitle?: string;
+
+  /**
+   * Chunk Provider connection
+   */
+  chunkProviderConnectionCreation: boolean;
+  chunkProviderConnectionInitialization: boolean;
+  chunkProviderConnectionCreationDisplayName?: string;
+  chunkProviderConnectionCreationButtonTitle?: string;
+
+  // other
   emptyConnectionMarkdownDescription?: string;
 
   version?: string;
@@ -134,6 +217,16 @@ export interface ProviderInfo {
   updateInfo?: {
     version: string;
   };
+}
+
+/**
+ * Credential metadata resolved from an inference connection, used to
+ * create a matching kdn vault secret during workspace creation.
+ */
+export interface InferenceConnectionCredentials {
+  credentials: Record<string, string>;
+  llmMetadataName?: string;
+  endpoint?: string;
 }
 
 export interface PreflightChecksCallback {

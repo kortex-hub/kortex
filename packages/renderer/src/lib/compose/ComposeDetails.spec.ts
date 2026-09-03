@@ -35,6 +35,7 @@ import { type ProviderInfo } from '/@api/provider-info';
 import ComposeDetails from './ComposeDetails.svelte';
 
 vi.mock(import('@xterm/xterm'));
+vi.mock(import('/@/lib/editor/MonacoEditor.svelte'));
 
 beforeAll(() => {
   (window.events as unknown) = {

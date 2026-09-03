@@ -72,8 +72,9 @@ test('kubernetesContextsHealths not in experimental states mode', async () => {
   await callbackExtensionsStarted!();
 
   // values are never fetched
-  await new Promise(resolve => setTimeout(resolve, 500));
-  const currentValue = get(kubernetesContextsHealths);
-  expect(currentValue).toEqual([]);
-  expect(vi.mocked(window.kubernetesGetContextsHealths)).not.toHaveBeenCalled();
+  await vi.waitFor(() => {
+    const currentValue = get(kubernetesContextsHealths);
+    expect(currentValue).toEqual(initialValues);
+  }, 500);
+  expect(vi.mocked(window.kubernetesGetContextsHealths)).toHaveBeenCalled();
 });

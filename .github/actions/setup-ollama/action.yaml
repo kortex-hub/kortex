@@ -1,0 +1,114 @@
+#
+# Copyright (C) 2026 Red Hat, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: Setup Ollama
+description: Install Ollama, pull a model, and serve it. Sets OLLAMA_ENABLED, INFERENCE_MODEL, and optionally INFERENCE_SECOND_MODEL in the environment on success.
+
+inputs:
+  model:
+    description: 'Model to pull and serve (e.g., granite3.2:2b)'
+    required: true
+  second_model:
+    description: 'Optional second inference model to pull (e.g., granite3.1-dense:2b).'
+    required: false
+    default: ''
+
+outputs:
+  enabled:
+    description: "'true' if the primary model is ready, 'false' otherwise"
+    value: ${{ steps.pull.outputs.enabled }}
+  second_model_enabled:
+    description: "'true' if the second model was pulled successfully, 'false' or empty otherwise"
+    value: ${{ steps.pull.outputs.second_model_enabled }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Ollama
+      uses: ai-action/setup-ollama@71ea83e32be8721c648fa946c5da9853679a3803 # v2
+
+    - name: Cache Ollama models
+      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+      with:
+        path: ~/.ollama/models
+        key: ollama-${{ inputs.model }}-${{ inputs.second_model || 'none' }}-${{ runner.os }}
+
+    - name: Pull Ollama model(s)
+      id: pull
+      shell: bash
+      run: |
+        # Wait for Ollama server to be ready (up to 60 seconds)
+        for i in {1..30}; do
+          if ollama list &> /dev/null; then
+            echo "Ollama server is ready"
+            break
+          fi
+          echo "Waiting for Ollama server... (attempt $i/30)"
+          sleep 2
+          if [ "$i" -eq 30 ]; then
+            echo "Ollama server failed to start"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+        done
+
+        pull_model() {
+          local model="$1"
+
+          if ollama list | grep -q "$model"; then
+            echo "Model $model is already available (from cache)"
+            return 0
+          fi
+
+          for attempt in {1..5}; do
+            echo "Pulling $model (attempt $attempt/5)..."
+            ollama rm "$model" 2>/dev/null || true
+
+            if ollama pull "$model" 2>&1 && ollama list | grep -q "$model"; then
+              echo "Model $model is ready"
+              return 0
+            fi
+
+            wait_time=$((attempt * 10))
+            echo "Pull failed, retrying in ${wait_time} seconds..."
+            sleep $wait_time
+          done
+
+          return 1
+        }
+
+        # Pull primary model
+        if pull_model "${{ inputs.model }}"; then
+          echo "OLLAMA_ENABLED=true" >> "$GITHUB_ENV"
+          echo "INFERENCE_MODEL=${{ inputs.model }}" >> "$GITHUB_ENV"
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "::warning::Failed to pull ${{ inputs.model }} model after 5 attempts - Ollama tests will be skipped"
+          echo "enabled=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        # Pull second model if specified
+        if [ -n "${{ inputs.second_model }}" ]; then
+          if pull_model "${{ inputs.second_model }}"; then
+            echo "INFERENCE_SECOND_MODEL=${{ inputs.second_model }}" >> "$GITHUB_ENV"
+            echo "second_model_enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Failed to pull ${{ inputs.second_model }} after 5 attempts - second model tests will be skipped"
+            echo "second_model_enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+        fi

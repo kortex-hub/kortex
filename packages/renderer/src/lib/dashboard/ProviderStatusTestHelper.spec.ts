@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { ProviderStatus } from '@podman-desktop/api';
+import type { ProviderStatus } from '@openkaiden/api';
 import { render, screen } from '@testing-library/svelte';
 import type { Component } from 'svelte';
 import { expect, test } from 'vitest';
@@ -52,6 +52,16 @@ export function verifyStatus<
     },
     extensionId: '',
     cleanupSupport: false,
+    inferenceConnections: [],
+    ragConnections: [],
+    chunkConnections: [],
+    flowConnections: [],
+    inferenceProviderConnectionCreation: false,
+    inferenceProviderConnectionInitialization: false,
+    ragProviderConnectionCreation: false,
+    ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
 
   const initializationContext: InitializationContext = { mode: InitializeAndStartMode };

@@ -38,6 +38,13 @@ const windowEvents = [
   'provider-unregister-kubernetes-connection',
   'provider-register-vm-connection',
   'provider-unregister-vm-connection',
+  'provider-register-flow-connection',
+  'provider-unregister-flow-connection',
+  'provider-register-inference-connection',
+  'provider-register-mcp-connection',
+  'provider-register-rag-connection',
+  'provider-register-chunk-connection',
+  'provider-unregister-chunk-connection',
   'extensions-started',
 ];
 const windowListeners = ['system-ready', 'provider-lifecycle-change'];

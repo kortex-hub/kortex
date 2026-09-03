@@ -1,6 +1,6 @@
 <script lang="ts">
 import { faCircleInfo, faTerminal } from '@fortawesome/free-solid-svg-icons';
-import type { ContainerProviderConnection } from '@podman-desktop/api';
+import type { ContainerProviderConnection } from '@openkaiden/api';
 import { DropdownMenu, EmptyScreen, Tooltip } from '@podman-desktop/ui-svelte';
 import { Buffer } from 'buffer';
 import { filesize } from 'filesize';
@@ -38,6 +38,7 @@ import PreferencesProviderInstallationModal from './PreferencesProviderInstallat
 import PreferencesResourcesRenderingCopyButton from './PreferencesResourcesRenderingCopyButton.svelte';
 import ProviderActionButtons from './ProviderActionButtons.svelte';
 import SettingsPage from './SettingsPage.svelte';
+import ThemedIcon from './ThemedIcon.svelte';
 import {
   getProviderConnectionName,
   type IConnectionRestart,
@@ -164,6 +165,53 @@ onMount(async () => {
               status: connection.status,
             });
           }
+        }
+      });
+
+      provider.inferenceConnections.forEach(connection => {
+        const inferenceConnectionName = getProviderConnectionName(provider, connection);
+        connectionNames.push(inferenceConnectionName);
+        // update the map only if the container state is different from last time
+        if (
+          !containerConnectionStatus.has(inferenceConnectionName) ||
+          containerConnectionStatus.get(inferenceConnectionName)?.status !== connection.status
+        ) {
+          containerConnectionStatus.set(inferenceConnectionName, {
+            inProgress: false,
+            action: undefined,
+            status: connection.status,
+          });
+        }
+      });
+
+      provider.ragConnections.forEach(connection => {
+        const ragConnectionName = getProviderConnectionName(provider, connection);
+        connectionNames.push(ragConnectionName);
+        // update the map only if the container state is different from last time
+        if (
+          !containerConnectionStatus.has(ragConnectionName) ||
+          containerConnectionStatus.get(ragConnectionName)?.status !== connection.status
+        ) {
+          containerConnectionStatus.set(ragConnectionName, {
+            inProgress: false,
+            action: undefined,
+            status: connection.status,
+          });
+        }
+      });
+
+      provider.chunkConnections.forEach(connection => {
+        const chunkConnectionName = getProviderConnectionName(provider, connection);
+        connectionNames.push(chunkConnectionName);
+        if (
+          !containerConnectionStatus.has(chunkConnectionName) ||
+          containerConnectionStatus.get(chunkConnectionName)?.status !== connection.status
+        ) {
+          containerConnectionStatus.set(chunkConnectionName, {
+            inProgress: false,
+            action: undefined,
+            status: connection.status,
+          });
         }
       });
     });
@@ -426,6 +474,18 @@ $effect(() => {
     providerElementMap[focus].scrollIntoView({ behavior: 'auto', block: 'start' });
   }
 });
+
+function hasConnections(provider: ProviderInfo): boolean {
+  return (
+    provider.containerConnections.length > 0 ||
+    provider.kubernetesConnections.length > 0 ||
+    provider.vmConnections.length > 0 ||
+    provider.inferenceConnections.length > 0 ||
+    provider.ragConnections.length > 0 ||
+    provider.flowConnections.length > 0 ||
+    provider.chunkConnections.length > 0
+  );
+}
 </script>
 
 <SettingsPage title="Resources">
@@ -455,14 +515,7 @@ $effect(() => {
           <!-- left col - provider icon/name + "create new" button -->
           <div class="min-w-[170px] max-w-[200px] pr-5 py-2">
             <div class="flex">
-              {#if provider.images.icon}
-                {#if typeof provider.images.icon === 'string'}
-                  <img src={provider.images.icon} alt={provider.name} class="max-w-[40px] h-full" />
-                  <!-- TODO check theme used for image, now use dark by default -->
-                {:else}
-                  <img src={provider.images.icon.dark} alt={provider.name} class="max-w-[40px]" />
-                {/if}
-              {/if}
+              <ThemedIcon icon={provider.images.icon} alt={provider.name} class="max-w-[40px]" />
               <span class="my-auto font-semibold text-[var(--pd-invert-content-card-header-text)] ml-3 break-words"
                 >{provider.name}</span>
               {#if provider.version}
@@ -487,7 +540,7 @@ $effect(() => {
           aria-label="Provider Connections">
           <PreferencesConnectionsEmptyRendering
             message={provider.emptyConnectionMarkdownDescription}
-            hidden={provider.containerConnections.length > 0 || provider.kubernetesConnections.length > 0 || provider.vmConnections.length > 0} />
+            hidden={hasConnections(provider)} />
           {#each provider.containerConnections as container, index (index)}
             {@const peerProperties = new PeerProperties()}
             {@const rootfulInfo = getRootfulDisplayInfo(provider, container)}
@@ -688,7 +741,63 @@ $effect(() => {
               {/snippet}
             </PreferencesConnectionActions>
           </div>
-        {/each}
+          {/each}
+          {#each provider.inferenceConnections as inferenceConnection, index (index)}
+          <div class="px-5 py-2 w-[240px] border-r border-[var(--pd-content-divider)]" role="region" aria-label={inferenceConnection.name}>
+            <div class="font-semibold">
+              {inferenceConnection.name} (Inference)
+            </div>
+            <PreferencesConnectionActions
+              provider={provider}
+              connection={inferenceConnection}
+              connectionStatus={containerConnectionStatus.get(getProviderConnectionName(provider, inferenceConnection))}
+              updateConnectionStatus={updateContainerStatus}
+              addConnectionToRestartingQueue={addConnectionToRestartingQueue}>
+            </PreferencesConnectionActions>
+          </div>
+          {/each}
+          {#each provider.ragConnections as ragConnection, index (index)}
+          <div class="px-5 py-2 w-[240px] border-r border-[var(--pd-content-divider)]" role="region" aria-label={ragConnection.name}>
+            <div class="font-semibold">
+              {ragConnection.name} (Knowledge Database)
+            </div>
+            <PreferencesConnectionActions
+              provider={provider}
+              connection={ragConnection}
+              connectionStatus={containerConnectionStatus.get(getProviderConnectionName(provider, ragConnection))}
+              updateConnectionStatus={updateContainerStatus}
+              addConnectionToRestartingQueue={addConnectionToRestartingQueue}>
+            </PreferencesConnectionActions>
+          </div>
+          {/each}
+          {#each provider.flowConnections as flowConnection, index (index)}
+          <div class="px-5 py-2 w-[240px] border-r border-[var(--pd-content-divider)]" role="region" aria-label={flowConnection.name}>
+            <div class="font-semibold">
+              {flowConnection.name} (Flow)
+            </div>
+            <PreferencesConnectionActions
+              provider={provider}
+              connection={flowConnection}
+              connectionStatus={containerConnectionStatus.get(getProviderConnectionName(provider, flowConnection))}
+              updateConnectionStatus={updateContainerStatus}
+              addConnectionToRestartingQueue={addConnectionToRestartingQueue}>
+            </PreferencesConnectionActions>
+          </div>
+          {/each}
+          {#each provider.chunkConnections as chunkConnection, index (index)}
+          <div class="px-5 py-2 w-[240px] border-r border-[var(--pd-content-divider)]" role="region" aria-label={chunkConnection.name}>
+            <div class="font-semibold">
+              {chunkConnection.name} (Chunk)
+            </div>
+            <PreferencesConnectionActions
+              provider={provider}
+              connection={chunkConnection}
+              connectionStatus={containerConnectionStatus.get(getProviderConnectionName(provider, chunkConnection))}
+              updateConnectionStatus={updateContainerStatus}
+              addConnectionToRestartingQueue={addConnectionToRestartingQueue}>
+            </PreferencesConnectionActions>
+          </div>
+          {/each}
         </div>
       </div>
     {/each}

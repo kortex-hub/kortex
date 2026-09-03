@@ -63,7 +63,7 @@ test('ElectronApp#setAsDefaultProtocolClient should be called when application i
   await plugin.onReady();
 
   expect(ELECTRON_APP_MOCK.setAsDefaultProtocolClient).toHaveBeenCalledOnce();
-  expect(ELECTRON_APP_MOCK.setAsDefaultProtocolClient).toHaveBeenCalledWith('podman-desktop');
+  expect(ELECTRON_APP_MOCK.setAsDefaultProtocolClient).toHaveBeenCalledWith('kaiden');
 });
 
 test('on windows ElectronApp#setAsDefaultProtocolClient should be called with process args', async () => {
@@ -72,8 +72,5 @@ test('on windows ElectronApp#setAsDefaultProtocolClient should be called with pr
   await plugin.onReady();
 
   expect(ELECTRON_APP_MOCK.setAsDefaultProtocolClient).toHaveBeenCalledOnce();
-  expect(ELECTRON_APP_MOCK.setAsDefaultProtocolClient).toHaveBeenCalledWith('podman-desktop', '/foo/bar', [
-    'foo',
-    'bar',
-  ]);
+  expect(ELECTRON_APP_MOCK.setAsDefaultProtocolClient).toHaveBeenCalledWith('kaiden', '/foo/bar', ['foo', 'bar']);
 });

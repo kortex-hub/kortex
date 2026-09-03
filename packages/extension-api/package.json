@@ -1,8 +1,8 @@
 {
-  "name": "@podman-desktop/api",
-  "version": "0.0.1",
-  "description": "API for Podman Desktop extensions",
-  "repository": "https://github.com/podman-desktop/podman-desktop",
+  "name": "@openkaiden/api",
+  "version": "0.4.0-next",
+  "description": "API for Kaiden extensions",
+  "repository": "https://github.com/openkaiden/kaiden",
   "publishConfig": {
     "provenance": true,
     "access": "public"
@@ -19,5 +19,8 @@
     "watch": "",
     "publish:next": "pnpm publish  --registry=https://registry.npmjs.org/ --no-git-tag-version --new-version 0.0.1-\"$(date +%s)\""
   },
-  "devDependencies": {}
+  "dependencies": {
+    "@ai-sdk/provider": "^4.0.3",
+    "@openkaiden/workspace-configuration": "^0.15.0"
+  }
 }

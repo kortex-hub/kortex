@@ -45,6 +45,8 @@ const network1: NetworkInspectInfo = {
   ConfigOnly: false,
 };
 
+vi.mock(import('/@/lib/editor/MonacoEditor.svelte'));
+
 beforeEach(() => {
   vi.resetAllMocks();
   networksListInfo.set([]);

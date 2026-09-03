@@ -14,6 +14,7 @@ import type { IConfigurationPropertyRecordedSchema } from '/@api/configuration/m
 import type { ProviderConnectionInfo, ProviderInfo } from '/@api/provider-info';
 
 import PreferencesConnectionCreationRendering from './PreferencesConnectionCreationOrEditRendering.svelte';
+import ProviderInfoIcon from './ProviderInfoIcon.svelte';
 import { writeToTerminal } from './Util';
 
 interface Props {
@@ -56,7 +57,13 @@ let providerDisplayName: string = $derived(
       ? providerInfo?.kubernetesProviderConnectionCreationDisplayName
       : providerInfo?.vmProviderConnectionCreation
         ? providerInfo?.vmProviderConnectionCreationDisplayName
-        : undefined) ?? providerInfo?.name,
+        : providerInfo?.inferenceProviderConnectionCreation
+          ? providerInfo?.inferenceProviderConnectionCreationDisplayName
+          : providerInfo?.ragProviderConnectionCreation
+            ? providerInfo?.ragProviderConnectionCreationDisplayName
+            : providerInfo?.chunkProviderConnectionCreation
+              ? providerInfo?.chunkProviderConnectionCreationDisplayName
+              : undefined) ?? providerInfo?.name,
 );
 
 let title: string = $derived(
@@ -92,14 +99,7 @@ async function stopReceivingLogs(providerInternalId: string): Promise<void> {
 <Route path="/*" breadcrumb={providerInfo?.name} navigationHint="details">
   <FormPage title={title} inProgress={inProgress}>
     {#snippet icon()}
-      {#if providerInfo?.images?.icon}
-        {#if typeof providerInfo.images.icon === 'string'}
-          <img src={providerInfo.images.icon} alt={providerInfo.name} class="max-h-10" />
-          <!-- TODO check theme used for image, now use dark by default -->
-        {:else}
-          <img src={providerInfo.images.icon.dark} alt={providerInfo.name} class="max-h-10" />
-        {/if}
-      {/if}
+     <ProviderInfoIcon {providerInfo}/>
     {/snippet}
 
     {#snippet actions()}
@@ -173,6 +173,37 @@ async function stopReceivingLogs(providerInternalId: string): Promise<void> {
             taskId={taskId}
             bind:inProgress={inProgress} />
         {/if}
+
+        {#if providerInfo?.inferenceProviderConnectionCreation === true}
+          <PreferencesConnectionCreationRendering
+            providerInfo={providerInfo}
+            properties={properties}
+            propertyScope="InferenceProviderConnectionFactory"
+            callback={window.createInferenceProviderConnection}
+            taskId={taskId}
+            bind:inProgress={inProgress} />
+        {/if}
+
+        {#if providerInfo?.ragProviderConnectionCreation === true}
+          <PreferencesConnectionCreationRendering
+            providerInfo={providerInfo}
+            properties={properties}
+            propertyScope="RagProviderConnectionFactory"
+            callback={window.createRagProviderConnection}
+            taskId={taskId}
+            bind:inProgress={inProgress} />
+        {/if}
+
+        {#if providerInfo?.chunkProviderConnectionCreation === true}
+          <PreferencesConnectionCreationRendering
+            providerInfo={providerInfo}
+            properties={properties}
+            propertyScope="ChunkProviderConnectionFactory"
+            callback={window.createChunkProviderConnection}
+            taskId={taskId}
+            bind:inProgress={inProgress} />
+        {/if}
+
       </div>
     </div>
     {/snippet}

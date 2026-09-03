@@ -21,8 +21,8 @@ import { expect, test } from 'vitest';
 import { GITHUB_OWNER, GITHUB_REPOSITORY, REPOSITORY_HOMEPAGE, REPOSITORY_URL } from './repository-infos.js';
 
 test('check constants correctly extracted from package.json', async () => {
-  expect(REPOSITORY_URL).toBe('https://github.com/podman-desktop/podman-desktop');
-  expect(REPOSITORY_HOMEPAGE).toBe('https://www.podman-desktop.io');
-  expect(GITHUB_OWNER).toBe('podman-desktop');
-  expect(GITHUB_REPOSITORY).toBe('podman-desktop');
+  expect(REPOSITORY_URL).toBe('https://github.com/openkaiden/kaiden');
+  expect(REPOSITORY_HOMEPAGE).toBe('https://www.openkaiden.ai');
+  expect(GITHUB_OWNER).toBe('openkaiden');
+  expect(GITHUB_REPOSITORY).toBe('kaiden');
 });

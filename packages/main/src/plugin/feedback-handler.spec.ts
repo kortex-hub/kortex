@@ -94,11 +94,9 @@ describe('getFeedbackMessages', () => {
     const feedbackHandler = new FeedbackHandler(extensionLoaderMock);
     const messages = feedbackHandler.getFeedbackMessages();
 
-    expect(messages.experienceLabel).toBe('How was your experience with Podman Desktop');
-    expect(messages.thankYouMessage).toBe(
-      'Your input is valuable in helping us better understand and tailor Podman Desktop.',
-    );
-    expect(messages.gitHubStarsMessage).toBe('Like Podman Desktop? Give us a star on GitHub');
+    expect(messages.experienceLabel).toBe('How was your experience with Kaiden');
+    expect(messages.thankYouMessage).toBe('Your input is valuable in helping us better understand and tailor Kaiden.');
+    expect(messages.gitHubStarsMessage).toBe('Like Kaiden? Give us a star on GitHub');
   });
 
   test('should return feedback messages with custom product name', () => {
@@ -127,6 +125,9 @@ describe('openGitHubIssue', () => {
     await feedbackHandler.openGitHubIssue(issueProperties);
 
     expect(shell.openExternal).toHaveBeenCalledOnce();
+    expect(shell.openExternal).toHaveBeenCalledWith(
+      expect.stringContaining(productJSONFile.GitHubFeedbackLinks.issues),
+    );
 
     // extract the first argument of the shell.openExternal call
     const url: string | undefined = vi.mocked(shell.openExternal).mock.calls[0]?.[0];
@@ -135,6 +136,30 @@ describe('openGitHubIssue', () => {
       title: 'PD is not working',
       'bug-description': 'bug description',
     });
+  });
+
+  test('Expect log in the console is there is no GitHub issues link for preview', async () => {
+    const originalConsoleLog = console.log;
+    const consoleLogMock = vi.fn();
+    console.log = consoleLogMock;
+
+    const originalLink = vi.mocked(productJSONFile).GitHubFeedbackLinks.issues;
+
+    vi.mocked(productJSONFile).GitHubFeedbackLinks.issues = '';
+
+    const issueProperties: GitHubIssue = {
+      category: 'feature',
+      title: 'new feature',
+      description: 'feature description',
+    };
+
+    const feedbackHandler = new FeedbackHandler(extensionLoaderMock);
+    await feedbackHandler.openGitHubIssue(issueProperties);
+
+    expect(consoleLogMock).toHaveBeenCalledWith('No GitHub issues link found, cannot preview new GitHub issue');
+
+    console.log = originalConsoleLog;
+    vi.mocked(productJSONFile).GitHubFeedbackLinks.issues = originalLink;
   });
 
   test('Expect openExternal to be called with queryParams and feature request template', async () => {

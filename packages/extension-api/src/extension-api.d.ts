@@ -17,33 +17,37 @@
  ***********************************************************************/
 
 /**
- * The Podman Desktop API is intended to be consumed by extensions interacting with Podman Desktop.
+ * The Kaiden API is intended to be consumed by extensions interacting with Kaiden.
  *
  * This documentation is automatically generated from typedoc comments
- * in the source code `extension-api.d.ts` and provided [on our website](https://podman-desktop.io/api).
+ * in the source code `extension-api.d.ts`
  *
- * This type declaration file can be installed from [the npm registry](https://www.npmjs.com/package/@podman-desktop/api).
+ * This type declaration file can be installed from [the npm registry](https://www.npmjs.com/package/@openkaiden/api).
  *
- * For more information, see the main
- * [Podman Desktop developing extensions documentation](https://podman-desktop.io/docs/extensions/developing).
  *
  * @example
  * ```shell
- * $ npm install @podman-desktop/api
+ * $ npm install @openkaiden/api
  * ```
  *
  * ```typescript
- * import * as api from '@podman-desktop/api';
+ * import * as api from '@openkaiden/api';
  *
  * console.log(api.version);
  * ```
  *
- * @module @podman-desktop/api
+ * @module @openkaiden/api
  **/
 
-declare module '@podman-desktop/api' {
+declare module '@openkaiden/api' {
+  import type { ProviderV3, ProviderV4 } from '@ai-sdk/provider' with { 'resolution-mode': 'import' };
+
+  type AISDKInferenceProvider = ProviderV3 | ProviderV4;
+  import type { components } from '@openkaiden/mcp-registry-types';
+  import type { components as workspaceConfigComponents } from '@openkaiden/workspace-configuration';
+
   /**
-   * The version of Podman Desktop.
+   * The version of Kaiden.
    */
   export const version: string;
 
@@ -130,7 +134,7 @@ declare module '@podman-desktop/api' {
    * the `Event` interface.
    *
    * ```typescript
-   * import * as api from '@podman-desktop/api';
+   * import * as api from '@openkaiden/api';
    *
    * class MyValueManager {
    *   private value: boolean | undefined = undefined;
@@ -254,10 +258,10 @@ declare module '@podman-desktop/api' {
    * and the {@link Extension.exports exports}-property, like below:
    *
    * ```typescript
-   * const podmanExtension = extensions.getExtension('podman-desktop.podman');
-   * const podmanExtensionAPI = podmanExtension.exports;
+   * const fooExtension = extensions.getExtension('kaiden.foo');
+   * const fooExtensionAPI = fooExtension.exports;
    *
-   * podmanExtensionAPI....
+   * fooExtensionAPI....
    * ```
    */
   export namespace extensions {
@@ -408,6 +412,112 @@ declare module '@podman-desktop/api' {
     vmTypeDisplayName?: string;
   }
 
+  export interface FlowParameter {
+    required: boolean;
+    name: string;
+    description: string;
+    format: string;
+    default?: string;
+  }
+
+  export interface Flow {
+    id: string;
+    path: string;
+    parameters?: Array<FlowParameter>;
+  }
+
+  export interface FlowGenerateKubernetesResult {
+    resources: string;
+  }
+
+  export interface FlowGenerateKubernetesOptions {
+    flowId: string;
+    hideSecrets: boolean;
+    namespace: string;
+    params: Record<string, string>;
+  }
+
+  export interface FlowGenerateCommandLineOptions {
+    flowId: string;
+  }
+
+  export interface FlowExecuteParams {
+    flowId: string;
+    logger: Logger;
+    params?: Record<string, string>;
+  }
+
+  export interface FlowGenerateCommandLineResult {
+    command: string;
+    args: string[];
+    env: Record<string, string>;
+  }
+
+  export interface FlowGenerateOptions {
+    name: string;
+    description: string;
+    /**
+     * system prompt
+     */
+    prompt: string;
+    parameters?: Array<FlowParameter>;
+    instruction: string;
+    model: {
+      providerId: string;
+      label: string;
+    };
+    mcp: Array<{
+      name: string;
+      type: 'streamable_http' | 'sse';
+      uri: string;
+      headers?: {
+        [key: string]: string;
+      };
+    }>;
+  }
+
+  export interface FlowProviderConnection {
+    name: string;
+    displayName?: string;
+    status(): ProviderConnectionStatus;
+    lifecycle?: ProviderConnectionLifecycle;
+    flow: {
+      all(): Promise<Array<Flow>>;
+      onDidChange: Event<void>;
+      /**
+       * @experimental expect change
+       */
+      delete(flowId: string): Promise<void>;
+      /**
+       * @experimental expect change
+       */
+      read(flowId: string): Promise<string>;
+      /**
+       * @experimental expect change
+       * @returns the flowId
+       */
+      create(content: string): Promise<string>;
+      /**
+       * @experimental expect change
+       */
+      generate(options?: FlowGenerateOptions): Promise<string>;
+
+      /**
+       * @experimental expect change
+       */
+      generateCommandLine(options: FlowGenerateCommandLineOptions): Promise<FlowGenerateCommandLineResult>;
+
+      /**
+       * @experimental expect change
+       */
+      generateKubernetesYAML(options: FlowGenerateKubernetesOptions): Promise<FlowGenerateKubernetesResult>;
+      /**
+       * @experimental expect change
+       */
+      execute(options: FlowExecuteParams): Promise<void>;
+    };
+  }
+
   export interface PodCreatePortOptions {
     host_ip: string;
     container_port: number;
@@ -537,7 +647,108 @@ declare module '@podman-desktop/api' {
     status(): ProviderConnectionStatus;
   }
 
-  export type ProviderConnection = ContainerProviderConnection | KubernetesProviderConnection | VmProviderConnection;
+  export interface InferenceModel {
+    label: string;
+  }
+
+  export type InferenceProviderConnectionType = 'cloud' | 'local' | 'self-hosted';
+
+  export interface LLMMetadata {
+    name?: string;
+    semanticRouter?: string;
+  }
+
+  export type InferenceProviderConnection = {
+    id: string;
+    name: string;
+    type: InferenceProviderConnectionType;
+    llmMetadata?: LLMMetadata;
+    endpoint?: string;
+    sdk: AISDKInferenceProvider;
+    credentials(): Record<string, string>;
+    lifecycle?: ProviderConnectionLifecycle;
+    status(): ProviderConnectionStatus;
+    // list of models
+    models: Array<InferenceModel>;
+  };
+
+  export interface InputResponse {
+    value: string;
+  }
+
+  export interface InputWithVariableResponse extends InputResponse {
+    variables: Record<string, InputResponse>;
+  }
+
+  export interface MCPRemoteServerConfig {
+    type: 'remote';
+    index: number;
+    headers: Record<string, InputWithVariableResponse>;
+  }
+
+  export interface MCPPackageServerConfig {
+    type: 'package';
+    index: number;
+    runtimeArguments: Record<number, InputWithVariableResponse>;
+    packageArguments: Record<number, InputWithVariableResponse>;
+    environmentVariables: Record<string, InputWithVariableResponse>;
+  }
+
+  export type MCPServerConfig = MCPRemoteServerConfig | MCPPackageServerConfig;
+
+  export type MCPServerDetail = components['schemas']['ServerDetail'];
+
+  export type MCPServer = {
+    serverId: string;
+    config: MCPServerConfig;
+  };
+
+  export type RegisterServerResult = Disposable & { serverId: string };
+
+  export type RagProviderConnection = {
+    name: string;
+    mcpServer: MCPServer;
+    index(doc: Uri, chunks: Uri[]): Promise<void>;
+    deindex(doc: Uri): Promise<void>;
+    lifecycle?: ProviderConnectionLifecycle;
+    status(): ProviderConnectionStatus;
+  };
+
+  export type Chunk = {
+    text: Uri;
+  };
+
+  export type ChunkProviderConnection = {
+    id: string;
+    name: string;
+    chunk(doc: Uri): Promise<Chunk[]>;
+    status(): ProviderConnectionStatus;
+    lifecycle?: ProviderConnectionLifecycle;
+  };
+
+  export interface ProviderInferenceConnection {
+    providerId: string;
+    connection: InferenceProviderConnection;
+  }
+
+  export interface ProviderRagConnection {
+    providerId: string;
+    connection: RagProviderConnection;
+  }
+
+  export interface ProviderChunkProviderConnection {
+    providerId: string;
+    connection: ChunkProviderConnection;
+  }
+
+  export type ProviderConnection =
+    | ContainerProviderConnection
+    | KubernetesProviderConnection
+    | VmProviderConnection
+    | InferenceProviderConnection
+    | RagProviderConnection
+    | FlowProviderConnection
+    | ChunkProviderConnection;
 
   // common set of options for creating a provider
   export interface ProviderConnectionFactory {
@@ -555,6 +766,39 @@ declare module '@podman-desktop/api' {
   export interface ContainerProviderConnectionFactory extends ProviderConnectionFactory {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     create(params: { [key: string]: any }, logger?: Logger, token?: CancellationToken): Promise<void>;
+  }
+
+  // create programmatically a InferenceProviderConnection
+  export interface InferenceProviderConnectionFactory extends ProviderConnectionFactory {
+    connectionTypes: InferenceProviderConnectionType[];
+    llmMetadata?: LLMMetadata;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    create(params: { [key: string]: any }, logger?: Logger, token?: CancellationToken): Promise<void>;
+  }
+
+  // create programmatically a RagProviderConnection
+  export interface RagProviderConnectionFactory extends ProviderConnectionFactory {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    create(params: { [key: string]: any }, logger?: Logger, token?: CancellationToken): Promise<void>;
+  }
+
+  export interface ChunkProviderConnectionFactory extends ProviderConnectionFactory {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    create(params: { [key: string]: any }, logger?: Logger, token?: CancellationToken): Promise<void>;
+  }
+
+  export interface SemanticRouterCreateParams {
+    name: string;
+    config: string;
+  }
+
+  export interface SemanticRouter {
+    connectionId: string;
+  }
+
+  export interface SemanticRouterFactory extends ProviderConnectionFactory {
+    readonly type: string;
+    create(params: SemanticRouterCreateParams, logger?: Logger, token?: CancellationToken): Promise<SemanticRouter>;
   }
 
   // create a kubernetes provider
@@ -679,6 +923,67 @@ declare module '@podman-desktop/api' {
     logo?: string | { light: string; dark: string };
   }
 
+  // details of a scheduled task execution (from getExecution)
+  export interface ProviderScheduleExecution {
+    id: string;
+    lastExecution: Date;
+    output: string;
+    duration: number;
+    exitCode?: number;
+  }
+
+  // item representing a scheduled task (from listing)
+  export interface ProviderScheduleItem {
+    id: string;
+    metadata: Record<string, string>;
+    cronExpression: string;
+  }
+
+  // command to execute for the scheduled task
+  export interface ProviderSchedulerCommand {
+    command: string;
+    env: Record<string, string>;
+    args: string[];
+  }
+
+  // options to schedule a task
+  export interface ProviderSchedulerOptions {
+    command: ProviderSchedulerCommand;
+    cronExpression: string;
+    metadata: Record<string, string>;
+  }
+
+  // result of scheduling a task
+  export interface ProviderScheduleResult {
+    id: string;
+  }
+
+  export interface ProviderSchedulerListOptions {
+    metadataKeys?: string[];
+  }
+
+  // allow to schedule tasks, including listing, canceling and getting execution details
+  export interface ProviderScheduler {
+    name: string;
+
+    // schedule a task and return a schedule id
+    schedule(options: ProviderSchedulerOptions): Promise<ProviderScheduleResult>;
+
+    // cancel a scheduled task by id
+    cancel(id: string): Promise<void>;
+
+    // list scheduled tasks
+    list(options: ProviderSchedulerListOptions): Promise<ProviderScheduleItem[]>;
+
+    // get execution details for a scheduled task
+    getExecution(id: string): Promise<ProviderScheduleExecution | undefined>;
+  }
+
+  export interface CreateSkillParams {
+    label: string;
+    path: string;
+  }
+
   export interface Provider {
     setContainerProviderConnectionFactory(
       containerProviderConnectionFactory: ContainerProviderConnectionFactory,
@@ -693,9 +998,38 @@ declare module '@podman-desktop/api' {
       connectionAuditor?: Auditor,
     ): Disposable;
 
+    setInferenceProviderConnectionFactory(
+      providerProviderConnectionFactory: InferenceProviderConnectionFactory,
+      connectionAuditor?: Auditor,
+    ): Disposable;
+
+    setRagProviderConnectionFactory(
+      ragProviderConnectionFactory: RagProviderConnectionFactory,
+      connectionAuditor?: Auditor,
+    ): Disposable;
+
+    setChunkProviderConnectionFactory(
+      chunkProviderConnectionFactory: ChunkProviderConnectionFactory,
+      connectionAuditor?: Auditor,
+    ): Disposable;
+
+    setSemanticRouterConnectionFactory(
+      semanticRouterConnectionFactory: SemanticRouterFactory,
+      connectionAuditor?: Auditor,
+    ): Disposable;
+
     registerContainerProviderConnection(connection: ContainerProviderConnection): Disposable;
     registerKubernetesProviderConnection(connection: KubernetesProviderConnection): Disposable;
     registerVmProviderConnection(connection: VmProviderConnection): Disposable;
+    registerInferenceProviderConnection(connection: InferenceProviderConnection): Disposable;
+    registerRagProviderConnection(connection: RagProviderConnection): Disposable;
+
+    registerFlowProviderConnection(connection: FlowProviderConnection): Disposable;
+
+    registerChunkProviderConnection(connection: ChunkProviderConnection): Disposable;
+
+    registerSkill(skill: CreateSkillParams): Disposable;
+
     registerLifecycle(lifecycle: ProviderLifecycle): Disposable;
 
     // register installation flow
@@ -708,6 +1042,8 @@ declare module '@podman-desktop/api' {
     registerAutostart(autostart: ProviderAutostart): Disposable;
 
     registerCleanup(cleanup: ProviderCleanup): Disposable;
+
+    registerScheduler(scheduler: ProviderScheduler): Disposable;
 
     dispose(): void;
     readonly name: string;
@@ -743,12 +1079,12 @@ declare module '@podman-desktop/api' {
   /**
    * The commands module provides functions to register and execute commands
    * Existing commands available for extensions to use:
-   * - `pullImage`: uses Podman Desktop's UI pull image behavior. This command will create a visible task to show the progress of the pullImage action with the option to include a task action.
+   * - `pullImage`: uses Kaiden's UI pull image behavior. This command will create a visible task to show the progress of the pullImage action with the option to include a task action.
    * It uses the same parameters as the original pullImage function, in addition to having `taskActionName: string` and `taskActionCallback: () => void` as parameters to create a task action (optional).
    *
    * @example
    * ```typescript
-   * import * as api from '@podman-desktop/api';
+   * import * as api from '@openkaiden/api';
    *
    * export async function activate(extensionContext: api.ExtensionContext): Promise<void> {
    *
@@ -836,6 +1172,50 @@ declare module '@podman-desktop/api' {
   export interface RegisterVmConnectionEvent {
     providerId: string;
   }
+  export interface RegisterInferenceConnectionEvent {
+    providerId: string;
+    connection: InferenceProviderConnection;
+  }
+  export interface UnregisterInferenceConnectionEvent {
+    providerId: string;
+    connection: InferenceProviderConnection;
+  }
+  export interface RegisterRagConnectionEvent {
+    providerId: string;
+    connection: RagProviderConnection;
+  }
+  export interface UpdateRagConnectionEvent {
+    providerId: string;
+    connection: RagProviderConnection;
+    status: ProviderConnectionStatus;
+  }
+  export interface UnregisterRagConnectionEvent {
+    providerId: string;
+    connection: RagProviderConnection;
+  }
+  export interface RegisterChunkProviderConnectionEvent {
+    providerId: string;
+    connection: ChunkProviderConnection;
+  }
+  export interface UpdateChunkProviderConnectionEvent {
+    providerId: string;
+    connection: ChunkProviderConnection;
+    status: ProviderConnectionStatus;
+  }
+  export interface UnregisterChunkProviderConnectionEvent {
+    providerId: string;
+    connection: ChunkProviderConnection;
+  }
+
+  export interface RegisterFlowConnectionEvent {
+    providerId: string;
+    connection: FlowProviderConnection;
+  }
+  export interface UnregisterFlowConnectionEvent {
+    providerId: string;
+    connectionName: string;
+  }
+
   export interface RegisterContainerConnectionEvent {
     providerId: string;
     connection: ContainerProviderConnection;
@@ -846,7 +1226,7 @@ declare module '@podman-desktop/api' {
   }
 
   export interface ConnectionFactory {
-    type: 'container' | 'kubernetes' | 'vm';
+    type: 'container' | 'kubernetes' | 'vm' | 'inference';
     providerId: string;
   }
 
@@ -864,7 +1244,7 @@ declare module '@podman-desktop/api' {
     /**
      * Opens new session using ProviderConnectionShellAccessImpl class
      * @example
-     * import * as api from '@podman-desktop/api';
+     * import * as api from '@openkaiden/api';
      *
      * class ProviderConnectionShellAccessImpl implements ProviderConnectionShellAccess {
      *  open(): ProviderConnectionShellAccessSession {
@@ -1030,6 +1410,10 @@ declare module '@podman-desktop/api' {
     readonly label: string;
   }
 
+  export interface SchedulerOptions {
+    name: string;
+  }
+
   export namespace provider {
     export function createProvider(provider: ProviderOptions): Provider;
     export const onDidUpdateProvider: Event<ProviderEvent>;
@@ -1050,6 +1434,8 @@ declare module '@podman-desktop/api' {
      */
     export function getConnectionFactories(): ConnectionFactoryDetails[];
     export function getContainerConnections(): ProviderContainerConnection[];
+    export function getInferenceConnections(): ProviderInferenceConnection[];
+    export function getRagConnections(): ProviderRagConnection[];
     /**
      * It returns the lifecycle context for the provider connection.
      * If no context is found it throws an error
@@ -1092,7 +1478,7 @@ declare module '@podman-desktop/api' {
    * @example
    *
    * ```typescript
-   * import * as api from '@podman-desktop/api';
+   * import * as api from '@openkaiden/api';
    *
    * export async function activate(extensionContext: api.ExtensionContext): Promise<void> {
    *   const handleProxyConfiguration = (e: boolean | undefined, s: api.ProxySettings | undefined) => {
@@ -1206,6 +1592,56 @@ declare module '@podman-desktop/api' {
     export const onDidUnregisterRegistry: Event<Registry>;
   }
 
+  // An interface for "Default" registries that include the name, URL as well as an icon
+  // This allows an extension to "suggest" a registry to the user that you may
+  // login via a username & password.
+  export interface MCPRegistrySuggestedProvider {
+    name: string;
+    url: string;
+
+    // Optional base64 PNG image (for transparency / non vector icons)
+    icon?: string | { light: string; dark: string };
+  }
+
+  export interface MCPRegistry extends MCPRegistryCreateOptions {
+    // Optional name and icon for the registry when it's being added (used for display within the UI)
+    name?: string;
+    icon?: string | { light: string; dark: string };
+  }
+
+  export interface MCPRegistryCreateOptions {
+    serverUrl: string;
+    alias?: string;
+  }
+
+  export interface MCPRegistryProvider {
+    readonly name: string;
+    create(registryCreateOptions: MCPRegistryCreateOptions): Registry;
+  }
+
+  /**
+   * Handle MCP registries from different sources
+   */
+  export namespace mcpRegistry {
+    export function registerRegistryProvider(registryProvider: MCPRegistryProvider): Disposable;
+
+    // expose a registry from a source
+    export function registerRegistry(registry: Registry): Disposable;
+
+    // remove registry from a source
+    export function unregisterRegistry(registry: Registry): void;
+
+    // suggest a registry to be included on the registry settings page
+    export function suggestRegistry(registry: MCPRegistrySuggestedProvider): Disposable;
+
+    export const onDidRegisterRegistry: Event<MCPRegistry>;
+    export const onDidUpdateRegistry: Event<MCPRegistry>;
+    export const onDidUnregisterRegistry: Event<MCPRegistry>;
+
+    export function registerServer(server: MCPServerDetail): RegisterServerResult;
+    export function unregisterServer(serverId: string): void;
+  }
+
   export namespace tray {
     /**
      * Creates a menu not related to a Provider
@@ -1310,7 +1746,7 @@ declare module '@podman-desktop/api' {
      * Show progress bar under app icon in launcher bar.
      *
      * @deprecated This value is deprecated as it does not render equally on various supported platforms. It will be
-     * removed in future versions of Podman Desktop. We strongly encourage to use TASK_WIDGET instead.
+     * removed in future versions of Kaiden. We strongly encourage to use TASK_WIDGET instead.
      * @see TASK_WIDGET
      */
     APP_ICON = 1,
@@ -1349,7 +1785,7 @@ declare module '@podman-desktop/api' {
      * navigate action that the user can trigger.
      * @example
      * ```ts
-     * import { window, type ProgressLocation } from '@podman-desktop/api';
+     * import { window, type ProgressLocation } from '@openkaiden/api';
      *
      * await window.withProgress<string>(
      *     {
@@ -2227,7 +2663,7 @@ declare module '@podman-desktop/api' {
     export function showErrorMessage(message: string, ...items: string[]): Promise<string | undefined>;
 
     /**
-     * Show progress in Podman Desktop. Progress is shown while running the given callback
+     * Show progress in Kaiden. Progress is shown while running the given callback
      * and while the promise it returned isn't resolved nor rejected. The location at which
      * progress should show (and other details) is defined via the passed {@linkcode ProgressOptions}.
      *
@@ -2305,7 +2741,7 @@ declare module '@podman-desktop/api' {
      *
      * @example
      * ```typescript
-     * import * as api from '@podman-desktop/api';
+     * import * as api from '@openkaiden/api';
      *
      * export async function activate(extensionContext: api.ExtensionContext): Promise<void> {
      *   const statusBarItem = api.window.createStatusBarItem();
@@ -4748,7 +5184,7 @@ declare module '@podman-desktop/api' {
   export type CliToolInstallationSource = 'extension' | 'external';
 
   /**
-   * Options to create new CliTool instance and register it in podman desktop
+   * Options to create new CliTool instance and register it in Kaiden
    */
 
   export interface CliToolOptions {
@@ -5037,7 +5473,7 @@ declare module '@podman-desktop/api' {
      *
      * @example
      * ```ts
-     * import { navigation, commands } from '@podman-desktop/api';
+     * import { navigation, commands } from '@openkaiden/api';
      *
      * commands.registerCommand('redirect-download-command', (trackingId: string) => {
      *   // todo: do something with the trackingId
@@ -5129,5 +5565,150 @@ declare module '@podman-desktop/api' {
      * @throws {Error} If the repository is not hosted on GitHub.
      */
     constructor(url: string);
+  }
+
+  export interface ModelType {
+    readonly name: string;
+  }
+
+  export interface AcpConfiguration {
+    readonly command?: string;
+    readonly args: ReadonlyArray<string>;
+  }
+
+  export interface AgentConfigurationBase {
+    readonly path: string;
+    read(): Promise<string>;
+  }
+  export interface AgentConfigurationFile extends AgentConfigurationBase {
+    update(content: string): Promise<void>;
+  }
+
+  export type AgentWorkspaceConfiguration = workspaceConfigComponents['schemas']['WorkspaceConfiguration'];
+
+  export interface AgentWorkspaceContext {
+    readonly model: {
+      readonly llmMetadata?: LLMMetadata;
+      readonly model: InferenceModel;
+      readonly endpoint?: string;
+    };
+    readonly configurationFiles: ReadonlyArray<AgentConfigurationFile>;
+    readonly workspace: AgentWorkspaceConfiguration;
+  }
+
+  export interface Agent {
+    readonly id: string;
+    readonly name: string;
+    readonly description: string;
+    readonly icon?: ProviderImages;
+    readonly tags?: ReadonlyArray<string>;
+    readonly command: string;
+    readonly acp?: AcpConfiguration;
+    readonly configurationFiles: ReadonlyArray<AgentConfigurationBase>;
+    readonly baseImage?: string;
+    /**
+     * If relative path taken as relative to home folder of the sandbox user or
+     * ${HOME}/path1/path2
+     */
+    readonly destinationSkillsFolder: string;
+    isSupportedModelType?(type: ModelType): boolean | Promise<boolean>;
+    preWorkspaceStart(context: AgentWorkspaceContext): Promise<void>;
+  }
+
+  export interface AgentRegisteredEvent {
+    readonly agent: Agent;
+  }
+
+  export interface AgentUnregisteredEvent {
+    readonly id: string;
+  }
+
+  export namespace agents {
+    export function registerAgent(agent: Agent): Disposable;
+  }
+
+  export interface OpenShellGatewayFeatures {
+    readonly supportMount: boolean;
+  }
+
+  export interface OpenShellGateway {
+    readonly id: string;
+    readonly name: string;
+    readonly endpoint: string;
+    status(): ProviderConnectionStatus;
+    readonly features: OpenShellGatewayFeatures;
+  }
+
+  export interface OpenShellSandboxInfo {
+    readonly id: string;
+    readonly name: string;
+    readonly phase: 'Provisioning' | 'Ready' | 'Error';
+  }
+
+  export interface OpenShellSandboxAttach {
+    readonly columns: number;
+    readonly rows: number;
+    readonly onData: Event<string>;
+    readonly onExit: Event<number>;
+    resize(columns: number, rows: number): void;
+    write(data: string | Buffer): void;
+    kill(): void;
+    clear(): void;
+  }
+
+  export interface OpenShellProviderInfo {
+    readonly name: string;
+    readonly type: string;
+  }
+
+  export interface OpenShellBaseParams {
+    readonly gatewayId: string;
+  }
+
+  export interface OpenShellSandboxParams extends OpenShellBaseParams {
+    readonly sandboxName: string;
+  }
+
+  export interface OpenShellProviderParams extends OpenShellBaseParams {
+    readonly providerName: string;
+  }
+
+  export interface OpenShellCreateProviderParams extends OpenShellProviderParams {
+    readonly providerType: string;
+    readonly credentials: Record<string, string>;
+    readonly config?: Record<string, string>;
+    readonly flags?: ReadonlyArray<string>;
+    readonly env?: Record<string, string>;
+  }
+
+  export interface OpenShellSetInferenceParams extends OpenShellProviderParams {
+    readonly model: string;
+  }
+
+  export interface OpenShellCLI {
+    readonly sandbox: {
+      list(params: OpenShellBaseParams): Promise<OpenShellSandboxInfo[]>;
+      delete(params: OpenShellSandboxParams): Promise<void>;
+      connect(params: OpenShellSandboxParams): OpenShellSandboxAttach;
+      enableV2Provider(params: OpenShellSandboxParams): Promise<void>;
+    };
+    readonly provider: {
+      list(params: OpenShellBaseParams): Promise<ReadonlyArray<OpenShellProviderInfo>>;
+      delete(params: OpenShellProviderParams): Promise<void>;
+      create(params: OpenShellCreateProviderParams): Promise<void>;
+    };
+    readonly inference: {
+      set(params: OpenShellSetInferenceParams): Promise<void>;
+    };
+  }
+
+  export namespace openshell {
+    export function registerGateway(gateway: OpenShellGateway): Disposable;
+    export const onDidRegisterGateway: Event<OpenShellGateway>;
+    export const onDidUnregisterGateway: Event<OpenShellGateway>;
+    export const onDidUpdateGateway: Event<OpenShellGateway>;
+    export function registerCLI(cli: OpenShellCLI): Disposable;
+    export const onDidRegisterCLI: Event<OpenShellCLI>;
+    export const onDidUnregisterCLI: Event<OpenShellCLI>;
   }
 }

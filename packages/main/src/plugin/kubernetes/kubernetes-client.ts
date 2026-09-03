@@ -65,7 +65,7 @@ import {
   Watch,
 } from '@kubernetes/client-node';
 import { PromiseMiddlewareWrapper } from '@kubernetes/client-node/dist/gen/middleware.js';
-import type * as containerDesktopAPI from '@podman-desktop/api';
+import type * as containerDesktopAPI from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 import * as jsYaml from 'js-yaml';
 import type { WebSocket } from 'ws';
@@ -239,11 +239,6 @@ export class KubernetesClient {
           format: 'file',
           readonly: false,
         },
-        ['kubernetes.statesExperimental']: {
-          description: 'Use new version of Kubernetes contexts monitoring (needs restart)',
-          type: 'boolean',
-          default: true,
-        },
       },
     };
 
@@ -268,12 +263,10 @@ export class KubernetesClient {
     );
     this.telemetry.track('kubernetesExperimentalMode', { enabled: statesExperimental });
 
-    if (statesExperimental) {
-      const manager = new ContextsManagerExperimental();
-      this.contextsState = manager;
-      this.contextsStatesDispatcher = new ContextsStatesDispatcher(manager, this.apiSender);
-      this.contextsStatesDispatcher.init();
-    }
+    const manager = new ContextsManagerExperimental();
+    this.contextsState = manager;
+    this.contextsStatesDispatcher = new ContextsStatesDispatcher(manager, this.apiSender);
+    this.contextsStatesDispatcher.init();
 
     // Update the property on change
     this.configurationRegistry.onDidChangeConfiguration(async e => {
@@ -1279,9 +1272,10 @@ export class KubernetesClient {
    * @param yaml content consisting of a stringified YAML
    * @return an array of resources created
    */
-  async applyResourcesFromYAML(context: string, yaml: string): Promise<KubernetesObject[]> {
+  async applyResourcesFromYAML(context: string, yaml: string, namespace?: string): Promise<KubernetesObject[]> {
     const manifests = await this.loadManifestsFromYAML(yaml);
-    return this.applyResources(context, manifests);
+    namespace ??= this.currentNamespace;
+    return this.applyResources(context, manifests, namespace);
   }
 
   /**

@@ -20,7 +20,7 @@ import { existsSync } from 'node:fs';
 import type * as http from 'node:http';
 import { resolve } from 'node:path';
 
-import type * as podmanDesktopAPI from '@podman-desktop/api';
+import type * as podmanDesktopAPI from '@openkaiden/api';
 import type { Application } from 'express';
 import express from 'express';
 import { inject, injectable } from 'inversify';
@@ -190,7 +190,7 @@ export class WebviewRegistry {
     this.initRouting();
 
     // grab a free port
-    this.#serverPort = await getFreePort(44000);
+    this.#serverPort = await getFreePort(45000);
 
     // start the express server
     await this.#expressServer.start(this.#serverPort);

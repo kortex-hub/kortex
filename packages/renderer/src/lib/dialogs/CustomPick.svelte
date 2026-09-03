@@ -1,12 +1,13 @@
 <script lang="ts">
 import { faAngleDown, faAngleUp, faCircleCheck, faXmark } from '@fortawesome/free-solid-svg-icons';
-import type { CustomPickItem } from '@podman-desktop/api';
+import type { CustomPickItem } from '@openkaiden/api';
 import { Button } from '@podman-desktop/ui-svelte';
 import { onMount } from 'svelte';
 import { SvelteMap } from 'svelte/reactivity';
 import Fa from 'svelte-fa';
 
 import Markdown from '/@/lib/markdown/Markdown.svelte';
+import { isDark } from '/@/stores/appearance';
 
 import type { CustomPickOptions } from './quickpick-input';
 
@@ -145,8 +146,7 @@ function dragMe(node: HTMLElement): void {
             {#if typeof icon === 'string'}
               <img src={icon} alt={title ? title : 'icon'} class="max-h-12" />
             {:else}
-              <!-- TODO check theme used for image, now use dark by default -->
-              <img src={icon.dark} alt={title ? title : 'icon'} class="max-h-12" />
+              <img src={$isDark ? (icon.dark ?? icon.light) : (icon.light ?? icon.dark)} alt={title ? title : 'icon'} class="max-h-12" />
             {/if}
           </div>
         {/if}

@@ -1,0 +1,69 @@
+/**********************************************************************
+ * Copyright (C) 2025 Red Hat, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ***********************************************************************/
+
+import type containerDesktopAPI from '@openkaiden/api';
+import type { IpcMainInvokeEvent } from 'electron/main';
+import { inject, injectable } from 'inversify';
+
+import { IPCHandle } from '/@/plugin/api.js';
+import { MCPExporter } from '/@/plugin/mcp/mcp-exporter.js';
+import { MCPRegistry } from '/@/plugin/mcp/mcp-registry.js';
+import type { MCPExportTarget } from '/@api/mcp/mcp-export.js';
+
+@injectable()
+export class MCPIPCHandler {
+  constructor(
+    @inject(IPCHandle)
+    private readonly ipcHandle: IPCHandle,
+    @inject(MCPRegistry)
+    private readonly mcpRegistry: MCPRegistry,
+    @inject(MCPExporter)
+    private readonly mcpExporter: MCPExporter,
+  ) {}
+
+  init(): void {
+    this.ipcHandle('mcp-registry:createMCPRegistry', this.createMCPRegistry.bind(this));
+    this.ipcHandle('mcp-registry:exportServer', this.exportServer.bind(this));
+    this.ipcHandle('mcp-registry:getExportConfigPath', this.getExportConfigPath.bind(this));
+    this.ipcHandle('mcp-manager:startMCPServer', this.startMCPServer.bind(this));
+    this.ipcHandle('mcp-manager:stopMCPServer', this.stopMCPServer.bind(this));
+  }
+
+  protected async createMCPRegistry(
+    _: IpcMainInvokeEvent,
+    registryCreateOptions: containerDesktopAPI.MCPRegistryCreateOptions,
+  ): Promise<void> {
+    await this.mcpRegistry.createRegistry(registryCreateOptions);
+  }
+
+  protected async exportServer(_: IpcMainInvokeEvent, serverId: string, target: MCPExportTarget): Promise<void> {
+    await this.mcpExporter.exportServer(serverId, target);
+  }
+
+  protected getExportConfigPath(_: IpcMainInvokeEvent, target: MCPExportTarget): string {
+    return this.mcpExporter.getConfigFilePath(target);
+  }
+
+  protected async startMCPServer(_: IpcMainInvokeEvent, key: string): Promise<void> {
+    await this.mcpRegistry.startMCPServer(key);
+  }
+
+  protected async stopMCPServer(_: IpcMainInvokeEvent, key: string): Promise<void> {
+    await this.mcpRegistry.stopMCPServer(key);
+  }
+}

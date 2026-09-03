@@ -1,0 +1,59 @@
+{
+  "name": "openai-compatible",
+  "displayName": "OpenAI Compatible",
+  "description": "Integration for Open AI",
+  "version": "0.4.0-next",
+  "icon": "icon.png",
+  "publisher": "kaiden",
+  "license": "Apache-2.0",
+  "engines": {
+    "kaiden": "^0.0.1"
+  },
+  "main": "./dist/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "OpenAI",
+      "properties": {
+        "openai.factory.baseURL": {
+          "type": "string",
+          "scope": "InferenceProviderConnectionFactory",
+          "description": "baseURL"
+        },
+        "openai.factory.apiKey": {
+          "type": "string",
+          "scope": "InferenceProviderConnectionFactory",
+          "description": "apiKey",
+          "format": "password"
+        },
+        "openai.connection._type": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "OpenShell provider type",
+          "hidden": true
+        },
+        "openai.connection.OPENAI_API_KEY": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "API key secret reference",
+          "format": "password",
+          "hidden": true
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "vite build && node ./scripts/build.js",
+    "test": "vitest run --coverage --passWithNoTests",
+    "test:watch": "vitest watch --coverage --passWithNoTests",
+    "watch": "vite build --watch"
+  },
+  "dependencies": {
+    "@ai-sdk/openai-compatible": "^3.0.13",
+    "@openkaiden/api": "workspace:*"
+  },
+  "devDependencies": {
+    "mkdirp": "^3.0.1",
+    "vite": "^7.1.2",
+    "vitest": "^4.0.10"
+  }
+}

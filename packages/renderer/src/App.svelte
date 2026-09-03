@@ -3,12 +3,29 @@ import './app.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
 import { tablePersistence } from '@podman-desktop/ui-svelte';
+import { onDestroy } from 'svelte';
 import { router } from 'tinro';
 
+import AcpSessionDetail from '/@/lib/acp-sessions/AcpSessionDetail.svelte';
+import AcpSessionLayout from '/@/lib/acp-sessions/AcpSessionLayout.svelte';
+import AcpSessionList from '/@/lib/acp-sessions/AcpSessionList.svelte';
+import AgentWorkspaceCreate from '/@/lib/agent-workspaces/AgentWorkspaceCreate.svelte';
+import AgentWorkspaceDetails from '/@/lib/agent-workspaces/AgentWorkspaceDetails.svelte';
+import AgentWorkspaceList from '/@/lib/agent-workspaces/AgentWorkspaceList.svelte';
 import { parseExtensionListRequest } from '/@/lib/extensions/extension-list';
+import FlowCreate from '/@/lib/flows/FlowCreate.svelte';
+import FlowDetails from '/@/lib/flows/FlowDetails.svelte';
+import FlowList from '/@/lib/flows/FlowList.svelte';
 import KubernetesRoot from '/@/lib/kube/KubernetesRoot.svelte';
+import MCPDetails from '/@/lib/mcp/MCPDetails.svelte';
+import ProjectCreate from '/@/lib/projects/ProjectCreate.svelte';
+import ProjectDetails from '/@/lib/projects/ProjectDetails.svelte';
+import ProjectList from '/@/lib/projects/ProjectList.svelte';
+import RAGEnvironmentDetails from '/@/lib/rag/RAGEnvironmentDetails.svelte';
+import RAGEnvironmentList from '/@/lib/rag/RAGEnvironmentList.svelte';
 import PinActions from '/@/lib/statusbar/PinActions.svelte';
 import { handleNavigation } from '/@/navigation';
+import { showChatWindow } from '/@/stores/chat-window';
 import { kubernetesNoCurrentContext } from '/@/stores/kubernetes-no-current-context';
 import type { KubernetesNavigationRequest } from '/@api/kubernetes-navigation';
 import type { NavigationRequest } from '/@api/navigation-request';
@@ -16,6 +33,8 @@ import type { NavigationRequest } from '/@api/navigation-request';
 import AppNavigation from './AppNavigation.svelte';
 import { navigateTo } from './kubernetesNavigation';
 import Appearance from './lib/appearance/Appearance.svelte';
+import CustomChat from './lib/chat/route/CustomChat.svelte';
+import CodingAgentsPage from './lib/coding-agents/CodingAgentsPage.svelte';
 import ComposeDetails from './lib/compose/ComposeDetails.svelte';
 import ConfigMapDetails from './lib/configmaps-secrets/ConfigMapDetails.svelte';
 import ConfigMapSecretList from './lib/configmaps-secrets/ConfigMapSecretList.svelte';
@@ -27,7 +46,6 @@ import CreateContainerFromExistingImage from './lib/container/CreateContainerFro
 import ContextKey from './lib/context/ContextKey.svelte';
 import CronJobDetails from './lib/cronjob/CronJobDetails.svelte';
 import CronJobList from './lib/cronjob/CronJobList.svelte';
-import DashboardPage from './lib/dashboard/DashboardPage.svelte';
 import DeploymentDetails from './lib/deployments/DeploymentDetails.svelte';
 import DeploymentsList from './lib/deployments/DeploymentsList.svelte';
 import CustomPick from './lib/dialogs/CustomPick.svelte';
@@ -57,6 +75,10 @@ import KubePodDetails from './lib/kube/pods/PodDetails.svelte';
 import KubePodsList from './lib/kube/pods/PodsList.svelte';
 import PortForwardingList from './lib/kubernetes-port-forward/PortForwardingList.svelte';
 import ManifestDetails from './lib/manifest/ManifestDetails.svelte';
+import McpRegistryCreateFromRegistryForm from './lib/mcp/MCPRegistryCreateFromRegistryForm.svelte';
+import McpServerList from './lib/mcp/MCPServerList.svelte';
+import ModelsCatalog from './lib/models/ModelsCatalog.svelte';
+import SemanticRouterCreate from './lib/models/SemanticRouterCreate.svelte';
 import CreateNetwork from './lib/network/CreateNetwork.svelte';
 import NetworkDetails from './lib/network/NetworkDetails.svelte';
 import NetworksList from './lib/network/NetworksList.svelte';
@@ -70,8 +92,14 @@ import PodsList from './lib/pod/PodsList.svelte';
 import PreferencesPage from './lib/preferences/PreferencesPage.svelte';
 import PVCDetails from './lib/pvc/PVCDetails.svelte';
 import PVCList from './lib/pvc/PVCList.svelte';
+import SecretVaultCreate from './lib/secret-vault/SecretVaultCreate.svelte';
+import SecretVaultDetails from './lib/secret-vault/SecretVaultDetails.svelte';
+import SecretVaultList from './lib/secret-vault/SecretVaultList.svelte';
 import ServiceDetails from './lib/service/ServiceDetails.svelte';
 import ServicesList from './lib/service/ServicesList.svelte';
+import SkillCreate from './lib/skills/SkillCreate.svelte';
+import SkillDetails from './lib/skills/SkillDetails.svelte';
+import SkillsList from './lib/skills/SkillsList.svelte';
 import StatusBar from './lib/statusbar/StatusBar.svelte';
 import IconsStyle from './lib/style/IconsStyle.svelte';
 import { PodmanDesktopStoragePersist } from './lib/table/PodmanDesktopStoragePersist';
@@ -79,6 +107,7 @@ import TaskManager from './lib/task-manager/TaskManager.svelte';
 import ToastHandler from './lib/toast/ToastHandler.svelte';
 import ToastTaskNotifications from './lib/toast/ToastTaskNotifications.svelte';
 import TroubleshootingPage from './lib/troubleshooting/TroubleshootingPage.svelte';
+import NoUsableGatewayWarning from './lib/ui/NoUsableGatewayWarning.svelte';
 import TitleBar from './lib/ui/TitleBar.svelte';
 import CreateVolume from './lib/volume/CreateVolume.svelte';
 import VolumeDetails from './lib/volume/VolumeDetails.svelte';
@@ -92,13 +121,79 @@ import SubmenuNavigation from './SubmenuNavigation.svelte';
 
 router.mode.memory();
 
+const LAST_ROUTE_KEY = 'last-route';
+const SETTINGS_PAGE_KEY = 'settings-page';
+
+let savedRoute: string | undefined = sessionStorage.getItem(LAST_ROUTE_KEY) ?? undefined;
+let savedSettingsPage: string | undefined = sessionStorage.getItem(SETTINGS_PAGE_KEY) ?? undefined;
+
 //remember from where we come to preference pages
-let nonSettingsPage = '/';
+let nonSettingsPage = savedRoute ?? '/';
+
+function isChatRoute(url: string): boolean {
+  return url === '/' || url.startsWith('/chat');
+}
+
+// When chat setting loads, redirect as needed.
+// undefined = still loading (no redirect), false = disabled, true = enabled.
+let chatConfigLoaded = false;
+let currentUrl: string | undefined;
+const unsubscribeShowChatWindow = showChatWindow.subscribe(value => {
+  if (value === undefined) return;
+  if (value === false && currentUrl !== undefined && isChatRoute(currentUrl)) {
+    router.goto('/agent-workspaces');
+  } else if (value === true && !chatConfigLoaded && currentUrl === '/') {
+    // Force tinro to re-match after chat routes mount on initial load
+    router.goto('/');
+  }
+  chatConfigLoaded = true;
+});
+
+onDestroy(unsubscribeShowChatWindow);
+
+// tinro fires router.subscribe synchronously with the current state on setup,
+// and WelcomePage always calls router.goto('/') in its onMount (even on reload).
+// We use that guaranteed '/' event as the trigger to restore the pre-reload
+// route on top of Dashboard.  subscribeReady skips the synchronous initial
+// fire so savedRoute is still available when the real '/' event arrives.
+let subscribeReady = false;
 router.subscribe(function (navigation) {
-  if (navigation.url !== undefined && !navigation.url.startsWith('/preferences')) {
+  if (!subscribeReady) return;
+  if (navigation.url === undefined || navigation.url.includes('.html')) return;
+  if (!navigation.url.startsWith('/')) return;
+
+  currentUrl = navigation.url;
+
+  if ((savedRoute !== undefined || savedSettingsPage !== undefined) && navigation.url === '/') {
+    if (savedRoute) {
+      router.goto(savedRoute);
+      savedRoute = undefined;
+    }
+    if (savedSettingsPage) {
+      router.goto(savedSettingsPage);
+      savedSettingsPage = undefined;
+    }
+    return;
+  }
+
+  if (navigation.url === '/') {
+    sessionStorage.removeItem(LAST_ROUTE_KEY);
+    sessionStorage.removeItem(SETTINGS_PAGE_KEY);
+    nonSettingsPage = '/';
+  } else if (navigation.url.startsWith('/preferences')) {
+    sessionStorage.setItem(SETTINGS_PAGE_KEY, navigation.url);
+  } else {
+    sessionStorage.setItem(LAST_ROUTE_KEY, navigation.url);
+    sessionStorage.removeItem(SETTINGS_PAGE_KEY);
     nonSettingsPage = navigation.url;
   }
+
+  // Guard: redirect away from chat routes when chat is disabled
+  if ($showChatWindow === false && isChatRoute(navigation.url)) {
+    router.goto('/agent-workspaces');
+  }
 });
+subscribeReady = true;
 
 window.events?.receive('context-menu:visible', visible => {
   if (visible) {
@@ -156,9 +251,143 @@ tablePersistence.storage = new PodmanDesktopStoragePersist();
         <SendFeedback />
         <ToastHandler />
         <ToastTaskNotifications />
-        <Route path="/" breadcrumb="Dashboard Page" navigationHint="root">
-          <DashboardPage />
+        <NoUsableGatewayWarning />
+        {#if $showChatWindow}
+        <Route path="/" breadcrumb="Chat" navigationHint="root">
+          <CustomChat />
         </Route>
+        <Route path="/chat" breadcrumb="Chat">
+          <CustomChat />
+        </Route>
+        <Route path="/chat/:chatId/*" let:meta breadcrumb="Chat">
+          <CustomChat chatId={meta.params.chatId} />
+        </Route>
+        {/if}
+
+        <Route path="/acp-sessions/*" breadcrumb="Agents" navigationHint="root" firstmatch>
+          <Route path="/" breadcrumb="Agents" navigationHint="root">
+            <AcpSessionLayout>
+              <AcpSessionList />
+            </AcpSessionLayout>
+          </Route>
+          <Route path="/new" breadcrumb="New Session" let:meta navigationHint="details">
+            <AcpSessionLayout>
+              <AcpSessionDetail sessionId="new" draftSandboxName={meta.query.sandbox ?? ''} draftAgentId={meta.query.agent ?? ''} />
+            </AcpSessionLayout>
+          </Route>
+          <Route path="/:id/*" breadcrumb="Session Details" let:meta navigationHint="details">
+            <AcpSessionLayout currentSessionId={decodeURIComponent(meta.params.id)}>
+              <AcpSessionDetail sessionId={decodeURIComponent(meta.params.id)} />
+            </AcpSessionLayout>
+          </Route>
+        </Route>
+
+        <Route path="/agent-workspaces/*" breadcrumb="Agentic Workspaces" navigationHint="root" firstmatch>
+          <Route path="/" breadcrumb="Agentic Workspaces" navigationHint="root">
+            <AgentWorkspaceList />
+          </Route>
+          <Route path="/create" breadcrumb="Create">
+            <AgentWorkspaceCreate />
+          </Route>
+          <Route path="/:id/*" breadcrumb="Workspace Details" let:meta navigationHint="details">
+            <AgentWorkspaceDetails workspaceId={decodeURIComponent(meta.params.id)} />
+          </Route>
+        </Route>
+
+        <Route path="/projects/*" breadcrumb="Projects" navigationHint="root" firstmatch>
+          <Route path="/" breadcrumb="Projects" navigationHint="root">
+            <ProjectList />
+          </Route>
+          <Route path="/create" breadcrumb="New Project">
+            <ProjectCreate />
+          </Route>
+          <Route path="/:id/*" breadcrumb="Project Details" let:meta navigationHint="details">
+            <ProjectDetails projectId={decodeURIComponent(meta.params.id)} />
+          </Route>
+        </Route>
+
+        <Route path="/flows/*" breadcrumb="Flows" navigationHint="root" firstmatch>
+          <Route path="/" breadcrumb="Flows" navigationHint="root">
+            <FlowList/>
+          </Route>
+          <Route path="/create" breadcrumb="Create">
+            <FlowCreate/>
+          </Route>
+          <Route path="/:providerId/:connectionName/:flowId/*" let:meta breadcrumb="Flow Details">
+            <FlowDetails
+              providerId={decodeURIComponent(meta.params.providerId)}
+              connectionName={decodeURIComponent(meta.params.connectionName)}
+              flowId={decodeURIComponent(meta.params.flowId)}
+            />
+          </Route>
+        </Route>
+
+        <!-- MCP -->
+        <Route path="/mcps/*" breadcrumb="MCPs" navigationHint="root" firstmatch>
+          <Route path="/" breadcrumb="MCPs" navigationHint="root" let:meta>
+            <McpServerList tab="{meta.query.tab}"/>
+          </Route>
+          <Route path="/:id/*" breadcrumb="MCP Details" let:meta>
+            <MCPDetails id={decodeURIComponent(meta.params.id)} />
+          </Route>
+        </Route>
+        <Route path="/mcp-install-from-registry/:serverId/*" breadcrumb="Install MCP Server from Registry" let:meta>
+          <McpRegistryCreateFromRegistryForm serverId={decodeURIComponent(meta.params.serverId)} />
+        </Route>
+
+        <!-- Coding agents -->
+        <Route path="/coding-agents" breadcrumb="Coding agents" navigationHint="root">
+          <CodingAgentsPage />
+        </Route>
+
+        <!-- Models -->
+        <Route path="/models/*" breadcrumb="Models" navigationHint="root" firstmatch>
+          <Route path="/" breadcrumb="Models" navigationHint="root">
+            <ModelsCatalog />
+          </Route>
+          <Route path="/semantic-routers" breadcrumb="Semantic Routers" navigationHint="root">
+            <ModelsCatalog initialCategory="router" />
+          </Route>
+          <Route path="/semantic-router/create" breadcrumb="Add Semantic Router" navigationHint="details">
+            <SemanticRouterCreate />
+          </Route>
+        </Route>
+
+        <!-- Skills -->
+        <Route path="/skills/*" breadcrumb="Skills" navigationHint="root" firstmatch>
+          <Route path="/" breadcrumb="Skills" navigationHint="root">
+            <SkillsList />
+          </Route>
+          <Route path="/create" breadcrumb="Create Skill" navigationHint="details">
+            <SkillCreate />
+          </Route>
+          <Route path="/:name/*" let:meta breadcrumb="Skill Details" navigationHint="details">
+            <SkillDetails name={decodeURIComponent(meta.params.name)} />
+          </Route>
+        </Route>
+        <!-- Knowledge Databases -->
+        <Route path="/rag-environments/*" breadcrumb="Knowledge Databases" navigationHint="root" firstmatch>
+          <Route path="/" breadcrumb="Knowledge Databases" navigationHint="root">
+            <RAGEnvironmentList />
+          </Route>
+          <Route path="/:name/*" let:meta breadcrumb="Knowledge Database Details" navigationHint="details">
+            <RAGEnvironmentDetails name={decodeURIComponent(meta.params.name)} />
+          </Route>
+        </Route>
+
+        <!-- Secret Vault -->
+        <Route path="/secret-vault/*" breadcrumb="Secret Vault" navigationHint="root" firstmatch>
+          <Route path="/" breadcrumb="Secret Vault" navigationHint="root">
+            <SecretVaultList />
+          </Route>
+          <Route path="/create" breadcrumb="Add Secret" navigationHint="details">
+            <SecretVaultCreate />
+          </Route>
+          <Route path="/:id/*" let:meta breadcrumb="Secret Details" navigationHint="details">
+            <SecretVaultDetails id={decodeURIComponent(meta.params.id)} />
+          </Route>
+        </Route>
+
         <Route path="/containers" breadcrumb="Containers" navigationHint="root">
           <ContainerList searchTerm={meta.query.filter ?? ''} />
         </Route>
@@ -400,6 +629,9 @@ tablePersistence.storage = new PodmanDesktopStoragePersist();
         </Route>
         <Route path="/extensions/details/:id/*" breadcrumb="Extension Details" let:meta navigationHint="details">
           <ExtensionDetails extensionId={meta.params.id} />
+        </Route>
+        <Route path="/jobs" breadcrumb="Jobs" navigationHint="root">
+            <JobList />
         </Route>
       </div>
     </div>

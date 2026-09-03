@@ -24,13 +24,16 @@ import type { IconSize } from 'svelte-fa';
 import { configurationProperties } from '/@/stores/configurationProperties';
 import { EventStore } from '/@/stores/event-store';
 
-import { createNavigationContainerEntry } from './navigation-registry-container.svelte';
+import { createNavigationAcpSessionsEntry } from './navigation-registry-acp-sessions.svelte';
+import { createNavigationAgentWorkspacesEntry } from './navigation-registry-agent-workspaces.svelte';
+import { createNavigationCodingAgentsEntry } from './navigation-registry-coding-agents.svelte';
 import { createNavigationExtensionEntry, createNavigationExtensionGroup } from './navigation-registry-extension.svelte';
-import { createNavigationImageEntry } from './navigation-registry-image.svelte';
-import { createNavigationKubernetesGroup } from './navigation-registry-kubernetes.svelte';
-import { createNavigationNetworkEntry } from './navigation-registry-network.svelte';
-import { createNavigationPodEntry } from './navigation-registry-pod.svelte';
-import { createNavigationVolumeEntry } from './navigation-registry-volume.svelte';
+import { createNavigationMcpEntry } from './navigation-registry-mcp.svelte';
+import { createNavigationModelsEntry } from './navigation-registry-models.svelte';
+import { createNavigationProjectsEntry } from './navigation-registry-projects.svelte';
+import { createNavigationRagEntry } from './navigation-registry-rag.svelte';
+import { createNavigationSecretVaultEntry } from './navigation-registry-secret-vault.svelte';
+import { createNavigationSkillsEntry } from './navigation-registry-skills.svelte';
 
 export interface NavigationRegistryEntry {
   name: string;
@@ -63,12 +66,15 @@ let hiddenItems: string[] = [];
 let values: NavigationRegistryEntry[] = [];
 let initialized = false;
 const init = (): void => {
-  values.push(createNavigationContainerEntry());
-  values.push(createNavigationPodEntry());
-  values.push(createNavigationImageEntry());
-  values.push(createNavigationVolumeEntry());
-  values.push(createNavigationNetworkEntry());
-  values.push(createNavigationKubernetesGroup());
+  values.push(createNavigationAcpSessionsEntry());
+  values.push(createNavigationAgentWorkspacesEntry());
+  values.push(createNavigationProjectsEntry());
+  values.push(createNavigationCodingAgentsEntry());
+  values.push(createNavigationModelsEntry());
+  values.push(createNavigationMcpEntry());
+  values.push(createNavigationSecretVaultEntry());
+  values.push(createNavigationSkillsEntry());
+  values.push(createNavigationRagEntry());
   values.push(createNavigationExtensionEntry());
   values.push(createNavigationExtensionGroup());
   hideItems().catch((err: unknown) => console.error('Error hiding navigation items', err));

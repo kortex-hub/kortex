@@ -15,18 +15,22 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
-
+import type { ProviderV3, ProviderV4 } from '@ai-sdk/provider';
 import type {
   AuditRequestItems,
   AuditResult,
   CancellationToken,
+  ChunkProviderConnection,
   ConnectionFactory,
   ConnectionFactoryDetails,
   ContainerProviderConnection,
+  FlowProviderConnection,
+  InferenceProviderConnection,
   KubernetesProviderConnection,
   Logger,
   Provider,
   ProviderAutostart,
+  ProviderChunkProviderConnection,
   ProviderCleanup,
   ProviderCleanupAction,
   ProviderCleanupExecuteOptions,
@@ -39,35 +43,56 @@ import type {
   ProviderContainerConnection,
   ProviderDetectionCheck,
   ProviderEvent,
+  ProviderInferenceConnection,
   ProviderInformation,
   ProviderInstallation,
   ProviderLifecycle,
   ProviderOptions,
+  ProviderRagConnection,
   ProviderStatus,
   ProviderUpdate,
+  RagProviderConnection,
+  RegisterChunkProviderConnectionEvent,
   RegisterContainerConnectionEvent,
+  RegisterFlowConnectionEvent,
+  RegisterInferenceConnectionEvent,
   RegisterKubernetesConnectionEvent,
+  RegisterRagConnectionEvent,
   RegisterVmConnectionEvent,
+  SemanticRouterFactory,
+  UnregisterChunkProviderConnectionEvent,
   UnregisterContainerConnectionEvent,
+  UnregisterFlowConnectionEvent,
+  UnregisterInferenceConnectionEvent,
   UnregisterKubernetesConnectionEvent,
+  UnregisterRagConnectionEvent,
   UnregisterVmConnectionEvent,
+  UpdateChunkProviderConnectionEvent,
   UpdateContainerConnectionEvent,
   UpdateKubernetesConnectionEvent,
+  UpdateRagConnectionEvent,
   UpdateVmConnectionEvent,
   VmProviderConnection,
-} from '@podman-desktop/api';
+} from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 
+import { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
+import { SkillManager } from '/@/plugin/skill/skill-manager.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { Event } from '/@api/event.js';
 import type {
+  InferenceConnectionCredentials,
   LifecycleMethod,
   PreflightChecksCallback,
+  ProviderChunkProviderConnectionInfo,
   ProviderCleanupActionInfo,
   ProviderConnectionInfo,
   ProviderContainerConnectionInfo,
+  ProviderFlowConnectionInfo,
+  ProviderInferenceConnectionInfo,
   ProviderInfo,
   ProviderKubernetesConnectionInfo,
+  ProviderRagConnectionInfo,
   ProviderVmConnectionInfo,
 } from '/@api/provider-info.js';
 
@@ -117,6 +142,10 @@ export class ProviderRegistry {
 
   protected kubernetesProviders: Map<string, KubernetesProviderConnection> = new Map();
   protected vmProviders: Map<string, VmProviderConnection> = new Map();
+  protected inferenceProviders: Map<string, InferenceProviderConnection> = new Map();
+  protected ragProviders: Map<string, RagProviderConnection> = new Map();
+  protected flowProviders: Map<string, FlowProviderConnection> = new Map();
+  protected chunkProviders: Map<string, ChunkProviderConnection> = new Map();
 
   private readonly _onDidUpdateProvider = new Emitter<ProviderEvent>();
   readonly onDidUpdateProvider: Event<ProviderEvent> = this._onDidUpdateProvider.event;
@@ -156,6 +185,42 @@ export class ProviderRegistry {
   private readonly _onDidRegisterVmConnection = new Emitter<RegisterVmConnectionEvent>();
   readonly onDidRegisterVmConnection: Event<RegisterVmConnectionEvent> = this._onDidRegisterVmConnection.event;
 
+  private readonly _onDidRegisterInferenceConnection = new Emitter<RegisterInferenceConnectionEvent>();
+  readonly onDidRegisterInferenceConnection: Event<RegisterInferenceConnectionEvent> =
+    this._onDidRegisterInferenceConnection.event;
+
+  private readonly _onDidUnregisterInferenceConnection = new Emitter<UnregisterInferenceConnectionEvent>();
+  readonly onDidUnregisterInferenceConnection: Event<UnregisterInferenceConnectionEvent> =
+    this._onDidUnregisterInferenceConnection.event;
+
+  private readonly _onDidRegisterRagConnection = new Emitter<RegisterRagConnectionEvent>();
+  readonly onDidRegisterRagConnection: Event<RegisterRagConnectionEvent> = this._onDidRegisterRagConnection.event;
+
+  private readonly _onDidUpdateRagConnection = new Emitter<UpdateRagConnectionEvent>();
+  readonly onDidUpdateRagConnection: Event<UpdateRagConnectionEvent> = this._onDidUpdateRagConnection.event;
+
+  private readonly _onDidUnregisterRagConnection = new Emitter<UnregisterRagConnectionEvent>();
+  readonly onDidUnregisterRagConnection: Event<UnregisterRagConnectionEvent> = this._onDidUnregisterRagConnection.event;
+
+  private readonly _onDidRegisterFlowConnection = new Emitter<RegisterFlowConnectionEvent>();
+  readonly onDidRegisterFlowConnection: Event<RegisterFlowConnectionEvent> = this._onDidRegisterFlowConnection.event;
+
+  private readonly _onDidUnregisterFlowConnection = new Emitter<UnregisterFlowConnectionEvent>();
+  readonly onDidUnregisterFlowConnection: Event<UnregisterFlowConnectionEvent> =
+    this._onDidUnregisterFlowConnection.event;
+
+  private readonly _onDidRegisterChunkConnection = new Emitter<RegisterChunkProviderConnectionEvent>();
+  readonly onDidRegisterChunkConnection: Event<RegisterChunkProviderConnectionEvent> =
+    this._onDidRegisterChunkConnection.event;
+
+  private readonly _onDidUpdateChunkConnection = new Emitter<UpdateChunkProviderConnectionEvent>();
+  readonly onDidUpdateChunkConnection: Event<UpdateChunkProviderConnectionEvent> =
+    this._onDidUpdateChunkConnection.event;
+
+  private readonly _onDidUnregisterChunkConnection = new Emitter<UnregisterChunkProviderConnectionEvent>();
+  readonly onDidUnregisterChunkConnection: Event<UnregisterChunkProviderConnectionEvent> =
+    this._onDidUnregisterChunkConnection.event;
+
   private readonly _onDidRegisterContainerConnection = new Emitter<RegisterContainerConnectionEvent>();
   readonly onDidRegisterContainerConnection: Event<RegisterContainerConnectionEvent> =
     this._onDidRegisterContainerConnection.event;
@@ -173,6 +238,10 @@ export class ProviderRegistry {
     private containerRegistry: ContainerProviderRegistry,
     @inject(Telemetry)
     private telemetryService: Telemetry,
+    @inject(SchedulerRegistry)
+    private schedulerRegistry: SchedulerRegistry,
+    @inject(SkillManager)
+    private skillManager: SkillManager,
   ) {
     this.providers = new Map();
     this.listeners = [];
@@ -222,6 +291,8 @@ export class ProviderRegistry {
       providerOptions,
       this,
       this.containerRegistry,
+      this.schedulerRegistry,
+      this.skillManager,
     );
     this.count++;
     this.providers.set(id, providerImpl);
@@ -696,6 +767,22 @@ export class ProviderRegistry {
     return this.getProviderConnectionInfo(connection) as ProviderVmConnectionInfo;
   }
 
+  public getProviderInferenceConnectionInfo(connection: InferenceProviderConnection): ProviderInferenceConnectionInfo {
+    return this.getProviderConnectionInfo(connection) as ProviderInferenceConnectionInfo;
+  }
+
+  public getProviderRagConnectionInfo(connection: RagProviderConnection): ProviderRagConnectionInfo {
+    return this.getProviderConnectionInfo(connection) as ProviderRagConnectionInfo;
+  }
+
+  public getProviderFlowConnectionInfo(connection: FlowProviderConnection): ProviderFlowConnectionInfo {
+    return this.getProviderConnectionInfo(connection) as ProviderFlowConnectionInfo;
+  }
+
+  public getProviderChunkConnectionInfo(connection: ChunkProviderConnection): ProviderChunkProviderConnectionInfo {
+    return this.getProviderConnectionInfo(connection) as ProviderChunkProviderConnectionInfo;
+  }
+
   private getProviderConnectionInfo(connection: ProviderConnection): ProviderConnectionInfo {
     let providerConnection: ProviderConnectionInfo;
     if (this.isContainerConnection(connection)) {
@@ -725,6 +812,36 @@ export class ProviderRegistry {
           apiURL: connection.endpoint.apiURL,
         },
       };
+    } else if (this.isInferenceConnection(connection)) {
+      providerConnection = {
+        connectionType: 'inference',
+        id: connection.id,
+        name: connection.name,
+        type: connection.type,
+        llmMetadata: connection.llmMetadata,
+        endpoint: connection.endpoint,
+        models: connection.models,
+        status: connection.status(),
+      };
+    } else if (this.isRagConnection(connection)) {
+      providerConnection = {
+        name: connection.name,
+        status: connection.status(),
+        connectionType: 'rag',
+      };
+    } else if (this.isFlowConnection(connection)) {
+      providerConnection = {
+        name: connection.name,
+        status: connection.status(),
+        connectionType: 'flow',
+      };
+    } else if (this.isChunkConnection(connection)) {
+      providerConnection = {
+        id: connection.id,
+        name: connection.name,
+        status: connection.status(),
+        connectionType: 'chunk',
+      };
     } else {
       providerConnection = {
         connectionType: 'vm',
@@ -732,6 +849,8 @@ export class ProviderRegistry {
         status: connection.status(),
       };
     }
+
+    // handle lifecycle
     if (connection.lifecycle) {
       const lifecycleMethods: LifecycleMethod[] = [];
       if (connection.lifecycle.delete) {
@@ -761,6 +880,18 @@ export class ProviderRegistry {
     const vmConnections: ProviderVmConnectionInfo[] = provider.vmConnections.map(connection => {
       return this.getProviderVmConnectionInfo(connection);
     });
+    const inferenceConnections: ProviderInferenceConnectionInfo[] = provider.inferenceConnections.map(connection => {
+      return this.getProviderInferenceConnectionInfo(connection);
+    });
+    const ragConnections: ProviderRagConnectionInfo[] = provider.ragConnections.map(connection => {
+      return this.getProviderRagConnectionInfo(connection);
+    });
+    const flowConnections: ProviderFlowConnectionInfo[] = provider.flowConnections.map(connection => {
+      return this.getProviderFlowConnectionInfo(connection);
+    });
+    const chunkConnections: ProviderChunkProviderConnectionInfo[] = provider.chunkConnections.map(connection => {
+      return this.getProviderChunkConnectionInfo(connection);
+    });
 
     // container connection factory ?
     let containerProviderConnectionInitialization = false;
@@ -778,6 +909,12 @@ export class ProviderRegistry {
     let vmProviderConnectionCreation = false;
     if (provider?.vmProviderConnectionFactory?.create) {
       vmProviderConnectionCreation = true;
+    }
+
+    // Inference connection factory ?
+    let inferenceProviderConnectionCreation = false;
+    if (provider?.inferenceProviderConnectionFactory?.create) {
+      inferenceProviderConnectionCreation = true;
     }
 
     // container connection factory ?
@@ -808,6 +945,42 @@ export class ProviderRegistry {
       vmProviderConnectionInitialization = true;
     }
 
+    // Inference connection factory ?
+    let inferenceProviderConnectionInitialization = false;
+    const inferenceProviderConnectionCreationDisplayName =
+      provider.inferenceProviderConnectionFactory?.creationDisplayName;
+    const inferenceProviderConnectionCreationButtonTitle =
+      provider.inferenceProviderConnectionFactory?.creationButtonTitle;
+    const inferenceProviderConnectionCreationTypes = provider.inferenceProviderConnectionFactory?.connectionTypes;
+    const inferenceProviderConnectionCreationLLMMetadata = provider.inferenceProviderConnectionFactory?.llmMetadata;
+    if (provider?.inferenceProviderConnectionFactory?.initialize) {
+      inferenceProviderConnectionInitialization = true;
+    }
+
+    // RAG connection factory ?
+    let ragProviderConnectionCreation = false;
+    let ragProviderConnectionInitialization = false;
+    const ragProviderConnectionCreationDisplayName = provider.ragProviderConnectionFactory?.creationDisplayName;
+    const ragProviderConnectionCreationButtonTitle = provider.ragProviderConnectionFactory?.creationButtonTitle;
+    if (provider.ragProviderConnectionFactory) {
+      ragProviderConnectionCreation = true;
+    }
+    if (provider?.ragProviderConnectionFactory?.initialize) {
+      ragProviderConnectionInitialization = true;
+    }
+
+    // Chunk connection factory ?
+    let chunkProviderConnectionCreation = false;
+    let chunkProviderConnectionInitialization = false;
+    const chunkProviderConnectionCreationDisplayName = provider.chunkProviderConnectionFactory?.creationDisplayName;
+    const chunkProviderConnectionCreationButtonTitle = provider.chunkProviderConnectionFactory?.creationButtonTitle;
+    if (provider.chunkProviderConnectionFactory) {
+      chunkProviderConnectionCreation = true;
+    }
+    if (provider?.chunkProviderConnectionFactory?.initialize) {
+      chunkProviderConnectionInitialization = true;
+    }
+
     const emptyConnectionMarkdownDescription = provider.emptyConnectionMarkdownDescription;
 
     // handle installation
@@ -830,19 +1003,44 @@ export class ProviderRegistry {
       containerConnections,
       kubernetesConnections,
       vmConnections,
+      inferenceConnections,
+      ragConnections,
+      flowConnections,
+      chunkConnections,
       status: provider.status,
       containerProviderConnectionCreation,
       kubernetesProviderConnectionCreation,
       vmProviderConnectionCreation,
+      inferenceProviderConnectionCreation,
+      // containers
       containerProviderConnectionInitialization,
       containerProviderConnectionCreationDisplayName,
       containerProviderConnectionCreationButtonTitle,
+      // K8s
       kubernetesProviderConnectionInitialization,
       kubernetesProviderConnectionCreationDisplayName,
       kubernetesProviderConnectionCreationButtonTitle,
+      // VM
       vmProviderConnectionInitialization,
       vmProviderConnectionCreationDisplayName,
       vmProviderConnectionCreationButtonTitle,
+      // Inference
+      inferenceProviderConnectionInitialization,
+      inferenceProviderConnectionCreationDisplayName,
+      inferenceProviderConnectionCreationButtonTitle,
+      inferenceProviderConnectionCreationTypes,
+      inferenceProviderConnectionCreationLLMMetadata,
+      // RAG
+      ragProviderConnectionCreation,
+      ragProviderConnectionInitialization,
+      ragProviderConnectionCreationDisplayName,
+      ragProviderConnectionCreationButtonTitle,
+      // Chunk
+      chunkProviderConnectionCreation,
+      chunkProviderConnectionInitialization,
+      chunkProviderConnectionCreationDisplayName,
+      chunkProviderConnectionCreationButtonTitle,
+      // other
       emptyConnectionMarkdownDescription,
       links: provider.links,
       detectionChecks: provider.detectionChecks,
@@ -918,12 +1116,18 @@ export class ProviderRegistry {
     return context;
   }
 
-  getMatchingProviderInternalId(providerId: string): string {
+  getProvider(providerId: string): ProviderImpl {
     // need to find the provider
     const provider = Array.from(this.providers.values()).find(prov => prov.id === providerId);
     if (!provider) {
       throw new Error(`no provider matching provider id ${providerId}`);
     }
+    return provider;
+  }
+
+  getMatchingProviderInternalId(providerId: string): string {
+    // need to find the provider
+    const provider = this.getProvider(providerId);
     return provider.internalId;
   }
 
@@ -1010,6 +1214,50 @@ export class ProviderRegistry {
     return provider.vmProviderConnectionFactory.create(params, logHandler, token);
   }
 
+  async createInferenceProviderConnection(
+    internalProviderId: string,
+    params: { [key: string]: unknown },
+    logHandler: Logger,
+    token?: CancellationToken,
+  ): Promise<void> {
+    // grab the correct provider
+    const provider = this.getMatchingProvider(internalProviderId);
+
+    if (!provider.inferenceProviderConnectionFactory?.create) {
+      throw new Error('The provider does not support Inference connection creation');
+    }
+    return provider.inferenceProviderConnectionFactory.create(params, logHandler, token);
+  }
+
+  async createRagProviderConnection(
+    internalProviderId: string,
+    params: { [key: string]: unknown },
+    logHandler: Logger,
+    token?: CancellationToken,
+  ): Promise<void> {
+    // grab the correct provider
+    const provider = this.getMatchingProvider(internalProviderId);
+
+    if (!provider.ragProviderConnectionFactory?.create) {
+      throw new Error('The provider does not support RAG connection creation');
+    }
+    return provider.ragProviderConnectionFactory.create(params, logHandler, token);
+  }
+
+  async createChunkProviderConnection(
+    internalProviderId: string,
+    params: { [key: string]: unknown },
+    logHandler: Logger,
+    token?: CancellationToken,
+  ): Promise<void> {
+    const provider = this.getMatchingProvider(internalProviderId);
+
+    if (!provider.chunkProviderConnectionFactory?.create) {
+      throw new Error('The provider does not support Chunk connection creation');
+    }
+    return provider.chunkProviderConnectionFactory.create(params, logHandler, token);
+  }
+
   // helper method
   protected getMatchingContainerConnectionFromProvider(
     internalProviderId: string,
@@ -1066,17 +1314,89 @@ export class ProviderRegistry {
     return vmConnection;
   }
 
+  protected getMatchingInferenceConnectionFromProvider(
+    internalProviderId: string,
+    providerConnectionInfo: ProviderInferenceConnectionInfo,
+  ): InferenceProviderConnection {
+    const provider = this.getMatchingProvider(internalProviderId);
+
+    const connection = provider.inferenceConnections.find(connection => connection.id === providerConnectionInfo.id);
+    if (!connection) {
+      throw new Error(`no inference connection matching provider id ${internalProviderId}`);
+    }
+    return connection;
+  }
+
+  protected getMatchingRagConnectionFromProvider(
+    internalProviderId: string,
+    providerRagConnectionInfo: ProviderRagConnectionInfo,
+  ): RagProviderConnection {
+    // grab the correct provider
+    const provider = this.getMatchingProvider(internalProviderId);
+
+    // grab the correct RAG connection
+    const connection = provider.ragConnections.find(connection => connection.name === providerRagConnectionInfo.name);
+    if (!connection) {
+      throw new Error(`no RAG connection matching provider id ${internalProviderId}`);
+    }
+    return connection;
+  }
+
+  protected getMatchingFlowConnectionFromProvider(
+    internalProviderId: string,
+    providerFlowConnectionInfo: ProviderFlowConnectionInfo,
+  ): FlowProviderConnection {
+    // grab the correct provider
+    const provider = this.getMatchingProvider(internalProviderId);
+
+    // grab the correct kubernetes connection
+    const connection = provider.flowConnections.find(connection => connection.name === providerFlowConnectionInfo.name);
+    if (!connection) {
+      throw new Error(`no flow connection matching provider id ${internalProviderId}`);
+    }
+    return connection;
+  }
+
+  protected getMatchingChunkConnectionFromProvider(
+    internalProviderId: string,
+    providerChunkConnectionInfo: ProviderChunkProviderConnectionInfo,
+  ): ChunkProviderConnection {
+    const provider = this.getMatchingProvider(internalProviderId);
+
+    const connection = provider.chunkConnections.find(
+      connection => connection.name === providerChunkConnectionInfo.name,
+    );
+    if (!connection) {
+      throw new Error(`no chunk connection matching provider id ${internalProviderId}`);
+    }
+    return connection;
+  }
+
   getMatchingConnectionFromProvider(
     internalProviderId: string,
-    providerContainerConnectionInfo: ProviderConnectionInfo | ContainerProviderConnection,
+    providerContainerConnectionInfo:
+      | ProviderConnectionInfo
+      | ContainerProviderConnection
+      | ProviderVmConnectionInfo
+      | ProviderInferenceConnectionInfo
+      | ProviderFlowConnectionInfo,
   ): ProviderConnection {
     if (this.isProviderContainerConnection(providerContainerConnectionInfo)) {
       return this.getMatchingContainerConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
     } else if (this.isProviderKubernetesConnectionInfo(providerContainerConnectionInfo)) {
       return this.getMatchingKubernetesConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
-    } else {
+    } else if (this.isVMConnectionInfo(providerContainerConnectionInfo)) {
       return this.getMatchingVmConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
+    } else if (this.isInferenceConnectionInfo(providerContainerConnectionInfo)) {
+      return this.getMatchingInferenceConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
+    } else if (this.isFlowConnectionInfo(providerContainerConnectionInfo)) {
+      return this.getMatchingFlowConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
+    } else if (this.isRagConnectionInfo(providerContainerConnectionInfo)) {
+      return this.getMatchingRagConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
+    } else if (this.isChunkConnectionInfo(providerContainerConnectionInfo)) {
+      return this.getMatchingChunkConnectionFromProvider(internalProviderId, providerContainerConnectionInfo);
     }
+    throw new Error('Unknown connection type');
   }
 
   isProviderContainerConnection(
@@ -1090,8 +1410,30 @@ export class ProviderRegistry {
   ): connection is ProviderKubernetesConnectionInfo {
     return (
       !this.isProviderContainerConnection(connection) &&
-      (connection as ProviderKubernetesConnectionInfo).endpoint !== undefined
+      (connection as ProviderKubernetesConnectionInfo).connectionType === 'kubernetes'
     );
+  }
+
+  isRagConnectionInfo(
+    connection: ProviderConnectionInfo | RagProviderConnection,
+  ): connection is ProviderRagConnectionInfo {
+    return (connection as ProviderRagConnectionInfo).connectionType === 'rag';
+  }
+
+  isVMConnectionInfo(connection: ProviderConnectionInfo): connection is ProviderVmConnectionInfo {
+    return (connection as ProviderVmConnectionInfo).connectionType === 'vm';
+  }
+
+  isInferenceConnectionInfo(connection: ProviderConnectionInfo): connection is ProviderInferenceConnectionInfo {
+    return (connection as ProviderInferenceConnectionInfo).connectionType === 'inference';
+  }
+
+  isFlowConnectionInfo(connection: ProviderConnectionInfo): connection is ProviderFlowConnectionInfo {
+    return (connection as ProviderFlowConnectionInfo).connectionType === 'flow';
+  }
+
+  isChunkConnectionInfo(connection: ProviderConnectionInfo): connection is ProviderChunkProviderConnectionInfo {
+    return (connection as ProviderChunkProviderConnectionInfo).connectionType === 'chunk';
   }
 
   isContainerConnection(connection: ProviderConnection): connection is ContainerProviderConnection {
@@ -1100,8 +1442,25 @@ export class ProviderRegistry {
 
   isKubernetesConnection(connection: ProviderConnection): connection is KubernetesProviderConnection {
     return (
-      !this.isContainerConnection(connection) && (connection as ContainerProviderConnection).endpoint !== undefined
+      !this.isContainerConnection(connection) &&
+      (connection as KubernetesProviderConnection).endpoint?.apiURL !== undefined
     );
+  }
+
+  isInferenceConnection(connection: ProviderConnection): connection is InferenceProviderConnection {
+    return 'sdk' in connection;
+  }
+
+  isRagConnection(connection: ProviderConnection): connection is RagProviderConnection {
+    return 'mcpServer' in connection;
+  }
+
+  isFlowConnection(connection: ProviderConnection): connection is FlowProviderConnection {
+    return 'flow' in connection;
+  }
+
+  isChunkConnection(connection: ProviderConnection): connection is ChunkProviderConnection {
+    return 'chunk' in connection;
   }
 
   async startProviderConnection(
@@ -1144,6 +1503,24 @@ export class ProviderRegistry {
           },
           status: 'started',
         });
+      } else if (this.isRagConnectionInfo(providerConnectionInfo)) {
+        const connection = this.ragProviders.get(provider.id + '.' + providerConnectionInfo.name);
+        if (connection !== undefined) {
+          this._onDidUpdateRagConnection.fire({
+            providerId: provider.id,
+            connection,
+            status: 'started',
+          });
+        }
+      } else if (this.isChunkConnectionInfo(providerConnectionInfo)) {
+        const connection = this.chunkProviders.get(provider.id + '.' + providerConnectionInfo.name);
+        if (connection !== undefined) {
+          this._onDidUpdateChunkConnection.fire({
+            providerId: provider.id,
+            connection,
+            status: 'started',
+          });
+        }
       } else {
         this._onDidUpdateVmConnection.fire({
           providerId: provider.id,
@@ -1259,6 +1636,24 @@ export class ProviderRegistry {
           },
           status: 'stopped',
         });
+      } else if (this.isRagConnectionInfo(providerConnectionInfo)) {
+        const connection = this.ragProviders.get(provider.id + '.' + providerConnectionInfo.name);
+        if (connection !== undefined) {
+          this._onDidUpdateRagConnection.fire({
+            providerId: provider.id,
+            connection,
+            status: 'stopped',
+          });
+        }
+      } else if (this.isChunkConnectionInfo(providerConnectionInfo)) {
+        const connection = this.chunkProviders.get(provider.id + '.' + providerConnectionInfo.name);
+        if (connection !== undefined) {
+          this._onDidUpdateChunkConnection.fire({
+            providerId: provider.id,
+            connection,
+            status: 'stopped',
+          });
+        }
       } else {
         this._onDidUpdateVmConnection.fire({
           providerId: provider.id,
@@ -1321,7 +1716,7 @@ export class ProviderRegistry {
   onDidSetConnectionFactoryCallback(
     provider: ProviderImpl,
     factory: ProviderConnectionFactory,
-    factoryType: 'container' | 'kubernetes' | 'vm',
+    factoryType: 'container' | 'kubernetes' | 'vm' | 'inference',
   ): void {
     this._onDidSetConnectionFactory.fire({
       providerId: provider.id,
@@ -1333,7 +1728,10 @@ export class ProviderRegistry {
     });
   }
 
-  onDidUnsetConnectionFactoryCallback(provider: ProviderImpl, factoryType: 'container' | 'kubernetes' | 'vm'): void {
+  onDidUnsetConnectionFactoryCallback(
+    provider: ProviderImpl,
+    factoryType: 'container' | 'kubernetes' | 'vm' | 'inference',
+  ): void {
     this._onDidUnsetConnectionFactory.fire({
       providerId: provider.id,
       type: factoryType,
@@ -1377,10 +1775,58 @@ export class ProviderRegistry {
     return factories;
   }
 
+  getSemanticRouterFactory(): { internalId: string; factory: SemanticRouterFactory } | undefined {
+    for (const [internalId, provider] of this.providers) {
+      if (provider.semanticRouterConnectionFactory) {
+        return { internalId, factory: provider.semanticRouterConnectionFactory };
+      }
+    }
+    return undefined;
+  }
+
+  async deleteInferenceConnectionBySemanticRouter(semanticRouterName: string): Promise<void> {
+    for (const [, provider] of this.providers) {
+      const connection = provider.inferenceConnections.find(
+        c => c.name === semanticRouterName && c.llmMetadata?.semanticRouter,
+      );
+      if (connection?.lifecycle?.delete) {
+        await connection.lifecycle.delete();
+        return;
+      }
+    }
+  }
+
   onDidRegisterVmConnectionCallback(provider: ProviderImpl, vmProviderConnection: VmProviderConnection): void {
     this.connectionLifecycleContexts.set(vmProviderConnection, new LifecycleContextImpl());
     this.apiSender.send('provider-register-vm-connection', { name: vmProviderConnection.name });
     this._onDidRegisterVmConnection.fire({ providerId: provider.id });
+  }
+
+  onDidRegisterInferenceConnectionCallback(
+    provider: ProviderImpl,
+    inferenceProviderConnection: InferenceProviderConnection,
+  ): void {
+    this.connectionLifecycleContexts.set(inferenceProviderConnection, new LifecycleContextImpl());
+    this.apiSender.send('provider-register-inference-connection', { name: inferenceProviderConnection.name });
+    this._onDidRegisterInferenceConnection.fire({ providerId: provider.id, connection: inferenceProviderConnection });
+  }
+
+  onDidRegisterRagConnectionCallback(provider: ProviderImpl, ragProviderConnection: RagProviderConnection): void {
+    this.connectionLifecycleContexts.set(ragProviderConnection, new LifecycleContextImpl());
+    this.apiSender.send('provider-register-rag-connection', { name: ragProviderConnection.name });
+    this._onDidRegisterRagConnection.fire({ providerId: provider.id, connection: ragProviderConnection });
+  }
+
+  onDidRegisterFlowConnectionCallback(provider: ProviderImpl, connection: FlowProviderConnection): void {
+    this.connectionLifecycleContexts.set(connection, new LifecycleContextImpl());
+    this.apiSender.send('provider-register-flow-connection', { name: connection.name });
+    this._onDidRegisterFlowConnection.fire({ providerId: provider.id, connection: connection });
+  }
+
+  onDidRegisterChunkConnectionCallback(provider: ProviderImpl, connection: ChunkProviderConnection): void {
+    this.connectionLifecycleContexts.set(connection, new LifecycleContextImpl());
+    this.apiSender.send('provider-register-chunk-connection', { name: connection.name });
+    this._onDidRegisterChunkConnection.fire({ providerId: provider.id, connection });
   }
 
   onDidChangeContainerProviderConnectionStatus(
@@ -1424,6 +1870,29 @@ export class ProviderRegistry {
   ): void {
     this.apiSender.send('provider-unregister-kubernetes-connection', { name: kubernetesProviderConnection.name });
     this._onDidUnregisterKubernetesConnection.fire({ providerId: provider.id });
+  }
+
+  onDidUnregisterInferenceConnectionCallback(
+    provider: ProviderImpl,
+    inferenceProviderConnection: InferenceProviderConnection,
+  ): void {
+    this.apiSender.send('provider-unregister-inference-connection', { name: inferenceProviderConnection.name });
+    this._onDidUnregisterInferenceConnection.fire({ providerId: provider.id, connection: inferenceProviderConnection });
+  }
+
+  onDidUnregisterRagConnectionCallback(provider: ProviderImpl, ragProviderConnection: RagProviderConnection): void {
+    this.apiSender.send('provider-unregister-rag-connection', { name: ragProviderConnection.name });
+    this._onDidUnregisterRagConnection.fire({ providerId: provider.id, connection: ragProviderConnection });
+  }
+
+  onDidUnregisterFlowConnectionCallback(provider: ProviderImpl, connection: FlowProviderConnection): void {
+    this.apiSender.send('provider-unregister-flow-connection', { name: connection.name });
+    this._onDidUnregisterFlowConnection.fire({ providerId: provider.id, connectionName: connection.name });
+  }
+
+  onDidUnregisterChunkConnectionCallback(provider: ProviderImpl, connection: ChunkProviderConnection): void {
+    this.apiSender.send('provider-unregister-chunk-connection', { name: connection.name });
+    this._onDidUnregisterChunkConnection.fire({ providerId: provider.id, connection });
   }
 
   onDidUnregisterVmConnectionCallback(provider: ProviderImpl, vmProviderConnection: VmProviderConnection): void {
@@ -1517,6 +1986,164 @@ export class ProviderRegistry {
     });
   }
 
+  registerInferenceConnection(
+    provider: Provider,
+    inferenceProviderConnection: InferenceProviderConnection,
+  ): Disposable {
+    const id = `${provider.id}.${inferenceProviderConnection.id}`;
+    if (this.inferenceProviders.has(id)) {
+      throw new Error(
+        `an inference connection with id '${inferenceProviderConnection.id}' is already registered for provider '${provider.id}'`,
+      );
+    }
+    this.inferenceProviders.set(id, inferenceProviderConnection);
+    this.telemetryService.track('registerInferenceProviderConnection', {
+      name: inferenceProviderConnection.name,
+      total: this.inferenceProviders.size,
+    });
+
+    let previousStatus = inferenceProviderConnection.status();
+
+    // track the status of the provider
+    const timer = setInterval(() => {
+      const newStatus = inferenceProviderConnection.status();
+      if (newStatus !== previousStatus) {
+        this.apiSender.send('provider-change', {});
+        previousStatus = newStatus;
+      }
+    }, 2000);
+
+    return Disposable.create(() => {
+      clearInterval(timer);
+      this.inferenceProviders.delete(id);
+      this.apiSender.send('provider-change', {});
+    });
+  }
+
+  registerRagConnection(provider: Provider, ragProviderConnection: RagProviderConnection): Disposable {
+    const providerName = ragProviderConnection.name;
+    const id = `${provider.id}.${providerName}`;
+    this.ragProviders.set(id, ragProviderConnection);
+    this.telemetryService.track('registerRagProviderConnection', {
+      name: ragProviderConnection.name,
+      total: this.ragProviders.size,
+    });
+
+    let previousStatus = ragProviderConnection.status();
+
+    // track the status of the provider
+    const timer = setInterval(() => {
+      const newStatus = ragProviderConnection.status();
+      if (newStatus !== previousStatus) {
+        this.apiSender.send('provider-change', {});
+        previousStatus = newStatus;
+      }
+    }, 2000);
+
+    return Disposable.create(() => {
+      clearInterval(timer);
+      this.ragProviders.delete(id);
+      this.apiSender.send('provider-change', {});
+    });
+  }
+
+  getInferenceConnections(): ProviderInferenceConnection[] {
+    const connections: ProviderInferenceConnection[] = [];
+    this.providers.forEach(provider => {
+      provider.inferenceConnections.forEach(connection => {
+        connections.push({
+          providerId: provider.id,
+          connection,
+        });
+      });
+    });
+    return connections;
+  }
+
+  getRagConnections(): ProviderRagConnection[] {
+    const connections: ProviderRagConnection[] = [];
+    this.providers.forEach(provider => {
+      provider.ragConnections.forEach(connection => {
+        connections.push({
+          providerId: provider.id,
+          connection,
+        });
+      });
+    });
+    return connections;
+  }
+
+  registerFlowConnection(provider: Provider, connection: FlowProviderConnection): Disposable {
+    const providerName = connection.name;
+    const id = `${provider.id}.${providerName}`;
+    this.flowProviders.set(id, connection);
+    this.telemetryService.track('registerFlowProviderConnection', {
+      name: connection.name,
+      total: this.flowProviders.size,
+    });
+
+    let previousStatus = connection.status();
+
+    // track the status of the provider
+    const timer = setInterval(() => {
+      const newStatus = connection.status();
+      if (newStatus !== previousStatus) {
+        this.apiSender.send('provider-change', {});
+        previousStatus = newStatus;
+      }
+    }, 2000);
+
+    return Disposable.create(() => {
+      clearInterval(timer);
+      this.flowProviders.delete(id);
+      this.apiSender.send('provider-change', {});
+    });
+  }
+
+  registerChunkConnection(provider: Provider, connection: ChunkProviderConnection): Disposable {
+    const providerName = connection.name;
+    const id = `${provider.id}.${providerName}`;
+    this.chunkProviders.set(id, connection);
+    this.telemetryService.track('registerChunkProviderConnection', {
+      name: connection.name,
+      total: this.chunkProviders.size,
+    });
+
+    let previousStatus = connection.status();
+
+    const timer = setInterval(() => {
+      const newStatus = connection.status();
+      if (newStatus !== previousStatus) {
+        this._onDidUpdateChunkConnection.fire({
+          providerId: provider.id,
+          connection,
+          status: newStatus,
+        });
+        this.apiSender.send('provider-change', {});
+        previousStatus = newStatus;
+      }
+    }, 2000);
+
+    return Disposable.create(() => {
+      clearInterval(timer);
+      this.chunkProviders.delete(id);
+      this.apiSender.send('provider-change', {});
+    });
+  }
+
+  getChunkConnections(): ProviderChunkProviderConnection[] {
+    const connections: ProviderChunkProviderConnection[] = [];
+    this.providers.forEach(provider => {
+      provider.chunkConnections.forEach(connection => {
+        connections.push({
+          providerId: provider.id,
+          connection,
+        });
+      });
+    });
+    return connections;
+  }
+
   async shellInProviderConnection(
     internalProviderId: string,
     providerConnectionInfo: ProviderConnectionInfo,
@@ -1533,7 +2160,14 @@ export class ProviderRegistry {
       let shellAccess: ProviderConnectionShellAccess | undefined;
       let connection: ProviderConnectionShellAccessSession | undefined;
       const disposables: Disposable[] = [];
-      if (!this.isKubernetesConnection(containerConnection) && providerConnectionInfo.status === 'started') {
+      if (
+        !this.isKubernetesConnection(containerConnection) &&
+        !this.isInferenceConnection(containerConnection) &&
+        !this.isFlowConnection(containerConnection) &&
+        !this.isRagConnection(containerConnection) &&
+        !this.isChunkConnection(containerConnection) &&
+        providerConnectionInfo.status === 'started'
+      ) {
         shellAccess = containerConnection.shellAccess;
         connection = shellAccess?.open();
         connection?.onData(
@@ -1581,6 +2215,127 @@ export class ProviderRegistry {
       return this.toProviderInfo(provider);
     }
     return undefined;
+  }
+
+  getInferenceSDK(internalProviderId: string, connectionId: string): ProviderV3 | ProviderV4 {
+    const provider = this.providers.get(internalProviderId);
+    if (!provider) throw new Error('Provider not found');
+
+    const connection =
+      provider.inferenceConnections.find(({ id }) => id === connectionId) ??
+      provider.inferenceConnections.find(({ name }) => name === connectionId);
+    if (!connection) throw new Error('Connection not found');
+    return connection.sdk;
+  }
+
+  getInferenceConnectionType(providerId: string, connectionId: string): InferenceProviderConnection['type'] {
+    const internalId = this.getMatchingProviderInternalId(providerId);
+    const provider = this.providers.get(internalId);
+    if (!provider) throw new Error('Provider not found');
+
+    const connection =
+      provider.inferenceConnections.find(({ id }) => id === connectionId) ??
+      provider.inferenceConnections.find(({ name }) => name === connectionId);
+    if (!connection) throw new Error('Connection not found');
+    return connection.type;
+  }
+
+  getInferenceConnectionEndpoint(providerId: string, connectionId: string): InferenceProviderConnection['endpoint'] {
+    const internalId = this.getMatchingProviderInternalId(providerId);
+    const provider = this.providers.get(internalId);
+    if (!provider) throw new Error('Provider not found');
+
+    const connection =
+      provider.inferenceConnections.find(({ id }) => id === connectionId) ??
+      provider.inferenceConnections.find(({ name }) => name === connectionId);
+    if (!connection) throw new Error('Connection not found');
+    return connection.endpoint;
+  }
+
+  getInferenceConnectionName(providerId: string, connectionId: string): string {
+    const internalId = this.getMatchingProviderInternalId(providerId);
+    const provider = this.providers.get(internalId);
+    if (!provider) throw new Error('Provider not found');
+
+    const connection =
+      provider.inferenceConnections.find(({ id }) => id === connectionId) ??
+      provider.inferenceConnections.find(({ name }) => name === connectionId);
+    if (!connection) throw new Error('Connection not found');
+    return connection.name;
+  }
+
+  getFirstInferenceSDK(providerName: string): ProviderV3 | ProviderV4 {
+    const provider = this.providers.values().find(provider => provider.id === providerName);
+    if (!provider) throw new Error('Provider not found');
+    const connections = provider.inferenceConnections.filter(c => c.sdk);
+    if (!connections) throw new Error('Connection not found');
+    if (connections.length < 1 || !connections[0]) {
+      throw new Error('No inference connection found');
+    }
+    return connections[0].sdk;
+  }
+
+  /**
+   * Finds the inference connection owning a model (identified by the composite
+   * model-id string `llmMetadataName::label::endpoint`) and returns credentials
+   * together with provider metadata needed to derive a kdn vault secret.
+   *
+   * Returns `undefined` when no matching connection is found.
+   */
+  getInferenceConnectionCredentials(modelId: string): InferenceConnectionCredentials | undefined {
+    const [metadataName = '', modelLabel = '', endpoint = ''] = modelId.split('::');
+
+    for (const provider of this.providers.values()) {
+      for (const connection of provider.inferenceConnections) {
+        const connMetadataName = connection.llmMetadata?.name ?? '';
+        const connEndpoint = connection.endpoint ?? '';
+        if (
+          connMetadataName === metadataName &&
+          connEndpoint === endpoint &&
+          connection.models.some(m => m.label === modelLabel)
+        ) {
+          return {
+            credentials: connection.credentials(),
+            llmMetadataName: connection.llmMetadata?.name,
+            endpoint: connection.endpoint,
+          };
+        }
+      }
+    }
+    return undefined;
+  }
+
+  getInferenceConnection(modelId: string): { connection: InferenceProviderConnection; providerId: string } | undefined {
+    const [metadataName = '', modelLabel = '', endpoint = ''] = modelId.split('::');
+
+    for (const provider of this.providers.values()) {
+      for (const connection of provider.inferenceConnections) {
+        const connMetadataName = connection.llmMetadata?.name ?? '';
+        const connEndpoint = connection.endpoint ?? '';
+        if (
+          connMetadataName === metadataName &&
+          connEndpoint === endpoint &&
+          connection.models.some(m => m.label === modelLabel)
+        ) {
+          return { connection, providerId: provider.id };
+        }
+      }
+    }
+    return undefined;
+  }
+
+  getFlowProviderConnection(internalProviderId: string): Array<FlowProviderConnection> {
+    const provider = this.providers.get(internalProviderId);
+    if (!provider) throw new Error('Provider not found');
+
+    return provider.flowConnections;
+  }
+
+  getChunkProviderConnection(internalProviderId: string): Array<ChunkProviderConnection> {
+    const provider = this.providers.get(internalProviderId);
+    if (!provider) throw new Error('Provider not found');
+
+    return provider.chunkConnections;
   }
 
   protected fireUpdateContainerConnectionEvents(

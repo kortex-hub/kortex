@@ -37,6 +37,17 @@ beforeEach(() => {
   vi.mocked(states).routeSearchPattern = writable<string>('');
   vi.mocked(states).kubernetesContextsCheckingStateDelayed = writable();
   vi.mocked(states).kubernetesCurrentContextState = writable();
+
+  // Mock window.events
+  Object.defineProperty(window, 'events', {
+    value: {
+      receive: vi.fn(() => ({
+        dispose: vi.fn(),
+      })),
+    },
+    configurable: true,
+    writable: true,
+  });
 });
 
 test('Expect ingress&routes empty screen', async () => {

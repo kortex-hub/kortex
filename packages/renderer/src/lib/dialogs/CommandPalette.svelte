@@ -76,10 +76,10 @@ let isMac: boolean = $state(false);
 let modifierC: string = $derived(isMac ? '⌘' : 'Ctrl+');
 let modifierS: string = $derived(isMac ? '⇧' : 'Shift+');
 let searchOptions: SearchOption[] = $derived([
-  { text: 'All', shortCut: [`${modifierC}${modifierS}P`], helperText: 'Search Podman Desktop, or type > for commands' },
+  { text: 'All', shortCut: [`${modifierC}${modifierS}P`], helperText: 'Search Kaiden, or type > for commands' },
   { text: 'Commands', shortCut: [`${F1}`, '>'], helperText: 'Search and execute commands' },
   { text: 'Documentation', shortCut: [`${modifierC}K`], helperText: 'Search documentation and tutorials' },
-  { text: 'Go to', shortCut: [`${modifierC}F`], helperText: 'Search images, containers, pods, and other resources' },
+  { text: 'Go to', shortCut: [`${modifierC}F`], helperText: 'Search resources' },
 ]);
 let searchOptionsSelectedIndex: number = $state(0);
 
@@ -140,7 +140,7 @@ let filteredItems = $derived.by(() => {
 onMount(async () => {
   const platform = await window.getOsPlatform();
   isMac = platform === 'darwin';
-  documentationItems = await window.getDocumentationItems();
+  // commented out waiting for https://github.com/podman-desktop/podman-desktop/issues/16463 documentationItems = await window.getDocumentationItems();
 });
 
 // Focus the input when the command palette becomes visible
@@ -168,6 +168,11 @@ function displaySearchBar(): void {
 }
 
 async function handleKeydown(e: KeyboardEvent): Promise<void> {
+  // open palette only if F1 key is pressed when palette is not already visible
+  if (!display && e.key !== `${F1}`) {
+    return;
+  }
+
   // toggle display using F1 or ESC keys
   if (e.key === `${F1}` || e.key === '>') {
     selectedFilteredIndex = 0;
@@ -194,11 +199,6 @@ async function handleKeydown(e: KeyboardEvent): Promise<void> {
       displaySearchBar();
       e.preventDefault();
     }
-  }
-
-  // for other keys, only check if it's being displayed
-  if (!display) {
-    return;
   }
 
   // no items, abort

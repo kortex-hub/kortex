@@ -18,12 +18,12 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import type { ProviderImages } from '@podman-desktop/api';
+import type { ProviderImages } from '@openkaiden/api';
 import { render, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { expect, test } from 'vitest';
 
-import type { ProviderInfo } from '/@api/provider-info';
+import { type ProviderInfo } from '/@api/provider-info';
 
 import ProviderCard from './ProviderCard.svelte';
 
@@ -49,6 +49,16 @@ test('Expect provider region', async () => {
     images: {} as ProviderImages,
     installationSupport: false,
     cleanupSupport: false,
+    inferenceConnections: [],
+    ragConnections: [],
+    chunkConnections: [],
+    flowConnections: [],
+    inferenceProviderConnectionCreation: false,
+    inferenceProviderConnectionInitialization: false,
+    ragProviderConnectionCreation: false,
+    ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
   render(ProviderCard, { provider });
 
@@ -78,6 +88,16 @@ test('Expect provider name', async () => {
     images: {} as ProviderImages,
     installationSupport: false,
     cleanupSupport: false,
+    inferenceConnections: [],
+    ragConnections: [],
+    chunkConnections: [],
+    flowConnections: [],
+    inferenceProviderConnectionCreation: false,
+    inferenceProviderConnectionInitialization: false,
+    ragProviderConnectionCreation: false,
+    ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
   render(ProviderCard, { provider });
 
@@ -108,6 +128,16 @@ test('Expect provider icon', async () => {
     images: { icon: 'test.png' } as ProviderImages,
     installationSupport: false,
     cleanupSupport: false,
+    inferenceConnections: [],
+    ragConnections: [],
+    chunkConnections: [],
+    flowConnections: [],
+    inferenceProviderConnectionCreation: false,
+    inferenceProviderConnectionInitialization: false,
+    ragProviderConnectionCreation: false,
+    ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
 
   render(ProviderCard, { provider });
@@ -142,7 +172,16 @@ test('Expect no provider version', async () => {
     images: {} as ProviderImages,
     installationSupport: false,
     cleanupSupport: false,
-    // no version
+    inferenceConnections: [],
+    ragConnections: [],
+    chunkConnections: [],
+    flowConnections: [],
+    inferenceProviderConnectionCreation: false,
+    inferenceProviderConnectionInitialization: false,
+    ragProviderConnectionCreation: false,
+    ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
   render(ProviderCard, { provider });
 
@@ -173,6 +212,16 @@ test('Expect provider version', async () => {
     installationSupport: false,
     version: '1.2.3',
     cleanupSupport: false,
+    inferenceConnections: [],
+    ragConnections: [],
+    chunkConnections: [],
+    flowConnections: [],
+    inferenceProviderConnectionCreation: false,
+    inferenceProviderConnectionInitialization: false,
+    ragProviderConnectionCreation: false,
+    ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
   render(ProviderCard, { provider });
 
@@ -203,6 +252,16 @@ test('Expect provider state', async () => {
     images: {} as ProviderImages,
     installationSupport: false,
     cleanupSupport: false,
+    inferenceConnections: [],
+    ragConnections: [],
+    chunkConnections: [],
+    flowConnections: [],
+    inferenceProviderConnectionCreation: false,
+    inferenceProviderConnectionInitialization: false,
+    ragProviderConnectionCreation: false,
+    ragProviderConnectionInitialization: false,
+    chunkProviderConnectionCreation: false,
+    chunkProviderConnectionInitialization: false,
   };
   render(ProviderCard, { provider });
 

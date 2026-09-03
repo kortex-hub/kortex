@@ -18,6 +18,8 @@
 
 import type { IpcMainEvent, IpcMainInvokeEvent } from 'electron';
 
+export const WebContentsType = Symbol.for('WebContents');
+
 export const IPCHandle = Symbol.for('IPCHandle');
 export type IPCHandle = (
   channel: string,

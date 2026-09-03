@@ -18,9 +18,15 @@
 
 import type {
   Auditor,
+  ChunkProviderConnection,
+  ChunkProviderConnectionFactory,
   ContainerProviderConnection,
   ContainerProviderConnectionFactory,
+  CreateSkillParams,
   Event,
+  FlowProviderConnection,
+  InferenceProviderConnection,
+  InferenceProviderConnectionFactory,
   KubernetesProviderConnection,
   KubernetesProviderConnectionFactory,
   Provider,
@@ -34,12 +40,18 @@ import type {
   ProviderLifecycle,
   ProviderLinks,
   ProviderOptions,
+  ProviderScheduler,
   ProviderStatus,
   ProviderUpdate,
+  RagProviderConnection,
+  RagProviderConnectionFactory,
+  SemanticRouterFactory,
   VmProviderConnection,
   VmProviderConnectionFactory,
-} from '@podman-desktop/api';
+} from '@openkaiden/api';
 
+import type { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
+import type { SkillManager } from '/@/plugin/skill/skill-manager.js';
 import type { IDisposable } from '/@api/disposable.js';
 
 import type { ContainerProviderRegistry } from './container-registry.js';
@@ -52,10 +64,19 @@ export class ProviderImpl implements Provider, IDisposable {
   private containerProviderConnectionsStatuses: Map<string, ProviderConnectionStatus>;
   private kubernetesProviderConnections: Set<KubernetesProviderConnection>;
   private vmProviderConnections: Set<VmProviderConnection>;
+  private inferenceProviderConnections: Set<InferenceProviderConnection>;
+  private ragProviderConnections: Set<RagProviderConnection>;
+  private flowProviderConnections: Set<FlowProviderConnection>;
+  private chunkProviderConnections: Set<ChunkProviderConnection>;
+
   // optional factory
   private _containerProviderConnectionFactory: ContainerProviderConnectionFactory | undefined = undefined;
   private _kubernetesProviderConnectionFactory: KubernetesProviderConnectionFactory | undefined = undefined;
   private _vmProviderConnectionFactory: VmProviderConnectionFactory | undefined = undefined;
+  private _inferenceProviderConnectionFactory: InferenceProviderConnectionFactory | undefined = undefined;
+  private _ragProviderConnectionFactory: RagProviderConnectionFactory | undefined = undefined;
+  private _chunkProviderConnectionFactory: ChunkProviderConnectionFactory | undefined = undefined;
+  private _semanticRouterConnectionFactory: SemanticRouterFactory | undefined = undefined;
 
   private _connectionAuditor: Auditor | undefined = undefined;
 
@@ -86,11 +107,17 @@ export class ProviderImpl implements Provider, IDisposable {
     private providerOptions: ProviderOptions,
     private providerRegistry: ProviderRegistry,
     private containerRegistry: ContainerProviderRegistry,
+    private schedulerRegistry: SchedulerRegistry,
+    private skillManager: SkillManager,
   ) {
     this.containerProviderConnectionsStatuses = new Map();
     this.containerProviderConnections = new Set();
     this.kubernetesProviderConnections = new Set();
     this.vmProviderConnections = new Set();
+    this.inferenceProviderConnections = new Set();
+    this.ragProviderConnections = new Set();
+    this.flowProviderConnections = new Set();
+    this.chunkProviderConnections = new Set();
     this._status = providerOptions.status;
     this._version = providerOptions.version;
 
@@ -123,6 +150,22 @@ export class ProviderImpl implements Provider, IDisposable {
 
   get containerProviderConnectionFactory(): ContainerProviderConnectionFactory | undefined {
     return this._containerProviderConnectionFactory;
+  }
+
+  get inferenceProviderConnectionFactory(): InferenceProviderConnectionFactory | undefined {
+    return this._inferenceProviderConnectionFactory;
+  }
+
+  get ragProviderConnectionFactory(): RagProviderConnectionFactory | undefined {
+    return this._ragProviderConnectionFactory;
+  }
+
+  get chunkProviderConnectionFactory(): ChunkProviderConnectionFactory | undefined {
+    return this._chunkProviderConnectionFactory;
+  }
+
+  get semanticRouterConnectionFactory(): SemanticRouterFactory | undefined {
+    return this._semanticRouterConnectionFactory;
   }
 
   get connectionAuditor(): Auditor | undefined {
@@ -204,6 +247,22 @@ export class ProviderImpl implements Provider, IDisposable {
     return Array.from(this.vmProviderConnections.values());
   }
 
+  get inferenceConnections(): InferenceProviderConnection[] {
+    return Array.from(this.inferenceProviderConnections.values());
+  }
+
+  get ragConnections(): RagProviderConnection[] {
+    return Array.from(this.ragProviderConnections.values());
+  }
+
+  get flowConnections(): FlowProviderConnection[] {
+    return Array.from(this.flowProviderConnections.values());
+  }
+
+  get chunkConnections(): ChunkProviderConnection[] {
+    return Array.from(this.chunkProviderConnections.values());
+  }
+
   dispose(): void {
     this.providerRegistry.disposeProvider(this);
   }
@@ -244,6 +303,100 @@ export class ProviderImpl implements Provider, IDisposable {
       this.kubernetesProviderConnections.delete(kubernetesProviderConnection);
       disposable.dispose();
       this.providerRegistry.onDidUnregisterKubernetesConnectionCallback(this, kubernetesProviderConnection);
+    });
+  }
+
+  registerInferenceProviderConnection(connection: InferenceProviderConnection): Disposable {
+    this.inferenceProviderConnections.add(connection);
+    const disposable = this.providerRegistry.registerInferenceConnection(this, connection);
+    this.providerRegistry.onDidRegisterInferenceConnectionCallback(this, connection);
+    return Disposable.create(() => {
+      this.inferenceProviderConnections.delete(connection);
+      disposable.dispose();
+      this.providerRegistry.onDidUnregisterInferenceConnectionCallback(this, connection);
+    });
+  }
+
+  registerRagProviderConnection(connection: RagProviderConnection): Disposable {
+    this.ragProviderConnections.add(connection);
+    const disposable = this.providerRegistry.registerRagConnection(this, connection);
+    this.providerRegistry.onDidRegisterRagConnectionCallback(this, connection);
+    return Disposable.create(() => {
+      this.ragProviderConnections.delete(connection);
+      disposable.dispose();
+      this.providerRegistry.onDidUnregisterRagConnectionCallback(this, connection);
+    });
+  }
+
+  setInferenceProviderConnectionFactory(
+    inferenceProviderConnectionFactory: InferenceProviderConnectionFactory,
+    connectionAuditor?: Auditor,
+  ): Disposable {
+    this._inferenceProviderConnectionFactory = inferenceProviderConnectionFactory;
+    this._connectionAuditor = connectionAuditor;
+    this.providerRegistry.onDidSetConnectionFactoryCallback(this, inferenceProviderConnectionFactory, 'inference');
+    return Disposable.create(() => {
+      this._inferenceProviderConnectionFactory = undefined;
+      this._connectionAuditor = undefined;
+      this.providerRegistry.onDidUnsetConnectionFactoryCallback(this, 'inference');
+    });
+  }
+
+  setRagProviderConnectionFactory(
+    ragProviderConnectionFactory: RagProviderConnectionFactory,
+    connectionAuditor?: Auditor,
+  ): Disposable {
+    this._ragProviderConnectionFactory = ragProviderConnectionFactory;
+    this._connectionAuditor = connectionAuditor;
+    return Disposable.create(() => {
+      this._ragProviderConnectionFactory = undefined;
+      this._connectionAuditor = undefined;
+    });
+  }
+
+  setChunkProviderConnectionFactory(
+    chunkProviderConnectionFactory: ChunkProviderConnectionFactory,
+    connectionAuditor?: Auditor,
+  ): Disposable {
+    this._chunkProviderConnectionFactory = chunkProviderConnectionFactory;
+    this._connectionAuditor = connectionAuditor;
+    return Disposable.create(() => {
+      this._chunkProviderConnectionFactory = undefined;
+      this._connectionAuditor = undefined;
+    });
+  }
+
+  setSemanticRouterConnectionFactory(
+    semanticRouterConnectionFactory: SemanticRouterFactory,
+    connectionAuditor?: Auditor,
+  ): Disposable {
+    this._semanticRouterConnectionFactory = semanticRouterConnectionFactory;
+    this._connectionAuditor = connectionAuditor;
+    return Disposable.create(() => {
+      this._semanticRouterConnectionFactory = undefined;
+      this._connectionAuditor = undefined;
+    });
+  }
+
+  registerFlowProviderConnection(connection: FlowProviderConnection): Disposable {
+    this.flowProviderConnections.add(connection);
+    const disposable = this.providerRegistry.registerFlowConnection(this, connection);
+    this.providerRegistry.onDidRegisterFlowConnectionCallback(this, connection);
+    return Disposable.create(() => {
+      this.flowProviderConnections.delete(connection);
+      disposable.dispose();
+      this.providerRegistry.onDidUnregisterFlowConnectionCallback(this, connection);
+    });
+  }
+
+  registerChunkProviderConnection(connection: ChunkProviderConnection): Disposable {
+    this.chunkProviderConnections.add(connection);
+    const disposable = this.providerRegistry.registerChunkConnection(this, connection);
+    this.providerRegistry.onDidRegisterChunkConnectionCallback(this, connection);
+    return Disposable.create(() => {
+      this.chunkProviderConnections.delete(connection);
+      disposable.dispose();
+      this.providerRegistry.onDidUnregisterChunkConnectionCallback(this, connection);
     });
   }
 
@@ -292,6 +445,10 @@ export class ProviderImpl implements Provider, IDisposable {
     return this.providerRegistry.registerLifecycle(this, lifecycle);
   }
 
+  registerScheduler(scheduler: ProviderScheduler): Disposable {
+    return this.schedulerRegistry.register(this, scheduler);
+  }
+
   registerInstallation(installation: ProviderInstallation): Disposable {
     return this.providerRegistry.registerInstallation(this, installation);
   }
@@ -306,5 +463,15 @@ export class ProviderImpl implements Provider, IDisposable {
 
   registerCleanup(cleanup: ProviderCleanup): Disposable {
     return this.providerRegistry.registerCleanup(this, cleanup);
+  }
+
+  registerSkill(skill: CreateSkillParams): Disposable {
+    return Disposable.create(
+      this.skillManager.registerSkillFolder({
+        label: skill.label,
+        badge: this.extensionDisplayName,
+        baseDirectory: skill.path,
+      }).dispose,
+    );
   }
 }

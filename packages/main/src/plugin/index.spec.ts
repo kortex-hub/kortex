@@ -20,7 +20,7 @@
 import { EventEmitter } from 'node:events';
 import { tmpdir } from 'node:os';
 
-import type { PullEvent } from '@podman-desktop/api';
+import type { PullEvent } from '@openkaiden/api';
 import type { IpcMainInvokeEvent, WebContents } from 'electron';
 import { app, BrowserWindow, clipboard, ipcMain, shell } from 'electron';
 import { Container as InversifyContainer } from 'inversify';
@@ -55,6 +55,11 @@ import { Disposable } from './types/disposable.js';
 import { HttpServer } from './webview/webview-registry.js';
 
 vi.mock(import('./extension/extension-api-version.js'));
+vi.mock(import('/@/chat/chat-manager.js'), () => {
+  const ChatManagerMock = vi.fn();
+  ChatManagerMock.prototype.init = vi.fn().mockResolvedValue(undefined);
+  return { ChatManager: ChatManagerMock };
+});
 
 let pluginSystem: TestPluginSystem;
 
@@ -791,6 +796,30 @@ describe.each<{
     expect(errorMock).toHaveBeenCalledWith(rejectError);
     expect(originalTask.status).toEqual('in-progress');
     expect(originalTask.error).toEqual('Something went wrong while creating container provider: Error: an error');
+  });
+});
+
+describe('before-quit container disposal', () => {
+  test('should call unbindAll on the container when before-quit is emitted', () => {
+    const beforeQuitCallbacks: (() => void)[] = [];
+    vi.mocked(app.on).mockImplementation(((event: string, cb: () => void) => {
+      if (event === 'before-quit') {
+        beforeQuitCallbacks.push(cb);
+      }
+      return app;
+    }) as typeof app.on);
+
+    const trayMenu = {} as TrayMenu;
+    const deferred = Promise.withResolvers<BrowserWindow>();
+    const ps = new PluginSystem(trayMenu, deferred);
+
+    const unbindAllMock = vi.fn().mockResolvedValue(undefined);
+    (ps as any).container = { unbindAll: unbindAllMock };
+
+    expect(beforeQuitCallbacks).toHaveLength(1);
+    beforeQuitCallbacks[0]!();
+
+    expect(unbindAllMock).toHaveBeenCalled();
   });
 });
 

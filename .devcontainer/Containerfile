@@ -1,2 +1,0 @@
-FROM quay.io/podman-desktop/devcontainer-parent:next
-

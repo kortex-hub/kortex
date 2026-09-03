@@ -18,7 +18,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import type { ProviderConnectionStatus } from '@podman-desktop/api';
+import type { ProviderConnectionStatus } from '@openkaiden/api';
 import { render, screen, within } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { router } from 'tinro';
@@ -30,7 +30,7 @@ import { providerInfos } from '/@/stores/providers';
 import { CONFIGURATION_DEFAULT_SCOPE } from '/@api/configuration/constants.js';
 import type { Menu } from '/@api/menu.js';
 import type { OnboardingInfo } from '/@api/onboarding';
-import type { ProviderInfo } from '/@api/provider-info';
+import { type ProviderInfo } from '/@api/provider-info';
 
 import PreferencesResourcesRendering from './PreferencesResourcesRendering.svelte';
 
@@ -98,6 +98,16 @@ const providerInfo: ProviderInfo = {
   containerProviderConnectionCreationDisplayName: 'Podman machine',
   kubernetesProviderConnectionInitialization: false,
   cleanupSupport: false,
+  inferenceConnections: [],
+  ragConnections: [],
+  chunkConnections: [],
+  flowConnections: [],
+  inferenceProviderConnectionCreation: false,
+  inferenceProviderConnectionInitialization: false,
+  ragProviderConnectionCreation: false,
+  ragProviderConnectionInitialization: false,
+  chunkProviderConnectionCreation: false,
+  chunkProviderConnectionInitialization: false,
 };
 
 // mock the router
@@ -201,6 +211,16 @@ describe.each<{
       containerProviderConnectionCreationDisplayName: 'Podman machine',
       kubernetesProviderConnectionInitialization: false,
       cleanupSupport: false,
+      inferenceConnections: [],
+      ragConnections: [],
+      chunkConnections: [],
+      flowConnections: [],
+      inferenceProviderConnectionCreation: false,
+      inferenceProviderConnectionInitialization: false,
+      ragProviderConnectionCreation: false,
+      ragProviderConnectionInitialization: false,
+      chunkProviderConnectionCreation: false,
+      chunkProviderConnectionInitialization: false,
     },
     startFailedImplemented: true,
   },
@@ -259,6 +279,16 @@ describe.each<{
       kubernetesProviderConnectionCreationDisplayName: 'Kluster',
       kubernetesProviderConnectionInitialization: false,
       cleanupSupport: false,
+      inferenceConnections: [],
+      ragConnections: [],
+      chunkConnections: [],
+      flowConnections: [],
+      inferenceProviderConnectionCreation: false,
+      inferenceProviderConnectionInitialization: false,
+      ragProviderConnectionCreation: false,
+      ragProviderConnectionInitialization: false,
+      chunkProviderConnectionCreation: false,
+      chunkProviderConnectionInitialization: false,
     },
     startFailedImplemented: false,
   },
@@ -310,6 +340,16 @@ describe.each<{
       containerProviderConnectionInitialization: false,
       kubernetesProviderConnectionInitialization: false,
       cleanupSupport: false,
+      inferenceConnections: [],
+      ragConnections: [],
+      chunkConnections: [],
+      flowConnections: [],
+      inferenceProviderConnectionCreation: false,
+      inferenceProviderConnectionInitialization: false,
+      ragProviderConnectionCreation: false,
+      ragProviderConnectionInitialization: false,
+      chunkProviderConnectionCreation: false,
+      chunkProviderConnectionInitialization: false,
     },
     startFailedImplemented: true,
   },
@@ -438,36 +478,32 @@ describe.each<{
       expect(vi.mocked(window.startProviderConnectionLifecycle)).toHaveBeenCalled();
     });
 
-    test(
-      'click start and make it fail',
-      {
-        skip: !startFailedImplemented,
-      },
-      async () => {
-        const customProviderInfo: ProviderInfo = { ...providerInfo };
-        setConnectionStatus(customProviderInfo, 0, 'stopped');
-        providerInfos.set([customProviderInfo]);
-        const { getByRole, getByLabelText } = render(PreferencesResourcesRendering, {});
+    test('click start and make it fail', {
+      skip: !startFailedImplemented,
+    }, async () => {
+      const customProviderInfo: ProviderInfo = { ...providerInfo };
+      setConnectionStatus(customProviderInfo, 0, 'stopped');
+      providerInfos.set([customProviderInfo]);
+      const { getByRole, getByLabelText } = render(PreferencesResourcesRendering, {});
 
-        // get the region containing the content for the default connection
-        const region = getByRole('region', { name: defaultName });
+      // get the region containing the content for the default connection
+      const region = getByRole('region', { name: defaultName });
 
-        const startButton = within(region).getByRole('button', { name: 'Start' });
-        expect(startButton).toBeInTheDocument();
-        expect(!startButton.classList.contains('cursor-not-allowed')).toBeTruthy();
-        vi.mocked(window.startProviderConnectionLifecycle).mockClear();
-        await userEvent.click(startButton);
-        expect(window.startProviderConnectionLifecycle).toHaveBeenCalledOnce();
-        const call = vi.mocked(window.startProviderConnectionLifecycle).mock.calls[0];
-        const key = call[2];
-        const logger = call[3];
-        assert(!!logger);
-        logger(key, 'error', ['an error']);
-        await vi.waitFor(() => {
-          getByLabelText(/failed/);
-        });
-      },
-    );
+      const startButton = within(region).getByRole('button', { name: 'Start' });
+      expect(startButton).toBeInTheDocument();
+      expect(!startButton.classList.contains('cursor-not-allowed')).toBeTruthy();
+      vi.mocked(window.startProviderConnectionLifecycle).mockClear();
+      await userEvent.click(startButton);
+      expect(window.startProviderConnectionLifecycle).toHaveBeenCalledOnce();
+      const call = vi.mocked(window.startProviderConnectionLifecycle).mock.calls[0];
+      const key = call[2];
+      const logger = call[3];
+      assert(!!logger);
+      logger(key, 'error', ['an error']);
+      await vi.waitFor(() => {
+        getByLabelText(/failed/);
+      });
+    });
   });
 
   test('Expect to redirect to create New page if provider is installed', async () => {

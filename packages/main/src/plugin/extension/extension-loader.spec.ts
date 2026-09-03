@@ -21,7 +21,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import type * as containerDesktopAPI from '@podman-desktop/api';
+import type * as containerDesktopAPI from '@openkaiden/api';
 import { app } from 'electron';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -30,6 +30,7 @@ import type { ContributionManager } from '/@/plugin/contribution-manager.js';
 import type { ExtensionApiVersion } from '/@/plugin/extension/extension-api-version.js';
 import type { FeatureRegistry } from '/@/plugin/feature-registry.js';
 import type { KubeGeneratorRegistry } from '/@/plugin/kubernetes/kube-generator-registry.js';
+import type { MCPRegistry } from '/@/plugin/mcp/mcp-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
 import type { WebviewRegistry } from '/@/plugin/webview/webview-registry.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
@@ -44,6 +45,7 @@ import type { WebviewInfo } from '/@api/webview-info.js';
 import product from '/@product.json' with { type: 'json' };
 
 import { getBase64Image } from '../../util.js';
+import type { AgentRegistry } from '../agent-registry.js';
 import type { AuthenticationImpl } from '../authentication.js';
 import type { CliToolRegistry } from '../cli-tool-registry.js';
 import type { ColorRegistry } from '../color-registry.js';
@@ -64,9 +66,10 @@ import type { KubernetesClient } from '../kubernetes/kubernetes-client.js';
 import type { MenuRegistry } from '../menu-registry.js';
 import type { MessageBox } from '../message-box.js';
 import type { OnboardingRegistry } from '../onboarding-registry.js';
+import type { OpenShellRegistry } from '../openshell-registry.js';
 import type { ProviderRegistry } from '../provider-registry.js';
 import type { Proxy } from '../proxy.js';
-import type { ExtensionSecretStorage, SafeStorageRegistry } from '../safe-storage/safe-storage-registry.js';
+import type { SafeStorageRegistry, SecretStorageWrapper } from '../safe-storage/safe-storage-registry.js';
 import type { StatusBarRegistry } from '../statusbar/statusbar-registry.js';
 import type { NotificationRegistry } from '../tasks/notification-registry.js';
 import { type ProgressImpl, ProgressLocation } from '../tasks/progress-impl.js';
@@ -161,6 +164,8 @@ const featureRegistry: FeatureRegistry = {
   registerFeatures: vi.fn(),
 } as unknown as FeatureRegistry;
 
+const mcpRegistry: MCPRegistry = {} as unknown as MCPRegistry;
+
 const apiSender: ApiSenderType = { send: vi.fn() } as unknown as ApiSenderType;
 
 const trayMenuRegistry: TrayMenuRegistry = {} as unknown as TrayMenuRegistry;
@@ -177,7 +182,9 @@ const kubernetesClient: KubernetesClient = {
   dispose: vi.fn(),
 } as unknown as KubernetesClient;
 
-const fileSystemMonitoring: FilesystemMonitoring = {} as unknown as FilesystemMonitoring;
+const fileSystemMonitoring: FilesystemMonitoring = {
+  disposeAll: vi.fn().mockResolvedValue(undefined),
+} as unknown as FilesystemMonitoring;
 
 const proxy: Proxy = {} as unknown as Proxy;
 
@@ -223,6 +230,20 @@ const context: Context = new Context(apiSender);
 const cliToolRegistry: CliToolRegistry = {
   createCliTool: vi.fn(),
 } as unknown as CliToolRegistry;
+
+const agentRegistry: AgentRegistry = {
+  registerAgent: vi.fn(),
+} as unknown as AgentRegistry;
+
+const openShellRegistry: OpenShellRegistry = {
+  registerGateway: vi.fn(),
+  registerCLI: vi.fn(),
+  onDidRegisterGateway: vi.fn(),
+  onDidUnregisterGateway: vi.fn(),
+  onDidUpdateGateway: vi.fn(),
+  onDidRegisterCLI: vi.fn(),
+  onDidUnregisterCLI: vi.fn(),
+} as unknown as OpenShellRegistry;
 
 const safeStorageRegistry: SafeStorageRegistry = {
   getExtensionStorage: vi.fn(),
@@ -374,6 +395,8 @@ beforeEach(() => {
     exec,
     kubernetesGeneratorRegistry,
     cliToolRegistry,
+    agentRegistry,
+    openShellRegistry,
     notificationRegistry,
     imageCheckerImpl,
     imageFilesImpl,
@@ -388,6 +411,7 @@ beforeEach(() => {
     extensionAnalyzer,
     extensionApiVersion,
     featureRegistry,
+    mcpRegistry,
   );
 });
 
@@ -2089,6 +2113,91 @@ test('createCliTool ', async () => {
   expect(newCliTool).toStrictEqual({ id: 'created' });
 });
 
+test('registerAgent', async () => {
+  const disposables: IDisposable[] = [];
+
+  const api = createApi(disposables);
+
+  expect(api).toBeDefined();
+  expect(disposables.length).toBe(0);
+
+  const agent: containerDesktopAPI.Agent = {
+    id: 'my-agent',
+    name: 'My Agent',
+    description: 'An agent for testing',
+    command: 'my-agent',
+    configurationFiles: [],
+    destinationSkillsFolder: '/home/test/.my-agent/skills',
+    async preWorkspaceStart(): Promise<void> {
+      throw new Error('not implemented');
+    },
+  };
+
+  vi.mocked(agentRegistry.registerAgent).mockReturnValue(Disposable.create(() => {}));
+
+  api.agents.registerAgent(agent);
+  expect(disposables.length).toBe(1);
+
+  expect(agentRegistry.registerAgent).toHaveBeenCalledWith(agent);
+});
+
+test('registerGateway', async () => {
+  const disposables: IDisposable[] = [];
+
+  const api = createApi(disposables);
+
+  expect(api).toBeDefined();
+  expect(disposables.length).toBe(0);
+
+  const gateway: containerDesktopAPI.OpenShellGateway = {
+    id: 'gw-1',
+    name: 'Test Gateway',
+    endpoint: 'https://localhost:17670',
+    status: () => 'started',
+    features: { supportMount: false },
+  };
+
+  vi.mocked(openShellRegistry.registerGateway).mockReturnValue(Disposable.create(() => {}));
+
+  api.openshell.registerGateway(gateway);
+  expect(disposables.length).toBe(1);
+
+  expect(openShellRegistry.registerGateway).toHaveBeenCalledWith(gateway);
+});
+
+test('registerCLI', async () => {
+  const disposables: IDisposable[] = [];
+
+  const api = createApi(disposables);
+
+  expect(api).toBeDefined();
+  expect(disposables.length).toBe(0);
+
+  const cli: containerDesktopAPI.OpenShellCLI = {
+    sandbox: {
+      list: vi.fn(),
+      delete: vi.fn(),
+      connect: vi.fn(),
+      enableV2Provider: vi.fn(),
+    },
+    provider: {
+      list: vi.fn(),
+      delete: vi.fn(),
+      create: vi.fn(),
+    },
+    inference: {
+      set: vi.fn(),
+    },
+  };
+
+  vi.mocked(openShellRegistry.registerCLI).mockReturnValue(Disposable.create(() => {}));
+
+  api.openshell.registerCLI(cli);
+  expect(disposables.length).toBe(1);
+
+  expect(openShellRegistry.registerCLI).toHaveBeenCalledWith(cli);
+});
+
 test('registerImageCheckerProvider ', async () => {
   const disposables: IDisposable[] = [];
 
@@ -2437,7 +2546,7 @@ describe('extensionContext', async () => {
       get: getMock,
       store: storeMock,
       delete: deleteMock,
-    } as unknown as ExtensionSecretStorage);
+    } as unknown as SecretStorageWrapper);
 
     let extensionContext: containerDesktopAPI.ExtensionContext | undefined;
 
@@ -2908,6 +3017,13 @@ test('ExtensionLoader async dispose should stop all extensions', async () => {
   await extensionLoader.asyncDispose();
 
   expect(deactivateMock).toHaveBeenCalledOnce();
+  expect(fileSystemMonitoring.disposeAll).toHaveBeenCalledOnce();
+});
+
+test('asyncDispose should call fileSystemMonitoring.disposeAll', async () => {
+  await extensionLoader.asyncDispose();
+
+  expect(fileSystemMonitoring.disposeAll).toHaveBeenCalledOnce();
 });
 
 describe('env API', () => {

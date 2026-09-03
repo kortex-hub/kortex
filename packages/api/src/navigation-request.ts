@@ -57,6 +57,54 @@ export interface NavigationParameters {
   [NavigationPage.NETWORK]: { name: string; engineId: string };
   [NavigationPage.NETWORK_CREATE]: never;
   [NavigationPage.EXTENSIONS_CATALOG]: { searchTerm?: string };
+  // flows
+  [NavigationPage.FLOWS]: never;
+  [NavigationPage.FLOW_CREATE]: never;
+  [NavigationPage.FLOW_RUN]: {
+    providerId: string;
+    connectionName: string;
+    flowId: string;
+  };
+  [NavigationPage.FLOW_DETAILS]: {
+    providerId: string;
+    connectionName: string;
+    flowId: string;
+  };
+  [NavigationPage.MCP_DETAILS]: {
+    id: string;
+  };
+  [NavigationPage.MCP_INSTALL_FROM_REGISTRY]: {
+    serverId: string;
+  };
+  [NavigationPage.AGENT_WORKSPACES]: never;
+  [NavigationPage.AGENT_WORKSPACE_CREATE]: never;
+  [NavigationPage.CODING_AGENTS]: never;
+  [NavigationPage.SKILLS]: never;
+  [NavigationPage.SKILL_CREATE]: never;
+  [NavigationPage.SKILL_DETAILS]: {
+    name: string;
+  };
+  [NavigationPage.RAG_ENVIRONMENTS]: never;
+  [NavigationPage.RAG_ENVIRONMENT_DETAILS]: {
+    name: string;
+  };
+  [NavigationPage.SECRET_VAULT]: never;
+  [NavigationPage.SECRET_VAULT_CREATE]: never;
+  [NavigationPage.SECRET_VAULT_DETAILS]: {
+    id: string;
+  };
+  [NavigationPage.MODELS]: never;
+  [NavigationPage.SEMANTIC_ROUTERS]: never;
+  [NavigationPage.PROJECTS]: never;
+  [NavigationPage.PROJECT_DETAILS]: {
+    id: string;
+  };
+  [NavigationPage.PROJECT_CREATE]: never;
+  [NavigationPage.ACP_SESSIONS]: never;
+  [NavigationPage.ACP_SESSION_CREATE]: never;
+  [NavigationPage.ACP_SESSION_DETAILS]: {
+    id: string;
+  };
 }
 
 // the parameters property is optional when the NavigationParameters say it is

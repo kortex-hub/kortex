@@ -1,0 +1,137 @@
+/**********************************************************************
+ * Copyright (C) 2025 Red Hat, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ***********************************************************************/
+
+import type { Locator, Page } from '@playwright/test';
+import { expect } from '@playwright/test';
+
+import type { ExtensionLocator } from '/@/model/core/types';
+import { BadgeType, builtInExtensions, Button, extensionRawName, ExtensionStatus, State } from '/@/model/core/types';
+
+import { BasePage } from './base-page';
+import { ExtensionDetailsPage } from './extension-details-page';
+
+const stateMap: { [key: string]: ExtensionStatus } = {
+  [State.ACTIVE]: ExtensionStatus.RUNNING,
+  [State.DISABLED]: ExtensionStatus.STOPPED,
+};
+
+export class ExtensionsInstalledPage extends BasePage {
+  readonly noSearchResultsHeading: Locator;
+  readonly clearFilterButton: Locator;
+
+  constructor(page: Page) {
+    super(page);
+    this.noSearchResultsHeading = page.getByRole('heading', { name: /No extensions matching/ });
+    this.clearFilterButton = page.getByRole('button', { name: 'Clear filter' });
+  }
+
+  async waitForLoad(): Promise<void> {
+    await expect(this.getExtension(builtInExtensions[0].locator)).toBeVisible();
+  }
+
+  public getExtension(locator: ExtensionLocator): Locator {
+    return this.page.getByLabel(locator);
+  }
+
+  public getExtensionBadge(locator: ExtensionLocator): Locator {
+    return this.getExtension(locator).getByLabel(BadgeType.BUILT_IN);
+  }
+
+  public getPreInstalledLabel(locator: ExtensionLocator): Locator {
+    return this.getExtension(locator).getByText('Pre-installed', { exact: true });
+  }
+
+  public async getExtensionState(locator: ExtensionLocator): Promise<ExtensionStatus> {
+    try {
+      const statusLabel = this.extensionStateLocator(locator);
+      const status = (await statusLabel.textContent()) ?? '';
+
+      return stateMap[status] ?? ExtensionStatus.UNKNOWN;
+    } catch {
+      return ExtensionStatus.UNKNOWN;
+    }
+  }
+
+  public async stopExtensionAndVerify(locator: ExtensionLocator, timeout = 10_000): Promise<void> {
+    await this.clickExtensionButton(locator, Button.STOP);
+    await expect(this.extensionStateLocator(locator)).toHaveText(State.DISABLED, {
+      timeout,
+    });
+  }
+
+  public async startExtensionAndVerify(locator: ExtensionLocator, timeout = 10_000): Promise<void> {
+    await this.clickExtensionButton(locator, Button.START);
+    await expect(this.extensionStateLocator(locator)).toHaveText(State.ACTIVE, {
+      timeout,
+    });
+  }
+
+  public async toggleExtensionState(locator: ExtensionLocator): Promise<void> {
+    const currentState = await this.getExtensionState(locator);
+    switch (currentState) {
+      case ExtensionStatus.RUNNING:
+        await this.stopExtensionAndVerify(locator);
+        break;
+      case ExtensionStatus.STOPPED:
+        await this.startExtensionAndVerify(locator);
+        break;
+      default:
+        throw new Error(`Cannot toggle extension with unknown state: ${locator}`);
+    }
+  }
+
+  public getExtensionDetailsLink(extension: (typeof builtInExtensions)[number]): Locator {
+    return this.page.getByLabel(`${extensionRawName(extension)} extension details`).first();
+  }
+
+  public async openExtensionDetails(extension: (typeof builtInExtensions)[number]): Promise<ExtensionDetailsPage> {
+    const link = this.getExtensionDetailsLink(extension);
+    await expect(link).toBeEnabled();
+    await link.click();
+
+    const detailsPage = new ExtensionDetailsPage(this.page, extension.name);
+    await detailsPage.waitForLoad();
+    return detailsPage;
+  }
+
+  public getDeleteButtonForExtension(locator: ExtensionLocator): Locator {
+    return this.getExtensionButton(locator, Button.DELETE);
+  }
+
+  public getStartButtonForExtension(locator: ExtensionLocator): Locator {
+    return this.getExtensionButton(locator, Button.START);
+  }
+
+  public getStopButtonForExtension(locator: ExtensionLocator): Locator {
+    return this.getExtensionButton(locator, Button.STOP);
+  }
+
+  private extensionStateLocator(locator: ExtensionLocator): Locator {
+    return this.getExtension(locator).getByLabel('Extension Status Label');
+  }
+
+  private async clickExtensionButton(locator: ExtensionLocator, buttonType: Button): Promise<void> {
+    const button = this.getExtensionButton(locator, buttonType);
+    await expect(button).toBeEnabled();
+    await button.click();
+  }
+
+  private getExtensionButton(locator: ExtensionLocator, buttonType: Button): Locator {
+    return this.getExtension(locator).getByLabel(buttonType);
+  }
+}

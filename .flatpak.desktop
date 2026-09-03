@@ -1,10 +1,10 @@
 [Desktop Entry]
-Name=Podman Desktop
+Name=Kaiden
 Exec=run.sh %U
 Terminal=false
 Type=Application
-Icon=io.podman_desktop.PodmanDesktop
-StartupWMClass=Podman Desktop
+Icon=ai.openkaiden.Kaiden
+StartupWMClass=Kaiden
 Categories=Development;
-Keywords=container;pod;image;volume;kubernetes;docker;kind;kubectl;
-X-Flatpak=io.podman_desktop.PodmanDesktop
+Keywords=
+X-Flatpak=ai.openkaiden.Kaiden

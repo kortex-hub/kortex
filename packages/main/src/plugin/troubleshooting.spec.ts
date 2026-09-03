@@ -156,19 +156,13 @@ test('Should return getMacSystemLogs if the platform is darwin', async () => {
   // Expect it to have been called twice as it checked stdout and stderr
   expect(readFileMock).toHaveBeenCalledTimes(2);
 
-  // Expect readFileMock to have been called with /Library/Logs/Podman Desktop/launchd-stdout.log but CONTAINED in the path
-  expect(readFileMock).toHaveBeenCalledWith(
-    expect.stringContaining('/Library/Logs/Podman Desktop/launchd-stdout'),
-    'utf-8',
-  );
-  expect(readFileMock).toHaveBeenCalledWith(
-    expect.stringContaining('/Library/Logs/Podman Desktop/launchd-stderr'),
-    'utf-8',
-  );
+  // Expect readFileMock to have been called with /Library/Logs/Kaiden/launchd-stdout.log but CONTAINED in the path
+  expect(readFileMock).toHaveBeenCalledWith(expect.stringContaining('/Library/Logs/Kaiden/launchd-stdout'), 'utf-8');
+  expect(readFileMock).toHaveBeenCalledWith(expect.stringContaining('/Library/Logs/Kaiden/launchd-stderr'), 'utf-8');
 });
 
 // Should return getWindowsSystemLogs if the platform is win32
-// ~/AppData/Roaming/Podman Desktop/logs/podman-desktop.log
+// ~/AppData/Roaming/Kaiden/logs/podman-desktop.log
 test('Should return getWindowsSystemLogs if the platform is win32', async () => {
   // Mock exists to be true
   vi.mock('node:fs');
@@ -188,14 +182,11 @@ test('Should return getWindowsSystemLogs if the platform is win32', async () => 
   await zipFile.getSystemLogs();
   expect(getSystemLogsSpy).toHaveBeenCalled();
 
-  // Expect it to have been called once as it checked podman-desktop.log
+  // Expect it to have been called once as it checked kaiden.log
   expect(readFileMock).toHaveBeenCalledTimes(1);
 
-  // Expect readFileMock to have been called with ~/AppData/Roaming/Podman Desktop/logs/podman-desktop.log but CONTAINED in the path
-  expect(readFileMock).toHaveBeenCalledWith(
-    expect.stringContaining('/AppData/Roaming/Podman Desktop/logs/podman-desktop'),
-    'utf-8',
-  );
+  // Expect readFileMock to have been called with ~/AppData/Roaming/Kaiden/logs/podman-desktop.log but CONTAINED in the path
+  expect(readFileMock).toHaveBeenCalledWith(expect.stringContaining('/AppData/Roaming/Kaiden/logs/kaiden'), 'utf-8');
 });
 
 // test generateLogFileName for different cases

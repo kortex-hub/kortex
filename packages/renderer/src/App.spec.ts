@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2024-2025 Red Hat, Inc.
+ * Copyright (C) 2024-2026 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,9 @@ import { render, waitFor } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { get, writable } from 'svelte/store';
 import { router } from 'tinro';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
+import { showChatWindow } from '/@/stores/chat-window';
 import * as kubernetesNoCurrentContext from '/@/stores/kubernetes-no-current-context';
 
 import App from './App.svelte';
@@ -30,22 +31,23 @@ import { lastPage } from './stores/breadcrumb';
 import { navigationRegistry, type NavigationRegistryEntry } from './stores/navigation/navigation-registry';
 
 const mocks = vi.hoisted(() => ({
-  DashboardPage: vi.fn(),
   RunImage: vi.fn(),
   ImagesList: vi.fn(),
   SubmenuNavigation: vi.fn(),
   DeploymentsList: vi.fn(),
   KubernetesDashboard: vi.fn(),
+  CustomChat: vi.fn(),
 }));
 
-vi.mock('./lib/dashboard/DashboardPage.svelte', () => ({
-  default: mocks.DashboardPage,
-}));
 vi.mock('./lib/image/RunImage.svelte', () => ({
   default: mocks.RunImage,
 }));
 vi.mock('./lib/image/ImagesList.svelte', () => ({
   default: mocks.ImagesList,
+}));
+
+vi.mock('./lib/chat/route/CustomChat.svelte', () => ({
+  default: mocks.CustomChat,
 }));
 
 vi.mock('./lib/ui/TitleBar.svelte', () => ({
@@ -54,6 +56,8 @@ vi.mock('./lib/ui/TitleBar.svelte', () => ({
 vi.mock('./lib/welcome/WelcomePage.svelte', () => ({
   default: vi.fn(),
 }));
+
+vi.mock(import('./PreferencesNavigation.svelte'));
 
 vi.mock('./lib/context/ContextKey.svelte', () => ({
   default: vi.fn(),
@@ -86,6 +90,8 @@ const messages = new Map<string, (args: unknown) => void>();
 
 beforeEach(() => {
   vi.resetAllMocks();
+  sessionStorage.clear();
+  showChatWindow.set(true);
   router.goto('/');
   (window.events as unknown) = {
     receive: vi.fn().mockImplementation((channel, func) => {
@@ -94,13 +100,18 @@ beforeEach(() => {
   };
   Object.defineProperty(window, 'dispatchEvent', { value: dispatchEventMock });
   (window.getConfigurationValue as unknown) = vi.fn();
+  vi.mocked(window.inferenceGetChats).mockResolvedValue([]);
   vi.mocked(kubernetesNoCurrentContext).kubernetesNoCurrentContext = writable(false);
+});
+
+afterEach(() => {
+  showChatWindow.set(false);
 });
 
 test('test /image/run/* route', async () => {
   render(App);
   expect(mocks.RunImage).not.toHaveBeenCalled();
-  expect(mocks.DashboardPage).toHaveBeenCalled();
+  expect(mocks.CustomChat).toHaveBeenCalled();
   router.goto('/image/run/basic');
   await tick();
   expect(mocks.RunImage).toHaveBeenCalled();
@@ -109,7 +120,7 @@ test('test /image/run/* route', async () => {
 test('test /images/:id/:engineId route', async () => {
   render(App);
   expect(mocks.ImagesList).not.toHaveBeenCalled();
-  expect(mocks.DashboardPage).toHaveBeenCalled();
+  expect(mocks.CustomChat).toHaveBeenCalled();
   router.goto('/images/an-image/an-engine');
   await tick();
   expect(mocks.ImagesList).toHaveBeenCalled();
@@ -186,10 +197,10 @@ test('receive show-release-notes event from main', async () => {
 
   messages.get('show-release-notes');
 
-  expect(mocks.DashboardPage).toBeCalled();
+  expect(mocks.CustomChat).toBeCalled();
 });
 
-test('leaving Dashboard Page saves it in lastPage storage', async () => {
+test('leaving Chat Page saves it in lastPage storage', async () => {
   navigationRegistry.set([
     {
       name: 'Pods',
@@ -219,7 +230,7 @@ test('leaving Dashboard Page saves it in lastPage storage', async () => {
 
   router.goto('/pods');
   await tick();
-  expect(get(lastPage).name).equals('Dashboard Page');
+  expect(get(lastPage).name).equals('Chat');
 
   router.goto('/images');
   await tick();
@@ -231,7 +242,60 @@ test('leaving Dashboard Page saves it in lastPage storage', async () => {
 
   router.goto('/pods');
   await tick();
-  expect(get(lastPage).name).equals('Dashboard Page');
+  expect(get(lastPage).name).equals('Chat');
+});
+
+describe('route persistence across reloads', () => {
+  const LAST_ROUTE_KEY = 'last-route';
+  const SETTINGS_PAGE_KEY = 'settings-page';
+
+  test('navigating to a regular page saves it in sessionStorage', async () => {
+    render(App);
+    router.goto('/images');
+    await tick();
+    expect(sessionStorage.getItem(LAST_ROUTE_KEY)).toBe('/images');
+    expect(sessionStorage.getItem(SETTINGS_PAGE_KEY)).toBeNull();
+  });
+
+  test('navigating to Dashboard clears sessionStorage', async () => {
+    render(App);
+    router.goto('/images');
+    await tick();
+    router.goto('/');
+    await tick();
+    expect(sessionStorage.getItem(LAST_ROUTE_KEY)).toBeNull();
+    expect(sessionStorage.getItem(SETTINGS_PAGE_KEY)).toBeNull();
+  });
+
+  test('navigating to a preferences page saves it without overwriting last regular page', async () => {
+    render(App);
+    router.goto('/images');
+    await tick();
+    router.goto('/preferences/resources');
+    await tick();
+    expect(sessionStorage.getItem(LAST_ROUTE_KEY)).toBe('/images');
+    expect(sessionStorage.getItem(SETTINGS_PAGE_KEY)).toBe('/preferences/resources');
+  });
+
+  test('navigating directly to a preferences page (no prior regular page) saves only SETTINGS_PAGE_KEY', async () => {
+    render(App);
+    router.goto('/preferences/onboarding/podman');
+    await tick();
+    expect(sessionStorage.getItem(SETTINGS_PAGE_KEY)).toBe('/preferences/onboarding/podman');
+    expect(sessionStorage.getItem(LAST_ROUTE_KEY)).toBeNull();
+  });
+
+  test('navigating away from preferences clears SETTINGS_PAGE_KEY', async () => {
+    render(App);
+    router.goto('/images');
+    await tick();
+    router.goto('/preferences/resources');
+    await tick();
+    router.goto('/containers');
+    await tick();
+    expect(sessionStorage.getItem(LAST_ROUTE_KEY)).toBe('/containers');
+    expect(sessionStorage.getItem(SETTINGS_PAGE_KEY)).toBeNull();
+  });
 });
 
 describe('Table persistence functionality', () => {

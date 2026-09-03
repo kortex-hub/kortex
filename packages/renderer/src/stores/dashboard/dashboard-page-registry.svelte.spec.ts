@@ -39,13 +39,7 @@ beforeEach(() => {
 
 describe('getDefaultSectionNames', () => {
   test('should return section names in correct order', () => {
-    expect(defaultSectionNames).toEqual([
-      'Release Notes',
-      'Extension Banners',
-      'Explore Features',
-      'Learning Center',
-      'Providers',
-    ]);
+    expect(defaultSectionNames).toEqual(['Release Notes']);
   });
 });
 

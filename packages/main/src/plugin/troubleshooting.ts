@@ -67,10 +67,10 @@ export class Troubleshooting {
       case 'darwin':
         return this.getLogsFromFiles(
           ['launchd-stdout.log', 'launchd-stderr.log'],
-          `${os.homedir()}/Library/Logs/Podman Desktop`,
+          `${os.homedir()}/Library/Logs/Kaiden`,
         );
       case 'win32':
-        return this.getLogsFromFiles(['podman-desktop'], `${os.homedir()}/AppData/Roaming/Podman Desktop/logs`);
+        return this.getLogsFromFiles(['kaiden'], `${os.homedir()}/AppData/Roaming/Kaiden/logs`);
       default:
         // Unsupported platform, so do not return anything
         return [];

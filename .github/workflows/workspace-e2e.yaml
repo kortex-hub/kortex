@@ -1,0 +1,495 @@
+#
+# Copyright (C) 2026 Red Hat, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: workspace e2e tests (windows azure)
+run-name: >-
+  ${{ github.event.inputs.npm_target == 'test:e2e:workspaces:claude' && 'workspace e2e tests(claude agent)'
+    || github.event.inputs.npm_target == 'test:e2e:workspaces:opencode' && 'workspace e2e tests(opencode agent)'
+    || github.event.inputs.npm_target == 'test:e2e:workspaces:goose' && 'workspace e2e tests(goose agent)'
+    || github.event.inputs.npm_target == 'test:e2e:workspaces:openclaw' && 'workspace e2e tests(openclaw agent)'
+    || github.event.inputs.npm_target == 'test:e2e:workspaces:copilot' && 'workspace e2e tests(copilot agent)'
+    || 'workspace e2e tests' }}
+  · prerelease ${{ github.event.inputs.prerelease_override || 'latest' }}
+  · with podman ${{ github.event.inputs.podman_provider == 'wsl' && 'wsl'
+    || github.event.inputs.podman_provider == 'hyperv' && 'hyperv'
+    || '(wsl, hyperv)' }}
+
+on:
+  # Scheduled runs temporarily disabled - re-enable by uncommenting below.
+  # schedule:
+  #   - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      repo_branch:
+        default: 'FORK=openkaiden,BRANCH=main'
+        description: 'Kaiden fork and branch (FORK=owner,BRANCH=branch)'
+        type: string
+        required: true
+      npm_target:
+        default: 'test:e2e:workspaces'
+        description: 'npm target to run tests (use :claude etc. for a single smoke test)'
+        type: choice
+        options:
+          - 'test:e2e:workspaces'
+          - 'test:e2e:workspaces:claude'
+          - 'test:e2e:workspaces:opencode'
+          - 'test:e2e:workspaces:goose'
+          - 'test:e2e:workspaces:openclaw'
+          - 'test:e2e:workspaces:copilot'
+        required: true
+      env_vars:
+        default: 'PODMAN_ENABLED=true'
+        description: 'Env. Variables passed into target machine, ie: VAR1=xxx,VAR2=true'
+        type: string
+        required: true
+      podman_version:
+        default: 'latest'
+        description: 'Podman version ("latest" for stable release, or specific like "v5.6.1")'
+        type: string
+        required: true
+      images_version:
+        default: 'v0.1.1'
+        description: 'pde2e-image version tag'
+        type: string
+        required: true
+      mapt_params:
+        description: |
+          **Create instance (leave empty to use defaults)**
+
+          **Format:** IMAGE=xxx;VERSION_TAG=xxx;CPUS=xxx;MEMORY=xxx;EXCLUDED_REGIONS=xxx
+        required: false
+        type: string
+      prerelease_source:
+        default: 'openkaiden/testing-prereleases'
+        description: 'GitHub owner/repo with published Windows prod builds (owner/repo)'
+        type: string
+        required: true
+      prerelease_override:
+        default: ''
+        description: 'Optional release tag (e.g. v0.2.0-202606201430-abc1234) or direct download URL. Latest if empty.'
+        type: string
+        required: false
+      prerelease_install_mode:
+        default: 'setup'
+        description: 'Install setup-x64.exe (Podman Desktop MAPT pattern) or use portable x64 exe'
+        type: choice
+        options:
+          - setup
+          - portable
+        required: true
+      podman_provider:
+        default: 'both'
+        description: 'Podman machine provider to test (both runs WSL and Hyper-V in parallel)'
+        type: choice
+        options:
+          - both
+          - wsl
+          - hyperv
+        required: true
+
+jobs:
+  resolve-matrix:
+    name: resolve podman provider matrix
+    runs-on: ubuntu-24.04
+    outputs:
+      podman_providers: ${{ steps.matrix.outputs.providers }}
+    steps:
+    - name: Resolve podman providers
+      id: matrix
+      env:
+        INPUT_PODMAN_PROVIDER: ${{ github.event.inputs.podman_provider || 'both' }}
+      run: |
+        selection="$INPUT_PODMAN_PROVIDER"
+        case "$selection" in
+          wsl) providers='["wsl"]' ;;
+          hyperv) providers='["hyperv"]' ;;
+          *) providers='["wsl","hyperv"]' ;;
+        esac
+        echo "providers=$providers" >> "$GITHUB_OUTPUT"
+        echo "Podman provider matrix: $providers"
+
+  workspace-e2e:
+    name: workspace-e2e (${{ matrix.podman_provider }})
+    needs: resolve-matrix
+    timeout-minutes: 150
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        podman_provider: ${{ fromJson(needs.resolve-matrix.outputs.podman_providers) }}
+    permissions:
+      contents: read
+      checks: write
+      packages: read
+    env:
+      WINDOWS_VERSION: '11'
+      WINDOWS_FEATUREPACK: '25h2-ent'
+      PODMAN_PROVIDER: ${{ matrix.podman_provider }}
+      INSTALL_WSL: ${{ matrix.podman_provider == 'wsl' && '1' || '0' }}
+      MAPT_PROJECT_NAME: kaiden-e2e-${{ matrix.podman_provider }}
+      PRERELEASE_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        persist-credentials: false
+
+    - name: Log repo Node version
+      run: |
+        echo "Repo Node version (.nvmrc): v$(tr -d '[:space:]' < .nvmrc)"
+
+    - name: Fetch latest stable Podman version
+      id: fetch-podman
+      uses: redhat-actions/podman-install/.github/actions/fetch-latest-podman-version-windows@aea6ff44f2a4a82da13d22061ce73443a125925d
+      with:
+        version_input: ${{ github.event.inputs.podman_version || 'latest' }}
+        file_type: 'msi'
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set default environment variables
+      env:
+        DEFAULT_REPO_BRANCH: 'FORK=openkaiden,BRANCH=main'
+        DEFAULT_NPM_TARGET: 'test:e2e:workspaces'
+        DEFAULT_ENV_VARS: 'PODMAN_ENABLED=true,NPM_CONFIG_LOGLEVEL=warn'
+        DEFAULT_IMAGE_VERSION: 'v0.1.1'
+        DEFAULT_TARGET_REPO: 'kaiden'
+        DEFAULT_TARGET_APP_NAME: 'Kaiden'
+        DEFAULT_PRERELEASE_SOURCE: 'openkaiden/testing-prereleases'
+        INPUT_REPO_BRANCH: ${{ github.event.inputs.repo_branch || '' }}
+        INPUT_NPM_TARGET: ${{ github.event.inputs.npm_target || '' }}
+        INPUT_ENV_VARS: ${{ github.event.inputs.env_vars || '' }}
+        INPUT_PRERELEASE_SOURCE: ${{ github.event.inputs.prerelease_source || '' }}
+        INPUT_PRERELEASE_OVERRIDE: ${{ github.event.inputs.prerelease_override || '' }}
+        INPUT_PRERELEASE_INSTALL_MODE: ${{ github.event.inputs.prerelease_install_mode || '' }}
+        INPUT_IMAGES_VERSION: ${{ github.event.inputs.images_version || '' }}
+        INPUT_MAPT_PARAMS: ${{ github.event.inputs.mapt_params || '' }}
+        INPUT_PODMAN_DOWNLOAD_URL: ${{ steps.fetch-podman.outputs.download_url }}
+        MAPT_IMAGE_VAR: ${{ vars.MAPT_IMAGE }}
+        MAPT_VERSION_TAG_VAR: ${{ vars.MAPT_VERSION_TAG }}
+        MAPT_CPUS_VAR: ${{ vars.MAPT_CPUS }}
+        MAPT_MEMORY_VAR: ${{ vars.MAPT_MEMORY }}
+        MAPT_EXCLUDED_REGIONS_VAR: ${{ vars.MAPT_EXCLUDED_REGIONS }}
+      run: |
+        repo_branch="${INPUT_REPO_BRANCH:-$DEFAULT_REPO_BRANCH}"
+        echo "$repo_branch" | awk -F ',' \
+         '{for (i=1; i<=NF; i++) {split($i, kv, "="); print kv[1]"="kv[2]}}' >> $GITHUB_ENV
+        npm_target="${INPUT_NPM_TARGET:-$DEFAULT_NPM_TARGET}"
+        echo "NPM_TARGET=$npm_target" >> $GITHUB_ENV
+        prerelease_source="${INPUT_PRERELEASE_SOURCE:-$DEFAULT_PRERELEASE_SOURCE}"
+        echo "PRERELEASE_OWNER=${prerelease_source%%/*}" >> $GITHUB_ENV
+        echo "PRERELEASE_REPO=${prerelease_source#*/}" >> $GITHUB_ENV
+        prerelease_override="$INPUT_PRERELEASE_OVERRIDE"
+        if [[ "$prerelease_override" =~ ^https:// ]]; then
+          echo "PRERELEASE_URL=$prerelease_override" >> $GITHUB_ENV
+          echo "PRERELEASE_TAG=" >> $GITHUB_ENV
+        elif [ -n "$prerelease_override" ]; then
+          echo "PRERELEASE_TAG=$prerelease_override" >> $GITHUB_ENV
+          echo "PRERELEASE_URL=" >> $GITHUB_ENV
+        else
+          echo "PRERELEASE_TAG=" >> $GITHUB_ENV
+          echo "PRERELEASE_URL=" >> $GITHUB_ENV
+        fi
+        install_mode="${INPUT_PRERELEASE_INSTALL_MODE:-setup}"
+        echo "PRERELEASE_INSTALL_MODE=$install_mode" >> $GITHUB_ENV
+
+        if [ "$npm_target" = "test:e2e:workspaces" ]; then
+          pde2e_npm_target="test:e2e:pde2e:workspaces:run"
+        else
+          pde2e_npm_target="test:e2e:pde2e:${npm_target#test:e2e:}"
+        fi
+        echo "PDE2E_NPM_TARGET=$pde2e_npm_target" >> $GITHUB_ENV
+
+        env_vars="${INPUT_ENV_VARS:-$DEFAULT_ENV_VARS}"
+        debug_flags="CONTAINERS_MACHINE_PROVIDER=${{ matrix.podman_provider }}"
+        for flag in ${debug_flags//,/ }; do
+          if [[ ",$env_vars," != *",$flag,"* ]]; then
+            env_vars="$env_vars,$flag"
+          fi
+        done
+        echo "ENV_VARS=$env_vars" >> $GITHUB_ENV
+        echo "PODMAN_URL=$INPUT_PODMAN_DOWNLOAD_URL" >> $GITHUB_ENV
+        runner_tag="${INPUT_IMAGES_VERSION:-$DEFAULT_IMAGE_VERSION}"
+        runner_tag="${runner_tag%-windows}"
+        echo "PDE2E_RUNNER=${runner_tag}" >> $GITHUB_ENV
+        echo "TARGET_REPO=$DEFAULT_TARGET_REPO" >> $GITHUB_ENV
+        echo "TARGET_APP_NAME=$DEFAULT_TARGET_APP_NAME" >> $GITHUB_ENV
+        echo "Resolved PDE2E_NPM_TARGET: $pde2e_npm_target"
+        echo "Resolved ENV_VARS: $env_vars"
+
+        if [ -n "$INPUT_MAPT_PARAMS" ]; then
+          mapt_params="$INPUT_MAPT_PARAMS"
+        else
+          mapt_params="IMAGE=$MAPT_IMAGE_VAR;VERSION_TAG=$MAPT_VERSION_TAG_VAR;CPUS=$MAPT_CPUS_VAR;MEMORY=$MAPT_MEMORY_VAR;EXCLUDED_REGIONS=\"$MAPT_EXCLUDED_REGIONS_VAR\""
+        fi
+        echo "$mapt_params" | awk -F ';' '{for (i=1; i<=NF; i++) {split($i, kv, "="); print "MAPT_"kv[1]"="kv[2]}}' >> "$GITHUB_ENV"
+
+    - name: Get Latest Kaiden testing prerelease
+      if: ${{ env.PRERELEASE_URL == '' }}
+      timeout-minutes: 3
+      env:
+        GH_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN != '' && secrets.KAIDEN_BOT_TOKEN || secrets.GITHUB_TOKEN }}
+      run: |
+        OWNER="$PRERELEASE_OWNER"
+        REPO="$PRERELEASE_REPO"
+        TAG="$PRERELEASE_TAG"
+        API="https://api.github.com/repos/${OWNER}/${REPO}"
+        INSTALL_MODE="$PRERELEASE_INSTALL_MODE"
+
+        if [ -n "$TAG" ]; then
+          echo "Resolving release by tag: $TAG"
+          release_json=$(curl --fail --silent --show-error \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${API}/releases/tags/${TAG}")
+        else
+          echo "Resolving latest published release from ${OWNER}/${REPO}"
+          release_json=$(curl --fail --silent --show-error \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${API}/releases?per_page=1")
+          release_json=$(echo "$release_json" | jq '.[0]')
+        fi
+
+        release_id=$(echo "$release_json" | jq -r '.id')
+        release_tag=$(echo "$release_json" | jq -r '.tag_name')
+        echo "Release ID: $release_id (tag=$release_tag)"
+
+        if [ "$INSTALL_MODE" = "setup" ]; then
+          asset_filter='.[] | select(.name | test("^kaiden-.*-setup-x64\\.exe$")) | .browser_download_url'
+          asset_label="setup-x64.exe"
+        else
+          asset_filter='.[] | select(.name | test("^kaiden-.*-x64\\.exe$")) | select(.name | test("setup") | not) | .browser_download_url'
+          asset_label="portable x64.exe"
+        fi
+
+        url=$(curl --fail --silent --show-error \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${GH_TOKEN}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          "${API}/releases/${release_id}/assets" \
+          | jq -r "$asset_filter" \
+          | head -n 1)
+
+        if [ -z "$url" ] || [ "$url" = "null" ]; then
+          echo "::error::No Windows ${asset_label} asset on ${release_tag}"
+          exit 1
+        fi
+
+        echo "Kaiden testing prerelease url: ${url}"
+        echo "PRERELEASE_URL=${url}" >> "$GITHUB_ENV"
+
+    - name: Create instance
+      uses: podman-desktop/e2e/.github/actions/create-instance@77d4a1ea4f361dddd1fa231ccf74392dcac5c447
+      with:
+        project-name: ${{ env.MAPT_PROJECT_NAME }}
+        mapt-image: ${{ env.MAPT_IMAGE || '' }}
+        mapt-version: ${{ env.MAPT_VERSION_TAG || '' }}
+        windows-version: ${{ env.WINDOWS_VERSION }}
+        windows-featurepack: ${{ env.WINDOWS_FEATUREPACK }}
+        cpus: ${{ env.MAPT_CPUS || '' }}
+        memory: ${{ env.MAPT_MEMORY || '' }}
+        excluded-regions: ${{ env.MAPT_EXCLUDED_REGIONS || '' }}
+        tags: 'project=kaiden,orgrepo=${{ github.repository }},run=https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }},source=github,podman-provider=${{ matrix.podman_provider }}'
+        arm-tenant-id: ${{ secrets.ARM_TENANT_ID }}
+        arm-subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+        arm-client-id: ${{ secrets.ARM_CLIENT_ID }}
+        arm-client-secret: ${{ secrets.ARM_CLIENT_SECRET }}
+
+    - name: Check instance system info
+      uses: podman-desktop/e2e/.github/actions/instance-system-info@77d4a1ea4f361dddd1fa231ccf74392dcac5c447
+
+    - name: Emulate X session
+      uses: podman-desktop/e2e/.github/actions/emulate-x-session@77d4a1ea4f361dddd1fa231ccf74392dcac5c447
+
+    - name: Read connection details
+      id: conn
+      shell: bash
+      run: |
+        echo "host=$(cat host)" >> "$GITHUB_OUTPUT"
+        echo "username=$(cat username)" >> "$GITHUB_OUTPUT"
+
+    - name: Configure Podman machine defaults on remote host
+      shell: bash
+      run: |
+        # Host key verification intentionally skipped: MAPT provisions ephemeral Azure VMs with no pre-known host keys
+        SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=30 -o ServerAliveCountMax=1200 -i id_rsa"
+        HOST="$(cat username)@$(cat host)"
+        SCRIPT='
+          $configDir = "$env:APPDATA\containers"
+          if (-not (Test-Path $configDir)) { New-Item -ItemType Directory -Path $configDir -Force | Out-Null }
+          $conf = "[machine]`ncpus = 4`nmemory = 16384`n"
+          Set-Content -Path "$configDir\containers.conf" -Value $conf
+          Write-Host "Podman machine defaults: 4 CPUs, 16GB RAM"
+        '
+        encoded=$(printf '%s' "$SCRIPT" | iconv -t UTF-16LE | base64 -w 0)
+        ssh $SSH_OPTS "$HOST" "powershell -NoProfile -EncodedCommand $encoded"
+
+    - name: Run Kaiden Workspace Playwright E2E tests
+      timeout-minutes: 90
+      shell: bash
+      env:
+        PODMANDESKTOP_CI_BOT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+      run: |
+        trap 'rm -f secrets.txt pde2e-runner.raw.log' EXIT
+        echo "Running target: fork=$FORK branch=$BRANCH repo=$TARGET_REPO app=$TARGET_APP_NAME"
+        echo "Podman provider: $PODMAN_PROVIDER (installWSL=$INSTALL_WSL)"
+        echo "Using runner image tag: ${PDE2E_RUNNER}-windows"
+        echo "pde2e npm target: $PDE2E_NPM_TARGET"
+        echo "Kaiden prerelease url: $PRERELEASE_URL"
+        echo "Effective test env vars: $ENV_VARS"
+
+        install -m 600 /dev/null secrets.txt
+        echo "PODMANDESKTOP_CI_BOT_TOKEN=$PODMANDESKTOP_CI_BOT_TOKEN" > secrets.txt
+        echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" >> secrets.txt
+        echo "OPENAI_API_KEY=$OPENAI_API_KEY" >> secrets.txt
+        echo "GEMINI_API_KEY=$GEMINI_API_KEY" >> secrets.txt
+        echo "MISTRAL_API_KEY=$MISTRAL_API_KEY" >> secrets.txt
+        if [ -n "${PRERELEASE_TOKEN}" ]; then
+          echo "PRERELEASE_TOKEN=${PRERELEASE_TOKEN}" >> secrets.txt
+        fi
+
+        echo "::group::Start pde2e runner container"
+        podman run -d --name pde2e-runner-run \
+          -e TARGET_HOST=$(cat host) \
+          -e TARGET_HOST_USERNAME=$(cat username) \
+          -e TARGET_HOST_KEY_PATH=/data/id_rsa \
+          -e TARGET_FOLDER=pd-e2e \
+          -e TARGET_RESULTS=results \
+          -e OUTPUT_FOLDER=/data \
+          -v $PWD:/data:z \
+          -v $PWD/secrets.txt:/opt/pde2e-image/secrets.txt:z \
+          -v $PWD/.github/scripts/pde2e:/opt/pde2e-image/scripts/kaiden:z \
+          quay.io/odockal/pde2e-image:${PDE2E_RUNNER}-windows \
+          pd-e2e/runner.ps1 \
+            -targetFolder pd-e2e \
+            -resultsFolder results \
+            -fork "$FORK" \
+            -branch "$BRANCH" \
+            -repo "$TARGET_REPO" \
+            -appName "$TARGET_APP_NAME" \
+            -pdUrl "$PRERELEASE_URL" \
+            -podmanDownloadUrl "$PODMAN_URL" \
+            -initialize 1 \
+            -start 1 \
+            -rootful 1 \
+            -installWSL "$INSTALL_WSL" \
+            -podmanProvider "$PODMAN_PROVIDER" \
+            -npmTarget "$PDE2E_NPM_TARGET" \
+            -envVars "$ENV_VARS" \
+            -scriptPaths "scripts/kaiden/defer-test-secrets.ps1,scripts/kaiden/sync-node-from-nvmrc.ps1,scripts/kaiden/resolve-kaiden-binary.ps1" \
+            -secretFile secrets.txt
+        echo "::endgroup::"
+
+        echo "::group::pde2e runner logs"
+        echo "Waiting for pde2e runner container to finish..."
+        EXIT_CODE=1
+        podman wait pde2e-runner-run || echo "::warning::podman wait exited with $?"
+        EXIT_CODE=$(podman inspect --format='{{.State.ExitCode}}' pde2e-runner-run 2>/dev/null || echo "1")
+        echo "Runner container exit code: $EXIT_CODE"
+        podman logs pde2e-runner-run > pde2e-runner.raw.log 2>&1
+        cp pde2e-runner.raw.log pde2e-runner.log
+        chmod +x .github/scripts/pde2e/sanitize-collected-logs.sh
+        .github/scripts/pde2e/sanitize-collected-logs.sh pde2e-runner.log results
+        tail -n 200 pde2e-runner.log
+        echo "::endgroup::"
+
+        echo "::group::Runner container state"
+        podman inspect pde2e-runner-run --format 'Container status={{.State.Status}} finishedAt={{.State.FinishedAt}} startedAt={{.State.StartedAt}}'
+        echo "::endgroup::"
+        rm -f secrets.txt pde2e-runner.raw.log
+        if [ "$EXIT_CODE" -ne 0 ]; then
+          echo "::error::Test runner container exited with code $EXIT_CODE"
+          exit 1
+        fi
+
+    - name: Create workflow run attributes
+      if: always()
+      shell: bash
+      env:
+        PODMAN_VERSION_OUT: ${{ steps.fetch-podman.outputs.version }}
+      run: |
+        cat > workflow-run-attributes.json <<EOF
+        {
+          "runner": "pde2e-image",
+          "podman-provider": "${PODMAN_PROVIDER}",
+          "podman-version": "${PODMAN_VERSION_OUT}",
+          "os": "windows",
+          "os-version": "${WINDOWS_VERSION}",
+          "featurepack": "${WINDOWS_FEATUREPACK}",
+          "architecture": "x86_64",
+          "platform": "windows-nt",
+          "repository": "${TARGET_REPO}"
+        }
+        EOF
+
+    - name: Destroy instance
+      if: always()
+      uses: podman-desktop/e2e/.github/actions/destroy-instance@77d4a1ea4f361dddd1fa231ccf74392dcac5c447
+      with:
+        project-name: ${{ env.MAPT_PROJECT_NAME }}
+        mapt-image: ${{ env.MAPT_IMAGE || '' }}
+        mapt-version: ${{ env.MAPT_VERSION_TAG || '' }}
+        arm-tenant-id: ${{ secrets.ARM_TENANT_ID }}
+        arm-subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+        arm-client-id: ${{ secrets.ARM_CLIENT_ID }}
+        arm-client-secret: ${{ secrets.ARM_CLIENT_SECRET }}
+
+    - name: Generate infrastructure failure report
+      if: failure()
+      uses: podman-desktop/e2e/.github/actions/generate-infra-report@77d4a1ea4f361dddd1fa231ccf74392dcac5c447
+
+    - name: Publish Test Report
+      uses: mikepenz/action-junit-report@a9170d5795813c01ab4901ffb045b52bab4ab09d # v6
+      if: always()
+      with:
+        fail_on_failure: true
+        include_passed: true
+        detailed_summary: true
+        annotate_only: true
+        require_tests: true
+        report_paths: '**/*results.xml'
+
+    - name: Sanitize collected logs
+      if: failure()
+      shell: bash
+      run: |
+        chmod +x .github/scripts/pde2e/sanitize-collected-logs.sh
+        .github/scripts/pde2e/sanitize-collected-logs.sh results pde2e-runner.log
+
+    - name: Upload test artifacts
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      if: failure()
+      with:
+        name: workspace-e2e-win${{ env.WINDOWS_VERSION }}-${{ env.PODMAN_PROVIDER }}-pde2e
+        path: |
+          results/**
+          pde2e-runner.log
+          **/workflow-run-attributes.json
+          **/junit-infra-failure-report.xml
+        retention-days: 7
+
+    - name: Cleanup sensitive files
+      if: always()
+      shell: bash
+      run: rm -f secrets.txt pde2e-runner.raw.log

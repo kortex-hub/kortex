@@ -36,7 +36,7 @@ async function fetchCatalog(): Promise<void> {
   {:else if showEmptyScreen}
     <EmptyScreen
       title="No extensions in the catalog"
-      message="No extensions from the catalog. It seems that the internet connection was not available to download the catalog."
+      message="No extensions from the catalog."
       icon={faPuzzlePiece}>
       <div class="flex gap-2 justify-center">
         <Button type="link" on:click={fetchCatalog}>Refresh the catalog</Button>

@@ -1,0 +1,67 @@
+{
+  "name": "gemini",
+  "displayName": "Gemini",
+  "description": "Integration for Gemini",
+  "version": "0.4.0-next",
+  "icon": "icon.png",
+  "publisher": "kaiden",
+  "license": "Apache-2.0",
+  "engines": {
+    "kaiden": "^0.0.1"
+  },
+  "main": "./dist/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Gemini",
+      "properties": {
+        "gemini.factory._description": {
+          "type": "markdown",
+          "scope": "InferenceProviderConnectionFactory",
+          "markdownDescription": "Provide a Gemini key. Please note that it is possible to have a key on the free tier\n\n:button[Grab a key]{href=\"https://aistudio.google.com/app/apikey\"}"
+        },
+        "gemini.factory.apiKey": {
+          "type": "string",
+          "scope": "InferenceProviderConnectionFactory",
+          "description": "Enter your Gemini API key (GEMINI_API_KEY)",
+          "format": "password"
+        },
+        "gemini.connection._type": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "OpenShell provider type",
+          "hidden": true
+        },
+        "gemini.connection.OPENAI_API_KEY": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "API key secret reference",
+          "format": "password",
+          "hidden": true
+        },
+        "gemini.connection.OPENAI_BASE_URL": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "Gemini OpenAI-compatible base URL",
+          "hidden": true
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "vite build && node ./scripts/build.js",
+    "test": "vitest run --coverage --passWithNoTests",
+    "test:watch": "vitest watch --coverage --passWithNoTests",
+    "watch": "vite build --watch"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^4.0.22",
+    "@google/genai": "^1.25.0",
+    "@openkaiden/api": "workspace:*",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "mkdirp": "^3.0.1",
+    "vite": "^7.1.2",
+    "vitest": "^4.0.10"
+  }
+}

@@ -18,7 +18,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import type { ContainerInspectInfo } from '@podman-desktop/api';
+import type { ContainerInspectInfo } from '@openkaiden/api';
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { expect, test, vi } from 'vitest';
 
@@ -64,6 +64,16 @@ const providerInfo: ProviderInfo = {
   vmConnections: [],
   vmProviderConnectionCreation: false,
   vmProviderConnectionInitialization: false,
+  inferenceConnections: [],
+  ragConnections: [],
+  chunkConnections: [],
+  flowConnections: [],
+  inferenceProviderConnectionCreation: false,
+  inferenceProviderConnectionInitialization: false,
+  ragProviderConnectionCreation: false,
+  ragProviderConnectionInitialization: false,
+  chunkProviderConnectionCreation: false,
+  chunkProviderConnectionInitialization: false,
 };
 
 const podCreation: PodCreation = {

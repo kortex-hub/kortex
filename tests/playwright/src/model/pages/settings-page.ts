@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2023 Red Hat, Inc.
+ * Copyright (C) 2025 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,32 +16,122 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
+
+import type { ResourceId } from '/@/model/core/types';
+import { PROVIDERS, TIMEOUTS } from '/@/model/core/types';
 
 import { BasePage } from './base-page';
+import { SettingsCliPage } from './settings-cli-tab-page';
+import { SettingsPreferencesPage } from './settings-preferences-tab-page';
+import { SettingsProxyPage } from './settings-proxy-tab-page';
+import { SettingsResourcesPage } from './settings-resources-tab-page';
 
-export abstract class SettingsPage extends BasePage {
-  readonly tabName: string;
-  readonly parent: Locator;
-  readonly header: Locator;
-  readonly content: Locator;
+export class SettingsPage extends BasePage {
+  readonly resourcesTab: Locator;
+  readonly cliTab: Locator;
+  readonly proxyTab: Locator;
+  readonly preferencesTab: Locator;
+  private readonly tabs: Locator[];
 
-  constructor(page: Page, tabName: string) {
+  constructor(page: Page) {
     super(page);
-    this.tabName = tabName;
-    this.parent = this.page.getByRole('region', { name: tabName });
-    this.header = this.parent.getByRole('region', { name: 'Header' });
-    this.content = this.parent.getByRole('region', { name: 'Content' });
+    this.resourcesTab = page.getByRole('link', { name: 'Resources' });
+    this.cliTab = page.getByRole('link', { name: 'CLI' });
+    this.proxyTab = page.getByRole('link', { name: 'Proxy' });
+    this.preferencesTab = page.getByRole('link', { name: 'Preferences' });
+    this.tabs = [this.resourcesTab, this.cliTab, this.proxyTab, this.preferencesTab];
   }
 
-  async getTab(): Promise<Locator> {
-    let tabName = this.tabName;
-    if (this.tabName === 'Preferences') {
-      // special case for lower case first letter in 'preferences' tab
-      tabName = this.tabName.toLowerCase();
+  async isCurrentPage(): Promise<boolean> {
+    return this.resourcesTab.isVisible();
+  }
+
+  async waitForLoad(): Promise<void> {
+    await expect(this.resourcesTab).toBeVisible({ timeout: TIMEOUTS.SHORT });
+    await expect(this.cliTab).toBeVisible({ timeout: TIMEOUTS.SHORT });
+    await expect(this.proxyTab).toBeVisible({ timeout: TIMEOUTS.SHORT });
+    await expect(this.preferencesTab).toBeVisible({ timeout: TIMEOUTS.SHORT });
+  }
+
+  async openResources(): Promise<SettingsResourcesPage> {
+    return this.openTab(this.resourcesTab, SettingsResourcesPage);
+  }
+
+  async openCli(): Promise<SettingsCliPage> {
+    return this.openTab(this.cliTab, SettingsCliPage);
+  }
+
+  async openProxy(): Promise<SettingsProxyPage> {
+    return this.openTab(this.proxyTab, SettingsProxyPage);
+  }
+
+  async openPreferences(): Promise<SettingsPreferencesPage> {
+    return this.openTab(this.preferencesTab, SettingsPreferencesPage);
+  }
+
+  getAllTabs(): Locator[] {
+    return this.tabs;
+  }
+
+  async createResource(providerId: ResourceId, value: string): Promise<void> {
+    const provider = PROVIDERS[providerId];
+    const connectionType = 'connectionType' in provider ? provider.connectionType : 'inference';
+    const resourcesPage = await this.openResources();
+
+    if ((await resourcesPage.getCreatedConnectionFor(provider.resourceId, connectionType).count()) > 0) {
+      console.log(`Resource ${providerId} already exists, skipping...`);
+      return;
     }
-    return this.page
-      .getByRole('navigation', { name: 'PreferencesNavigation' })
-      .getByRole('link', { name: tabName, exact: true });
+
+    switch (providerId) {
+      case 'gemini': {
+        const createGeminiPage = await resourcesPage.openCreateGeminiPage();
+        await createGeminiPage.createAndGoBack(value);
+        break;
+      }
+      case 'openai': {
+        const createOpenAIPage = await resourcesPage.openCreateOpenAIPage();
+        await createOpenAIPage.createAndGoBack(PROVIDERS.openai.baseURL, value);
+        break;
+      }
+      case 'claude': {
+        const createClaudePage = await resourcesPage.openCreateClaudePage();
+        await createClaudePage.createAndGoBack(value);
+        break;
+      }
+      case 'mistral': {
+        const createMistralPage = await resourcesPage.openCreateMistralPage();
+        await createMistralPage.createAndGoBack(value);
+        break;
+      }
+      case 'milvus': {
+        const createMilvusPage = await resourcesPage.openCreateMilvusPage();
+        await createMilvusPage.createAndGoBack(value);
+        break;
+      }
+      case 'docling': {
+        const createDoclingPage = await resourcesPage.openCreateDoclingPage();
+        await createDoclingPage.createAndGoBack(value);
+        break;
+      }
+      case 'openshift-ai':
+        throw new Error('OpenShift AI resource creation not yet implemented');
+      default:
+        throw new Error(`Unknown provider: ${providerId}`);
+    }
+
+    await resourcesPage.waitForLoad();
+    const resource = resourcesPage.getCreatedConnectionFor(provider.resourceId, connectionType);
+    await expect(resource).toBeVisible({ timeout: TIMEOUTS.DEFAULT });
+  }
+
+  async deleteResource(providerId: ResourceId): Promise<void> {
+    const provider = PROVIDERS[providerId];
+    const connectionType = 'connectionType' in provider ? provider.connectionType : 'inference';
+    const resourcesPage = await this.openResources();
+
+    await resourcesPage.waitForLoad();
+    await resourcesPage.deleteCreatedConnectionFor(provider.resourceId, connectionType);
   }
 }

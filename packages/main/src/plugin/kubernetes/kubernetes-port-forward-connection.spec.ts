@@ -29,7 +29,7 @@ import {
 } from '@kubernetes/client-node';
 import type { ApiType } from '@kubernetes/client-node/dist/config.js';
 import type { V1PodList } from '@kubernetes/client-node/dist/gen/models/V1PodList.js';
-import type { WebSocket } from 'isomorphic-ws';
+import type WebSocket from 'isomorphic-ws';
 import { afterEach, beforeEach, describe, expect, type MockedFunction, test, vi } from 'vitest';
 
 import type { ConfigurationRegistry } from '/@/plugin/configuration-registry.js';

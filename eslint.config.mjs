@@ -47,12 +47,9 @@ const compat = new FlatCompat({
 
 const TYPESCRIPT_PROJECTS = [
   'packages/*/tsconfig.json',
-  './website/tsconfig.json',
-  './website-argos/tsconfig.json',
   './extensions/*/tsconfig.json',
   './extensions/*/packages/*/tsconfig.json',
   './tests/playwright/tsconfig.json',
-  './storybook/tsconfig.json',
 ];
 
 export default [
@@ -340,6 +337,7 @@ export default [
       'sonarjs/no-clear-text-protocols': 'off',
       'sonarjs/slow-regex': 'off',
       'sonarjs/publicly-writable-directories': 'off',
+      'sonarjs/no-empty-test-file': 'off',
     },
   },
 
@@ -358,6 +356,23 @@ export default [
       // The sonarjs/no-unused-collection rule has a bug when analyzing Svelte files with reactive statements ($webviews)
       // causing "Cannot read properties of null (reading 'type')" error during linting
       'sonarjs/no-unused-collection': 'off',
+    },
+  },
+
+  {
+    files: ['tests/playwright/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../**'],
+              message: 'Parent relative imports are not allowed. Use path aliases (e.g. /@/) instead.',
+            },
+          ],
+        },
+      ],
     },
   },
 ];

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { Configuration } from '@podman-desktop/api';
+import type { Configuration } from '@openkaiden/api';
 import { shell } from 'electron';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -131,12 +131,12 @@ describe('init', () => {
     expect(registerConfigurationsMock).toHaveBeenCalledTimes(1);
     expect(registerConfigurationsMock).toHaveBeenCalledWith([
       {
-        id: 'preferences',
-        title: 'Feedback dialog',
+        id: 'preferences.feedback',
+        title: 'Feedback reminder',
         type: 'object',
         properties: {
           'feedback.dialog': {
-            description: 'Show feedback dialog for experimental features',
+            description: 'Show periodic feedback reminder for experimental features',
             type: 'boolean',
             default: true,
           },

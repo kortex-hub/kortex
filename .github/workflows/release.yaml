@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2022-2025 Red Hat, Inc.
+# Copyright (C) 2026 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,12 +27,18 @@ on:
         description: 'Branch to use for the release'
         required: true
         default: main
+
+concurrency:
+  group: release-${{ inputs.branch }}
+  cancel-in-progress: false
+
 env:
   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
   DEBUG: electron-builder
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
 
@@ -43,34 +49,36 @@ jobs:
       contents: write
     outputs:
       githubTag: ${{ steps.TAG_UTIL.outputs.githubTag}}
-      desktopVersion: ${{ steps.TAG_UTIL.outputs.desktopVersion}}
+      kaidenVersion: ${{ steps.TAG_UTIL.outputs.kaidenVersion}}
       releaseId: ${{ steps.create_release.outputs.id}}
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.inputs.branch }}
-          token: ${{ secrets.PODMAN_DESKTOP_BOT_TOKEN }}
+          token: ${{ secrets.KAIDEN_BOT_TOKEN }}
       - name: Generate tag utilities
         id: TAG_UTIL
         run: |
             TAG_PATTERN=${{ github.event.inputs.version }}
             echo "githubTag=v$TAG_PATTERN" >> ${GITHUB_OUTPUT}
-            echo "desktopVersion=$TAG_PATTERN" >> ${GITHUB_OUTPUT}
+            echo "kaidenVersion=$TAG_PATTERN" >> ${GITHUB_OUTPUT}
 
       - name: tag
         run: |
           git config --local user.name ${{ github.actor }}
+          git config --local user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
 
           # Add the new version in package.json file
-          sed -i  "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.desktopVersion }}\",#g" package.json
-          find extensions/* -maxdepth 5 -name "package.json" | xargs -I {} sed -i "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.desktopVersion }}\",#g" {}
-          git add package.json extensions/*/package.json extensions/*/packages/extension/package.json
+          sed -i  "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.kaidenVersion }}\",#g" package.json
+          find packages/* -maxdepth 1 -name "package.json" | xargs -I {} sed -i "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.kaidenVersion }}\",#g" {}
+          find extensions/* -maxdepth 3 -name "package.json" | xargs -I {} sed -i "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.kaidenVersion }}\",#g" {}
+          git add package.json extensions/*/package.json extensions/*/packages/*/package.json packages/*/package.json
 
           # Update the issue template with the new version and move old version below
           nextVersionLineNumber=$(grep -n "next (development version)" .github/ISSUE_TEMPLATE/bug_report.yml | cut -d ":" -f 1 | head -n 1)
           currentVersionItem=$(sed "$(expr ${nextVersionLineNumber} - 1)q;d" .github/ISSUE_TEMPLATE/bug_report.yml)
-          newVersionItem=$(echo "$currentVersionItem" | sed -r -e "s|\".*\"|\"${{ steps.TAG_UTIL.outputs.desktopVersion }}\"|")
+          newVersionItem=$(echo "$currentVersionItem" | sed -r -e "s|\".*\"|\"${{ steps.TAG_UTIL.outputs.kaidenVersion }}\"|")
           # delete the lines before the next version line
           sed -i "$(expr ${nextVersionLineNumber} - 1)d" .github/ISSUE_TEMPLATE/bug_report.yml
           # insert the version being tagged
@@ -81,7 +89,7 @@ jobs:
 
           # Add the new version in the appdata.xml file
           xmlReleasesLineNumber=$(grep -n "<releases>" .flatpak-appdata.xml | cut -d ":" -f 1 | head -n 1)
-          newFlatpakReleaseItem="    <release version=\"${{ steps.TAG_UTIL.outputs.desktopVersion }}\" date=\"$(date +%Y-%m-%d)\"/>"
+          newFlatpakReleaseItem="    <release version=\"${{ steps.TAG_UTIL.outputs.kaidenVersion }}\" date=\"$(date +%Y-%m-%d)\"/>"
           sed -i "$(expr ${xmlReleasesLineNumber} + 1)i\\${newFlatpakReleaseItem}" .flatpak-appdata.xml
           git add .flatpak-appdata.xml
 
@@ -92,7 +100,7 @@ jobs:
           git push origin ${{ steps.TAG_UTIL.outputs.githubTag }}
       - name: Create Release
         id: create_release
-        uses: ncipollo/release-action@b7eabc95ff50cbeeedec83973935c8f306dfcd0b # v1.20.0
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -104,19 +112,21 @@ jobs:
         if: ${{ github.event.inputs.branch == 'main' }}
         run: |
           git config --local user.name ${{ github.actor }}
-          git config --local user.email "fbenoit@redhat.com"
-          CURRENT_VERSION=$(echo "${{ steps.TAG_UTIL.outputs.desktopVersion }}")
+          git config --local user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          CURRENT_VERSION=$(echo "${{ steps.TAG_UTIL.outputs.kaidenVersion }}")
           tmp=${CURRENT_VERSION%.*}
           minor=${tmp#*.}
           bumpedVersion=${CURRENT_VERSION%%.*}.$((minor + 1)).0
           bumpedBranchName="bump-to-${bumpedVersion}"
           git checkout -b "${bumpedBranchName}"
           sed -i  "s#version\":\ \"\(.*\)\",#version\":\ \"${bumpedVersion}-next\",#g" package.json
-          find extensions/* -maxdepth 5 -name "package.json" | xargs -I {} sed -i "s#version\":\ \"\(.*\)\",#version\":\ \"${bumpedVersion}-next\",#g" {}
-          git add package.json extensions/*/package.json extensions/*/packages/extension/package.json
+          find extensions/* -maxdepth 3 -name "package.json" | xargs -I {} sed -i "s#version\":\ \"\(.*\)\",#version\":\ \"${bumpedVersion}-next\",#g" {}
+          find packages/* -maxdepth 1 -name "package.json" | xargs -I {} sed -i "s#version\":\ \"\(.*\)\",#version\":\ \"${bumpedVersion}-next\",#g" {}
+          git add package.json extensions/*/package.json extensions/*/packages/*/package.json packages/*/package.json
+
           git commit -s --amend -m "chore: bump version to ${bumpedVersion}"
           git push origin "${bumpedBranchName}"
-          echo -e "📢 Bump version to ${bumpedVersion}\n\n${{ steps.TAG_UTIL.outputs.desktopVersion }} has been released.\n\n Time to switch to the new ${bumpedVersion} version 🥳" > /tmp/pr-title
+          echo -e "📢 Bump version to ${bumpedVersion}\n\n${{ steps.TAG_UTIL.outputs.kaidenVersion }} has been released.\n\n Time to switch to the new ${bumpedVersion} version 🥳" > /tmp/pr-title
           pullRequestUrl=$(gh pr create --title "chore: 📢 Bump version to ${bumpedVersion}" --body-file /tmp/pr-title --head "${bumpedBranchName}" --base "main")
           echo "📢 Pull request created: ${pullRequestUrl}"
           echo "➡️ Flag the PR as being ready for review"
@@ -124,43 +134,37 @@ jobs:
           echo "🔅 Mark the PR as being ok to be merged automatically"
           gh pr merge "${pullRequestUrl}" --auto --rebase
         env:
-          GITHUB_TOKEN: ${{ secrets.PODMAN_DESKTOP_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
 
   build:
-    name: Build / ${{ matrix.os }} ${{ matrix.airgap == 'true' && '(Air Gap)' || ''  }}
+    name: Build / ${{ matrix.os }}
     needs: tag
     permissions:
       contents: write
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        include:
-          - os: "windows-2025"
-          - os: "windows-2025"
-            airgap: "true"
-          - os: "macos-15"
-          - os: "macos-15"
-            airgap: "true"
-          - os: "ubuntu-24.04"
+        os: [windows-2022, ubuntu-24.04, macos-15]
     timeout-minutes: 60
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.tag.outputs.githubTag}}
 
-      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         name: Install pnpm
         with:
           run_install: false
 
-      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
-      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.x"
 
@@ -201,9 +205,9 @@ jobs:
 
       - name: Build & Publish artifacts
         timeout-minutes: 40
-        env:
-          AIRGAP_DOWNLOAD: ${{ matrix.airgap == 'true' && '1' || ''  }}
         run: pnpm compile:next
+        env:
+          GITHUB_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
 
   release:
     needs: [tag, build]
@@ -218,7 +222,7 @@ jobs:
       - name: Publish release
         uses: StuYarrow/publish-release@01f2a1365bacd77bad861873a7fdf274ab49eefd # v1.1.2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
         with:
           id: ${{ needs.tag.outputs.releaseId}}
 
@@ -234,23 +238,23 @@ jobs:
         arch: [amd64, arm64]
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.tag.outputs.githubTag}}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
       - name: create the pnpm store from the dependencies
         run: |
-          podman run --platform linux/${{ matrix.arch }} -v $(pwd):/project --rm -it --entrypoint=sh node:24 -c "cd /project && npm install -g corepack@latest && corepack enable pnpm && COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm install --frozen-lockfile  --store-dir pnpm-store"
+          podman run --platform linux/${{ matrix.arch }} -v $(pwd):/project --rm -i -e GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}" --entrypoint=sh node:24 -c "cd /project && npm install -g corepack@latest && corepack enable pnpm && COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm install --frozen-lockfile  --store-dir pnpm-store"
           # now the store is in the pnpm-store directory
           # create a tarball of the store
           echo "Creating the archive store-cache-pnpm-${{ matrix.arch }}.tgz"
           tar -czf store-cache-pnpm-${{ matrix.arch }}.tgz pnpm-store
 
       - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@6b7fa9f267e90b50a19fef07b3596790bb941741 # v2
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # v2
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          repo_token: ${{ secrets.KAIDEN_BOT_TOKEN }}
           file: store-cache-pnpm-${{ matrix.arch }}.tgz
           tag: ${{ needs.tag.outputs.githubTag }}

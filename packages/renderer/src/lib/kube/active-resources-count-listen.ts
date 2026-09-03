@@ -23,10 +23,6 @@ import type { ResourceCount } from '/@api/kubernetes-resource-count';
 export async function listenActiveResourcesCount(
   callback: (activeResourcesCounts: ResourceCount[]) => void,
 ): Promise<IDisposable | undefined> {
-  if (!(await isKubernetesExperimentalMode())) {
-    return;
-  }
-
   const disposable = window.events.receive('kubernetes-active-resources-count', () => {
     collectAndSendCount(callback);
   });
@@ -49,12 +45,4 @@ function collectAndSendCount(callback: (activeResourcesCount: ResourceCount[]) =
     .catch(() => {
       console.error(`error getting active resources counts`);
     });
-}
-
-export async function isKubernetesExperimentalMode(): Promise<boolean> {
-  try {
-    return await window.isExperimentalConfigurationEnabled('kubernetes.statesExperimental');
-  } catch {
-    return false;
-  }
 }

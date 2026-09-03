@@ -1,0 +1,30 @@
+{
+  "name": "@openkaiden/container-extension-api",
+  "version": "0.4.0-next",
+  "description": "API for Kaiden Container extension",
+  "repository": "https://github.com/openkaiden/kaiden",
+  "publishConfig": {
+    "provenance": true,
+    "access": "public"
+  },
+  "license": "Apache-2.0",
+  "types": "./src/container-extension-api.d.ts",
+  "exports": {
+    ".": "./src/container-extension-api.d.ts",
+    "./container-name": "./src/container-name.ts",
+    "./src/container-name": "./src/container-name.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "prepare": "",
+    "clean": "rimraf lib *.tsbuildinfo",
+    "build": "",
+    "watch": "",
+    "publish:next": "pnpm publish --registry=https://registry.npmjs.org/ --no-git-tag-version --new-version 0.0.1-\"$(date +%s)\""
+  },
+  "dependencies": {
+    "@openkaiden/api": "workspace:*"
+  }
+}

@@ -1,0 +1,217 @@
+#
+# Copyright (C) 2026 Red Hat, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: E2E Test Job
+
+on:
+  workflow_call:
+    inputs:
+      instance:
+        description: 'GitHub Actions runner instance (e.g., macos-latest, windows-2022, ubuntu-24.04)'
+        required: true
+        type: string
+      mode:
+        description: 'Test mode (prod or dev)'
+        required: true
+        type: string
+      compile_args:
+        description: 'Arguments for pnpm compile:current (e.g., --win dir, --linux dir, --mac dir)'
+        required: true
+        type: string
+      repo:
+        description: 'Repository to checkout (e.g., owner/repo for forks). Defaults to the current repository.'
+        required: false
+        type: string
+        default: ''
+      ref:
+        description: 'Branch, tag, or SHA to checkout. Defaults to the default branch.'
+        required: false
+        type: string
+        default: ''
+      inference_provider:
+        description: 'Local inference provider: "ollama", "ramalama", or "none" to skip.'
+        required: false
+        type: string
+        default: 'none'
+      inference_model:
+        description: 'Model to pull and serve (e.g., granite3.2:2b, phi4-mini, qwen2.5:3b).'
+        required: false
+        type: string
+        default: 'granite3.2:2b'
+      inference_second_model:
+        description: 'Optional second inference model to pull (Ollama only, e.g., granite3.1-dense:2b).'
+        required: false
+        type: string
+        default: ''
+      test_script:
+        description: 'pnpm script to run for E2E tests.'
+        required: false
+        type: string
+        default: 'test:e2e'
+
+jobs:
+  e2e-test:
+    name: ${{ inputs.inference_provider != 'none' && format('{0} ({1})', inputs.instance, inputs.inference_provider) || inputs.instance }}
+    runs-on: ${{ inputs.instance }}
+    timeout-minutes: 60
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      GEMINI_API_KEY: ${{ !startsWith(inputs.instance, 'ubuntu') && secrets.GEMINI_API_KEY || '' }}
+      PODMAN_ENABLED: ${{ startsWith(inputs.instance, 'ubuntu') && 'true' || '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ${{ inputs.repo || github.repository }}
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Free disk space
+        if: runner.os == 'Linux'
+        uses: podman-desktop/e2e/.github/actions/disk-cleanup@fe42dc2bd7b4aa6047e5d1f44c44adfded29baca
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86
+        name: Install pnpm
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Execute pnpm
+        run: pnpm install
+
+      - name: Get Playwright version and cache path
+        id: playwright-info
+        shell: bash
+        run: |
+          echo "version=$(npx --yes playwright --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')" >> "$GITHUB_OUTPUT"
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "path=$USERPROFILE/AppData/Local/ms-playwright" >> "$GITHUB_OUTPUT"
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            echo "path=$HOME/Library/Caches/ms-playwright" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=$HOME/.cache/ms-playwright" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: playwright-cache
+        with:
+          path: ${{ steps.playwright-info.outputs.path }}
+          key: playwright-${{ runner.os }}-${{ steps.playwright-info.outputs.version }}
+
+      - name: Install Playwright browser
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        working-directory: tests/playwright
+        timeout-minutes: 3
+        run: npx playwright install chromium
+
+      # TEMPORARY: the ubuntu-24.04 runner image bumped Podman to >=5.6.2, which emits
+      # OCI runtime-spec v1.2.0/1.2.1. crun <1.14.3 has a version-check bug that rejects
+      # that spec ("crun: unknown version specified"), breaking every container-backed
+      # provider (Docling, Milvus, ...). Fixed upstream in crun 1.14.3.
+      # https://github.com/containers/podman/issues/27272
+      # Remove once the runner image ships a compatible crun.
+      - name: Upgrade crun (workaround for podman/crun OCI runtime-spec mismatch)
+        if: runner.os == 'Linux'
+        run: |
+          CRUN_VERSION=1.28
+          CRUN_SHA256=2aa6b7024a9c9f153895c0d11ae233d3758f54844011c3a039e3e89048d01d42
+          curl -fsSL -o /tmp/crun "https://github.com/containers/crun/releases/download/${CRUN_VERSION}/crun-${CRUN_VERSION}-linux-amd64"
+          echo "${CRUN_SHA256}  /tmp/crun" | sha256sum -c -
+          chmod +x /tmp/crun
+          sudo mv /tmp/crun /usr/bin/crun
+          crun --version
+
+      - name: Install uv (Python package manager for MCP server spawning)
+        if: runner.os == 'Linux'
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+
+      - name: Enable Podman socket
+        if: runner.os == 'Linux'
+        run: |
+          systemctl --user enable --now podman.socket
+          echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
+          podman info
+
+      - name: Setup Ollama
+        if: inputs.inference_provider == 'ollama'
+        uses: ./.github/actions/setup-ollama
+        with:
+          model: ${{ inputs.inference_model }}
+          second_model: ${{ inputs.inference_second_model }}
+
+      - name: Setup RamaLama
+        if: inputs.inference_provider == 'ramalama'
+        uses: ./.github/actions/setup-ramalama
+        with:
+          model: ${{ inputs.inference_model }}
+
+      - name: Run Smoke E2E tests in ${{ inputs.mode == 'prod' && 'Production' || 'Development' }} Mode
+        shell: bash
+        env:
+          VITE_CI: 'true'
+        run: |
+          # Derive binary path from instance (OS and architecture)
+          INSTANCE="${{ inputs.instance }}"
+          if [[ "$INSTANCE" == *"windows"* ]]; then
+            if [[ "$INSTANCE" == *"arm"* ]]; then
+              BINARY_PATH="./dist/win-arm64-unpacked/Kaiden.exe"
+            else
+              BINARY_PATH="./dist/win-unpacked/Kaiden.exe"
+            fi
+          elif [[ "$INSTANCE" == *"ubuntu"* ]] || [[ "$INSTANCE" == *"linux"* ]]; then
+            BINARY_PATH="./dist/linux-unpacked/kaiden"
+          elif [[ "$INSTANCE" == *"macos"* ]]; then
+            BINARY_PATH="./dist/mac-arm64/Kaiden.app/Contents/MacOS/Kaiden"
+          else
+            echo "::error::Unknown instance: $INSTANCE. Cannot determine binary path."
+            exit 1
+          fi
+
+          if [ "${{ inputs.mode }}" == "prod" ]; then
+            echo "Compiling Kaiden in production mode"
+            export ELECTRON_ENABLE_INSPECT=true
+            pnpm compile:current ${{ inputs.compile_args }}
+
+            path=$(realpath "$BINARY_PATH")
+            echo "Kaiden built binary: $path"
+            export KAIDEN_BINARY="$path"
+          fi
+          pnpm ${{ inputs.test_script }}
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@a9170d5795813c01ab4901ffb045b52bab4ab09d # v6
+        if: always()
+        with:
+          annotate_only: true
+          fail_on_failure: true
+          include_passed: true
+          detailed_summary: true
+          require_tests: true
+          report_paths: '**/*results.xml'
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: results-e2e-${{ inputs.instance }}-${{ inputs.mode }}${{ inputs.inference_provider != 'none' && format('-{0}', inputs.inference_provider) || '' }}
+          path: tests/playwright/output/**
+          retention-days: 7

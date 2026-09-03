@@ -1,0 +1,101 @@
+{
+  "name": "vertex-ai",
+  "displayName": "Vertex AI",
+  "description": "Integration for Google Cloud Vertex AI (Anthropic models)",
+  "version": "0.4.0-next",
+  "icon": "icon.png",
+  "publisher": "kaiden",
+  "license": "Apache-2.0",
+  "engines": {
+    "kaiden": "^0.0.1"
+  },
+  "main": "./dist/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Vertex AI",
+      "properties": {
+        "vertex-ai.factory._description": {
+          "type": "markdown",
+          "scope": "InferenceProviderConnectionFactory",
+          "markdownDescription": "Connect to Anthropic models on Google Cloud Vertex AI.\n\nRun `gcloud auth application-default login` on the host first.\n\n:button[Vertex AI docs]{href=\"https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/use-claude\"}"
+        },
+        "vertex-ai.factory.projectId": {
+          "type": "string",
+          "scope": "InferenceProviderConnectionFactory",
+          "description": "Google Cloud project ID where Anthropic models are enabled (not the ADC quota_project_id)",
+          "default": [
+            "env:GOOGLE_VERTEX_PROJECT",
+            "env:ANTHROPIC_VERTEX_PROJECT_ID"
+          ]
+        },
+        "vertex-ai.factory.region": {
+          "type": "string",
+          "scope": "InferenceProviderConnectionFactory",
+          "description": "Google Cloud region (e.g. us-east5, europe-west1)",
+          "default": [
+            "env:GOOGLE_VERTEX_LOCATION",
+            "env:CLOUD_ML_REGION"
+          ]
+        },
+        "vertex-ai.factory.credentialsFile": {
+          "type": "string",
+          "format": "file",
+          "scope": "InferenceProviderConnectionFactory",
+          "description": "Path to gcloud credentials file (e.g. ~/.config/gcloud/application_default_credentials.json)",
+          "default": [
+            "env:GOOGLE_APPLICATION_CREDENTIALS",
+            "file:~/.config/gcloud/application_default_credentials.json",
+            "file:$APPDATA/gcloud/application_default_credentials.json"
+          ]
+        },
+        "vertex-ai.connection._type": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "Vertex AI provider type",
+          "hidden": true
+        },
+        "vertex-ai.connection._flags": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "Vertex AI provider flag",
+          "hidden": true
+        },
+        "vertex-ai.connection.GOOGLE_APPLICATION_CREDENTIALS": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "Credentials secret reference",
+          "format": "password",
+          "hidden": true
+        },
+        "vertex-ai.connection.VERTEX_AI_PROJECT_ID": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "Google Cloud project ID",
+          "hidden": true
+        },
+        "vertex-ai.connection.VERTEX_AI_REGION": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "Google Cloud region",
+          "hidden": true
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "vite build && node ./scripts/build.js",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest watch --coverage",
+    "watch": "vite build --watch"
+  },
+  "dependencies": {
+    "@ai-sdk/google-vertex": "^5.0.26",
+    "@openkaiden/api": "workspace:*"
+  },
+  "devDependencies": {
+    "adm-zip": "^0.5.16",
+    "mkdirp": "^3.0.1",
+    "vite": "^7.1.2",
+    "vitest": "^4.0.10"
+  }
+}

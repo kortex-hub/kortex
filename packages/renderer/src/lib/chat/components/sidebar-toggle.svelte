@@ -1,0 +1,27 @@
+<script lang="ts">
+import SidebarLeftIcon from './icons/sidebar-left.svelte';
+import { Button } from './ui/button';
+import { useSidebar } from './ui/sidebar';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+
+const sidebar = useSidebar();
+</script>
+
+<Tooltip>
+	<TooltipTrigger>
+		{#snippet child({ props })}
+			<Button
+				{...props}
+				aria-label="Toggle sidebar"
+				onclick={(): void => {
+					sidebar.toggle();
+				}}
+				variant="outline"
+				class="md:h-fit md:px-2"
+			>
+				<SidebarLeftIcon />
+			</Button>
+		{/snippet}
+	</TooltipTrigger>
+	<TooltipContent side="bottom" align="start">Toggle Sidebar</TooltipContent>
+</Tooltip>

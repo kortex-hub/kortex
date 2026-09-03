@@ -18,7 +18,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import type { Registry } from '@podman-desktop/api';
+import type { Registry } from '@openkaiden/api';
 import { waitFor } from '@testing-library/dom';
 import { render, screen } from '@testing-library/svelte';
 import { default as userEvent } from '@testing-library/user-event';

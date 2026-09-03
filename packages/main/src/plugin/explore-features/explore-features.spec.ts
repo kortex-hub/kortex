@@ -19,7 +19,7 @@
 import { existsSync, promises } from 'node:fs';
 import path from 'node:path';
 
-import type { Configuration } from '@podman-desktop/api';
+import type { Configuration } from '@openkaiden/api';
 import { beforeEach, expect, test, vi } from 'vitest';
 
 import type { Context } from '/@/plugin/context/context.js';
@@ -115,6 +115,7 @@ const providerInfoMock: ProviderInfo = {
   ],
   kubernetesConnections: [],
   vmConnections: [],
+  inferenceConnections: [],
   status: 'ready',
   containerProviderConnectionCreation: false,
   containerProviderConnectionInitialization: false,
@@ -122,12 +123,21 @@ const providerInfoMock: ProviderInfo = {
   kubernetesProviderConnectionInitialization: false,
   vmProviderConnectionCreation: false,
   vmProviderConnectionInitialization: false,
+  inferenceProviderConnectionCreation: false,
+  inferenceProviderConnectionInitialization: false,
   links: [],
   detectionChecks: [],
   warnings: [],
   images: {},
   installationSupport: false,
   cleanupSupport: false,
+  flowConnections: [],
+  ragConnections: [],
+  chunkConnections: [],
+  ragProviderConnectionCreation: false,
+  ragProviderConnectionInitialization: false,
+  chunkProviderConnectionCreation: false,
+  chunkProviderConnectionInitialization: false,
 };
 
 const extensionInfoMock: ExtensionInfo = {

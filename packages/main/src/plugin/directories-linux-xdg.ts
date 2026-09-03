@@ -38,6 +38,12 @@ export class LinuxXDGDirectories implements Directories {
   private readonly extensionsStorageDirectory: string;
   private readonly contributionStorageDirectory: string;
   private readonly safeStorageDirectory: string;
+  private readonly chatPersistenceDirectory: string;
+  private readonly skillsDirectory: string;
+  private readonly workspaceProjectsDirectory: string;
+  private readonly semanticRoutersDirectory: string;
+  private readonly agentWorkspacesConfigDirectory: string;
+  private readonly acpSessionsDirectory: string;
 
   constructor() {
     // XDG_CONFIG_HOME: user-specific configuration files
@@ -56,6 +62,12 @@ export class LinuxXDGDirectories implements Directories {
     this.extensionsStorageDirectory = path.resolve(this.dataDirectory, 'extensions-storage');
     this.contributionStorageDirectory = path.resolve(this.dataDirectory, 'contributions');
     this.safeStorageDirectory = path.resolve(this.dataDirectory, 'safe-storage');
+    this.chatPersistenceDirectory = path.resolve(this.dataDirectory, 'chat-persistence');
+    this.skillsDirectory = path.resolve(this.dataDirectory, 'skills');
+    this.workspaceProjectsDirectory = path.resolve(this.dataDirectory, 'workspace-projects');
+    this.semanticRoutersDirectory = path.resolve(this.dataDirectory, 'semantic-routers');
+    this.agentWorkspacesConfigDirectory = path.resolve(this.dataDirectory, 'agent-workspaces');
+    this.acpSessionsDirectory = path.resolve(this.dataDirectory, 'acp-sessions');
   }
 
   getConfigurationDirectory(): string {
@@ -92,5 +104,29 @@ export class LinuxXDGDirectories implements Directories {
       return product.paths.managed.flatpak;
     }
     return product.paths.managed.linux;
+  }
+
+  getChatPersistenceDirectory(): string {
+    return this.chatPersistenceDirectory;
+  }
+
+  getSkillsDirectory(): string {
+    return this.skillsDirectory;
+  }
+
+  getWorkspaceProjectsDirectory(): string {
+    return this.workspaceProjectsDirectory;
+  }
+
+  getSemanticRoutersDirectory(): string {
+    return this.semanticRoutersDirectory;
+  }
+
+  getAgentWorkspacesConfigDirectory(): string {
+    return this.agentWorkspacesConfigDirectory;
+  }
+
+  getAcpSessionsDirectory(): string {
+    return this.acpSessionsDirectory;
   }
 }

@@ -19,7 +19,7 @@
 import * as fs from 'node:fs';
 import * as pathfs from 'node:path';
 
-import type * as containerDesktopAPI from '@podman-desktop/api';
+import type * as containerDesktopAPI from '@openkaiden/api';
 import * as chokidar from 'chokidar';
 import { injectable } from 'inversify';
 
@@ -109,7 +109,22 @@ export class FileSystemWatcherImpl implements containerDesktopAPI.FileSystemWatc
 
 @injectable()
 export class FilesystemMonitoring {
+  private watchers: FileSystemWatcherImpl[] = [];
+
   createFileSystemWatcher(path: string): containerDesktopAPI.FileSystemWatcher {
-    return new FileSystemWatcherImpl(path);
+    const watcher = new FileSystemWatcherImpl(path);
+    this.watchers.push(watcher);
+    return watcher;
+  }
+
+  async disposeAll(): Promise<void> {
+    await Promise.all(
+      this.watchers.map(watcher =>
+        Promise.resolve().then(() => {
+          watcher.dispose();
+        }),
+      ),
+    );
+    this.watchers = [];
   }
 }

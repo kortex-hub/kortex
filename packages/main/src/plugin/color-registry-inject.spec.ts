@@ -21,6 +21,7 @@ import { beforeEach, expect, test, vi } from 'vitest';
 
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 
+import tailwindColorPalette from '../../../../tailwind-color-palette.json' with { type: 'json' };
 import { InjectableColorRegistry } from './color-registry-inject.js';
 import { ConfigurationRegistry } from './configuration-registry.js';
 
@@ -49,9 +50,11 @@ beforeEach(() => {
 test('check injection', async () => {
   colorRegistry.init();
   const colors = colorRegistry.listColors('dark');
-  expect(colors[0]).toMatchObject({
-    cssVar: '--pd-default-text',
-    id: 'default-text',
-    value: '#fff',
-  });
+  expect(colors).toContainEqual(
+    expect.objectContaining({
+      cssVar: '--pd-default-text',
+      id: 'default-text',
+      value: tailwindColorPalette.navy[25],
+    }),
+  );
 });

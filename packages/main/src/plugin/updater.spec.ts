@@ -18,7 +18,7 @@
 
 import type { IncomingMessage } from 'node:http';
 
-import type { Configuration } from '@podman-desktop/api';
+import type { Configuration } from '@openkaiden/api';
 import { app, shell } from 'electron';
 import { type AppUpdater, autoUpdater, type UpdateCheckResult, type UpdateDownloadedEvent } from 'electron-updater';
 import type { AppUpdaterEvents } from 'electron-updater/out/AppUpdater.js';
@@ -137,6 +137,7 @@ beforeEach(() => {
   // eslint-disable-next-line no-null/no-null
   vi.mocked(autoUpdater.checkForUpdates).mockResolvedValue(null);
 
+  vi.mocked(product).name = 'Podman Desktop';
   vi.mocked(product).releaseNotes = {
     url: '',
     blog: '',
@@ -541,7 +542,7 @@ describe('expect update command to depends on context', async () => {
       buttons: ['Update now', `What's new`, 'Remind me later', `Don't show again`],
       message:
         'A new version v@debug-next of Podman Desktop is available. Do you want to update your current version v@debug?',
-      title: 'Update Available now',
+      title: 'Update Podman Desktop?',
       type: 'info',
     });
   });
@@ -557,7 +558,7 @@ describe('expect update command to depends on context', async () => {
       buttons: ['Update now', `What's new`, 'Cancel'],
       message:
         'A new version v@debug-next of Podman Desktop is available. Do you want to update your current version v@debug?',
-      title: 'Update Available now',
+      title: 'Update Podman Desktop?',
       type: 'info',
     });
   });

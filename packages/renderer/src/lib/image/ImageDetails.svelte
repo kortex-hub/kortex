@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { ImageInfo } from '@podman-desktop/api';
+import type { ImageInfo } from '@openkaiden/api';
 import { StatusIcon, Tab } from '@podman-desktop/ui-svelte';
 import { router } from 'tinro';
 

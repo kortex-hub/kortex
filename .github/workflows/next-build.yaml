@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2022-2024 Red Hat, Inc.
+# Copyright (C) 2022-2025 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ env:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
 
@@ -39,13 +40,13 @@ jobs:
     if: github.event.repository.fork == false
     outputs:
       githubTag: ${{ steps.TAG_UTIL.outputs.githubTag}}
-      desktopVersion: ${{ steps.TAG_UTIL.outputs.desktopVersion}}
+      kaidenVersion: ${{ steps.TAG_UTIL.outputs.kaidenVersion}}
       releaseId: ${{ steps.create_release.outputs.id}}
 
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-         token: ${{ secrets.PODMAN_DESKTOP_BOT_TOKEN }}
+         token: ${{ secrets.KAIDEN_BOT_TOKEN }}
          fetch-depth: 0
       - name: Generate tag utilities
         id: TAG_UTIL
@@ -53,40 +54,40 @@ jobs:
             CURRENT_DAY=$(date +'%Y%m%d')
             SHORT_SHA1=$(git rev-parse --short HEAD)
             # grab the version from the package.json
-            PODMAN_DEKSTOP_VERSION=$(jq -r '.version' package.json)
+            KAIDEN_VERSION=$(jq -r '.version' package.json)
             # remove the -next from the version
-            STRIPPED_VERSION=${PODMAN_DEKSTOP_VERSION%-next}
+            STRIPPED_VERSION=${KAIDEN_VERSION%-next}
             TAG_PATTERN=${STRIPPED_VERSION}-next.$(date +'%Y%m%d%H%M')-${SHORT_SHA1}
             echo "githubTag=v$TAG_PATTERN" >> ${GITHUB_OUTPUT}
-            echo "desktopVersion=$TAG_PATTERN" >> ${GITHUB_OUTPUT}
+            echo "kaidenVersion=$TAG_PATTERN" >> ${GITHUB_OUTPUT}
       - name: tag
         run: |
           git config --local user.name ${{ github.actor }}
           git config --local user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
-          sed -i  "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.desktopVersion }}\",#g" package.json
-          find extensions/* -maxdepth 2 -name "package.json" | xargs -I {} sed -i "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.desktopVersion }}\",#g" {}
+          sed -i  "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.kaidenVersion }}\",#g" package.json
+          find extensions/* -maxdepth 2 -name "package.json" | xargs -I {} sed -i "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.kaidenVersion }}\",#g" {}
           # change the repository field to be the prerelease repository in package.json file
-          sed -i "s#\"repository\":\ \"\(.*\)\",#\"repository\":\ \"https://github.com/podman-desktop/prereleases\",#g" package.json
+          sed -i "s#\"repository\":\ \"\(.*\)\",#\"repository\":\ \"https://github.com/openkaiden/prereleases\",#g" package.json
           cat package.json
           git add package.json extensions/*/package.json
           git commit -m "chore: tag ${{ steps.TAG_UTIL.outputs.githubTag }}"
           echo "Tagging with ${{ steps.TAG_UTIL.outputs.githubTag }}"
           git tag ${{ steps.TAG_UTIL.outputs.githubTag }}
           # push tag to the prereleases repository
-          git remote add prereleases https://github.com/podman-desktop/prereleases
+          git remote add prereleases https://github.com/openkaiden/prereleases
           git push prereleases ${{ steps.TAG_UTIL.outputs.githubTag }}
 
       - name: Create Release
         id: create_release
-        uses: ncipollo/release-action@b7eabc95ff50cbeeedec83973935c8f306dfcd0b # v1.20.0
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
         with:
           tag: ${{ steps.TAG_UTIL.outputs.githubTag }}
           name: ${{ steps.TAG_UTIL.outputs.githubTag }}
           draft: true
           prerelease: true
-          owner: containers
-          repo: podman-desktop-prereleases
-          token: ${{ secrets.PODMAN_DESKTOP_BOT_TOKEN }}
+          owner: openkaiden
+          repo: prereleases
+          token: ${{ secrets.KAIDEN_BOT_TOKEN }}
 
   build:
     name: Build / ${{ matrix.os }}
@@ -95,31 +96,31 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2025, ubuntu-24.04, macos-15]
+        os: [windows-2022, ubuntu-24.04, macos-15]
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: podman-desktop/prereleases
+          repository: openkaiden/prereleases
           ref: ${{ needs.tag.outputs.githubTag}}
 
-      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         name: Install pnpm
         with:
           run_install: false
 
-      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
-      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.x"
 
       - name: setup telemetry key for production
         run: |
-          jq --arg key "${{ secrets.SEGMENT_WRITE_KEY }}" '.telemetry.key = $key' product.json > product.json.tmp && rm product.json && mv product.json.tmp product.json
+          sed -i -r -e "s/SEGMENT_KEY = '.*'/SEGMENT_KEY = '${{ secrets.SEGMENT_WRITE_KEY }}'/" packages/main/src/plugin/telemetry/telemetry.ts
 
       - name: Execute pnpm
         run: pnpm install
@@ -157,7 +158,7 @@ jobs:
         timeout-minutes: 40
         run: pnpm compile:next
         env:
-          GITHUB_TOKEN: ${{ secrets.PODMAN_DESKTOP_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
 
   release:
     needs: [tag, build]
@@ -170,8 +171,8 @@ jobs:
       - name: Publish release
         uses: StuYarrow/publish-release@01f2a1365bacd77bad861873a7fdf274ab49eefd # v1.1.2
         env:
-          GITHUB_TOKEN: ${{ secrets.PODMAN_DESKTOP_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
         with:
           id: ${{ needs.tag.outputs.releaseId}}
-          repo: podman-desktop-prereleases
-          owner: podman-desktop
+          repo: prereleases
+          owner: openkaiden

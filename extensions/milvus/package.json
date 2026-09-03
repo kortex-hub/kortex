@@ -1,0 +1,47 @@
+{
+  "name": "milvus",
+  "displayName": "Milvus Knowledges Provider",
+  "description": "Provides Milvus vector database for Knowledges",
+  "version": "0.4.0-next",
+  "icon": "milvus-icon-color.png",
+  "publisher": "kaiden",
+  "license": "Apache-2.0",
+  "engines": {
+    "kaiden": "^0.0.1"
+  },
+  "extensionDependencies": [
+    "kaiden.container"
+  ],
+  "main": "./dist/extension.js",
+  "source": "./src/extension.ts",
+  "contributes": {
+    "configuration": {
+      "title": "Milvus",
+      "properties": {
+        "milvus.name": {
+          "type": "string",
+          "default": "",
+          "description": "Name for the Milvus connection",
+          "scope": "RagProviderConnectionFactory"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "vite build && node ./scripts/build.js",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest watch --coverage",
+    "watch": "vite build --watch"
+  },
+  "dependencies": {
+    "@zilliz/milvus2-sdk-node": "^2.6.5",
+    "inversify": "^7.10.4"
+  },
+  "devDependencies": {
+    "@openkaiden/api": "workspace:*",
+    "@openkaiden/container-extension-api": "workspace:*",
+    "mkdirp": "^3.0.1",
+    "vite": "^7.1.2",
+    "vitest": "^4.0.10"
+  }
+}

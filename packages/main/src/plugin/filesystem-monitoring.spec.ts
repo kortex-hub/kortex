@@ -21,11 +21,11 @@ import os from 'node:os';
 import path, { join } from 'node:path';
 
 import { watch } from 'chokidar';
-import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { isWindows } from '/@/util.js';
 
-import { FileSystemWatcherImpl } from './filesystem-monitoring.js';
+import { FilesystemMonitoring, FileSystemWatcherImpl } from './filesystem-monitoring.js';
 import { Uri } from './types/uri.js';
 
 let rootdir: string;
@@ -47,49 +47,45 @@ afterEach(async () => {
   }
 });
 
-test(
-  'should send event into onDid when a file is watched into an existing directory',
-  {
-    skip: isWindows(),
-  },
-  async () => {
-    const watchedFile = path.join(rootdir, 'file.txt');
-    watcher = new FileSystemWatcherImpl(watchedFile);
+test('should send event into onDid when a file is watched into an existing directory', {
+  skip: isWindows(),
+}, async () => {
+  const watchedFile = path.join(rootdir, 'file.txt');
+  watcher = new FileSystemWatcherImpl(watchedFile);
 
-    const readyListener = vi.fn();
-    watcher.onReady(readyListener);
+  const readyListener = vi.fn();
+  watcher.onReady(readyListener);
 
-    const createListener = vi.fn();
-    watcher.onDidCreate(createListener);
-    const changeListener = vi.fn();
-    watcher.onDidChange(changeListener);
-    const unlinkListener = vi.fn();
-    watcher.onDidDelete(unlinkListener);
+  const createListener = vi.fn();
+  watcher.onDidCreate(createListener);
+  const changeListener = vi.fn();
+  watcher.onDidChange(changeListener);
+  const unlinkListener = vi.fn();
+  watcher.onDidDelete(unlinkListener);
 
-    await vi.waitFor(async () => {
-      expect(readyListener).toHaveBeenCalled();
-    });
+  await vi.waitFor(async () => {
+    expect(readyListener).toHaveBeenCalled();
+  });
 
-    expect(createListener).not.toHaveBeenCalled();
-    const h = await promises.open(watchedFile, 'a');
-    await h.close();
-    await vi.waitFor(async () => {
-      expect(createListener).toHaveBeenCalledWith(Uri.file(watchedFile));
-    });
+  expect(createListener).not.toHaveBeenCalled();
+  const h = await promises.open(watchedFile, 'a');
+  await h.close();
+  await vi.waitFor(async () => {
+    expect(createListener).toHaveBeenCalledWith(Uri.file(watchedFile));
+  });
 
-    expect(changeListener).not.toHaveBeenCalled();
-    await promises.writeFile(watchedFile, 'new content');
-    await vi.waitFor(async () => {
-      expect(changeListener).toHaveBeenCalledWith(Uri.file(watchedFile));
-    });
+  expect(changeListener).not.toHaveBeenCalled();
+  await promises.writeFile(watchedFile, 'new content');
+  await vi.waitFor(async () => {
+    expect(changeListener).toHaveBeenCalledWith(Uri.file(watchedFile));
+  });
 
-    expect(unlinkListener).not.toHaveBeenCalled();
-    await promises.rm(watchedFile);
-    await vi.waitFor(async () => {
-      expect(unlinkListener).toHaveBeenCalledWith(Uri.file(watchedFile));
-    });
-  },
-);
+  expect(unlinkListener).not.toHaveBeenCalled();
+  await promises.rm(watchedFile);
+  await vi.waitFor(async () => {
+    expect(unlinkListener).toHaveBeenCalledWith(Uri.file(watchedFile));
+  });
+});
 
 test('should send event onDidCreate when a directory is created into a watched directory', async () => {
   watcher = new FileSystemWatcherImpl(rootdir);
@@ -206,4 +202,49 @@ test.runIf(os.platform() === 'darwin')('Watch a directory with a lot of files', 
   });
 
   await vi.waitFor(() => expect(counter).toBeGreaterThan(3));
+});
+
+describe('FilesystemMonitoring', () => {
+  let monitoring: FilesystemMonitoring;
+
+  beforeEach(() => {
+    monitoring = new FilesystemMonitoring();
+  });
+
+  test('createFileSystemWatcher should return a FileSystemWatcher', () => {
+    const fsWatcher = monitoring.createFileSystemWatcher(path.join(rootdir, 'somefile'));
+    expect(fsWatcher).toBeDefined();
+    expect(fsWatcher.dispose).toBeDefined();
+    expect(fsWatcher.onDidCreate).toBeDefined();
+    expect(fsWatcher.onDidChange).toBeDefined();
+    expect(fsWatcher.onDidDelete).toBeDefined();
+    fsWatcher.dispose();
+  });
+
+  test('disposeAll should dispose all tracked watchers', async () => {
+    const watcher1 = monitoring.createFileSystemWatcher(path.join(rootdir, 'file1'));
+    const watcher2 = monitoring.createFileSystemWatcher(path.join(rootdir, 'file2'));
+    const disposeSpy1 = vi.spyOn(watcher1, 'dispose');
+    const disposeSpy2 = vi.spyOn(watcher2, 'dispose');
+
+    await monitoring.disposeAll();
+
+    expect(disposeSpy1).toHaveBeenCalledOnce();
+    expect(disposeSpy2).toHaveBeenCalledOnce();
+  });
+
+  test('disposeAll should clear the watchers so subsequent calls are no-ops', async () => {
+    const fsWatcher = monitoring.createFileSystemWatcher(path.join(rootdir, 'file'));
+    const disposeSpy = vi.spyOn(fsWatcher, 'dispose');
+
+    await monitoring.disposeAll();
+    expect(disposeSpy).toHaveBeenCalledOnce();
+
+    await monitoring.disposeAll();
+    expect(disposeSpy).toHaveBeenCalledOnce();
+  });
+
+  test('disposeAll on empty instance should resolve without error', async () => {
+    await expect(monitoring.disposeAll()).resolves.toBeUndefined();
+  });
 });

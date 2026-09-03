@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 @config '../../../tailwind.config.cjs';
 
 /* Disable dragging links elements */
@@ -19,4 +20,128 @@ a {
   [role='button']:not(:disabled) {
     cursor: pointer;
   }
+}
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.625rem;
+  --background: #f8f9fb;
+  --foreground: #0d1b2e;
+  --card: #ffffff;
+  --card-foreground: #0d1b2e;
+  --popover: #ffffff;
+  --popover-foreground: #0d1b2e;
+  --primary: #1a6fa8;
+  --primary-foreground: #ffffff;
+  --secondary: #eef1f6;
+  --secondary-foreground: #0d1b2e;
+  --muted: #eef1f6;
+  --muted-foreground: #5a6b89;
+  --accent: #eef1f6;
+  --accent-foreground: #0d1b2e;
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: #dde2ec;
+  --input: #dde2ec;
+  --ring: #4fc3f7;
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0d1b2e;
+  --sidebar-primary: #1a6fa8;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eef1f6;
+  --sidebar-accent-foreground: #0d1b2e;
+  --sidebar-border: #dde2ec;
+  --sidebar-ring: #4fc3f7;
+}
+
+.dark {
+  --background: var(--pd-content-bg, #080f1a);
+  --foreground: #e8eef7;
+  --card: #111e33;
+  --card-foreground: #e8eef7;
+  --popover: #111e33;
+  --popover-foreground: #e8eef7;
+  --primary: #4fc3f7;
+  --primary-foreground: #0d1b2e;
+  --secondary: #1e3358;
+  --secondary-foreground: #e8eef7;
+  --muted: #1e3358;
+  --muted-foreground: #7090b8;
+  --accent: #1e3358;
+  --accent-foreground: #e8eef7;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: #1e3358;
+  --input: #1e3a5f;
+  --ring: #4fc3f7;
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: #111e33;
+  --sidebar-foreground: #e8eef7;
+  --sidebar-primary: #4fc3f7;
+  --sidebar-primary-foreground: #0d1b2e;
+  --sidebar-accent: #1e3358;
+  --sidebar-accent-foreground: #e8eef7;
+  --sidebar-border: #1e3358;
+  --sidebar-ring: #4fc3f7;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* Card component styles */
+.content-card {
+  background: linear-gradient(180deg, var(--pd-content-card-bg) 0%, var(--pd-content-card-inset-bg) 100%);
+  border: 1px solid var(--pd-content-table-border);
+  border-radius: 0.5rem;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--pd-content-bg) 6%, transparent),
+    0 8px 24px color-mix(in srgb, var(--pd-content-bg) 7%, transparent);
+}
+
+.dark .content-card {
+  background: linear-gradient(160deg, var(--pd-content-card-bg) 0%, var(--pd-content-bg) 100%);
+  box-shadow: none;
 }

@@ -94,11 +94,11 @@ onMount(() => {
   <div class="h-full overflow-y-auto" style="margin-bottom:auto">
     {#each settingsNavigationItems as navItem, index (index)}
       {#if navItem.visible}
-        <SettingsNavItem 
-          title={navItem.title} 
-          href={navItem.href} 
+        <SettingsNavItem
+          title={navItem.title}
+          href={navItem.href}
           icon={navItem.icon}
-          selected={meta.url === navItem.href} 
+          selected={meta.url === navItem.href}
         />
       {/if}
     {/each}

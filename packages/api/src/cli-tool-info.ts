@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import type { CliToolState, ProviderImages } from '@podman-desktop/api';
+import type { CliToolState, ProviderImages } from '@openkaiden/api';
 
 export type CliToolExtensionInfo = {
   id: string;

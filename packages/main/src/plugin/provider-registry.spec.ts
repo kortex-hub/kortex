@@ -22,6 +22,7 @@ import type {
   AutostartContext,
   CancellationToken,
   CheckResult,
+  ChunkProviderConnection,
   ConnectionFactory,
   ConnectionFactoryDetails,
   ContainerProviderConnection,
@@ -39,9 +40,11 @@ import type {
   ProviderUpdate,
   UpdateVmConnectionEvent,
   VmProviderConnection,
-} from '@podman-desktop/api';
+} from '@openkaiden/api';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
+import type { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
+import type { SkillManager } from '/@/plugin/skill/skill-manager.js';
 import type { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type {
   CheckStatus,
@@ -65,6 +68,9 @@ let autostartEngine: AutostartEngine;
 const apiSenderSendMock = vi.fn();
 
 let containerRegistry: ContainerProviderRegistry;
+
+let schedulerRegistry: SchedulerRegistry;
+let skillManager: SkillManager;
 
 class TestProviderRegistry extends ProviderRegistry {
   getKubernetesProviders(): Map<string, KubernetesProviderConnection> {
@@ -96,7 +102,14 @@ beforeEach(() => {
     isApiAttached: vi.fn(),
     onApiAttached: vi.fn(),
   } as unknown as ContainerProviderRegistry;
-  providerRegistry = new TestProviderRegistry(apiSender, containerRegistry, telemetry);
+  schedulerRegistry = {
+    register: vi.fn(),
+  } as unknown as SchedulerRegistry;
+  skillManager = {
+    registerSkillFolder: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+  } as unknown as SkillManager;
+
+  providerRegistry = new TestProviderRegistry(apiSender, containerRegistry, telemetry, schedulerRegistry, skillManager);
   autostartEngine = {
     registerProvider: vi.fn(),
   } as unknown as AutostartEngine;
@@ -184,6 +197,55 @@ test('onDidSetConnectionFactory is called when a container connection factory is
   disposable.dispose();
   expect(onDidUnsetConnectionFactoryMock).toHaveBeenCalledWith({
     type: 'container',
+    providerId: 'aProviderId',
+  });
+});
+
+test('onDidSetConnectionFactory is called when an inference connection factory is set and onDidUnsetConnectionFactory is called when the disposable is disposed', async () => {
+  const onDidSetConnectionFactoryMock: (e: ConnectionFactoryDetails) => void = vi.fn();
+  providerRegistry.onDidSetConnectionFactory(onDidSetConnectionFactoryMock);
+
+  const onDidUnsetConnectionFactoryMock: (e: ConnectionFactory) => void = vi.fn();
+  providerRegistry.onDidUnsetConnectionFactory(onDidUnsetConnectionFactoryMock);
+
+  const images = {
+    icon: {
+      light: 'a light image',
+      dark: 'a dark image',
+    },
+    logo: {
+      light: 'a light image',
+      dark: 'a dark image',
+    },
+  } as ProviderImages;
+  const provider = providerRegistry.createProvider('id', 'name', {
+    id: 'aProviderId',
+    name: 'aProviderName',
+    status: 'installed',
+    emptyConnectionMarkdownDescription: 'an empty connection markdown description',
+    images,
+  });
+
+  const disposable = provider.setInferenceProviderConnectionFactory({
+    connectionTypes: ['cloud'],
+    llmMetadata: { name: 'anthropic' },
+    create: async () => {},
+    creationDisplayName: 'a creation Display Name',
+    creationButtonTitle: 'a creation Button Title',
+  });
+
+  expect(onDidSetConnectionFactoryMock).toHaveBeenCalledWith({
+    type: 'inference',
+    providerId: 'aProviderId',
+    creationDisplayName: 'a creation Display Name',
+    creationButtonTitle: 'a creation Button Title',
+    emptyConnectionMarkdownDescription: 'an empty connection markdown description',
+    images,
+  });
+
+  disposable.dispose();
+  expect(onDidUnsetConnectionFactoryMock).toHaveBeenCalledWith({
+    type: 'inference',
     providerId: 'aProviderId',
   });
 });
@@ -2641,4 +2703,316 @@ test('getConnectionFactories should return the connection factories', async () =
     emptyConnectionMarkdownDescription: 'an empty connection markdown description for provider 2',
     images: provider2Images,
   });
+});
+
+describe('getInferenceConnectionCredentials', () => {
+  function registerProvider(
+    id: string,
+    connections: Array<{
+      name: string;
+      llmMetadataName: string;
+      endpoint?: string;
+      models: string[];
+      credentials: Record<string, string>;
+    }>,
+  ): void {
+    const provider = providerRegistry.createProvider(id, id, {
+      id,
+      name: id,
+      status: 'installed',
+    });
+    let counter = 0;
+    for (const conn of connections) {
+      provider.registerInferenceProviderConnection({
+        id: `${id}-${counter++}`,
+        name: conn.name,
+        type: 'cloud',
+        llmMetadata: { name: conn.llmMetadataName },
+        endpoint: conn.endpoint,
+        sdk: {} as never,
+        credentials: () => conn.credentials,
+        status: () => 'started',
+        models: conn.models.map(label => ({ label })),
+      });
+    }
+  }
+
+  test('returns credentials for matching anthropic connection', () => {
+    registerProvider('claude', [
+      {
+        name: 'sk-a*****',
+        llmMetadataName: 'anthropic',
+        models: ['claude-sonnet-4-20250514'],
+        credentials: { 'claude:tokens': 'sk-ant-secret' },
+      },
+    ]);
+
+    const result = providerRegistry.getInferenceConnectionCredentials('anthropic::claude-sonnet-4-20250514::');
+
+    expect(result).toEqual({
+      credentials: { 'claude:tokens': 'sk-ant-secret' },
+      llmMetadataName: 'anthropic',
+      endpoint: undefined,
+    });
+  });
+
+  test('returns credentials for openai connection with endpoint', () => {
+    registerProvider('openai', [
+      {
+        name: 'https://api.openai.com/v1',
+        llmMetadataName: 'openai',
+        endpoint: 'https://api.openai.com/v1',
+        models: ['gpt-4o', 'gpt-4.1'],
+        credentials: { 'openai:tokens': 'sk-openai-key' },
+      },
+    ]);
+
+    const result = providerRegistry.getInferenceConnectionCredentials('openai::gpt-4o::https://api.openai.com/v1');
+
+    expect(result).toEqual({
+      credentials: { 'openai:tokens': 'sk-openai-key' },
+      llmMetadataName: 'openai',
+      endpoint: 'https://api.openai.com/v1',
+    });
+  });
+
+  test('returns undefined when no connection matches the model', () => {
+    registerProvider('claude', [
+      {
+        name: 'sk-a*****',
+        llmMetadataName: 'anthropic',
+        models: ['claude-sonnet-4-20250514'],
+        credentials: { 'claude:tokens': 'sk-ant-secret' },
+      },
+    ]);
+
+    const result = providerRegistry.getInferenceConnectionCredentials('anthropic::nonexistent-model::');
+
+    expect(result).toBeUndefined();
+  });
+
+  test('returns undefined when no providers are registered', () => {
+    const result = providerRegistry.getInferenceConnectionCredentials('anthropic::claude-sonnet-4-20250514::');
+
+    expect(result).toBeUndefined();
+  });
+
+  test('returns undefined for mismatched endpoint', () => {
+    registerProvider('openai', [
+      {
+        name: 'custom',
+        llmMetadataName: 'openai',
+        endpoint: 'https://custom.api.com',
+        models: ['gpt-4o'],
+        credentials: { 'openai:tokens': 'sk-key' },
+      },
+    ]);
+
+    const result = providerRegistry.getInferenceConnectionCredentials('openai::gpt-4o::https://other.api.com');
+
+    expect(result).toBeUndefined();
+  });
+});
+
+describe('registerChunkProviderConnection is called on ProviderImpl', async () => {
+  let provider: ProviderImpl;
+  let connection: ChunkProviderConnection;
+  let disposable: Disposable;
+
+  beforeEach(() => {
+    provider = providerRegistry.createProvider('id', 'name', {
+      id: 'internal',
+      name: 'internal',
+      status: 'installed',
+    }) as ProviderImpl;
+
+    connection = {
+      id: 'internal.chunk-test',
+      name: 'chunk-test',
+      chunk: vi.fn(),
+      status: (): ProviderConnectionStatus => 'started',
+    };
+
+    vi.spyOn(providerRegistry, 'registerChunkConnection');
+    vi.spyOn(providerRegistry, 'onDidRegisterChunkConnectionCallback');
+    vi.spyOn(providerRegistry, 'onDidUnregisterChunkConnectionCallback');
+    disposable = provider.registerChunkProviderConnection(connection);
+  });
+
+  test('registerChunkConnection is called on registry and provider added to set', async () => {
+    expect(providerRegistry.registerChunkConnection).toHaveBeenCalled();
+    expect(providerRegistry.onDidRegisterChunkConnectionCallback).toHaveBeenCalled();
+    expect(provider.chunkConnections).toHaveLength(1);
+  });
+
+  test('should be removed from set when disposed', async () => {
+    disposable.dispose();
+    expect(provider.chunkConnections).toHaveLength(0);
+    expect(providerRegistry.onDidUnregisterChunkConnectionCallback).toHaveBeenCalled();
+  });
+});
+
+describe('a chunk provider connection is registered', async () => {
+  let provider: Provider;
+  let disposable: Disposable;
+  let connection: ChunkProviderConnection;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    provider = providerRegistry.createProvider('id', 'name', {
+      id: 'internal',
+      name: 'internal',
+      status: 'installed',
+    });
+    connection = {
+      id: 'internal.chunk-conn',
+      name: 'chunk-conn',
+      chunk: vi.fn(),
+      status: (): ProviderConnectionStatus => 'started',
+    };
+
+    disposable = providerRegistry.registerChunkConnection(provider, connection);
+  });
+
+  test('should send telemetry and be added to registry', async () => {
+    expect(telemetry.track).toHaveBeenLastCalledWith('registerChunkProviderConnection', {
+      name: 'chunk-conn',
+      total: 1,
+    });
+  });
+
+  test('should be removed from registry when disposed', async () => {
+    disposable.dispose();
+    expect(providerRegistry.getChunkConnections()).toHaveLength(0);
+  });
+
+  test('should send provider-change when status changes', async () => {
+    vi.advanceTimersByTime(2005);
+    expect(apiSenderSendMock).not.toHaveBeenCalledWith('provider-change', expect.anything());
+
+    connection.status = (): ProviderConnectionStatus => 'stopped';
+
+    vi.advanceTimersByTime(2005);
+    expect(apiSenderSendMock).toHaveBeenCalledWith('provider-change', {});
+  });
+
+  test('should fire update event when status changes', async () => {
+    const listener = vi.fn();
+    providerRegistry.onDidUpdateChunkConnection(listener);
+
+    connection.status = (): ProviderConnectionStatus => 'stopped';
+    vi.advanceTimersByTime(2005);
+
+    expect(listener).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerId: provider.id,
+        connection,
+        status: 'stopped',
+      }),
+    );
+  });
+});
+
+test('rejects duplicate inference connection id for the same provider', () => {
+  const provider = providerRegistry.createProvider('ext', 'ext', {
+    id: 'provider-a',
+    name: 'provider-a',
+    status: 'installed',
+  });
+
+  const base = {
+    name: 'conn',
+    type: 'cloud' as const,
+    llmMetadata: { name: 'openai' },
+    sdk: {} as never,
+    credentials: (): Record<string, string> => ({}),
+    status: (): ProviderConnectionStatus => 'started',
+    models: [{ label: 'gpt-4o' }],
+  };
+
+  provider.registerInferenceProviderConnection({ id: 'conn-0', ...base });
+  expect(() => provider.registerInferenceProviderConnection({ id: 'conn-0', ...base })).toThrow(
+    /an inference connection with id 'conn-0' is already registered for provider 'provider-a'/,
+  );
+});
+
+test('getSemanticRouterFactory returns undefined when no provider has a factory', () => {
+  providerRegistry.createProvider('id', 'name', {
+    id: 'provider-a',
+    name: 'Provider A',
+    status: 'installed',
+  });
+
+  expect(providerRegistry.getSemanticRouterFactory()).toBeUndefined();
+});
+
+test('getSemanticRouterFactory returns factory when a provider has one set', () => {
+  const provider = providerRegistry.createProvider('id', 'name', {
+    id: 'provider-a',
+    name: 'Provider A',
+    status: 'installed',
+  });
+
+  const factory = {
+    type: 'semantic-router',
+    create: vi.fn(),
+  };
+  provider.setSemanticRouterConnectionFactory(factory);
+
+  const result = providerRegistry.getSemanticRouterFactory();
+  expect(result).toBeDefined();
+  expect(result!.factory).toBe(factory);
+});
+
+test('getSemanticRouterFactory returns undefined after factory disposable is disposed', () => {
+  const provider = providerRegistry.createProvider('id', 'name', {
+    id: 'provider-a',
+    name: 'Provider A',
+    status: 'installed',
+  });
+
+  const factory = {
+    type: 'semantic-router',
+    create: vi.fn(),
+  };
+  const disposable = provider.setSemanticRouterConnectionFactory(factory);
+
+  disposable.dispose();
+
+  expect(providerRegistry.getSemanticRouterFactory()).toBeUndefined();
+});
+
+test('deleteInferenceConnectionBySemanticRouter calls lifecycle.delete on matching connection', async () => {
+  const provider = providerRegistry.createProvider('id', 'name', {
+    id: 'provider-a',
+    name: 'Provider A',
+    status: 'installed',
+  });
+
+  const deleteMock = vi.fn().mockResolvedValue(undefined);
+  provider.registerInferenceProviderConnection({
+    id: 'conn-1',
+    name: 'my-router',
+    type: 'cloud',
+    llmMetadata: { name: 'test', semanticRouter: 'my-router' },
+    sdk: {} as never,
+    credentials: (): Record<string, string> => ({}),
+    lifecycle: { delete: deleteMock },
+    status: (): ProviderConnectionStatus => 'started',
+    models: [],
+  });
+
+  await providerRegistry.deleteInferenceConnectionBySemanticRouter('my-router');
+
+  expect(deleteMock).toHaveBeenCalled();
+});
+
+test('deleteInferenceConnectionBySemanticRouter does nothing when no matching connection exists', async () => {
+  providerRegistry.createProvider('id', 'name', {
+    id: 'provider-a',
+    name: 'Provider A',
+    status: 'installed',
+  });
+
+  await expect(providerRegistry.deleteInferenceConnectionBySemanticRouter('nonexistent')).resolves.toBeUndefined();
 });

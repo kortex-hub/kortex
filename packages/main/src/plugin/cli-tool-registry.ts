@@ -24,7 +24,7 @@ import type {
   CliToolSelectUpdate,
   CliToolUpdate,
   Logger,
-} from '@podman-desktop/api';
+} from '@openkaiden/api';
 import { inject, injectable } from 'inversify';
 
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
@@ -183,6 +183,7 @@ export class CliToolRegistry {
       displayName: cliTool.displayName,
       markdownDescription: cliTool.markdownDescription,
       images: cliTool.images,
+      path: cliTool.path,
       version: cliTool.version,
       extensionInfo: {
         id: cliTool.extensionInfo.id,

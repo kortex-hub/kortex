@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2023-2025 Red Hat, Inc.
+ * Copyright (C) 2025 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,111 +17,78 @@
  ***********************************************************************/
 
 import type { Locator, Page } from '@playwright/test';
-import test, { expect as playExpect } from '@playwright/test';
+import { expect } from '@playwright/test';
 
-import { ExtensionCardPage } from './extension-card-page';
-import type { ExtensionDetailsPage } from './extension-details-page';
+import type { ExtensionLocator } from '/@/model/core/types';
+import { builtInExtensions } from '/@/model/core/types';
 
-export class ExtensionsPage {
-  readonly page: Page;
-  readonly heading: Locator;
-  readonly header: Locator;
-  readonly content: Locator;
-  readonly additionalActions: Locator;
+import { BasePage } from './base-page';
+import { ExtensionsInstalledPage } from './extensions-installed-tab-page';
+import { InstallCustomExtensionModal } from './install-custom-extension-modal';
+
+export class ExtensionsPage extends BasePage {
+  readonly searchField: Locator;
   readonly installedTab: Locator;
   readonly catalogTab: Locator;
-  readonly installExtensionFromOCIImageButton: Locator;
+  readonly localExtensionsTab: Locator;
+  readonly installCustomButton: Locator;
+  readonly filteredOutIndicator: Locator;
+  private readonly tabs: Locator[];
 
   constructor(page: Page) {
-    this.page = page;
-    this.header = page.getByRole('region', { name: 'header' });
-    this.content = page.getByRole('region', { name: 'content' });
-    this.heading = this.header.getByRole('heading', { name: 'extensions' });
-    this.additionalActions = this.header.getByRole('group', {
-      name: 'additionalActions',
-    });
-    this.installedTab = this.page.getByRole('button', { name: 'Installed' });
-    this.catalogTab = this.page.getByRole('button', { name: 'Catalog', exact: true });
-    this.installExtensionFromOCIImageButton = this.additionalActions.getByLabel('Install custom');
+    super(page);
+    this.searchField = page.getByLabel('search extensions');
+    this.installedTab = page.getByRole('button', { name: 'Installed', exact: true });
+    this.catalogTab = page.getByRole('button', { name: 'Catalog', exact: true });
+    this.localExtensionsTab = page.getByRole('button', { name: 'Local Extensions', exact: true });
+    this.installCustomButton = page.getByLabel('Install custom');
+    this.filteredOutIndicator = page.getByText(/Filtered out \d+ items? of \d+/);
+    this.tabs = [this.installedTab, this.catalogTab, this.localExtensionsTab];
   }
 
-  public async installExtensionFromOCIImage(extension: string, timeout = 100_000): Promise<ExtensionsPage> {
-    return test.step(`Install extension from OCI image: ${extension}`, async () => {
-      // open button to install extension from OCI image
-      await playExpect(this.installExtensionFromOCIImageButton).toBeEnabled();
-      await this.installExtensionFromOCIImageButton.click();
-
-      const dialog = this.page.getByRole('dialog', {
-        name: 'Install Custom Extension',
-        exact: true,
-      });
-      await playExpect(dialog).toBeVisible();
-      const imageInput = dialog.getByRole('textbox', {
-        name: 'Image name to install custom extension',
-      });
-      // check visibility of the input
-      await playExpect(imageInput).toBeVisible();
-
-      await imageInput.fill(extension);
-
-      const installButton = dialog.getByRole('button', {
-        name: 'Install',
-        exact: true,
-      });
-      await playExpect(installButton).toBeEnabled();
-
-      await installButton.click();
-
-      const doneButton = dialog.getByRole('button', {
-        name: 'Done',
-        exact: true,
-      });
-      await playExpect(doneButton).toBeEnabled({ timeout: timeout });
-      await doneButton.click();
-
-      return this;
-    });
+  async waitForLoad(): Promise<void> {
+    await expect(this.searchField).toBeVisible();
+    await expect(this.installedTab).toBeVisible();
+    await expect(this.catalogTab).toBeVisible();
+    await expect(this.localExtensionsTab).toBeVisible();
   }
 
-  public async openInstalledTab(): Promise<void> {
-    await playExpect(this.installedTab).toBeVisible({ timeout: 10_000 });
-    await this.installedTab.click({ force: true });
+  async openInstalledTab(): Promise<ExtensionsInstalledPage> {
+    return this.openTab(this.installedTab, ExtensionsInstalledPage);
   }
 
-  public async openCatalogTab(): Promise<void> {
-    await this.catalogTab.click();
+  async openInstallCustomExtensionModal(): Promise<InstallCustomExtensionModal> {
+    await expect(this.installCustomButton).toBeEnabled();
+    await this.installCustomButton.click();
+
+    const modal = new InstallCustomExtensionModal(this.page);
+    await modal.waitForLoad();
+    return modal;
   }
 
-  public async openExtensionDetails(name: string, label: string, heading: string): Promise<ExtensionDetailsPage> {
-    const extensionCard = await this.getInstalledExtension(name, label);
-    return await extensionCard.openExtensionDetails(heading);
+  getAllTabs(): Locator[] {
+    return this.tabs;
   }
 
-  public async getInstalledExtension(name: string, label: string): Promise<ExtensionCardPage> {
-    await this.openInstalledTab();
-    const extensionCard = new ExtensionCardPage(this.page, name, label);
-    await playExpect(extensionCard.card).toBeVisible();
-    return extensionCard;
+  async searchExtension(searchTerm: string): Promise<void> {
+    await expect(this.searchField).toBeVisible();
+    await this.searchField.fill(searchTerm);
+    await expect(this.searchField).toHaveValue(searchTerm);
   }
 
-  public async extensionIsInstalled(label: string): Promise<boolean> {
-    await this.openInstalledTab();
-    const extension = this.content.getByRole('region', { name: label, exact: true });
-    return (await extension.count()) > 0;
+  async clearSearch(): Promise<void> {
+    await expect(this.searchField).toBeVisible();
+    await this.searchField.clear();
+    await expect(this.searchField).toHaveValue('');
   }
 
-  public async getInstalledExtensionVersion(name: string, label: string): Promise<string | undefined> {
-    const extensionCard = await this.getInstalledExtension(name, label);
-    const version = extensionCard.rightActions.getByLabel('Version');
-    if ((await version.count()) === 0) {
-      return undefined;
-    }
-
-    try {
-      return await version.innerText();
-    } catch (error) {
-      console.log(`Could not get ${label} extension version:`, error);
-      return undefined;
+  async verifySearchResults(searchedExtensionLocator: ExtensionLocator): Promise<void> {
+    const installedPage = new ExtensionsInstalledPage(this.page);
+    await expect(installedPage.getExtension(searchedExtensionLocator)).toBeVisible();
+    for (const otherExtension of builtInExtensions.filter(
+      extension => extension.locator !== searchedExtensionLocator,
+    )) {
+      await expect(installedPage.getExtension(otherExtension.locator)).not.toBeVisible();
     }
   }
 }

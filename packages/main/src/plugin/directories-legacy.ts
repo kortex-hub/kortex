@@ -35,7 +35,7 @@ import type { Directories } from './directories.js';
 @injectable()
 export class LegacyDirectories implements Directories {
   static readonly XDG_DATA_DIRECTORY = `.local${path.sep}share${path.sep}${product.paths.config}`;
-  static readonly PODMAN_DESKTOP_HOME_DIR = 'PODMAN_DESKTOP_HOME_DIR';
+  static readonly KAIDEN_HOME_DIR = 'KAIDEN_HOME_DIR';
 
   private readonly configurationDirectory: string;
   private readonly dataDirectory: string;
@@ -45,11 +45,17 @@ export class LegacyDirectories implements Directories {
   private readonly contributionStorageDirectory: string;
   private readonly safeStorageDirectory: string;
   private readonly desktopAppHomeDir: string;
+  private readonly chatPersistenceDirectory: string;
+  private readonly skillsDirectory: string;
+  private readonly workspaceProjectsDirectory: string;
+  private readonly semanticRoutersDirectory: string;
+  private readonly agentWorkspacesConfigDirectory: string;
+  private readonly acpSessionsDirectory: string;
 
   constructor() {
     // Check for custom directory override
     this.desktopAppHomeDir =
-      process.env[LegacyDirectories.PODMAN_DESKTOP_HOME_DIR] ??
+      process.env[LegacyDirectories.KAIDEN_HOME_DIR] ??
       path.resolve(os.homedir(), LegacyDirectories.XDG_DATA_DIRECTORY);
 
     // Create the base directory if it doesn't exist
@@ -65,6 +71,12 @@ export class LegacyDirectories implements Directories {
     this.extensionsStorageDirectory = path.resolve(this.desktopAppHomeDir, 'extensions-storage');
     this.contributionStorageDirectory = path.resolve(this.desktopAppHomeDir, 'contributions');
     this.safeStorageDirectory = path.resolve(this.desktopAppHomeDir, 'safe-storage');
+    this.chatPersistenceDirectory = path.resolve(this.desktopAppHomeDir, 'chat-persistence');
+    this.skillsDirectory = path.resolve(this.desktopAppHomeDir, 'skills');
+    this.workspaceProjectsDirectory = path.resolve(this.desktopAppHomeDir, 'workspace-projects');
+    this.semanticRoutersDirectory = path.resolve(this.desktopAppHomeDir, 'semantic-routers');
+    this.agentWorkspacesConfigDirectory = path.resolve(this.desktopAppHomeDir, 'agent-workspaces');
+    this.acpSessionsDirectory = path.resolve(this.desktopAppHomeDir, 'acp-sessions');
   }
 
   getConfigurationDirectory(): string {
@@ -111,5 +123,29 @@ export class LegacyDirectories implements Directories {
     }
     // Fallback to Linux-style path
     return product.paths.managed.linux;
+  }
+
+  getChatPersistenceDirectory(): string {
+    return this.chatPersistenceDirectory;
+  }
+
+  getSkillsDirectory(): string {
+    return this.skillsDirectory;
+  }
+
+  getWorkspaceProjectsDirectory(): string {
+    return this.workspaceProjectsDirectory;
+  }
+
+  getSemanticRoutersDirectory(): string {
+    return this.semanticRoutersDirectory;
+  }
+
+  getAgentWorkspacesConfigDirectory(): string {
+    return this.agentWorkspacesConfigDirectory;
+  }
+
+  getAcpSessionsDirectory(): string {
+    return this.acpSessionsDirectory;
   }
 }

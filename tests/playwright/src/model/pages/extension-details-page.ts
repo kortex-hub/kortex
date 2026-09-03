@@ -1,5 +1,5 @@
 /**********************************************************************
- * Copyright (C) 2023-2024 Red Hat, Inc.
+ * Copyright (C) 2026 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,85 +17,28 @@
  ***********************************************************************/
 
 import type { Locator, Page } from '@playwright/test';
-import test, { expect as playExpect } from '@playwright/test';
+import { expect } from '@playwright/test';
+
+import { Button } from '/@/model/core/types';
 
 import { BasePage } from './base-page';
-import { ExtensionsPage } from './extensions-page';
 
 export class ExtensionDetailsPage extends BasePage {
   readonly header: Locator;
-  readonly tabs: Locator;
-  readonly tabContent: Locator;
-  readonly enableButton: Locator;
-  readonly disableButton: Locator;
-  readonly removeExtensionButton: Locator;
-  readonly status: Locator;
   readonly heading: Locator;
-  readonly errorStackTrace: Locator;
+  readonly deleteButton: Locator;
+  readonly status: Locator;
 
-  constructor(
-    page: Page,
-    public readonly extensionName: string,
-  ) {
+  constructor(page: Page, extensionName: string) {
     super(page);
     this.header = page.getByRole('region', { name: 'Header' });
-    this.tabs = page.getByRole('region', { name: 'Tabs' });
-    this.tabContent = page.getByRole('region', { name: 'Tab Content' });
-    this.heading = this.header.getByRole('heading', { name: extensionName });
-    this.enableButton = this.header.getByRole('button', { name: 'Start' });
-    this.disableButton = this.header.getByRole('button', { name: 'Stop' });
-    this.removeExtensionButton = this.header.getByRole('button', {
-      name: 'Delete',
-    });
+    this.heading = this.header.getByRole('heading', { name: `${extensionName} extension`, exact: true });
+    this.deleteButton = this.header.getByLabel(Button.DELETE);
     this.status = this.header.getByLabel('Extension Status Label');
-    this.errorStackTrace = this.tabContent.getByRole('group', {
-      name: 'Stack Trace',
-      exact: true,
-    });
   }
 
-  async disableExtension(): Promise<this> {
-    return test.step(`Disable extension: ${this.extensionName}`, async () => {
-      if ((await this.status.innerText()) === 'DISABLED') return this;
-
-      await this.disableButton.click();
-      await playExpect(this.status).toHaveText('DISABLED', { timeout: 30000 });
-      return this;
-    });
-  }
-
-  async enableExtension(): Promise<this> {
-    return test.step(`Enable extension: ${this.extensionName}`, async () => {
-      if ((await this.status.innerText()) === 'ACTIVE') return this;
-
-      await this.enableButton.click();
-      await playExpect(this.status).toHaveText('ACTIVE', { timeout: 30000 });
-      return this;
-    });
-  }
-
-  async removeExtension(disableBeforeRemove = true): Promise<ExtensionsPage> {
-    return test.step(`Remove extension: ${this.extensionName}`, async () => {
-      if (disableBeforeRemove) {
-        await this.disableExtension();
-      }
-
-      await playExpect(this.removeExtensionButton).toBeVisible();
-      await this.removeExtensionButton.click();
-      await playExpect(this.removeExtensionButton).not.toBeVisible({ timeout: 30_000 });
-      return new ExtensionsPage(this.page);
-    });
-  }
-
-  async activateTab(tabName: string): Promise<this> {
-    return test.step(`Activate tab: ${tabName}`, async () => {
-      const tabItem = this.tabs.getByRole('button', {
-        name: tabName,
-        exact: true,
-      });
-      await playExpect(tabItem).toBeVisible();
-      await tabItem.click();
-      return this;
-    });
+  async waitForLoad(): Promise<void> {
+    await expect(this.heading).toBeVisible();
+    await expect(this.status).toBeVisible();
   }
 }

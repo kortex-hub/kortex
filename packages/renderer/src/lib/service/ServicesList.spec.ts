@@ -35,6 +35,17 @@ beforeEach(() => {
   vi.mocked(states).serviceSearchPattern = writable<string>('');
   vi.mocked(states).kubernetesContextsCheckingStateDelayed = writable();
   vi.mocked(states).kubernetesCurrentContextState = writable();
+
+  // Mock window.events
+  Object.defineProperty(window, 'events', {
+    value: {
+      receive: vi.fn(() => ({
+        dispose: vi.fn(),
+      })),
+    },
+    configurable: true,
+    writable: true,
+  });
 });
 
 test('Expect service empty screen', async () => {

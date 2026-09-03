@@ -20,6 +20,7 @@
  * @module preload
  */
 import { EventEmitter } from 'node:events';
+import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
@@ -41,27 +42,54 @@ import type {
   V1Secret,
   V1Service,
 } from '@kubernetes/client-node';
-import type * as containerDesktopAPI from '@podman-desktop/api';
+import type * as containerDesktopAPI from '@openkaiden/api';
+import type { components } from '@openkaiden/mcp-registry-types';
 import checkDiskSpacePkg from 'check-disk-space';
 import type Dockerode from 'dockerode';
 import type { IpcMainEvent, WebContents } from 'electron';
 import { app, BrowserWindow, clipboard, ipcMain, shell } from 'electron';
 import type { IpcMainInvokeEvent } from 'electron/main';
 import { Container } from 'inversify';
+import { lookup } from 'mime-types';
 
-import { IPCHandle, IPCMainOn } from '/@/plugin/api.js';
+import { AcpIPCHandler } from '/@/plugin/acp/acp-ipc-handler.js';
+import { AcpSessionManager } from '/@/plugin/acp/acp-session-manager.js';
+import { AgentRegistry } from '/@/plugin/agent-registry.js';
+import { AgentWorkspaceManager } from '/@/plugin/agent-workspace/agent-workspace-manager.js';
+import { IPCHandle, IPCMainOn, WebContentsType } from '/@/plugin/api.js';
 import { ContainerfileParser } from '/@/plugin/containerfile-parser.js';
 import { ExtensionApiVersion } from '/@/plugin/extension/extension-api-version.js';
 import { ExtensionLoader } from '/@/plugin/extension/extension-loader.js';
 import { ExtensionWatcher } from '/@/plugin/extension/extension-watcher.js';
 import { FeatureRegistry } from '/@/plugin/feature-registry.js';
+import { FlowManager } from '/@/plugin/flow/flow-manager.js';
 import { KubeGeneratorRegistry } from '/@/plugin/kubernetes/kube-generator-registry.js';
 import { LockedConfiguration } from '/@/plugin/locked-configuration.js';
+import { MCPExchanges } from '/@/plugin/mcp/mcp-exchanges.js';
+import { MCPExporter } from '/@/plugin/mcp/mcp-exporter.js';
+import { MCPIPCHandler } from '/@/plugin/mcp/mcp-ipc-handler.js';
+import { MCPManager } from '/@/plugin/mcp/mcp-manager.js';
 import { MenuRegistry } from '/@/plugin/menu-registry.js';
 import { NavigationManager } from '/@/plugin/navigation/navigation-manager.js';
+import { OpenshellCli } from '/@/plugin/openshell-cli/openshell-cli.js';
+import { OpenshellGateway } from '/@/plugin/openshell-cli/openshell-gateway.js';
+import { OpenshellGatewayConfig } from '/@/plugin/openshell-cli/openshell-gateway-config.js';
+import { OpenshellGatewayStateManager } from '/@/plugin/openshell-cli/openshell-gateway-state-manager.js';
+import { OpenshellImageBuilder } from '/@/plugin/openshell-cli/openshell-image-builder.js';
+import { OpenshellSdkClientManager } from '/@/plugin/openshell-cli/openshell-sdk-client-manager.js';
+import { OpenShellRegistry } from '/@/plugin/openshell-registry.js';
+import { RagEnvironmentRegistry } from '/@/plugin/rag-environment-registry.js';
+import { SchedulerRegistry } from '/@/plugin/scheduler/scheduler-registry.js';
+import { OpenshellSecretAdapter } from '/@/plugin/secret-manager/openshell-secret-adapter.js';
+import { SecretManager } from '/@/plugin/secret-manager/secret-manager.js';
+import { SemanticRouterManager } from '/@/plugin/semantic-router/semantic-router-manager.js';
+import { SkillManager } from '/@/plugin/skill/skill-manager.js';
 import { TaskManager } from '/@/plugin/tasks/task-manager.js';
 import { Uri } from '/@/plugin/types/uri.js';
 import { Updater } from '/@/plugin/updater.js';
+import { Welcome } from '/@/plugin/welcome.js';
+import { WorkspaceProjectManager } from '/@/plugin/workspace-project/workspace-project-manager.js';
+import type { AgentInfo } from '/@api/agent-info.js';
 import { ApiSenderType } from '/@api/api-sender/api-sender-type.js';
 import type { AuthenticationProviderInfo } from '/@api/authentication/authentication.js';
 import type { CliToolInfo } from '/@api/cli-tool-info.js';
@@ -118,6 +146,8 @@ import type { KubernetesTroubleshootingInformation } from '/@api/kubernetes-trou
 import type { ContainerCreateOptions as PodmanContainerCreateOptions, PlayKubeInfo } from '/@api/libpod/libpod.js';
 import type { ListOrganizerItem } from '/@api/list-organizer.js';
 import type { ManifestCreateOptions, ManifestInspectInfo, ManifestPushOptions } from '/@api/manifest-info.js';
+import type { MCPRemoteServerInfo } from '/@api/mcp/mcp-server-info.js';
+import type { MCPSetupOptions, MCPSetupPackageOptions } from '/@api/mcp/mcp-setup.js';
 import type { Menu } from '/@api/menu.js';
 import type { NetworkInspectInfo } from '/@api/network-info.js';
 import type { NotificationCard, NotificationCardOptions } from '/@api/notification.js';
@@ -142,7 +172,9 @@ import type { TelemetryMessages } from '/@api/telemetry.js';
 import type { ViewInfoUI } from '/@api/view-info.js';
 import type { VolumeInspectInfo, VolumeListInfo } from '/@api/volume-info.js';
 import type { WebviewInfo } from '/@api/webview-info.js';
+import type { WelcomeMessages } from '/@api/welcome-info.js';
 
+import { ChatManager } from '../chat/chat-manager.js';
 import { securityRestrictionCurrentHandler } from '../security-restrictions-handler.js';
 import { TrayMenu } from '../tray-menu.js';
 import { createHash, isMac } from '../util.js';
@@ -151,6 +183,7 @@ import { AuthenticationImpl } from './authentication.js';
 import { AutostartEngine } from './autostart-engine.js';
 import { CancellationTokenRegistry } from './cancellation-token-registry.js';
 import { Certificates } from './certificates.js';
+import { ChatInit } from './chat-init.js';
 import { CliToolRegistry } from './cli-tool-registry.js';
 import { CloseBehavior } from './close-behavior.js';
 import { ColorRegistry } from './color-registry.js';
@@ -189,6 +222,7 @@ import { IconRegistry } from './icon-registry.js';
 import { ImageCheckerImpl } from './image-checker.js';
 import { ImageFilesRegistry } from './image-files-registry.js';
 import { ImageRegistry } from './image-registry.js';
+import { InferenceConnectionSummaryRegistry } from './inference-connection-summary-registry.js';
 import { InputQuickPickRegistry } from './input-quickpick/input-quickpick-registry.js';
 import { ExtensionInstaller } from './install/extension-installer.js';
 import { KubernetesClient } from './kubernetes/kubernetes-client.js';
@@ -196,8 +230,13 @@ import { downloadGuideList } from './learning-center/learning-center.js';
 import { LearningCenterInit } from './learning-center-init.js';
 import { LibpodApiInit } from './libpod-api-enable/libpod-api-init.js';
 import { ListOrganizerRegistry } from './list-organizer.js';
+import { INTERNAL_PROVIDER_ID, MCPRegistry } from './mcp/mcp-registry.js';
+import { MCPSchemaValidator } from './mcp/mcp-schema-validator.js';
 import { MessageBox } from './message-box.js';
+import { ModelCatalogInit } from './model-catalog-init.js';
+import { ModelRegistry } from './model-registry.js';
 import { NavigationItemsInit } from './navigation-items-init.js';
+import { OnboardingInit } from './onboarding/onboarding-init.js';
 import { OnboardingRegistry } from './onboarding-registry.js';
 import { OpenDevToolsInit } from './open-devtools-init.js';
 import { ProviderRegistry } from './provider-registry.js';
@@ -207,7 +246,6 @@ import { RegistryInit } from './registry-init.js';
 import { ReleaseNotesBannerInit } from './release-notes-banner-init.js';
 import { SafeStorageRegistry } from './safe-storage/safe-storage-registry.js';
 import { PinRegistry } from './statusbar/pin-registry.js';
-import { StatusbarProvidersInit } from './statusbar/statusbar-providers-init.js';
 import { StatusBarRegistry } from './statusbar/statusbar-registry.js';
 import { NotificationRegistry } from './tasks/notification-registry.js';
 import { ProgressImpl } from './tasks/progress-impl.js';
@@ -257,12 +295,17 @@ export class PluginSystem {
   private extensionLoader!: ExtensionLoader;
   private validExtList!: ExtensionInfo[];
 
+  private container: Container | undefined;
+
   constructor(
     private trayMenu: TrayMenu,
     private mainWindowDeferred: PromiseWithResolvers<BrowserWindow>,
   ) {
     app.on('before-quit', () => {
       this.isQuitting = true;
+      this.container
+        ?.unbindAll()
+        .catch((err: unknown) => console.error('[PluginSystem] failed to dispose container:', err));
     });
   }
 
@@ -480,10 +523,13 @@ export class PluginSystem {
 
     // init api sender
     const apiSender = this.getApiSender(this.getWebContentsSender());
-    const container = new Container();
+    const webContentsSender = this.getWebContentsSender();
+    this.container = new Container();
+    const container = this.container;
     container.bind<ApiSenderType>(ApiSenderType).toConstantValue(apiSender);
     container.bind<IPCHandle>(IPCHandle).toConstantValue(this.ipcHandle);
     container.bind<IPCMainOn>(IPCMainOn).toConstantValue(this.ipcMainOn);
+    container.bind<WebContents>(WebContentsType).toConstantValue(webContentsSender);
     container.bind<TrayMenu>(TrayMenu).toConstantValue(this.trayMenu);
     container.bind<IconRegistry>(IconRegistry).toSelf().inSingletonScope();
     const directoryStrategy = new DirectoryStrategy();
@@ -543,18 +589,50 @@ export class PluginSystem {
     container.bind<MenuRegistry>(MenuRegistry).toSelf().inSingletonScope();
     container.bind<KubeGeneratorRegistry>(KubeGeneratorRegistry).toSelf().inSingletonScope();
     container.bind<ImageRegistry>(ImageRegistry).toSelf().inSingletonScope();
+    container.bind<MCPSchemaValidator>(MCPSchemaValidator).toSelf().inSingletonScope();
+    container.bind<MCPRegistry>(MCPRegistry).toSelf().inSingletonScope();
+    container.bind<MCPExporter>(MCPExporter).toSelf().inSingletonScope();
+    container.bind<MCPIPCHandler>(MCPIPCHandler).toSelf().inSingletonScope();
     container.bind<ViewRegistry>(ViewRegistry).toSelf().inSingletonScope();
     container.bind<Context>(Context).toSelf().inSingletonScope();
     container.bind<ContainerProviderRegistry>(ContainerProviderRegistry).toSelf().inSingletonScope();
     container.bind<CancellationTokenRegistry>(CancellationTokenRegistry).toSelf().inSingletonScope();
 
+    container.bind<MCPExchanges>(MCPExchanges).toSelf().inSingletonScope();
     container.bind<ProviderRegistry>(ProviderRegistry).toSelf().inSingletonScope();
+    container.bind<MCPManager>(MCPManager).toSelf().inSingletonScope();
+    container.bind<CliToolRegistry>(CliToolRegistry).toSelf().inSingletonScope();
+    container.bind<AgentRegistry>(AgentRegistry).toSelf().inSingletonScope();
+    container.bind<OpenShellRegistry>(OpenShellRegistry).toSelf().inSingletonScope();
+    container.bind<OpenshellCli>(OpenshellCli).toSelf().inSingletonScope();
+    container.bind<OpenshellGatewayConfig>(OpenshellGatewayConfig).toSelf();
+    container.bind<OpenshellSdkClientManager>(OpenshellSdkClientManager).toSelf().inSingletonScope();
+    container.bind<OpenshellGateway>(OpenshellGateway).toSelf().inSingletonScope();
+    container.bind<OpenshellGatewayStateManager>(OpenshellGatewayStateManager).toSelf().inSingletonScope();
+    container.bind<OpenshellImageBuilder>(OpenshellImageBuilder).toSelf().inSingletonScope();
+    container.bind<AgentWorkspaceManager>(AgentWorkspaceManager).toSelf().inSingletonScope();
+    container.bind<OpenshellSecretAdapter>(OpenshellSecretAdapter).toSelf().inSingletonScope();
+    container.bind<AcpSessionManager>(AcpSessionManager).toSelf().inSingletonScope();
+    container.bind<AcpIPCHandler>(AcpIPCHandler).toSelf().inSingletonScope();
+    container.bind<SecretManager>(SecretManager).toSelf().inSingletonScope();
+    container.bind<FlowManager>(FlowManager).toSelf().inSingletonScope();
+    container.bind<SkillManager>(SkillManager).toSelf().inSingletonScope();
+    container.bind<WorkspaceProjectManager>(WorkspaceProjectManager).toSelf().inSingletonScope();
+    container.bind<SemanticRouterManager>(SemanticRouterManager).toSelf().inSingletonScope();
     container.bind<TrayMenuRegistry>(TrayMenuRegistry).toSelf().inSingletonScope();
     container.bind<InputQuickPickRegistry>(InputQuickPickRegistry).toSelf().inSingletonScope();
     container.bind<FilesystemMonitoring>(FilesystemMonitoring).toSelf().inSingletonScope();
     container.bind<CustomPickRegistry>(CustomPickRegistry).toSelf().inSingletonScope();
     container.bind<OnboardingRegistry>(OnboardingRegistry).toSelf().inSingletonScope();
+    container.bind<OnboardingInit>(OnboardingInit).toSelf().inSingletonScope();
     container.bind<KubernetesClient>(KubernetesClient).toSelf().inSingletonScope();
+    container.bind<ChatManager>(ChatManager).toSelf().inSingletonScope();
+    container.bind<ModelRegistry>(ModelRegistry).toSelf().inSingletonScope();
+    container.bind<InferenceConnectionSummaryRegistry>(InferenceConnectionSummaryRegistry).toSelf().inSingletonScope();
+    container.bind<SchedulerRegistry>(SchedulerRegistry).toSelf().inSingletonScope();
+    container.bind<RagEnvironmentRegistry>(RagEnvironmentRegistry).toSelf().inSingletonScope();
+
+    // INIT KUBERNETES
     const kubernetesClient = container.get<KubernetesClient>(KubernetesClient);
     await kubernetesClient.init();
 
@@ -566,11 +644,7 @@ export class PluginSystem {
 
     container.bind<DockerCompatibility>(DockerCompatibility).toSelf().inSingletonScope();
     const dockerCompatibility = container.get<DockerCompatibility>(DockerCompatibility);
-    dockerCompatibility.init();
-
-    container.bind<StatusbarProvidersInit>(StatusbarProvidersInit).toSelf().inSingletonScope();
-    const statusbarProviders = container.get<StatusbarProvidersInit>(StatusbarProvidersInit);
-    statusbarProviders.init();
+    // DISABLED: dockerCompatibility.init();
 
     container.bind<HelpMenu>(HelpMenu).toSelf().inSingletonScope();
     const helpMenu = container.get<HelpMenu>(HelpMenu);
@@ -623,6 +697,36 @@ export class PluginSystem {
 
     const providerRegistry = container.get<ProviderRegistry>(ProviderRegistry);
     providerRegistry.registerAutostartEngine(autoStartEngine);
+
+    const modelRegistry = container.get<ModelRegistry>(ModelRegistry);
+    modelRegistry.init();
+
+    const inferenceConnectionSummaryRegistry = container.get<InferenceConnectionSummaryRegistry>(
+      InferenceConnectionSummaryRegistry,
+    );
+    inferenceConnectionSummaryRegistry.init();
+
+    const mcpManager = container.get<MCPManager>(MCPManager);
+    mcpManager.init();
+
+    const agentWorkspaceManager = container.get<AgentWorkspaceManager>(AgentWorkspaceManager);
+    agentWorkspaceManager.init();
+    const openshellGatewayStateManager = container.get<OpenshellGatewayStateManager>(OpenshellGatewayStateManager);
+    openshellGatewayStateManager.init();
+
+    const secretManager = container.get<SecretManager>(SecretManager);
+    secretManager.init();
+    const onboardingInit = container.get<OnboardingInit>(OnboardingInit);
+    onboardingInit.init();
+
+    const flowManager = container.get<FlowManager>(FlowManager);
+    flowManager.init();
+
+    const skillManager = container.get<SkillManager>(SkillManager);
+    await skillManager.init();
+
+    const chatManager = container.get<ChatManager>(ChatManager);
+    await chatManager.init();
 
     providerRegistry.addProviderListener((name: string, providerInfo: ProviderInfo) => {
       if (name === 'provider:update-status') {
@@ -681,9 +785,16 @@ export class PluginSystem {
     const terminalInit = container.get<TerminalInit>(TerminalInit);
     terminalInit.init();
 
+    container.bind<Welcome>(Welcome).toSelf().inSingletonScope();
+    const welcome = container.get<Welcome>(Welcome);
+
     container.bind<NavigationItemsInit>(NavigationItemsInit).toSelf().inSingletonScope();
     const navigationItems = container.get<NavigationItemsInit>(NavigationItemsInit);
     navigationItems.init();
+
+    container.bind<ModelCatalogInit>(ModelCatalogInit).toSelf().inSingletonScope();
+    const modelCatalogInit = container.get<ModelCatalogInit>(ModelCatalogInit);
+    modelCatalogInit.init();
 
     // only in development mode
     if (import.meta.env.DEV) {
@@ -691,6 +802,11 @@ export class PluginSystem {
       const openDevToolsInit = container.get<OpenDevToolsInit>(OpenDevToolsInit);
       openDevToolsInit.init();
     }
+
+    // init chat configuration
+    container.bind<ChatInit>(ChatInit).toSelf().inSingletonScope();
+    const chatInit = container.get<ChatInit>(ChatInit);
+    chatInit.init();
 
     // init editor configuration
     container.bind<EditorInit>(EditorInit).toSelf().inSingletonScope();
@@ -713,7 +829,6 @@ export class PluginSystem {
     libpodApiInit.init();
 
     container.bind<AuthenticationImpl>(AuthenticationImpl).toSelf().inSingletonScope();
-    container.bind<CliToolRegistry>(CliToolRegistry).toSelf().inSingletonScope();
     container.bind<ImageCheckerImpl>(ImageCheckerImpl).toSelf().inSingletonScope();
     container.bind<ImageFilesRegistry>(ImageFilesRegistry).toSelf().inSingletonScope();
     container.bind<Troubleshooting>(Troubleshooting).toSelf().inSingletonScope();
@@ -775,7 +890,7 @@ export class PluginSystem {
 
     container.bind<RecommendationsRegistry>(RecommendationsRegistry).toSelf().inSingletonScope();
     const recommendationsRegistry = container.get<RecommendationsRegistry>(RecommendationsRegistry);
-    recommendationsRegistry.init();
+    // DISABLED: recommendationsRegistry.init();
 
     container.bind<TempFileService>(TempFileService).toSelf().inSingletonScope();
 
@@ -795,6 +910,7 @@ export class PluginSystem {
     const feedback = container.get<FeedbackHandler>(FeedbackHandler);
     const cancellationTokenRegistry = container.get<CancellationTokenRegistry>(CancellationTokenRegistry);
     const cliToolRegistry = container.get<CliToolRegistry>(CliToolRegistry);
+    const agentRegistry = container.get<AgentRegistry>(AgentRegistry);
     const troubleshooting = container.get<Troubleshooting>(Troubleshooting);
     const menuRegistry = container.get<MenuRegistry>(MenuRegistry);
     const contributionManager = container.get<ContributionManager>(ContributionManager);
@@ -813,7 +929,29 @@ export class PluginSystem {
       ExperimentalFeatureFeedbackHandler,
     );
     await experimentalFeatureFeedbackHandler.init();
+    const mcpRegistry = container.get<MCPRegistry>(MCPRegistry);
+    const schedulerRegistry = container.get<SchedulerRegistry>(SchedulerRegistry);
+    mcpRegistry.init();
 
+    const ragEnvironmentRegistry = container.get<RagEnvironmentRegistry>(RagEnvironmentRegistry);
+    await ragEnvironmentRegistry.init();
+
+    const workspaceProjectManager = container.get<WorkspaceProjectManager>(WorkspaceProjectManager);
+    await workspaceProjectManager.init();
+
+    const semanticRouterManager = container.get<SemanticRouterManager>(SemanticRouterManager);
+    await semanticRouterManager.init();
+
+    const mcpIPCHandler = container.get<MCPIPCHandler>(MCPIPCHandler);
+    mcpIPCHandler.init();
+
+    const acpSessionManager = container.get<AcpSessionManager>(AcpSessionManager);
+    await acpSessionManager.init();
+
+    const acpIPCHandler = container.get<AcpIPCHandler>(AcpIPCHandler);
+    acpIPCHandler.init();
+
+    await schedulerRegistry.init();
     await this.setupSecurityRestrictionsOnLinks(messageBox);
 
     this.ipcHandle('tasks:clear-all', async (): Promise<void> => {
@@ -851,6 +989,149 @@ export class PluginSystem {
     this.ipcHandle('container-provider-registry:listPods', async (): Promise<PodInfo[]> => {
       return containerProviderRegistry.listPods();
     });
+
+    this.ipcHandle(
+      'flows:delete',
+      async (_listener, providerId: string, connectionName: string, flowId: string): Promise<void> => {
+        // Get the flow provider to use
+        const flowProvider = providerRegistry.getProvider(providerId);
+        const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
+          flowProvider.flowConnections.find(({ name }) => name === connectionName);
+        if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
+
+        flowManager.refresh();
+
+        return flowConnection.flow.delete(flowId);
+      },
+    );
+
+    this.ipcHandle(
+      'flows:read',
+      async (_listener, providerId: string, connectionName: string, flowId: string): Promise<string> => {
+        // Get the flow provider to use
+        const flowProvider = providerRegistry.getProvider(providerId);
+        const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
+          flowProvider.flowConnections.find(({ name }) => name === connectionName);
+        if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
+
+        return flowConnection.flow.read(flowId);
+      },
+    );
+
+    this.ipcHandle(
+      'flows:generate',
+      async (
+        _listener,
+        providerId: string,
+        connectionName: string,
+        options: containerDesktopAPI.FlowGenerateOptions & { mcp: MCPRemoteServerInfo[] },
+      ): Promise<string> => {
+        const task = taskManager.createTask({
+          title: `Generating flow for ${connectionName}'`,
+        });
+
+        try {
+          // Get the flow provider to use
+          const flowProvider = providerRegistry.getProvider(providerId);
+          const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
+            flowProvider.flowConnections.find(({ name }) => name === connectionName);
+          if (!flowConnection) throw new Error(`cannot find flow connection with name ${connectionName}`);
+
+          /**
+           * Painfully recover the headers credentials for a given MCP id
+           */
+          const accumulator: Array<{
+            name: string;
+            type: 'streamable_http';
+            uri: string;
+            headers?: {
+              [key: string]: string;
+            };
+          }> = [];
+          for (const {
+            name,
+            url,
+            infos: { internalProviderId, serverId, remoteId },
+          } of options.mcp) {
+            // skip non-internal (should not happen)
+            if (internalProviderId !== INTERNAL_PROVIDER_ID) continue;
+
+            // Collect the credentials
+            const init = await mcpRegistry.getCredentials(serverId, remoteId);
+
+            accumulator.push({
+              name,
+              type: 'streamable_http',
+              uri: url,
+              headers: init.headers ?? {},
+            });
+          }
+
+          // Generate the raw string
+          const generated = await flowConnection.flow.generate({
+            ...options,
+            mcp: accumulator,
+          });
+
+          // Save it
+          const flowId = await flowConnection.flow.create(generated);
+
+          task.status = 'success';
+
+          return flowId;
+        } catch (err: unknown) {
+          task.status = 'failure';
+          task.error = String(err);
+          throw err;
+        }
+      },
+    );
+
+    this.ipcHandle(
+      'flows:deploy:kubernetes',
+      async (
+        _listener,
+        flow: {
+          providerId: string;
+          connectionName: string;
+          flowId: string;
+        },
+        options: {
+          namespace: string;
+          hideSecrets: boolean;
+          dryrun: boolean;
+          params: Record<string, string>;
+        },
+      ): Promise<string> => {
+        if (!options.dryrun && options.hideSecrets) throw new Error('cannot apply YAML while hidding secrets');
+
+        // Get the flow provider to use
+        const flowProvider = providerRegistry.getProvider(flow.providerId);
+        const flowConnection: containerDesktopAPI.FlowProviderConnection | undefined =
+          flowProvider.flowConnections.find(({ name }) => name === flow.connectionName);
+        if (!flowConnection) throw new Error(`cannot find flow connection with name ${flow.connectionName}`);
+
+        // Generate the Kubernetes YAML
+        const { resources } = await flowConnection.flow.generateKubernetesYAML({
+          flowId: flow.flowId,
+          namespace: options.namespace,
+          hideSecrets: options.hideSecrets,
+          params: options.params,
+        });
+
+        if (options.dryrun) {
+          return resources;
+        }
+
+        const currentContext = kubernetesClient.getCurrentContextName();
+        if (!currentContext) throw new Error('cannot find current context');
+        const objects = await kubernetesClient.applyResourcesFromYAML(currentContext, resources);
+        console.log('[FlowGenerate] created', objects);
+
+        return resources;
+      },
+    );
+
     this.ipcHandle('container-provider-registry:listNetworks', async (): Promise<NetworkInspectInfo[]> => {
       return containerProviderRegistry.listNetworks();
     });
@@ -1725,6 +2006,10 @@ export class PluginSystem {
       return cliToolRegistry.getCliToolInfos();
     });
 
+    this.ipcHandle('agent-registry:getAgentInfos', async (): Promise<ReadonlyArray<AgentInfo>> => {
+      return agentRegistry.getAgentInfos();
+    });
+
     this.ipcHandle(
       'troubleshooting:saveLogs',
       async (
@@ -2126,6 +2411,58 @@ export class PluginSystem {
         registryCreateOptions: containerDesktopAPI.RegistryCreateOptions,
       ): Promise<void> => {
         await imageRegistry.createRegistry(providerName, registryCreateOptions);
+      },
+    );
+
+    this.ipcHandle('mcp-registry:getMcpRegistries', async (): Promise<readonly containerDesktopAPI.MCPRegistry[]> => {
+      return mcpRegistry.getRegistries();
+    });
+
+    this.ipcHandle(
+      'mcp-registry:setup',
+      async (_listener, serverId: string, options: MCPSetupOptions): Promise<void> => {
+        await mcpRegistry.setupMCPServer(serverId, options);
+      },
+    );
+
+    this.ipcHandle(
+      'mcp-registry:register',
+      async (_listener, serverId: string, options: MCPSetupPackageOptions): Promise<void> => {
+        await mcpRegistry.registerMCPServerOnly(serverId, options);
+      },
+    );
+
+    this.ipcHandle(
+      'mcp-registry:getMcpRegistryServers',
+      async (): Promise<readonly components['schemas']['ServerDetail'][]> => {
+        return mcpRegistry.listMCPServersFromRegistries();
+      },
+    );
+
+    this.ipcHandle(
+      'mcp-registry:getMcpSuggestedRegistries',
+      async (): Promise<containerDesktopAPI.MCPRegistrySuggestedProvider[]> => {
+        return mcpRegistry.getSuggestedRegistries();
+      },
+    );
+
+    this.ipcHandle(
+      'mcp-registry:unregisterMCPRegistry',
+      async (_listener, registry: containerDesktopAPI.MCPRegistry): Promise<void> => {
+        return mcpRegistry.unregisterMCPRegistry(registry, true);
+      },
+    );
+
+    this.ipcHandle('mcp-manager:fetchMcpRemoteServers', async (_listener): Promise<MCPRemoteServerInfo[]> => {
+      return mcpManager.listMCPRemoteServers();
+    });
+
+    this.ipcHandle(
+      'mcp-manager:removeMcpRemoteServer',
+      async (_listener, key: string, options: { serverId: string; remoteId: number }): Promise<void> => {
+        await mcpRegistry.deleteRemoteMcpFromConfiguration(options.serverId, options.remoteId);
+        await mcpRegistry.deletePackageFromConfiguration(options.serverId, options.remoteId);
+        return mcpManager.removeMcpRemoteServer(key);
       },
     );
 
@@ -2659,6 +2996,75 @@ export class PluginSystem {
       },
     );
 
+    this.ipcHandle(
+      'provider-registry:createInferenceProviderConnection',
+      async (
+        _listener: Electron.IpcMainInvokeEvent,
+        internalProviderId: string,
+        params: { [key: string]: unknown },
+        loggerId: string,
+        tokenId: number | undefined,
+        taskId: number | undefined,
+      ): Promise<void> => {
+        const providerName = providerRegistry.getProviderInfo(internalProviderId)?.name;
+        return taskConnectionUtils.withTask({
+          loggerId,
+          tokenId,
+          title: `Creating ${providerName ?? 'Inference'} provider`,
+          navigateToTask: () => navigationManager.navigateToProviderTask(internalProviderId, taskId),
+          execute: (logger: LoggerWithEnd, token?: containerDesktopAPI.CancellationToken) =>
+            providerRegistry.createInferenceProviderConnection(internalProviderId, params, logger, token),
+          executeErrorMsg: (err: unknown) => `Something went wrong while trying to create provider: ${err}`,
+        });
+      },
+    );
+
+    this.ipcHandle(
+      'provider-registry:createRagProviderConnection',
+      async (
+        _listener: Electron.IpcMainInvokeEvent,
+        internalProviderId: string,
+        params: { [key: string]: unknown },
+        loggerId: string,
+        tokenId: number | undefined,
+        taskId: number | undefined,
+      ): Promise<void> => {
+        const providerName = providerRegistry.getProviderInfo(internalProviderId)?.name;
+        return taskConnectionUtils.withTask({
+          loggerId,
+          tokenId,
+          title: `Creating ${providerName ?? 'Knowledge Database'} provider`,
+          navigateToTask: () => navigationManager.navigateToProviderTask(internalProviderId, taskId),
+          execute: (logger: LoggerWithEnd, token?: containerDesktopAPI.CancellationToken) =>
+            providerRegistry.createRagProviderConnection(internalProviderId, params, logger, token),
+          executeErrorMsg: (err: unknown) => `Something went wrong while trying to create provider: ${err}`,
+        });
+      },
+    );
+
+    this.ipcHandle(
+      'provider-registry:createChunkProviderConnection',
+      async (
+        _listener: Electron.IpcMainInvokeEvent,
+        internalProviderId: string,
+        params: { [key: string]: unknown },
+        loggerId: string,
+        tokenId: number | undefined,
+        taskId: number | undefined,
+      ): Promise<void> => {
+        const providerName = providerRegistry.getProviderInfo(internalProviderId)?.name;
+        return taskConnectionUtils.withTask({
+          loggerId,
+          tokenId,
+          title: `Creating ${providerName ?? 'Chunk'} provider`,
+          navigateToTask: () => navigationManager.navigateToProviderTask(internalProviderId, taskId),
+          execute: (logger: LoggerWithEnd, token?: containerDesktopAPI.CancellationToken) =>
+            providerRegistry.createChunkProviderConnection(internalProviderId, params, logger, token),
+          executeErrorMsg: (err: unknown) => `Something went wrong while trying to create provider: ${err}`,
+        });
+      },
+    );
+
     this.ipcHandle('kubernetes-client:createPod', async (_listener, namespace: string, pod: V1Pod): Promise<V1Pod> => {
       return kubernetesClient.createPod(namespace, pod);
     });
@@ -3028,6 +3434,20 @@ export class PluginSystem {
       return feedback.openGitHubIssue(properties);
     });
 
+    this.ipcHandle(
+      'feedback:getGitHubFeedbackLinks',
+      async (_listener): Promise<{ [category: string]: string } | undefined> => {
+        return feedback.getGitHubFeedbackLinks();
+      },
+    );
+
+    this.ipcHandle(
+      'feedback:getFeedbackLinks',
+      async (_listener): Promise<{ [category: string]: string } | undefined> => {
+        return feedback.getFeedbackLinks();
+      },
+    );
+
     this.ipcHandle('feedback:getFeedbackMessages', async (): Promise<FeedbackMessages> => {
       return feedback.getFeedbackMessages();
     });
@@ -3138,6 +3558,10 @@ export class PluginSystem {
         return;
       }
       window.close();
+    });
+
+    this.ipcHandle('welcome:getWelcomeMessages', async (): Promise<WelcomeMessages> => {
+      return welcome.getWelcomeMessages();
     });
 
     this.ipcHandle(
@@ -3285,6 +3709,15 @@ export class PluginSystem {
       return path.relative(from, to);
     });
 
+    this.ipcHandle('path:mimeType', async (_listener, from: string): Promise<string> => {
+      return lookup(from) || 'application/octet-stream';
+    });
+
+    this.ipcHandle('path:fileSize', async (_listener, filePath: string): Promise<number> => {
+      const stats = await fs.promises.stat(filePath);
+      return stats.size;
+    });
+
     this.ipcHandle(
       'extension-development-folders:getDevelopmentFolders',
       async (): Promise<ExtensionDevelopmentFolderInfo[]> => {
@@ -3356,6 +3789,9 @@ export class PluginSystem {
       apiSender.send('extensions-started');
       this.markAsExtensionsStarted();
     }
+    const openshellGateway = container.get<OpenshellGateway>(OpenshellGateway);
+    openshellGateway.init().catch((err: unknown) => console.error('Unable to initialize openshell gateway', err));
+
     extensionsUpdater.init().catch((err: unknown) => console.error('Unable to perform extension updates', err));
     autoStartEngine.start().catch((err: unknown) => console.error('Unable to perform autostart', err));
     await exploreFeatures.init();

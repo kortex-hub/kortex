@@ -1,28 +1,13 @@
 <script lang="ts">
 import { Dropdown } from '@podman-desktop/ui-svelte';
-import { onMount } from 'svelte';
 
 import { kubernetesContextsHealths } from '/@/stores/kubernetes-context-health';
-import { kubernetesCurrentContextState } from '/@/stores/kubernetes-contexts-state';
-
-let isExperimental: boolean = $state(false);
-
-onMount(async () => {
-  try {
-    isExperimental = await window.isExperimentalConfigurationEnabled('kubernetes.statesExperimental');
-  } catch {
-    // keep default value
-  }
-});
 
 let reachablePromise = $derived.by(async () => {
-  if (isExperimental) {
-    const contextName = await window.kubernetesGetCurrentContextName();
-    return $kubernetesContextsHealths.some(
-      contextHealth => contextHealth.contextName === contextName && contextHealth.reachable,
-    );
-  }
-  return $kubernetesCurrentContextState?.reachable;
+  const contextName = await window.kubernetesGetCurrentContextName();
+  return $kubernetesContextsHealths.some(
+    contextHealth => contextHealth.contextName === contextName && contextHealth.reachable,
+  );
 });
 
 let namespacesPromise = $derived.by(async () => {

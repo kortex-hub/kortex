@@ -25,8 +25,6 @@ export async function listenResourcePermitted(
   resourceName: string,
   callback: (permitted: boolean) => void,
 ): Promise<IDisposable> {
-  const experimental = await window.isExperimentalConfigurationEnabled('kubernetes.statesExperimental');
-
   let contextName = '';
   let permissions: ContextPermission[] = [];
 
@@ -42,12 +40,6 @@ export async function listenResourcePermitted(
     }
     callback(permission.permitted);
   };
-
-  // If is kubernetes experimental disabled, all resources should be permitted
-  if (!experimental) {
-    callback(true);
-    return { dispose: (): void => {} };
-  }
 
   // Subscribe to kubernetes contexts
   const unsubscribeContexts = kubernetesContexts.subscribe(value => {

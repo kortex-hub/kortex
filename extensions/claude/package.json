@@ -1,0 +1,69 @@
+{
+  "name": "claude",
+  "displayName": "Claude",
+  "description": "Integration for Claude",
+  "version": "0.4.0-next",
+  "icon": "icon.png",
+  "publisher": "kaiden",
+  "license": "Apache-2.0",
+  "engines": {
+    "kaiden": "^0.0.1"
+  },
+  "main": "./dist/extension.js",
+  "source": "./src/extension.ts",
+  "contributes": {
+    "configuration": {
+      "title": "Claude",
+      "properties": {
+        "claude.factory._description": {
+          "type": "markdown",
+          "scope": "InferenceProviderConnectionFactory",
+          "markdownDescription": "Provide a Claude API key\n\n:button[Grab a key]{href=\"https://console.anthropic.com/settings/keys\"}"
+        },
+        "claude.factory.baseURL": {
+          "type": "string",
+          "scope": "InferenceProviderConnectionFactory",
+          "description": "Custom base URL (leave empty for https://api.anthropic.com)"
+        },
+        "claude.factory.apiKey": {
+          "type": "string",
+          "scope": "InferenceProviderConnectionFactory",
+          "description": "Enter your Claude API key (ANTHROPIC_API_KEY)",
+          "format": "password"
+        },
+        "claude.connection._type": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "Claude provider type",
+          "hidden": true
+        },
+        "claude.connection.ANTHROPIC_API_KEY": {
+          "type": "string",
+          "scope": "InferenceProviderConnection",
+          "description": "API key secret reference",
+          "format": "password",
+          "hidden": true
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "vite build && node ./scripts/build.js",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest watch --coverage",
+    "watch": "vite build --watch"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.18",
+    "@anthropic-ai/sdk": "^0.88.0",
+    "inversify": "^7.7.1",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@openkaiden/api": "workspace:*",
+    "adm-zip": "^0.5.16",
+    "mkdirp": "^3.0.1",
+    "vite": "^7.1.2",
+    "vitest": "^4.0.10"
+  }
+}

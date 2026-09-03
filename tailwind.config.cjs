@@ -24,6 +24,7 @@ module.exports = {
     'packages/renderer/index.html',
     'packages/renderer/src/**/*.{svelte,ts,css}',
     'packages/ui/src/**/*.{svelte,ts,css}',
+    'node_modules/@podman-desktop/ui-svelte/dist/**/*.{svelte,ts,css}',
   ],
   darkMode: 'class',
   theme: {
@@ -54,6 +55,17 @@ module.exports = {
       violet: {
         600: tailwindColors.violet[600],
         700: tailwindColors.violet[700],
+      },
+    },
+    extend: {
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: 0, transform: 'translateY(10px)' },
+          '100%': { opacity: 1, transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'fade-in': 'fadeIn 2s ease-out forwards',
       },
     },
   },

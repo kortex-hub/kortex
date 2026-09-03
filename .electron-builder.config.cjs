@@ -30,12 +30,10 @@ if (process.env.VITE_APP_VERSION === undefined) {
   }`;
 }
 
-let macosArches = ['x64', 'arm64', 'universal'];
+const macosArches = ['arm64'];
 let artifactNameSuffix = '';
 if (process.env.AIRGAP_DOWNLOAD) {
   artifactNameSuffix = '-airgap';
-  // Create dedicated but not universal builds for airgap as it's > 2GB for macOS
-  macosArches = ['x64', 'arm64'];
 }
 
 async function addElectronFuses(context) {
@@ -122,31 +120,53 @@ const config = {
     // download & package remote extensions
     await packageRemoteExtensions(context);
 
+    // include pre-downloaded OpenShell binaries (not available on Windows)
+    const openshellArchMap = { [Arch.x64]: 'x64', [Arch.arm64]: 'arm64' };
+    const openshellArch = openshellArchMap[context.arch];
+    if (openshellArch && context.electronPlatformName !== 'win32') {
+      const openshellAssetsDir = path.join(
+        'extensions',
+        'openshell',
+        'assets',
+        `${context.electronPlatformName}-${openshellArch}`,
+      );
+      if (!fs.existsSync(openshellAssetsDir)) {
+        throw new Error(
+          `OpenShell assets not found at ${openshellAssetsDir}. Run "pnpm --filter openshell download" (or "pnpm --filter openshell download:all") before packaging.`,
+        );
+      }
+      context.packager.config.extraResources.push({
+        from: openshellAssetsDir,
+        to: 'openshell',
+        filter: ['!.openshell-version'],
+      });
+
+      // include pre-downloaded openshell-image-builder binary (same platform filter)
+      const ibAssetsDir = path.join(
+        'extensions',
+        'openshell',
+        'assets',
+        'image-builder',
+        `${context.electronPlatformName}-${openshellArch}`,
+      );
+      if (fs.existsSync(ibAssetsDir)) {
+        context.packager.config.extraResources.push({
+          from: ibAssetsDir,
+          to: 'openshell-image-builder',
+          filter: ['!.openshell-image-builder-version'],
+        });
+      }
+    }
+
     // include product.json
     context.packager.config.extraResources.push({
       from: 'product.json',
       to: 'product.json',
     });
 
-    // universal build, add both pkg files
-    // this is hack to avoid issue https://github.com/electron/universal/issues/36
-    if (
-      context.appOutDir.endsWith('mac-universal-x64-temp') ||
-      context.appOutDir.endsWith('mac-universal-arm64-temp')
-    ) {
-      context.packager.config.extraResources = DEFAULT_ASSETS;
-      context.packager.config.extraResources.push(`${PODMAN_EXTENSION_ASSETS}/podman-installer-macos-universal*.pkg`);
-      return;
-    }
-
     if (context.arch === Arch.arm64 && context.electronPlatformName === 'darwin') {
       context.packager.config.extraResources.push(`${PODMAN_EXTENSION_ASSETS}/podman-installer-macos-aarch64-*.pkg`);
       context.packager.config.extraResources.push(`${PODMAN_EXTENSION_ASSETS}/podman-image-arm64.zst`);
-    }
-
-    if (context.arch === Arch.x64 && context.electronPlatformName === 'darwin') {
-      context.packager.config.extraResources.push(`${PODMAN_EXTENSION_ASSETS}/podman-installer-macos-amd64-*.pkg`);
-      context.packager.config.extraResources.push(`${PODMAN_EXTENSION_ASSETS}/podman-image-x64.zst`);
     }
 
     if (context.electronPlatformName === 'win32') {
@@ -165,6 +185,10 @@ const config = {
         context.packager.config.extraResources.push(`${PODMAN_EXTENSION_ASSETS}/podman-image-arm64.zst`);
       }
     }
+    context.packager.config.extraResources.push({
+      from: 'packages/main/src/chat/db/migrations/',
+      to: 'chat/db/migrations',
+    });
   },
   afterPack: async context => {
     await addElectronFuses(context);
@@ -233,13 +257,13 @@ const config = {
     runtimeVersion: '25.08',
     branch: 'main',
     files: [
-      ['.flatpak-appdata.xml', '/share/metainfo/io.podman_desktop.PodmanDesktop.metainfo.xml'],
-      ['buildResources/icon-512x512.png', '/share/icons/hicolor/512x512/apps/io.podman_desktop.PodmanDesktop.png'],
+      ['.flatpak-appdata.xml', '/share/metainfo/ai.openkaiden.Kaiden.metainfo.xml'],
+      ['buildResources/icon-512x512.png', '/share/icons/hicolor/512x512/apps/ai.openkaiden.Kaiden.png'],
     ],
   },
   linux: {
     category: 'Development',
-    icon: './buildResources/icon-512x512.png',
+    icon: './buildResources/icon-1024x1024.png',
     executableName: product.artifactName,
     artifactName: `${product.artifactName}${artifactNameSuffix}-\${version}-\${arch}.\${ext}`,
     target: ['flatpak', { target: 'tar.gz', arch: ['x64', 'arm64'] }],

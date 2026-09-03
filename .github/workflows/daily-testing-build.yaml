@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2024 Red Hat, Inc.
+# Copyright (C) 2026 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,19 +16,24 @@
 # SPDX-License-Identifier: Apache-2.0
 
 name: Daily testing build
-run-name: Testing build of Podman Desktop from Main branch
+run-name: Testing build of Kaiden from Main branch
 
 on:
   workflow_dispatch:
   schedule:
     - cron: '0 1 * * *'
 
+concurrency:
+  group: daily-testing-build
+  cancel-in-progress: true
+
 env:
-  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   DEBUG: electron-builder
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   tag:
@@ -38,69 +43,79 @@ jobs:
     if: github.event.repository.fork == false
     outputs:
       githubTag: ${{ steps.TAG_UTIL.outputs.githubTag }}
-      desktopVersion: ${{ steps.TAG_UTIL.outputs.desktopVersion }}
+      kaidenVersion: ${{ steps.TAG_UTIL.outputs.kaidenVersion }}
       releaseId: ${{ steps.create_release.outputs.id }}
-
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          token: ${{ secrets.PODMAN_DESKTOP_BOT_TOKEN }}
+          token: ${{ secrets.KAIDEN_BOT_TOKEN }}
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Generate tag utilities
         id: TAG_UTIL
         run: |
-            CURRENT_DAY=$(date +'%Y%m%d')
-            SHORT_SHA1=$(git rev-parse --short HEAD)
-            # grab the version from the package.json
-            PODMAN_DEKSTOP_VERSION=$(jq -r '.version' package.json)
-            # remove the -next from the version
-            STRIPPED_VERSION=${PODMAN_DEKSTOP_VERSION%-next}
-            TAG_PATTERN=${STRIPPED_VERSION}-$(date +'%Y%m%d%H%M')-${SHORT_SHA1}
-            echo "githubTag=v$TAG_PATTERN" >> ${GITHUB_OUTPUT}
-            echo "desktopVersion=$TAG_PATTERN" >> ${GITHUB_OUTPUT}
-            # check for tag existence - exit the workflow
-            echo "Checking if tag exists: $(git rev-parse -q --verify "$githubTag")"
-            if [ git rev-parse -q --verify "$githubTag" ]; then
-              echo "Tag '$githubTag' exists, skipping..."
-              exit 1;
-            else
-              echo "Tag '$githubTag' does not exist yet, continue"
-            fi
+          CURRENT_DAY=$(date +'%Y%m%d')
+          SHORT_SHA1=$(git rev-parse --short HEAD)
+          # grab the version from the package.json
+          KAIDEN_VERSION=$(jq -r '.version' package.json)
+          # remove the -next from the version
+          STRIPPED_VERSION=${KAIDEN_VERSION%-next}
+          TAG_PATTERN=${STRIPPED_VERSION}-$(date +'%Y%m%d%H%M')-${SHORT_SHA1}
+          echo "githubTag=v$TAG_PATTERN" >> ${GITHUB_OUTPUT}
+          echo "kaidenVersion=$TAG_PATTERN" >> ${GITHUB_OUTPUT}
+
+          # check for tag existence - exit the workflow
+          GITHUB_TAG="v$TAG_PATTERN"
+          echo "Checking if tag exists: $(git rev-parse -q --verify "$GITHUB_TAG")"
+          if git rev-parse -q --verify "$GITHUB_TAG" > /dev/null 2>&1; then
+            echo "Tag '$GITHUB_TAG' exists, skipping..."
+            exit 1;
+          else
+            echo "Tag '$GITHUB_TAG' does not exist yet, continue"
+          fi
 
       - name: Create a Tag, commit and push to testing-prereleases
+        env:
+          GIT_USER_NAME: ${{ github.actor }}
+          GIT_USER_EMAIL: "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          KAIDEN_BOT_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
         run: |
-          # quite heavy solution, we might only consider crating a tag, but not actually pushing whole state of the repo
-          echo "Setting github.actor: ${{ github.actor }} and id: ${{ github.actor_id }}"
-          git config --local user.name ${{ github.actor }}
-          git config --local user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
-          sed -i  "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.desktopVersion }}\",#g" package.json
-          find extensions/* -maxdepth 2 -name "package.json" | xargs -I {} sed -i "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.desktopVersion }}\",#g" {}
+          echo "Setting github.actor: $GIT_USER_NAME"
+          git config --local user.name "$GIT_USER_NAME"
+          git config --local user.email "$GIT_USER_EMAIL"
+          sed -i "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.kaidenVersion }}\",#g" package.json
+          find extensions/* -maxdepth 2 -name "package.json" | xargs -I {} sed -i "s#version\":\ \"\(.*\)\",#version\":\ \"${{ steps.TAG_UTIL.outputs.kaidenVersion }}\",#g" {}
+
           # change the repository field to be the prerelease repository in package.json file
-          sed -i "s#\"repository\":\ \"\(.*\)\",#\"repository\":\ \"https://github.com/podman-desktop/testing-prereleases\",#g" package.json
+          sed -i "s#\"repository\":\ \"\(.*\)\",#\"repository\":\ \"https://github.com/openkaiden/testing-prereleases\",#g" package.json
+
           cat package.json
           git add package.json extensions/*/package.json
+
           # get rid of .github/workflows - requires additional permissions
           rm -rf .github/workflows/*
           git add .github/
+
           git commit -m "chore: tag ${{ steps.TAG_UTIL.outputs.githubTag }}"
           echo "Tagging with ${{ steps.TAG_UTIL.outputs.githubTag }}"
           git tag ${{ steps.TAG_UTIL.outputs.githubTag }}
+
           # push tag to the prereleases repository
-          git remote add prereleases https://github.com/podman-desktop/testing-prereleases
+          git remote add prereleases https://${KAIDEN_BOT_TOKEN}@github.com/openkaiden/testing-prereleases
           git push prereleases ${{ steps.TAG_UTIL.outputs.githubTag }}
 
       - name: Create Release
         id: create_release
-        uses: ncipollo/release-action@b7eabc95ff50cbeeedec83973935c8f306dfcd0b # v1.20.0
+        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
         with:
           tag: ${{ steps.TAG_UTIL.outputs.githubTag }}
           name: ${{ steps.TAG_UTIL.outputs.githubTag }}
           draft: true
           prerelease: true
-          owner: podman-desktop
+          owner: openkaiden
           repo: testing-prereleases
-          token: ${{ secrets.PODMAN_DESKTOP_BOT_TOKEN }}
+          token: ${{ secrets.KAIDEN_BOT_TOKEN }}
 
   build:
     name: Build / ${{ matrix.os }}
@@ -110,26 +125,35 @@ jobs:
     if: github.event.repository.fork == false
     env:
       ELECTRON_ENABLE_INSPECT: true
-      GITHUB_TOKEN: ${{ secrets.PODMAN_DESKTOP_BOT_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2025, macos-15]
+        include:
+          - os: windows-2022
+            windows_arch: x64
+          - os: windows-11-arm
+            windows_arch: arm64
+          - os: ubuntu-24.04
+            windows_arch: ''
+          - os: macos-26
+            windows_arch: ''
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: podman-desktop/testing-prereleases
+          repository: openkaiden/testing-prereleases
           ref: ${{ needs.tag.outputs.githubTag }}
+          persist-credentials: false
 
-      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         name: Install pnpm
         with:
           run_install: false
 
-      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version-file: '.nvmrc'
           cache: 'pnpm'
 
       - name: Execute pnpm
@@ -147,7 +171,40 @@ jobs:
 
       - name: Run Build and Compile on all platforms
         timeout-minutes: 60
-        run: pnpm compile:next
+        shell: bash
+        run: |
+          if [ -n "${{ matrix.windows_arch }}" ]; then
+            pnpm exec cross-env MODE=production pnpm run build
+            # Target list is required: --x64 alone still builds both archs from config and
+            # lets windows-11-arm clobber setup-x64.exe on the shared GitHub release.
+            pnpm exec electron-builder build --publish always --config .electron-builder.config.cjs \
+              --win nsis:${{ matrix.windows_arch }} portable:${{ matrix.windows_arch }}
+          else
+            pnpm compile:next
+          fi
+
+      - name: Assert Windows release artifacts match runner arch
+        if: matrix.windows_arch != ''
+        shell: bash
+        run: |
+          shopt -s nullglob
+          echo "dist contents:"
+          ls -la dist/ || true
+
+          if [ "${{ matrix.windows_arch }}" = "x64" ]; then
+            forbidden=(dist/*-arm64.exe dist/*-setup-arm64.exe dist/*-setup.exe)
+          else
+            forbidden=(dist/*-x64.exe dist/*-setup-x64.exe dist/*-setup.exe)
+          fi
+
+          for pattern in "${forbidden[@]}"; do
+            for file in $pattern; do
+              echo "::error::${{ matrix.os }} must not publish ${file}"
+              exit 1
+            done
+          done
+
+          echo "Windows ${{ matrix.windows_arch }} artifacts look correct"
 
   release:
     needs: [tag, build]
@@ -157,7 +214,7 @@ jobs:
     if: github.event.repository.fork == false && always()
     steps:
       - name: id
-        run: | 
+        run: |
           echo the release id is ${{ needs.tag.outputs.releaseId }}
           echo "The result of the build jobs: ${{ needs.build.result }}"
 
@@ -165,27 +222,27 @@ jobs:
         if: ${{ needs.build.result == 'success' }}
         uses: StuYarrow/publish-release@01f2a1365bacd77bad861873a7fdf274ab49eefd # v1.1.2
         env:
-          GITHUB_TOKEN: ${{ secrets.PODMAN_DESKTOP_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
         with:
           id: ${{ needs.tag.outputs.releaseId }}
           repo: testing-prereleases
-          owner: podman-desktop
-      
+          owner: openkaiden
+
       - name: Delete release
-        if: ${{ needs.build.result != 'success' }}
+        if: ${{ needs.build.result != 'success' && needs.tag.outputs.releaseId != '' }}
         env:
-          GITHUB_TOKEN: ${{ secrets.PODMAN_DESKTOP_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.KAIDEN_BOT_TOKEN }}
         run: |
           echo "Build failed, deleting release with id: ${{ needs.tag.outputs.releaseId }}"
           set -e
           curl -L -f -X DELETE -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/podman-desktop/testing-prereleases/releases/${{ needs.tag.outputs.releaseId }}"
+            "https://api.github.com/repos/openkaiden/testing-prereleases/releases/${{ needs.tag.outputs.releaseId }}"
           echo "Release deleted..."
           echo "Delete tag: ${{ needs.tag.outputs.githubTag }}"
           curl -L -f -X DELETE -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/podman-desktop/testing-prereleases/git/refs/tags/${{ needs.tag.outputs.githubTag }}"
+            "https://api.github.com/repos/openkaiden/testing-prereleases/git/refs/tags/${{ needs.tag.outputs.githubTag }}"
           echo "Tag deleted..."

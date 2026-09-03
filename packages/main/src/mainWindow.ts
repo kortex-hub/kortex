@@ -50,7 +50,7 @@ async function createWindow(): Promise<BrowserWindow> {
 
   const browserWindowConstructorOptions: BrowserWindowConstructorOptions = {
     show: false, // Use 'ready-to-show' event to show window
-    autoHideMenuBar: true, // This makes Podman Desktop look more like a native app
+    autoHideMenuBar: true, // This makes Kaiden look more like a native app
     width: INITIAL_APP_WIDTH,
     minWidth: INITIAL_APP_MIN_WIDTH,
     minHeight: INITIAL_APP_MIN_HEIGHT,
@@ -91,6 +91,10 @@ async function createWindow(): Promise<BrowserWindow> {
     height: INITIAL_APP_HEIGHT,
   };
   browserWindow.setBounds(initialBounds);
+
+  browserWindow.webContents.on('will-prevent-unload', () => {
+    browserWindow.webContents.send('api-sender', 'agent-terminal:confirm-reload', {});
+  });
 
   /**
    * If you install `show: true` then it can cause issues when trying to close the window.

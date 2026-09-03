@@ -18,6 +18,8 @@
 
 // Import to access mocked functionionalities such as using vi.mock (we don't want to actually call node:fs methods)
 import * as fs from 'node:fs';
+import { homedir } from 'node:os';
+import path from 'node:path';
 
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -26,7 +28,7 @@ import {
   CONFIGURATION_SYSTEM_MANAGED_DEFAULTS_SCOPE,
   CONFIGURATION_SYSTEM_MANAGED_LOCKED_SCOPE,
 } from '/@api/configuration/constants.js';
-import type { IConfigurationNode } from '/@api/configuration/models.js';
+import type { IConfigurationNode, IConfigurationPropertyRecordedSchema } from '/@api/configuration/models.js';
 import type { IDisposable } from '/@api/disposable.js';
 
 import { ConfigurationRegistry } from './configuration-registry.js';
@@ -40,6 +42,7 @@ vi.mock('node:fs', () => ({
   readFileSync: vi.fn(),
   writeFileSync: vi.fn(),
   cpSync: vi.fn(),
+  existsSync: vi.fn(),
   promises: {
     access: vi.fn(),
     mkdir: vi.fn(),
@@ -48,6 +51,14 @@ vi.mock('node:fs', () => ({
     copyFile: vi.fn(),
   },
 }));
+
+vi.mock(import('node:os'), async importOriginal => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    homedir: vi.fn(),
+  };
+});
 
 // mock DefaultConfiguration for the new managed defaults functionality
 vi.mock(import('./default-configuration.js'), () => ({
@@ -107,6 +118,8 @@ beforeEach(async () => {
   writeFileMock.mockResolvedValue(undefined);
   readFileMock.mockResolvedValue(JSON.stringify({}));
   cpSync.mockReturnValue(undefined);
+  vi.mocked(fs.existsSync).mockReturnValue(false);
+  vi.mocked(homedir).mockReturnValue('/home/testuser');
 
   // Setup DefaultConfiguration mock for the new functionality
   getContentMock.mockResolvedValue({});
@@ -334,6 +347,186 @@ test('addConfigurationEnum with a previous default value', async () => {
   // check default property is no longer 'myValue3' but it is defaulted to myValue1
   const val = configurationRegistry.getConfiguration('my.fake')?.get<string>('enum.property');
   expect(val).toEqual('myValue1');
+});
+
+describe('declarative env:/file: defaults', () => {
+  const ENV_VAR = 'PD_TEST_CREDENTIALS_PATH';
+  const APPDATA_VAR = 'PD_TEST_APPDATA';
+
+  beforeEach(() => {
+    delete process.env[ENV_VAR];
+    delete process.env[APPDATA_VAR];
+    vi.mocked(fs.existsSync).mockReturnValue(false);
+    vi.mocked(homedir).mockReturnValue('/home/testuser');
+  });
+
+  function registerWithDefault(defaultValue: unknown): IConfigurationPropertyRecordedSchema | undefined {
+    const node: IConfigurationNode = {
+      id: 'my-extension',
+      title: 'My Extension',
+      type: 'object',
+      properties: {
+        'my-extension.credentialsFile': {
+          description: 'Path to credentials file',
+          type: 'string',
+          format: 'file',
+          default: defaultValue,
+        },
+      },
+    };
+    configurationRegistry.registerConfigurations([node]);
+    return configurationRegistry.getConfigurationProperties()['my-extension.credentialsFile'];
+  }
+
+  test('should resolve env: entry when environment variable is set', () => {
+    process.env[ENV_VAR] = '/custom/credentials.json';
+
+    const property = registerWithDefault([
+      `env:${ENV_VAR}`,
+      'file:~/.config/my-tool/credentials.json',
+      `file:$${APPDATA_VAR}/my-tool/credentials.json`,
+    ]);
+
+    expect(property?.default).toBe('/custom/credentials.json');
+    expect(configurationRegistry.getConfiguration('my-extension').get('credentialsFile')).toBe(
+      '/custom/credentials.json',
+    );
+  });
+
+  test('should skip empty env: value and fall through to file:', () => {
+    process.env[ENV_VAR] = '';
+    const expectedPath = path.join('/home/testuser', '.config/my-tool/credentials.json');
+    vi.mocked(fs.existsSync).mockImplementation((p: Parameters<typeof fs.existsSync>[0]) => p === expectedPath);
+
+    const property = registerWithDefault([`env:${ENV_VAR}`, 'file:~/.config/my-tool/credentials.json']);
+
+    expect(property?.default).toBe(expectedPath);
+  });
+
+  test('should resolve file: with ~ expansion when file exists', () => {
+    const expectedPath = path.join('/home/testuser', '.config/my-tool/credentials.json');
+    vi.mocked(fs.existsSync).mockImplementation((p: Parameters<typeof fs.existsSync>[0]) => p === expectedPath);
+
+    const property = registerWithDefault([
+      `env:${ENV_VAR}`,
+      'file:~/.config/my-tool/credentials.json',
+      `file:$${APPDATA_VAR}/my-tool/credentials.json`,
+    ]);
+
+    expect(property?.default).toBe(expectedPath);
+  });
+
+  test('should resolve file: with $VAR expansion when file exists', () => {
+    process.env[APPDATA_VAR] = 'C:\\Users\\test\\AppData\\Roaming';
+    const expectedPath = 'C:\\Users\\test\\AppData\\Roaming/my-tool/credentials.json';
+    vi.mocked(fs.existsSync).mockImplementation((p: Parameters<typeof fs.existsSync>[0]) => p === expectedPath);
+
+    const property = registerWithDefault([
+      `env:${ENV_VAR}`,
+      'file:~/.config/my-tool/credentials.json',
+      `file:$${APPDATA_VAR}/my-tool/credentials.json`,
+    ]);
+
+    expect(property?.default).toBe(expectedPath);
+  });
+
+  test('should skip file: entry when $VAR is unset instead of checking a truncated path', () => {
+    const existsSyncMock = vi.mocked(fs.existsSync);
+    existsSyncMock.mockImplementation((p: Parameters<typeof fs.existsSync>[0]) => p === '/my-tool/credentials.json');
+
+    const property = registerWithDefault([`file:$${APPDATA_VAR}/my-tool/credentials.json`]);
+
+    expect(property?.default).toBeUndefined();
+    expect(existsSyncMock).not.toHaveBeenCalled();
+  });
+
+  test('should leave default undefined when no entry resolves', () => {
+    const property = registerWithDefault([
+      `env:${ENV_VAR}`,
+      'file:~/.config/my-tool/credentials.json',
+      `file:$${APPDATA_VAR}/my-tool/credentials.json`,
+    ]);
+
+    expect(property?.default).toBeUndefined();
+    expect(configurationRegistry.getConfiguration('my-extension').get('credentialsFile')).toBeUndefined();
+  });
+
+  test('should not treat literal array defaults as declarative', () => {
+    const literalDefault = [
+      { label: 'foo', value: 1 },
+      { label: 'bar', value: 2 },
+    ];
+    const node: IConfigurationNode = {
+      id: 'custom',
+      title: 'Test Object Property',
+      properties: {
+        'test.literalArray': {
+          description: 'test property',
+          type: 'array',
+          default: literalDefault,
+        },
+      },
+    };
+
+    configurationRegistry.registerConfigurations([node]);
+    const property = configurationRegistry.getConfigurationProperties()['test.literalArray'];
+
+    expect(property?.default).toEqual(literalDefault);
+  });
+
+  test('should not treat string array defaults without env:/file: prefixes as declarative', () => {
+    const literalDefault = ['alpha', 'beta'];
+    const node: IConfigurationNode = {
+      id: 'custom',
+      title: 'Test String Array',
+      properties: {
+        'test.stringArray': {
+          description: 'test property',
+          type: 'array',
+          default: literalDefault,
+        },
+      },
+    };
+
+    configurationRegistry.registerConfigurations([node]);
+    const property = configurationRegistry.getConfigurationProperties()['test.stringArray'];
+
+    expect(property?.default).toEqual(literalDefault);
+  });
+
+  test('should leave scalar defaults unchanged', () => {
+    const property = registerWithDefault('/already/set/path.json');
+    expect(property?.default).toBe('/already/set/path.json');
+  });
+
+  test('should resolve single env: string default when variable is set', () => {
+    process.env[ENV_VAR] = '/from/env/creds.json';
+
+    const property = registerWithDefault(`env:${ENV_VAR}`);
+
+    expect(property?.default).toBe('/from/env/creds.json');
+  });
+
+  test('should resolve single env: string default to undefined when variable is unset', () => {
+    const property = registerWithDefault(`env:${ENV_VAR}`);
+
+    expect(property?.default).toBeUndefined();
+  });
+
+  test('should resolve single file: string default when file exists', () => {
+    const expectedPath = path.join('/home/testuser', '.config/my-tool/credentials.json');
+    vi.mocked(fs.existsSync).mockImplementation((p: Parameters<typeof fs.existsSync>[0]) => p === expectedPath);
+
+    const property = registerWithDefault('file:~/.config/my-tool/credentials.json');
+
+    expect(property?.default).toBe(expectedPath);
+  });
+
+  test('should resolve single file: string default to undefined when file does not exist', () => {
+    const property = registerWithDefault('file:~/.config/my-tool/credentials.json');
+
+    expect(property?.default).toBeUndefined();
+  });
 });
 
 test('check to be able to register a property with a group', async () => {
