@@ -1265,7 +1265,7 @@ describe('gateway config generation', () => {
 
     const writtenContent = vi.mocked(writeFile).mock.calls[0]?.[1] as string;
     expect(writtenContent).toContain('[openshell.drivers.podman]');
-    expect(writtenContent).not.toContain('enable_bind_mounts');
+    expect(writtenContent).toContain('enable_bind_mounts');
     expect(writtenContent).not.toContain('compute_drivers');
   });
 });
