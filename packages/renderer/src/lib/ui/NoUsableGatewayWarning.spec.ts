@@ -18,14 +18,18 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { render, screen, waitFor } from '@testing-library/svelte';
-import { beforeEach, expect, test } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { router } from 'tinro';
+import { beforeEach, expect, test, vi } from 'vitest';
 
 import { openshellGateways, openshellGatewaysReady } from '/@/stores/openshell-gateways';
 
 import NoUsableGatewayWarning from './NoUsableGatewayWarning.svelte';
 
+vi.mock(import('tinro'));
+
 beforeEach(() => {
+  vi.resetAllMocks();
   openshellGateways.set([]);
   openshellGatewaysReady.set(false);
 });
@@ -42,6 +46,15 @@ test('shows a warning after gateways load with no results', async () => {
   openshellGatewaysReady.set(true);
 
   expect(await screen.findByRole('alert')).toHaveTextContent('No usable OpenShell gateways available.');
+});
+
+test('opens gateway settings from the warning', async () => {
+  openshellGatewaysReady.set(true);
+  render(NoUsableGatewayWarning);
+
+  await fireEvent.click(screen.getByRole('button', { name: 'Open gateway settings' }));
+
+  expect(router.goto).toHaveBeenCalledWith('/preferences/openshell/gateways');
 });
 
 test('shows a warning when all discoverable gateways are unreachable', () => {
