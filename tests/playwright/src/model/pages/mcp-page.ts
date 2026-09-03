@@ -34,9 +34,9 @@ export class McpPage extends BasePage {
   constructor(page: Page) {
     super(page);
     this.searchMcpServersField = page.getByLabel('search MCP servers');
-    this.editRegistriesTabButton = page.getByRole('button', { name: 'Edit registries' });
-    this.installTabButton = page.getByRole('button', { name: 'Install' });
-    this.readyTabButton = page.getByRole('button', { name: 'Ready' });
+    this.editRegistriesTabButton = page.getByRole('button', { name: 'Edit registries', exact: true });
+    this.installTabButton = page.getByRole('button', { name: 'Install', exact: true });
+    this.readyTabButton = page.getByRole('button', { name: 'Ready', exact: true });
   }
 
   async waitForLoad(): Promise<void> {
@@ -70,6 +70,14 @@ export class McpPage extends BasePage {
     await expect
       .poll(async () => await readyTabAfterInstall.isServerConnected(serverName), { timeout: TIMEOUTS.SHORT })
       .toBeTruthy();
+  }
+
+  async searchServers(query: string): Promise<void> {
+    await this.searchMcpServersField.fill(query);
+  }
+
+  async clearSearch(): Promise<void> {
+    await this.searchMcpServersField.clear();
   }
 
   async deleteServer(serverName: string): Promise<void> {
