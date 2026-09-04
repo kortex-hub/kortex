@@ -792,6 +792,9 @@ importers:
 
   extensions/openshell:
     dependencies:
+      adm-zip:
+        specifier: ^0.5.16
+        version: 0.5.16
       inversify:
         specifier: ^7.10.4
         version: 7.11.0(reflect-metadata@0.2.2)
