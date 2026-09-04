@@ -43,6 +43,11 @@ on:
         default: ''
         type: string
 
+permissions:
+  contents: read
+  checks: write
+  packages: read
+
 jobs:
   windows-e2e-tests:
     if: ${{ github.event_name == 'schedule' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
