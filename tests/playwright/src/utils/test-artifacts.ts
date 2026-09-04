@@ -18,7 +18,17 @@
 
 import { existsSync } from 'node:fs';
 
-import type { Page, TestInfo } from '@playwright/test';
+import type { Page, TestInfo, Video } from '@playwright/test';
+
+import { TIMEOUTS } from '/@/model/core/types';
+
+type PendingVideo = {
+  video: Video;
+  videoPath: string;
+  testInfo: TestInfo;
+};
+
+const pendingVideos: PendingVideo[] = [];
 
 function attach(testInfo: TestInfo, name: string, path: string, contentType: string): void {
   if (existsSync(path)) {
@@ -26,31 +36,80 @@ function attach(testInfo: TestInfo, name: string, path: string, contentType: str
   }
 }
 
+// A degraded CDP connection (e.g. after the app enters a broken state) can leave these
+// calls pending forever rather than rejecting, and their own .catch() only handles
+// rejection — so bound each step or a single stuck artifact stalls the whole test teardown.
+// Clears its timer once either side settles, and annotates the test report (rather than just
+// logging) so a degraded connection isn't silently swallowed as a routine missing artifact.
+function withTimeout(promise: Promise<unknown>, label: string, testInfo: TestInfo): Promise<unknown> {
+  let timer: NodeJS.Timeout;
+  const timedOut = new Promise(resolve => {
+    timer = setTimeout(() => {
+      testInfo.annotations.push({
+        type: 'warning',
+        description: `${label} did not settle within ${TIMEOUTS.SHORT}ms, skipped`,
+      });
+      resolve(undefined);
+    }, TIMEOUTS.SHORT);
+  });
+  return Promise.race([promise, timedOut]).finally(() => clearTimeout(timer));
+}
+
 export async function saveTestArtifacts(page: Page, testInfo: TestInfo): Promise<void> {
   const context = page.context();
   const failed = testInfo.status !== testInfo.expectedStatus;
 
-  if (failed) {
-    const tracePath = testInfo.outputPath('trace.zip');
-    await context.tracing.stopChunk({ path: tracePath }).catch(() => {});
-    attach(testInfo, 'trace', tracePath, 'application/zip');
-  } else {
-    await context.tracing.stopChunk().catch(() => {});
+  if (!failed) {
+    await withTimeout(
+      context.tracing.stopChunk().catch(() => {}),
+      'trace',
+      testInfo,
+    );
+    return;
   }
-  if (failed) {
-    const screenshotPath = testInfo.outputPath('failure.png');
-    await page.screenshot({ path: screenshotPath, fullPage: true }).catch((error: unknown) => {
-      console.error('Failed to capture failure screenshot:', error);
-    });
-    attach(testInfo, 'screenshot', screenshotPath, 'image/png');
-  }
-  // saveAs() is safe to call while the page is still open — it copies the
-  // recording captured so far without waiting for page/context closure.
-  // Only video.delete() blocks until the page closes.
+
+  const tracePath = testInfo.outputPath('trace.zip');
+  const screenshotPath = testInfo.outputPath('failure.png');
+  // Video.saveAs() waits for the page or context to close before the file exists.
+  // Capture the handle now and export in savePendingVideos() after Electron teardown.
   const video = page.video();
-  if (video && failed) {
-    const videoPath = testInfo.outputPath('video.webm');
-    await video.saveAs(videoPath).catch(() => {});
-    attach(testInfo, 'video', videoPath, 'video/webm');
+  if (video) {
+    pendingVideos.push({
+      video,
+      videoPath: testInfo.outputPath('video.webm'),
+      testInfo,
+    });
   }
+
+  await Promise.all([
+    withTimeout(
+      context.tracing.stopChunk({ path: tracePath }).catch(() => {}),
+      'trace',
+      testInfo,
+    ),
+    withTimeout(
+      page.screenshot({ path: screenshotPath, fullPage: true }).catch((error: unknown) => {
+        console.error('Failed to capture failure screenshot:', error);
+      }),
+      'screenshot',
+      testInfo,
+    ),
+  ]);
+
+  attach(testInfo, 'trace', tracePath, 'application/zip');
+  attach(testInfo, 'screenshot', screenshotPath, 'image/png');
+}
+
+export async function savePendingVideos(): Promise<void> {
+  const queued = pendingVideos.splice(0, pendingVideos.length);
+  await Promise.all(
+    queued.map(async ({ video, videoPath, testInfo }) => {
+      await withTimeout(
+        video.saveAs(videoPath).catch(() => {}),
+        'video',
+        testInfo,
+      );
+      attach(testInfo, 'video', videoPath, 'video/webm');
+    }),
+  );
 }
