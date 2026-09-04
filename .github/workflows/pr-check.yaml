@@ -279,7 +279,7 @@ jobs:
         mode: [prod, dev]
     uses: ./.github/workflows/e2e-test-job.yaml
     with:
-      instance: ubuntu-24.04
+      instance: ubuntu-26.04
       mode: ${{ matrix.mode }}
       inference_provider: ollama
       inference_model: 'granite3.2:2b'

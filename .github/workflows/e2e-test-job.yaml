@@ -21,7 +21,7 @@ on:
   workflow_call:
     inputs:
       instance:
-        description: 'GitHub Actions runner instance (e.g., macos-latest, windows-2022, ubuntu-24.04)'
+        description: 'GitHub Actions runner instance (e.g., macos-latest, windows-2022, ubuntu-26.04)'
         required: true
         type: string
       mode:
@@ -123,11 +123,10 @@ jobs:
         timeout-minutes: 3
         run: npx playwright install chromium
 
-      # TEMPORARY: the ubuntu-24.04 runner image bumped Podman to >=5.6.2, which emits
-      # OCI runtime-spec v1.2.0/1.2.1. crun <1.14.3 has a version-check bug that rejects
-      # that spec ("crun: unknown version specified"), breaking every container-backed
-      # provider (Docling, Milvus, ...). Fixed upstream in crun 1.14.3.
-      # https://github.com/containers/podman/issues/27272
+      # TEMPORARY: Podman >=5.6.2 emits OCI runtime-spec v1.2.0/1.2.1. crun <1.14.3
+      # has a version-check bug that rejects that spec ("crun: unknown version specified"),
+      # breaking every container-backed provider (Docling, Milvus, ...). Fixed upstream
+      # in crun 1.14.3. https://github.com/containers/podman/issues/27272
       # Remove once the runner image ships a compatible crun.
       - name: Upgrade crun (workaround for podman/crun OCI runtime-spec mismatch)
         if: runner.os == 'Linux'
@@ -140,12 +139,25 @@ jobs:
           sudo mv /tmp/crun /usr/bin/crun
           crun --version
 
+      # OpenShell 0.0.113 fails closed unless Podman reports rootlessNetworkCmd=pasta.
+      # ubuntu-24.04 images from 20260831 onward ship distro Podman 4.9.3, which omits
+      # that field (helper '<missing>'), so the local gateway never becomes reachable.
+      # Linux e2e therefore runs on ubuntu-26.04 (distro Podman 5.7.0). Assert the
+      # helper here so a runner-image regression fails in seconds instead of at wizard tests.
+      # https://github.com/actions/runner-images/issues/14642
+      # https://github.com/NVIDIA/OpenShell/issues/2540
       - name: Enable Podman socket
         if: runner.os == 'Linux'
         run: |
           systemctl --user enable --now podman.socket
           echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
           podman info
+          ROOTLESS_CMD="$(podman info --format '{{.Host.RootlessNetworkCmd}}' 2>/dev/null || true)"
+          echo "rootlessNetworkCmd=${ROOTLESS_CMD:-missing}"
+          if [[ "${ROOTLESS_CMD}" != "pasta" ]]; then
+            echo "::error::OpenShell requires Podman 5.x with rootlessNetworkCmd=pasta (got '${ROOTLESS_CMD:-missing}'). Use ubuntu-26.04."
+            exit 1
+          fi
 
       - name: Setup Ollama
         if: inputs.inference_provider == 'ollama'
