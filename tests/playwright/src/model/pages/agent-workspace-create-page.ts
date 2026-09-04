@@ -122,12 +122,19 @@ export class AgentWorkspaceCreatePage extends BasePage {
   async continueToStep(step: WizardStep): Promise<void> {
     // Only the Workspace step's Continue button is gated on gateway availability, so restrict
     // this diagnostic to that transition to avoid misattributing unrelated disabled-button
-    // causes on other steps.
+    // causes on other steps. Wait for Continue first: a fresh app profile can show the
+    // no-gateway banner while the local gateway is still starting.
     const leavesWorkspaceStep = WIZARD_STEPS[WIZARD_STEPS.indexOf(step) - 1] === WIZARD_STEP.WORKSPACE;
-    if (leavesWorkspaceStep && !(await this.continueButton.isEnabled().catch(() => false))) {
-      await this.assertGatewayAvailable();
+    if (leavesWorkspaceStep) {
+      try {
+        await expect(this.continueButton).toBeEnabled({ timeout: TIMEOUTS.STANDARD });
+      } catch (error) {
+        await this.assertGatewayAvailable();
+        throw error;
+      }
+    } else {
+      await expect(this.continueButton).toBeEnabled();
     }
-    await expect(this.continueButton).toBeEnabled();
     await this.continueButton.click();
     await this.expectStepActive(step);
   }

@@ -18,8 +18,6 @@
 
 import { expect, type Locator, type Page } from '@playwright/test';
 
-import { TIMEOUTS } from '/@/model/core/types';
-
 export const NO_GATEWAY_MESSAGE = 'No usable OpenShell gateways available';
 
 export abstract class BasePage {
@@ -44,11 +42,10 @@ export abstract class BasePage {
     return pageInstance;
   }
 
-  async isGatewayAvailable(timeoutMs: number = TIMEOUTS.SHORT): Promise<boolean> {
-    return this.noGatewayBanner
-      .waitFor({ state: 'visible', timeout: timeoutMs })
-      .then(() => false)
-      .catch(() => true);
+  async isGatewayAvailable(): Promise<boolean> {
+    // Snapshot only: the banner can appear while the local gateway is still starting.
+    // Callers that need to wait should wait for Continue (or another ready signal) first.
+    return !(await this.noGatewayBanner.isVisible().catch(() => false));
   }
 
   async assertGatewayAvailable(): Promise<void> {
