@@ -10,7 +10,7 @@ export type ChunkProviderFileFilterSource = {
 export function buildDialogFilters(
   connection: ChunkProviderFileFilterSource,
 ): NonNullable<OpenDialogOptions['filters']> {
-  if (connection.supportedExtensions && connection.supportedExtensions.length > 0) {
+  if (connection.supportedExtensions?.length) {
     const uniqueExtensions = [
       ...new Set(connection.supportedExtensions.map(extension => extension.toLowerCase())),
     ].sort((a, b) => a.localeCompare(b));
@@ -28,6 +28,14 @@ export function formatSupportedExtensionsLabel(extensions: string[]): string {
   const displayExtensions = extensions.slice(0, 4).map(extension => extension.toUpperCase());
   const label = displayExtensions.join(', ');
   return extensions.length > 4 ? `${label}, and more` : label;
+}
+
+export function getDatabaseName(providerInfos: ProviderInfo[], ragEnvironment: RagEnvironment | undefined): string {
+  const ragProvider = providerInfos.find(provider => provider.id === ragEnvironment?.ragConnection?.providerId);
+  const ragConnection = ragProvider?.ragConnections.find(
+    connection => connection.name === ragEnvironment?.ragConnection?.name,
+  );
+  return ragConnection?.name ? `${ragConnection.name} (${ragProvider?.name})` : 'N/A';
 }
 
 export function getChunkProviderName(
@@ -49,12 +57,4 @@ export function getChunkProviderSupportedExtensions(
   const provider = providerInfos.find(p => p.id === ragEnvironment.chunkerConnection.providerId);
   const connection = provider?.chunkConnections.find(c => c.id === ragEnvironment.chunkerConnection.id);
   return connection?.supportedExtensions;
-}
-
-export function getDatabaseName(providerInfos: ProviderInfo[], ragEnvironment: RagEnvironment | undefined): string {
-  const ragProvider = providerInfos.find(provider => provider.id === ragEnvironment?.ragConnection?.providerId);
-  const ragConnection = ragProvider?.ragConnections.find(
-    connection => connection.name === ragEnvironment?.ragConnection?.name,
-  );
-  return ragConnection?.name ? `${ragConnection.name} (${ragProvider?.name})` : 'N/A';
 }

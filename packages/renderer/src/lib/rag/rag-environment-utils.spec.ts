@@ -16,17 +16,18 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
+import { expect, test } from 'vitest';
+
 import type { ProviderInfo } from '/@api/provider-info';
 import type { RagEnvironment } from '/@api/rag/rag-environment';
-import { expect, test } from 'vitest';
 
 import {
   buildDialogFilters,
+  type ChunkProviderFileFilterSource,
   formatSupportedExtensionsLabel,
   getChunkProviderName,
   getChunkProviderSupportedExtensions,
   getDatabaseName,
-  type ChunkProviderFileFilterSource,
 } from './rag-environment-utils';
 
 function createMockChunkProviderConnection(
