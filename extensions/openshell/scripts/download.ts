@@ -137,8 +137,10 @@ if (targets.length === 0) {
   }
 
   if (selectedDownloads.some(entry => entry.id === 'openshell')) {
-    for (const { platform, arch } of targets.filter(target => target.platform === 'linux')) {
-      await downloadMkfsExt4(pkg.e2fsprogsVersion, arch, resolve(ASSETS_DIR, `${platform}-${arch}`));
+    for (const { platform, arch } of targets.filter(
+      target => target.platform === 'linux' || target.platform === 'darwin',
+    )) {
+      await downloadMkfsExt4(pkg.e2fsprogsVersion, arch, platform, resolve(ASSETS_DIR, `${platform}-${arch}`));
     }
   }
 })();

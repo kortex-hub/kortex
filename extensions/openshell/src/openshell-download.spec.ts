@@ -126,6 +126,10 @@ describe('downloadBinaries', () => {
     await downloadBinaries(OPENSHELL_DOWNLOAD, '0.0.55', 'linux', 'x64', '/output', digests);
 
     expect(vi.mocked(tar.extract)).toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('openshell-sandbox-x86_64-unknown-linux-gnu.tar.gz'),
+      expect.any(Object),
+    );
   });
 
   test('extracts OpenShell archives and writes its version marker', async () => {
@@ -134,7 +138,7 @@ describe('downloadBinaries', () => {
     const digests = new Map([
       ['openshell-x86_64-unknown-linux-musl.tar.gz', 'abc123'],
       ['openshell-gateway-x86_64-unknown-linux-gnu.tar.gz', 'abc123'],
-      ['openshell-sandbox-x86_64-unknown-linux-gnu.tar.gz', 'abc123'],
+      ['openshell-sandbox-x86_64-unknown-linux-musl.tar.gz', 'abc123'],
       ['openshell-driver-vm-x86_64-unknown-linux-gnu.tar.gz', 'abc123'],
     ]);
 

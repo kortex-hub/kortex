@@ -178,6 +178,7 @@ test.describe('Knowledge Database provider tests', () => {
     .serial('Knowledge Database Pipeline with Milvus', { tag: ['@knowledge-provider', '@smoke'] }, () => {
       const ENVIRONMENT_NAME = 'connected-knowledge-base';
       const EXPECTED_COLLECTION_NAME = 'connected_knowledge_base';
+      const MCP_SERVER_NAME = `kaiden.milvus.mcp-server-milvus-${VECTOR_STORE_NAME}`;
 
       test('[KDB-06] Milvus connection is visible in Settings Resources', async ({
         milvusSetup: _milvusSetup,
@@ -219,6 +220,24 @@ test.describe('Knowledge Database provider tests', () => {
         await expect(detailsPage.getInfoValue('Collection Name')).toHaveText(EXPECTED_COLLECTION_NAME, {
           timeout: TIMEOUTS.DEFAULT,
         });
+      });
+
+      test('[KDB-11] Milvus MCP server is auto-spawned and knowledge database status is RUNNING', async ({
+        workerNavigationBar,
+      }) => {
+        const knowledgePage = await workerNavigationBar.navigateToKnowledgePage();
+        await knowledgePage.waitForLoad();
+        await expect
+          .poll(async () => await knowledgePage.getEnvironmentStatus(ENVIRONMENT_NAME), {
+            timeout: TIMEOUTS.DEFAULT,
+          })
+          .toBe('RUNNING');
+
+        const mcpPage = await workerNavigationBar.navigateToMCPPage();
+        const readyTab = await mcpPage.openReadyTab();
+        await expect
+          .poll(async () => await readyTab.isServerConnected(MCP_SERVER_NAME), { timeout: TIMEOUTS.DEFAULT })
+          .toBeTruthy();
       });
 
       test('[KDB-09] Delete knowledge database from details page', async ({ workerNavigationBar }) => {
