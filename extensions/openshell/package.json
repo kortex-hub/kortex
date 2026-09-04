@@ -77,7 +77,7 @@
     "watch": "vite build --watch"
   },
   "dependencies": {
-    "adm-zip": "^0.5.16",
+    "adm-zip": "^0.6.0",
     "inversify": "^7.10.4",
     "tar": "^7.5.3"
   },
