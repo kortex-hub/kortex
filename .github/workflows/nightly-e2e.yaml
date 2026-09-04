@@ -43,14 +43,13 @@ on:
         default: ''
         type: string
 
-permissions:
-  contents: read
-  checks: write
-  packages: read
-
 jobs:
   windows-e2e-tests:
     if: ${{ github.event_name == 'schedule' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
+    permissions:
+      contents: read
+      checks: write
+      packages: read
     strategy:
       fail-fast: false
       matrix:
@@ -67,6 +66,10 @@ jobs:
 
   linux-e2e-tests:
     if: ${{ github.event_name == 'schedule' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux' }}
+    permissions:
+      contents: read
+      checks: write
+      packages: read
     strategy:
       fail-fast: false
       matrix:
@@ -90,6 +93,10 @@ jobs:
 
   macos-e2e-tests:
     if: ${{ github.event_name == 'schedule' || github.event.inputs.platform == 'all' || github.event.inputs.platform == 'macos' }}
+    permissions:
+      contents: read
+      checks: write
+      packages: read
     strategy:
       fail-fast: false
       matrix:
