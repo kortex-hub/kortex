@@ -841,6 +841,7 @@ export class ProviderRegistry {
         name: connection.name,
         status: connection.status(),
         connectionType: 'chunk',
+        supportedExtensions: connection.supportedExtensions,
       };
     } else {
       providerConnection = {

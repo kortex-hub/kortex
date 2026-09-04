@@ -724,6 +724,8 @@ declare module '@openkaiden/api' {
     chunk(doc: Uri): Promise<Chunk[]>;
     status(): ProviderConnectionStatus;
     lifecycle?: ProviderConnectionLifecycle;
+    /** Lowercase file extensions (without leading dot) supported by this chunk provider. */
+    supportedExtensions?: string[];
   };
 
   export interface ProviderInferenceConnection {
