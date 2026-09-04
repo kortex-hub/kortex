@@ -68,11 +68,11 @@ jobs:
     name: ${{ inputs.inference_provider != 'none' && format('{0} ({1})', inputs.instance, inputs.inference_provider) || inputs.instance }}
     runs-on: ${{ inputs.instance }}
     timeout-minutes: 60
+    permissions:
+      contents: read
+      checks: write
+      packages: read
     env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      GEMINI_API_KEY: ${{ !startsWith(inputs.instance, 'ubuntu') && secrets.GEMINI_API_KEY || '' }}
       PODMAN_ENABLED: ${{ startsWith(inputs.instance, 'ubuntu') && 'true' || '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -95,6 +95,8 @@ jobs:
           cache: 'pnpm'
 
       - name: Execute pnpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm install
 
       - name: Get Playwright version and cache path
@@ -180,6 +182,10 @@ jobs:
         shell: bash
         env:
           VITE_CI: 'true'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ !startsWith(inputs.instance, 'ubuntu') && secrets.GEMINI_API_KEY || '' }}
         run: |
           # Derive binary path from instance (OS and architecture)
           INSTANCE="${{ inputs.instance }}"

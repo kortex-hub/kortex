@@ -273,6 +273,10 @@ jobs:
 
   smoke-e2e-tests:
     if: ${{ contains(github.event.pull_request.labels.*.name, 'area/ci') || !github.event.pull_request.draft }}
+    permissions:
+      contents: read
+      checks: write
+      packages: read
     strategy:
       fail-fast: false
       matrix:
