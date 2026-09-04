@@ -34,7 +34,7 @@ import { McpPage } from '/@/model/pages/mcp-page';
 import { SettingsPage } from '/@/model/pages/settings-page';
 import { SkillsPage } from '/@/model/pages/skills-page';
 import { type AppReadyOptions, waitForAppReady } from '/@/utils/app-ready';
-import { saveTestArtifacts } from '/@/utils/test-artifacts';
+import { savePendingVideos, saveTestArtifacts } from '/@/utils/test-artifacts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -87,6 +87,7 @@ export const test = base.extend<ElectronFixtures>({
           }
         }
       }
+      await savePendingVideos();
     }
   },
 
@@ -153,6 +154,7 @@ export const workerTest = test.extend<ElectronFixtures, WorkerElectronFixtures>(
       const app = await launchElectronApp();
       await use(app);
       await app.close().catch(() => {});
+      await savePendingVideos();
     },
     { scope: 'worker' },
   ],

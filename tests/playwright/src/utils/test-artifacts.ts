@@ -18,9 +18,17 @@
 
 import { existsSync } from 'node:fs';
 
-import type { Page, TestInfo } from '@playwright/test';
+import type { Page, TestInfo, Video } from '@playwright/test';
 
 import { TIMEOUTS } from '/@/model/core/types';
+
+type PendingVideo = {
+  video: Video;
+  videoPath: string;
+  testInfo: TestInfo;
+};
+
+const pendingVideos: PendingVideo[] = [];
 
 function attach(testInfo: TestInfo, name: string, path: string, contentType: string): void {
   if (existsSync(path)) {
@@ -60,14 +68,20 @@ export async function saveTestArtifacts(page: Page, testInfo: TestInfo): Promise
     return;
   }
 
-  // These touch independent resources (tracing context, page, video file) with no
-  // dependency on each other, so save them concurrently instead of paying their sum.
   const tracePath = testInfo.outputPath('trace.zip');
   const screenshotPath = testInfo.outputPath('failure.png');
+  // Video.saveAs() waits for the page or context to close before the file exists.
+  // Capture the handle now and export in savePendingVideos() after Electron teardown.
   const video = page.video();
-  const videoPath = video ? testInfo.outputPath('video.webm') : undefined;
+  if (video) {
+    pendingVideos.push({
+      video,
+      videoPath: testInfo.outputPath('video.webm'),
+      testInfo,
+    });
+  }
 
-  const tasks = [
+  await Promise.all([
     withTimeout(
       context.tracing.stopChunk({ path: tracePath }).catch(() => {}),
       'trace',
@@ -80,24 +94,22 @@ export async function saveTestArtifacts(page: Page, testInfo: TestInfo): Promise
       'screenshot',
       testInfo,
     ),
-  ];
-  // saveAs() is safe to call while the page is still open — it copies the recording
-  // captured so far without waiting for page/context closure. Only video.delete() blocks
-  // until the page closes.
-  if (video && videoPath) {
-    tasks.push(
-      withTimeout(
-        video.saveAs(videoPath).catch(() => {}),
-        'video',
-        testInfo,
-      ),
-    );
-  }
-  await Promise.all(tasks);
+  ]);
 
   attach(testInfo, 'trace', tracePath, 'application/zip');
   attach(testInfo, 'screenshot', screenshotPath, 'image/png');
-  if (video && videoPath) {
-    attach(testInfo, 'video', videoPath, 'video/webm');
-  }
+}
+
+export async function savePendingVideos(): Promise<void> {
+  const queued = pendingVideos.splice(0, pendingVideos.length);
+  await Promise.all(
+    queued.map(async ({ video, videoPath, testInfo }) => {
+      await withTimeout(
+        video.saveAs(videoPath).catch(() => {}),
+        'video',
+        testInfo,
+      );
+      attach(testInfo, 'video', videoPath, 'video/webm');
+    }),
+  );
 }
