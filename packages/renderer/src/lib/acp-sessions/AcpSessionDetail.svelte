@@ -482,7 +482,10 @@ function handleKeyDown(e: KeyboardEvent): void {
       {:else if event.kind === 'agent_message'}
         <AcpFlowAgentMessage {event} />
       {:else if event.kind === 'thinking'}
-        <AcpFlowThinking {event} />
+        {@const nextEvent = events[i + 1]}
+        {@const isThinkingComplete = !!nextEvent || session?.status !== 'running'}
+        {@const thinkingDurationMs = nextEvent ? nextEvent.timestamp - event.timestamp : undefined}
+        <AcpFlowThinking {event} isComplete={isThinkingComplete} durationMs={thinkingDurationMs} />
       {:else if event.kind === 'tool_call'}
         <AcpFlowToolCall {event} {sessionId} />
       {:else if event.kind === 'plan'}

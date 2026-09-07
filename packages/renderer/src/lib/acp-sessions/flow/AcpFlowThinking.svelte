@@ -1,16 +1,27 @@
 <script lang="ts">
 import { faChevronDown, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from '@podman-desktop/ui-svelte/icons';
+import humanizeDuration from 'humanize-duration';
 
 import Markdown from '/@/lib/markdown/Markdown.svelte';
 import type { AcpFlowThinkingEvent } from '/@api/acp-session-info';
 
 interface Props {
   event: AcpFlowThinkingEvent;
+  isComplete?: boolean;
+  durationMs?: number;
 }
 
-let { event }: Props = $props();
+let { event, isComplete = false, durationMs }: Props = $props();
 let expanded = $state(false);
+
+const label = $derived(
+  isComplete
+    ? durationMs !== undefined
+      ? `Thought for ${humanizeDuration(durationMs, { round: true, largest: 2 })}`
+      : 'Thought for a few seconds'
+    : 'Thinking…',
+);
 </script>
 
 <div class="rounded-lg border border-[var(--pd-content-divider)] bg-[var(--pd-content-card-bg)] overflow-hidden">
@@ -19,7 +30,7 @@ let expanded = $state(false);
     onclick={(): void => { expanded = !expanded; }}
   >
     <Icon icon={expanded ? faChevronDown : faChevronRight} class="text-[10px]" />
-    <span class="italic">Thinking…</span>
+    <span class="italic">{label}</span>
   </button>
   {#if expanded}
     <div class="border-t border-[var(--pd-content-divider)] px-4 py-3 text-sm text-[var(--pd-content-text)] opacity-70">
