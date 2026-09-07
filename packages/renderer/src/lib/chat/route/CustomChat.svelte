@@ -38,7 +38,7 @@ const hasModels = $derived(
 const forcedTheme = $derived($isDark ? 'dark' : 'light');
 </script>
 
-<div class="flex h-full w-full">
+<div class="flex h-full min-h-0 w-full overflow-hidden">
 <ThemeProvider attribute="class" disableTransitionOnChange {forcedTheme}>
 	<Toaster position="top-center" />
   {#await chatMessagesPromise}
