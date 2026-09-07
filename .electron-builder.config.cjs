@@ -136,7 +136,7 @@ const config = {
           to: 'openshell',
           filter: ['!.openshell-version', '!.openshell-windows-gateway-version'],
         });
-      } else if (context.electronPlatformName !== 'win32') {
+      } else {
         throw new Error(
           `OpenShell assets not found at ${openshellAssetsDir}. Run "pnpm --filter openshell download" (or "pnpm --filter openshell download:all") before packaging.`,
         );
