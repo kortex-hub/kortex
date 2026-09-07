@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import type { IconDefinition } from '@fortawesome/free-regular-svg-icons';
-import { faLink, faServer, faShield } from '@fortawesome/free-solid-svg-icons';
+import { faBrain, faLink, faServer, faShield, faTerminal } from '@fortawesome/free-solid-svg-icons';
 import type { Component } from 'svelte';
 
 import CLIToolsIcon from '/@/lib/images/CLIToolsIcon.svelte';
@@ -40,6 +40,14 @@ export interface SettingsNavItemConfig {
 
 // Static navigation entries for routes not in the main navigation registry
 export const settingsNavigationEntries: SettingsNavItemConfig[] = [
+  {
+    title: 'AI tools',
+    href: '/preferences/ai-tools',
+    visible: true,
+    expanded: true,
+    icon: faBrain,
+    children: [{ title: 'Coding agents', href: '/preferences/coding-agents', visible: true, icon: faTerminal }],
+  },
   {
     title: 'Connections',
     href: '/preferences/connections',

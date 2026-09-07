@@ -1,6 +1,7 @@
 <script lang="ts">
 import { onMount } from 'svelte';
 
+import CodingAgentsPage from '/@/lib/coding-agents/CodingAgentsPage.svelte';
 import Onboarding from '/@/lib/onboarding/Onboarding.svelte';
 import ExperimentalPage from '/@/lib/preferences/ExperimentalPage.svelte';
 import PreferencesContainerConnectionEdit from '/@/lib/preferences/PreferencesContainerConnectionEdit.svelte';
@@ -82,6 +83,9 @@ onMount(async () => {
   </Route>
   <Route path="/openshell/gateways" breadcrumb="OpenShell Gateways">
     <PreferencesOpenshellGatewaysRendering />
+  </Route>
+  <Route path="/coding-agents" breadcrumb="Coding Agents">
+    <CodingAgentsPage />
   </Route>
   <Route path="/kubernetes-contexts" breadcrumb="Kubernetes Contexts">
     <PreferencesKubernetesContextsRendering />
