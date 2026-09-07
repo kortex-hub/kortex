@@ -563,9 +563,8 @@ export class AcpSessionManager {
           messageId?: string | null;
         };
         if (rawUpdate.sessionUpdate === 'agent_thought_chunk' && rawUpdate.content?.type === 'text') {
-          const existing = session.events.findLast(
-            (e): e is Extract<AcpFlowEvent, { kind: 'thinking' }> => e.kind === 'thinking',
-          );
+          const lastEvent = session.events.at(-1);
+          const existing = lastEvent?.kind === 'thinking' ? lastEvent : undefined;
           if (existing) {
             existing.text += rawUpdate.content.text;
             this.emitEvent(sessionId, existing);
