@@ -25,6 +25,7 @@ import { parseArgs } from 'node:util';
 import {
   downloadBinaries,
   getRelease,
+  MXC_DOWNLOAD,
   OPENSHELL_DOWNLOAD,
   OPENSHELL_IMAGE_BUILDER_DOWNLOAD,
   OPENSHELL_WINDOWS_GATEWAY_DOWNLOAD,
@@ -45,6 +46,7 @@ const SUPPORTED_TARGETS: { platform: string; arch: string }[] = [
 
 interface PackageJson {
   e2fsprogsVersion: string;
+  mxcVersion: string;
   openshellVersion: string;
   openshellImageBuilderVersion: string;
   openshellWindowsGatewayVersion: string;
@@ -73,6 +75,12 @@ const DOWNLOADS: DownloadEntry[] = [
     id: 'windows-gateway',
     config: OPENSHELL_WINDOWS_GATEWAY_DOWNLOAD,
     versionProperty: 'openshellWindowsGatewayVersion',
+  },
+  {
+    id: 'mxc',
+    config: MXC_DOWNLOAD,
+    versionProperty: 'mxcVersion',
+    outputSubdirectory: 'mxc',
   },
 ];
 

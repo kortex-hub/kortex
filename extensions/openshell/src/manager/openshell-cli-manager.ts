@@ -112,6 +112,26 @@ export class OpenshellCliManager implements Disposable {
       'OpenShell Gateway server for managing sandbox connections',
       gwRegistration,
     );
+
+    if (extensionApi.env.isWindows) {
+      const mxcResult = await this.discoverBinary(
+        'wxc-exec',
+        'mxc.binary.path',
+        'mxc',
+        'mxc',
+        packageJson.mxcVersion,
+        'mxc',
+      );
+      const mxcRegistration: BinaryDiscoveryResult = mxcResult ?? {
+        installationSource: 'extension',
+      };
+
+      if (!mxcResult) {
+        console.warn('[wxc-exec] CLI not found, registering installer-only entry');
+      }
+
+      this.registerCliTool('wxc-exec', 'MXC', 'Windows sandbox executor for secure code execution', mxcRegistration);
+    }
   }
 
   dispose(): void {}
@@ -141,6 +161,8 @@ export class OpenshellCliManager implements Disposable {
     configKey: string,
     resourceSubdir: string,
     assetsSubdir?: string,
+    version?: string,
+    versionMarker?: string,
   ): Promise<BinaryDiscoveryResult | undefined> {
     const binDir = join(this.extensionContext.storagePath, 'bin');
     const binaryName = extensionApi.env.isWindows ? `${binaryBaseName}.exe` : binaryBaseName;
@@ -154,10 +176,10 @@ export class OpenshellCliManager implements Disposable {
 
     const customPath = extensionApi.configuration.getConfiguration('openshell').get<string>(configKey) ?? undefined;
     if (customPath && existsSync(customPath)) {
-      const version = await this.getVersion(customPath);
-      if (version) {
+      const detectedVersion = await this.getVersion(customPath);
+      if (detectedVersion || version !== undefined) {
         console.log(`[${binaryBaseName}] using custom binary path: ${customPath}`);
-        return { path: customPath, version, installationSource: 'external' };
+        return { path: customPath, version: detectedVersion, installationSource: 'external' };
       }
       console.warn(`[${binaryBaseName}] custom binary at ${customPath} failed to report a version`);
     }
@@ -166,13 +188,19 @@ export class OpenshellCliManager implements Disposable {
       let result: BinaryDiscoveryResult | undefined;
       switch (source) {
         case 'storage':
-          result = await this.discoverFromExtensionStorage(binaryBaseName, localBinaryPath);
+          result = await this.discoverFromExtensionStorage(binaryBaseName, localBinaryPath, version, versionMarker);
           break;
         case 'bundled':
-          result = await this.discoverFromBundledResources(binaryBaseName, binaryName, resourceSubdir, assetsSubdir);
+          result = await this.discoverFromBundledResources(
+            binaryBaseName,
+            binaryName,
+            resourceSubdir,
+            assetsSubdir,
+            version,
+          );
           break;
         case 'system':
-          result = await this.discoverFromSystemPath(binaryBaseName);
+          result = await this.discoverFromSystemPath(binaryBaseName, version);
           break;
       }
       if (result) return result;
@@ -184,14 +212,29 @@ export class OpenshellCliManager implements Disposable {
   private async discoverFromExtensionStorage(
     binaryBaseName: string,
     localBinaryPath: string,
+    fallbackVersion?: string,
+    versionMarker?: string,
   ): Promise<BinaryDiscoveryResult | undefined> {
     if (existsSync(localBinaryPath)) {
-      const version = await this.getVersion(localBinaryPath);
-      if (version) {
+      let version = await this.getVersion(localBinaryPath);
+      if (!version && versionMarker) {
+        version = this.readVersionMarker(versionMarker);
+      }
+      if (version || fallbackVersion !== undefined) {
         console.log(`[${binaryBaseName}] binary found in extension storage`);
-        return { path: localBinaryPath, version, installationSource: 'extension' };
+        return { path: localBinaryPath, version: version ?? fallbackVersion, installationSource: 'extension' };
       }
       console.warn(`[${binaryBaseName}] binary exists at ${localBinaryPath} but failed to report a version`);
+    }
+    return undefined;
+  }
+
+  private readVersionMarker(markerName: string): string | undefined {
+    const versionFile = join(this.extensionContext.storagePath, 'bin', `.${markerName}-version`);
+    if (existsSync(versionFile)) {
+      const marker = readFileSync(versionFile, 'utf8').trim();
+      const suffix = `-${process.platform}-${process.arch}`;
+      return marker.endsWith(suffix) ? marker.slice(0, -suffix.length) : marker;
     }
     return undefined;
   }
@@ -201,6 +244,7 @@ export class OpenshellCliManager implements Disposable {
     binaryName: string,
     resourceSubdir: string,
     assetsSubdir?: string,
+    fallbackVersion?: string,
   ): Promise<BinaryDiscoveryResult | undefined> {
     let resourcesPath: string | undefined;
     let bundledResourceSubdir: string;
@@ -221,9 +265,9 @@ export class OpenshellCliManager implements Disposable {
       console.log(`[${binaryBaseName}] checking bundled resources at ${bundledBinaryPath}`);
       if (existsSync(bundledBinaryPath)) {
         const version = await this.getVersion(bundledBinaryPath);
-        if (version) {
+        if (version || fallbackVersion !== undefined) {
           console.log(`[${binaryBaseName}] binary found in bundled resources at ${bundledBinaryPath}`);
-          return { path: bundledBinaryPath, version, installationSource: 'extension' };
+          return { path: bundledBinaryPath, version: version ?? fallbackVersion, installationSource: 'extension' };
         }
         console.warn(`[${binaryBaseName}] bundled binary at ${bundledBinaryPath} failed to report a version`);
       }
@@ -233,11 +277,25 @@ export class OpenshellCliManager implements Disposable {
     return undefined;
   }
 
-  private async discoverFromSystemPath(binaryBaseName: string): Promise<BinaryDiscoveryResult | undefined> {
+  private async discoverFromSystemPath(
+    binaryBaseName: string,
+    fallbackVersion?: string,
+  ): Promise<BinaryDiscoveryResult | undefined> {
     const systemResult = await this.findOnPath(binaryBaseName);
     if (systemResult) {
       console.log(`[${binaryBaseName}] binary found in system PATH at ${systemResult.path}`);
       return { path: systemResult.path, version: systemResult.version, installationSource: 'external' };
+    }
+    if (fallbackVersion !== undefined) {
+      try {
+        const resolvedPath = await this.resolveFromPath(binaryBaseName);
+        if (resolvedPath) {
+          console.log(`[${binaryBaseName}] binary found in system PATH at ${resolvedPath}`);
+          return { path: resolvedPath, installationSource: 'external' };
+        }
+      } catch {
+        // not on PATH
+      }
     }
     return undefined;
   }

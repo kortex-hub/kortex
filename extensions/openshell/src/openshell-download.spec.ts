@@ -29,6 +29,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   downloadBinaries,
   getRelease,
+  MXC_DOWNLOAD,
   OPENSHELL_DOWNLOAD,
   OPENSHELL_IMAGE_BUILDER_DOWNLOAD,
   OPENSHELL_WINDOWS_GATEWAY_DOWNLOAD,
@@ -230,6 +231,66 @@ describe('downloadBinaries', () => {
     expect(chmod).not.toHaveBeenCalled();
   });
 
+  test('extracts only the matching entry when entryPath is specified', async () => {
+    stubDownloadFetch();
+    const mockEntries: IZipEntry[] = [
+      { isDirectory: false, entryName: 'x64/wxc-exec.exe' } as IZipEntry,
+      { isDirectory: false, entryName: 'arm64/wxc-exec.exe' } as IZipEntry,
+      { isDirectory: false, entryName: 'x64/wxc-host-prep.exe' } as IZipEntry,
+      { isDirectory: true, entryName: 'x64/' } as IZipEntry,
+    ];
+    vi.mocked(AdmZip.prototype.getEntries).mockReturnValue(mockEntries);
+    vi.mocked(AdmZip.prototype.extractEntryTo).mockImplementation((_entry: unknown, outDir: string) => {
+      fileMap.set(normPath(path.join(outDir, 'wxc-exec.exe')), true);
+      return true;
+    });
+    const digests = new Map([['mxc-release-binaries.zip', 'abc123']]);
+
+    await downloadBinaries(MXC_DOWNLOAD, '0.8.0', 'win32', 'x64', '/output', digests);
+
+    expect(AdmZip.prototype.extractEntryTo).toHaveBeenCalledTimes(1);
+    expect(AdmZip.prototype.extractEntryTo).toHaveBeenCalledWith(
+      expect.objectContaining({ entryName: 'x64/wxc-exec.exe' }),
+      '/output',
+      false,
+      true,
+    );
+    expect(chmod).not.toHaveBeenCalled();
+  });
+
+  test('skips MXC download when version marker and binary are cached', async () => {
+    fileMap.set('/output/.mxc-version', true);
+    fileMap.set('/output/wxc-exec.exe', true);
+    vi.mocked(readFile).mockResolvedValue('0.8.0-win32-x64');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => {
+        throw new Error('fetch should not be called when cached');
+      }),
+    );
+
+    await downloadBinaries(MXC_DOWNLOAD, '0.8.0', 'win32', 'x64', '/output', new Map());
+  });
+
+  test('writes MXC version marker after download', async () => {
+    stubDownloadFetch();
+    const mockEntries: IZipEntry[] = [{ isDirectory: false, entryName: 'x64/wxc-exec.exe' } as IZipEntry];
+    vi.mocked(AdmZip.prototype.getEntries).mockReturnValue(mockEntries);
+    vi.mocked(AdmZip.prototype.extractEntryTo).mockImplementation((_entry: unknown, outDir: string) => {
+      fileMap.set(normPath(path.join(outDir, 'wxc-exec.exe')), true);
+      return true;
+    });
+    const digests = new Map([['mxc-release-binaries.zip', 'abc123']]);
+
+    await downloadBinaries(MXC_DOWNLOAD, '0.8.0', 'win32', 'x64', '/output', digests);
+
+    expect(writeFile).toHaveBeenCalledWith(
+      expect.stringContaining('.mxc-version'),
+      '0.8.0-win32-x64',
+      expect.any(Object),
+    );
+  });
+
   test('sends Authorization header when GITHUB_TOKEN is set', async () => {
     vi.stubEnv('GITHUB_TOKEN', 'test-token');
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, body: new PassThrough() });
@@ -315,6 +376,22 @@ describe('getRelease', () => {
       expect.any(Object),
     );
     expect(release.version).toBe('c93b2fa7');
+  });
+
+  test('uses default v tag prefix for MXC config', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => ({ tag_name: 'v0.8.0', assets: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const release = await getRelease(MXC_DOWNLOAD, '0.8.0');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.github.com/repos/microsoft/mxc/releases/tags/v0.8.0',
+      expect.any(Object),
+    );
+    expect(release.version).toBe('0.8.0');
   });
 
   test('throws on fetch failure', async () => {

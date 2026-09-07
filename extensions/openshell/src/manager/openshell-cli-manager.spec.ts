@@ -20,7 +20,7 @@ import type { PathLike } from 'node:fs';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { cli, configuration, process as extensionProcess } from '@openkaiden/api';
+import { cli, configuration, env, process as extensionProcess } from '@openkaiden/api';
 import { assert, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { OpenshellCliManager } from './openshell-cli-manager';
@@ -48,7 +48,7 @@ beforeEach(() => {
   vi.resetAllMocks();
 
   vi.mocked(readFileSync).mockReturnValue(
-    JSON.stringify({ openshellVersion: '0.1.0', openshellImageBuilderVersion: '0.1.0' }),
+    JSON.stringify({ openshellVersion: '0.1.0', openshellImageBuilderVersion: '0.1.0', mxcVersion: '0.8.0' }),
   );
 
   vi.mocked(configuration.getConfiguration).mockReturnValue({
@@ -311,6 +311,120 @@ describe('OpenshellCliManager', () => {
       await manager.init();
 
       expect(manager.getRegisteredPath()).toBe(customPath);
+    });
+  });
+
+  describe('MXC (wxc-exec) discovery', () => {
+    test('does not register wxc-exec on non-Windows platforms', async () => {
+      vi.mocked(env).isWindows = false;
+
+      const manager = createManager();
+      await manager.init();
+
+      const createCalls = vi.mocked(cli.createCliTool).mock.calls;
+      const registeredNames = createCalls.map(call => call[0].name);
+      expect(registeredNames).not.toContain('wxc-exec');
+    });
+
+    test('registers wxc-exec with bundled version from package.json', async () => {
+      vi.mocked(env).isWindows = true;
+      const platformArch = `${process.platform}-${process.arch}`;
+      const bundledPath = join(EXTENSION_URI, 'assets', 'mxc', platformArch, 'wxc-exec.exe');
+
+      vi.mocked(existsSync).mockImplementation((p: PathLike) => {
+        return String(p) === bundledPath;
+      });
+
+      const manager = createManager();
+      await manager.init();
+
+      const createCalls = vi.mocked(cli.createCliTool).mock.calls;
+      const mxcCall = createCalls.find(call => call[0].name === 'wxc-exec');
+      assert(mxcCall);
+      expect(mxcCall[0].path).toBe(bundledPath);
+      expect(mxcCall[0].version).toBe('0.8.0');
+      expect(mxcCall[0].installationSource).toBe('extension');
+    });
+
+    test('registers wxc-exec with version from marker file in extension storage', async () => {
+      vi.mocked(env).isWindows = true;
+      const storageBinaryPath = join(STORAGE_PATH, 'bin', 'wxc-exec.exe');
+      const versionFilePath = join(STORAGE_PATH, 'bin', '.mxc-version');
+
+      vi.mocked(configuration.getConfiguration).mockReturnValue({
+        get: vi.fn().mockImplementation((key: string) => {
+          if (key === 'binary.resolution') return 'storage,bundled,system';
+          return undefined;
+        }),
+        has: vi.fn(),
+        update: vi.fn(),
+      } as never);
+
+      vi.mocked(existsSync).mockImplementation((p: PathLike) => {
+        const s = String(p);
+        return s === storageBinaryPath || s === versionFilePath;
+      });
+
+      vi.mocked(readFileSync).mockImplementation((p: PathLike | number) => {
+        const s = String(p);
+        if (s === versionFilePath) {
+          return `0.7.0-${process.platform}-${process.arch}`;
+        }
+        return JSON.stringify({
+          openshellVersion: '0.1.0',
+          openshellImageBuilderVersion: '0.1.0',
+          mxcVersion: '0.8.0',
+        });
+      });
+
+      const manager = createManager();
+      await manager.init();
+
+      const createCalls = vi.mocked(cli.createCliTool).mock.calls;
+      const mxcCall = createCalls.find(call => call[0].name === 'wxc-exec');
+      assert(mxcCall);
+      expect(mxcCall[0].path).toBe(storageBinaryPath);
+      expect(mxcCall[0].version).toBe('0.7.0');
+      expect(mxcCall[0].installationSource).toBe('extension');
+    });
+
+    test('registers wxc-exec from system PATH with no version', async () => {
+      vi.mocked(env).isWindows = true;
+
+      vi.mocked(existsSync).mockReturnValue(false);
+
+      vi.mocked(extensionProcess.exec).mockImplementation(async (cmd: string, args?: string[]) => {
+        if (cmd === 'where' && args?.[0] === 'wxc-exec') {
+          return { stdout: 'C:\\Windows\\wxc-exec.exe\n', stderr: '', command: cmd };
+        }
+        throw new Error(`unexpected exec: ${cmd} ${args?.join(' ')}`);
+      });
+
+      const manager = createManager();
+      await manager.init();
+
+      const createCalls = vi.mocked(cli.createCliTool).mock.calls;
+      const mxcCall = createCalls.find(call => call[0].name === 'wxc-exec');
+      assert(mxcCall);
+      expect(mxcCall[0].path).toBe('C:\\Windows\\wxc-exec.exe');
+      expect(mxcCall[0].version).toBeUndefined();
+      expect(mxcCall[0].installationSource).toBe('external');
+    });
+
+    test('registers wxc-exec as installer-only entry when not found', async () => {
+      vi.mocked(env).isWindows = true;
+      vi.mocked(existsSync).mockReturnValue(false);
+      vi.mocked(extensionProcess.exec).mockRejectedValue(new Error('not found'));
+
+      const manager = createManager();
+      await manager.init();
+
+      const createCalls = vi.mocked(cli.createCliTool).mock.calls;
+      const mxcCall = createCalls.find(call => call[0].name === 'wxc-exec');
+      assert(mxcCall);
+      expect(mxcCall[0].path).toBeUndefined();
+      expect(mxcCall[0].version).toBeUndefined();
+      expect(mxcCall[0].installationSource).toBe('extension');
     });
   });
 });

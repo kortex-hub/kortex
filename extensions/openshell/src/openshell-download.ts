@@ -35,6 +35,7 @@ interface AssetSpec {
   assetName: string | string[];
   binaryName: string;
   subdir?: string;
+  entryPath?: string;
 }
 
 export interface GitHubArtifactDownload {
@@ -139,6 +140,17 @@ export const OPENSHELL_WINDOWS_GATEWAY_DOWNLOAD: GitHubArtifactDownload = {
   },
 };
 
+export const MXC_DOWNLOAD: GitHubArtifactDownload = {
+  name: 'mxc',
+  repository: 'microsoft/mxc',
+  assets: {
+    'win32-x64': [{ assetName: 'mxc-release-binaries.zip', binaryName: 'wxc-exec.exe', entryPath: 'x64/wxc-exec.exe' }],
+    'win32-arm64': [
+      { assetName: 'mxc-release-binaries.zip', binaryName: 'wxc-exec.exe', entryPath: 'arm64/wxc-exec.exe' },
+    ],
+  },
+};
+
 export async function getRelease(downloadConfig: GitHubArtifactDownload, version: string): Promise<ReleaseInfo> {
   const headers: Record<string, string> = { Accept: 'application/vnd.github.v3+json' };
   const token = process.env['GITHUB_TOKEN'];
@@ -204,12 +216,13 @@ async function extract(archive: string, outDir: string): Promise<void> {
   });
 }
 
-function extractZip(archive: string, outDir: string): void {
+function extractZip(archive: string, outDir: string, entryPath?: string): void {
   const zip = new AdmZip(archive);
   for (const entry of zip.getEntries()) {
-    if (!entry.isDirectory && isSafePath(entry.entryName)) {
-      zip.extractEntryTo(entry, outDir, false, true);
-    }
+    if (entry.isDirectory) continue;
+    if (!isSafePath(entry.entryName)) continue;
+    if (entryPath && entry.entryName !== entryPath) continue;
+    zip.extractEntryTo(entry, outDir, false, true);
   }
 }
 
@@ -266,7 +279,7 @@ export async function downloadBinaries(
       await rm(downloadPath);
     } else if (assetName.endsWith('.zip')) {
       console.log(`extracting ${asset.binaryName}...`);
-      extractZip(downloadPath, assetDir);
+      extractZip(downloadPath, assetDir, asset.entryPath);
       await rm(downloadPath);
     } else if (downloadPath !== binaryPath) {
       await rename(downloadPath, binaryPath);

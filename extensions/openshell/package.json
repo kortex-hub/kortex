@@ -7,6 +7,7 @@
   "openshellImageBuilderVersion": "0.9.0",
   "e2fsprogsVersion": "1.47.4",
   "openshellWindowsGatewayVersion": "c93b2fa7",
+  "mxcVersion": "0.8.0",
   "icon": "icon.png",
   "publisher": "kaiden",
   "license": "Apache-2.0",
@@ -53,6 +54,14 @@
           "scope": "DEFAULT",
           "default": "",
           "description": "Custom path to openshell-gateway binary (Default is blank)"
+        },
+        "openshell.mxc.binary.path": {
+          "type": "string",
+          "format": "file",
+          "scope": "DEFAULT",
+          "default": "",
+          "description": "Custom path to MXC wxc-exec binary (Default is blank)",
+          "when": "isWindows"
         },
         "openshell.gateway.pollInterval": {
           "type": "number",
