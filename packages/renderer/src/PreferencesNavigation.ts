@@ -17,7 +17,7 @@
  ***********************************************************************/
 
 import type { IconDefinition } from '@fortawesome/free-regular-svg-icons';
-import { faServer } from '@fortawesome/free-solid-svg-icons';
+import { faLink, faServer, faShield } from '@fortawesome/free-solid-svg-icons';
 import type { Component } from 'svelte';
 
 import CLIToolsIcon from '/@/lib/images/CLIToolsIcon.svelte';
@@ -40,8 +40,24 @@ export interface SettingsNavItemConfig {
 
 // Static navigation entries for routes not in the main navigation registry
 export const settingsNavigationEntries: SettingsNavItemConfig[] = [
-  { title: 'Resources', href: '/preferences/resources', visible: true, icon: ResourcesIcon },
-  { title: 'Proxy', href: '/preferences/proxies', visible: true, icon: ProxyIcon },
-  { title: 'CLI Tools', href: '/preferences/cli-tools', visible: true, icon: CLIToolsIcon },
-  { title: 'Gateways', href: '/preferences/openshell/gateways', visible: true, icon: faServer },
+  {
+    title: 'Connections',
+    href: '/preferences/connections',
+    visible: true,
+    expanded: true,
+    icon: faLink,
+    children: [
+      { title: 'Resources', href: '/preferences/resources', visible: true, icon: ResourcesIcon },
+      { title: 'Proxy', href: '/preferences/proxies', visible: true, icon: ProxyIcon },
+      { title: 'CLI Tools', href: '/preferences/cli-tools', visible: true, icon: CLIToolsIcon },
+    ],
+  },
+  {
+    title: 'OpenShell',
+    href: '/preferences/openshell',
+    visible: true,
+    expanded: true,
+    icon: faShield,
+    children: [{ title: 'Gateways', href: '/preferences/openshell/gateways', visible: true, icon: faServer }],
+  },
 ];
