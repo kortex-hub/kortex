@@ -15,7 +15,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-name: fullsend-webupd
+name: Update website with fullsend
 
 on:
   schedule:
@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           repository: fullsend-ai/fullsend
-          ref: 84c8bbbb821ff85136854150b06740253709b3b8 # v0.37.0
+          ref: 4665685a1d9d471a7a044908a68f00bed78caba7 # v0.42.0
           path: .defaults
           sparse-checkout: |
             internal/scaffold/fullsend-repo/
@@ -82,7 +82,7 @@ jobs:
         run: bash .fullsend/scripts/prepare-sandbox-credentials.sh
 
       - name: Install fullsend CLI
-        uses: fullsend-ai/fullsend@84c8bbbb821ff85136854150b06740253709b3b8 # v0.37.0
+        uses: fullsend-ai/fullsend@4665685a1d9d471a7a044908a68f00bed78caba7 # v0.42.0
         with:
           agent: __install_only__
 
