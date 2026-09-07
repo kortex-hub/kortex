@@ -183,7 +183,7 @@ export const handleNavigation = (request: InferredNavigationRequest<NavigationPa
       router.goto('/agent-workspaces/create');
       break;
     case NavigationPage.CODING_AGENTS:
-      router.goto('/coding-agents');
+      router.goto('/preferences/coding-agents');
       break;
     case NavigationPage.SKILL_DETAILS:
       router.goto(`/skills/${encodeURIComponent(request.parameters.name)}/summary`);

@@ -34,7 +34,6 @@ import AppNavigation from './AppNavigation.svelte';
 import { navigateTo } from './kubernetesNavigation';
 import Appearance from './lib/appearance/Appearance.svelte';
 import CustomChat from './lib/chat/route/CustomChat.svelte';
-import CodingAgentsPage from './lib/coding-agents/CodingAgentsPage.svelte';
 import ComposeDetails from './lib/compose/ComposeDetails.svelte';
 import ConfigMapDetails from './lib/configmaps-secrets/ConfigMapDetails.svelte';
 import ConfigMapSecretList from './lib/configmaps-secrets/ConfigMapSecretList.svelte';
@@ -333,11 +332,6 @@ tablePersistence.storage = new PodmanDesktopStoragePersist();
         </Route>
         <Route path="/mcp-install-from-registry/:serverId/*" breadcrumb="Install MCP Server from Registry" let:meta>
           <McpRegistryCreateFromRegistryForm serverId={decodeURIComponent(meta.params.serverId)} />
-        </Route>
-
-        <!-- Coding agents -->
-        <Route path="/coding-agents" breadcrumb="Coding agents" navigationHint="root">
-          <CodingAgentsPage />
         </Route>
 
         <!-- Models -->
