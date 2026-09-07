@@ -18,7 +18,7 @@
 
 import '@testing-library/jest-dom/vitest';
 
-import { fireEvent, render, screen, within } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { beforeEach, expect, test, vi } from 'vitest';
 
@@ -222,4 +222,96 @@ test('Expect "All" option shows all workspaces', async () => {
 
   expect(screen.getByText('local-workspace')).toBeInTheDocument();
   expect(screen.getByText('remote-workspace')).toBeInTheDocument();
+});
+
+test('Expect checkboxes rendered for each workspace', async () => {
+  const workspaces: GatewaySandboxes[] = [
+    {
+      gateway: { name: 'local', endpoint: 'http://localhost:18080' },
+      sandboxes: [
+        { id: 'ws-1', name: 'workspace-1', phase: 'Ready', created_at: Date.now().toString() },
+        { id: 'ws-2', name: 'workspace-2', phase: 'Ready', created_at: Date.now().toString() },
+      ],
+    },
+  ];
+
+  openshellSandboxes.set(workspaces);
+  render(AgentWorkspaceList);
+  await tick();
+
+  const checkboxes = screen.getAllByRole('checkbox', { name: 'Toggle openshell-workspaces' });
+  expect(checkboxes).toHaveLength(2);
+  expect(checkboxes[0]).not.toBeDisabled();
+  expect(checkboxes[1]).not.toBeDisabled();
+});
+
+test('Expect checkbox disabled for workspace in Deleting phase', async () => {
+  const workspaces: GatewaySandboxes[] = [
+    {
+      gateway: { name: 'local', endpoint: 'http://localhost:18080' },
+      sandboxes: [
+        { id: 'ws-1', name: 'workspace-1', phase: 'Ready', created_at: Date.now().toString() },
+        { id: 'ws-2', name: 'workspace-2', phase: 'Deleting', created_at: Date.now().toString() },
+      ],
+    },
+  ];
+
+  openshellSandboxes.set(workspaces);
+  render(AgentWorkspaceList);
+  await tick();
+
+  const checkboxes = screen.getAllByRole('checkbox', { name: 'Toggle openshell-workspaces' });
+  expect(checkboxes).toHaveLength(2);
+  expect(checkboxes[0]).not.toBeDisabled();
+  expect(checkboxes[1]).toBeDisabled();
+});
+
+test('Expect bulk delete button appears after selecting a workspace', async () => {
+  const workspaces: GatewaySandboxes[] = [
+    {
+      gateway: { name: 'local', endpoint: 'http://localhost:18080' },
+      sandboxes: [{ id: 'ws-1', name: 'workspace-1', phase: 'Ready', created_at: Date.now().toString() }],
+    },
+  ];
+
+  openshellSandboxes.set(workspaces);
+  render(AgentWorkspaceList);
+  await tick();
+
+  expect(screen.queryByRole('button', { name: /Delete .* selected items/ })).not.toBeInTheDocument();
+
+  const checkbox = screen.getByRole('checkbox', { name: 'Toggle openshell-workspaces' });
+  await fireEvent.click(checkbox);
+
+  expect(screen.getByRole('button', { name: 'Delete 1 selected items' })).toBeInTheDocument();
+  expect(screen.getByText('On 1 selected items.')).toBeInTheDocument();
+});
+
+test('Expect user confirmation for bulk delete when required', async () => {
+  const workspaces: GatewaySandboxes[] = [
+    {
+      gateway: { name: 'local', endpoint: 'http://localhost:18080' },
+      sandboxes: [{ id: 'ws-1', name: 'workspace-1', phase: 'Ready', created_at: Date.now().toString() }],
+    },
+  ];
+
+  openshellSandboxes.set(workspaces);
+  render(AgentWorkspaceList);
+  await tick();
+
+  const checkbox = screen.getByRole('checkbox', { name: 'Toggle openshell-workspaces' });
+  await fireEvent.click(checkbox);
+
+  vi.mocked(window.getConfigurationValue).mockResolvedValue(true);
+  vi.mocked(window.showMessageBox).mockResolvedValue({ response: 1 });
+
+  const deleteButton = screen.getByRole('button', { name: 'Delete 1 selected items' });
+  await fireEvent.click(deleteButton);
+
+  expect(window.showMessageBox).toHaveBeenCalledOnce();
+
+  vi.mocked(window.showMessageBox).mockResolvedValue({ response: 0 });
+  await fireEvent.click(deleteButton);
+  expect(window.showMessageBox).toHaveBeenCalledTimes(2);
+  await waitFor(() => expect(window.deleteOpenshellSandbox).toHaveBeenCalledWith('workspace-1', 'local'));
 });
